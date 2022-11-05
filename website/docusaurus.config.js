@@ -54,10 +54,10 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'FerretDB',
         logo: {
           alt: 'FerretDB Logo',
-          src: 'img/logo.svg',
+          src: 'img/logo_dark.png',
+          srcDark:'img/logo_light.png'
         },
         items: [
           {
