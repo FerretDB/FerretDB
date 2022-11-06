@@ -186,7 +186,7 @@ func (d *Document) add(key string, value any) error {
 		// ensure that _id is the first field
 		d.fields = slices.Insert(d.fields, 0, field{key, value})
 	} else {
-		d.fields = append(d.fields, field{key, value}) // lala
+		d.fields = append(d.fields, field{key, value})
 	}
 
 	return nil
