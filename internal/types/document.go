@@ -184,9 +184,9 @@ func (d *Document) Command() string {
 func (d *Document) add(key string, value any) error {
 	if key == "_id" {
 		// ensure that _id is the first field
-		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
+		d.fields = slices.Insert(d.fields, 0, field{key, value})
 	} else {
-		d.fields = append(d.fields, field{key: key, value: value})
+		d.fields = append(d.fields, field{key, value}) // lala
 	}
 
 	return nil
@@ -230,7 +230,7 @@ func (d *Document) Set(key string, value any) {
 		if i := slices.Index(d.Keys(), key); i >= 0 {
 			d.fields = slices.Delete(d.fields, i, i+1)
 		}
-		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
+		d.fields = slices.Insert(d.fields, 0, field{key, value})
 
 		return
 	}
@@ -242,7 +242,7 @@ func (d *Document) Set(key string, value any) {
 		}
 	}
 
-	d.fields = append(d.fields, field{key: key, value: value})
+	d.fields = append(d.fields, field{key, value})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
