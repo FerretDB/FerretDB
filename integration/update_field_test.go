@@ -352,26 +352,6 @@ func TestUpdateFieldInc(t *testing.T) {
 					UpsertedCount: 0,
 				},
 			},
-			"DoubleDoublePositiveInfinityIncrement": {
-				id:       "double",
-				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(+1)}}}},
-				expected: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleDoubleNegativeInfinityIncrement": {
-				id:       "double",
-				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(-1)}}}},
-				expected: bson.D{{"_id", "double"}, {"v", math.Inf(-1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
 			"DoubleDoubleBigIncrement": {
 				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(2 << 60)}}}},
@@ -429,46 +409,6 @@ func TestUpdateFieldInc(t *testing.T) {
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"DoublePositiveInfinityPositiveIncrement": {
-				id:       "double-positive-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-				expected: bson.D{{"_id", "double-positive-infinity"}, {"v", math.Inf(+1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoublePositiveInfinityNegativeIncrement": {
-				id:       "double-positive-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-				expected: bson.D{{"_id", "double-positive-infinity"}, {"v", math.Inf(+1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleNegativeInfinityPositiveIncrement": {
-				id:       "double-negative-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-				expected: bson.D{{"_id", "double-negative-infinity"}, {"v", math.Inf(-1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleNegativeInfinityNegativeIncrement": {
-				id:       "double-negative-infinity",
-				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-				expected: bson.D{{"_id", "double-negative-infinity"}, {"v", math.Inf(-1)}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
 					UpsertedCount: 0,
 				},
 			},
@@ -808,16 +748,6 @@ func TestUpdateFieldSet(t *testing.T) {
 			id:       "double",
 			update:   bson.D{{"$set", bson.D{{"v", int32(1)}}}},
 			expected: bson.D{{"_id", "double"}, {"v", int32(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"Inf": {
-			id:       "double",
-			update:   bson.D{{"$set", bson.D{{"v", math.Inf(+1)}}}},
-			expected: bson.D{{"_id", "double"}, {"v", math.Inf(+1)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -1310,17 +1240,16 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 				update:   bson.D{{"$pop", bson.D{{"foo", 1}}}},
 				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
 			},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/1000
-			//"PopEmptyValue": {
-			//	id:       "array",
-			//	update:   bson.D{{"$pop", bson.D{}}},
-			//	expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
-			//	stat: &mongo.UpdateResult{
-			//		MatchedCount:  1,
-			//		ModifiedCount: 0,
-			//		UpsertedCount: 0,
-			//	},
-			//},
+			"PopEmptyValue": {
+				id:       "array",
+				update:   bson.D{{"$pop", bson.D{}}},
+				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
+				stat: &mongo.UpdateResult{
+					MatchedCount:  1,
+					ModifiedCount: 0,
+					UpsertedCount: 0,
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
@@ -1479,6 +1408,17 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 	_, err := collection.InsertOne(ctx, bson.D{{"_id", "document"}, {"foo", int32(42)}, {"bar", "baz"}})
 	require.NoError(t, err)
 
+	var inserted bson.D
+	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&inserted)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"_id", "document"},
+		{"foo", int32(42)},
+		{"bar", "baz"},
+	}
+	AssertEqualDocuments(t, expected, inserted)
+
 	_, err = collection.UpdateOne(
 		ctx,
 		bson.D{{"_id", "document"}},
@@ -1487,13 +1427,13 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 	require.NoError(t, err)
 
 	var updated bson.D
-
 	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
 	require.NoError(t, err)
 
-	expected := bson.D{
+	expected = bson.D{
 		{"_id", "document"},
 	}
+	AssertEqualDocuments(t, expected, updated)
 
 	_, err = collection.UpdateOne(
 		ctx,
@@ -1501,8 +1441,6 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 		bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 	)
 	require.NoError(t, err)
-
-	AssertEqualDocuments(t, expected, updated)
 
 	err = collection.FindOne(ctx, bson.D{{"_id", "document"}}).Decode(&updated)
 	require.NoError(t, err)
@@ -1512,6 +1450,5 @@ func TestUpdateDocumentFieldsOrderSimplified(t *testing.T) {
 		{"bar", "baz"},
 		{"foo", int32(42)},
 	}
-
 	AssertEqualDocuments(t, expected, updated)
 }

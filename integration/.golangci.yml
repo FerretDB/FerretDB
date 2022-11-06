@@ -56,6 +56,8 @@ linters-settings:
     alias:
       - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
         alias: api
+      - pkg: github.com/prometheus/client_model/go
+        alias: dto
   # ineffassign
   misspell:
     ignore-words:

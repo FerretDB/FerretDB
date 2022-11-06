@@ -39,7 +39,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	common.Ignored(document, h.l, "comment", "authorizedDatabases")
+	common.Ignored(document, h.L, "comment", "authorizedDatabases")
 
 	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
 	if err != nil {
@@ -48,7 +48,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var totalSize int64
 	var databases *types.Array
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var databaseNames []string
 		var err error
 		databaseNames, err = pgdb.Databases(ctx, tx)
@@ -106,7 +106,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil
 		}
 
-		return h.pgPool.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
+		return tx.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&totalSize)
 	})
 	if err != nil {
 		return nil, err

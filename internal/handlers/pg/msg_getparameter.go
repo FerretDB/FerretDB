@@ -79,7 +79,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "comment")
+	common.Ignored(document, h.L, "comment")
 
 	if resDoc.Len() < 2 {
 		return &reply, common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
@@ -115,24 +115,16 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 				item = val
 			}
 		}
-		err = doc.Set(k, item)
-		if err != nil {
-			return nil, err
-		}
+
+		doc.Set(k, item)
 	}
 
 	if doc.Len() < 1 {
-		err := doc.Set("ok", float64(0))
-		if err != nil {
-			return nil, err
-		}
+		doc.Set("ok", float64(0))
 		return doc, nil
 	}
 
-	err = doc.Set("ok", float64(1))
-	if err != nil {
-		return nil, err
-	}
+	doc.Set("ok", float64(1))
 	return doc, nil
 }
 

@@ -23,7 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-	"github.com/FerretDB/FerretDB/internal/tjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -40,6 +40,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
+
 	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
@@ -106,11 +107,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"ok", float64(1),
 	))
 
-	if len(delErrors) > 0 {
+	if delErrors.Len() > 0 {
 		replyDoc = delErrors.Document()
 	}
 
-	must.NoError(replyDoc.Set("n", deleted))
+	replyDoc.Set("n", deleted)
 
 	var reply wire.OpMsg
 

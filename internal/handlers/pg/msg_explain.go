@@ -43,7 +43,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "verbosity")
+	common.Ignored(document, h.L, "verbosity")
 
 	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
 	if err != nil {
@@ -61,15 +61,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if explain.Has("filter") {
-		sp.Filter, err = common.GetRequiredParam[*types.Document](explain, "filter")
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	sp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	var queryPlanner *types.Array
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	var queryPlanner *types.Document
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
 		return err
@@ -91,18 +89,21 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
-		"port", int32(port),
+		"port", port,
 		"version", version.MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
 	))
 
+	cmd := command.DeepCopy()
+	cmd.Set("$db", sp.DB)
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
-			"explainVersion", int32(1),
-			"command", command,
+			"explainVersion", "1",
+			"command", cmd,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

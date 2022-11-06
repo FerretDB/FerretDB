@@ -208,24 +208,10 @@ var (
 			`"string":["foo",""],"timestamp":[{"$t":"42"},{"$t":"0"}]}`,
 	}
 
-	eof = testCase{
-		name: "EOF",
-		j:    `[`,
-		jErr: `unexpected EOF`,
-	}
-
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all}
 )
 
 func TestDocument(t *testing.T) {
 	t.Parallel()
 	testJSON(t, documentTestCases, func() fjsontype { return new(documentType) })
-}
-
-func FuzzDocument(f *testing.F) {
-	fuzzJSON(f, documentTestCases, func() fjsontype { return new(documentType) })
-}
-
-func BenchmarkDocument(b *testing.B) {
-	benchmark(b, documentTestCases, func() fjsontype { return new(documentType) })
 }

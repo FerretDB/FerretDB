@@ -28,6 +28,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/jackc/pgx/v4"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -35,6 +36,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
@@ -84,8 +86,13 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 	}
 
 	for ctx.Err() == nil {
-		var pgPool *pgdb.Pool
-		pgPool, err := pgdb.NewPool(ctx, fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port), logger.Desugar(), false)
+		p, err := state.NewProvider("")
+		if err != nil {
+			return err
+		}
+
+		connString := fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port)
+		pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
 		if err == nil {
 			pgPool.Close()
 			return nil
@@ -194,7 +201,13 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	pgPool, err := pgdb.NewPool(ctx, "postgres://postgres@127.0.0.1:5432/ferretdb", logger.Desugar(), false)
+	p, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
+	connString := "postgres://postgres@127.0.0.1:5432/ferretdb"
+	pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
 	if err != nil {
 		return err
 	}
@@ -259,7 +272,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // run runs all setup commands.
 func run(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", logger.Named("debug").Desugar())
+	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
 
 	if err := setupPostgres(ctx, logger); err != nil {
 		return err

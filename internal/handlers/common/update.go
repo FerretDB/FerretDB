@@ -105,19 +105,18 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			// Treats the update as a Replacement object.
 			setDoc := update
 
-			sort.Strings(setDoc.Keys())
-
 			for _, setKey := range doc.Keys() {
 				if !setDoc.Has(setKey) && setKey != "_id" {
 					doc.Remove(setKey)
 				}
 			}
 
-			for _, setKey := range setDoc.Keys() {
+			setDocKeys := setDoc.Keys()
+			sort.Strings(setDocKeys)
+
+			for _, setKey := range setDocKeys {
 				setValue := must.NotFail(setDoc.Get(setKey))
-				if err := doc.Set(setKey, setValue); err != nil {
-					return false, err
-				}
+				doc.Set(setKey, setValue)
 			}
 
 			changed = true
@@ -132,9 +131,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
-	sort.Strings(setDoc.Keys())
+	setDocKeys := setDoc.Keys()
+	sort.Strings(setDocKeys)
 
-	for _, setKey := range setDoc.Keys() {
+	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
 		path := types.NewPathFromString(setKey)
@@ -365,9 +365,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			}
 		}
 
-		if err := doc.Set(field, maxVal); err != nil {
-			return changed, err
-		}
+		doc.Set(field, maxVal)
 		changed = true
 	}
 
@@ -378,22 +376,20 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
 	var changed bool
-	var err error
 	currentDateExpression := currentDateVal.(*types.Document)
 
 	now := time.Now().UTC()
-	sort.Strings(currentDateExpression.Keys())
+	keys := currentDateExpression.Keys()
+	sort.Strings(keys)
 
-	for _, field := range currentDateExpression.Keys() {
+	for _, field := range keys {
 		currentDateField := must.NotFail(currentDateExpression.Get(field))
 
 		switch currentDateField := currentDateField.(type) {
 		case *types.Document:
 			currentDateType, err := currentDateField.Get("$type")
 			if err != nil { // default is date
-				if err := doc.Set(field, now); err != nil {
-					return false, err
-				}
+				doc.Set(field, now)
 				changed = true
 				continue
 			}
@@ -401,22 +397,16 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 			currentDateType = currentDateType.(string)
 			switch currentDateType {
 			case "timestamp":
-				if err := doc.Set(field, types.NextTimestamp(now)); err != nil {
-					return false, err
-				}
+				doc.Set(field, types.NextTimestamp(now))
 				changed = true
 
 			case "date":
-				if err := doc.Set(field, now); err != nil {
-					return false, err
-				}
+				doc.Set(field, now)
 				changed = true
 			}
 
 		case bool:
-			if err = doc.Set(field, now); err != nil {
-				return false, err
-			}
+			doc.Set(field, now)
 			changed = true
 		}
 	}
@@ -484,6 +474,12 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			fallthrough
 		case "$pop":
 			updateModifier = true
+		case "$mul", "$rename":
+			return false, NewCommandErrorMsgWithArgument(
+				ErrNotImplemented,
+				fmt.Sprintf("update operator %s is not implemented", updateOp),
+				updateOp,
+			)
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewWriteErrorMsg(

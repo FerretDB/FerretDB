@@ -50,6 +50,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
+
 	ignoredFields := []string{
 		"hint",
 		"batchSize",

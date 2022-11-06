@@ -33,6 +33,12 @@ jobs:
         with:
           lfs: true
 
+      - name: Check LFS status
+        if: false # TODO https://github.com/ActionsDesk/lfs-warning/issues/147
+        uses: actionsdesk/lfs-warning@v3.2
+        with:
+          filesizelimit: 1MB
+
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:

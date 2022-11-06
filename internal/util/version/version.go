@@ -120,27 +120,27 @@ func init() {
 			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
 
 		case "-compiler":
-			must.NoError(info.BuildEnvironment.Set("compiler", s.Value))
+			info.BuildEnvironment.Set("compiler", s.Value)
 
 		case "-race":
-			must.NoError(info.BuildEnvironment.Set("race", s.Value))
+			info.BuildEnvironment.Set("race", s.Value)
 
 			if must.NotFail(strconv.ParseBool(s.Value)) {
 				info.Debug = true
 			}
 
 		case "-tags":
-			must.NoError(info.BuildEnvironment.Set("buildtags", s.Value))
+			info.BuildEnvironment.Set("buildtags", s.Value)
 
 			if slices.Contains(strings.Split(s.Value, ","), "ferretdb_testcover") {
 				info.Debug = true
 			}
 
 		case "-trimpath":
-			must.NoError(info.BuildEnvironment.Set("trimpath", s.Value))
+			info.BuildEnvironment.Set("trimpath", s.Value)
 
 		default:
-			must.NoError(info.BuildEnvironment.Set(s.Key, s.Value))
+			info.BuildEnvironment.Set(s.Key, s.Value)
 		}
 	}
 }

@@ -29,6 +29,18 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
+  cockroach:
+    build:
+      context: ./build/deps
+      dockerfile: cockroach.Dockerfile
+    container_name: ferretdb_cockroach
+    command: start-single-node --insecure
+    ports:
+      - 26257:26257
+    environment:
+      - COCKROACH_USER=cockroach
+      - COCKROACH_DATABASE=ferretdb
+
   # for proxy mode and mongosh
   mongodb:
     build:
@@ -69,6 +81,13 @@ services:
       - ./build/rpm:/rpm
 
   # for documentation
+  textlint:
+    build:
+      context: ./build/deps
+      dockerfile: ferretdb-textlint.Dockerfile
+    container_name: ferretdb_ferretdb-textlint
+    volumes:
+      - .:/workdir
   markdownlint:
     build:
       context: ./build/deps
@@ -76,19 +95,21 @@ services:
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
-  textlint:
+  docusaurus-docs:
     build:
-      context: ./build/deps/textlint
-    container_name: ferretdb_textlint
-    volumes:
-      - .:/workdir
-      - /workdir/build/deps/textlint/node_modules
-  docusaurus:
-    build:
-      context: ./website
-    container_name: ferretdb_docusaurus
+      context: ./build/deps
+      dockerfile: docusaurus-docs.Dockerfile
+    container_name: ferretdb_docusaurus-docs
     ports:
       - 3000:3000
     volumes:
-      - .:/workdir
-      - /workdir/website/node_modules
+      # package.json and package-lock.json are not bound; container image already contains them.
+      # But we need them in the repo for Vercel.
+      # TODO https://github.com/FerretDB/FerretDB/issues/1133
+      - ./website/docs:/workdir/docusaurus-docs/docs:ro
+      - ./website/src:/workdir/docusaurus-docs/src:ro
+      - ./website/static:/workdir/docusaurus-docs/static:ro
+      - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
+      - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
+      - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
+      - ./website/build:/workdir/docusaurus-docs/build:rw

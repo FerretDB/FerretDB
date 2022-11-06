@@ -9,10 +9,12 @@ linters-settings:
   depguard:
     list-type: blacklist
     packages:
+      - golang.org/x/net/context # use stdlib's context instead
       - github.com/FerretDB/FerretDB/internal/bson
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pjson
-      - github.com/FerretDB/FerretDB/internal/tjson
+      - github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb
+      - github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson
       - github.com/FerretDB/FerretDB/internal/types/fjson
       - github.com/tigrisdata/tigris-client-go/api/client/v1/api
       - github.com/tigrisdata/tigris-client-go/filter # We use our own filter without generics (see tigris/tigrisdb/filter)
@@ -69,6 +71,8 @@ linters-settings:
     alias:
       - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
         alias: api
+      - pkg: github.com/prometheus/client_model/go
+        alias: dto
   # ineffassign
   lll:
     line-length: 130
@@ -82,10 +86,6 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
-  revive:
-    ignore-generated-header: true
-    severity: warning
-    enableAllRules: true
   staticcheck:
     checks:
       - all
@@ -115,7 +115,6 @@ linters:
     - lll
     - misspell
     - nolintlint
-    - revive
     - staticcheck
     - unused
     - whitespace
@@ -131,15 +130,18 @@ issues:
       path: internal/wire
       text: bson
 
-    # only `testutil` and `wire` packages can import `fjson` package
+    # only `testutil`, `bson` (for testing), and `wire` packages can import `fjson` package
     - linters: [depguard]
       path: internal/util/testutil
+      text: fjson
+    - linters: [depguard]
+      path: internal/bson
       text: fjson
     - linters: [depguard]
       path: internal/wire
       text: fjson
 
-    # only `pg` handler can import `pgdb` package, not other handler can do that
+    # only `pg` handler can import `pgdb` package, no other handler can do that
     - linters: [depguard]
       path: internal/handlers/pg
       text: pgdb
@@ -156,7 +158,7 @@ issues:
       path: internal/handlers/registry
       text: pgdb
 
-    # only `pg` handler can import `pjson` package, not other handler can do that
+    # only `pg` handler can import `pjson` package, no other handler can do that
     - linters: [depguard]
       path: internal/handlers/pg
       text: pjson
@@ -167,7 +169,19 @@ issues:
       path: internal/util/testutil
       text: pjson
 
-    # only `tigris` handler can import `tjson` package, not other handler can do that
+    # only `tigris` handler can import `tigrisdb` package, no other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/tigris
+      text: tigrisdb
+    - linters: [depguard]
+      path: internal/handlers/registry
+      text: tigrisdb
+
+    # only `tigris` handler can import `tjson` package, no other handler can do that
     - linters: [depguard]
       path: internal/handlers/tigris
       text: tjson
+
+    # we don't want to introduce that constant
+    - linters: [goconst]
+      text: "^string `_id` has \\d+ occurrences, make it a constant"

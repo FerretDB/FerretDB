@@ -36,7 +36,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.l, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
 	var sp pgdb.SQLParam
 
@@ -63,7 +63,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var inserted int32
-	err = h.pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		for i := 0; i < docs.Len(); i++ {
 			doc, err := docs.Get(i)
 			if err != nil {
@@ -118,5 +118,5 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
 	}
 
-	return lazyerrors.Error(err)
+	return common.CheckError(err)
 }

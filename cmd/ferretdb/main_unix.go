@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
+//go:build unix
 
 package main
 
@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// notifyAppTermination installs a signal handler that cancels the context.
 func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }

@@ -29,7 +29,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 			filter: bson.D{{
 				"$and", bson.A{},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			resultType: emptyResult,
 		},
 		"One": {
 			filter: bson.D{{
@@ -80,7 +80,6 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
 		},
 	}
 
@@ -95,7 +94,7 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 			filter: bson.D{{
 				"$or", bson.A{},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			resultType: emptyResult,
 		},
 		"One": {
 			filter: bson.D{{
@@ -135,7 +134,6 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 				},
 			}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/962",
 		},
 	}
 
@@ -150,7 +148,7 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 			filter: bson.D{{
 				"$nor", bson.A{},
 			}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/962",
+			resultType: emptyResult,
 		},
 		"One": {
 			filter: bson.D{{

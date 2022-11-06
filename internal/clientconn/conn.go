@@ -27,13 +27,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
@@ -73,7 +73,7 @@ type conn struct {
 	mode           Mode
 	l              *zap.SugaredLogger
 	h              handlers.Interface
-	m              *ConnMetrics
+	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Router
 	lastRequestID  int32
 	testRecordsDir string // if empty, no records are created
@@ -85,7 +85,7 @@ type newConnOpts struct {
 	mode           Mode
 	l              *zap.Logger
 	handler        handlers.Interface
-	connMetrics    *ConnMetrics
+	connMetrics    *connmetrics.ConnMetrics
 	proxyAddr      string
 	testRecordsDir string // if empty, no records are created
 }
@@ -161,7 +161,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			return err
 		}
 
-		filename := fmt.Sprintf("%s_%s.bin", time.Now().Format("2006-02-01_15:04:05"), c.netConn.RemoteAddr().String())
+		filename := fmt.Sprintf("%s-%s.bin", time.Now().Format("2006-01-02-15-04-05"), c.netConn.RemoteAddr().String())
 
 		path := filepath.Join(c.testRecordsDir, filename)
 
@@ -289,28 +289,30 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // The possible resBody returns:
 //   - normal response  - to be returned to the client, closeConn is false;
-//   - protocol error (*common.Error, possibly wrapped) - to be returned to the client, closeConn is false;
+//   - protocol error - to be returned to the client, closeConn is false;
 //   - any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	requests := c.m.requests.MustCurryWith(prometheus.Labels{"opcode": reqHeader.OpCode.String()})
-	var command string
-	var result *string
-	defer func() {
-		if result == nil {
-			result = pointer.ToString("panic")
-		}
-		c.m.responses.WithLabelValues(resHeader.OpCode.String(), command, *result).Inc()
-	}()
-
 	connInfo := &conninfo.ConnInfo{
-		PeerAddr:          c.netConn.RemoteAddr(),
-		AggregationStages: c.m.aggregationStages,
+		PeerAddr: c.netConn.RemoteAddr(),
 	}
 	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
 	defer cancel()
+
+	var command, result, argument string
+	defer func() {
+		if result == "" {
+			result = "panic"
+		}
+
+		if argument == "" {
+			argument = "unknown"
+		}
+
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+	}()
 
 	resHeader = new(wire.MsgHeader)
 	var err error
@@ -352,7 +354,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
-	requests.WithLabelValues(command).Inc()
+	if command == "" {
+		command = "unknown"
+	}
+
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
 	// set body for error
 	if err != nil {
@@ -360,12 +366,18 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeMsg:
 			protoErr, recoverable := common.ProtocolError(err)
 			closeConn = !recoverable
+
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 			resBody = &res
-			result = pointer.ToString(protoErr.Code().String())
+
+			result = protoErr.Code().String()
+
+			if info := protoErr.Info(); info != nil {
+				argument = info.Argument
+			}
 
 		case wire.OpCodeQuery:
 			fallthrough
@@ -386,7 +398,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		case wire.OpCodeCompressed:
 			// do not panic to make fuzzing easier
 			closeConn = true
-			result = pointer.ToString("unhandled")
+			result = "unhandled"
 			c.l.Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -396,7 +408,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		default:
 			// do not panic to make fuzzing easier
 			closeConn = true
-			result = pointer.ToString("unexpected")
+			result = "unexpected"
 			c.l.Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -409,7 +421,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	// https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
-		result = nil
+		result = ""
 		panic(err)
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
@@ -417,9 +429,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
 	resHeader.ResponseTo = reqHeader.RequestID
 
-	if result == nil {
-		result = pointer.ToString("ok")
+	if result == "" {
+		result = "ok"
 	}
+
 	return
 }
 
@@ -432,16 +445,6 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 
 	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
 	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
-}
-
-// Describe implements prometheus.Collector.
-func (c *conn) Describe(ch chan<- *prometheus.Desc) {
-	c.m.Describe(ch)
-}
-
-// Collect implements prometheus.Collector.
-func (c *conn) Collect(ch chan<- prometheus.Metric) {
-	c.m.Collect(ch)
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
@@ -475,3 +478,18 @@ func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.M
 
 	return level
 }
+
+// Describe implements prometheus.Collector.
+func (c *conn) Describe(ch chan<- *prometheus.Desc) {
+	c.m.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (c *conn) Collect(ch chan<- prometheus.Metric) {
+	c.m.Collect(ch)
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*conn)(nil)
+)

@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -26,27 +25,6 @@ type stringType string
 
 // fjsontype implements fjsontype interface.
 func (str *stringType) fjsontype() {}
-
-// UnmarshalJSON implements fjsontype interface.
-func (str *stringType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	var o string
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	*str = stringType(o)
-	return nil
-}
 
 // MarshalJSON implements fjsontype interface.
 func (str *stringType) MarshalJSON() ([]byte, error) {

@@ -83,19 +83,26 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		var pv string
-		err = h.pgPool.QueryRow(ctx, "SHOW server_version").Scan(&pv)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		pv, _, _ = strings.Cut(pv, " ")
+		pv, _, _ := strings.Cut(h.StateProvider.Get().HandlerVersion, " ")
 		mv := version.Get()
 
+		startupWarnings := []string{
+			"Powered by FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+		}
+
+		state := h.StateProvider.Get()
+		if state.Telemetry == nil {
+			startupWarnings = append(
+				startupWarnings,
+				"The telemetry state is undecided; the first report will be sent soon. "+
+					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			)
+		}
+
 		var log types.Array
-		for _, line := range []string{
-			"Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
-		} {
+
+		for _, line := range startupWarnings {
 			b, err := json.Marshal(map[string]any{
 				"msg":  line,
 				"tags": []string{"startupWarnings"},

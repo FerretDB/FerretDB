@@ -18,12 +18,32 @@ package testutil
 import (
 	"context"
 	"testing"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 // Ctx returns test context.
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	// TODO handle signals to stop tests gracefully
-	return context.Background()
+	ctx, stop := notifyTestsTermination(context.Background())
+
+	go func() {
+		<-ctx.Done()
+		tb.Log("Stopping...")
+		stop()
+	}()
+
+	return ctx
+}
+
+// Logger returns zap test logger with valid configuration.
+func Logger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
+	opts := []zaptest.LoggerOption{
+		zaptest.Level(level),
+		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
+	}
+
+	return zaptest.NewLogger(tb, opts...)
 }

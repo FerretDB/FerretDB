@@ -15,13 +15,20 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net"
+	"runtime"
+	"sort"
 	"strconv"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -836,6 +843,166 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+}
+
+func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		cmds            []bson.D
+		metricsPath     types.Path
+		expectedNonZero []string
+	}{
+		"BasicCmd": {
+			cmds: []bson.D{
+				{{"ping", int32(1)}},
+			},
+			metricsPath:     types.NewPath([]string{"metrics", "commands", "ping"}),
+			expectedNonZero: []string{"total"},
+		},
+		"UpdateCmd": {
+			cmds: []bson.D{
+				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
+			},
+			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedNonZero: []string{"total"},
+		},
+		"UpdateCmdFailed": {
+			cmds: []bson.D{
+				{{"update", int32(1)}},
+			},
+			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			expectedNonZero: []string{"failed", "total"},
+		},
+		// TODO: https://github.com/FerretDB/FerretDB/issues/9
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, collection := setup.Setup(t)
+
+			for _, cmd := range tc.cmds {
+				collection.Database().RunCommand(ctx, cmd)
+			}
+
+			command := bson.D{{"serverStatus", int32(1)}}
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			// TODO Don't ignore this error after https://github.com/FerretDB/FerretDB/issues/1317
+			if err != nil {
+				var pgErr *pgconn.PgError
+				if errors.As(err, &pgErr) {
+					switch pgErr.Code {
+					case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
+						err = nil
+					}
+				}
+			}
+
+			require.NoError(t, err)
+
+			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
+			assert.NoError(t, err)
+
+			actualDoc, ok := actualMetric.(*types.Document)
+			require.True(t, ok)
+
+			actualFields := actualDoc.Keys()
+
+			sort.Strings(actualFields)
+
+			var actualNotZeros []string
+			for key, value := range actualDoc.Map() {
+				assert.IsType(t, int64(0), value)
+
+				if value != 0 {
+					actualNotZeros = append(actualNotZeros, key)
+				}
+			}
+
+			for _, expectedName := range tc.expectedNonZero {
+				assert.Contains(t, actualNotZeros, expectedName)
+			}
+		})
+	}
+}
+
+func TestCommandsAdministrationServerStatusStress(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
+
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
+	client := collection.Database().Client()
+
+	dbNum := runtime.GOMAXPROCS(-1) * 10
+
+	ready := make(chan struct{}, dbNum)
+	start := make(chan struct{})
+
+	var wg sync.WaitGroup
+	for i := 0; i < dbNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
+			db := client.Database(dbName)
+			_ = db.Drop(ctx) // make sure DB doesn't exist (it will be created together with the collection)
+
+			collName := fmt.Sprintf("stress_%d", i)
+
+			schema := fmt.Sprintf(`{
+				"title": "%s",
+				"description": "Create Collection Stress %d",
+				"primary_key": ["_id"],
+				"properties": {
+					"_id": {"type": "string"},
+					"v": {"type": "string"}
+				}
+			}`, collName, i,
+			)
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{"$tigrisSchemaString", schema}},
+			}
+
+			// Attempt to create a collection for Tigris with a schema.
+			// If we get an error, that's MongoDB (FerretDB ignores that argument for non-Tigris handlers),
+			// so we create collection without schema.
+			err := db.CreateCollection(ctx, collName, &opts)
+			if err != nil {
+				if strings.Contains(err.Error(), `support for field "validator" is not implemented yet`) {
+					err = db.CreateCollection(ctx, collName)
+				}
+			}
+
+			assert.NoError(t, err)
+
+			err = db.Drop(ctx)
+			assert.NoError(t, err)
+
+			command := bson.D{{"serverStatus", int32(1)}}
+			var actual bson.D
+			err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	for i := 0; i < dbNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
 }
 
 // TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.

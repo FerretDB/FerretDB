@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,7 +27,7 @@ import (
 )
 
 // ServerStatus returns a common part of serverStatus command response.
-func ServerStatus(startTime time.Time) (*types.Document, error) {
+func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Document, error) {
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -39,6 +40,25 @@ func ServerStatus(startTime time.Time) (*types.Document, error) {
 
 	uptime := time.Since(startTime)
 
+	metricsDoc := types.MakeDocument(0)
+
+	metrics := cm.GetResponses()
+	for _, commands := range metrics {
+		for command, arguments := range commands {
+			var total, failed int
+			for _, m := range arguments {
+				total += m.Total
+
+				for _, v := range m.Failures {
+					failed += v
+				}
+			}
+
+			d := must.NotFail(types.NewDocument("total", int64(total), "failed", int64(failed)))
+			metricsDoc.Set(command, d)
+		}
+	}
+
 	res := must.NotFail(types.NewDocument(
 		"host", host,
 		"version", version.MongoDBVersion,
@@ -50,6 +70,9 @@ func ServerStatus(startTime time.Time) (*types.Document, error) {
 		"localTime", time.Now(),
 		"freeMonitoring", must.NotFail(types.NewDocument(
 			"state", "disabled",
+		)),
+		"metrics", must.NotFail(types.NewDocument(
+			"commands", metricsDoc,
 		)),
 		"ok", float64(1),
 	))

@@ -22,7 +22,7 @@ tasks:
     cmds:
       - go generate -x ./...
     sources:
-      - "**/*.go"
+      - "../**/*.go"
 
   lint:
     deps:
@@ -32,7 +32,7 @@ tasks:
     cmds:
       - task: lint-golangci-lint-new
     sources:
-      - "**/*.go"
+      - "../**/*.go"
 
   lint-golangci-lint:
     cmds:
@@ -48,4 +48,4 @@ tasks:
 
   lint-go-consistent:
     cmds:
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
+      - ../bin/go-consistent{{exeExt}} -v -pedantic ./...

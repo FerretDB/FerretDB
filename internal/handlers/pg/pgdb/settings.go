@@ -128,8 +128,8 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 	}
 
 	tableName := formatCollectionName(collection)
-	must.NoError(collections.Set(collection, tableName))
-	must.NoError(settings.Set("collections", collections))
+	collections.Set(collection, tableName)
+	settings.Set("collections", collections)
 
 	err = updateSettingsTable(ctx, tx, db, settings)
 	if err != nil {
@@ -141,6 +141,10 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 
 // getSettingsTable returns FerretDB settings table.
 func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/1206
+	// `SELECT settings FROM %s FOR UPDATE` could solve the problem with parallel access of the settings table,
+	// but it locks the row that could be accessed from other places and causes timeouts,
+	// so we need a faster solution instead.
 	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
@@ -195,7 +199,7 @@ func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection stri
 
 	collections.Remove(collection)
 
-	must.NoError(settings.Set("collections", collections))
+	settings.Set("collections", collections)
 
 	if err := updateSettingsTable(ctx, tx, db, settings); err != nil {
 		return lazyerrors.Error(err)

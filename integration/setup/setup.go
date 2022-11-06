@@ -23,10 +23,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -47,9 +47,10 @@ type SetupOpts struct {
 
 // SetupResult represents setup results.
 type SetupResult struct {
-	Ctx        context.Context
-	Collection *mongo.Collection
-	Port       uint16
+	Ctx           context.Context
+	Collection    *mongo.Collection
+	Port          uint16
+	StateProvider *state.Provider
 }
 
 // SetupWithOpts setups the test according to given options.
@@ -68,11 +69,15 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := zaptest.NewLogger(tb, zaptest.Level(level), zaptest.WrapOptions(zap.AddCaller()))
+	logger := testutil.Logger(tb, level)
 
+	var stateProvider *state.Provider
 	port := *targetPortF
 	if port == 0 {
-		port = setupListener(tb, ctx, logger)
+		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
+		// TODO https://github.com/FerretDB/FerretDB/issues/1295
+		_ = *targetUnixSocketF
+		stateProvider, port = setupListener(tb, ctx, logger)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -83,9 +88,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
-		Ctx:        ctx,
-		Collection: collection,
-		Port:       uint16(port),
+		Ctx:           ctx,
+		Collection:    collection,
+		Port:          uint16(port),
+		StateProvider: stateProvider,
 	}
 }
 

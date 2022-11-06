@@ -20,7 +20,7 @@
 //  2. As they are used for logging - `fjson` package.
 //  3. As they are used in the wire protocol implementation - `bson` package.
 //  4. As they are used to store data in PostgreSQL - `pjson` package.
-//  5. As they are used to store data in PostgreSQL - `tjson` package.
+//  5. As they are used to store data in Tigris - `tjson` package.
 //
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
 // to make refactorings and optimizations easier, etc.
@@ -101,18 +101,15 @@ func deepCopy(value any) any {
 
 	switch value := value.(type) {
 	case *Document:
-		keys := make([]string, len(value.keys))
-		copy(keys, value.keys)
-
-		m := make(map[string]any, len(value.m))
-		for k, v := range value.m {
-			m[k] = deepCopy(v)
+		fields := make([]field, len(value.fields))
+		for i, f := range value.fields {
+			fields[i] = field{
+				key:   f.key,
+				value: deepCopy(f.value),
+			}
 		}
 
-		return &Document{
-			keys: keys,
-			m:    m,
-		}
+		return &Document{fields}
 
 	case *Array:
 		s := make([]any, len(value.s))

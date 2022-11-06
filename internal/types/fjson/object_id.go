@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 
@@ -32,36 +31,6 @@ func (obj *objectIDType) fjsontype() {}
 // objectIDJSON is a JSON object representation of the objectIDType.
 type objectIDJSON struct {
 	O string `json:"$o"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (obj *objectIDType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o objectIDJSON
-	if err := dec.Decode(&o); err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	b, err := hex.DecodeString(o.O)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if len(b) != types.ObjectIDLen {
-		return lazyerrors.Errorf("fjson.objectIDType.UnmarshalJSON: %d bytes", len(b))
-	}
-	copy(obj[:], b)
-
-	return nil
 }
 
 // MarshalJSON implements fjsontype interface.

@@ -31,25 +31,6 @@ type queryCompatTestCase struct {
 	filter     bson.D                   // required
 	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	skip       string                   // skips test if non-empty
-}
-
-func TestQueryCompat(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
-		"Empty": {
-			filter: bson.D{},
-		},
-		"IDString": {
-			filter: bson.D{{"_id", "string"}},
-		},
-		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
-		},
-	}
-
-	testQueryCompat(t, testCases)
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -64,10 +45,6 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
 
 			t.Parallel()
 
@@ -104,7 +81,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 						assert.Equal(t, compatErr, targetErr)
 						return
 					}
-					require.NoError(t, compatErr, "compat error")
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					var targetRes, compatRes []bson.D
 					require.NoError(t, targetCursor.All(ctx, &targetRes))
@@ -130,4 +107,22 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 		})
 	}
+}
+
+func TestQueryCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Empty": {
+			filter: bson.D{},
+		},
+		"IDString": {
+			filter: bson.D{{"_id", "string"}},
+		},
+		"IDObjectID": {
+			filter: bson.D{{"_id", primitive.NilObjectID}},
+		},
+	}
+
+	testQueryCompat(t, testCases)
 }

@@ -15,7 +15,6 @@
 package fjson
 
 import (
-	"bytes"
 	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -32,30 +31,6 @@ func (bin *binaryType) fjsontype() {}
 type binaryJSON struct {
 	B []byte `json:"$b"`
 	S byte   `json:"s"`
-}
-
-// UnmarshalJSON implements fjsontype interface.
-func (bin *binaryType) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	var o binaryJSON
-	err := dec.Decode(&o)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if err = checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	bin.B = o.B
-	bin.Subtype = types.BinarySubtype(o.S)
-	return nil
 }
 
 // MarshalJSON implements fjsontype interface.
