@@ -1,5 +1,5 @@
 ---
-# Linters that should pass for all code.
+# Linters that should pass for all FerretDB and tools code.
 
 run:
   timeout: 3m
