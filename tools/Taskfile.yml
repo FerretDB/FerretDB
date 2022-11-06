@@ -6,12 +6,16 @@ vars:
   RACEFLAG: -race={{ne OS "windows"}}
 
 tasks:
-  lint-go-consistent:
+  lint:
     cmds:
+      - go vet -vettool=../bin/checkswitch{{exeExt}} ./checkswitch/...
       - ../bin/go-consistent{{exeExt}} -pedantic ./checkswitch/...
+      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci.yml ./checkswitch/...
+      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml ./checkswitch/...
     sources:
       - "**/*.go"
-      - "go.mod"
+      - "../**/go.mod"
+      - "../**/*.yml"
 
   test-unit-short:
     cmds:

@@ -21,50 +21,15 @@ tasks:
   gen:
     cmds:
       - go generate -x ./...
-    sources:
-      - "../**/*.go"
-      - "../**/go.mod"
 
   lint:
-    deps:
-      - lint-golangci-lint
-      - lint-go-sumtype
-      - lint-go-consistent
     cmds:
-      - task: lint-golangci-lint-new
-    sources:
-      - "../**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"
-
-  lint-golangci-lint:
-    cmds:
+      - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
+      - ../bin/go-sumtype{{exeExt}} ./...
+      - ../bin/go-consistent{{exeExt}} -pedantic ./...
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
-    sources:
-      - "../**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"
-
-  lint-golangci-lint-new:
-    cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
     sources:
-      - "../**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"
-
-  lint-go-sumtype:
-    cmds:
-      - ../bin/go-sumtype{{exeExt}} ./...
-    sources:
-      - "../**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"
-
-  lint-go-consistent:
-    cmds:
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
-    sources:
-      - "../**/*.go"
+      - "**/*.go"
       - "../**/go.mod"
       - "../**/*.yml"

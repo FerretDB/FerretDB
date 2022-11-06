@@ -262,31 +262,25 @@ tasks:
 
   lint:
     desc: "Run linters"
-    deps:
-      - lint-golangci-lint
-      - lint-go-sumtype
-      - lint-go-consistent
+    deps: [lint-integration, lint-tools]
     cmds:
-      - task: lint-golangci-lint-new
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
+      - bin/go-sumtype{{exeExt}} ./...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
+      - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
+      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+    sources:
+      - "**/*.go"
+      - "**/go.mod"
+      - "**/*.yml"
+
+  lint-integration:
+    cmds:
       - bin/task{{exeExt}} -d integration lint
 
-  lint-golangci-lint:
+  lint-tools:
     cmds:
-      - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
-
-  lint-golangci-lint-new:
-    cmds:
-      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-
-  lint-go-sumtype:
-    cmds:
-      - bin/go-sumtype{{exeExt}} ./...
-
-  lint-go-consistent:
-    cmds:
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
-      - bin/task{{exeExt}} -d tools lint-go-consistent
+      - bin/task{{exeExt}} -d tools lint
 
   security:
     desc: "Run security scanners"
