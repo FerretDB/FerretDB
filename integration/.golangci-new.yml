@@ -11,7 +11,9 @@ linters-settings:
     errorf: false
     asserts: true
     comparison: true
-
+  govet:
+    check-shadowing: true
+    enable-all: true
   staticcheck:
     checks: ["all"]
   wsl:
@@ -43,7 +45,6 @@ linters:
     - goimports
     - gomodguard
     - gosimple
-    - govet
     - importas
     - ineffassign
     - lll
@@ -115,16 +116,19 @@ linters:
     - noctx
     - rowserrcheck
     - sqlclosecheck
-    - structcheck
     - tparallel
     - unparam
     - wastedassign
 
-    - golint      # deprecated
-    - interfacer  # deprecated
-    - maligned    # deprecated
+    # deprecated
+    - golint
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+
     - nlreturn    # too annoying
-    - scopelint   # deprecated
     - testpackage # we test internals
 
 issues:

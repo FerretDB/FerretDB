@@ -64,6 +64,9 @@ linters-settings:
       - pkg: github.com/prometheus/client_model/go
         alias: dto
   # ineffassign
+  lll:
+    line-length: 175 # TODO reduce it to 130
+    tab-width: 4
   misspell:
     ignore-words:
       - guiness # present in the test dataset
@@ -103,6 +106,7 @@ linters:
     - govet
     - importas
     - ineffassign
+    - lll
     - misspell
     - nolintlint
     - revive
