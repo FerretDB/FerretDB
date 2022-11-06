@@ -63,7 +63,7 @@ tasks:
 
   lint-go-consistent:
     cmds:
-      - ../bin/go-consistent{{exeExt}} -v -pedantic ./...
+      - ../bin/go-consistent{{exeExt}} -pedantic ./...
     sources:
       - "../**/*.go"
       - "../**/go.mod"

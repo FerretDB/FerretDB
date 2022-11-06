@@ -8,7 +8,7 @@ vars:
 tasks:
   lint-go-consistent:
     cmds:
-      - ../bin/go-consistent{{exeExt}} -v -pedantic ./checkswitch/...
+      - ../bin/go-consistent{{exeExt}} -pedantic ./checkswitch/...
     sources:
       - "**/*.go"
       - "go.mod"

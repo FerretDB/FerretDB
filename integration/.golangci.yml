@@ -78,8 +78,7 @@ linters-settings:
     require-specific: true
   revive:
     ignore-generated-header: true
-    severity: warning
-    enableAllRules: true
+    severity: error
   staticcheck:
     checks:
       - all

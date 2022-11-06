@@ -285,7 +285,7 @@ tasks:
 
   lint-go-consistent:
     cmds:
-      - bin/go-consistent{{exeExt}} -v -pedantic ./cmd/... ./internal/... ./ferretdb/...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
       - bin/task{{exeExt}} -d tools lint-go-consistent
 
   security:

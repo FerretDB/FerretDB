@@ -14,6 +14,15 @@ linters-settings:
   govet:
     check-shadowing: true
     enable-all: true
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    # TODO enable-all-rules: true
+    rules:
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
+      - name: exported
+        arguments: [checkPrivateReceivers]
+      - name: package-comments
   staticcheck:
     checks: ["all"]
   wsl:
@@ -50,7 +59,6 @@ linters:
     - lll
     - misspell
     - nolintlint
-    - revive
     - unused
     - whitespace
 
