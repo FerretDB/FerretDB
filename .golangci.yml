@@ -64,7 +64,12 @@ linters-settings:
             reason: "FerretDB should not depend on MongoDB Go driver."
   gosimple:
     checks: ["all"]
-  # govet
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - nilness
+      - shadow
   importas:
     no-unaliased: false
     no-extra-aliases: true

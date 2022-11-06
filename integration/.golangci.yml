@@ -49,7 +49,12 @@ linters-settings:
   # gomodguard
   gosimple:
     checks: ["all"]
-  # govet
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - nilness
+      - shadow
   importas:
     no-unaliased: false
     no-extra-aliases: true

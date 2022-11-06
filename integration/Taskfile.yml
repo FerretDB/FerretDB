@@ -23,6 +23,7 @@ tasks:
       - go generate -x ./...
     sources:
       - "../**/*.go"
+      - "../**/go.mod"
 
   lint:
     deps:
@@ -33,19 +34,37 @@ tasks:
       - task: lint-golangci-lint-new
     sources:
       - "../**/*.go"
+      - "../**/go.mod"
+      - "../**/*.yml"
 
   lint-golangci-lint:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
+    sources:
+      - "../**/*.go"
+      - "../**/go.mod"
+      - "../**/*.yml"
 
   lint-golangci-lint-new:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+    sources:
+      - "../**/*.go"
+      - "../**/go.mod"
+      - "../**/*.yml"
 
   lint-go-sumtype:
     cmds:
       - ../bin/go-sumtype{{exeExt}} ./...
+    sources:
+      - "../**/*.go"
+      - "../**/go.mod"
+      - "../**/*.yml"
 
   lint-go-consistent:
     cmds:
       - ../bin/go-consistent{{exeExt}} -v -pedantic ./...
+    sources:
+      - "../**/*.go"
+      - "../**/go.mod"
+      - "../**/*.yml"

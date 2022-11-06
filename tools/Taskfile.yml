@@ -11,6 +11,7 @@ tasks:
       - ../bin/go-consistent{{exeExt}} -v -pedantic ./checkswitch/...
     sources:
       - "**/*.go"
+      - "go.mod"
 
   test-unit-short:
     cmds:
