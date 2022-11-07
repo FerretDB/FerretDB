@@ -87,7 +87,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		// do nothing
 	case *driver.Error:
 		if tigrisdb.IsInvalidArgument(err) {
-			return nil, common.NewError(common.ErrBadValue, err)
+			return nil, common.NewCommandError(common.ErrBadValue, err)
 		}
 
 		return nil, lazyerrors.Error(err)

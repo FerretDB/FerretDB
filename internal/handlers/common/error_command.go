@@ -46,13 +46,6 @@ func NewCommandError(code ErrorCode, err error) error {
 	}
 }
 
-// NewError is a deprecated alias for NewCommandError.
-//
-// Deprecated: use NewCommandError instead.
-func NewError(code ErrorCode, err error) error {
-	return NewCommandError(code, err)
-}
-
 // NewCommandErrorMsg is variant for NewCommandError with error string.
 //
 // Code shouldn't be zero, err can't be empty.

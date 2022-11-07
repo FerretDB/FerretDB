@@ -251,7 +251,7 @@ func (h *Handler) delete(ctx context.Context, sp *pgdb.SQLParam, docs []*types.D
 	})
 	if err != nil {
 		// TODO check error code
-		return 0, common.NewError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+		return 0, common.NewCommandError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
 
 	return rowsDeleted, nil
