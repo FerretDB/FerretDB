@@ -767,7 +767,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 
 	case types.Binary:
 		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewErrorMsg(ErrNotImplemented, "BinData() not supported yet")
+		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAllClear")
 
 	case int32:
 		bitmask, err := getBinaryMaskParam(maskValue)

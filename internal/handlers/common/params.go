@@ -103,8 +103,7 @@ func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
 		msg := fmt.Sprintf("got type %T, expected %T", value, res)
-		// TODO: assign parameter where its called
-		return res, NewErrorMsg(ErrBadValue, msg)
+		return res, NewCommandErrorMsg(ErrBadValue, msg)
 	}
 
 	return res, nil

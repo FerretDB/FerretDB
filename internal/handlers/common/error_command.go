@@ -71,13 +71,6 @@ func NewCommandErrorMsgWithArgument(code ErrorCode, msg string, argument string)
 	}
 }
 
-// NewErrorMsg is a deprecated alias for NewCommandErrorMsg.
-//
-// Deprecated: use NewCommandErrorMsg instead.
-func NewErrorMsg(code ErrorCode, msg string) error {
-	return NewCommandErrorMsg(code, msg)
-}
-
 // Error implements error interface.
 func (e *CommandError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
