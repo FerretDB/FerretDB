@@ -16,8 +16,10 @@ package tigrisdb
 
 import (
 	"context"
+	"errors"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -41,10 +43,17 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 	}
 
 	err = tdb.Driver.UseDatabase(db).CreateOrUpdateCollection(ctx, collection, schema)
-	switch err := err.(type) {
-	case nil:
+	tdb.l.Debug(
+		"CreateCollectionIfNotExist",
+		zap.String("db", db), zap.String("collection", collection), zap.ByteString("schema", schema), zap.Error(err),
+	)
+
+	var driverErr *driver.Error
+
+	switch {
+	case err == nil:
 		return true, nil
-	case *driver.Error:
+	case errors.As(err, &driverErr):
 		if IsAlreadyExists(err) {
 			return false, nil
 		}
