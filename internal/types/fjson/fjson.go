@@ -25,7 +25,7 @@
 //
 // Scalar types
 //
-//	float64          {"$f": JSON number}
+//	float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
 //	string           JSON string
 //	types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
 //	types.ObjectID   {"$o": "<ObjectID as 24 character hex string"}
