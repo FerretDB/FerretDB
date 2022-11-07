@@ -126,7 +126,7 @@ type ProtoErr interface {
 	Code() ErrorCode
 	// Document returns *types.Document.
 	Document() *types.Document
-	// Info returns *Info.
+	// Info returns *ErrInfo.
 	Info() *ErrInfo
 }
 

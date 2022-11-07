@@ -637,8 +637,7 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 	case types.Regex:
 		if options != "" {
 			if regexValue.Options != "" {
-				//TODO: regex or options
-				return false, NewErrorMsg(ErrRegexOptions, "options set in both $regex and $options")
+				return false, NewCommandErrorMsg(ErrRegexOptions, "options set in both $regex and $options")
 			}
 			regexValue.Options = options
 		}

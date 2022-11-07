@@ -104,18 +104,15 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	if update != nil && remove {
-		// TODO: update or remove?
-		return nil, NewErrorMsg(ErrFailedToParse, "Cannot specify both an update and remove=true")
+		return nil, NewCommandErrorMsg(ErrFailedToParse, "Cannot specify both an update and remove=true")
 	}
 
 	if upsert && remove {
-		// TODO: upsert or remove?
-		return nil, NewErrorMsg(ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
+		return nil, NewCommandErrorMsg(ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
 	}
 
 	if returnNewDocument && remove {
-		// TODO: new or remove?
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsg(
 			ErrFailedToParse,
 			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
 		)
