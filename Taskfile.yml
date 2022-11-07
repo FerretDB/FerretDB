@@ -316,7 +316,7 @@ tasks:
 
   docker-init:
     cmds:
-      - docker buildx create --driver=docker-container --name=ferretdb
+      - docker buildx create --driver=docker-container --name=ferretdb --use=false
 
   docker-local:
     deps: [gen-version]
