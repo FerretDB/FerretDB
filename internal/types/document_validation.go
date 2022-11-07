@@ -15,6 +15,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -30,8 +31,11 @@ const (
 	// ErrValidation indicates that document is invalid.
 	ErrValidation ValidationErrorCode = iota + 1
 
-	// ErrBadID indicates that _id field is invalid.
-	ErrBadID
+	// ErrWrongIDType indicates that _id field is invalid.
+	ErrWrongIDType
+
+	// ErrIDNotFound indicates that _id field is not found.
+	ErrIDNotFound
 )
 
 // ValidationError describes an error that could occur when validating a document.
@@ -91,25 +95,60 @@ func (d *Document) ValidateData() error {
 
 		value := must.NotFail(d.Get(key))
 
-		// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
-		if v, ok := value.(float64); ok && math.IsInf(v, 0) {
-			return newValidationError(
-				ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
-			)
+		switch v := value.(type) {
+		case *Document:
+			err := v.ValidateData()
+			if err != nil {
+				var vErr *ValidationError
+
+				if errors.As(err, &vErr) && vErr.code == ErrIDNotFound {
+					continue
+				}
+
+				return err
+			}
+		case *Array:
+			if key == "_id" {
+				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
+			}
+
+			for i := 0; i < v.Len(); i++ {
+				item := must.NotFail(v.Get(i))
+
+				switch item := item.(type) {
+				case *Document:
+					err := item.ValidateData()
+					if err != nil {
+						var vErr *ValidationError
+
+						if errors.As(err, &vErr) && vErr.code == ErrIDNotFound {
+							continue
+						}
+
+						return err
+					}
+				case *Array:
+					return newValidationError(ErrValidation, fmt.Errorf(
+						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(v),
+					))
+				}
+			}
+		case float64:
+			// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
+			if math.IsInf(v, 0) {
+				return newValidationError(
+					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
+				)
+			}
+		case Regex:
+			if key == "_id" {
+				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
+			}
 		}
 	}
 
 	if !idPresent {
-		return newValidationError(ErrValidation, fmt.Errorf("invalid document: document must contain '_id' field"))
-	}
-
-	v := must.NotFail(d.Get("_id"))
-
-	switch v.(type) {
-	case *Array:
-		return newValidationError(ErrBadID, fmt.Errorf("The '_id' value cannot be of type array"))
-	case Regex:
-		return newValidationError(ErrBadID, fmt.Errorf("The '_id' value cannot be of type regex"))
+		return newValidationError(ErrIDNotFound, fmt.Errorf("invalid document: document must contain '_id' field"))
 	}
 
 	return nil

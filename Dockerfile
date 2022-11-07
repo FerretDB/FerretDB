@@ -1,7 +1,7 @@
 ARG VERSION
 ARG COMMIT
 
-FROM golang:1.19.2 AS build
+FROM golang:1.19.3 AS build
 
 WORKDIR /src
 ADD . .
@@ -12,7 +12,7 @@ RUN go mod download
 RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race                 ./cmd/ferretdb
 RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race -coverpkg=./... ./cmd/ferretdb
 
-FROM golang:1.19.2
+FROM golang:1.19.3
 
 WORKDIR /
 
