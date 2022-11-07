@@ -87,8 +87,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 
 	updateParam, err := document.Get("update")
 	if err != nil && !remove {
-		// TODO: ???
-		return nil, NewErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
+		return nil, NewCommandErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
 	}
 
 	if err == nil {
