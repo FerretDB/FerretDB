@@ -345,7 +345,7 @@ tasks:
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
-        --platform=linux/arm64,linux/amd64
+        --platform=linux/arm/v7,linux/arm64,linux/amd64
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
