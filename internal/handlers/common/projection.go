@@ -58,16 +58,18 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 			result := types.Compare(v, int32(0))
 			if types.ContainsCompareResult(result, types.Equal) {
 				if inclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+					err = NewCommandErrorMsgWithArgument(ErrProjectionExIn,
+						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
+						"projection",
 					)
 					return
 				}
 				exclusion = true
 			} else {
 				if exclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+					err = NewCommandErrorMsgWithArgument(ErrProjectionInEx,
+						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
+						"projection",
 					)
 					return
 				}
@@ -77,16 +79,18 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case bool:
 			if v {
 				if exclusion {
-					err = NewError(ErrProjectionInEx,
-						fmt.Errorf("Cannot do inclusion on field %s in exclusion projection", k),
+					err = NewCommandErrorMsgWithArgument(ErrProjectionInEx,
+						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
+						"projection",
 					)
 					return
 				}
 				inclusion = true
 			} else {
 				if inclusion {
-					err = NewError(ErrProjectionExIn,
-						fmt.Errorf("Cannot do exclusion on field %s in inclusion projection", k),
+					err = NewCommandErrorMsgWithArgument(ErrProjectionExIn,
+						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
+						"projection",
 					)
 					return
 				}
