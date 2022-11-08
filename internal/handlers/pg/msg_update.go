@@ -56,7 +56,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)
@@ -76,7 +76,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if errors.Is(pgdb.ErrInvalidTableName, err) ||
 			errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 			msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
-			return nil, common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 		}
 		return nil, err
 	}

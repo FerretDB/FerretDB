@@ -75,7 +75,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)

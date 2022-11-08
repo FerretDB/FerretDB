@@ -23,5 +23,5 @@ import (
 
 // MsgCollMod implements HandlerInterface.
 func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, "`collMod` command is not implemented yet")
+	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, "`collMod` command is not implemented yet")
 }
