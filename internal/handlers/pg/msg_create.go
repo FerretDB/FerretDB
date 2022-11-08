@@ -87,7 +87,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return pgdb.ErrAlreadyExist
 			case errors.Is(pgdb.ErrInvalidDatabaseName, err):
 				msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
-				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 			default:
 				return lazyerrors.Error(err)
 			}
@@ -103,10 +103,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			switch {
 			case errors.Is(err, pgdb.ErrAlreadyExist):
 				msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-				return common.NewErrorMsg(common.ErrNamespaceExists, msg)
+				return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
 			case errors.Is(err, pgdb.ErrInvalidTableName):
 				msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
-				return common.NewErrorMsg(common.ErrInvalidNamespace, msg)
+				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 			default:
 				return lazyerrors.Error(err)
 			}

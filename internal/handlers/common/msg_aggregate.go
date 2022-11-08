@@ -46,5 +46,5 @@ func MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		)
 	}
 
-	return nil, NewErrorMsg(ErrNotImplemented, "`aggregate` command is not implemented yet")
+	return nil, NewCommandErrorMsg(ErrNotImplemented, "`aggregate` command is not implemented yet")
 }

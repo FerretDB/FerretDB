@@ -66,7 +66,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
-		return nil, common.NewErrorMsg(common.ErrTypeMismatch, "Expected field sort to be of type object")
+		return nil, common.NewCommandErrorMsgWithArgument(
+			common.ErrTypeMismatch,
+			"Expected field sort to be of type object",
+			"sort",
+		)
 	}
 	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
 		return nil, err
@@ -106,7 +110,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)
