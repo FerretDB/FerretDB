@@ -41,8 +41,8 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 					"localTime", time.Now(),
 					// logicalSessionTimeoutMinutes
 					// connectionId
-					"minWireVersion", int32(17),
-					"maxWireVersion", int32(17),
+					"minWireVersion", common.MinWireVersion,
+					"maxWireVersion", common.MaxWireVersion,
 					"readOnly", false,
 					"ok", float64(1),
 				))},
