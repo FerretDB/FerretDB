@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -41,8 +42,8 @@ func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"localTime", time.Now(),
 			// logicalSessionTimeoutMinutes
 			// connectionId
-			"minWireVersion", int32(17),
-			"maxWireVersion", int32(17),
+			"minWireVersion", common.MinWireVersion,
+			"maxWireVersion", common.MaxWireVersion,
 			"readOnly", false,
 			"ok", float64(1),
 		))},
