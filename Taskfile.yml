@@ -8,7 +8,7 @@ vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
-  RACEFLAG: -race={{ne OS "windows"}}
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_tigris
 
 tasks:
@@ -329,6 +329,7 @@ tasks:
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
+        --build-arg RACEFLAG={{.RACEFLAG}}
         --tag=ferretdb-local
         --load .
     vars:
@@ -345,7 +346,8 @@ tasks:
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
-        --platform=linux/arm64,linux/amd64
+        --build-arg RACEFLAG={{.RACEFLAG}}
+        --platform=linux/arm/v7,linux/arm64,linux/amd64
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:
