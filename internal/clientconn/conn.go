@@ -444,6 +444,7 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 	}
 
 	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
+
 	return nil, common.NewCommandErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 

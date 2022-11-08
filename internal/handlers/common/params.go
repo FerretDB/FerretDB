@@ -54,6 +54,7 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
 			key, AliasFromType(v), AliasFromType(defaultValue),
 		)
+
 		return defaultValue, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
 	}
 
@@ -87,6 +88,7 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 			key,
 			AliasFromType(v),
 		)
+
 		return false, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
 	}
 }

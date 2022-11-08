@@ -98,7 +98,11 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 			// TODO aggregation pipeline stages metrics
 			return nil, NewCommandErrorMsgWithArgument(ErrNotImplemented, "Aggregation pipelines are not supported yet", "update")
 		default:
-			return nil, NewCommandErrorMsgWithArgument(ErrFailedToParse, "Update argument must be either an object or an array", "update")
+			return nil, NewCommandErrorMsgWithArgument(
+				ErrFailedToParse,
+				"Update argument must be either an object or an array",
+				"update",
+			)
 		}
 	}
 
