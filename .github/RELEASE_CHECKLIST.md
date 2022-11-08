@@ -14,10 +14,10 @@
 8. Make [release](https://github.com/FerretDB/FerretDB/releases).
 9. Upload .deb and .rpm packages from the CI build for the tag.
 10. Refresh
-    * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
-    * `env GOPROXY=https://proxy.golang.org go install -v github.com/FerretDB/FerretDB/ferretdb@<tag>`
+    * `env GOPROXY=https://proxy.golang.org go install -x github.com/FerretDB/FerretDB/cmd/ferretdb@<tag>`
+    * `env GOPROXY=https://proxy.golang.org go install -x github.com/FerretDB/FerretDB/ferretdb@<tag>`
       (expected error message is `package github.com/FerretDB/FerretDB/ferretdb is not a main package`)
-    * <https://pkg.go.dev/github.com/FerretDB/FerretDB>
+    * <https://pkg.go.dev/github.com/FerretDB/FerretDB?tab=versions>
 11. `task docker-local`
 12. `task docker-push` with four tags (`X.Y.Z` without leading `v` and `latest` for both ghcr.io and Docker Hub):
     * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`

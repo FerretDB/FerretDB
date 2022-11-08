@@ -2,7 +2,6 @@
 sidebar_position: 5
 ---
 
-
 # Delete operation
 
 The delete operation removes a document from the database when a given query is met.
