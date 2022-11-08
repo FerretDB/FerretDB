@@ -14,3 +14,11 @@
 
 // Package common provides common code for all handlers.
 package common
+
+const (
+	// MinWireVersion is the minimal supported wire protocol version.
+	MinWireVersion = int32(14) // 5.1
+
+	// MaxWireVersion is the maximal supported wire protocol version.
+	MaxWireVersion = int32(17)
+)

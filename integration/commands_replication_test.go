@@ -26,11 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestCommandsReplicationIsMaster(t *testing.T) {
+func TestCommandsReplication(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	for _, command := range []string{"ismaster", "isMaster"} {
+	for _, command := range []string{"ismaster", "isMaster", "hello"} {
 		command := command
 		t.Run(command, func(t *testing.T) {
 			t.Parallel()
@@ -42,23 +42,24 @@ func TestCommandsReplicationIsMaster(t *testing.T) {
 			m := actual.Map()
 			t.Log(m)
 
+			delete(m, "ismaster")
 			delete(m, "connectionId")
 			delete(m, "logicalSessionTimeoutMinutes")
 			delete(m, "topologyVersion")
+			delete(m, "isWritablePrimary")
 
 			assert.InDelta(t, time.Now().Unix(), m["localTime"].(primitive.DateTime).Time().Unix(), 2)
 			delete(m, "localTime")
 
 			maxWireVersion := m["maxWireVersion"].(int32)
-			assert.True(t, maxWireVersion == 0 || maxWireVersion == 17)
+			assert.Equal(t, int32(17), maxWireVersion)
 			delete(m, "maxWireVersion")
 
 			minWireVersion := m["minWireVersion"].(int32)
-			assert.True(t, minWireVersion == 0 || minWireVersion == 17)
+			assert.True(t, minWireVersion == 0 || minWireVersion == 14)
 			delete(m, "minWireVersion")
 
 			expected := bson.M{
-				"ismaster":            true,
 				"maxBsonObjectSize":   int32(16777216),
 				"maxMessageSizeBytes": int32(48000000),
 				"maxWriteBatchSize":   int32(100000),
@@ -69,42 +70,4 @@ func TestCommandsReplicationIsMaster(t *testing.T) {
 			assert.Equal(t, expected, m)
 		})
 	}
-}
-
-func TestCommandsReplicationHello(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
-
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"hello", 1}}).Decode(&actual)
-	require.NoError(t, err)
-
-	m := actual.Map()
-	t.Log(m)
-
-	delete(m, "connectionId")
-	delete(m, "logicalSessionTimeoutMinutes")
-	delete(m, "topologyVersion")
-
-	assert.InDelta(t, time.Now().Unix(), m["localTime"].(primitive.DateTime).Time().Unix(), 2)
-	delete(m, "localTime")
-
-	maxWireVersion := m["maxWireVersion"].(int32)
-	assert.True(t, maxWireVersion == 0 || maxWireVersion == 17)
-	delete(m, "maxWireVersion")
-
-	minWireVersion := m["minWireVersion"].(int32)
-	assert.True(t, minWireVersion == 0 || minWireVersion == 17)
-	delete(m, "minWireVersion")
-
-	expected := bson.M{
-		"isWritablePrimary":   true,
-		"maxBsonObjectSize":   int32(16777216),
-		"maxMessageSizeBytes": int32(48000000),
-		"maxWriteBatchSize":   int32(100000),
-		"ok":                  float64(1),
-		"readOnly":            false,
-	}
-
-	assert.Equal(t, expected, m)
 }
