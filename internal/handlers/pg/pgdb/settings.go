@@ -136,12 +136,14 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 }
 
 // getSettingsTable returns FerretDB settings table.
-func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, forUpdate bool) (*types.Document, error) {
-	fu := ""
-	if forUpdate {
-		fu = " FOR UPDATE"
+// If lock is true, the table's row will be locked through SELECT FOR UPDATE, use it if you need to modify settings.
+func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*types.Document, error) {
+	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
+
+	if lock {
+		sql += " FOR UPDATE"
 	}
-	sql := fmt.Sprintf(`SELECT settings FROM %s %s`, pgx.Identifier{db, settingsTableName}.Sanitize(), fu)
+
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -170,6 +172,9 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, forUpdate bool)
 	return settings, nil
 }
 
+// setTableInSettings sets the table name for given collection in settings table.
+// As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
+// explicit lock is used to prevent concurrent modifications.
 func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	settings, err := getSettingsTable(ctx, tx, db, true)
 	if err != nil {
@@ -198,6 +203,8 @@ func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection string) (
 }
 
 // removeTableFromSettings removes collection from FerretDB settings table.
+// As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
+// explicit lock is used to prevent concurrent modifications.
 func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	settings, err := getSettingsTable(ctx, tx, db, true)
 	if err != nil {
