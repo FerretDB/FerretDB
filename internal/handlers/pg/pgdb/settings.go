@@ -127,7 +127,8 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 		return must.NotFail(collections.Get(collection)).(string), nil
 	}
 
-	tableName, err := setTableInSettings(ctx, tx, db, collection)
+	tableName := formatCollectionName(collection)
+	err = setTableInSettings(ctx, tx, db, collection, tableName)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -175,31 +176,37 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*ty
 // setTableInSettings sets the table name for given collection in settings table.
 // As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
 // explicit lock is used to prevent concurrent modifications.
-func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table string) error {
 	settings, err := getSettingsTable(ctx, tx, db, true)
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
 	collectionsDoc := must.NotFail(settings.Get("collections"))
 
 	collections, ok := collectionsDoc.(*types.Document)
 	if !ok {
-		return "", lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
+		return lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
 	}
 
-	tableName := formatCollectionName(collection)
-	collections.Set(collection, tableName)
+	if collections.Has(collection) {
+		oldName := must.NotFail(collections.Get(collection)).(string)
+		if oldName != table {
+			panic(fmt.Sprintf("table name mismatch: old name %v, new name %v", oldName, table))
+		}
+	} else {
+		collections.Set(collection, table)
+	}
 	settings.Set("collections", collections)
 
 	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
 
 	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
-	return tableName, nil
+	return nil
 }
 
 // removeTableFromSettings removes collection from FerretDB settings table.

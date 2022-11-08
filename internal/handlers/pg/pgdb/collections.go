@@ -125,7 +125,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return nil
 	}
 
-	table, err = setTableInSettings(ctx, tx, db, collection)
+	err = setTableInSettings(ctx, tx, db, collection, table)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
