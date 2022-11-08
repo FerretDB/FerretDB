@@ -1,0 +1,27 @@
+{
+  "unversionedId": "Basic_operations/index",
+  "id": "Basic_operations/index",
+  "title": "Performing CRUD operations",
+  "description": "CRUD (Create, Read, Update, and Delete) operations in FerretDB uses the same protocols and drivers as MongoDB.",
+  "source": "@site/docs/Basic_operations/index.md",
+  "sourceDirName": "Basic_operations",
+  "slug": "/Basic_operations/",
+  "permalink": "/Basic_operations/",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/Basic_operations/index.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Basic CRUD Operations",
+    "permalink": "/category/basic-crud-operations"
+  },
+  "next": {
+    "title": "Insert operation",
+    "permalink": "/Basic_operations/create"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "unversionedId": "diff",
+  "id": "diff",
+  "title": "Known differences",
+  "description": "1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.",
+  "source": "@site/docs/diff.md",
+  "sourceDirName": ".",
+  "slug": "/diff",
+  "permalink": "/diff",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/diff.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "How to contribute to FerretDB",
+    "permalink": "/contributing"
+  }
+}

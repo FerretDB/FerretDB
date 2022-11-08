@@ -1,0 +1,202 @@
+{
+  "pluginId": "default",
+  "version": "current",
+  "label": "Next",
+  "banner": null,
+  "badge": false,
+  "noIndex": false,
+  "className": "docs-version-current",
+  "isLast": true,
+  "docsSidebars": {
+    "sidebar": [
+      {
+        "type": "link",
+        "label": "Introduction",
+        "href": "/intro",
+        "docId": "intro"
+      },
+      {
+        "type": "link",
+        "label": "Understanding FerretDB",
+        "href": "/understanding_ferretdb",
+        "docId": "understanding_ferretdb"
+      },
+      {
+        "type": "category",
+        "label": "Quickstart",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "type": "link",
+            "label": "Docker",
+            "href": "/quickstart_guide/docker",
+            "docId": "quickstart_guide/docker"
+          },
+          {
+            "type": "link",
+            "label": "Debian package",
+            "href": "/quickstart_guide/debian",
+            "docId": "quickstart_guide/debian"
+          },
+          {
+            "type": "link",
+            "label": "macOS",
+            "href": "/quickstart_guide/macos",
+            "docId": "quickstart_guide/macos"
+          },
+          {
+            "type": "link",
+            "label": "Windows",
+            "href": "/quickstart_guide/windows",
+            "docId": "quickstart_guide/windows"
+          },
+          {
+            "type": "link",
+            "label": "RPM package manager",
+            "href": "/quickstart_guide/rpm",
+            "docId": "quickstart_guide/rpm"
+          }
+        ],
+        "href": "/category/quickstart"
+      },
+      {
+        "type": "category",
+        "label": "Basic CRUD Operations",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "type": "link",
+            "label": "Performing CRUD operations",
+            "href": "/Basic_operations/",
+            "docId": "Basic_operations/index"
+          },
+          {
+            "type": "link",
+            "label": "Insert operation",
+            "href": "/Basic_operations/create",
+            "docId": "Basic_operations/create"
+          },
+          {
+            "type": "link",
+            "label": "Read operation",
+            "href": "/Basic_operations/read",
+            "docId": "Basic_operations/read"
+          },
+          {
+            "type": "link",
+            "label": "Update operation",
+            "href": "/Basic_operations/update",
+            "docId": "Basic_operations/update"
+          },
+          {
+            "type": "link",
+            "label": "Delete operation",
+            "href": "/Basic_operations/delete",
+            "docId": "Basic_operations/delete"
+          }
+        ],
+        "href": "/category/basic-crud-operations"
+      },
+      {
+        "type": "link",
+        "label": "How to contribute to FerretDB",
+        "href": "/contributing",
+        "docId": "contributing"
+      },
+      {
+        "type": "link",
+        "label": "Known differences",
+        "href": "/diff",
+        "docId": "diff"
+      }
+    ]
+  },
+  "docs": {
+    "Basic_operations/create": {
+      "id": "Basic_operations/create",
+      "title": "Insert operation",
+      "description": "The insert operation adds a new document to a collection.",
+      "sidebar": "sidebar"
+    },
+    "Basic_operations/delete": {
+      "id": "Basic_operations/delete",
+      "title": "Delete operation",
+      "description": "The delete operation removes a document from the database when a given query is met.",
+      "sidebar": "sidebar"
+    },
+    "Basic_operations/index": {
+      "id": "Basic_operations/index",
+      "title": "Performing CRUD operations",
+      "description": "CRUD (Create, Read, Update, and Delete) operations in FerretDB uses the same protocols and drivers as MongoDB.",
+      "sidebar": "sidebar"
+    },
+    "Basic_operations/read": {
+      "id": "Basic_operations/read",
+      "title": "Read operation",
+      "description": "The read operation retrieves documents in a collection.",
+      "sidebar": "sidebar"
+    },
+    "Basic_operations/update": {
+      "id": "Basic_operations/update",
+      "title": "Update operation",
+      "description": "The update operation modifies a document record in a collection, based on a given query parameter and update.",
+      "sidebar": "sidebar"
+    },
+    "contributing": {
+      "id": "contributing",
+      "title": "How to contribute to FerretDB",
+      "description": "FerretDB is an open source project and everyone – developers and non-developers – is welcome to contribute.",
+      "sidebar": "sidebar"
+    },
+    "diff": {
+      "id": "diff",
+      "title": "Known differences",
+      "description": "1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.",
+      "sidebar": "sidebar"
+    },
+    "intro": {
+      "id": "intro",
+      "title": "Introduction",
+      "description": "FerretDB (formerly MangoDB) is an open-source proxy that translates MongoDB wire protocol",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/debian": {
+      "id": "quickstart_guide/debian",
+      "title": "Debian package",
+      "description": "To install the .deb packages for FerretDB on your Debian, Ubuntu, Linux, and other Unix-like systems, you can use apt or dpkg.",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/docker": {
+      "id": "quickstart_guide/docker",
+      "title": "Docker",
+      "description": "These steps describe a quick local setup.",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/macos": {
+      "id": "quickstart_guide/macos",
+      "title": "macOS",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/rpm": {
+      "id": "quickstart_guide/rpm",
+      "title": "RPM package manager",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/windows": {
+      "id": "quickstart_guide/windows",
+      "title": "Windows",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "understanding_ferretdb": {
+      "id": "understanding_ferretdb",
+      "title": "Understanding FerretDB",
+      "description": "FerretDB is a document database that uses similar commands, drivers, and tools to those of MongoDB for storing data.",
+      "sidebar": "sidebar"
+    }
+  }
+}

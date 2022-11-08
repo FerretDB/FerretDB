@@ -1,0 +1,27 @@
+{
+  "unversionedId": "Basic_operations/create",
+  "id": "Basic_operations/create",
+  "title": "Insert operation",
+  "description": "The insert operation adds a new document to a collection.",
+  "source": "@site/docs/Basic_operations/create.md",
+  "sourceDirName": "Basic_operations",
+  "slug": "/Basic_operations/create",
+  "permalink": "/Basic_operations/create",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/Basic_operations/create.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Performing CRUD operations",
+    "permalink": "/Basic_operations/"
+  },
+  "next": {
+    "title": "Read operation",
+    "permalink": "/Basic_operations/read"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "unversionedId": "Basic_operations/update",
+  "id": "Basic_operations/update",
+  "title": "Update operation",
+  "description": "The update operation modifies a document record in a collection, based on a given query parameter and update.",
+  "source": "@site/docs/Basic_operations/update.md",
+  "sourceDirName": "Basic_operations",
+  "slug": "/Basic_operations/update",
+  "permalink": "/Basic_operations/update",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/Basic_operations/update.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Read operation",
+    "permalink": "/Basic_operations/read"
+  },
+  "next": {
+    "title": "Delete operation",
+    "permalink": "/Basic_operations/delete"
+  }
+}

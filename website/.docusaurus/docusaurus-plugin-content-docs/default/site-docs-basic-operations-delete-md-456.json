@@ -1,0 +1,27 @@
+{
+  "unversionedId": "Basic_operations/delete",
+  "id": "Basic_operations/delete",
+  "title": "Delete operation",
+  "description": "The delete operation removes a document from the database when a given query is met.",
+  "source": "@site/docs/Basic_operations/delete.md",
+  "sourceDirName": "Basic_operations",
+  "slug": "/Basic_operations/delete",
+  "permalink": "/Basic_operations/delete",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/Basic_operations/delete.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Update operation",
+    "permalink": "/Basic_operations/update"
+  },
+  "next": {
+    "title": "How to contribute to FerretDB",
+    "permalink": "/contributing"
+  }
+}

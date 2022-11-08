@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -27,8 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -890,17 +887,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-			// TODO Don't ignore this error after https://github.com/FerretDB/FerretDB/issues/1317
-			if err != nil {
-				var pgErr *pgconn.PgError
-				if errors.As(err, &pgErr) {
-					switch pgErr.Code {
-					case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
-						err = nil
-					}
-				}
-			}
-
 			require.NoError(t, err)
 
 			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
