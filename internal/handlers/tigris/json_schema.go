@@ -35,14 +35,14 @@ func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	}
 
 	if schema == "" {
-		return nil, common.NewError(common.ErrBadValue, fmt.Errorf("empty schema is not allowed"))
+		return nil, common.NewCommandError(common.ErrBadValue, fmt.Errorf("empty schema is not allowed"))
 	}
 
 	sch := new(tjson.Schema)
 	err = sch.Unmarshal([]byte(schema))
 
 	if err != nil {
-		return nil, common.NewError(common.ErrBadValue, err)
+		return nil, common.NewCommandError(common.ErrBadValue, err)
 	}
 
 	return sch, nil

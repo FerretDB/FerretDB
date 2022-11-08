@@ -99,7 +99,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, NewError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+				return false, NewCommandError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
 			}
 
 			// Treats the update as a Replacement object.
@@ -361,7 +361,11 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			case types.Less:
 				// if document value is less than max value, update the value
 			case types.Incomparable:
-				return changed, NewErrorMsg(ErrNotImplemented, "document comparison is not implemented")
+				return changed, NewCommandErrorMsgWithArgument(
+					ErrNotImplemented,
+					"document comparison is not implemented",
+					"$max",
+				)
 			}
 		}
 
