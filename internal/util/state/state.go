@@ -30,9 +30,10 @@ type State struct {
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	Start          time.Time `json:"-"`
-	LatestVersion  string    `json:"-"`
-	HandlerVersion string    `json:"-"`
+	TelemetryEnabledOnStart bool      `json:"-"`
+	Start                   time.Time `json:"-"`
+	LatestVersion           string    `json:"-"`
+	HandlerVersion          string    `json:"-"`
 }
 
 // fill replaces all unset or invalid values with default.

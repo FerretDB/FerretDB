@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"fmt"
+
 	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -41,14 +42,17 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 
 	var telemetryState bool
 
-	switch action {
-	case "enable":
-		telemetryState = true
-	case "disable":
+	if provider.Get().TelemetryEnabledOnStart {
 		return nil, NewErrorMsg(
 			ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
 		)
+	}
+
+	switch action {
+	case "enable":
+		telemetryState = true
+	case "disable":
 
 	default:
 		return nil, NewErrorMsg(
@@ -60,6 +64,10 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 			),
 		)
 	}
+
+	if provider == nil {
+		// TODO
+	}
 	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
 		return nil, NewCommandErrorMsg(errInternalError, err.Error())
 	}
@@ -70,7 +78,7 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"state", action,
 			"message", "TODO",
-			"url", "https://beacon.ferretdb.io/",
+			//"url", "https://beacon.ferretdb.io/", not present if error
 			"ok", float64(1),
 		))},
 	}))

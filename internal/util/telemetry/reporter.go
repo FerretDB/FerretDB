@@ -83,6 +83,12 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 		return nil, err
 	}
 
+	if t != nil {
+		if err := opts.P.Update(func(s *state.State) { s.TelemetryEnabledOnStart = true }); err != nil {
+			return nil, err
+		}
+	}
+
 	if err = opts.P.Update(func(s *state.State) { s.Telemetry = t }); err != nil {
 		return nil, err
 	}
