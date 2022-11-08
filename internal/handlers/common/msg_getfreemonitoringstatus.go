@@ -30,6 +30,7 @@ func MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *sta
 	telemetryState := "disabled"
 	telemetryMsg := "monitoring is not enabled"
 
+	// TODO if s.Telemetry != nil && !*s.Telemetry { + handle nil state
 	if state != nil && pointer.Get(state.Telemetry) {
 		telemetryState = "enabled"
 		telemetryMsg = "monitoring is enabled"
