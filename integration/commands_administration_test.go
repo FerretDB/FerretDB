@@ -959,7 +959,7 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 
 			// Attempt to create a collection for Tigris with a schema.
 			// If we get an error that support for "validator" is not implemented, that's Postgres.
-			// If we got an error that "$tigrisSchemaString" is unknown, that's MongoDB.
+			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
 			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
