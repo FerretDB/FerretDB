@@ -176,6 +176,7 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Documen
 
 // updateSettingsTable updates FerretDB settings table.
 func updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
+	// TODO delete this method as it's not atomic
 	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
 	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	return err
