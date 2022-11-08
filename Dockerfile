@@ -1,16 +1,18 @@
 ARG VERSION
 ARG COMMIT
+ARG RACEFLAG
 
 FROM golang:1.19.3 AS build
 
 WORKDIR /src
 ADD . .
 ENV CGO_ENABLED=1
+ENV GORACE=halt_on_error=1,history_size=2
 
 # split into several commands for better logging on GitHub Actions
 RUN go mod download
-RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race                 ./cmd/ferretdb
-RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race -coverpkg=./... ./cmd/ferretdb
+RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG}                 ./cmd/ferretdb
+RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG} -coverpkg=./... ./cmd/ferretdb
 
 FROM golang:1.19.3
 
