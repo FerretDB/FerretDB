@@ -16,6 +16,10 @@ package pg
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 
 	"github.com/jackc/pgx/v4"
 
@@ -73,10 +77,21 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 				// Even though we run the query in a transaction, the current isolation level doesn't guarantee
 				// that the table is not deleted (see https://www.postgresql.org/docs/14/transaction-iso.html).
 				err = tx.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
-				if err != nil {
-					return lazyerrors.Error(err)
+				if err == nil {
+					sizeOnDisk += tableSize
+					continue
 				}
-				sizeOnDisk += tableSize
+
+				var pgErr *pgconn.PgError
+				if errors.As(err, &pgErr) {
+					switch pgErr.Code {
+					case pgerrcode.UndefinedTable:
+						// Table was deleted after we got the list of tables, just ignore it
+						continue
+					}
+				}
+
+				return lazyerrors.Error(err)
 			}
 
 			d := must.NotFail(types.NewDocument(

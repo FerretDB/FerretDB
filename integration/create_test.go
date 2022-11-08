@@ -32,8 +32,6 @@ import (
 )
 
 func TestCreateStress(t *testing.T) {
-	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1206")
-
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
@@ -103,10 +101,6 @@ func TestCreateStress(t *testing.T) {
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1206
-	// Without SkipForPostgres this test would fail.
-	// Even though all the collections are created as separate tables in the database,
-	// the settings table doesn't store all of them because of concurrency issues.
 	require.Len(t, colls, collNum)
 
 	// check that all collections were created, and we can query them

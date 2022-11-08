@@ -46,7 +46,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 		return nil, ErrSchemaNotExist
 	}
 
-	settings, err := getSettingsTable(ctx, tx, db)
+	settings, err := getSettingsTable(ctx, tx, db, false)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -110,7 +110,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrAlreadyExist
 	}
 
-	settings, err := getSettingsTable(ctx, tx, db)
+	settings, err := getSettingsTable(ctx, tx, db, false)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -125,11 +125,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return nil
 	}
 
-	// TODO keep "collections" sorted after each update
-	collections.Set(collection, table)
-	settings.Set("collections", collections)
-
-	err = updateSettingsTable(ctx, tx, db, settings)
+	table, err = setTableInSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

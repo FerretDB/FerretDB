@@ -112,7 +112,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 		}
 	}
 
-	settings, err := getSettingsTable(ctx, tx, db)
+	settings, err := getSettingsTable(ctx, tx, db, false)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -127,11 +127,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 		return must.NotFail(collections.Get(collection)).(string), nil
 	}
 
-	tableName := formatCollectionName(collection)
-	collections.Set(collection, tableName)
-	settings.Set("collections", collections)
-
-	err = updateSettingsTable(ctx, tx, db, settings)
+	tableName, err := setTableInSettings(ctx, tx, db, collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -140,12 +136,12 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 }
 
 // getSettingsTable returns FerretDB settings table.
-func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1206
-	// `SELECT settings FROM %s FOR UPDATE` could solve the problem with parallel access of the settings table,
-	// but it locks the row that could be accessed from other places and causes timeouts,
-	// so we need a faster solution instead.
-	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
+func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, forUpdate bool) (*types.Document, error) {
+	fu := ""
+	if forUpdate {
+		fu = " FOR UPDATE"
+	}
+	sql := fmt.Sprintf(`SELECT settings FROM %s %s`, pgx.Identifier{db, settingsTableName}.Sanitize(), fu)
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -174,17 +170,36 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Documen
 	return settings, nil
 }
 
-// updateSettingsTable updates FerretDB settings table.
-func updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
-	// TODO delete this method as it's not atomic
+func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+	settings, err := getSettingsTable(ctx, tx, db, true)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	collectionsDoc := must.NotFail(settings.Get("collections"))
+
+	collections, ok := collectionsDoc.(*types.Document)
+	if !ok {
+		return "", lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
+	}
+
+	tableName := formatCollectionName(collection)
+	collections.Set(collection, tableName)
+	settings.Set("collections", collections)
+
 	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
-	return err
+
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return tableName, nil
 }
 
 // removeTableFromSettings removes collection from FerretDB settings table.
 func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	settings, err := getSettingsTable(ctx, tx, db)
+	settings, err := getSettingsTable(ctx, tx, db, true)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -202,7 +217,10 @@ func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection stri
 
 	settings.Set("collections", collections)
 
-	if err := updateSettingsTable(ctx, tx, db, settings); err != nil {
+	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
+
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
