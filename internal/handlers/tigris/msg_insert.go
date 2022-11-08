@@ -51,7 +51,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 		)
@@ -99,7 +99,7 @@ func (h *Handler) insert(ctx context.Context, fp *tigrisdb.FetchParam, doc *type
 		return nil
 	case errors.As(err, &driverErr):
 		if tigrisdb.IsInvalidArgument(err) {
-			return common.NewErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+			return common.NewCommandErrorMsg(common.ErrDocumentValidationFailure, err.Error())
 		}
 		return lazyerrors.Error(err)
 	default:

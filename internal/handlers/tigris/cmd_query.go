@@ -51,10 +51,11 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		default:
 			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
-			return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+			return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
 		}
 	}
 
 	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+
+	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
 }

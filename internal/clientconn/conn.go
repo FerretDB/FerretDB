@@ -444,7 +444,8 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*w
 	}
 
 	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
-	return nil, common.NewErrorMsg(common.ErrCommandNotFound, errMsg)
+
+	return nil, common.NewCommandErrorMsg(common.ErrCommandNotFound, errMsg)
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
