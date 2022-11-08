@@ -62,7 +62,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	common.Ignored(document, h.L, "comment")
 
 	if resDoc.Len() < 2 {
-		return &reply, common.NewErrorMsg(common.ErrorCode(0), "no option found to get")
+		return &reply, common.NewCommandErrorMsg(common.ErrorCode(0), "no option found to get")
 	}
 
 	return &reply, nil

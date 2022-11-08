@@ -29,13 +29,13 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	v, err := doc.Get(key)
 	if err != nil {
 		msg := fmt.Sprintf("required parameter %q is missing", key)
-		return zero, NewErrorMsg(ErrBadValue, msg)
+		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
 	}
 
 	res, ok := v.(T)
 	if !ok {
 		msg := fmt.Sprintf("required parameter %q has type %T (expected %T)", key, v, zero)
-		return zero, NewErrorMsg(ErrBadValue, msg)
+		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
 	}
 
 	return res, nil
@@ -54,7 +54,8 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
 			key, AliasFromType(v), AliasFromType(defaultValue),
 		)
-		return defaultValue, NewErrorMsg(ErrTypeMismatch, msg)
+
+		return defaultValue, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
 	}
 
 	return res, nil
@@ -87,7 +88,8 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 			key,
 			AliasFromType(v),
 		)
-		return false, NewErrorMsg(ErrTypeMismatch, msg)
+
+		return false, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
 	}
 }
 
@@ -97,13 +99,13 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 //
 //	d, ok := value.(*types.Document)
 //	if !ok {
-//	  return NewErrorMsg(ErrBadValue, "expected document")
+//	  return NewCommandErrorMsg(ErrBadValue, "expected document")
 //	}
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
 		msg := fmt.Sprintf("got type %T, expected %T", value, res)
-		return res, NewErrorMsg(ErrBadValue, msg)
+		return res, NewCommandErrorMsg(ErrBadValue, msg)
 	}
 
 	return res, nil
@@ -163,14 +165,14 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, NewError(
+				return 0, NewCommandError(
 					ErrBadValue,
 					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
 				)
 			}
 
 			if b < 0 {
-				return 0, NewError(
+				return 0, NewCommandError(
 					ErrBadValue,
 					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
 				)
@@ -235,7 +237,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 func parseTypeCode(alias string) (typeCode, error) {
 	code, ok := aliasToTypeCode[alias]
 	if !ok {
-		return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias))
+		return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias), "$type")
 	}
 
 	return code, nil
@@ -333,33 +335,36 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a number", key))
+			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s must be a number", key), key)
 		case errNotWholeNumber:
 			if _, ok := v.(float64); ok {
-				return 0, NewErrorMsg(
+				return 0, NewCommandErrorMsgWithArgument(
 					ErrBadValue,
 					fmt.Sprintf("%v has non-integral value", key),
+					key,
 				)
 			}
 
-			return 0, NewErrorMsg(ErrBadValue, fmt.Sprintf("%s must be a whole number", key))
+			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s must be a whole number", key), key)
 		default:
 			return 0, err
 		}
 	}
 
 	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
-		return 0, NewErrorMsg(
+		return 0, NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
+			key,
 		)
 	}
 
 	value := int32(wholeNumberParam)
 	if value < 0 {
-		return 0, NewErrorMsg(
+		return 0, NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", value, key),
+			key,
 		)
 	}
 
