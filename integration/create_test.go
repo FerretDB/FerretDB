@@ -133,6 +133,7 @@ func TestCreateStressSameCollection(t *testing.T) {
 	start := make(chan struct{})
 
 	var created atomic.Int32 // number of successful attempts to create a collection
+
 	var wg sync.WaitGroup
 	for i := 0; i < collNum; i++ {
 		wg.Add(1)
