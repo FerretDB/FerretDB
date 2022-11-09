@@ -175,10 +175,10 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
-// database, schema, table.
-// If schema is empty, it calculates statistics across the whole PostgreSQL database.
-// If collection is empty it calculates statistics across the whole PostgreSQL schema.
+// SchemaStats is a stub to return a set of statistics for FerretDB server, database, collection
+// - or, in terms of PostgreSQL, database, schema, table.
+// Currently, it always returns an empty DBStats, this needs to be fixed later.
+// TODO https://github.com/FerretDB/FerretDB/issues/1346
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
 	return &DBStats{
 		Name: schema,
