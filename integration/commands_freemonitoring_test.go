@@ -57,31 +57,27 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	}
 }
 
-func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
+func 0TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
+		command       bson.D
+		err           *mongo.CommandError
+		expectedState interface{}
+		expectedOk    interface{}
 	}{
 		"Enable": {
-			command: bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
-			err: &mongo.CommandError{
-				Code:    50840,
-				Name:    "Location50840",
-				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
-			},
+			command:       bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
+			expectedState: "enable",
+			expectedOk:    float64(1),
 		},
 		"Disable": {
-			command: bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
-			err: &mongo.CommandError{
-				Code:    50840,
-				Name:    "Location50840",
-				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
-			},
+			command:       bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
+			expectedState: "disable",
+			expectedOk:    float64(1),
 		},
 		"Other": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "foobar"}},
@@ -105,6 +101,8 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			allowedKeys := []string{"state", "message", "url", "userReminder", "ok"}
+
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
@@ -114,6 +112,20 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+
+			require.NotNil(t, tc.expectedState, "expectedState and expectedOk should be set inside the test case if error is nil")
+			require.NotNil(t, tc.expectedOk, "expectedState and expectedOk should be set inside the test case if error is nil")
+
+			for k, v := range actual.Map() {
+				assert.Contains(t, allowedKeys, k)
+
+				if k == "state" {
+					assert.Equal(t, tc.expectedState, v)
+				}
+				if k == "ok" {
+					assert.Equal(t, tc.expectedOk, v)
+				}
+			}
 		})
 	}
 }
