@@ -183,10 +183,7 @@ func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table st
 		return lazyerrors.Error(err)
 	}
 
-	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
-	if !ok {
-		return lazyerrors.Errorf("invalid settings document")
-	}
+	collections := must.NotFail(settings.Get("collections")).(*types.Document)
 
 	if collections.Has(collection) {
 		return ErrAlreadyExist
@@ -215,10 +212,7 @@ func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection stri
 		return lazyerrors.Error(err)
 	}
 
-	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
-	if !ok {
-		return lazyerrors.Errorf("invalid settings document")
-	}
+	collections := must.NotFail(settings.Get("collections")).(*types.Document)
 
 	if !collections.Has(collection) {
 		return ErrTableNotExist
