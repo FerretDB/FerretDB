@@ -18,27 +18,18 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata . -target-port=37017 -compat-port=0
 
-  gen:
+  integration-gen:
     cmds:
       - go generate -x ./...
-    sources:
-      - "../**/*.go"
 
-  lint:
-    cmds:
-      - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
-      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml
-    sources:
-      - "../**/*.go"
-
-  lint-golangci-lint:
+  integration-lint:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
+      - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+      - ../bin/go-consistent{{exeExt}} -pedantic ./...
+      - ../bin/go-sumtype{{exeExt}} ./...
+      - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
     sources:
-      - "../**/*.go"
-
-  lint-go-consistent:
-    cmds:
-      - ../bin/go-consistent{{exeExt}} -v -pedantic ./...
-    sources:
-      - "../**/*.go"
+      - "**/*.go"
+      - "../**/go.mod"
+      - "../**/*.yml"

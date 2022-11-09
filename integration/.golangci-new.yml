@@ -1,6 +1,6 @@
 ---
 # New or experimental linters that should pass (or be reconfigured)
-# for new FerretDB and tools code (compared to `origin/main`).
+# for new integration code (compared to `origin/main`).
 
 run:
   timeout: 3m
