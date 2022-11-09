@@ -78,7 +78,7 @@ For example, let's take the following array field in a document:
 animals: ["dog", "cat", "fish", "fox"]
 ```
 
-To reference the fourth element in the array, use the dot notation `" animals.4"`.
+To reference the fourth element in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
