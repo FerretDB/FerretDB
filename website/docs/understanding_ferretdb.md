@@ -58,7 +58,7 @@ In the example above, the `name` field is a subdocument embedded into a document
 
 ## Dot Notation
 
-Dot notations reference elements in an array or objects in an embedded document.
+Dot notations `(.)` specify elements in an array or objects in an embedded document.
 
 ### Arrays
 
@@ -67,6 +67,10 @@ Dot notations can specify or query the elements present in an array by concatena
 ```sh
 "array_name.index"
 ```
+
+:::note
+When using dot notations, the field name of the array and the specified element must be enclosed in quotation marks.
+:::
 
 For example, let's take the following array field in a document:
 
@@ -78,9 +82,8 @@ To reference the fourth element in the array, use the dot notation `" animals.4"
 
 Here are more examples of dot notations on arrays:
 
-* Query an array
+* [Query an array](https://docs.ferretdb.io/Basic_operations/read/#retrieve-documents-containing-a-value-in-an-array)
 * Update an array
-* Query for a field in an embedded document array
 
 ### Embedded documents
 
