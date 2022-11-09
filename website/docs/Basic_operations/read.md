@@ -85,6 +85,98 @@ Here is a list of the most commonly used operators.
 
 `$eq`: select records that are equal to a specific value
 
+### Retrieve documents containing a value in an array
+
+Insert the following documents in an `employees` collection using this command:
+
+```sh
+db.employees.insertMany([
+   {
+      name:{
+         first:"Earl",
+         last:"Thomas"
+      },
+      employeeID:1234,
+      age:23,
+      role:"salesperson",
+      catalog:[
+         "printer",
+         "cardboard",
+         "crayons",
+         "books"
+      ]
+   },
+   {
+      name:{
+         first:"Sam",
+         last:"Johnson"
+      },
+      employeeID:2234,
+      age:35,
+      role:"salesperson",
+      catalog:[
+         "cabinet",
+         "fridge",
+         "blender",
+         "utensils"
+      ]
+   },
+   {
+      name:{
+         first:"Clarke",
+         last:"Dane"
+      },
+      employeeID:3234,
+      age:21,
+      role:"salesperson",
+      catalog:[
+         "printer",
+         "pencils",
+         "crayons",
+         "toys"
+      ]
+   }
+])
+```
+
+To retrieve all documents containing a specific array element and value (`catalog: "printer"`), run the following command:
+
+```sh
+db.employees.find({catalog: "printer"})
+```
+
+The response displays all the retrieved documents:
+
+```sh
+[
+  {
+    _id: ObjectId("636b39f80466c61a229bbf9b"),
+    name: { first: 'Earl', last: 'Thomas' },
+    employeeID: 1234,
+    age: 23,
+    role: 'salesperson',
+    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+  },
+  {
+    _id: ObjectId("636b3b0e0466c61a229bbf9d"),
+    name: { first: 'Clarke', last: 'Dane' },
+    employeeID: 3234,
+    age: 21,
+    role: 'salesperson',
+    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+  }
+]
+```
+
+### Retrieve documents containing an array element using dot notation
+
+To retrieve all documents containing a specific value in an array index, use dot notation to reference its position in the `employees` collection.
+The following command retrieves all documents containing `"blender"` in the third element of an array:
+
+```sh
+db.employees.find({"catalog.2": "blender"})
+```
+
 ## Retrieve a single document
 
 The `findOne()` command retrieves a single document from a collection.

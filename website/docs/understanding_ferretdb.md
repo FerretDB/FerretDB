@@ -56,6 +56,66 @@ For complex documents, you can nest objects (subdocuments) inside a document.
 
 In the example above, the `name` field is a subdocument embedded into a document.
 
+## Dot Notation
+
+Dot notations reference elements in an array or objects in an embedded document.
+
+### Arrays
+
+Dot notations can specify or query the elements present in an array by concatenating a dot `(.)` with the index position of the element.
+
+```sh
+"array_name.index"
+```
+
+For example, let's take the following array field in a document:
+
+```sh
+animals: ["dog", "cat", "fish", "fox"]
+```
+
+To reference the fourth element in the array, use the dot notation `" animals.4"`.
+
+Here are more examples of dot notations on arrays:
+
+* Query an array
+* Update an array
+* Query for a field in an embedded document array
+
+### Embedded documents
+
+To reference or query a field in an embedded document using, concatenate the name of the embedded document and the field name using the dot notation.
+
+```sh
+"embedded_document_name.field"
+```
+
+Take the following document, for example:
+
+```sh
+{
+   name:{
+      first: "Tom",
+      last: "Barry"
+   },
+   contact:{
+      address:{
+         city: "Kent",
+         state: "Ohio"
+      },
+      phone: "432-124-1234"
+   }
+}
+```
+
+To reference the `city` field in the embedded document, use the dot notation `" contact.address.city"`.
+
+For dot notation examples on embedded documents, see here:
+
+* Query an embedded document
+* Update an embedded document
+* Query an array of embedded documents
+
 ## Collections
 
 Collections are a repository for documents.
