@@ -57,7 +57,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	}
 }
 
-func 0TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
+func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
