@@ -110,22 +110,11 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrAlreadyExist
 	}
 
-	settings, err := getSettingsTable(ctx, tx, db, false)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	collectionsDoc := must.NotFail(settings.Get("collections"))
-	collections, ok := collectionsDoc.(*types.Document)
-	if !ok {
-		return lazyerrors.Errorf("expected document but got %[1]T: %[1]v", collectionsDoc)
-	}
-
-	if collections.Has(collection) {
-		return nil
-	}
-
 	err = setTableInSettings(ctx, tx, db, collection, table)
+	if errors.Is(err, ErrAlreadyExist) {
+		return ErrAlreadyExist
+	}
+
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

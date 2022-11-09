@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 
@@ -128,8 +129,9 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 	}
 
 	tableName := formatCollectionName(collection)
+
 	err = setTableInSettings(ctx, tx, db, collection, tableName)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return "", lazyerrors.Error(err)
 	}
 
