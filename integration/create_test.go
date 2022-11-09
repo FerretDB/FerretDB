@@ -170,21 +170,22 @@ func TestCreateStressSameCollection(t *testing.T) {
 				) {
 					err = db.CreateCollection(ctx, collName)
 				}
-
-				if err == nil {
-					created.Add(1)
-				} else {
-					AssertEqualError(t,
-						mongo.CommandError{
-							Code:    48,
-							Name:    "NamespaceExists",
-							Message: `Collection testcreatestresssamecollection.stress_same_collection already exists.`,
-						},
-						err)
-				}
 			}
 
-			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
+			if err == nil {
+				created.Add(1)
+			} else {
+				AssertEqualError(t,
+					mongo.CommandError{
+						Code:    48,
+						Name:    "NamespaceExists",
+						Message: `Collection testcreatestresssamecollection.stress_same_collection already exists.`,
+					},
+					err)
+			}
+
+			id := fmt.Sprintf("foo_%d", i)
+			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", id}, {"v", "bar"}})
 
 			assert.NoError(t, err)
 		}(i)
@@ -210,9 +211,9 @@ func TestCreateStressSameCollection(t *testing.T) {
 		t.Parallel()
 
 		var doc bson.D
-		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo"}}).Decode(&doc)
+		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
 		require.NoError(t, err)
-		require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
+		require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 	})
 }
 
