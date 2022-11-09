@@ -177,6 +177,21 @@ The following command retrieves all documents containing `"blender"` in the thir
 db.employees.find({"catalog.2": "blender"})
 ```
 
+The document matching the array query is displayed in the response:
+
+```sh
+[
+  {
+    _id: ObjectId("636b3b0e0466c61a229bbf9c"),
+    name: { first: 'Sam', last: 'Johnson' },
+    employeeID: 2234,
+    age: 35,
+    role: 'salesperson',
+    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+  }
+]
+```
+
 ## Retrieve a single document
 
 The `findOne()` command retrieves a single document from a collection.
