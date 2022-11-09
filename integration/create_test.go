@@ -199,8 +199,6 @@ func TestCreateStressSameCollection(t *testing.T) {
 
 	wg.Wait()
 
-	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
-
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 
@@ -215,6 +213,10 @@ func TestCreateStressSameCollection(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 	})
+
+	setup.SkipForTigrisWithReason(t, "In case of Tigris, CreateOrUpdate is called, "+
+		"and it's not possible to check the number of creation attempts as some of them might be updates.")
+	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
 }
 
 func TestCreateTigris(t *testing.T) {
