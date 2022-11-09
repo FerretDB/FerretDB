@@ -26,12 +26,26 @@ import (
 
 // MsgGetFreeMonitoringStatus is a common implementation of the getFreeMonitoringStatus command.
 func MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *state.State) (*wire.OpMsg, error) {
+	if state == nil {
+		panic("state cannot be equal to nil")
+	}
+
 	telemetryState := "disabled"
 	telemetryMsg := "monitoring is not enabled"
 
 	// TODO if s.Telemetry != nil && !*s.Telemetry { + handle nil state
 	// TODO should we differentiate "undecided"?
-	if state != nil && pointer.Get(state.Telemetry) {
+	switch state.Telemetry {
+	case nil:
+		telemetryState = "undecided"
+		telemetryMsg = "monitoring is undecided, TODO: time"
+	case pointer.ToBool(true):
+		telemetryState = "enabled"
+		telemetryMsg = "monitoring is enabled"
+	case pointer.ToBool(false):
+	}
+
+	if pointer.Get(state.Telemetry) {
 		telemetryState = "enabled"
 		telemetryMsg = "monitoring is enabled"
 	}
