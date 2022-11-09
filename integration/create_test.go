@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,6 +118,102 @@ func TestCreateStress(t *testing.T) {
 			require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
 		})
 	}
+}
+
+func TestCreateStressSameCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
+	db := collection.Database()
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+	collName := "stress_same_collection"
+
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
+
+	var created atomic.Int32 // number of successful attempts to create a collection
+	var wg sync.WaitGroup
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			schema := fmt.Sprintf(`{
+				"title": "%s",
+				"description": "Create Collection Stress %d",
+				"primary_key": ["_id"],
+				"properties": {
+					"_id": {"type": "string"},
+					"v": {"type": "string"}
+				}
+			}`, collName, i,
+			)
+			opts := options.CreateCollectionOptions{
+				Validator: bson.D{{"$tigrisSchemaString", schema}},
+			}
+
+			// Attempt to create a collection for Tigris with a schema.
+			// If we get an error that support for "validator" is not implemented, that's Postgres.
+			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
+			// In both cases, we create a collection without a schema.
+			err := db.CreateCollection(ctx, collName, &opts)
+			if err != nil {
+				if errorTextContains(err,
+					`support for field "validator" is not implemented yet`,
+					`unknown top level operator: $tigrisSchemaString`,
+				) {
+					err = db.CreateCollection(ctx, collName)
+				}
+
+				if err == nil {
+					created.Add(1)
+				} else {
+					AssertEqualError(t,
+						mongo.CommandError{
+							Code:    48,
+							Name:    "NamespaceExists",
+							Message: `Collection testcreatestresssamecollection.stress_same_collection already exists.`,
+						},
+						err)
+				}
+			}
+
+			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
+
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
+
+	colls, err := db.ListCollectionNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	require.Len(t, colls, 1)
+
+	// check that the collection was created, and we can query it
+	t.Run("check_stress", func(t *testing.T) {
+		t.Parallel()
+
+		var doc bson.D
+		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo"}}).Decode(&doc)
+		require.NoError(t, err)
+		require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
+	})
 }
 
 func TestCreateTigris(t *testing.T) {
