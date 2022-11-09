@@ -17,7 +17,6 @@ package integration
 import (
 	"fmt"
 	"runtime"
-	"strings"
 	"sync"
 	"testing"
 
@@ -74,8 +73,10 @@ func TestCreateStress(t *testing.T) {
 			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
-				if strings.Contains(err.Error(), `support for field "validator" is not implemented yet`) ||
-					strings.Contains(err.Error(), `unknown top level operator: $tigrisSchemaString`) {
+				if errorTextContains(err,
+					`support for field "validator" is not implemented yet`,
+					`unknown top level operator: $tigrisSchemaString`,
+				) {
 					err = db.CreateCollection(ctx, collName)
 				}
 
