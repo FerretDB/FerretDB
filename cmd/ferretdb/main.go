@@ -170,7 +170,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("branch", info.Branch),
 		zap.Bool("dirty", info.Dirty),
 		zap.Bool("debug", info.Debug),
-		zap.Reflect("buildEnvironment", info.BuildEnvironment.Map()),
+		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
 	}
 	logUUID := stateProvider.Get().UUID
 
