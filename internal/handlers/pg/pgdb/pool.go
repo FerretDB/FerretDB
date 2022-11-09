@@ -175,49 +175,14 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// SchemaStats returns a set of statistics for FerretDB server, database, collection - or, in terms of PostgreSQL,
-// database, schema, table.
-// If schema is empty, it calculates statistics across the whole PostgreSQL database.
-// If collection is empty it calculates statistics across the whole PostgreSQL schema.
+// SchemaStats is a stub to return a set of statistics for FerretDB server, database, collection
+// - or, in terms of PostgreSQL, database, schema, table.
+// Currently, it always returns an empty DBStats, this needs to be fixed later.
+// TODO https://github.com/FerretDB/FerretDB/issues/1346
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
-	var res DBStats
-
-	sql := `
-    SELECT COUNT(distinct t.table_name)                                                             AS CountTables,
-           COALESCE(SUM(s.n_live_tup), 0)                                                           AS CountRows,
-           COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)  AS SizeTotal,
-           COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)         AS SizeIndexes,
-           COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeRelation,
-           COUNT(distinct i.indexname)                                                              AS CountIndexes
-      FROM information_schema.tables AS t
-      LEFT OUTER
-      JOIN pg_stat_user_tables       AS s ON s.schemaname = t.table_schema
-                                         AND s.relname = t.table_name
-      LEFT OUTER
-      JOIN pg_indexes                AS i ON i.schemaname = t.table_schema
-                                         AND i.tablename = t.table_name`
-
-	// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
-
-	args := []any{}
-
-	if schema != "" {
-		sql += " WHERE t.table_schema = $1"
-		args = append(args, schema)
-
-		if collection != "" {
-			sql += " AND t.table_name = $2"
-			args = append(args, collection)
-		}
-	}
-
-	res.Name = schema
-	err := pgPool.QueryRow(ctx, sql, args...).
-		Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	return &res, nil
+	return &DBStats{
+		Name: schema,
+	}, nil
 }
 
 // InTransaction wraps the given function f in a transaction.
