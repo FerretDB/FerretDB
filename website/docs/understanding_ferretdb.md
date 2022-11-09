@@ -58,11 +58,11 @@ In the example above, the `name` field is a subdocument embedded into a document
 
 ## Dot Notation
 
-Dot notations `(.)` specify elements in an array or objects in an embedded document.
+Dot notations `(.)` are used to specify the elements in an array, the objects in a document, or the values in an embedded document.
 
 ### Arrays
 
-Dot notations can specify or query the elements present in an array by concatenating a dot `(.)` with the index position of the element.
+Dot notations can be used to specify or query the elements present in an array by concatenating a dot `(.)` with the index position of the element.
 
 ```sh
 "array_name.index"
