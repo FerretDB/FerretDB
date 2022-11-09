@@ -55,10 +55,11 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:           s.UUID,
-		Telemetry:      telemetry,
-		Start:          s.Start,
-		LatestVersion:  s.LatestVersion,
-		HandlerVersion: s.HandlerVersion,
+		UUID:                    s.UUID,
+		Telemetry:               telemetry,
+		TelemetryEnabledOnStart: s.TelemetryEnabledOnStart,
+		Start:                   s.Start,
+		LatestVersion:           s.LatestVersion,
+		HandlerVersion:          s.HandlerVersion,
 	}
 }

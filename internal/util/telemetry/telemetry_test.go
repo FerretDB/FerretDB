@@ -15,6 +15,7 @@
 package telemetry
 
 import (
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -24,6 +25,16 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
+
+func TestUpdate(t *testing.T) {
+	provider, err := state.NewProvider("d")
+	require.NoError(t, err)
+
+	err = provider.Update(func(s *state.State) { s.TelemetryEnabledOnStart = true })
+	require.NoError(t, err)
+
+	assert.True(t, provider.Get().TelemetryEnabledOnStart)
+}
 
 func TestState(t *testing.T) {
 	t.Parallel()

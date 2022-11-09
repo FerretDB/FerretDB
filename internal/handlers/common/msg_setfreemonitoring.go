@@ -42,26 +42,26 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 
 	var telemetryState bool
 
-	if provider.Get().TelemetryEnabledOnStart {
-		return nil, NewErrorMsg(
-			ErrFreeMonitoringDisabled,
-			"Free Monitoring has been disabled via the command-line and/or config file",
-		)
-	}
-
 	switch action {
 	case "enable":
 		telemetryState = true
 	case "disable":
 
 	default:
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsg(
 			ErrBadValue,
 			fmt.Sprintf(
 				"Enumeration value '%s' for field '%s' is not a valid value.",
 				action,
 				command+".action",
 			),
+		)
+	}
+
+	if provider.Get().TelemetryEnabledOnStart {
+		return nil, NewCommandErrorMsg(
+			ErrFreeMonitoringDisabled,
+			"Free Monitoring has been disabled via the command-line and/or config file",
 		)
 	}
 
@@ -77,8 +77,7 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"state", action,
-			"message", "TODO",
-			//"url", "https://beacon.ferretdb.io/", not present if error
+			//"message", "TODO",
 			"ok", float64(1),
 		))},
 	}))
