@@ -76,8 +76,6 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"state", action,
-			//"message", "TODO",
 			"ok", float64(1),
 		))},
 	}))

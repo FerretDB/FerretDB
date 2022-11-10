@@ -66,6 +66,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command        bson.D
 		err            *mongo.CommandError
+		expectedRes    bson.D
 		expectedState  interface{}
 		expectedOk     interface{}
 		expectedStatus string
@@ -73,12 +74,14 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			expectedState:  "enable",
+			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedOk:     float64(1),
 			expectedStatus: "enabled",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
 			expectedState:  "disable",
+			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedOk:     float64(1),
 			expectedStatus: "disabled",
 		},
@@ -114,6 +117,8 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				return
 			}
 
+			AssertEqualDocuments(t, tc.expectedRes, actual)
+
 			require.NoError(t, err)
 
 			require.NotNil(t, tc.expectedState, "expectedState and expectedOk should be set inside the test case if error is nil")
@@ -122,10 +127,10 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			for k, v := range actual.Map() {
 				assert.Contains(t, allowedKeys, k)
 
-				if k == "state" {
+				switch k {
+				case "state":
 					assert.Equal(t, tc.expectedState, v)
-				}
-				if k == "ok" {
+				case "ok":
 					assert.Equal(t, tc.expectedOk, v)
 				}
 			}
