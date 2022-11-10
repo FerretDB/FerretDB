@@ -60,6 +60,9 @@ func (s *Flag) UnmarshalText(text []byte) error {
 //   - common DO_NOT_TRACK environment variable;
 //   - executable name;
 //   - and the previously saved state.
+//
+// The second returned value is true if the telemetry state should be locked, because of
+// setting telemetry via a command-line flag, an environment variable, or a filename.
 func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (*bool, bool, error) {
 	var disable bool
 
