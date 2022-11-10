@@ -47,7 +47,6 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
-      #command: --enableFreeMonitoring off
     ports:
       - 37017:27017
     extra_hosts:
