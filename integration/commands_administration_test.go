@@ -922,10 +922,10 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command        bson.D
-		err            *mongo.CommandError
-		expectedRes    bson.D
 		expectedStatus string
+		err            *mongo.CommandError
+		command        bson.D
+		expectedRes    bson.D
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
