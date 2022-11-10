@@ -147,7 +147,7 @@ db.employees.find({catalog: "printer"})
 
 The response displays all the retrieved documents:
 
-```sh
+```js
 [
   {
     _id: ObjectId("636b39f80466c61a229bbf9b"),
