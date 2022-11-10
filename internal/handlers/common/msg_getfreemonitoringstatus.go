@@ -33,17 +33,11 @@ func MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *sta
 	telemetryState := "disabled"
 	telemetryMsg := "monitoring is not enabled"
 
-	switch state.Telemetry {
-	case nil:
+	switch {
+	case state.Telemetry == nil:
 		telemetryState = "undecided"
 		telemetryMsg = "monitoring is undecided"
-	case pointer.ToBool(true):
-		telemetryState = "enabled"
-		telemetryMsg = "monitoring is enabled"
-	case pointer.ToBool(false):
-	}
-
-	if pointer.Get(state.Telemetry) {
+	case pointer.GetBool(state.Telemetry):
 		telemetryState = "enabled"
 		telemetryMsg = "monitoring is enabled"
 	}
