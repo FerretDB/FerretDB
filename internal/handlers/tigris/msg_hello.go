@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -40,8 +41,8 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			"localTime", time.Now(),
 			// logicalSessionTimeoutMinutes
 			// connectionId
-			"minWireVersion", int32(17),
-			"maxWireVersion", int32(17),
+			"minWireVersion", common.MinWireVersion,
+			"maxWireVersion", common.MaxWireVersion,
 			"readOnly", false,
 			"ok", float64(1),
 		))},

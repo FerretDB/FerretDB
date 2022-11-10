@@ -126,7 +126,7 @@ type ProtoErr interface {
 	Code() ErrorCode
 	// Document returns *types.Document.
 	Document() *types.Document
-	// Info returns *Info.
+	// Info returns *ErrInfo.
 	Info() *ErrInfo
 }
 
@@ -159,28 +159,32 @@ func ProtocolError(err error) (ProtoErr, bool) {
 func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	switch err {
 	case errNotWholeNumber:
-		return NewCommandErrorMsg(
+		return NewCommandErrorMsgWithArgument(
 			ErrFailedToParse,
 			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
+			operator,
 		)
 
 	case errNegativeNumber:
 		if _, ok := maskValue.(float64); ok {
-			return NewCommandErrorMsg(
+			return NewCommandErrorMsgWithArgument(
 				ErrFailedToParse,
 				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
+				operator,
 			)
 		}
 
-		return NewCommandErrorMsg(
+		return NewCommandErrorMsgWithArgument(
 			ErrFailedToParse,
 			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
+			operator,
 		)
 
 	case errNotBinaryMask:
-		return NewCommandErrorMsg(
+		return NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
+			operator,
 		)
 
 	default:
@@ -198,7 +202,7 @@ func CheckError(err error) error {
 
 	switch ve.Code() {
 	case types.ErrValidation, types.ErrIDNotFound:
-		return NewErrorMsg(ErrBadValue, err.Error())
+		return NewCommandErrorMsg(ErrBadValue, err.Error())
 	case types.ErrWrongIDType:
 		return NewWriteErrorMsg(ErrInvalidID, err.Error())
 	default:

@@ -1,5 +1,5 @@
 ---
-# Linters that should pass for all code.
+# Linters that should pass for all FerretDB and tools code.
 
 run:
   timeout: 3m
@@ -64,7 +64,12 @@ linters-settings:
             reason: "FerretDB should not depend on MongoDB Go driver."
   gosimple:
     checks: ["all"]
-  # govet
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - nilness
+      - shadow
   importas:
     no-unaliased: false
     no-extra-aliases: true
@@ -86,6 +91,9 @@ linters-settings:
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
+  revive:
+    ignore-generated-header: true
+    severity: error
   staticcheck:
     checks:
       - all
@@ -115,6 +123,7 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - revive
     - staticcheck
     - unused
     - whitespace
@@ -181,10 +190,6 @@ issues:
     - linters: [depguard]
       path: internal/handlers/tigris
       text: tjson
-
-    # that's a valid usage of bson.D
-    - linters: [govet]
-      text: "`go.mongodb.org/mongo-driver/bson/primitive.E` composite literal uses unkeyed fields"
 
     # we don't want to introduce that constant
     - linters: [goconst]
