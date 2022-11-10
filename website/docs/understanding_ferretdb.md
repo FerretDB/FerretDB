@@ -58,13 +58,13 @@ In the example above, the `name` field is a subdocument embedded into a document
 
 ## Dot Notation
 
-Dot notations `(.)` are used to specify the elements in an array, the objects in a document, or the values in an embedded document.
+Dot notations `(.)` are used to specify the elements in an array or the values in an embedded document.
 
 ### Arrays
 
 Dot notations can be used to specify or query the elements present in an array by concatenating a dot `(.)` with the index position of the element.
 
-```sh
+```js
 "array_name.index"
 ```
 
@@ -74,7 +74,7 @@ When using dot notations, the field name of the array and the specified element 
 
 For example, let's take the following array field in a document:
 
-```sh
+```js
 animals: ["dog", "cat", "fish", "fox"]
 ```
 
@@ -89,13 +89,13 @@ Here are more examples of dot notations on arrays:
 
 To reference or query a field in an embedded document using, concatenate the name of the embedded document and the field name using the dot notation.
 
-```sh
+```js
 "embedded_document_name.field"
 ```
 
 Take the following document, for example:
 
-```sh
+```js
 {
    name:{
       first: "Tom",

@@ -31,7 +31,7 @@ export default function Home() {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      description="Explore the installation guide, database model and architecture, tutorials, and references on how to use FerretDB.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

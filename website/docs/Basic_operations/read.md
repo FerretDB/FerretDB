@@ -11,13 +11,13 @@ You can either retrieve all the documents in a collection, or only the documents
 
 The `find()` command is used for retrieveing all the documents in a collection.
 
-```sh
+```js
 db.collection.find()
 ```
 
 First, populate the database with a new collection containing a list of documents.
 
-```sh
+```js
 db.scientists.insertMany([
   {
     name: {
@@ -53,7 +53,7 @@ Run `db.scientists.find()` to see the complete list of documents in the collecti
 Using the `find()` command, you can also filter a collection for only the documents that match the provided query.
 For example, find the document with the field `born` set as 1857.
 
-```sh
+```js
 db.scientists.find({born: 1857})
 ```
 
@@ -63,7 +63,7 @@ The operator syntax allows users to query and retrieve a document.
 There are several operator methods that you can use, such as `$gt` or `$lt`.
 For example, to find the list of scientists born after the 1900s, we'll need the `$gt` operator:
 
-```sh
+```js
 db.scientists.find({born:{$gt:1900}})
 ```
 
@@ -89,7 +89,7 @@ Here is a list of the most commonly used operators.
 
 Insert the following documents in an `employees` collection using this command:
 
-```sh
+```js
 db.employees.insertMany([
    {
       name:{
@@ -141,7 +141,7 @@ db.employees.insertMany([
 
 To retrieve all documents containing a specific array element and value (`catalog: "printer"`), run the following command:
 
-```sh
+```js
 db.employees.find({catalog: "printer"})
 ```
 
@@ -173,13 +173,13 @@ The response displays all the retrieved documents:
 To retrieve all documents containing a specific value in an array index, use dot notation to reference its position in the `employees` collection.
 The following command retrieves all documents containing `"blender"` in the third element of an array:
 
-```sh
+```js
 db.employees.find({"catalog.2": "blender"})
 ```
 
 The document matching the array query is displayed in the response:
 
-```sh
+```js
 [
   {
     _id: ObjectId("636b3b0e0466c61a229bbf9c"),
@@ -196,6 +196,6 @@ The document matching the array query is displayed in the response:
 
 The `findOne()` command retrieves a single document from a collection.
 
-```sh
+```js
 db.scientists.findOne({invention: "Turing Machine"})
 ```

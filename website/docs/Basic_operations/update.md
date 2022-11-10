@@ -21,13 +21,13 @@ At present, FerretDB currently supports the following update operators:
 Use the `updateOne()` method to update a single document in a collection.
 This operation filters a collection using a query parameter, and updates given fields within that document.
 
-```sh
+```js
 db.collection.updateOne({<query-params>}, {$set: {<update fields>}})
 ```
 
 First, populate the database with a collection containing a list of documents.
 
-```sh
+```js
 db.scientists.insertMany([
    {
         firstname: "Thomas",
@@ -63,7 +63,7 @@ db.scientists.insertMany([
 Using the document record in the collection, update the document where `firstname` is "Graham", and set it as "Alexander Graham".
 The `updateOne()` operation will only affect the first document that’s retrieved in the collection.
 
-```sh
+```js
 db.scientists.updateOne({
    firstname:"Graham"
 },
@@ -79,7 +79,7 @@ db.scientists.updateOne({
 Using the `updateMany()` command, you can modify many documents at once.
 In the example below, where `nobel` is set as false, update and set to true.
 
-```sh
+```js
 db.scientists.updateMany({nobel:false}, {$set: {nobel:true}})
 ```
 
@@ -89,7 +89,7 @@ This operation updates all the documents where the field `nobel` was previously 
 
 Besides updating a document, you can replace it completely using the `replaceOne()` method.
 
-```sh
+```js
 db.scientists.replaceOne({
     lastname: "Bell",
 },
