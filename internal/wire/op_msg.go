@@ -126,11 +126,8 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				return lazyerrors.Error(err)
 			}
 
-			d, err := types.ConvertDocument(&doc)
-			if err != nil {
-				return lazyerrors.Error(err)
-			}
-			section.Documents = []*types.Document{d}
+			td := types.Document(doc)
+			section.Documents = []*types.Document{&td}
 
 		case 1:
 			var secSize int32
@@ -165,11 +162,8 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 					return lazyerrors.Error(err)
 				}
 
-				d, err := types.ConvertDocument(&doc)
-				if err != nil {
-					return lazyerrors.Error(err)
-				}
-				section.Documents = append(section.Documents, d)
+				td := types.Document(doc)
+				section.Documents = append(section.Documents, &td)
 			}
 
 		default:
@@ -238,11 +232,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 				panic(fmt.Sprintf("%d documents in section with kind 0", l))
 			}
 
-			d, err := bson.ConvertDocument(section.Documents[0])
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if d.WriteTo(bufw); err != nil {
+			if err := bson.Document(*section.Documents[0]).WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -255,11 +245,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			}
 
 			for _, doc := range section.Documents {
-				d, err := bson.ConvertDocument(doc)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-				if d.WriteTo(secw); err != nil {
+				if err := bson.Document(*doc).WriteTo(secw); err != nil {
 					return nil, lazyerrors.Error(err)
 				}
 			}

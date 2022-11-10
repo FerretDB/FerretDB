@@ -65,7 +65,8 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 		if err := doc.ReadFrom(bufr); err != nil {
 			return lazyerrors.Errorf("wire.OpReply.ReadFrom: %w", err)
 		}
-		reply.Documents[i] = must.NotFail(types.ConvertDocument(&doc))
+		td := types.Document(doc)
+		reply.Documents[i] = &td
 	}
 
 	return nil
@@ -110,7 +111,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	}
 
 	for _, doc := range reply.Documents {
-		if err := bson.MustConvertDocument(doc).WriteTo(bufw); err != nil {
+		if err := bson.Document(*doc).WriteTo(bufw); err != nil {
 			return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: %w", err)
 		}
 	}

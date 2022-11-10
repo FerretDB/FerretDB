@@ -63,7 +63,8 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	if err := q.ReadFrom(bufr); err != nil {
 		return err
 	}
-	query.Query = must.NotFail(types.ConvertDocument(&q))
+	td := types.Document(q)
+	query.Query = &td
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
@@ -71,8 +72,8 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 			return err
 		}
 
-		tr := must.NotFail(types.ConvertDocument(&r))
-		query.ReturnFieldsSelector = tr
+		tr := types.Document(r)
+		query.ReturnFieldsSelector = &tr
 	}
 
 	return nil
@@ -114,12 +115,12 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := bson.MustConvertDocument(query.Query).WriteTo(bufw); err != nil {
+	if err := bson.Document(*query.Query).WriteTo(bufw); err != nil {
 		return nil, err
 	}
 
 	if query.ReturnFieldsSelector != nil {
-		if err := bson.MustConvertDocument(query.ReturnFieldsSelector).WriteTo(bufw); err != nil {
+		if err := bson.Document(*query.ReturnFieldsSelector).WriteTo(bufw); err != nil {
 			return nil, err
 		}
 	}

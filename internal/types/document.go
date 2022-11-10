@@ -23,14 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// Common interface with bson.Document.
-//
-// TODO Remove this type.
-type document interface {
-	Map() map[string]any
-	Keys() []string
-}
-
 // Document represents BSON document.
 type Document struct {
 	fields []field
@@ -40,33 +32,6 @@ type Document struct {
 type field struct {
 	key   string
 	value any
-}
-
-// ConvertDocument converts bson.Document to *types.Document.
-// It references the same data without copying it.
-//
-// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
-func ConvertDocument(d document) (*Document, error) {
-	if d == nil {
-		panic("types.ConvertDocument: d is nil")
-	}
-
-	// If both keys and map are nil, we don't need to allocate memory for fields.
-	if d.Keys() == nil && d.Map() == nil {
-		return new(Document), nil
-	}
-
-	m := d.Map()
-
-	fields := make([]field, len(d.Keys()))
-	for i, key := range d.Keys() {
-		fields[i] = field{
-			key:   key,
-			value: m[key],
-		}
-	}
-
-	return &Document{fields}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -100,7 +65,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
-		if err := doc.add(key, value); err != nil {
+		if err := doc.Add(key, value); err != nil {
 			return nil, fmt.Errorf("types.NewDocument: %w", err)
 		}
 	}
@@ -177,11 +142,11 @@ func (d *Document) Command() string {
 	return keys[0]
 }
 
-// add adds the value for the given key.
+// Add adds the value for the given key.
 // If the key already exists, it will create a duplicate key.
 //
 // As a special case, _id always becomes the first key.
-func (d *Document) add(key string, value any) error {
+func (d *Document) Add(key string, value any) error {
 	if key == "_id" {
 		// ensure that _id is the first field
 		d.fields = slices.Insert(d.fields, 0, field{key, value})
@@ -348,8 +313,3 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 
 	return false
 }
-
-// check interfaces
-var (
-	_ document = (*Document)(nil)
-)
