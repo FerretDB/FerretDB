@@ -33,8 +33,6 @@ func MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *sta
 	telemetryState := "disabled"
 	telemetryMsg := "monitoring is not enabled"
 
-	// TODO if s.Telemetry != nil && !*s.Telemetry { + handle nil state
-	// TODO should we differentiate "undecided"?
 	switch state.Telemetry {
 	case nil:
 		telemetryState = "undecided"

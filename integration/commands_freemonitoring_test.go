@@ -64,20 +64,23 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command       bson.D
-		err           *mongo.CommandError
-		expectedState interface{}
-		expectedOk    interface{}
+		command        bson.D
+		err            *mongo.CommandError
+		expectedState  interface{}
+		expectedOk     interface{}
+		expectedStatus string
 	}{
 		"Enable": {
-			command:       bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
-			expectedState: "enable",
-			expectedOk:    float64(1),
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
+			expectedState:  "enable",
+			expectedOk:     float64(1),
+			expectedStatus: "enabled",
 		},
 		"Disable": {
-			command:       bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
-			expectedState: "disable",
-			expectedOk:    float64(1),
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
+			expectedState:  "disable",
+			expectedOk:     float64(1),
+			expectedStatus: "disabled",
 		},
 		"Other": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "foobar"}},
@@ -99,7 +102,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			// these tests shouldn't be run in parallel, because they work on the same database
 
 			allowedKeys := []string{"state", "message", "url", "userReminder", "ok"}
 
@@ -125,6 +128,17 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				if k == "ok" {
 					assert.Equal(t, tc.expectedOk, v)
 				}
+			}
+
+			if tc.expectedStatus != "" {
+				var actual bson.D
+				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
+				require.NoError(t, err)
+
+				actualStatus, ok := actual.Map()["state"]
+				require.True(t, ok)
+
+				assert.Equal(t, tc.expectedStatus, actualStatus)
 			}
 		})
 	}
