@@ -111,10 +111,6 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	}
 
 	err = setTableInSettings(ctx, tx, db, collection, table)
-	if errors.Is(err, ErrAlreadyExist) {
-		return ErrAlreadyExist
-	}
-
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

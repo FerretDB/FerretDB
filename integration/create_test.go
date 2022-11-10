@@ -31,8 +31,6 @@ import (
 )
 
 func TestCreateStress(t *testing.T) {
-	t.Parallel()
-
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
@@ -121,8 +119,6 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
-	t.Parallel()
-
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
 

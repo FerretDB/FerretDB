@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
 
@@ -131,7 +130,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 	tableName := formatCollectionName(collection)
 
 	err = setTableInSettings(ctx, tx, db, collection, tableName)
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
+	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
@@ -188,7 +187,7 @@ func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table st
 	collections := must.NotFail(settings.Get("collections")).(*types.Document)
 
 	if collections.Has(collection) {
-		return ErrAlreadyExist
+		panic("collection already exists in settings")
 	}
 
 	collections.Set(collection, table)
