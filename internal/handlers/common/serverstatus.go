@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
