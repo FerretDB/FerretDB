@@ -46,19 +46,20 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(types.NullType); ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrMissingField,
 			`BSON field 'getLog.getLog' is missing but a required field`,
 		)
 	}
 
 	if _, ok := getLog.(string); !ok {
-		return nil, common.NewError(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrTypeMismatch,
-			fmt.Errorf(
+			fmt.Sprintf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
 				common.AliasFromType(getLog),
 			),
+			"getLog",
 		)
 	}
 
@@ -87,11 +88,23 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		var log types.Array
-		for _, line := range []string{
+		startupWarnings := []string{
 			"Powered by FerretDB " + version.Get().Version + " and Tigris " + info.ServerVersion + ".",
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris",
-		} {
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris.",
+		}
+
+		state := h.StateProvider.Get()
+		if state.Telemetry == nil {
+			startupWarnings = append(
+				startupWarnings,
+				"The telemetry state is undecided; the first report will be sent soon. "+
+					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			)
+		}
+
+		var log types.Array
+
+		for _, line := range startupWarnings {
 			b, err := json.Marshal(map[string]any{
 				"msg":  line,
 				"tags": []string{"startupWarnings"},
@@ -117,7 +130,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		return nil, common.NewError(
+		return nil, common.NewCommandError(
 			common.ErrOperationFailed,
 			fmt.Errorf("no RecentEntries named: %s", getLog),
 		)

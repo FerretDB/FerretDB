@@ -47,14 +47,14 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(types.NullType); ok {
-		return nil, common.NewErrorMsg(
+		return nil, common.NewCommandErrorMsg(
 			common.ErrMissingField,
 			`BSON field 'getLog.getLog' is missing but a required field`,
 		)
 	}
 
 	if _, ok := getLog.(string); !ok {
-		return nil, common.NewError(
+		return nil, common.NewCommandError(
 			common.ErrTypeMismatch,
 			fmt.Errorf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
@@ -86,11 +86,23 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		pv, _, _ := strings.Cut(h.StateProvider.Get().HandlerVersion, " ")
 		mv := version.Get()
 
+		startupWarnings := []string{
+			"Powered by FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+		}
+
+		state := h.StateProvider.Get()
+		if state.Telemetry == nil {
+			startupWarnings = append(
+				startupWarnings,
+				"The telemetry state is undecided; the first report will be sent soon. "+
+					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			)
+		}
+
 		var log types.Array
-		for _, line := range []string{
-			"Powered by 🥭 FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB",
-		} {
+
+		for _, line := range startupWarnings {
 			b, err := json.Marshal(map[string]any{
 				"msg":  line,
 				"tags": []string{"startupWarnings"},
@@ -116,7 +128,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		return nil, common.NewError(
+		return nil, common.NewCommandError(
 			common.ErrOperationFailed,
 			fmt.Errorf("no RecentEntries named: %s", getLog),
 		)

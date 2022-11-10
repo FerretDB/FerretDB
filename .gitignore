@@ -6,7 +6,6 @@ bin/
 
 # dependencies
 vendor/
-node_modules/
 
 # task cache
 .task/
@@ -18,6 +17,7 @@ node_modules/
 *.deb
 *.rpm
 *.tar
+website/build/
 
 # test coverage results, generated files like commit.txt, etc.
 *.txt

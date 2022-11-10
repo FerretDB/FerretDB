@@ -47,7 +47,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 	}
 
 	if collection == "" {
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsg(
 			ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.'", db),
 		)
@@ -87,7 +87,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 
 	updateParam, err := document.Get("update")
 	if err != nil && !remove {
-		return nil, NewErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
+		return nil, NewCommandErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
 	}
 
 	if err == nil {
@@ -96,22 +96,26 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 			update = updateParam
 		case *types.Array:
 			// TODO aggregation pipeline stages metrics
-			return nil, NewErrorMsg(ErrNotImplemented, "Aggregation pipelines are not supported yet")
+			return nil, NewCommandErrorMsgWithArgument(ErrNotImplemented, "Aggregation pipelines are not supported yet", "update")
 		default:
-			return nil, NewErrorMsg(ErrFailedToParse, "Update argument must be either an object or an array")
+			return nil, NewCommandErrorMsgWithArgument(
+				ErrFailedToParse,
+				"Update argument must be either an object or an array",
+				"update",
+			)
 		}
 	}
 
 	if update != nil && remove {
-		return nil, NewErrorMsg(ErrFailedToParse, "Cannot specify both an update and remove=true")
+		return nil, NewCommandErrorMsg(ErrFailedToParse, "Cannot specify both an update and remove=true")
 	}
 
 	if upsert && remove {
-		return nil, NewErrorMsg(ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
+		return nil, NewCommandErrorMsg(ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
 	}
 
 	if returnNewDocument && remove {
-		return nil, NewErrorMsg(
+		return nil, NewCommandErrorMsg(
 			ErrFailedToParse,
 			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
 		)

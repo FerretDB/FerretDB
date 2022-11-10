@@ -51,20 +51,22 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 	case "disable":
 		telemetryState = false
 	default:
-		return nil, NewCommandErrorMsg(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf(
 				"Enumeration value '%s' for field '%s' is not a valid value.",
 				action,
 				command+".action",
 			),
+			"action",
 		)
 	}
 
 	if provider.Get().TelemetryLocked {
-		return nil, NewCommandErrorMsg(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
+			action,
 		)
 	}
 

@@ -15,28 +15,63 @@
 package tigrisdb
 
 import (
-	"github.com/AlekSi/pointer"
+	"errors"
+	"fmt"
+	"strings"
+
 	api "github.com/tigrisdata/tigris-client-go/api/server/v1"
 	"github.com/tigrisdata/tigris-client-go/driver"
 )
 
-// IsNotFound returns true if the error is "not found" error.
-// This function is implemented to keep nolint in a single place.
-func IsNotFound(err error) bool {
-	e, _ := err.(*driver.Error)
-	return pointer.Get(e).Code == api.Code_NOT_FOUND //nolint:nosnakecase // Tigris named their const that way
-}
+// Make our own constants to avoid nosnakecase linter errors.
+const (
+	errUnknown         = api.Code_UNKNOWN
+	errInvalidArgument = api.Code_INVALID_ARGUMENT
+	errNotFound        = api.Code_NOT_FOUND
+	errAlreadyExists   = api.Code_ALREADY_EXISTS
+)
 
-// IsAlreadyExists returns true if the error is "already exists" error.
-// This function is implemented to keep nolint in a single place.
-func IsAlreadyExists(err error) bool {
-	e, _ := err.(*driver.Error)
-	return pointer.Get(e).Code == api.Code_ALREADY_EXISTS //nolint:nosnakecase // Tigris named their const that way
-}
-
-// IsInvalidArgument returns true if the error is "invalid argument" error.
-// This function is implemented to keep nolint in a single place.
+// IsInvalidArgument returns true if the error's code is errInvalidArgument.
 func IsInvalidArgument(err error) bool {
-	e, _ := err.(*driver.Error)
-	return pointer.Get(e).Code == api.Code_INVALID_ARGUMENT //nolint:nosnakecase // Tigris named their const that way
+	var driverErr *driver.Error
+	if !errors.As(err, &driverErr) {
+		panic(fmt.Sprintf("unexpected error type %#v", err))
+	}
+
+	return driverErr.Code == errInvalidArgument
+}
+
+// IsNotFound returns true if the error's code is errNotFound.
+func IsNotFound(err error) bool {
+	var driverErr *driver.Error
+	if !errors.As(err, &driverErr) {
+		panic(fmt.Sprintf("unexpected error type %#v", err))
+	}
+
+	return driverErr.Code == errNotFound
+}
+
+// IsAlreadyExists returns true if the error's code is errAlreadyExists.
+func IsAlreadyExists(err error) bool {
+	var driverErr *driver.Error
+	if !errors.As(err, &driverErr) {
+		panic(fmt.Sprintf("unexpected error type %#v", err))
+	}
+
+	return driverErr.Code == errAlreadyExists
+}
+
+// isOtherCreationInFlight returns true if an attempt to create the database with the given name is already in progress.
+func isOtherCreationInFlight(err error) bool {
+	var driverErr *driver.Error
+	if !errors.As(err, &driverErr) {
+		panic(fmt.Sprintf("unexpected error type %#v", err))
+	}
+
+	if driverErr.Code != errUnknown {
+		return false
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1341
+	return strings.Contains(driverErr.Message, "duplicate key value, violates key constraint")
 }
