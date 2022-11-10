@@ -14,6 +14,9 @@
 
 // Package bson provides converters from/to BSON for built-in and `types` types.
 //
+// It supports all BSON types and values, even NaNs and negative zeroes
+// that are rejected by other layers.
+//
 // See contributing guidelines and documentation for package `types` for details.
 package bson
 
