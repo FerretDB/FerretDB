@@ -1,0 +1,27 @@
+{
+  "unversionedId": "contributing",
+  "id": "contributing",
+  "title": "How to contribute to FerretDB",
+  "description": "FerretDB is an open source project and everyone – developers and non-developers – is welcome to contribute.",
+  "source": "@site/docs/contributing.md",
+  "sourceDirName": ".",
+  "slug": "/contributing",
+  "permalink": "/contributing",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/contributing.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Known differences",
+    "permalink": "/diff"
+  },
+  "next": {
+    "title": "Quickstart",
+    "permalink": "/category/quickstart"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "unversionedId": "intro",
+  "id": "intro",
+  "title": "Introduction",
+  "description": "FerretDB (formerly MangoDB) is an open-source proxy that translates MongoDB wire protocol",
+  "source": "@site/docs/intro.md",
+  "sourceDirName": ".",
+  "slug": "/intro",
+  "permalink": "/intro",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/intro.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "sidebar",
+  "next": {
+    "title": "Known differences",
+    "permalink": "/diff"
+  }
+}

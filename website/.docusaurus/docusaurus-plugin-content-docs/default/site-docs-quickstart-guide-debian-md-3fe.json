@@ -1,0 +1,27 @@
+{
+  "unversionedId": "quickstart_guide/debian",
+  "id": "quickstart_guide/debian",
+  "title": "Debian",
+  "description": "",
+  "source": "@site/docs/quickstart_guide/debian.md",
+  "sourceDirName": "quickstart_guide",
+  "slug": "/quickstart_guide/debian",
+  "permalink": "/quickstart_guide/debian",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/quickstart_guide/debian.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {
+    "sidebar_position": 2
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Docker",
+    "permalink": "/quickstart_guide/docker"
+  },
+  "next": {
+    "title": "macOS",
+    "permalink": "/quickstart_guide/macos"
+  }
+}

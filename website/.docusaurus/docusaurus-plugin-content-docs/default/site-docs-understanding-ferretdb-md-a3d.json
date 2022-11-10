@@ -1,0 +1,23 @@
+{
+  "unversionedId": "understanding_ferretdb",
+  "id": "understanding_ferretdb",
+  "title": "Understanding FerretDB",
+  "description": "Databases",
+  "source": "@site/docs/understanding_ferretdb.md",
+  "sourceDirName": ".",
+  "slug": "/understanding_ferretdb",
+  "permalink": "/understanding_ferretdb",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/understanding_ferretdb.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "RPM package manager",
+    "permalink": "/quickstart_guide/rpm"
+  }
+}

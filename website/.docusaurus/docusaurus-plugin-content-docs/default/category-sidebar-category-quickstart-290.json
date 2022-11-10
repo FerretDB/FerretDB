@@ -1,0 +1,16 @@
+{
+  "title": "Quickstart",
+  "description": "Learn to install FerretDB on your local machine",
+  "slug": "/category/quickstart",
+  "permalink": "/category/quickstart",
+  "navigation": {
+    "previous": {
+      "title": "How to contribute to FerretDB",
+      "permalink": "/contributing"
+    },
+    "next": {
+      "title": "Docker",
+      "permalink": "/quickstart_guide/docker"
+    }
+  }
+}

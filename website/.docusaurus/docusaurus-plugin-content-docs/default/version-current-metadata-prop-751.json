@@ -1,0 +1,133 @@
+{
+  "pluginId": "default",
+  "version": "current",
+  "label": "Next",
+  "banner": null,
+  "badge": false,
+  "noIndex": false,
+  "className": "docs-version-current",
+  "isLast": true,
+  "docsSidebars": {
+    "sidebar": [
+      {
+        "type": "link",
+        "label": "Introduction",
+        "href": "/intro",
+        "docId": "intro"
+      },
+      {
+        "type": "link",
+        "label": "Known differences",
+        "href": "/diff",
+        "docId": "diff"
+      },
+      {
+        "type": "link",
+        "label": "How to contribute to FerretDB",
+        "href": "/contributing",
+        "docId": "contributing"
+      },
+      {
+        "type": "category",
+        "label": "Quickstart",
+        "collapsible": true,
+        "collapsed": true,
+        "items": [
+          {
+            "type": "link",
+            "label": "Docker",
+            "href": "/quickstart_guide/docker",
+            "docId": "quickstart_guide/docker"
+          },
+          {
+            "type": "link",
+            "label": "Debian",
+            "href": "/quickstart_guide/debian",
+            "docId": "quickstart_guide/debian"
+          },
+          {
+            "type": "link",
+            "label": "macOS",
+            "href": "/quickstart_guide/macos",
+            "docId": "quickstart_guide/macos"
+          },
+          {
+            "type": "link",
+            "label": "Windows",
+            "href": "/quickstart_guide/windows",
+            "docId": "quickstart_guide/windows"
+          },
+          {
+            "type": "link",
+            "label": "RPM package manager",
+            "href": "/quickstart_guide/rpm",
+            "docId": "quickstart_guide/rpm"
+          }
+        ],
+        "href": "/category/quickstart"
+      },
+      {
+        "type": "link",
+        "label": "Understanding FerretDB",
+        "href": "/understanding_ferretdb",
+        "docId": "understanding_ferretdb"
+      }
+    ]
+  },
+  "docs": {
+    "contributing": {
+      "id": "contributing",
+      "title": "How to contribute to FerretDB",
+      "description": "FerretDB is an open source project and everyone – developers and non-developers – is welcome to contribute.",
+      "sidebar": "sidebar"
+    },
+    "diff": {
+      "id": "diff",
+      "title": "Known differences",
+      "description": "1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.",
+      "sidebar": "sidebar"
+    },
+    "intro": {
+      "id": "intro",
+      "title": "Introduction",
+      "description": "FerretDB (formerly MangoDB) is an open-source proxy that translates MongoDB wire protocol",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/debian": {
+      "id": "quickstart_guide/debian",
+      "title": "Debian",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/docker": {
+      "id": "quickstart_guide/docker",
+      "title": "Docker",
+      "description": "These steps describe a quick local setup.",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/macos": {
+      "id": "quickstart_guide/macos",
+      "title": "macOS",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/rpm": {
+      "id": "quickstart_guide/rpm",
+      "title": "RPM package manager",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "quickstart_guide/windows": {
+      "id": "quickstart_guide/windows",
+      "title": "Windows",
+      "description": "",
+      "sidebar": "sidebar"
+    },
+    "understanding_ferretdb": {
+      "id": "understanding_ferretdb",
+      "title": "Understanding FerretDB",
+      "description": "Databases",
+      "sidebar": "sidebar"
+    }
+  }
+}

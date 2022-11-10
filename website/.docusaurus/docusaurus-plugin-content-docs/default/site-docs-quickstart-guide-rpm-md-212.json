@@ -1,0 +1,27 @@
+{
+  "unversionedId": "quickstart_guide/rpm",
+  "id": "quickstart_guide/rpm",
+  "title": "RPM package manager",
+  "description": "",
+  "source": "@site/docs/quickstart_guide/rpm.md",
+  "sourceDirName": "quickstart_guide",
+  "slug": "/quickstart_guide/rpm",
+  "permalink": "/quickstart_guide/rpm",
+  "draft": false,
+  "editUrl": "https://github.com/FerretDB/FerretDB/tree/main/website/docs/quickstart_guide/rpm.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 6,
+  "frontMatter": {
+    "sidebar_position": 6
+  },
+  "sidebar": "sidebar",
+  "previous": {
+    "title": "Windows",
+    "permalink": "/quickstart_guide/windows"
+  },
+  "next": {
+    "title": "Understanding FerretDB",
+    "permalink": "/understanding_ferretdb"
+  }
+}
