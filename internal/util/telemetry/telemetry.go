@@ -68,7 +68,7 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 	// and other valid values, including "0" and empty string, mean undecided.
 	v, err := parseValue(dnt)
 	if err != nil {
-		return nil, true, err
+		return nil, false, err
 	}
 
 	if pointer.GetBool(v) {
@@ -87,7 +87,7 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 			return nil, false, fmt.Errorf("telemetry can't be enabled")
 		}
 
-		return pointer.ToBool(false), false, nil
+		return pointer.ToBool(false), true, nil
 	}
 
 	if f.v == nil {

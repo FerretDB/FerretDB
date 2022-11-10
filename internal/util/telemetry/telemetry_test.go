@@ -15,7 +15,6 @@
 package telemetry
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -26,16 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestUpdate(t *testing.T) {
-	provider, err := state.NewProvider("d")
-	require.NoError(t, err)
-
-	err = provider.Update(func(s *state.State) { s.TelemetryEnabledOnStart = true })
-	require.NoError(t, err)
-
-	assert.True(t, provider.Get().TelemetryEnabledOnStart)
-}
-
 func TestState(t *testing.T) {
 	t.Parallel()
 
@@ -44,26 +33,31 @@ func TestState(t *testing.T) {
 		dnt      string
 		execName string
 		prev     *bool
+		locked   bool
 		state    *bool
 		err      string
 	}{
 		"default": {},
 		"prev": {
-			prev:  pointer.ToBool(false),
-			state: pointer.ToBool(false),
+			prev:   pointer.ToBool(false),
+			locked: false,
+			state:  pointer.ToBool(false),
 		},
 		"flag": {
-			flag:  "disable",
-			prev:  pointer.ToBool(true),
-			state: pointer.ToBool(false),
+			flag:   "disable",
+			prev:   pointer.ToBool(true),
+			locked: true,
+			state:  pointer.ToBool(false),
 		},
 		"dnt": {
-			dnt:   "1",
-			state: pointer.ToBool(false),
+			dnt:    "1",
+			state:  pointer.ToBool(false),
+			locked: true,
 		},
 		"conflict": {
 			flag:     "enable",
 			execName: "DoNotTrack",
+			locked:   false,
 			err:      "telemetry can't be enabled",
 		},
 	} {
@@ -77,8 +71,9 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-			actualState, actualErr := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
+			actualState, locked, actualErr := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
 			assert.Equal(t, tc.state, actualState)
+			assert.Equal(t, tc.locked, locked)
 			if tc.err != "" {
 				assert.EqualError(t, actualErr, tc.err)
 				return
