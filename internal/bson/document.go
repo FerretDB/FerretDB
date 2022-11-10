@@ -43,7 +43,7 @@ type document interface {
 // Duplicate fields are not supported yet.
 // TODO https://github.com/FerretDB/FerretDB/issues/1263
 type Document struct {
-	m    map[string]any
+	m    map[string]any // TODO
 	keys []string
 }
 
