@@ -32,6 +32,9 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 		DatabaseName: "admin",
 	})
 
+	// FerretDB telemetry is undecided by default
+	s.Collection.Database().RunCommand(s.Ctx, bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}})
+
 	expected := map[string]any{
 		"state": "disabled",
 		"ok":    float64(1),
