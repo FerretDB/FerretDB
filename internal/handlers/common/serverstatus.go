@@ -65,6 +65,7 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 	}
 
 	telemetryState := "disabled"
+
 	switch {
 	case state.Telemetry == nil:
 		telemetryState = "undecided"

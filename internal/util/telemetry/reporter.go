@@ -84,7 +84,7 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 	}
 
 	if t != nil && lock {
-		if err := opts.P.Update(func(s *state.State) { s.TelemetryLocked = true }); err != nil {
+		if err = opts.P.Update(func(s *state.State) { s.TelemetryLocked = true }); err != nil {
 			return nil, err
 		}
 	}
