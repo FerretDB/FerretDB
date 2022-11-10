@@ -86,8 +86,8 @@ Telemetry can be disabled using any of the following options:
    test> db.disableFreeMonitoring()
    { ok: 1 }
    ```
-   
-   :::caution 
+
+   :::caution
    If the telemetry is set via previously listed methods, it's not possible
    to modify its state via command.
    :::
