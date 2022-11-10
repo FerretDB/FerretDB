@@ -915,6 +915,53 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	}
 }
 
+func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
+	t.Parallel()
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	for name, tc := range map[string]struct {
+		command        bson.D
+		err            *mongo.CommandError
+		expectedRes    bson.D
+		expectedStatus string
+	}{
+		"Enable": {
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+		},
+		"Disable": {
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "disabled",
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+
+			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
+			require.NoError(t, res.Err())
+
+			var actual bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, actual)
+
+			freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
+			assert.True(t, ok)
+
+			status, err := freeMonitoring.Get("state")
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expectedStatus, status)
+		})
+	}
+}
+
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	t.Parallel()
 

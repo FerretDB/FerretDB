@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -32,28 +31,22 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 		DatabaseName: "admin",
 	})
 
-	expected := map[string]any{
-		"state": "undecided",
-		"ok":    float64(1),
-	}
+	necessaryKeys := []string{"state", "ok"}
+
+	allowedKeys := []string{"state", "message", "url", "userReminder", "ok"}
 
 	var actual bson.D
 	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
 	require.NoError(t, err)
 
-	m := actual.Map()
 	keys := CollectKeys(t, actual)
 
-	for k, item := range expected {
-		assert.Contains(t, keys, k)
-		assert.IsType(t, item, m[k])
+	for _, k := range allowedKeys {
+		assert.Contains(t, allowedKeys, k)
+	}
 
-		if it, ok := item.(primitive.D); ok {
-			z := m[k].(primitive.D)
-			AssertEqualDocuments(t, it, z)
-			continue
-		}
-		assert.Equal(t, m[k], item)
+	for _, k := range necessaryKeys {
+		assert.Contains(t, keys, k)
 	}
 }
 
