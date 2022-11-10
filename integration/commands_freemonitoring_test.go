@@ -67,22 +67,16 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		command        bson.D
 		err            *mongo.CommandError
 		expectedRes    bson.D
-		expectedState  interface{}
-		expectedOk     interface{}
 		expectedStatus string
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
-			expectedState:  "enable",
 			expectedRes:    bson.D{{"ok", float64(1)}},
-			expectedOk:     float64(1),
 			expectedStatus: "enabled",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
-			expectedState:  "disable",
 			expectedRes:    bson.D{{"ok", float64(1)}},
-			expectedOk:     float64(1),
 			expectedStatus: "disabled",
 		},
 		"Other": {
@@ -107,8 +101,6 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// these tests shouldn't be run in parallel, because they work on the same database
 
-			allowedKeys := []string{"state", "message", "url", "userReminder", "ok"}
-
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
@@ -117,23 +109,9 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				return
 			}
 
-			AssertEqualDocuments(t, tc.expectedRes, actual)
-
 			require.NoError(t, err)
 
-			require.NotNil(t, tc.expectedState, "expectedState and expectedOk should be set inside the test case if error is nil")
-			require.NotNil(t, tc.expectedOk, "expectedState and expectedOk should be set inside the test case if error is nil")
-
-			for k, v := range actual.Map() {
-				assert.Contains(t, allowedKeys, k)
-
-				switch k {
-				case "state":
-					assert.Equal(t, tc.expectedState, v)
-				case "ok":
-					assert.Equal(t, tc.expectedOk, v)
-				}
-			}
+			AssertEqualDocuments(t, tc.expectedRes, actual)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D
