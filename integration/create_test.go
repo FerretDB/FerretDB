@@ -176,13 +176,15 @@ func TestCreateStressSameCollection(t *testing.T) {
 			if err == nil {
 				created.Add(1)
 			} else {
-				AssertEqualError(t,
+				AssertEqualError(
+					t,
 					mongo.CommandError{
 						Code:    48,
 						Name:    "NamespaceExists",
 						Message: `Collection testcreatestresssamecollection.stress_same_collection already exists.`,
 					},
-					err)
+					err,
+				)
 			}
 
 			id := fmt.Sprintf("foo_%d", i)
