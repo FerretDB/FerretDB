@@ -193,7 +193,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			update: bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1263",
 		},
 	}
 
