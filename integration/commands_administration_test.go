@@ -916,7 +916,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
-	t.Parallel()
+	// this test shouldn't be run in parallel, because it requires specific state of the field which would be modify by the other tests.
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
