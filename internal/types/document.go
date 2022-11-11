@@ -132,6 +132,21 @@ func (d *Document) Keys() []string {
 	return keys
 }
 
+// FindDuplicateKey returns the first duplicate key in the document and true if duplicate exists.
+// If duplicate keys don't exist it returns empty string and false.
+func (d *Document) FindDuplicateKey() (string, bool) {
+	seen := make(map[string]struct{}, len(d.fields))
+	for _, field := range d.fields {
+		if _, ok := seen[field.key]; ok {
+			return field.key, true
+		}
+
+		seen[field.key] = struct{}{}
+	}
+
+	return "", false
+}
+
 // Command returns the first document's key. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {

@@ -547,6 +547,16 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
 
+	duplicate, ok := doc.FindDuplicateKey()
+	if ok {
+		return nil, NewWriteErrorMsg(
+			ErrConflictingUpdateOperators,
+			fmt.Sprintf(
+				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
+			),
+		)
+	}
+
 	return doc, nil
 }
 
