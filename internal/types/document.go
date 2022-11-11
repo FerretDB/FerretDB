@@ -175,19 +175,7 @@ func (d *Document) Command() string {
 
 // Add adds the value for the given key.
 // If the key already exists, it will create a duplicate key.
-//
-// As a special case, _id always becomes the first key.
 func (d *Document) Add(key string, value any) error {
-	// TOOD: it is not really correct to always add _id as the first key.
-	// For example, if sort = {v:1, _id:1} we shouldn't set _id as the first key as it will change the order
-	/*if key == "_id" {
-		// ensure that _id is the first field
-		d.fields = slices.Insert(d.fields, 0, field{key, value})
-	} else {
-		d.fields = append(d.fields, field{key, value})
-	}
-	*/
-
 	d.fields = append(d.fields, field{key, value})
 
 	return nil
