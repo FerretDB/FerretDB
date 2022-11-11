@@ -191,9 +191,9 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"SetNullInExisingField": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
 		},
-		"DuplicateKeys": {
+		/*"DuplicateKeys": {
 			update: bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
-		},
+		},*/
 	}
 
 	testUpdateCompat(t, testCases)
