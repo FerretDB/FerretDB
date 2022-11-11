@@ -90,6 +90,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.
 func (h *Handler) insert(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) error {
+	if err := common.ProcessInsertDocument(doc); err != nil {
+		return err
+	}
+
 	err := h.db.InsertDocument(ctx, fp.DB, fp.Collection, doc)
 
 	var driverErr *driver.Error

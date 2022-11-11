@@ -18,11 +18,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -31,6 +29,7 @@ import (
 type insertCompatTestCase struct {
 	insert     bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	skip       string                   // skips test if non-empty
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -41,6 +40,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			t.Parallel()
 
@@ -59,6 +62,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					targetInsertRes, targetErr := targetCollection.InsertOne(ctx, insert)
 					compatInsertRes, compatErr := compatCollection.InsertOne(ctx, insert)
 
+					if targetInsertRes != nil || compatInsertRes != nil {
+						nonEmptyResults = true
+					}
+
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
@@ -75,13 +82,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr, "compat error; target returned no error")
-					}
-
-					targetID, _ := pointer.Get(targetInsertRes).InsertedID.(primitive.ObjectID)
-					compatID, _ := pointer.Get(compatInsertRes).InsertedID.(primitive.ObjectID)
-
-					if !(targetID.IsZero() && compatID.IsZero()) {
-						nonEmptyResults = true
 					}
 
 					var targetFindRes, compatFindRes bson.D
@@ -125,6 +125,13 @@ func TestInsertCompat(t *testing.T) {
 		"InsertIDRegex": {
 			insert:     bson.D{{"_id", "^regex$"}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1396",
+		},
+		"InsertDuplicateKeysAZ": {
+			insert: bson.D{{"_id", "duplicate_keys_az"}, {"foo", "bar"}, {"foo", "baz"}},
+		},
+		"InsertDuplicateKeysZA": {
+			insert: bson.D{{"_id", "duplicate_keys_za"}, {"foo", "baz"}, {"foo", "bar"}},
 		},
 	}
 
