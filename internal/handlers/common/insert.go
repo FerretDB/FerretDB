@@ -14,9 +14,7 @@
 
 package common
 
-import (
-	"github.com/FerretDB/FerretDB/internal/types"
-)
+import "github.com/FerretDB/FerretDB/internal/types"
 
 // ProcessInsertDocument prepares the document for insertion.
 func ProcessInsertDocument(insert *types.Document) error {

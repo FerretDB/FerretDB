@@ -65,9 +65,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
-		if err := doc.Add(key, value); err != nil {
-			return nil, fmt.Errorf("types.NewDocument: %w", err)
-		}
+		doc.Add(key, value)
 	}
 
 	return doc, nil
@@ -147,6 +145,7 @@ func (d *Document) FindDuplicateKey() (string, bool) {
 	return "", false
 }
 
+// RemoveDuplicateKeys removes duplicate keys from the document. The last value of each duplicate key is kept.
 func (d *Document) RemoveDuplicateKeys() {
 	nondupl := make(map[string]any, len(d.fields))
 	for _, field := range d.fields {
@@ -155,6 +154,7 @@ func (d *Document) RemoveDuplicateKeys() {
 
 	fields := make([]field, len(nondupl))
 	i := 0
+
 	for key, value := range nondupl {
 		fields[i] = field{key, value}
 		i++
@@ -175,10 +175,8 @@ func (d *Document) Command() string {
 
 // Add adds the value for the given key.
 // If the key already exists, it will create a duplicate key.
-func (d *Document) Add(key string, value any) error {
+func (d *Document) Add(key string, value any) {
 	d.fields = append(d.fields, field{key, value})
-
-	return nil
 }
 
 // Has returns true if the given key is present in the document.
