@@ -30,6 +30,10 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		"Int32": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(42)}}}},
 		},
+		"Int32Duplicate": {
+			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
+			resultType: emptyResult,
+		},
 		"Int32Negative": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(-42)}}}},
 		},
@@ -82,6 +86,10 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"Double": {
 			update: bson.D{{"$max", bson.D{{"v", 54.32}}}},
+		},
+		"DoubleDuplicate": {
+			update:     bson.D{{"$max", bson.D{{"v", 54.32}, {"v", 54.42}}}},
+			resultType: emptyResult,
 		},
 		"DoubleNegative": {
 			update:        bson.D{{"$max", bson.D{{"v", -54.32}}}},
@@ -155,6 +163,10 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Simple": {
 			update: bson.D{{"$unset", bson.D{{"v", ""}}}},
+		},
+		"SimpleDuplicate": {
+			update:     bson.D{{"$unset", bson.D{{"v", ""}, {"v", ""}}}},
+			resultType: emptyResult,
 		},
 		"NonExisting": {
 			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},

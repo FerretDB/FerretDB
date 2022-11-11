@@ -429,6 +429,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$max", update)
+	if err != nil {
+		return err
+	}
+
 	set, err := extractValueFromUpdateOperator("$set", update)
 	if err != nil {
 		return err
