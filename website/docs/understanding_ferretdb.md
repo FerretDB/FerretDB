@@ -111,7 +111,7 @@ Take the following document, for example:
 }
 ```
 
-To reference the `city` field in the embedded document, use the dot notation `" contact.address.city"`.
+To reference the `city` field in the embedded document, use the dot notation `"contact.address.city"`.
 
 For dot notation examples on embedded documents, see here:
 
