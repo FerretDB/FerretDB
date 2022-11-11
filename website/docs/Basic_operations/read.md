@@ -92,14 +92,14 @@ Insert the following documents in an `employees` collection using this command:
 ```js
 db.employees.insertMany([
    {
-      name:{
-         first:"Earl",
-         last:"Thomas"
+      name: {
+         first: "Earl",
+         last: "Thomas"
       },
-      employeeID:1234,
-      age:23,
-      role:"salesperson",
-      catalog:[
+      employeeID: 1234,
+      age: 23,
+      role: "salesperson",
+      catalog: [
          "printer",
          "cardboard",
          "crayons",
@@ -107,14 +107,14 @@ db.employees.insertMany([
       ]
    },
    {
-      name:{
-         first:"Sam",
-         last:"Johnson"
+      name: {
+         first: "Sam",
+         last: "Johnson"
       },
-      employeeID:2234,
-      age:35,
-      role:"salesperson",
-      catalog:[
+      employeeID: 2234,
+      age: 35,
+      role: "salesperson",
+      catalog: [
          "cabinet",
          "fridge",
          "blender",
@@ -122,14 +122,14 @@ db.employees.insertMany([
       ]
    },
    {
-      name:{
-         first:"Clarke",
-         last:"Dane"
+      name: {
+         first: "Clarke",
+         last: "Dane"
       },
-      employeeID:3234,
-      age:21,
-      role:"salesperson",
-      catalog:[
+      employeeID: 3234,
+      age: 21,
+      role: "salesperson",
+      catalog: [
          "printer",
          "pencils",
          "crayons",
