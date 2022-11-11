@@ -424,6 +424,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$currentDate", update)
+	if err != nil {
+		return err
+	}
+
 	inc, err := extractValueFromUpdateOperator("$inc", update)
 	if err != nil {
 		return err
