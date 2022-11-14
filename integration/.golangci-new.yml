@@ -146,5 +146,5 @@ issues:
   new-from-rev: origin/main
   exclude-rules:
     # that's a valid usage of bson.D
-    - linters: [ govet ]
+    - linters: [govet]
       text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
