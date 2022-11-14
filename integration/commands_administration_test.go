@@ -925,16 +925,13 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 		expectedStatus string
 		err            *mongo.CommandError
 		command        bson.D
-		expectedRes    bson.D
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
-			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedStatus: "enabled",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
-			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedStatus: "disabled",
 		},
 	} {

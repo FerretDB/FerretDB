@@ -54,6 +54,11 @@ func TestState(t *testing.T) {
 			state:  pointer.ToBool(false),
 			locked: true,
 		},
+		"invalidDnt": {
+			dnt:    "foo",
+			locked: false,
+			err:    "failed to parse ",
+		},
 		"conflict": {
 			flag:     "enable",
 			execName: "DoNotTrack",
