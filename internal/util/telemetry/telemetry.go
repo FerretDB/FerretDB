@@ -24,8 +24,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// Telemetry states.
 const (
-	// Telemetry states.
 	Enabled   string = "enabled"
 	Disabled  string = "disabled"
 	Undecided string = "undecided"
