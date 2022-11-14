@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	// Telemetry states
+	// Telemetry states.
 	Enabled   string = "enabled"
 	Disabled  string = "disabled"
 	Undecided string = "undecided"
