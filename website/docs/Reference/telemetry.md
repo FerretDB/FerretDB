@@ -88,7 +88,7 @@ Telemetry can be disabled using any of the following options:
    ```
 
    :::caution
-   If the telemetry is set via previously listed methods, it's not possible
+   If the telemetry is set via a command-line flag, an environment variable or a filename, it's not possible
    to modify its state via command.
    :::
 
