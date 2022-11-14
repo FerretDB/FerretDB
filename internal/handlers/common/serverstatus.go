@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
@@ -64,13 +65,13 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 		}
 	}
 
-	telemetryState := "disabled"
+	telemetryState := telemetry.Disabled
 
 	switch {
 	case state.Telemetry == nil:
-		telemetryState = "undecided"
+		telemetryState = telemetry.Undecided
 	case pointer.GetBool(state.Telemetry):
-		telemetryState = "enabled"
+		telemetryState = telemetry.Enabled
 	}
 
 	res := must.NotFail(types.NewDocument(
