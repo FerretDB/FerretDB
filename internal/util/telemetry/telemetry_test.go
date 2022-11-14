@@ -57,7 +57,7 @@ func TestState(t *testing.T) {
 		"invalidDnt": {
 			dnt:    "foo",
 			locked: false,
-			err:    "failed to parse ",
+			err:    "failed to parse foo",
 		},
 		"conflict": {
 			flag:     "enable",
