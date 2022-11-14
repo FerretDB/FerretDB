@@ -90,6 +90,12 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, common.NewCommandError(common.ErrBadValue, err)
 		}
 
+		// Tigris returns Code_ABORTED if concurrent create collection request is detected.
+		if tigrisdb.IsAborted(err) {
+			msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
+			return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
+		}
+
 		return nil, lazyerrors.Error(err)
 	default:
 		return nil, lazyerrors.Error(err)
