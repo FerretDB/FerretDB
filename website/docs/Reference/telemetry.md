@@ -83,7 +83,7 @@ Telemetry can be disabled using any of the following options:
 5. Use the `db.disableFreeMonitoring()` command on runtime.
 
    ```js
-db.disableFreeMonitoring()
+   db.disableFreeMonitoring()
    ```
 
    :::caution
