@@ -17,6 +17,7 @@
 package setup
 
 import (
+	"path/filepath"
 	"testing"
 )
 
@@ -25,7 +26,10 @@ func listenUnix(tb testing.TB) string {
 	// The commented out code does not generate valid Unix domain socket path on macOS (at least).
 	// Maybe the argument is too long?
 	// TODO https://github.com/FerretDB/FerretDB/issues/1295
-	// return filepath.Join(tb.TempDir(), "ferretdb.sock")
-
-	return ""
+	socketPath := filepath.Join(tb.TempDir(), "ferretdb.sock")
+	if len(socketPath) > 108 {
+		// socket file path must be less than 108 characters.
+		tb.Fatalf("listen unix socket path is too long: %s", socketPath)
+	}
+	return socketPath
 }

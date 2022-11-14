@@ -49,7 +49,7 @@ type SetupOpts struct {
 type SetupResult struct {
 	Ctx           context.Context
 	Collection    *mongo.Collection
-	Port          uint16
+	MongoDBURI    string
 	StateProvider *state.Provider
 }
 
@@ -72,25 +72,29 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
+	var uri string
+	var targetUnixSocket bool
 	port := *targetPortF
 	if port == 0 {
 		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
 		// TODO https://github.com/FerretDB/FerretDB/issues/1295
-		_ = *targetUnixSocketF
-		stateProvider, port = setupListener(tb, ctx, logger)
+		targetUnixSocket = *targetUnixSocketF
+		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
+	} else {
+		uri = buildURI(tb, port)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, setupClient(tb, ctx, port), opts)
+	collection := setupCollection(tb, ctx, setupClient(tb, ctx, targetUnixSocket, uri), opts)
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
 		Ctx:           ctx,
 		Collection:    collection,
-		Port:          uint16(port),
+		MongoDBURI:    uri,
 		StateProvider: stateProvider,
 	}
 }

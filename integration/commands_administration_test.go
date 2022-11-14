@@ -1004,8 +1004,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	collectionName := s.Collection.Name()
 
 	// setup second client connection to check that `whatsmyuri` returns different ports
-	uri := fmt.Sprintf("mongodb://127.0.0.1:%d/", s.Port)
-	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(uri))
+	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoDBURI))
 	require.NoError(t, err)
 	defer client2.Disconnect(s.Ctx)
 	collection2 := client2.Database(databaseName).Collection(collectionName)

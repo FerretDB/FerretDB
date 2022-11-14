@@ -96,16 +96,19 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
+	var uri string
+	targetUnixSocket := false
 	targetPort := *targetPortF
 	if targetPort == 0 {
-		stateProvider, targetPort = setupListener(tb, ctx, logger)
+		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetPort), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatPort), opts)
+	compatUri := buildURI(tb, compatPort)
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetUnixSocket, uri), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetUnixSocket, compatUri), opts)
 
 	level.SetLevel(*logLevelF)
 

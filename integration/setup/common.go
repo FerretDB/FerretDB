@@ -92,8 +92,8 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
-// and returns listening port number.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, int) {
+// and returns listening mongoDB URI.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targetUnixSocket bool) (*state.Provider, string) {
 	tb.Helper()
 
 	p, err := state.NewProvider("")
@@ -150,16 +150,20 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		h.Close()
 	})
 
-	port := l.Addr().(*net.TCPAddr).Port
-	logger.Info("Listener started", zap.String("handler", *handlerF), zap.Int("port", port))
+	if targetUnixSocket {
+		return p, fmt.Sprintf("mongodb:%s", l.Unix().String())
+	}
 
-	return p, port
+	port := l.Addr().(*net.TCPAddr).Port
+
+	uri := buildURI(tb, port)
+	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+
+	return p, uri
 }
 
-// setupClient returns MongoDB client for database on 127.0.0.1:port.
-func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
-	tb.Helper()
-
+// buildURI builds mongoDB URI with given TPC port number.
+func buildURI(tb testing.TB, port int) string {
 	require.Greater(tb, port, 0)
 	require.Less(tb, port, 65536)
 
@@ -181,14 +185,20 @@ func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
 		//"directConnection": []string{"true"},
 		//"appName":          []string{tb.Name()},
 	}
-
 	u := url.URL{
 		Scheme:   "mongodb",
 		Host:     fmt.Sprintf("127.0.0.1:%d", port),
 		Path:     "/",
 		RawQuery: v.Encode(),
 	}
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	return u.String()
+}
+
+// setupClient returns MongoDB client for database on 127.0.0.1:port.
+func setupClient(tb testing.TB, ctx context.Context, unix bool, u string) *mongo.Client {
+	tb.Helper()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 	require.NoError(tb, err)
 
 	err = client.Ping(ctx, nil)
