@@ -31,10 +31,90 @@ const (
 	minDocumentLen = 5
 )
 
+// Common interface with types.Document.
+//
+// TODO Remove it.
+type document interface {
+	Keys() []string
+	Get(key string) (any, error)
+}
+
 // Document represents BSON Document type.
-type Document types.Document
+type Document struct {
+	fields []field
+}
+
+// field represents a field in the document.
+type field struct {
+	value any
+	key   string
+}
+
+// ConvertDocument converts types.Document to bson.Document and validates it.
+// It references the same data without copying it.
+//
+// TODO Remove it.
+func ConvertDocument(d document) (*Document, error) {
+	fields := make([]field, len(d.Keys()))
+	for i, key := range d.Keys() {
+		fields[i] = field{
+			key:   key,
+			value: must.NotFail(d.Get(key)),
+		}
+	}
+
+	doc := Document{
+		fields: fields,
+	}
+
+	// for validation
+	if _, err := types.ConvertDocument(&doc); err != nil {
+		return nil, fmt.Errorf("bson.ConvertDocument: %w", err)
+	}
+
+	return &doc, nil
+}
+
+// MustConvertDocument is a ConvertDocument that panics in case of error.
+func MustConvertDocument(d document) *Document {
+	doc, err := ConvertDocument(d)
+	if err != nil {
+		panic(err)
+	}
+	return doc
+}
 
 func (doc *Document) bsontype() {}
+
+// Keys returns a copy of document's keys.
+//
+// If there are duplicate keys in the document, the result will have duplicate keys too.
+//
+// It returns nil for nil Document.
+func (doc *Document) Keys() []string {
+	if doc == nil {
+		return nil
+	}
+
+	keys := make([]string, len(doc.fields))
+	for i, field := range doc.fields {
+		keys[i] = field.key
+	}
+
+	return keys
+}
+
+// Get returns a value at the given key.
+// If there are duplicated keys in the document, it returns the first value.
+func (doc *Document) Get(key string) (any, error) {
+	for _, field := range doc.fields {
+		if field.key == key {
+			return field.value, nil
+		}
+	}
+
+	return nil, fmt.Errorf("bson.Document.Get: key not found: %q", key)
+}
 
 // ReadFrom implements bsontype interface.
 func (doc *Document) ReadFrom(r *bufio.Reader) error {
@@ -59,7 +139,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 
 	bufr := bufio.NewReader(bytes.NewReader(b[4:]))
 
-	td := must.NotFail(types.NewDocument())
+	fields := make([]field, 0, 8)
 	for {
 		t, err := bufr.ReadByte()
 		if err != nil {
@@ -89,8 +169,13 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
-			d := types.Document(v)
-			td.Add(key, &d)
+
+			value, err := types.ConvertDocument(&v)
+			if err != nil {
+				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
+			}
+
+			fields = append(fields, field{key: key, value: value})
 
 		case tagArray:
 			// TODO check maximum nesting
@@ -100,7 +185,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
 			a := types.Array(v)
-			td.Add(key, &a)
+			fields = append(fields, field{key: key, value: &a})
 
 		case tagDouble:
 			var v doubleType
@@ -108,7 +193,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Double): %w", err)
 			}
 
-			td.Add(key, float64(v))
+			fields = append(fields, field{key: key, value: float64(v)})
 
 		case tagString:
 			var v stringType
@@ -116,7 +201,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (String): %w", err)
 			}
 
-			td.Add(key, string(v))
+			fields = append(fields, field{key: key, value: string(v)})
 
 		case tagBinary:
 			var v binaryType
@@ -124,7 +209,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Binary): %w", err)
 			}
 
-			td.Add(key, types.Binary(v))
+			fields = append(fields, field{key: key, value: types.Binary(v)})
 
 		case tagUndefined:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type `Undefined (value) — Deprecated`")
@@ -135,7 +220,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (ObjectID): %w", err)
 			}
 
-			td.Add(key, types.ObjectID(v))
+			fields = append(fields, field{key: key, value: types.ObjectID(v)})
 
 		case tagBool:
 			var v boolType
@@ -143,7 +228,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Bool): %w", err)
 			}
 
-			td.Add(key, bool(v))
+			fields = append(fields, field{key: key, value: bool(v)})
 
 		case tagDateTime:
 			var v dateTimeType
@@ -151,11 +236,11 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (DateTime): %w", err)
 			}
 
-			td.Add(key, time.Time(v))
+			fields = append(fields, field{key: key, value: time.Time(v)})
 
 		case tagNull:
 			// skip calling ReadFrom that does nothing
-			td.Add(key, types.Null)
+			fields = append(fields, field{key: key, value: types.Null})
 
 		case tagRegex:
 			var v regexType
@@ -163,7 +248,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Regex): %w", err)
 			}
 
-			td.Add(key, types.Regex(v))
+			fields = append(fields, field{key: key, value: types.Regex(v)})
 
 		case tagInt32:
 			var v int32Type
@@ -171,7 +256,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int32): %w", err)
 			}
 
-			td.Add(key, int32(v))
+			fields = append(fields, field{key: key, value: int32(v)})
 
 		case tagTimestamp:
 			var v timestampType
@@ -179,7 +264,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Timestamp): %w", err)
 			}
 
-			td.Add(key, types.Timestamp(v))
+			fields = append(fields, field{key: key, value: types.Timestamp(v)})
 
 		case tagInt64:
 			var v int64Type
@@ -187,7 +272,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int64): %w", err)
 			}
 
-			td.Add(key, int64(v))
+			fields = append(fields, field{key: key, value: int64(v)})
 
 		case tagDBPointer, tagDecimal, tagJavaScript, tagJavaScriptScope, tagMaxKey, tagMinKey, tagSymbol:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type %#02x (%s)", t, tag(t))
@@ -196,7 +281,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		}
 	}
 
-	*doc = Document(*td)
+	*doc = Document{fields: fields}
 	return nil
 }
 
@@ -217,14 +302,12 @@ func (doc Document) WriteTo(w *bufio.Writer) error {
 
 // MarshalBinary implements bsontype interface.
 func (doc Document) MarshalBinary() ([]byte, error) {
-	td := types.Document(doc)
-
 	var elist bytes.Buffer
 	bufw := bufio.NewWriter(&elist)
 
-	for _, elK := range td.Keys() {
+	for _, elK := range doc.Keys() {
 		ename := CString(elK)
-		elV := must.NotFail(td.Get(elK))
+		elV := must.NotFail(doc.Get(elK))
 
 		switch elV := elV.(type) {
 		case *types.Document:
@@ -233,7 +316,11 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			doc := Document(*elV)
+			doc, err := ConvertDocument(elV)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			if err := doc.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -369,4 +456,5 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 // check interfaces
 var (
 	_ bsontype = (*Document)(nil)
+	_ document = (*Document)(nil)
 )

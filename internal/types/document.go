@@ -23,6 +23,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// Common interface with bson.Document.
+//
+// TODO Remove this type.
+type document interface {
+	Keys() []string
+	Get(key string) (any, error)
+}
+
 // Document represents BSON document.
 type Document struct {
 	fields []field
@@ -32,6 +40,31 @@ type Document struct {
 type field struct {
 	key   string
 	value any
+}
+
+// ConvertDocument converts bson.Document to *types.Document.
+// It references the same data without copying it.
+//
+// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
+func ConvertDocument(d document) (*Document, error) {
+	if d == nil {
+		panic("types.ConvertDocument: d is nil")
+	}
+
+	// If keys are nil, we don't need to allocate memory for fields.
+	if d.Keys() == nil {
+		return new(Document), nil
+	}
+
+	fields := make([]field, len(d.Keys()))
+	for i, key := range d.Keys() {
+		fields[i] = field{
+			key:   key,
+			value: must.NotFail(d.Get(key)),
+		}
+	}
+
+	return &Document{fields}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -335,3 +368,8 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 
 	return false
 }
+
+// check interfaces
+var (
+	_ document = (*Document)(nil)
+)

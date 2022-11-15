@@ -34,8 +34,7 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Error(err)
 	}
 
-	td := types.Document(doc)
-	keys := td.Keys()
+	keys := doc.Keys()
 	ta := types.MakeArray(len(keys))
 
 	for i := 0; i < len(keys); i++ {
@@ -43,7 +42,7 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 			return lazyerrors.Errorf("key %d is %q", i, k)
 		}
 
-		v, err := td.Get(strconv.Itoa(i))
+		v, err := doc.Get(strconv.Itoa(i))
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -74,7 +73,8 @@ func (a arrayType) WriteTo(w *bufio.Writer) error {
 func (a arrayType) MarshalBinary() ([]byte, error) {
 	ta := types.Array(a)
 	l := ta.Len()
-	td := types.MakeDocument(l)
+
+	fields := make([]field, l)
 	for i := 0; i < l; i++ {
 		key := strconv.Itoa(i)
 		value, err := ta.Get(i)
@@ -82,10 +82,13 @@ func (a arrayType) MarshalBinary() ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		td.Add(key, value)
+		fields[i] = field{key: key, value: value}
 	}
 
-	doc := Document(*td)
+	doc := Document{
+		fields: fields,
+	}
+
 	b, err := doc.MarshalBinary()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

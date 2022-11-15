@@ -26,7 +26,7 @@ import (
 var (
 	handshake1 = testCase{
 		name: "handshake1",
-		v: pointerToDocument(must.NotFail(types.NewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
 				"driver", must.NotFail(types.NewDocument(
@@ -52,7 +52,7 @@ var (
 
 	handshake2 = testCase{
 		name: "handshake2",
-		v: pointerToDocument(must.NotFail(types.NewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
 				"driver", must.NotFail(types.NewDocument(
@@ -78,7 +78,7 @@ var (
 
 	handshake3 = testCase{
 		name: "handshake3",
-		v: pointerToDocument(must.NotFail(types.NewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"buildInfo", int32(1),
 			"lsid", must.NotFail(types.NewDocument(
 				"id", types.Binary{
@@ -96,7 +96,7 @@ var (
 
 	handshake4 = testCase{
 		name: "handshake4",
-		v: pointerToDocument(must.NotFail(types.NewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 			"modules", must.NotFail(types.NewArray()),
@@ -142,7 +142,7 @@ var (
 
 	all = testCase{
 		name: "all",
-		v: pointerToDocument(must.NotFail(types.NewDocument(
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"binary", must.NotFail(types.NewArray(
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
@@ -188,10 +188,4 @@ func FuzzDocument(f *testing.F) {
 
 func BenchmarkDocument(b *testing.B) {
 	benchmark(b, documentTestCases, func() bsontype { return new(Document) })
-}
-
-// pointerToDocument is a helper function that converts *types.Document to *Document.
-func pointerToDocument(d *types.Document) *Document {
-	doc := Document(*d)
-	return &doc
 }
