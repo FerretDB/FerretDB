@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -34,8 +35,14 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
+	if n, err := strconv.Atoi(); err != nil {
+		// return error with the n code
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/640
 	switch expected {
+	case "ok":
+		// return successful response
 	case "panic":
 		panic("oops!")
 	default:
