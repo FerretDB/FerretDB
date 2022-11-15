@@ -28,20 +28,49 @@ import (
 func TestNewReporterLock(t *testing.T) {
 	t.Parallel()
 
-	provider, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	opts := NewReporterOpts{
-		F: &Flag{
-			v: pointer.ToBool(true),
+	for name, tc := range map[string]struct {
+		f            *Flag
+		dnt          string
+		execName     string
+		expectedLock bool
+	}{
+		"NoSet": {},
+		"Flag": {
+			f:            &Flag{pointer.ToBool(true)},
+			expectedLock: true,
 		},
-		ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
-		P:           provider,
-		L:           zap.L(),
+		"FlagDisable": {
+			f:            &Flag{pointer.ToBool(false)},
+			expectedLock: true,
+		},
+		"DoNotTouch": {
+			dnt:          "enable",
+			expectedLock: true,
+		},
+		"ExecName": {
+			dnt:          "Exec_donottrack",
+			expectedLock: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			provider, err := state.NewProvider("")
+			require.NoError(t, err)
+
+			opts := NewReporterOpts{
+				F:           tc.f,
+				DNT:         tc.dnt,
+				ExecName:    tc.execName,
+				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
+				P:           provider,
+				L:           zap.L(),
+			}
+
+			_, err = NewReporter(&opts)
+			assert.NoError(t, err)
+
+			assert.True(t, provider.Get().TelemetryLocked)
+		})
 	}
 
-	_, err = NewReporter(&opts)
-	assert.NoError(t, err)
-
-	assert.True(t, provider.Get().TelemetryLocked)
 }
