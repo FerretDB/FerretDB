@@ -22,7 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -32,15 +31,15 @@ func MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *sta
 		panic("state cannot be equal to nil")
 	}
 
-	telemetryState := telemetry.Disabled
+	telemetryState := "disabled"
 	telemetryMsg := "monitoring is not enabled"
 
 	switch {
 	case state.Telemetry == nil:
-		telemetryState = telemetry.Undecided
+		telemetryState = "undecided"
 		telemetryMsg = "monitoring is undecided"
 	case pointer.GetBool(state.Telemetry):
-		telemetryState = telemetry.Enabled
+		telemetryState = "enabled"
 		telemetryMsg = "monitoring is enabled"
 	}
 

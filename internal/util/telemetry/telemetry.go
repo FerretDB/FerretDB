@@ -24,13 +24,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Telemetry states.
-const (
-	Enabled   string = "enabled"
-	Disabled  string = "disabled"
-	Undecided string = "undecided"
-)
-
 // parseValue parses a string value into true, false, or nil.
 func parseValue(s string) (*bool, error) {
 	switch strings.ToLower(s) {
