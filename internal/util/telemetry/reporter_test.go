@@ -58,7 +58,7 @@ func TestNewReporterLock(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 			provider, err := state.NewProvider("")
 			require.NoError(t, err)
 
