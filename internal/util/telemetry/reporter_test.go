@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestNewReporterLock(t *testing.T) {
@@ -36,6 +37,7 @@ func TestNewReporterLock(t *testing.T) {
 		},
 		ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
 		P:           provider,
+		L:           zap.L(),
 	}
 
 	_, err = NewReporter(&opts)
