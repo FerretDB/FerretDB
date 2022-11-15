@@ -147,7 +147,7 @@ func TestRemoveByPath(t *testing.T) {
 
 			doc := sourceDoc.DeepCopy()
 			RemoveByPath(doc, tc.path)
-			assert.Equal(t, tc.res, doc, name)
+			assert.Equal(t, tc.res, doc)
 		})
 	}
 }
@@ -203,7 +203,7 @@ func TestRemoveByPathArray(t *testing.T) {
 
 			arr := src.DeepCopy()
 			arr.RemoveByPath(tc.path)
-			assert.Equal(t, tc.expected, arr, name)
+			assert.Equal(t, tc.expected, arr)
 		})
 	}
 }
