@@ -58,18 +58,18 @@ In the example above, the `name` field is a subdocument embedded into a document
 
 ## Dot Notation
 
-Dot notations `(.)` are used to specify the elements in an array or the values in an embedded document.
+Dot notations `(.)` are used to reference a field in an embedded document or its index position in an array.
 
 ### Arrays
 
-Dot notations can be used to specify or query the elements present in an array by concatenating a dot `(.)` with the index position of the element.
+Dot notations can be used to specify or query an array by concatenating a dot `(.)` with the index position of the field.
 
 ```js
 "array_name.index"
 ```
 
 :::note
-When using dot notations, the field name of the array and the specified element must be enclosed in quotation marks.
+When using dot notations, the field name of the array and the specified value must be enclosed in quotation marks.
 :::
 
 For example, let's take the following array field in a document:
@@ -78,16 +78,16 @@ For example, let's take the following array field in a document:
 animals: ["dog", "cat", "fish", "fox"]
 ```
 
-To reference the fourth element in the array, use the dot notation `"animals.3"`.
+To reference the fourth field in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
 * [Query an array](https://docs.ferretdb.io/Basic_operations/read/#retrieve-documents-containing-a-value-in-an-array)
-* Update an array
+* [Update an array](https://docs.ferretdb.io/Basic_operations/update/#update-an-array-element)
 
 ### Embedded documents
 
-To reference or query a field in an embedded document using, concatenate the name of the embedded document and the field name using the dot notation.
+To reference or query a field in an embedded document, concatenate the name of the embedded document and the field name using the dot notation.
 
 ```js
 "embedded_document_name.field"

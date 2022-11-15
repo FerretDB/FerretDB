@@ -85,9 +85,9 @@ Here is a list of the most commonly used operators.
 
 `$eq`: select records that are equal to a specific value
 
-### Retrieve documents containing a value in an array
+### Retrieve documents containing a specific value in an array
 
-Insert the following documents in an `employees` collection using this command:
+Insert the following documents into an `employees` collection using this command:
 
 ```js
 db.employees.insertMany([
@@ -139,7 +139,7 @@ db.employees.insertMany([
 ])
 ```
 
-To retrieve all documents containing a specific array element and value (`catalog: "printer"`), run the following command:
+To retrieve all documents with a specific array field and value (`catalog: "printer"`), run the following command:
 
 ```js
 db.employees.find({catalog: "printer"})
@@ -168,16 +168,16 @@ The response displays all the retrieved documents:
 ]
 ```
 
-### Retrieve documents containing an array element using dot notation
+### Retrieve documents in an array using dot notation
 
-To retrieve all documents containing a specific value in an array index, use dot notation to reference its position in the `employees` collection.
-The following command retrieves all documents containing `"blender"` in the third element of an array:
+To retrieve all documents containing a specific value in an array, use dot notation to reference its position in the `employees` collection.
+The following command retrieves all documents containing `"blender"` in the third field of an array:
 
 ```js
 db.employees.find({"catalog.2": "blender"})
 ```
 
-The document matching the array query is displayed in the response:
+The document that matches the array query is displayed in the response:
 
 ```js
 [
