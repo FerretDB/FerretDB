@@ -197,6 +197,7 @@ func buildURI(tb testing.TB, port int) string {
 		Path:     "/",
 		RawQuery: v.Encode(),
 	}
+
 	return u.String()
 }
 

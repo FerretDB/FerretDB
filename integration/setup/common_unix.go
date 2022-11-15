@@ -27,9 +27,12 @@ func listenUnix(tb testing.TB) string {
 	// Maybe the argument is too long?
 	// TODO https://github.com/FerretDB/FerretDB/issues/1295
 	socketPath := filepath.Join(tb.TempDir(), "ferretdb.sock")
+
 	if len(socketPath) > 108 {
 		// socket file path must be less than 108 characters.
+		// TODO: generate a path if this error is common across different OS.
 		tb.Fatalf("listen unix socket path is too long: %s", socketPath)
 	}
+
 	return socketPath
 }
