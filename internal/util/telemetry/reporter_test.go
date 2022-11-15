@@ -18,11 +18,12 @@ import (
 	"testing"
 
 	"github.com/AlekSi/pointer"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 func TestNewReporterLock(t *testing.T) {
@@ -34,7 +35,9 @@ func TestNewReporterLock(t *testing.T) {
 		execName     string
 		expectedLock bool
 	}{
-		"NoSet": {},
+		"NoSet": {
+			f: new(Flag),
+		},
 		"Flag": {
 			f:            &Flag{pointer.ToBool(true)},
 			expectedLock: true,
@@ -44,16 +47,18 @@ func TestNewReporterLock(t *testing.T) {
 			expectedLock: true,
 		},
 		"DoNotTouch": {
+			f:            new(Flag),
 			dnt:          "enable",
 			expectedLock: true,
 		},
 		"ExecName": {
-			dnt:          "Exec_donottrack",
+			f:            new(Flag),
+			execName:     "exec_donottrack",
 			expectedLock: true,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			provider, err := state.NewProvider("")
 			require.NoError(t, err)
 
@@ -69,8 +74,7 @@ func TestNewReporterLock(t *testing.T) {
 			_, err = NewReporter(&opts)
 			assert.NoError(t, err)
 
-			assert.True(t, provider.Get().TelemetryLocked)
+			assert.Equal(t, tc.expectedLock, provider.Get().TelemetryLocked)
 		})
 	}
-
 }
