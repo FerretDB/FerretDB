@@ -98,7 +98,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
-		doc.Add(key, value)
+		doc.add(key, value)
 	}
 
 	return doc, nil
@@ -208,8 +208,17 @@ func (d *Document) Command() string {
 
 // Add adds the value for the given key.
 // If the key already exists, it will create a duplicate key.
-func (d *Document) Add(key string, value any) {
-	d.fields = append(d.fields, field{key, value})
+//
+// As a special case, _id always becomes the first key.
+func (d *Document) add(key string, value any) error {
+	if key == "_id" {
+		// ensure that _id is the first field
+		d.fields = slices.Insert(d.fields, 0, field{key, value})
+	} else {
+		d.fields = append(d.fields, field{key, value})
+	}
+
+	return nil
 }
 
 // Has returns true if the given key is present in the document.
