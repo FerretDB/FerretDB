@@ -113,6 +113,8 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 		return lazyerrors.Error(err)
 	}
 
+	// TODO: add float values checks here.
+
 	for {
 		var section OpMsgSection
 		if err := binary.Read(bufr, binary.LittleEndian, &section.Kind); err != nil {
