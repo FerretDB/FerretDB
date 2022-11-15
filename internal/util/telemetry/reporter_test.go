@@ -57,6 +57,8 @@ func TestNewReporterLock(t *testing.T) {
 			expectedLock: true,
 		},
 	} {
+		name, tc := name, tc
+
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			provider, err := state.NewProvider("")
