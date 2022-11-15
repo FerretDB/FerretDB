@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -106,14 +107,31 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	return doc, nil
 }
 
+// validateDocument check document values and return error if not supported value was encountered.
+func validateDocument(doc *types.Document) error {
+	for _, k := range doc.Keys() {
+		value, _ := doc.Get(k)
+
+		switch value := value.(type) {
+		case float64:
+			if math.IsNaN(value) {
+				return lazyerrors.Errorf("NaN is not supported in a document: %v", doc)
+			}
+			if value == 0 && math.Signbit(0) {
+				return lazyerrors.Errorf("-0 is not supported in a document: %v", doc)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (msg *OpMsg) msgbody() {}
 
 func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 	if err := binary.Read(bufr, binary.LittleEndian, &msg.FlagBits); err != nil {
 		return lazyerrors.Error(err)
 	}
-
-	// TODO: add float values checks here.
 
 	for {
 		var section OpMsgSection
@@ -132,6 +150,11 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
+
+			if err := validateDocument(d); err != nil {
+				return lazyerrors.Error(err)
+			}
+
 			section.Documents = []*types.Document{d}
 
 		case 1:
@@ -171,6 +194,11 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
+
+				if err := validateDocument(d); err != nil {
+					return lazyerrors.Error(err)
+				}
+
 				section.Documents = append(section.Documents, d)
 			}
 
