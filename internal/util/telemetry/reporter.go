@@ -215,7 +215,7 @@ func (r *Reporter) report(ctx context.Context) {
 	}
 
 	request := makeRequest(s, r.ConnMetrics)
-	r.L.Info("Reporting telemetry.", zap.Reflect("data", request))
+	r.L.Info("Reporting telemetry.", zap.String("url", r.URL), zap.Any("data", request))
 
 	b, err := json.Marshal(request)
 	if err != nil {

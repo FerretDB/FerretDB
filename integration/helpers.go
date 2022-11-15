@@ -17,6 +17,7 @@ package integration
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -318,4 +319,17 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// errorTextContains returns true if the error message contains at least one element of the given text slice.
+// This function should be used to highlight the places where we do not have proper error checks yet
+// but compare texts instead.
+func errorTextContains(err error, texts ...string) bool {
+	for _, text := range texts {
+		if strings.Contains(err.Error(), text) {
+			return true
+		}
+	}
+
+	return false
 }

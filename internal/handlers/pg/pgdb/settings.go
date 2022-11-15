@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 
@@ -112,7 +113,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 		}
 	}
 
-	settings, err := getSettingsTable(ctx, tx, db)
+	settings, err := getSettingsTable(ctx, tx, db, false)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -128,11 +129,9 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 	}
 
 	tableName := formatCollectionName(collection)
-	collections.Set(collection, tableName)
-	settings.Set("collections", collections)
 
-	err = updateSettingsTable(ctx, tx, db, settings)
-	if err != nil {
+	err = setTableInSettings(ctx, tx, db, collection, tableName)
+	if err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return "", lazyerrors.Error(err)
 	}
 
@@ -140,12 +139,14 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 }
 
 // getSettingsTable returns FerretDB settings table.
-func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Document, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1206
-	// `SELECT settings FROM %s FOR UPDATE` could solve the problem with parallel access of the settings table,
-	// but it locks the row that could be accessed from other places and causes timeouts,
-	// so we need a faster solution instead.
+// If lock is true, the table's row will be locked through SELECT FOR UPDATE, use it if you need to modify settings.
+func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*types.Document, error) {
 	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
+
+	if lock {
+		sql += " FOR UPDATE"
+	}
+
 	rows, err := tx.Query(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -174,34 +175,58 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string) (*types.Documen
 	return settings, nil
 }
 
-// updateSettingsTable updates FerretDB settings table.
-func updateSettingsTable(ctx context.Context, tx pgx.Tx, db string, settings *types.Document) error {
-	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
-	return err
-}
-
-// removeTableFromSettings removes collection from FerretDB settings table.
-func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	settings, err := getSettingsTable(ctx, tx, db)
+// setTableInSettings sets the table name for given collection in settings table.
+// As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
+// explicit lock is used to prevent concurrent modifications.
+// If the collection is already present in settings, ErrAlreadyExist will be returned.
+func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table string) error {
+	settings, err := getSettingsTable(ctx, tx, db, true)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	collections, ok := must.NotFail(settings.Get("collections")).(*types.Document)
-	if !ok {
-		return lazyerrors.Errorf("invalid settings document")
+	collections := must.NotFail(settings.Get("collections")).(*types.Document)
+
+	if collections.Has(collection) {
+		return ErrAlreadyExist
 	}
+
+	collections.Set(collection, table)
+	settings.Set("collections", collections)
+
+	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
+
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// removeTableFromSettings removes collection from FerretDB settings table.
+// As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
+// explicit lock is used to prevent concurrent modifications.
+// If the collection is not present in settings, ErrTableNotExist will be returned.
+func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	settings, err := getSettingsTable(ctx, tx, db, true)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	collections := must.NotFail(settings.Get("collections")).(*types.Document)
 
 	if !collections.Has(collection) {
 		return ErrTableNotExist
 	}
 
 	collections.Remove(collection)
-
 	settings.Set("collections", collections)
 
-	if err := updateSettingsTable(ctx, tx, db, settings); err != nil {
+	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
+
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 

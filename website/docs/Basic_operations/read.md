@@ -11,13 +11,13 @@ You can either retrieve all the documents in a collection, or only the documents
 
 The `find()` command is used for retrieveing all the documents in a collection.
 
-```sh
+```js
 db.collection.find()
 ```
 
 First, populate the database with a new collection containing a list of documents.
 
-```sh
+```js
 db.scientists.insertMany([
   {
     name: {
@@ -53,7 +53,7 @@ Run `db.scientists.find()` to see the complete list of documents in the collecti
 Using the `find()` command, you can also filter a collection for only the documents that match the provided query.
 For example, find the document with the field `born` set as 1857.
 
-```sh
+```js
 db.scientists.find({born: 1857})
 ```
 
@@ -63,7 +63,7 @@ The operator syntax allows users to query and retrieve a document.
 There are several operator methods that you can use, such as `$gt` or `$lt`.
 For example, to find the list of scientists born after the 1900s, we'll need the `$gt` operator:
 
-```sh
+```js
 db.scientists.find({born:{$gt:1900}})
 ```
 
@@ -85,10 +85,117 @@ Here is a list of the most commonly used operators.
 
 `$eq`: select records that are equal to a specific value
 
+### Retrieve documents containing a specific value in an array
+
+Insert the following documents into an `employees` collection using this command:
+
+```js
+db.employees.insertMany([
+   {
+      name: {
+         first: "Earl",
+         last: "Thomas"
+      },
+      employeeID: 1234,
+      age: 23,
+      role: "salesperson",
+      catalog: [
+         "printer",
+         "cardboard",
+         "crayons",
+         "books"
+      ]
+   },
+   {
+      name: {
+         first: "Sam",
+         last: "Johnson"
+      },
+      employeeID: 2234,
+      age: 35,
+      role: "salesperson",
+      catalog: [
+         "cabinet",
+         "fridge",
+         "blender",
+         "utensils"
+      ]
+   },
+   {
+      name: {
+         first: "Clarke",
+         last: "Dane"
+      },
+      employeeID: 3234,
+      age: 21,
+      role: "salesperson",
+      catalog: [
+         "printer",
+         "pencils",
+         "crayons",
+         "toys"
+      ]
+   }
+])
+```
+
+To retrieve all documents with a specific array field and value (`catalog: "printer"`), run the following command:
+
+```js
+db.employees.find({catalog: "printer"})
+```
+
+The response displays all the retrieved documents:
+
+```js
+[
+  {
+    _id: ObjectId("636b39f80466c61a229bbf9b"),
+    name: { first: 'Earl', last: 'Thomas' },
+    employeeID: 1234,
+    age: 23,
+    role: 'salesperson',
+    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+  },
+  {
+    _id: ObjectId("636b3b0e0466c61a229bbf9d"),
+    name: { first: 'Clarke', last: 'Dane' },
+    employeeID: 3234,
+    age: 21,
+    role: 'salesperson',
+    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+  }
+]
+```
+
+### Retrieve documents in an array using dot notation
+
+To retrieve all documents containing a specific value in an array, use dot notation to reference its position in the `employees` collection.
+The following command retrieves all documents containing `"blender"` in the third field of an array:
+
+```js
+db.employees.find({"catalog.2": "blender"})
+```
+
+The document that matches the array query is displayed in the response:
+
+```js
+[
+  {
+    _id: ObjectId("636b3b0e0466c61a229bbf9c"),
+    name: { first: 'Sam', last: 'Johnson' },
+    employeeID: 2234,
+    age: 35,
+    role: 'salesperson',
+    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+  }
+]
+```
+
 ## Retrieve a single document
 
 The `findOne()` command retrieves a single document from a collection.
 
-```sh
+```js
 db.scientists.findOne({invention: "Turing Machine"})
 ```
