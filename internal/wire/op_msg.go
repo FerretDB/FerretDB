@@ -117,6 +117,7 @@ func validateDocument(doc *types.Document) error {
 			if math.IsNaN(value) {
 				return lazyerrors.Errorf("NaN is not supported in a document: %v", doc)
 			}
+
 			if value == 0 && math.Signbit(0) {
 				return lazyerrors.Errorf("-0 is not supported in a document: %v", doc)
 			}
