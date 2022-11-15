@@ -16,7 +16,10 @@ package pg
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -72,11 +75,27 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 				// We use COALESCE to scan this null value as 0 in this case.
 				// Even though we run the query in a transaction, the current isolation level doesn't guarantee
 				// that the table is not deleted (see https://www.postgresql.org/docs/14/transaction-iso.html).
-				err = tx.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
-				if err != nil {
-					return lazyerrors.Error(err)
+				// PgPool (not a transaction) is used on purpose here. In this case, transaction doesn't lock
+				// relations, and it's possible that the table/schema is deleted between the moment we get the list of tables
+				// and the moment we get the size of the table. In this case, we might receive an error from the database,
+				// and transaction will be interrupted. Such errors are not critical, we can just ignore them, and
+				// we don't need to interrupt the whole transaction.
+				err = h.PgPool.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
+				if err == nil {
+					sizeOnDisk += tableSize
+					continue
 				}
-				sizeOnDisk += tableSize
+
+				var pgErr *pgconn.PgError
+				if errors.As(err, &pgErr) {
+					switch pgErr.Code {
+					case pgerrcode.UndefinedTable, pgerrcode.InvalidSchemaName:
+						// Table or schema was deleted after we got the list of tables, just ignore it
+						continue
+					}
+				}
+
+				return lazyerrors.Error(err)
 			}
 
 			d := must.NotFail(types.NewDocument(
