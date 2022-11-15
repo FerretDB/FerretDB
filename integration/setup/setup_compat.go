@@ -97,18 +97,20 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var stateProvider *state.Provider
 	var uri string
-	targetUnixSocket := false
 	targetPort := *targetPortF
 	if targetPort == 0 {
+		targetUnixSocket := false
 		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
+	} else {
+		uri = buildURI(tb, targetPort)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
 	compatUri := buildURI(tb, compatPort)
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetUnixSocket, uri), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetUnixSocket, compatUri), opts)
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
 
 	level.SetLevel(*logLevelF)
 

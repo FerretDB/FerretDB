@@ -151,18 +151,24 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targe
 	})
 
 	if targetUnixSocket {
-		return p, fmt.Sprintf("mongodb:%s", l.Unix().String())
+		unixUrl := url.URL{
+			Scheme: "mongodb",
+			Host:   l.Unix().String(),
+		}
+		uri := unixUrl.String()
+		logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+
+		return p, uri
 	}
 
 	port := l.Addr().(*net.TCPAddr).Port
-
 	uri := buildURI(tb, port)
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	return p, uri
 }
 
-// buildURI builds mongoDB URI with given TPC port number.
+// buildURI builds mongoDB URI with given TCP port number.
 func buildURI(tb testing.TB, port int) string {
 	require.Greater(tb, port, 0)
 	require.Less(tb, port, 65536)
@@ -194,20 +200,20 @@ func buildURI(tb testing.TB, port int) string {
 	return u.String()
 }
 
-// setupClient returns MongoDB client for database on 127.0.0.1:port.
-func setupClient(tb testing.TB, ctx context.Context, unix bool, u string) *mongo.Client {
+// setupClient returns MongoDB client for database on given MongoDB uri.
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
-	require.NoError(tb, err)
-
-	err = client.Ping(ctx, nil)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(tb, err)
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
 		require.NoError(tb, err)
 	})
+
+	err = client.Ping(ctx, nil)
+	require.NoError(tb, err)
 
 	return client
 }
