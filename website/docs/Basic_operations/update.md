@@ -87,7 +87,8 @@ This operation updates all the documents where the field `nobel` was previously 
 
 ### Update an array element
 
-The following update example uses the `employees` collection. To populate the collection, run the following in your terminal:
+The following update example uses the `employees` collection.
+To populate the collection, run the following in your terminal:
 
 ```js
 db.employees.insertMany([
@@ -139,7 +140,8 @@ db.employees.insertMany([
 ])
 ```
 
-The folllowing command will query and update the `catalog` array in the `employee` collection using dot notation. The command will query the second field of the array in every document for `"pencil"`, and when there is a match, updates the first element of the array.
+The folllowing command will query and update the `catalog` array in the `employee` collection using dot notation.
+The command will query the second field of the array in every document for `"pencil"`, and when there is a match, updates the first element of the array.
 
 ```js
 db.employees.updateMany({
