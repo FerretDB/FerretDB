@@ -38,6 +38,7 @@ func TestConnInfo(t *testing.T) {
 			},
 		},
 	} {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -65,6 +66,7 @@ func TestConnInfo(t *testing.T) {
 			ctx: context.WithValue(context.Background(), connInfoKey, nil),
 		},
 	} {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
