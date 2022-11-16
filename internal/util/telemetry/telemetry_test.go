@@ -75,13 +75,13 @@ func TestState(t *testing.T) {
 			logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
 
 			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
-			assert.Equal(t, tc.state, state)
-			assert.Equal(t, tc.locked, locked)
 			if tc.err != "" {
 				assert.EqualError(t, err, tc.err)
 				return
 			}
 			assert.NoError(t, err)
+			assert.Equal(t, tc.state, state)
+			assert.Equal(t, tc.locked, locked)
 		})
 	}
 }
