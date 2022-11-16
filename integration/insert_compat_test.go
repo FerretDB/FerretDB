@@ -18,9 +18,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -29,7 +31,6 @@ import (
 type insertCompatTestCase struct {
 	insert     bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	skip       string                   // skips test if non-empty
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -40,10 +41,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
 
 			t.Parallel()
 
@@ -62,10 +59,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					targetInsertRes, targetErr := targetCollection.InsertOne(ctx, insert)
 					compatInsertRes, compatErr := compatCollection.InsertOne(ctx, insert)
 
-					if targetInsertRes != nil || compatInsertRes != nil {
-						nonEmptyResults = true
-					}
-
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
@@ -74,8 +67,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						// Skip inserts that could not be performed due to Tigris schema validation.
 						var e mongo.CommandError
 						if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") ||
-								e.HasErrorCodeWithMessage(121, "does not validate with") {
+							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
 								setup.SkipForTigrisWithReason(t, targetErr.Error())
 							}
 						}
@@ -83,6 +75,13 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr, "compat error; target returned no error")
+					}
+
+					targetID, _ := pointer.Get(targetInsertRes).InsertedID.(primitive.ObjectID)
+					compatID, _ := pointer.Get(compatInsertRes).InsertedID.(primitive.ObjectID)
+
+					if !(targetID.IsZero() && compatID.IsZero()) {
+						nonEmptyResults = true
 					}
 
 					var targetFindRes, compatFindRes bson.D
@@ -126,7 +125,6 @@ func TestInsertCompat(t *testing.T) {
 		"InsertIDRegex": {
 			insert:     bson.D{{"_id", "^regex$"}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/1396",
 		},
 	}
 
