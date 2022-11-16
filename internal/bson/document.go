@@ -108,6 +108,8 @@ func (doc *Document) Keys() []string {
 
 // Get returns a value at the given key.
 // If there are duplicated keys in the document, it returns the first value.
+//
+// Deprecated: as Document might have duplicate keys, Get is not a good way to get values by the given keys.
 func (doc *Document) Get(key string) (any, error) {
 	for _, field := range doc.fields {
 		if field.key == key {
