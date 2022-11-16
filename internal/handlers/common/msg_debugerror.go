@@ -38,7 +38,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	// check if parameter is an error code
-	if n, err := strconv.Atoi(expected); err != nil {
+	if n, err := strconv.Atoi(expected); err == nil {
 		errCode := ErrorCode(n)
 		return nil, errors.New(errCode.String())
 	}
