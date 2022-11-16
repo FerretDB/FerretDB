@@ -58,7 +58,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return &reply, nil
 
 	case "panic":
-		panic("Panic")
+		panic("debugError panic")
 
 	default:
 		return nil, errors.New(expected)
