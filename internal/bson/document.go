@@ -44,9 +44,11 @@ type Document struct {
 }
 
 // field represents a field in the document.
+//
+// The order of field is like that to reduce a pressure on gc a bit, and make vet/fieldalignment linter happy.
 type field struct {
-	key   string
 	value any
+	key   string
 }
 
 // ConvertDocument converts types.Document to bson.Document and validates it.

@@ -37,9 +37,11 @@ type Document struct {
 }
 
 // field represents a field in the document.
+//
+// The order of field is like that to reduce a pressure on gc a bit, and make vet/fieldalignment linter happy.
 type field struct {
-	key   string
 	value any
+	key   string
 }
 
 // ConvertDocument converts bson.Document to *types.Document.
@@ -212,7 +214,7 @@ func (d *Document) RemoveDuplicateKeys() {
 	i := 0
 
 	for key, value := range nondupl {
-		fields[i] = field{key, value}
+		fields[i] = field{key: key, value: value}
 		i++
 	}
 
@@ -236,9 +238,9 @@ func (d *Document) Command() string {
 func (d *Document) add(key string, value any) error {
 	if key == "_id" {
 		// ensure that _id is the first field
-		d.fields = slices.Insert(d.fields, 0, field{key, value})
+		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
 	} else {
-		d.fields = append(d.fields, field{key, value})
+		d.fields = append(d.fields, field{key: key, value: value})
 	}
 
 	return nil
@@ -284,7 +286,7 @@ func (d *Document) Set(key string, value any) {
 		if i := slices.Index(d.Keys(), key); i >= 0 {
 			d.fields = slices.Delete(d.fields, i, i+1)
 		}
-		d.fields = slices.Insert(d.fields, 0, field{key, value})
+		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
 
 		return
 	}
@@ -296,7 +298,7 @@ func (d *Document) Set(key string, value any) {
 		}
 	}
 
-	d.fields = append(d.fields, field{key, value})
+	d.fields = append(d.fields, field{key: key, value: value})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
