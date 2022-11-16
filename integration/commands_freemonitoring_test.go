@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -32,28 +31,22 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 		DatabaseName: "admin",
 	})
 
-	expected := map[string]any{
-		"state": "disabled",
-		"ok":    float64(1),
-	}
+	necessaryKeys := []string{"state", "ok"}
+
+	allowedKeys := []string{"state", "message", "url", "userReminder", "ok"}
 
 	var actual bson.D
 	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
 	require.NoError(t, err)
 
-	m := actual.Map()
 	keys := CollectKeys(t, actual)
 
-	for k, item := range expected {
-		assert.Contains(t, keys, k)
-		assert.IsType(t, item, m[k])
+	for _, k := range allowedKeys {
+		assert.Contains(t, allowedKeys, k)
+	}
 
-		if it, ok := item.(primitive.D); ok {
-			z := m[k].(primitive.D)
-			AssertEqualDocuments(t, it, z)
-			continue
-		}
-		assert.Equal(t, m[k], item)
+	for _, k := range necessaryKeys {
+		assert.Contains(t, keys, k)
 	}
 }
 
@@ -64,24 +57,20 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
+		command        bson.D
+		err            *mongo.CommandError
+		expectedRes    bson.D
+		expectedStatus string
 	}{
 		"Enable": {
-			command: bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
-			err: &mongo.CommandError{
-				Code:    50840,
-				Name:    "Location50840",
-				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
-			},
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
 		},
 		"Disable": {
-			command: bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
-			err: &mongo.CommandError{
-				Code:    50840,
-				Name:    "Location50840",
-				Message: `Free Monitoring has been disabled via the command-line and/or config file`,
-			},
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "disabled",
 		},
 		"Other": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", "foobar"}},
@@ -103,7 +92,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			// these tests shouldn't be run in parallel, because they work on the same database
 
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
@@ -114,6 +103,19 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+
+			AssertEqualDocuments(t, tc.expectedRes, actual)
+
+			if tc.expectedStatus != "" {
+				var actual bson.D
+				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
+				require.NoError(t, err)
+
+				actualStatus, ok := actual.Map()["state"]
+				require.True(t, ok)
+
+				assert.Equal(t, tc.expectedStatus, actualStatus)
+			}
 		})
 	}
 }
