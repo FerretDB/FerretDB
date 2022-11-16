@@ -174,7 +174,12 @@ var (
 			"", false,
 			"", true,
 		))),
-		b: testutil.MustParseDumpFile("testdata", "fuzz1.hex"),
+		b: []byte{
+			0x0b, 0x00, 0x00, 0x00, // document length
+			0x08, 0x00, 0x00, // "": false
+			0x08, 0x00, 0x01, // "": true
+			0x00, // end of document
+		},
 	}
 
 	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, fuzz1}
