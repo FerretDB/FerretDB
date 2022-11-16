@@ -170,8 +170,11 @@ var (
 
 	fuzz1 = testCase{
 		name: "fuzz1",
-		b:    testutil.MustParseDumpFile("testdata", "fuzz1.hex"),
-		//	bErr: `duplicate key ""`,
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
+			"", false,
+			"", true,
+		))),
+		b: testutil.MustParseDumpFile("testdata", "fuzz1.hex"),
 	}
 
 	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, fuzz1}
