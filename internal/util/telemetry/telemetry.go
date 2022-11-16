@@ -69,7 +69,7 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 	// and other valid values, including "0" and empty string, mean undecided.
 	dntV, err := parseValue(dnt)
 	if err != nil {
-		return nil, false, err
+		return
 	}
 
 	if pointer.GetBool(dntV) {
