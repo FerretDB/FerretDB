@@ -8,7 +8,7 @@ vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
-  RACEFLAG: -race={{ne OS "windows"}}
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_tigris
 
 tasks:
@@ -116,7 +116,7 @@ tasks:
     desc: "Generate (and format) code"
     cmds:
       - go generate -x ./...
-      - bin/task{{exeExt}} -d integration gen
+      - bin/task{{exeExt}} -d integration integration-gen
       - task: fmt
 
   fmt:
@@ -133,14 +133,14 @@ tasks:
     desc: "Run short unit tests (with caching)"
     cmds:
       - go test -short {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - bin/task{{exeExt}} -d tools test-unit-short
+      - bin/task{{exeExt}} -d tools tools-test
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
       - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -bench=. -benchtime=1x ./...
-      - bin/task{{exeExt}} -d tools test-unit-short
+      - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
     desc: "Run integration tests for PostgreSQL and Tigris in parallel"
@@ -262,29 +262,18 @@ tasks:
 
   lint:
     desc: "Run linters"
-    deps:
-      - lint-golangci-lint
-      - lint-go-sumtype
-      - lint-go-consistent
-    cmds:
-      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
-      - bin/task{{exeExt}} -d integration lint
-      - bin/task{{exeExt}} -d integration lint-golangci-lint
-
-  lint-golangci-lint:
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
-
-  lint-go-sumtype:
-    cmds:
-      - bin/go-sumtype{{exeExt}} ./...
-
-  lint-go-consistent:
-    cmds:
+      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
-      - bin/task{{exeExt}} -d integration lint-go-consistent
-      - bin/task{{exeExt}} -d tools lint-go-consistent
+      - bin/go-sumtype{{exeExt}} ./...
+      - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
+      - bin/task{{exeExt}} -d integration integration-lint
+      - bin/task{{exeExt}} -d tools tools-lint
+    sources:
+      - "**/*.go"
+      - "**/go.mod"
+      - "**/*.yml"
 
   security:
     desc: "Run security scanners"
@@ -320,7 +309,7 @@ tasks:
 
   docker-init:
     cmds:
-      - docker buildx create --driver=docker-container --name=ferretdb
+      - docker buildx create --driver=docker-container --name=ferretdb --use=false
 
   docker-local:
     deps: [gen-version]
@@ -329,6 +318,7 @@ tasks:
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
+        --build-arg RACEFLAG={{.RACEFLAG}}
         --tag=ferretdb-local
         --load .
     vars:
@@ -345,7 +335,8 @@ tasks:
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
-        --platform=linux/arm64,linux/amd64
+        --build-arg RACEFLAG={{.RACEFLAG}}
+        --platform=linux/arm/v7,linux/arm64,linux/amd64
         --tag={{.DOCKER_IMAGE}}
         --push .
     vars:

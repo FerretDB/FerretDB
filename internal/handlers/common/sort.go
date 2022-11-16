@@ -139,9 +139,14 @@ func getSortType(key string, value any) (types.SortType, error) {
 			if _, ok := value.(types.NullType); ok {
 				value = "null"
 			}
-			return 0, NewErrorMsg(ErrSortBadValue, fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value))
+
+			return 0, NewCommandErrorMsgWithArgument(
+				ErrSortBadValue,
+				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
+				"$sort",
+			)
 		case errNotWholeNumber:
-			return 0, NewErrorMsg(ErrBadValue, "$sort must be a whole number")
+			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, "$sort must be a whole number", "$sort")
 		default:
 			return 0, err
 		}
@@ -153,6 +158,10 @@ func getSortType(key string, value any) (types.SortType, error) {
 	case -1:
 		return types.Descending, nil
 	default:
-		return 0, NewErrorMsg(ErrSortBadOrder, "$sort key ordering must be 1 (for ascending) or -1 (for descending)")
+		return 0, NewCommandErrorMsgWithArgument(
+			ErrSortBadOrder,
+			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			"$sort",
+		)
 	}
 }

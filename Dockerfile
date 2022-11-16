@@ -1,27 +1,29 @@
 ARG VERSION
 ARG COMMIT
+ARG RACEFLAG
 
-FROM golang:1.19.2 AS build
+FROM golang:1.19.3 AS build
 
 WORKDIR /src
 ADD . .
 ENV CGO_ENABLED=1
+ENV GORACE=halt_on_error=1,history_size=2
 
 # split into several commands for better logging on GitHub Actions
 RUN go mod download
-RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race                 ./cmd/ferretdb
-RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris -race -coverpkg=./... ./cmd/ferretdb
+RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG}                 ./cmd/ferretdb
+RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG} -coverpkg=./... ./cmd/ferretdb
 
-FROM golang:1.19.2
-
-WORKDIR /
+FROM golang:1.19.3
 
 COPY --from=build /src/bin/ferretdb /ferretdb
 
-EXPOSE 27017
-
+WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]
-CMD [ "--listen-addr=:27017", "--postgresql-url=postgres://username:password@hostname:5432/ferretdb" ]
+EXPOSE 27017 8080
+ENV FERRETDB_LISTEN_ADDR=:27017
+ENV FERRETDB_DEBUG_ADDR=:8080
+ENV FERRETDB_STATE_DIR=/state
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"

@@ -2,7 +2,6 @@
 sidebar_position: 5
 ---
 
-
 # Delete operation
 
 The delete operation removes a document from the database when a given query is met.
@@ -12,13 +11,13 @@ Two methods for deleting documents in a collection include `deleteOne()` and `de
 
 The `deleteOne()` method removes a single document (the first document that matches the query parameter) completely from the collection.
 
-```sh
+```js
 db.collection.deleteOne({<query_params>})
 ```
 
 Insert the following list of documents:
 
-```sh
+```js
 db.scientists.insertMany([
   {
     firstname: "Thomas",
@@ -53,7 +52,7 @@ db.scientists.insertMany([
 
 This operation returns a response showing `acknowledged` as `true` and the `ObjectId` of the four inserted documents:
 
-```sh
+```js
 {
   acknowledged: true,
   insertedIds: {
@@ -67,13 +66,13 @@ This operation returns a response showing `acknowledged` as `true` and the `Obje
 
 Next, delete a document from the collection where the field `nobel` is set to false.
 
-```sh
+```js
 db.scientists.deleteOne({nobel:false})
 ```
 
 This operation returns a response that shows that a single document was deleted from the collection.
 
-```sh
+```js
 { acknowledged: true, deletedCount: 1 }
 ```
 
@@ -82,7 +81,7 @@ This operation returns a response that shows that a single document was deleted 
 To delete multiple documents at once, use the  `deleteMany()` method.
 Using the same record from earlier, let's delete all the documents with `nobel` set to false.
 
-```sh
+```js
 db.scientists.deleteMany({nobel:false})
 ```
 

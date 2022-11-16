@@ -1,5 +1,45 @@
 # Changelog
 
+## [v0.6.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.6.1) (2022-11-07)
+
+### Enhancements 🛠
+* Deprecate dotted fields in data documents by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1313
+* Forbid regex types and arrays in document's `_id` field by @noisersup in https://github.com/FerretDB/FerretDB/pull/1326
+* Make users know about telemetry via `startupWarnings` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1336
+* Deprecate nested arrays by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1334
+
+### Documentation 📄
+* Fix syntax highlighting by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1340
+* Add text for empty pages by @Fashander in https://github.com/FerretDB/FerretDB/pull/1338
+* Update dark and light theme logo for documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/1368
+* Add documentation for configuring telemetry service by @Fashander in https://github.com/FerretDB/FerretDB/pull/1342
+
+### Other Changes 🤖
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1337
+* Switch from `markdownlint-cli` to `markdownlint-cli2` by @codingmickey in https://github.com/FerretDB/FerretDB/pull/1319
+* A minor clarification about diff tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1339
+* Add stress tests for `SchemaStats` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1318
+* Do not compare error strings by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1344
+* Add stress tests for settings table and fix simple issues with transactions by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1316
+* Cleanup compat tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1345
+* Fix ignore patterns for tools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1349
+* Use pre-built textlint image by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1366
+* Use pre-built Docusaurus image by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1365
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1367
+* Add "_id" string to linter exceptions by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1364
+* Remove extra `nolint` directives by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1348
+* Setup `lfs-warning` GitHub Action check by @ndkhangvl in https://github.com/FerretDB/FerretDB/pull/1371
+* Bump Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1372
+* Remove unsupported NaN and Inf from pjson package documentation by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1373
+
+## New Contributors
+* @codingmickey made their first contribution in https://github.com/FerretDB/FerretDB/pull/1319
+* @ndkhangvl made their first contribution in https://github.com/FerretDB/FerretDB/pull/1371
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/24?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.6.0...v0.6.1).
+
+
 ## [v0.6.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.6.0) (2022-10-27)
 
 ### What's Changed

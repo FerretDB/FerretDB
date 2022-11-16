@@ -41,8 +41,8 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 					"localTime", time.Now(),
 					// logicalSessionTimeoutMinutes
 					// connectionId
-					"minWireVersion", int32(17),
-					"maxWireVersion", int32(17),
+					"minWireVersion", common.MinWireVersion,
+					"maxWireVersion", common.MaxWireVersion,
 					"readOnly", false,
 					"ok", float64(1),
 				))},
@@ -51,10 +51,11 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		default:
 			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
-			return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+			return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
 		}
 	}
 
 	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
-	return nil, common.NewErrorMsg(common.ErrNotImplemented, msg)
+
+	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
 }

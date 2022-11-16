@@ -15,20 +15,16 @@
 package integration
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"net"
 	"runtime"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -890,17 +886,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-			// TODO Don't ignore this error after https://github.com/FerretDB/FerretDB/issues/1317
-			if err != nil {
-				var pgErr *pgconn.PgError
-				if errors.As(err, &pgErr) {
-					switch pgErr.Code {
-					case pgerrcode.InvalidSchemaName, pgerrcode.UndefinedTable:
-						err = nil
-					}
-				}
-			}
-
 			require.NoError(t, err)
 
 			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
@@ -930,8 +915,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	setup.SkipForPostgresWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1317")
-
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
@@ -974,11 +957,15 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 			}
 
 			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error, that's MongoDB (FerretDB ignores that argument for non-Tigris handlers),
-			// so we create collection without schema.
+			// If we get an error that support for "validator" is not implemented, that's Postgres.
+			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
+			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
-				if strings.Contains(err.Error(), `support for field "validator" is not implemented yet`) {
+				if errorTextContains(err,
+					`support for field "validator" is not implemented yet`,
+					`unknown top level operator: $tigrisSchemaString`,
+				) {
 					err = db.CreateCollection(ctx, collName)
 				}
 			}

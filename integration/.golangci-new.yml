@@ -1,6 +1,6 @@
 ---
 # New or experimental linters that should pass (or be reconfigured)
-# for new FerretDB and tools code (compared to `origin/main`).
+# for new integration code (compared to `origin/main`).
 
 run:
   timeout: 3m
@@ -144,3 +144,7 @@ issues:
   max-same-issues: 0
   exclude-use-default: false
   new-from-rev: origin/main
+  exclude-rules:
+    # that's a valid usage of bson.D
+    - linters: [govet]
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
