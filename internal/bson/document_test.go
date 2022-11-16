@@ -168,8 +168,8 @@ var (
 		bErr: `unexpected EOF`,
 	}
 
-	fuzz1 = testCase{
-		name: "fuzz1",
+	duplicateKeys = testCase{
+		name: "duplicateKeys",
 		v: MustConvertDocument(must.NotFail(types.NewDocument(
 			"", false,
 			"", true,
@@ -182,7 +182,7 @@ var (
 		},
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, fuzz1}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, duplicateKeys}
 )
 
 func TestDocument(t *testing.T) {
