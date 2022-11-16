@@ -45,8 +45,8 @@ type Document struct {
 
 // field represents a field in the document.
 type field struct {
-	value any
 	key   string
+	value any
 }
 
 // ConvertDocument converts types.Document to bson.Document and validates it.
