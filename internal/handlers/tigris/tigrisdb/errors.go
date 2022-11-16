@@ -29,6 +29,7 @@ const (
 	errInvalidArgument = api.Code_INVALID_ARGUMENT
 	errNotFound        = api.Code_NOT_FOUND
 	errAlreadyExists   = api.Code_ALREADY_EXISTS
+	errAborted         = api.Code_ABORTED
 )
 
 // IsInvalidArgument returns true if the error's code is errInvalidArgument.
@@ -59,6 +60,16 @@ func IsAlreadyExists(err error) bool {
 	}
 
 	return driverErr.Code == errAlreadyExists
+}
+
+// IsAborted returns true if the error's code is errAborted.
+func IsAborted(err error) bool {
+	var driverErr *driver.Error
+	if !errors.As(err, &driverErr) {
+		panic(fmt.Sprintf("unexpected error type %#v", err))
+	}
+
+	return driverErr.Code == errAborted
 }
 
 // isOtherCreationInFlight returns true if an attempt to create the database with the given name is already in progress.

@@ -6,44 +6,55 @@ We will do all that for you so you can focus on what is really interesting for y
 
 This guide tries to be short and does not mention things that are completely automated by our tooling.
 
-## Team Performance Metrics
+## Team performance and planning
 
-1. We want to deliver fast and make our deliverables predictable.
-2. To achieve that, we measure the flow of work and estimate tasks.
-3. The flow of work is measured automatically based on GitHub's pull request workflow.
-4. Tasks are measured manually by engineers during Sprint planning.
-5. Task estimation depends on the following parameters:
-   * Scope.
-     Are the changes required in one or multiple files, packages, components?
-   * Difficulty.
-     How hard is the task?
-     Does it require to cover a lot of test cases?
-     edge cases?
-   * Clarity.
-     Are the description and definition of done clear?
-     Or that's more of a research task?
-6. We use the following T-Shirt Sizes to estimate tasks:
-   * **S**: Small simple clear task.
-   * **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
-   * **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
-7. If the team thinks that the task is bigger than **L**, it should be decomposed into smaller tasks.
-8. After every Sprint, we measure how many tasks of each size we were able to complete
-   and discuss what went well and what could be improved.
-   We also look at the flows' metrics to gather more information about the team's dynamic.
+We want to deliver fast and make our deliverables predictable.
+To achieve that, we measure the flow of work and estimate tasks.
+The flow of work is measured automatically based on GitHub's pull request workflow.
+Tasks are estimated manually by engineers before or during Sprint planning.
 
-## Planning
+Task estimation depends on the following parameters:
 
-1. Estimation mistakes should be an exception, not a norm.
-   Try to estimate on the planning as best as you can.
-2. Unless the issue explicitly states otherwise, the following things are always in the scope:
-   * Tests.
-     See contributing documentation for general discussion about unit and integration tests.
-   * Small spot refactorings.
-     Larger refactorings should be in a separate issue with minimal behavior changes.
-   * Minor updates to existing documentation.
-     Completely new documentation should be in a separate issue.
-3. Words "small", "spot", "larger", "minimal", "minor" and similar are defined to be not clearly defined.
-   As always, use your best judgment and communicate (preferably on the planning).
+* Scope.
+  Are the changes required in one or multiple files, packages, components?
+* Difficulty.
+  How hard is the task?
+  Does it require to cover a lot of test cases?
+  edge cases?
+* Clarity.
+  Are the description and definition of done clear?
+  Or that's more of a research task?
+
+We use the following T-Shirt Sizes to estimate tasks:
+
+* **S**: Small simple clear task.
+* **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
+* **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
+
+If the team thinks that the task is bigger than **L**, it should be decomposed into smaller tasks.
+
+Unless the issue explicitly states otherwise, the following things are always in the scope:
+
+* Tests.
+  See contributing documentation for general discussion about unit and integration tests.
+* Small spot refactorings.
+  Larger refactorings should be in a separate issue with minimal behavior changes.
+* Minor updates to existing documentation.
+  Completely new documentation should be in a separate issue.
+
+Words "small", "spot", "larger", "minimal", "minor" and similar are defined to be not clearly defined.
+As always, use your best judgment and communicate (preferably on the planning).
+
+Engineering tasks could be added to the Sprint only if there are no other pre-planned tasks that are not done
+or could not benefit from more help.
+Those tasks should not be estimated.
+
+After every Sprint, we calculate how many tasks of each size we were able to complete
+and discuss what went well and what could be improved.
+We also look at the flows' metrics to gather more information about the team's dynamic.
+
+Estimation mistakes should be an exception, not a norm.
+Try to estimate on the planning as best as you can.
 
 ## Pull requests
 

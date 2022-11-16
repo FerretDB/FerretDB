@@ -16,14 +16,14 @@ RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigr
 
 FROM golang:1.19.3
 
-WORKDIR /
-
 COPY --from=build /src/bin/ferretdb /ferretdb
 
-EXPOSE 27017
-
+WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]
-CMD [ "--listen-addr=:27017", "--postgresql-url=postgres://username:password@hostname:5432/ferretdb" ]
+EXPOSE 27017 8080
+ENV FERRETDB_LISTEN_ADDR=:27017
+ENV FERRETDB_DEBUG_ADDR=:8080
+ENV FERRETDB_STATE_DIR=/state
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
