@@ -59,3 +59,10 @@ db.collection.aggregate()
 | `$sortByCount`                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
 | `$unwind`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |
+
+### Database stages
+
+```js
+db.aggregate()
+```
+
