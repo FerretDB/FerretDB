@@ -64,14 +64,14 @@ func (s *Flag) UnmarshalText(text []byte) error {
 // The second returned value is true if the telemetry state should be locked, because of
 // setting telemetry via a command-line flag, an environment variable, or a filename.
 func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (*bool, bool, error) {
-	var disable, locked bool
+	var disable bool
 
 	// https://consoledonottrack.com is not entirely clear about accepted values.
 	// Assume that "1", "t", "true", etc. mean that telemetry should be disabled,
 	// and other valid values, including "0" and empty string, mean undecided.
 	v, err := parseValue(dnt)
 	if err != nil {
-		return nil, locked, err
+		return nil, false, err
 	}
 
 	if pointer.GetBool(v) {
@@ -87,19 +87,18 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 	if disable {
 		// check for conflicts
 		if f.v != nil && *f.v {
-			return nil, locked, fmt.Errorf("telemetry can't be enabled")
+			return nil, false, fmt.Errorf("telemetry can't be enabled")
 		}
 
-		// telemetry state is disabled via flag, dnt env or binary name
-		locked = true
-
-		return pointer.ToBool(false), locked, nil
+		// telemetry state is disabled and locked via flag, dnt env or binary name
+		return pointer.ToBool(false), true, nil
 	}
 
+	// if flag is unset, use previous unlocked state
 	if f.v == nil {
 		if prev == nil {
 			// undecided state, reporter would log about it during run
-			return nil, locked, nil
+			return nil, false, nil
 		}
 
 		if *prev {
@@ -108,11 +107,10 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 			l.Info("Telemetry is disabled because it was disabled previously.")
 		}
 
-		return prev, locked, nil
+		return prev, false, nil
 	}
 
-	// telemetry state is enabled via flag, dnt env or binary name
-	locked = true
+	// flag is set, use it as locked state
 
 	if *f.v {
 		l.Info("Telemetry enabled.")
@@ -120,7 +118,7 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 		l.Info("Telemetry disabled.")
 	}
 
-	return f.v, locked, nil
+	return f.v, true, nil
 }
 
 // check interfaces
