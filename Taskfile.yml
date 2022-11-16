@@ -239,7 +239,7 @@ tasks:
         --mode=diff-normal --listen-addr=:27017
 
 # TODO: remove this
-  run-scoket:
+  run-socket:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
