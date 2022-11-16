@@ -24,7 +24,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -322,9 +321,12 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	var elist bytes.Buffer
 	bufw := bufio.NewWriter(&elist)
 
-	for _, elK := range doc.Keys() {
+	keys := doc.Keys()
+	values := doc.Values()
+
+	for i, elK := range keys {
 		ename := CString(elK)
-		elV := must.NotFail(doc.Get(elK))
+		elV := values[i]
 
 		switch elV := elV.(type) {
 		case *types.Document:
