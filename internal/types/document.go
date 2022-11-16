@@ -156,7 +156,7 @@ func (d *Document) Map() map[string]any {
 //
 // If there are duplicate keys in the document, the result will have duplicate keys too.
 //
-// If document or documents' fields are not set (nil), it returns nil.
+// If document or document's fields are not set (nil), it returns nil.
 func (d *Document) Keys() []string {
 	if d == nil || d.fields == nil {
 		return nil
@@ -172,7 +172,7 @@ func (d *Document) Keys() []string {
 
 // Values returns a copy of document's values in the same order as Keys().
 //
-// If document or documents' fields are not set (nil), it returns nil.
+// If document or document's fields are not set (nil), it returns nil.
 func (d *Document) Values() []any {
 	if d == nil || d.fields == nil {
 		return nil
