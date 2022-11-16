@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -72,6 +73,11 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			// do a shallow copy of the document that we would modify if there are kind 1 sections
 			doc = must.NotFail(types.NewDocument())
 			d := section.Documents[0]
+
+			if err := validateValue(d); err != nil {
+				return nil, lazyerrors.Errorf("wire.OpMsg.readFrom: validation failed for %v with: %v", d, err)
+			}
+
 			m := d.Map()
 			for _, k := range d.Keys() {
 				doc.Set(k, m[k])
@@ -92,6 +98,10 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 
 			a := types.MakeArray(len(section.Documents)) // may be zero
 			for _, d := range section.Documents {
+				if err := validateValue(d); err != nil {
+					return nil, lazyerrors.Errorf("wire.OpMsg.readFrom: validation failed for %v with: %v", d, err)
+				}
+
 				if err := a.Append(d); err != nil {
 					return nil, lazyerrors.Error(err)
 				}
@@ -107,20 +117,38 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	return doc, nil
 }
 
-// validateDocument check document values and return error if not supported value was encountered.
-func validateDocument(doc *types.Document) error {
-	for _, k := range doc.Keys() {
-		value, _ := doc.Get(k)
-
-		switch value := value.(type) {
-		case float64:
-			if math.IsNaN(value) {
-				return lazyerrors.Errorf("NaN is not supported in a document: %v", doc)
+// validateValue checks given value and return error if not supported value was encountered.
+func validateValue(v any) error {
+	switch v := v.(type) {
+	case *types.Document:
+		for _, k := range v.Keys() {
+			vv, err := v.Get(k)
+			if err != nil {
+				log.Fatal("can't get value from array")
 			}
 
-			if value == 0 && math.Signbit(0) {
-				return lazyerrors.Errorf("-0 is not supported in a document: %v", doc)
+			if err := validateValue(vv); err != nil {
+				return err
 			}
+		}
+	case *types.Array:
+		for i := 0; i < v.Len(); i++ {
+			vv, err := v.Get(i)
+			if err != nil {
+				log.Fatal("can't get value from array")
+			}
+
+			if err := validateValue(vv); err != nil {
+				return err
+			}
+		}
+	case float64:
+		if math.IsNaN(v) {
+			return lazyerrors.Errorf("NaN is not supported")
+		}
+
+		if v == 0 && math.Signbit(0) {
+			return lazyerrors.Errorf("-0 is not supported")
 		}
 	}
 
@@ -149,10 +177,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 
 			d, err := types.ConvertDocument(&doc)
 			if err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			if err := validateDocument(d); err != nil {
 				return lazyerrors.Error(err)
 			}
 
@@ -193,10 +217,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 
 				d, err := types.ConvertDocument(&doc)
 				if err != nil {
-					return lazyerrors.Error(err)
-				}
-
-				if err := validateDocument(d); err != nil {
 					return lazyerrors.Error(err)
 				}
 

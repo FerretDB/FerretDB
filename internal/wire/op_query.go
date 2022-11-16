@@ -62,10 +62,18 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	}
 
 	var q bson.Document
+
 	if err := q.ReadFrom(bufr); err != nil {
 		return err
 	}
-	query.Query = must.NotFail(types.ConvertDocument(&q))
+
+	doc := must.NotFail(types.ConvertDocument(&q))
+
+	if err := validateValue(doc); err != nil {
+		return lazyerrors.Errorf("wire.OpQuery.ReadFrom validation failed for %v with: %v", doc, err)
+	}
+
+	query.Query = doc
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
