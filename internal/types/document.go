@@ -55,7 +55,7 @@ func ConvertDocument(d document) (*Document, error) {
 	values := d.Values()
 
 	// If keys are not set, we don't need to allocate memory for fields.
-	if keys == nil || len(keys) == 0 {
+	if len(keys) == 0 {
 		return new(Document), nil
 	}
 
@@ -237,6 +237,8 @@ func (d *Document) Has(key string) bool {
 
 // Get returns a value at the given key.
 // If there are duplicated keys in the document, it returns the first value.
+//
+// Deprecated: as Document might have duplicate keys, Get is not a good way to get values by the given keys.
 func (d *Document) Get(key string) (any, error) {
 	for _, field := range d.fields {
 		if field.key == key {
