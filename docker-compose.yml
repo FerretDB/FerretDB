@@ -47,7 +47,11 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
-    command: --enableFreeMonitoring off
+    # TODO: set up right permission level
+    command: >
+      --enableFreeMonitoring off
+      --unixSocketPrefix /tmp/sockets
+      --filePermissions 0777
     ports:
       - 37017:27017
     extra_hosts:
@@ -55,6 +59,8 @@ services:
     environment:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
+    volumes:
+      - ./tmp/sockets/:/tmp/sockets:rw
 
   trivy:
     build:

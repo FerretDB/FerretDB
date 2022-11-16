@@ -238,6 +238,16 @@ tasks:
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017
 
+# TODO: remove this
+  run-scoket:
+    desc: "Run FerretDB"
+    deps: [build-testcover]
+    cmds:
+      - >
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
+        --mode=diff-normal --listen-addr=:27017
+        --listen-unix=${PWD}/tmp/sockets/mongodb-27017.sock
+
   run-tigris:
     deps: [build-testcover]
     cmds:
@@ -298,6 +308,14 @@ tasks:
     cmds:
       - >
         docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
+        --verbose --eval 'disableTelemetry()' --shell
+
+  # TODO: remove this
+  mongo-socket:
+    desc: "Run MongoDB shell (`mongosh`)"
+    cmds:
+      - >
+        docker-compose exec mongodb mongosh mongodb://%2Ftmp%2Fsockets%2Fmongodb-27017.sock?heartbeatFrequencyMS=300000
         --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
