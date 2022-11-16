@@ -101,9 +101,9 @@ func (doc *Document) bsontype() {}
 //
 // If there are duplicate keys in the document, the result will have duplicate keys too.
 //
-// It returns nil for nil Document.
+// If document or documents' fields are not set (nil), it returns nil.
 func (doc *Document) Keys() []string {
-	if doc == nil {
+	if doc == nil || doc.fields == nil {
 		return nil
 	}
 
@@ -116,6 +116,8 @@ func (doc *Document) Keys() []string {
 }
 
 // Values returns a copy of document's values in the same order as Keys().
+//
+// If document or documents' fields are not set (nil), it returns nil.
 func (doc *Document) Values() []any {
 	if doc == nil || doc.fields == nil {
 		return nil

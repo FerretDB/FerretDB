@@ -156,9 +156,9 @@ func (d *Document) Map() map[string]any {
 //
 // If there are duplicate keys in the document, the result will have duplicate keys too.
 //
-// It returns nil for nil Document.
+// If document or documents' fields are not set (nil), it returns nil.
 func (d *Document) Keys() []string {
-	if d == nil {
+	if d == nil || d.fields == nil {
 		return nil
 	}
 
@@ -168,6 +168,22 @@ func (d *Document) Keys() []string {
 	}
 
 	return keys
+}
+
+// Values returns a copy of document's values in the same order as Keys().
+//
+// If document or documents' fields are not set (nil), it returns nil.
+func (d *Document) Values() []any {
+	if d == nil || d.fields == nil {
+		return nil
+	}
+
+	values := make([]any, len(d.fields))
+	for i, field := range d.fields {
+		values[i] = field.value
+	}
+
+	return values
 }
 
 // FindDuplicateKey returns the first duplicate key in the document and true if duplicate exists.
@@ -251,21 +267,6 @@ func (d *Document) Get(key string) (any, error) {
 	}
 
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
-}
-
-// Values returns a copy of document's values in the same order as Keys().
-// If documents' fields are not set (nil), it returns nil.
-func (d *Document) Values() []any {
-	if d == nil || d.fields == nil {
-		return nil
-	}
-
-	values := make([]any, len(d.fields))
-	for i, field := range d.fields {
-		values[i] = field.value
-	}
-
-	return values
 }
 
 // Set sets the value for the given key, replacing any existing value.
