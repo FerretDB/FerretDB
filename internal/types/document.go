@@ -203,24 +203,6 @@ func (d *Document) FindDuplicateKey() (string, bool) {
 	return "", false
 }
 
-// RemoveDuplicateKeys removes duplicate keys from the document. The last value of each duplicate key is kept.
-func (d *Document) RemoveDuplicateKeys() {
-	nondupl := make(map[string]any, len(d.fields))
-	for _, field := range d.fields {
-		nondupl[field.key] = field.value
-	}
-
-	fields := make([]field, len(nondupl))
-	i := 0
-
-	for key, value := range nondupl {
-		fields[i] = field{key: key, value: value}
-		i++
-	}
-
-	d.fields = fields
-}
-
 // Command returns the first document's key. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {

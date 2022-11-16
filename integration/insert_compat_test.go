@@ -128,12 +128,6 @@ func TestInsertCompat(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1396",
 		},
-		"InsertDuplicateKeysAZ": {
-			insert: bson.D{{"_id", "duplicate_keys_az"}, {"v", "bar"}, {"v", "baz"}},
-		},
-		"InsertDuplicateKeysZA": {
-			insert: bson.D{{"_id", "duplicate_keys_za"}, {"v", "baz"}, {"v", "bar"}},
-		},
 	}
 
 	testInsertCompat(t, testCases)
