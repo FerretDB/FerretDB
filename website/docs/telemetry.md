@@ -80,6 +80,17 @@ Telemetry can be disabled using any of the following options:
    until the `donottrack` string is removed.
    :::
 
+5. Use the `db.disableFreeMonitoring()` command on runtime.
+
+   ```js
+   db.disableFreeMonitoring()
+   ```
+
+   :::caution
+   If the telemetry is set via a command-line flag, an environment variable or a filename, it's not possible
+   to modify its state via command.
+   :::
+
 ### Enable Telemetry
 
 If telemetry is disabled, enable telemetry with the command-line flag `--telemetry` and assign any of these values to it:
@@ -93,3 +104,5 @@ You can also use `FERRETDB_TELEMETRY` environment variable with same values.
 
 If telemetry is disabled with a `donottrack` string in the executable,
 remove the `donottrack` string to use the command-line flag and values again.
+
+It's also possible to enable telemetry on runtime via `db.enableFreeMonitoring()` command.

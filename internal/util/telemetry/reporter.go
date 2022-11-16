@@ -78,9 +78,15 @@ type NewReporterOpts struct {
 
 // NewReporter creates a new reporter.
 func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
-	t, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
+	t, lock, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
 	if err != nil {
 		return nil, err
+	}
+
+	if t != nil && lock {
+		if err = opts.P.Update(func(s *state.State) { s.TelemetryLocked = true }); err != nil {
+			return nil, err
+		}
 	}
 
 	if err = opts.P.Update(func(s *state.State) { s.Telemetry = t }); err != nil {
