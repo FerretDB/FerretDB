@@ -35,6 +35,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/1405
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
 		d, ok := v.(*types.Document)
 		return ok && d.Len() == 0
