@@ -229,7 +229,7 @@ func (d *Document) Command() string {
 	return keys[0]
 }
 
-// Add adds the value for the given key.
+// add adds the value for the given key.
 // If the key already exists, it will create a duplicate key.
 //
 // As a special case, _id always becomes the first key.
