@@ -12,7 +12,6 @@ sidebar_position: 1
 |                   | `comment`               | ⚠️     | Ignored                                                   |
 |                   | `authorizedCollections` | ⚠️     | Ignored                                                   |
 
-
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
@@ -20,109 +19,43 @@ The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
 | Command     | Argument             | Status | Comments                                                  |
 |-------------|----------------------|--------|-----------------------------------------------------------|
 | `aggregate` |                      | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
-|             | `$abs`               | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$accumulator`       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$acos`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$acosh`             | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$add`               | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$addToSet`          | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$allElementsTrue`   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$and`               | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$anyElementTrue`    | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$arrayElemAt`       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$arrayToObject`     | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$asin`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$asinh`             | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$atan`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$atan2`             | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$atanh`             | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$avg`               | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$binarySize`        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$bsonSize`          | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$ceil`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$cmp`               | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$concat`            | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$concatArrays`      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$cond`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$convert`           | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$cos`               | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$cosh`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$count`             | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$covariancePop`     | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$covarianceSamp`    | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateAdd`           | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateDiff`          | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateFromPart`      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateFromString`    | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateSubtract`      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateToParts`       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateToString`      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dateTrunc`         | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dayOfMonth`        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dayOfWeek`         | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$dayOfYear`         | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$degreesToRadians ` | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$denseRank`         | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$derivative`        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | `$divide`                  | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
 
-|              | `$geoNear` | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1412) |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
+### Collection stages
 
-|             | `$rand`                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/541)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
-|             | ``                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/)     |
+```js
+db.collection.aggregate()
+```
 
-| `count`     |            | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
-| `distinct`  |            | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
-| `mapReduce` |            | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
-
+| Stage                          | Status | Comments                                                  |
+|--------------------------------|--------|-----------------------------------------------------------|
+| `$addFields`, `$set`           | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
+| `$bucket`, `$bucketAuto`       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
+| `$changeStream`                | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
+| `$collStats`                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1416) |
+| `$count`                       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1417) |
+| `$densify`                     | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1418) |
+| `$documents`                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
+| `$facet`                       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1420) |
+| `$fill`                        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1421) |
+| `$geoNear`                     | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1412) |
+| `$graphLookup`                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1422) |
+| `$group`                       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1423) |
+| `$indexStats`                  | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1424) |
+| `$limit`                       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1425) |
+| `$listSessions`                | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
+| `$lookup`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1427) |
+| `$match`                       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1428) |
+| `$merge`                       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1429) |
+| `$out`                         | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1430) |
+| `$planCacheStats`              | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1431) |
+| `$project`, `$unset`           | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1432) |
+| `$redact`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1433) |
+| `$replaceRoot`, `$replaceWith` | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1434) |
+| `$sample`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
+| `$search`, `$searchMeta`       | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
+| `$setWindowFields`             | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
+| `$skip`                        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1438) |
+| `$sort`                        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1439) |
+| `$sortByCount`                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
+| `$unionWith`                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
+| `$unwind`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |****
