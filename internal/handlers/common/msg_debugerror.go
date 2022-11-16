@@ -37,6 +37,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
+	// check if parameter is an error code
 	if n, err := strconv.Atoi(expected); err != nil {
 		errCode := ErrorCode(n)
 		return nil, errors.New(errCode.String())
@@ -44,18 +45,20 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	switch expected {
 	case "ok":
+		var reply wire.OpMsg
+
 		replyDoc := must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		))
-
-		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{replyDoc},
 		}))
 
 		return &reply, nil
+
 	case "panic":
-		panic("oops!")
+		panic("Panic")
+
 	default:
 		return nil, errors.New(expected)
 	}
