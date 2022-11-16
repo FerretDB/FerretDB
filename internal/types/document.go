@@ -51,8 +51,8 @@ func ConvertDocument(d document) (*Document, error) {
 		panic("types.ConvertDocument: d is nil")
 	}
 
-	// If keys are nil, we don't need to allocate memory for fields.
-	if d.Keys() == nil {
+	// If keys are not set, we don't need to allocate memory for fields.
+	if d.Keys() == nil || len(d.Keys()) == 0 {
 		return new(Document), nil
 	}
 
