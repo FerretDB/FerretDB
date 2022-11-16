@@ -58,4 +58,4 @@ db.collection.aggregate()
 | `$sort`                        | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1439) |
 | `$sortByCount`                 | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`                   | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
-| `$unwind`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |****
+| `$unwind`                      | ⚠      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |
