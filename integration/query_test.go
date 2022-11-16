@@ -60,7 +60,7 @@ func TestQuerySort(t *testing.T) {
 				"array-three",
 				"array-three-reverse",
 				"null",
-				"double-nan",
+
 				"int64-min",
 				"int32-min",
 				"double-negative-zero",
@@ -144,7 +144,7 @@ func TestQuerySort(t *testing.T) {
 				"int64-zero",
 				"int32-min",
 				"int64-min",
-				"double-nan",
+
 				"array-null",
 				"null",
 				"array-empty",
@@ -181,10 +181,8 @@ func TestQuerySortValue(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
-				"double-nan",
 				"int64-min",
 				"int32-min",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
@@ -249,13 +247,11 @@ func TestQuerySortValue(t *testing.T) {
 				"int32",
 				"int64",
 				"double-smallest",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
 				"int32-min",
 				"int64-min",
-				"double-nan",
 				"null",
 			},
 		},
@@ -316,7 +312,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 47,
+			response: 45,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{

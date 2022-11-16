@@ -452,7 +452,7 @@ func TestQueryArrayAll(t *testing.T) {
 		},
 		"Zero": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+			expectedIDs: []any{"double-zero", "int32-zero", "int64-zero"},
 			expectedErr: nil,
 		},
 		"Double": {
@@ -505,12 +505,6 @@ func TestQueryArrayAll(t *testing.T) {
 		"NotFound": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"hello"}}}}},
 			expectedIDs: []any{},
-			expectedErr: nil,
-		},
-
-		"NaN": {
-			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.NaN()}}}}},
-			expectedIDs: []any{"array-two", "double-nan"},
 			expectedErr: nil,
 		},
 

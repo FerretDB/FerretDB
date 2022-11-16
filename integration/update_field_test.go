@@ -302,11 +302,6 @@ func TestUpdateFieldInc(t *testing.T) {
 				update:   bson.D{{"$inc", bson.D{{"v", math.NaN()}}}},
 				expected: bson.D{{"_id", "double"}, {"v", math.NaN()}},
 			},
-			"DoubleIncrementPlusInfinity": {
-				id:       "double-nan",
-				update:   bson.D{{"$inc", bson.D{{"v", math.Inf(+1)}}}},
-				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
-			},
 			"DoubleNegativeIncrement": {
 				id:       "double",
 				update:   bson.D{{"$inc", bson.D{{"v", float64(-42.13)}}}},
@@ -389,26 +384,6 @@ func TestUpdateFieldInc(t *testing.T) {
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleNaNDoublePositiveIncrement": {
-				id:       "double-nan",
-				update:   bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"DoubleNaNDoubleNegativeIncrement": {
-				id:       "double-nan",
-				update:   bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-				expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
 					UpsertedCount: 0,
 				},
 			},
@@ -774,16 +749,6 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"SetSameValueNan": {
-			id:       "double-nan",
-			update:   bson.D{{"$set", bson.D{{"v", math.NaN()}}}},
-			expected: bson.D{{"_id", "double-nan"}, {"v", math.NaN()}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-		},
 		"DotNotationDocumentFieldExist": {
 			id:       "document-composite",
 			update:   bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
@@ -929,16 +894,6 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 				Code: 9,
 				Message: "Modifiers operate on fields but we found type double instead. " +
 					"For example: {$mod: {<field>: ...}} not {$setOnInsert: 43.13}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"ErrNaN": {
-			id:     "double-nan",
-			update: bson.D{{"$setOnInsert", math.NaN()}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type double instead. " +
-					"For example: {$mod: {<field>: ...}} not {$setOnInsert: nan.0}",
 			},
 			alt: "Modifiers operate on fields but we found another type instead",
 		},

@@ -233,13 +233,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":    float64(1),
 			},
 		},
-		"GetParameter_NaN": {
-			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
-			expected: map[string]any{
-				"quiet": false,
-				"ok":    float64(1),
-			},
-		},
 		"GetParameter_Nil": {
 			command: bson.D{{"getParameter", nil}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{

@@ -36,7 +36,6 @@ func TestQueryElementExists(t *testing.T) {
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "empty-array"}, {"empty-array", []any{}}},
-		bson.D{{"_id", "nan"}, {"nan", math.NaN()}},
 		bson.D{{"_id", "null"}, {"null", nil}},
 		bson.D{{"_id", "string"}, {"v", "12"}},
 		bson.D{{"_id", "two-fields"}, {"v", "12"}, {"field", 42}},
@@ -49,7 +48,7 @@ func TestQueryElementExists(t *testing.T) {
 	}{
 		"Exists": {
 			filter:      bson.D{{"_id", bson.D{{"$exists", true}}}},
-			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
+			expectedIDs: []any{"empty-array", "null", "string", "two-fields"},
 		},
 		"ExistsSecondField": {
 			filter:      bson.D{{"field", bson.D{{"$exists", true}}}},
@@ -67,17 +66,13 @@ func TestQueryElementExists(t *testing.T) {
 			filter:      bson.D{{"empty-array", bson.D{{"$exists", true}}}},
 			expectedIDs: []any{"empty-array"},
 		},
-		"NanField": {
-			filter:      bson.D{{"nan", bson.D{{"$exists", true}}}},
-			expectedIDs: []any{"nan"},
-		},
 		"ExistsFalse": {
 			filter:      bson.D{{"field", bson.D{{"$exists", false}}}},
-			expectedIDs: []any{"empty-array", "nan", "null", "string"},
+			expectedIDs: []any{"empty-array", "null", "string"},
 		},
 		"NonBool": {
 			filter:      bson.D{{"_id", bson.D{{"$exists", -123}}}},
-			expectedIDs: []any{"empty-array", "nan", "null", "string", "two-fields"},
+			expectedIDs: []any{"empty-array", "null", "string", "two-fields"},
 		},
 	} {
 		name, tc := name, tc
@@ -125,8 +120,8 @@ func TestQueryElementType(t *testing.T) {
 		"Double": {
 			v: "double",
 			expectedIDs: []any{
-				"array-two", "double", "double-big", "double-max", "double-nan",
-				"double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"array-two", "double", "double-big", "double-max",
+				"double-smallest", "double-whole", "double-zero",
 			},
 		},
 		"String": {
@@ -177,8 +172,8 @@ func TestQueryElementType(t *testing.T) {
 			v: "number",
 			expectedIDs: []any{
 				"array", "array-three", "array-three-reverse", "array-two",
-				"double", "double-big", "double-max", "double-nan",
-				"double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"double", "double-big", "double-max",
+				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
 			},

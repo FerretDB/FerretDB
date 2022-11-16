@@ -118,7 +118,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 		},
 		"DoubleNaN": {
 			filter:      bson.D{{"v", math.NaN()}},
-			expectedIDs: []any{"array-two", "double-nan"},
+			expectedIDs: []any{"array-two"},
 		},
 
 		"String": {
@@ -167,7 +167,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
-				"double", "double-big", "double-max", "double-nan", "double-negative-zero",
+				"double", "double-big", "double-max",
 				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
@@ -271,11 +271,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"DoubleZero": {
 			filter:      bson.D{{"v", bson.D{{"$eq", 0.0}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
-		},
-		"DoubleNegativeZero": {
-			filter:      bson.D{{"v", bson.D{{"$eq", math.Copysign(0, -1)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+			expectedIDs: []any{"double-zero", "int32-zero", "int64-zero"},
 		},
 		"DoubleMax": {
 			filter:      bson.D{{"v", bson.D{{"$eq", math.MaxFloat64}}}},
@@ -284,10 +280,6 @@ func TestQueryComparisonEq(t *testing.T) {
 		"DoubleSmallest": {
 			filter:      bson.D{{"v", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
 			expectedIDs: []any{"double-smallest"},
-		},
-		"DoubleNaN": {
-			filter:      bson.D{{"v", bson.D{{"$eq", math.NaN()}}}},
-			expectedIDs: []any{"array-two", "double-nan"},
 		},
 		"DoubleBigInt64": {
 			filter:      bson.D{{"v", bson.D{{"$eq", float64(2 << 61)}}}},
@@ -386,7 +378,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"Int32Zero": {
 			filter:      bson.D{{"v", bson.D{{"$eq", int32(0)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+			expectedIDs: []any{"double-zero", "int32-zero", "int64-zero"},
 		},
 		"Int32Max": {
 			filter:      bson.D{{"v", bson.D{{"$eq", int32(math.MaxInt32)}}}},
@@ -412,7 +404,7 @@ func TestQueryComparisonEq(t *testing.T) {
 		},
 		"Int64Zero": {
 			filter:      bson.D{{"v", bson.D{{"$eq", int64(0)}}}},
-			expectedIDs: []any{"double-negative-zero", "double-zero", "int32-zero", "int64-zero"},
+			expectedIDs: []any{"double-zero", "int32-zero", "int64-zero"},
 		},
 		"Int64Max": {
 			filter:      bson.D{{"v", bson.D{{"$eq", int64(math.MaxInt64)}}}},
@@ -444,7 +436,7 @@ func TestQueryComparisonEq(t *testing.T) {
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
-				"double", "double-big", "double-max", "double-nan", "double-negative-zero",
+				"double", "double-big", "double-max",
 				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
@@ -741,23 +733,9 @@ func TestQueryComparisonGte(t *testing.T) {
 				"array-two", "double", "double-big", "double-max", "int32-max", "int64-big", "int64-max",
 			},
 		},
-		"DoubleNegativeZero": {
-			value: math.Copysign(0, -1),
-			expectedIDs: []any{
-				"array", "array-three", "array-three-reverse", "array-two",
-				"double", "double-big", "double-max", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
-				"int32", "int32-max", "int32-zero",
-				"int64", "int64-big", "int64-max", "int64-zero",
-			},
-		},
 		"DoubleMax": {
 			value:       math.MaxFloat64,
 			expectedIDs: []any{"double-max"},
-		},
-
-		"DoubleNaN": {
-			value:       math.NaN(),
-			expectedIDs: []any{"array-two", "double-nan"},
 		},
 
 		"String": {
@@ -943,7 +921,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			value: 43.13,
 			expectedIDs: []any{
 				"array", "array-three", "array-three-reverse", "array-two",
-				"double", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"double", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
 			},
@@ -955,7 +933,7 @@ func TestQueryComparisonLt(t *testing.T) {
 		"DoubleSmallest": {
 			value: math.SmallestNonzeroFloat64,
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
@@ -1027,7 +1005,7 @@ func TestQueryComparisonLt(t *testing.T) {
 		"Int32": {
 			value: int32(42),
 			expectedIDs: []any{
-				"double-negative-zero", "double-smallest", "double-zero",
+				"double-smallest", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
@@ -1053,7 +1031,7 @@ func TestQueryComparisonLt(t *testing.T) {
 		"Int64": {
 			value: int64(42),
 			expectedIDs: []any{
-				"double-negative-zero", "double-smallest", "double-zero",
+				"double-smallest", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
@@ -1066,7 +1044,7 @@ func TestQueryComparisonLt(t *testing.T) {
 			value: int64(2<<60 + 1),
 			expectedIDs: []any{
 				"array", "array-three", "array-three-reverse", "array-two",
-				"double", "double-big", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"double", "double-big", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
 			},
@@ -1152,7 +1130,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			value: 42.13,
 			expectedIDs: []any{
 				"array", "array-three", "array-three-reverse", "array-two",
-				"double", "double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"double", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
 			},
@@ -1160,7 +1138,7 @@ func TestQueryComparisonLte(t *testing.T) {
 		"DoubleNegativeZero": {
 			value: math.Copysign(0, -1),
 			expectedIDs: []any{
-				"double-negative-zero", "double-zero",
+				"double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
@@ -1168,14 +1146,14 @@ func TestQueryComparisonLte(t *testing.T) {
 		"DoubleSmallest": {
 			value: math.SmallestNonzeroFloat64,
 			expectedIDs: []any{
-				"double-negative-zero", "double-smallest", "double-zero",
+				"double-smallest", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
 		},
 		"DoubleNaN": {
 			value:       math.NaN(),
-			expectedIDs: []any{"array-two", "double-nan"},
+			expectedIDs: []any{"array-two"},
 		},
 
 		"String": {
@@ -1244,7 +1222,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			value: int32(42),
 			expectedIDs: []any{
 				"array", "array-three", "array-three-reverse",
-				"double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
 			},
@@ -1271,7 +1249,7 @@ func TestQueryComparisonLte(t *testing.T) {
 			value: int64(42),
 			expectedIDs: []any{
 				"array", "array-three", "array-three-reverse",
-				"double-negative-zero", "double-smallest", "double-whole", "double-zero",
+				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
 			},
@@ -1337,7 +1315,7 @@ func TestQueryComparisonNin(t *testing.T) {
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"double", "double-big", "double-max", "double-nan", "double-negative-zero",
+				"double", "double-big", "double-max",
 				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
@@ -1366,7 +1344,7 @@ func TestQueryComparisonNin(t *testing.T) {
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
 				"document", "document-composite", "document-composite-reverse", "document-empty", "document-null",
-				"double", "double-big", "double-max", "double-nan", "double-negative-zero",
+				"double", "double-big", "double-max",
 				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
@@ -1446,7 +1424,7 @@ func TestQueryComparisonIn(t *testing.T) {
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
-				"double", "double-big", "double-max", "double-nan", "double-negative-zero",
+				"double", "double-big", "double-max",
 				"double-smallest", "double-whole", "double-zero",
 				"int32", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-big", "int64-max", "int64-min", "int64-zero",
@@ -1566,10 +1544,6 @@ func TestQueryComparisonNe(t *testing.T) {
 		"DoubleZero": {
 			value:        0.0,
 			unexpectedID: "double-zero",
-		},
-		"DoubleNaN": {
-			value:        math.NaN(),
-			unexpectedID: "double-nan",
 		},
 		"DoubleBig": {
 			value:        float64(2 << 60),
