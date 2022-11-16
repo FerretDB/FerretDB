@@ -50,6 +50,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		replyDoc := must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		))
+
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{replyDoc},
 		}))
