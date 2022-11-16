@@ -54,8 +54,12 @@ func ConvertDocument(d document) (*Document, error) {
 	keys := d.Keys()
 	values := d.Values()
 
-	// If keys are not set, we don't need to allocate memory for fields.
-	if len(keys) == 0 {
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
+	// If values are not set, we don't need to allocate memory for fields.
+	if len(values) == 0 {
 		return new(Document), nil
 	}
 
@@ -250,6 +254,7 @@ func (d *Document) Get(key string) (any, error) {
 }
 
 // Values returns a copy of document's values in the same order as Keys().
+// If documents' fields are not set (nil), it returns nil.
 func (d *Document) Values() []any {
 	if d == nil || d.fields == nil {
 		return nil

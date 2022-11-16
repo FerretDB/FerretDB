@@ -74,7 +74,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						// Skip inserts that could not be performed due to Tigris schema validation.
 						var e mongo.CommandError
 						if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") ||
+								e.HasErrorCodeWithMessage(121, "does not validate with") {
 								setup.SkipForTigrisWithReason(t, targetErr.Error())
 							}
 						}
@@ -128,10 +129,10 @@ func TestInsertCompat(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1396",
 		},
 		"InsertDuplicateKeysAZ": {
-			insert: bson.D{{"_id", "duplicate_keys_az"}, {"foo", "bar"}, {"foo", "baz"}},
+			insert: bson.D{{"_id", "duplicate_keys_az"}, {"v", "bar"}, {"v", "baz"}},
 		},
 		"InsertDuplicateKeysZA": {
-			insert: bson.D{{"_id", "duplicate_keys_za"}, {"foo", "baz"}, {"foo", "bar"}},
+			insert: bson.D{{"_id", "duplicate_keys_za"}, {"v", "baz"}, {"v", "bar"}},
 		},
 	}
 

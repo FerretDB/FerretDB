@@ -16,6 +16,7 @@ package bson
 
 import (
 	"bufio"
+	"fmt"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -35,17 +36,21 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 	}
 
 	keys := doc.Keys()
+	values := doc.Values()
+
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
 	ta := types.MakeArray(len(keys))
 
-	for i := 0; i < len(keys); i++ {
-		if k := keys[i]; k != strconv.Itoa(i) {
+	for i, k := range keys {
+		if k != strconv.Itoa(i) {
 			return lazyerrors.Errorf("key %d is %q", i, k)
 		}
 
-		v, err := doc.Get(strconv.Itoa(i))
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
+		v := values[i]
+
 		if err := ta.Append(v); err != nil {
 			return lazyerrors.Error(err)
 		}

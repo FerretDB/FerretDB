@@ -57,6 +57,15 @@ func ConvertDocument(d document) (*Document, error) {
 	keys := d.Keys()
 	values := d.Values()
 
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
+	// If values are not set, we don't need to allocate memory for fields.
+	if values == nil {
+		return new(Document), nil
+	}
+
 	fields := make([]field, len(keys))
 	for i, key := range keys {
 		fields[i] = field{
@@ -104,20 +113,6 @@ func (doc *Document) Keys() []string {
 	}
 
 	return keys
-}
-
-// Get returns a value at the given key.
-// If there are duplicated keys in the document, it returns the first value.
-//
-// Deprecated: as Document might have duplicate keys, Get is not a good way to get values by the given keys.
-func (doc *Document) Get(key string) (any, error) {
-	for _, field := range doc.fields {
-		if field.key == key {
-			return field.value, nil
-		}
-	}
-
-	return nil, fmt.Errorf("bson.Document.Get: key not found: %q", key)
 }
 
 // Values returns a copy of document's values in the same order as Keys().
@@ -325,6 +320,10 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 
 	keys := doc.Keys()
 	values := doc.Values()
+
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
 
 	for i, elK := range keys {
 		ename := CString(elK)
