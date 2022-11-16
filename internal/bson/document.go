@@ -36,7 +36,7 @@ const (
 // TODO Remove it.
 type document interface {
 	Keys() []string
-	Get(key string) (any, error)
+	Values() []any
 }
 
 // Document represents BSON Document type.
@@ -55,11 +55,14 @@ type field struct {
 //
 // TODO Remove it.
 func ConvertDocument(d document) (*Document, error) {
-	fields := make([]field, len(d.Keys()))
-	for i, key := range d.Keys() {
+	keys := d.Keys()
+	values := d.Values()
+
+	fields := make([]field, len(keys))
+	for i, key := range keys {
 		fields[i] = field{
 			key:   key,
-			value: must.NotFail(d.Get(key)),
+			value: values[i],
 		}
 	}
 
@@ -114,6 +117,20 @@ func (doc *Document) Get(key string) (any, error) {
 	}
 
 	return nil, fmt.Errorf("bson.Document.Get: key not found: %q", key)
+}
+
+// Values returns a copy of document's values in the same order as Keys().
+func (doc *Document) Values() []any {
+	if doc == nil || doc.fields == nil {
+		return nil
+	}
+
+	values := make([]any, len(doc.fields))
+	for i, field := range doc.fields {
+		values[i] = field.value
+	}
+
+	return values
 }
 
 // ReadFrom implements bsontype interface.

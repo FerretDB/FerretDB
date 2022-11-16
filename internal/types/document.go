@@ -28,7 +28,7 @@ import (
 // TODO Remove this type.
 type document interface {
 	Keys() []string
-	Get(key string) (any, error)
+	Values() []any
 }
 
 // Document represents BSON document.
@@ -51,16 +51,19 @@ func ConvertDocument(d document) (*Document, error) {
 		panic("types.ConvertDocument: d is nil")
 	}
 
+	keys := d.Keys()
+	values := d.Values()
+
 	// If keys are not set, we don't need to allocate memory for fields.
-	if d.Keys() == nil || len(d.Keys()) == 0 {
+	if keys == nil || len(keys) == 0 {
 		return new(Document), nil
 	}
 
-	fields := make([]field, len(d.Keys()))
+	fields := make([]field, len(keys))
 	for i, key := range d.Keys() {
 		fields[i] = field{
 			key:   key,
-			value: must.NotFail(d.Get(key)),
+			value: values[i],
 		}
 	}
 
@@ -242,6 +245,20 @@ func (d *Document) Get(key string) (any, error) {
 	}
 
 	return nil, fmt.Errorf("types.Document.Get: key not found: %q", key)
+}
+
+// Values returns a copy of document's values in the same order as Keys().
+func (d *Document) Values() []any {
+	if d == nil || d.fields == nil {
+		return nil
+	}
+
+	values := make([]any, len(d.fields))
+	for i, field := range d.fields {
+		values[i] = field.value
+	}
+
+	return values
 }
 
 // Set sets the value for the given key, replacing any existing value.
