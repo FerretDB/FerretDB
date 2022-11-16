@@ -32,7 +32,6 @@ type deleteCompatTestCase struct {
 	filters    []bson.D                 // required
 	ordered    bool                     // defaults to false
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	skip       string                   // skips test if non-empty
 }
 
 func TestDeleteCompat(t *testing.T) {
@@ -139,10 +138,6 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
 
 			t.Parallel()
 

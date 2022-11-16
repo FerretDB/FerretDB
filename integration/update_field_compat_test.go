@@ -98,7 +98,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DuplicateQuery": {
 			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
-			skip:   "Handle duplicates correctly",
+			skip:   "https://github.com/FerretDB/FerretDB/issues/666",
 		},
 
 		// Strings are not converted to numbers (except for Tigris with int64 fields)
