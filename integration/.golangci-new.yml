@@ -144,3 +144,7 @@ issues:
   max-same-issues: 0
   exclude-use-default: false
   new-from-rev: origin/main
+  exclude-rules:
+    # that's a valid usage of bson.D
+    - linters: [govet]
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
