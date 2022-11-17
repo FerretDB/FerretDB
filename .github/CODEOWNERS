@@ -2,6 +2,14 @@
 # Order is important; the last matching pattern takes the most precedence.
 
 *              @AlekSi
+
+/cmd/          @FerretDB/leads
+/ferretdb/     @FerretDB/leads
 /integration/  @FerretDB/leads
 /internal/     @FerretDB/leads
+
 /website/      @FerretDB/doc
+
+/build/        @AlekSi
+go.mod         @AlekSi
+go.sum         @AlekSi
