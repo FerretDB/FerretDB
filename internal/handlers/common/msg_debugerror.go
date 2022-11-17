@@ -17,8 +17,11 @@ package common
 import (
 	"context"
 	"errors"
+	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -34,10 +37,29 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/640
+	// check if parameter is an error code
+	if n, err := strconv.Atoi(expected); err == nil {
+		errCode := ErrorCode(n)
+		return nil, errors.New(errCode.String())
+	}
+
 	switch expected {
+	case "ok":
+		var reply wire.OpMsg
+
+		replyDoc := must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))
+
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{replyDoc},
+		}))
+
+		return &reply, nil
+
 	case "panic":
-		panic("oops!")
+		panic("debugError panic")
+
 	default:
 		return nil, errors.New(expected)
 	}
