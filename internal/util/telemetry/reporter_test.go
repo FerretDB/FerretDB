@@ -30,37 +30,43 @@ func TestNewReporterLock(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		f            *Flag
-		dnt          string
-		execName     string
-		expectedLock bool
+		f        *Flag
+		dnt      string
+		execName string
+		t        *bool
+		locked   bool
 	}{
 		"NoSet": {
 			f: new(Flag),
 		},
-		"Flag": {
-			f:            &Flag{pointer.ToBool(true)},
-			expectedLock: true,
+		"FlagEnable": {
+			f:      &Flag{v: pointer.ToBool(true)},
+			t:      pointer.ToBool(true),
+			locked: true,
 		},
 		"FlagDisable": {
-			f:            &Flag{pointer.ToBool(false)},
-			expectedLock: true,
+			f:      &Flag{v: pointer.ToBool(false)},
+			t:      pointer.ToBool(false),
+			locked: true,
 		},
-		"DoNotTouch": {
-			f:            new(Flag),
-			dnt:          "enable",
-			expectedLock: true,
+		"DoNotTrack": {
+			f:      new(Flag),
+			dnt:    "enable",
+			t:      pointer.ToBool(false),
+			locked: true,
 		},
 		"ExecName": {
-			f:            new(Flag),
-			execName:     "exec_donottrack",
-			expectedLock: true,
+			f:        new(Flag),
+			execName: "exec_donottrack",
+			t:        pointer.ToBool(false),
+			locked:   true,
 		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
 			provider, err := state.NewProvider("")
 			require.NoError(t, err)
 
@@ -76,7 +82,9 @@ func TestNewReporterLock(t *testing.T) {
 			_, err = NewReporter(&opts)
 			assert.NoError(t, err)
 
-			assert.Equal(t, tc.expectedLock, provider.Get().TelemetryLocked)
+			s := provider.Get()
+			assert.Equal(t, tc.t, s.Telemetry)
+			assert.Equal(t, tc.locked, s.TelemetryLocked)
 		})
 	}
 }
