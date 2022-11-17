@@ -192,7 +192,12 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1253")
 
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+	})
+	ctx, collection := s.Ctx, s.Collection
+
+	isTCP := s.Port != 0
 
 	for name, tc := range map[string]struct {
 		query   bson.D
@@ -232,7 +237,12 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
 
 			assert.NotEmpty(t, must.NotFail(serverInfo.Get("host")))
-			assert.NotEmpty(t, must.NotFail(serverInfo.Get("port")))
+
+			// only check port number on TCP, not on unix socket
+			if isTCP {
+				assert.NotEmpty(t, must.NotFail(serverInfo.Get("port")))
+			}
+
 			assert.NotEmpty(t, must.NotFail(serverInfo.Get("gitVersion")))
 			assert.Regexp(t, `^6\.0\.`, must.NotFail(serverInfo.Get("version")))
 

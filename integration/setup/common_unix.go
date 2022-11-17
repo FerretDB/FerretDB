@@ -39,7 +39,7 @@ func listenUnix(tb testing.TB) string {
 	// The unix socket path must be less than 108 chars.
 	// https://man7.org/linux/man-pages/man7/unix.7.html
 	if len(socketPath) >= 108 {
-		tb.Fatalf("listen unix socket path of length %d is too long: %d %s", len(socketPath), socketPath)
+		tb.Fatalf("listen unix socket path too long len: %d, path: %s", len(socketPath), socketPath)
 	}
 
 	return socketPath
