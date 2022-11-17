@@ -15,35 +15,37 @@
 package wire
 
 import (
-	"log"
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+type ValidationError struct {
+	msg string
+}
+
+func (v ValidationError) Error() string {
+	return v.msg
+}
+
+func NewValidationError(err error) error {
+	return &ValidationError{msg: err.Error()}
+}
 
 // validateValue checks given value and return error if not supported value was encountered.
 func validateValue(v any) error {
 	switch v := v.(type) {
 	case *types.Document:
-		for _, k := range v.Keys() {
-			vv, err := v.Get(k)
-			if err != nil {
-				log.Fatal("can't get value from array")
-			}
-
-			if err := validateValue(vv); err != nil {
+		for _, v := range v.Values() {
+			if err := validateValue(v); err != nil {
 				return err
 			}
 		}
 	case *types.Array:
 		for i := 0; i < v.Len(); i++ {
-			vv, err := v.Get(i)
-			if err != nil {
-				log.Fatal("can't get value from array")
-			}
-
-			if err := validateValue(vv); err != nil {
+			if err := validateValue(must.NotFail(v.Get(i))); err != nil {
 				return err
 			}
 		}

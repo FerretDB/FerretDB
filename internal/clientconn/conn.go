@@ -323,8 +323,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		document, err = msg.Document()
 
 		command = document.Command()
+
+		resHeader.OpCode = wire.OpCodeMsg
+
 		if err == nil {
-			resHeader.OpCode = wire.OpCodeMsg
 			resBody, err = c.handleOpMsg(ctx, msg, command)
 		}
 

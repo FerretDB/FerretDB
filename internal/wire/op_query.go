@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -70,7 +71,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	doc := must.NotFail(types.ConvertDocument(&q))
 
 	if err := validateValue(doc); err != nil {
-		return lazyerrors.Errorf("wire.OpQuery.ReadFrom validation failed for %v with: %v", doc, err)
+		return NewValidationError(fmt.Errorf("wire.OpQuery.ReadFrom validation failed for %v with: %v", doc, err))
 	}
 
 	query.Query = doc
