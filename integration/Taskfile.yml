@@ -10,13 +10,16 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-        -tags=ferretdb_testenvdata . -handler=pg
+        -tags=ferretdb_testenvdata . -records-dir=../records
+        -handler=pg
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-        -tags=ferretdb_testenvdata,ferretdb_tigris . -handler=tigris
+        -tags=ferretdb_testenvdata,ferretdb_tigris . -records-dir=../records
+        -handler=tigris
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-        -tags=ferretdb_testenvdata . -target-port=37017 -compat-port=0
+        -tags=ferretdb_testenvdata . -records-dir=../records
+        -target-port=37017 -compat-port=0
 
   integration-gen:
     cmds:
