@@ -161,7 +161,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		},
 		"PositionIndexAtTheEndOfArray": {
 			filter:      bson.D{{"v.1", bson.D{{"$type", "string"}}}},
-			expectedIDs: []any{"array-two"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two"},
 		},
 
 		"PositionTypeNull": {
