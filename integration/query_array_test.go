@@ -90,14 +90,6 @@ func TestQueryArraySize(t *testing.T) {
 				Message: "Failed to parse $size. Expected an integer: $size: 2.1",
 			},
 		},
-		"NaN": {
-			filter: bson.D{{"v", bson.D{{"$size", math.NaN()}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Expected an integer, but found NaN in: $size: nan.0`,
-			},
-		},
 		"Infinity": {
 			filter: bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
 			err: &mongo.CommandError{

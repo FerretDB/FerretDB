@@ -533,10 +533,6 @@ func TestQueryComparisonGt(t *testing.T) {
 			value:       math.MaxFloat64,
 			expectedIDs: []any{},
 		},
-		"DoubleNaN": {
-			value:       math.NaN(),
-			expectedIDs: []any{},
-		},
 
 		"String": {
 			value:       "boo",
