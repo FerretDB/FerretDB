@@ -4,13 +4,10 @@ sidebar_position: 1
 
 # Supported commands
 
+## Query commands
+
 | Command           | Argument                | Status | Comments                                                  |
 |-------------------|-------------------------|--------|-----------------------------------------------------------|
-| `listCollections` |                         | ✅     | Basic command is fully supported                          |
-|                   | `filter`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
-|                   | `nameOnly`              | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
-|                   | `comment`               | ⚠️     | Ignored                                                   |
-|                   | `authorizedCollections` | ⚠️     | Ignored                                                   |
 | `delete`          |                         | ✅     | Basic command is fully supported                          |
 |                   | `deletes`               | ✅     |                                                           |
 |                   | `comment`               | ⚠️     | Ignored                                                   |
@@ -66,7 +63,6 @@ sidebar_position: 1
 |                   | `ordered`                  | ❌  | [Issue](https://github.com/FerretDB/FerretDB/issues/940)  |
 |                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                   |
 |                   | `comment`                  | ⚠️  | Ignored                                                   |
-| `resetError`      |                            |     | Removed in MongoDB 5.0.                                   |
 | `update`          |                            | ✅  | Basic command is fully supported                          |
 |                   | `updates`                  | ✅  |                                                           |
 |                   | `ordered`                  | ⚠️  | Ignored                                                   |
@@ -83,34 +79,34 @@ sidebar_position: 1
 |                   | `arrayFilters`             | ⚠️  | Unimplemented                                             |
 |                   | `hint`                     | ⚠️  | Unimplemented                                             |
 
-## Update Operators
+### Update Operators
 
 The following operators and modifiers are available in the `update` and `findAndModify` commands.
 
-| Operator          | Modifier | Status | Comments                                                  |
-|-------------------|----------|--------|-----------------------------------------------------------|
-| `$currentDate`    |          | ✅     |                                                           |
-| `$inc`            |          | ✅     |                                                           |
-| `$min`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/623)  |
-| `$max`            |          | ✅     |                                                           |
-| `$mul`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
-| `$rename`         |          | ✅     |                                                           |
-| `$set`            |          | ✅     |                                                           |
-| `$setOnInsert`    |          | ✅     |                                                           |
-| `$unset`          |          | ✅     |                                                           |
-| `$`               |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/822)  |
-| `$[]`             |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/823)  |
-| `$[<identifier>]` |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
-| `$addToSet`       |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
-| `$pop`            |          | ✅     |                                                           |
-| `$pull`           |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
-| `$push`           |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
-| `$pullAll`        |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
-|                   | `$each`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/828)  |
-|                   | `$position`             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/829)  |
-|                   | `$slice`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830)  |
-|                   | `$sort`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
-|                   | `$bit`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
+| Operator          | Modifier    | Status | Comments                                                  |
+|-------------------|-------------|--------|-----------------------------------------------------------|
+| `$currentDate`    |             | ✅     |                                                           |
+| `$inc`            |             | ✅     |                                                           |
+| `$min`            |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/623)  |
+| `$max`            |             | ✅     |                                                           |
+| `$mul`            |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
+| `$rename`         |             | ✅     |                                                           |
+| `$set`            |             | ✅     |                                                           |
+| `$setOnInsert`    |             | ✅     |                                                           |
+| `$unset`          |             | ✅     |                                                           |
+| `$`               |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/822)  |
+| `$[]`             |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/823)  |
+| `$[<identifier>]` |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
+| `$addToSet`       |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
+| `$pop`            |             | ✅     |                                                           |
+| `$pull`           |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
+| `$push`           |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
+| `$pullAll`        |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
+|                   | `$each`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/828)  |
+|                   | `$position` | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/829)  |
+|                   | `$slice`    | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830)  |
+|                   | `$sort`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
+|                   | `$bit`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
 ## Database Operations
 
@@ -165,9 +161,15 @@ The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
 
 | Command     | Argument             | Status | Comments                                                  |
 |-------------|----------------------|--------|-----------------------------------------------------------|
-| `aggregate` |                      | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
+| `aggregate` |                      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
 
-### Aggregation collection stages
+<!-- markdownlint-disable MD001 MD033 -->
+<!-- That's the simplest way to remove those sections from the right menu. -->
+
+<details>
+<summary>Stages and operators</summary>
+
+#### Aggregation collection stages
 
 ```js
 db.collection.aggregate()
@@ -175,39 +177,39 @@ db.collection.aggregate()
 
 | Stage                          | Status | Comments                                                  |
 |--------------------------------|--------|-----------------------------------------------------------|
-| `$addFields`, `$set`           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
-| `$bucket`, `$bucketAuto`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
-| `$changeStream`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
-| `$collStats`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1416) |
-| `$count`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1417) |
-| `$densify`                     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1418) |
-| `$documents`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
-| `$facet`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1420) |
-| `$fill`                        | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1421) |
-| `$geoNear`                     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1412) |
-| `$graphLookup`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1422) |
-| `$group`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1423) |
-| `$indexStats`                  | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1424) |
-| `$limit`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1425) |
-| `$listSessions`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
-| `$lookup`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1427) |
-| `$match`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1428) |
-| `$merge`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1429) |
-| `$out`                         | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1430) |
-| `$planCacheStats`              | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1431) |
-| `$project`, `$unset`           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1432) |
-| `$redact`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1433) |
-| `$replaceRoot`, `$replaceWith` | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1434) |
-| `$sample`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
-| `$search`, `$searchMeta`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
-| `$setWindowFields`             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
-| `$skip`                        | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1438) |
-| `$sort`                        | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1439) |
-| `$sortByCount`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
-| `$unionWith`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
-| `$unwind`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |
+| `$addFields`, `$set`           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
+| `$bucket`, `$bucketAuto`       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
+| `$changeStream`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
+| `$collStats`                   | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1416) |
+| `$count`                       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1417) |
+| `$densify`                     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1418) |
+| `$documents`                   | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
+| `$facet`                       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1420) |
+| `$fill`                        | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1421) |
+| `$geoNear`                     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1412) |
+| `$graphLookup`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1422) |
+| `$group`                       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1423) |
+| `$indexStats`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1424) |
+| `$limit`                       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1425) |
+| `$listSessions`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
+| `$lookup`                      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1427) |
+| `$match`                       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1428) |
+| `$merge`                       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1429) |
+| `$out`                         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1430) |
+| `$planCacheStats`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1431) |
+| `$project`, `$unset`           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1432) |
+| `$redact`                      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1433) |
+| `$replaceRoot`, `$replaceWith` | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1434) |
+| `$sample`                      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
+| `$search`, `$searchMeta`       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
+| `$setWindowFields`             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
+| `$skip`                        | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1438) |
+| `$sort`                        | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1439) |
+| `$sortByCount`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
+| `$unionWith`                   | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
+| `$unwind`                      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |
 
-### Aggregation database stages
+#### Aggregation database stages
 
 ```js
 db.aggregate()
@@ -215,12 +217,12 @@ db.aggregate()
 
 | Stage                | Status | Comments                                                  |
 |----------------------|--------|-----------------------------------------------------------|
-| `$changeStream`      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
-| `$currentOp`         | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1444) |
-| `$listLocalSessions` | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
-| `$documents`         | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
+| `$changeStream`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
+| `$currentOp`         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1444) |
+| `$listLocalSessions` | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
+| `$documents`         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
 
-### Aggregation pipeline operators
+#### Aggregation pipeline operators
 
 | Operator                          | Status | Comments                                                  |
 |-----------------------------------|--------|-----------------------------------------------------------|
@@ -392,3 +394,17 @@ db.aggregate()
 | `$week`                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
 | `$year`                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
 | `$zip`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1454) |
+
+</details>
+
+<!-- markdownlint-enable MD001 MD033 -->
+
+## Administration commands
+
+| Command           | Argument                | Status | Comments                                                  |
+|-------------------|-------------------------|--------|-----------------------------------------------------------|
+| `listCollections` |                         | ✅     | Basic command is fully supported                          |
+|                   | `filter`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
+|                   | `nameOnly`              | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                   | `comment`               | ⚠️     | Ignored                                                   |
+|                   | `authorizedCollections` | ⚠️     | Ignored                                                   |
