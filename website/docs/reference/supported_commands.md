@@ -113,11 +113,12 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$bit`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
 ## Database Operations
+
 ### User Management Commands
 
 | Command                    | Argument             | Status | Comments                                                  |
 |----------------------------|----------------------|--------|-----------------------------------------------------------|
-| `createUser`               |                      |        |                                                           |	
+| `createUser`               |                      |        |                                                           |
 | `dropAllUsersFromDatabase` |                      |        |                                                           |
 | `dropUser`                 |                      |        |                                                           |
 | `grantRolesToUser`         |                      |        |                                                           |
