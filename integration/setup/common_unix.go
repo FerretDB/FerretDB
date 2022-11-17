@@ -17,11 +17,12 @@
 package setup
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // listenUnix returns temporary Unix domain socket path for that test.
