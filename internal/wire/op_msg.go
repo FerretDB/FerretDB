@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"math"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -115,44 +113,6 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	return doc, nil
-}
-
-// validateValue checks given value and return error if not supported value was encountered.
-func validateValue(v any) error {
-	switch v := v.(type) {
-	case *types.Document:
-		for _, k := range v.Keys() {
-			vv, err := v.Get(k)
-			if err != nil {
-				log.Fatal("can't get value from array")
-			}
-
-			if err := validateValue(vv); err != nil {
-				return err
-			}
-		}
-	case *types.Array:
-		for i := 0; i < v.Len(); i++ {
-			vv, err := v.Get(i)
-			if err != nil {
-				log.Fatal("can't get value from array")
-			}
-
-			if err := validateValue(vv); err != nil {
-				return err
-			}
-		}
-	case float64:
-		if math.IsNaN(v) {
-			return lazyerrors.Errorf("NaN is not supported")
-		}
-
-		if v == 0 && math.Signbit(0) {
-			return lazyerrors.Errorf("-0 is not supported")
-		}
-	}
-
-	return nil
 }
 
 func (msg *OpMsg) msgbody() {}
