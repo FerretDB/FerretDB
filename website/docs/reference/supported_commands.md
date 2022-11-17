@@ -116,15 +116,48 @@ The following operators and modifiers are available in the `update` and `findAnd
 
 ### User Management Commands
 
-| Command                    | Argument             | Status | Comments                                                  |
-|----------------------------|----------------------|--------|-----------------------------------------------------------|
-| `createUser`               |                      |        |                                                           |
-| `dropAllUsersFromDatabase` |                      |        |                                                           |
-| `dropUser`                 |                      |        |                                                           |
-| `grantRolesToUser`         |                      |        |                                                           |
-| `revokeRolesFromUser`      |                      |        |                                                           |
-| `updateUser`               |                      |        |                                                           |
-| `usersInfo`                |                      |        |                                                           |
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `createUser`               |                                  | ❌     |                                                           |
+|                            | `pwd`                            | ⚠️      |                                                           |
+|                            | `customData`                     | ⚠️      |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `authenticationRestrictions`     | ⚠️      |                                                           |
+|                            | `mechanisms`                     | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `dropAllUsersFromDatabase` |                                  | ❌     |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `dropUser`                 |                                  | ❌     |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `grantRolesToUser`         |                                  | ❌     |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `revokeRolesFromUser`      |                                  | ❌     |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `updateUser`               |                                  | ❌     |                                                           |
+|                            | `pwd`                            | ⚠️      |                                                           |
+|                            | `customData`                     | ⚠️      |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `authenticationRestrictions`     | ⚠️      |                                                           |
+|                            | `mechanisms`                     | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `usersInfo`                |                                  | ❌     |                                                           |
+|                            | `showCredentials`                | ⚠️      |                                                           |
+|                            | `showCustomData`                 | ⚠️      |                                                           |
+|                            | `showPrivileges`                 | ⚠️      |                                                           |
+|                            | `showAuthenticationRestrictions` | ⚠️      |                                                           |
+|                            | `filter`                         | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
 
 ## Aggregation pipelines
 
