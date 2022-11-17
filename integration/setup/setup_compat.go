@@ -99,7 +99,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	var uri string
 	targetPort := *targetPortF
 	if targetPort == 0 {
-		targetUnixSocket := false
+		targetUnixSocket := *targetUnixSocketF
 		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
 	} else {
 		uri = buildURI(tb, targetPort)
