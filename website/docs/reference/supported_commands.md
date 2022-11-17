@@ -89,23 +89,23 @@ The following operators and modifiers are available in the `update` and `findAnd
 
 | Operator          | Modifier | Status | Comments                                                  |
 |-------------------|----------|--------|-----------------------------------------------------------|
-| `$currentDate`    |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-| `$inc`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-| `$min`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-| `$max`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+| `$currentDate`    |          | ✅     |                                                           |
+| `$inc`            |          | ✅     |                                                           |
+| `$min`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/623)  |
+| `$max`            |          | ✅     |                                                           |
 | `$mul`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
-| `$rename`         |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/626)  |
-| `$set`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-| `$setOnInsert`    |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-| `$unset`          |          | ⚠️     | Issues: [#666](https://github.com/FerretDB/FerretDB/issues/666) [#1242](https://github.com/FerretDB/FerretDB/issues/1242) [#1023](https://github.com/FerretDB/FerretDB/issues/1023) |
-| `$`               |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/822)  |
-| `$[]`             |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/823)  |
-| `$[<identifier>]` |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
-| `$addToSet`       |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
-| `$pop`            |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-| `$pull`           |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
-| `$push`           |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
-| `$pullAll`        |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
+| `$rename`         |          | ✅     |                                                           |
+| `$set`            |          | ✅     |                                                           |
+| `$setOnInsert`    |          | ✅     |                                                           |
+| `$unset`          |          | ✅     |                                                           |
+| `$`               |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/822)  |
+| `$[]`             |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/823)  |
+| `$[<identifier>]` |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
+| `$addToSet`       |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
+| `$pop`            |          | ✅     |                                                           |
+| `$pull`           |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
+| `$push`           |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
+| `$pullAll`        |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
 |                   | `$each`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/828)  |
 |                   | `$position`             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/829)  |
 |                   | `$slice`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830)  |
