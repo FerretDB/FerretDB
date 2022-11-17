@@ -357,24 +357,6 @@ func TestQueryEvaluationMod(t *testing.T) {
 				Message: `malformed mod, divisor not a number`,
 			},
 		},
-		"DivisorNaN": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
-			err: &mongo.CommandError{
-				Code: 2,
-				Name: "BadValue",
-				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
-					`Unable to coerce NaN/Inf to integral type`,
-			},
-		},
-		"RemainderNaN": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
-			err: &mongo.CommandError{
-				Code: 2,
-				Name: "BadValue",
-				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
-					`Unable to coerce NaN/Inf to integral type`,
-			},
-		},
 		"InfinityNegative": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
 			err: &mongo.CommandError{

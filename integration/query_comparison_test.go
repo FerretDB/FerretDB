@@ -938,10 +938,6 @@ func TestQueryComparisonLt(t *testing.T) {
 				"int64-min", "int64-zero",
 			},
 		},
-		"DoubleNaN": {
-			value:       math.NaN(),
-			expectedIDs: []any{},
-		},
 
 		"String": {
 			value:       "goo",
@@ -1150,10 +1146,6 @@ func TestQueryComparisonLte(t *testing.T) {
 				"int32-min", "int32-zero",
 				"int64-min", "int64-zero",
 			},
-		},
-		"DoubleNaN": {
-			value:       math.NaN(),
-			expectedIDs: []any{"array-two"},
 		},
 
 		"String": {

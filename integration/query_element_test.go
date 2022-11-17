@@ -223,14 +223,6 @@ func TestQueryElementType(t *testing.T) {
 				Name:    "BadValue",
 			},
 		},
-		"TypeArrayBadValueNan": {
-			v: []any{"binData", math.NaN()},
-			err: &mongo.CommandError{
-				Code:    2,
-				Message: "Invalid numerical type code: nan",
-				Name:    "BadValue",
-			},
-		},
 		"TypeArrayBadValuePlusInf": {
 			v: []any{"binData", math.Inf(+1)},
 			err: &mongo.CommandError{
