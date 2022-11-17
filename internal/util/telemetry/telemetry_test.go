@@ -33,21 +33,20 @@ func TestState(t *testing.T) {
 		dnt      string
 		execName string
 		prev     *bool
-		locked   bool
 		state    *bool
+		locked   bool
 		err      string
 	}{
 		"default": {},
 		"prev": {
-			prev:   pointer.ToBool(false),
-			locked: false,
-			state:  pointer.ToBool(false),
+			prev:  pointer.ToBool(false),
+			state: pointer.ToBool(false),
 		},
 		"flag": {
 			flag:   "disable",
 			prev:   pointer.ToBool(true),
-			locked: true,
 			state:  pointer.ToBool(false),
+			locked: true,
 		},
 		"dnt": {
 			dnt:    "1",
@@ -55,14 +54,12 @@ func TestState(t *testing.T) {
 			locked: true,
 		},
 		"invalidDnt": {
-			dnt:    "foo",
-			locked: false,
-			err:    "failed to parse foo",
+			dnt: "foo",
+			err: "failed to parse foo",
 		},
 		"conflict": {
 			flag:     "enable",
 			execName: "DoNotTrack",
-			locked:   false,
 			err:      "telemetry can't be enabled",
 		},
 	} {
@@ -76,14 +73,15 @@ func TestState(t *testing.T) {
 			require.NoError(t, err)
 
 			logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-			actualState, locked, actualErr := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
-			assert.Equal(t, tc.state, actualState)
-			assert.Equal(t, tc.locked, locked)
+
+			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
 			if tc.err != "" {
-				assert.EqualError(t, actualErr, tc.err)
+				assert.EqualError(t, err, tc.err)
 				return
 			}
-			assert.NoError(t, actualErr)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.state, state)
+			assert.Equal(t, tc.locked, locked)
 		})
 	}
 }
