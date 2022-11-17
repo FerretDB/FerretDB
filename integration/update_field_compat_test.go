@@ -23,6 +23,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+func TestUpdateFieldCompatCurrentDate(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"DuplicateKeys": {
+			update: bson.D{{"$currentDate", bson.D{
+				{"v", bson.D{{"$type", "timestamp"}}},
+				{"v", bson.D{{"$type", "timestamp"}}},
+			}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
 
@@ -50,6 +66,10 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		"DotNotationFieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
+		},
+		"DuplicateKeys": {
+			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
+			resultType: emptyResult,
 		},
 	}
 
@@ -96,9 +116,9 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			update:        bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
-		"DuplicateQuery": {
-			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/666",
+		"DuplicateKeys": {
+			update:     bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
+			resultType: emptyResult,
 		},
 
 		// Strings are not converted to numbers (except for Tigris with int64 fields)
@@ -179,6 +199,10 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
 			resultType: emptyResult,
 		},
+		"DuplicateKeys": {
+			update:     bson.D{{"$unset", bson.D{{"v", ""}, {"v", ""}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -192,8 +216,34 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
 		},
 		"DuplicateKeys": {
-			update: bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1263",
+			update:     bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"DuplicateKeys": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatPop(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"DuplicateKeys": {
+			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
+			resultType: emptyResult,
 		},
 	}
 

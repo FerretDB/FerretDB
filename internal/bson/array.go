@@ -16,6 +16,7 @@ package bson
 
 import (
 	"bufio"
+	"fmt"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,16 +35,22 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Error(err)
 	}
 
-	ta := types.MakeArray(len(doc.m))
-	for i := 0; i < len(doc.m); i++ {
-		if k := doc.keys[i]; k != strconv.Itoa(i) {
+	keys := doc.Keys()
+	values := doc.Values()
+
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
+	ta := types.MakeArray(len(keys))
+
+	for i, k := range keys {
+		if k != strconv.Itoa(i) {
 			return lazyerrors.Errorf("key %d is %q", i, k)
 		}
 
-		v, ok := doc.m[strconv.Itoa(i)]
-		if !ok {
-			return lazyerrors.Errorf("no element %d in array of length %d", i, len(doc.m))
-		}
+		v := values[i]
+
 		if err := ta.Append(v); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -71,22 +78,22 @@ func (a arrayType) WriteTo(w *bufio.Writer) error {
 func (a arrayType) MarshalBinary() ([]byte, error) {
 	ta := types.Array(a)
 	l := ta.Len()
-	m := make(map[string]any, l)
-	keys := make([]string, l)
+
+	fields := make([]field, l)
 	for i := 0; i < l; i++ {
 		key := strconv.Itoa(i)
 		value, err := ta.Get(i)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		m[key] = value
-		keys[i] = key
+
+		fields[i] = field{key: key, value: value}
 	}
 
 	doc := Document{
-		m:    m,
-		keys: keys,
+		fields: fields,
 	}
+
 	b, err := doc.MarshalBinary()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
