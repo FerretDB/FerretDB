@@ -424,7 +424,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$currentDate", update)
+	if err != nil {
+		return err
+	}
+
 	inc, err := extractValueFromUpdateOperator("$inc", update)
+	if err != nil {
+		return err
+	}
+
+	_, err = extractValueFromUpdateOperator("$max", update)
 	if err != nil {
 		return err
 	}
@@ -545,6 +555,16 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+	}
+
+	duplicate, ok := doc.FindDuplicateKey()
+	if ok {
+		return nil, NewWriteErrorMsg(
+			ErrConflictingUpdateOperators,
+			fmt.Sprintf(
+				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
+			),
+		)
 	}
 
 	return doc, nil
