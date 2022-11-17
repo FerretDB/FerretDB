@@ -83,6 +83,35 @@ sidebar_position: 1
 |                   | `arrayFilters`             | ⚠️  | Unimplemented                                             |
 |                   | `hint`                     | ⚠️  | Unimplemented                                             |
 
+## Update Operators
+
+The following operators and modifiers are available in the `update` and `findAndModify` commands.
+
+| Operator          | Modifier | Status | Comments                                                  |
+|-------------------|----------|--------|-----------------------------------------------------------|
+| `$currentDate`    |          | ✅     |                                                           |
+| `$inc`            |          | ✅     |                                                           |
+| `$min`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/623)  |
+| `$max`            |          | ✅     |                                                           |
+| `$mul`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
+| `$rename`         |          | ✅     |                                                           |
+| `$set`            |          | ✅     |                                                           |
+| `$setOnInsert`    |          | ✅     |                                                           |
+| `$unset`          |          | ✅     |                                                           |
+| `$`               |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/822)  |
+| `$[]`             |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/823)  |
+| `$[<identifier>]` |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
+| `$addToSet`       |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
+| `$pop`            |          | ✅     |                                                           |
+| `$pull`           |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
+| `$push`           |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
+| `$pullAll`        |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
+|                   | `$each`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/828)  |
+|                   | `$position`             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/829)  |
+|                   | `$slice`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830)  |
+|                   | `$sort`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
+|                   | `$bit`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
+
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
