@@ -114,7 +114,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 
 | Command                    | Argument                         | Status | Comments                                                  |
 |----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-| `createUser`               |                                  | ❌     |                                                           |
+| `createUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
 |                            | `pwd`                            | ⚠️      |                                                           |
 |                            | `customData`                     | ⚠️      |                                                           |
 |                            | `roles`                          | ⚠️      |                                                           |
@@ -124,20 +124,20 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                            | `mechanisms`                     | ⚠️      |                                                           |
 |                            | `digestPassword`                 | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `dropAllUsersFromDatabase` |                                  | ❌     |                                                           |
+| `dropAllUsersFromDatabase` |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1492) |
 |                            | `writeConcern`                   | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `dropUser`                 |                                  | ❌     |                                                           |
+| `dropUser`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1493) |
 |                            | `writeConcern`                   | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `grantRolesToUser`         |                                  | ❌     |                                                           |
+| `grantRolesToUser`         |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1494) |
 |                            | `writeConcern`                   | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `revokeRolesFromUser`      |                                  | ❌     |                                                           |
+| `revokeRolesFromUser`      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1495) |
 |                            | `roles`                          | ⚠️      |                                                           |
 |                            | `writeConcern`                   | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `updateUser`               |                                  | ❌     |                                                           |
+| `updateUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1496) |
 |                            | `pwd`                            | ⚠️      |                                                           |
 |                            | `customData`                     | ⚠️      |                                                           |
 |                            | `roles`                          | ⚠️      |                                                           |
@@ -147,7 +147,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                            | `mechanisms`                     | ⚠️      |                                                           |
 |                            | `digestPassword`                 | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `usersInfo`                |                                  | ❌     |                                                           |
+| `usersInfo`                |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1497) |
 |                            | `showCredentials`                | ⚠️      |                                                           |
 |                            | `showCustomData`                 | ⚠️      |                                                           |
 |                            | `showPrivileges`                 | ⚠️      |                                                           |
