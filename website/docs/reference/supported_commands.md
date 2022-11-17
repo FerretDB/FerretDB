@@ -107,6 +107,11 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$pull`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
 |                   | `$push`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
 |                   | `$pullAll`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
+|                   | `$each`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/828)  |
+|                   | `$position`             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/829)  |
+|                   | `$slice`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830)  |
+|                   | `$sort`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
+|                   | `$bit`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
 ## Aggregation pipelines
 
