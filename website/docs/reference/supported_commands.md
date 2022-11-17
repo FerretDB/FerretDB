@@ -90,23 +90,23 @@ The following operators and modifiers are available in the `update` and `findAnd
 | Command           | Operator / Modifier      | Status | Comments                                                  |
 |-------------------|-------------------------|--------|-----------------------------------------------------------|
 | `update`          |                         |        |                                                           |
-|                   | `$currentDate`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-|                   | `$inc`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-|                   | `$min`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-|                   | `$max`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-|                   | `$mul`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
-|                   | `$rename`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/626)  |
-|                   | `$set`                  | ❌     | [Issue](TODO)  |
-|                   | `$setOnInsert`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-|                   | `$unset`                | ❌     | Issues: [#666](https://github.com/FerretDB/FerretDB/issues/666) [#1242](https://github.com/FerretDB/FerretDB/issues/1242) [#1023](https://github.com/FerretDB/FerretDB/issues/1023) |
-|                   | `$`                     | ❌     | [Issue](TODO)  |
-|                   | `$[]`                   | ❌     | [Issue](TODO)  |
-|                   | `$[<identifier>]`       | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
-|                   | `$addToSet`             | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
-|                   | `$pop`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
-|                   | `$pull`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
-|                   | `$push`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
-|                   | `$pullAll`              | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
+|                   | `$currentDate`          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$inc`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$min`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$max`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$mul`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
+|                   | `$rename`               | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/626)  |
+|                   | `$set`                  | ⚠️     | [Issue](TODO)  |
+|                   | `$setOnInsert`          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$unset`                | ⚠️     | Issues: [#666](https://github.com/FerretDB/FerretDB/issues/666) [#1242](https://github.com/FerretDB/FerretDB/issues/1242) [#1023](https://github.com/FerretDB/FerretDB/issues/1023) |
+|                   | `$`                     | ⚠️     | [Issue](TODO)  |
+|                   | `$[]`                   | ⚠️     | [Issue](TODO)  |
+|                   | `$[<identifier>]`       | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
+|                   | `$addToSet`             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
+|                   | `$pop`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$pull`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826)  |
+|                   | `$push`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/503)  |
+|                   | `$pullAll`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/827)  |
 
 ## Aggregation pipelines
 
