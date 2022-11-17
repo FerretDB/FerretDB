@@ -98,8 +98,8 @@ The following operators and modifiers are available in the `update` and `findAnd
 | `$set`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
 | `$setOnInsert`    |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
 | `$unset`          |          | ⚠️     | Issues: [#666](https://github.com/FerretDB/FerretDB/issues/666) [#1242](https://github.com/FerretDB/FerretDB/issues/1242) [#1023](https://github.com/FerretDB/FerretDB/issues/1023) |
-| `$`               |         | ⚠️     | [Issue](TODO)  |
-| `$[]`             |         | ⚠️     | [Issue](TODO)  |
+| `$`               |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/822)  |
+| `$[]`             |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/823)  |
 | `$[<identifier>]` |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824)  |
 | `$addToSet`       |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/825)  |
 | `$pop`            |         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
