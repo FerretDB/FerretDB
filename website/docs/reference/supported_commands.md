@@ -85,7 +85,7 @@ sidebar_position: 1
 
 ## Update Operators
 
-The following modifiers are available in update operations, for example, in `db.collection.updateMany()` and `db.collection.findAndModify()`.
+The following modifiers are available in the `update` and `findAndModify` commands.
 
 | Command           | Operator                | Status | Comments                                                  |
 |-------------------|-------------------------|--------|-----------------------------------------------------------|
