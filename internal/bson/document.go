@@ -34,17 +34,21 @@ const (
 //
 // TODO Remove it.
 type document interface {
-	Map() map[string]any
 	Keys() []string
+	Values() []any
 }
 
 // Document represents BSON Document type.
-//
-// Duplicate fields are not supported yet.
-// TODO https://github.com/FerretDB/FerretDB/issues/1263
 type Document struct {
-	m    map[string]any
-	keys []string
+	fields []field
+}
+
+// field represents a field in the document.
+//
+// The order of field is like that to reduce a pressure on gc a bit, and make vet/fieldalignment linter happy.
+type field struct {
+	value any
+	key   string
 }
 
 // ConvertDocument converts types.Document to bson.Document and validates it.
@@ -52,17 +56,36 @@ type Document struct {
 //
 // TODO Remove it.
 func ConvertDocument(d document) (*Document, error) {
-	doc := &Document{
-		m:    d.Map(),
-		keys: d.Keys(),
+	keys := d.Keys()
+	values := d.Values()
+
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
+	// If values are not set, we don't need to allocate memory for fields.
+	if values == nil {
+		return new(Document), nil
+	}
+
+	fields := make([]field, len(keys))
+	for i, key := range keys {
+		fields[i] = field{
+			key:   key,
+			value: values[i],
+		}
+	}
+
+	doc := Document{
+		fields: fields,
 	}
 
 	// for validation
-	if _, err := types.ConvertDocument(doc); err != nil {
+	if _, err := types.ConvertDocument(&doc); err != nil {
 		return nil, fmt.Errorf("bson.ConvertDocument: %w", err)
 	}
 
-	return doc, nil
+	return &doc, nil
 }
 
 // MustConvertDocument is a ConvertDocument that panics in case of error.
@@ -76,14 +99,38 @@ func MustConvertDocument(d document) *Document {
 
 func (doc *Document) bsontype() {}
 
-// Map returns the map of key values associated with the Document.
-func (doc *Document) Map() map[string]any {
-	return doc.m
+// Keys returns a copy of document's keys.
+//
+// If there are duplicate keys in the document, the result will have duplicate keys too.
+//
+// If document or document's fields are not set (nil), it returns nil.
+func (doc *Document) Keys() []string {
+	if doc == nil || doc.fields == nil {
+		return nil
+	}
+
+	keys := make([]string, len(doc.fields))
+	for i, field := range doc.fields {
+		keys[i] = field.key
+	}
+
+	return keys
 }
 
-// Keys returns the keys associated with the document.
-func (doc *Document) Keys() []string {
-	return doc.keys
+// Values returns a copy of document's values in the same order as Keys().
+//
+// If document or document's fields are not set (nil), it returns nil.
+func (doc *Document) Values() []any {
+	if doc == nil || doc.fields == nil {
+		return nil
+	}
+
+	values := make([]any, len(doc.fields))
+	for i, field := range doc.fields {
+		values[i] = field.value
+	}
+
+	return values
 }
 
 // ReadFrom implements bsontype interface.
@@ -109,6 +156,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 
 	bufr := bufio.NewReader(bytes.NewReader(b[4:]))
 
+	fields := make([]field, 0, 8)
 	for {
 		t, err := bufr.ReadByte()
 		if err != nil {
@@ -129,16 +177,6 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		}
 
 		key := string(ename)
-		doc.keys = append(doc.keys, key)
-
-		if doc.m == nil {
-			doc.m = map[string]any{}
-		}
-
-		if _, ok := doc.m[key]; ok {
-			// TODO https://github.com/FerretDB/FerretDB/issues/1263
-			return lazyerrors.Errorf("duplicate key %q", key)
-		}
 
 		switch tag(t) {
 		case tagDocument:
@@ -148,10 +186,13 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
-			doc.m[key], err = types.ConvertDocument(&v)
+
+			value, err := types.ConvertDocument(&v)
 			if err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
+
+			fields = append(fields, field{key: key, value: value})
 
 		case tagArray:
 			// TODO check maximum nesting
@@ -161,28 +202,31 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
 			a := types.Array(v)
-			doc.m[key] = &a
+			fields = append(fields, field{key: key, value: &a})
 
 		case tagDouble:
 			var v doubleType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Double): %w", err)
 			}
-			doc.m[key] = float64(v)
+
+			fields = append(fields, field{key: key, value: float64(v)})
 
 		case tagString:
 			var v stringType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (String): %w", err)
 			}
-			doc.m[key] = string(v)
+
+			fields = append(fields, field{key: key, value: string(v)})
 
 		case tagBinary:
 			var v binaryType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Binary): %w", err)
 			}
-			doc.m[key] = types.Binary(v)
+
+			fields = append(fields, field{key: key, value: types.Binary(v)})
 
 		case tagUndefined:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type `Undefined (value) — Deprecated`")
@@ -192,53 +236,60 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (ObjectID): %w", err)
 			}
-			doc.m[key] = types.ObjectID(v)
+
+			fields = append(fields, field{key: key, value: types.ObjectID(v)})
 
 		case tagBool:
 			var v boolType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Bool): %w", err)
 			}
-			doc.m[key] = bool(v)
+
+			fields = append(fields, field{key: key, value: bool(v)})
 
 		case tagDateTime:
 			var v dateTimeType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (DateTime): %w", err)
 			}
-			doc.m[key] = time.Time(v)
+
+			fields = append(fields, field{key: key, value: time.Time(v)})
 
 		case tagNull:
 			// skip calling ReadFrom that does nothing
-			doc.m[key] = types.Null
+			fields = append(fields, field{key: key, value: types.Null})
 
 		case tagRegex:
 			var v regexType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Regex): %w", err)
 			}
-			doc.m[key] = types.Regex(v)
+
+			fields = append(fields, field{key: key, value: types.Regex(v)})
 
 		case tagInt32:
 			var v int32Type
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int32): %w", err)
 			}
-			doc.m[key] = int32(v)
+
+			fields = append(fields, field{key: key, value: int32(v)})
 
 		case tagTimestamp:
 			var v timestampType
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Timestamp): %w", err)
 			}
-			doc.m[key] = types.Timestamp(v)
+
+			fields = append(fields, field{key: key, value: types.Timestamp(v)})
 
 		case tagInt64:
 			var v int64Type
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int64): %w", err)
 			}
-			doc.m[key] = int64(v)
+
+			fields = append(fields, field{key: key, value: int64(v)})
 
 		case tagDBPointer, tagDecimal, tagJavaScript, tagJavaScriptScope, tagMaxKey, tagMinKey, tagSymbol:
 			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type %#02x (%s)", t, tag(t))
@@ -247,10 +298,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		}
 	}
 
-	if _, err := types.ConvertDocument(doc); err != nil {
-		return lazyerrors.Errorf("bson.Document.ReadFrom: %w", err)
-	}
-
+	*doc = Document{fields: fields}
 	return nil
 }
 
@@ -274,12 +322,16 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	var elist bytes.Buffer
 	bufw := bufio.NewWriter(&elist)
 
-	for _, elK := range doc.keys {
+	keys := doc.Keys()
+	values := doc.Values()
+
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
+	for i, elK := range keys {
 		ename := CString(elK)
-		elV, ok := doc.m[elK]
-		if !ok {
-			panic(fmt.Sprintf("%q not found in map", elK))
-		}
+		elV := values[i]
 
 		switch elV := elV.(type) {
 		case *types.Document:
@@ -287,10 +339,12 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 			if err := ename.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
+
 			doc, err := ConvertDocument(elV)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
+
 			if err := doc.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
