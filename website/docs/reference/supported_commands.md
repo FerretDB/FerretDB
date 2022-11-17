@@ -95,7 +95,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 | `$max`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
 | `$mul`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
 | `$rename`         |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/626)  |
-| $set`             |          | ⚠️     | [Issue](TODO)  |
+| `$set`            |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
 | `$setOnInsert`    |          | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
 | `$unset`          |          | ⚠️     | Issues: [#666](https://github.com/FerretDB/FerretDB/issues/666) [#1242](https://github.com/FerretDB/FerretDB/issues/1242) [#1023](https://github.com/FerretDB/FerretDB/issues/1023) |
 | `$`               |         | ⚠️     | [Issue](TODO)  |
