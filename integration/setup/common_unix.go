@@ -26,8 +26,7 @@ import (
 
 // listenUnix returns temporary Unix domain socket path for that test.
 func listenUnix(tb testing.TB) string {
-	// Unix domain socket path used in mongodb uri does not
-	// accept upper case.
+	// The MongoDB unix socket path with upper case letter does not work.
 	path := strings.ToLower(tb.TempDir())
 
 	// The path must exist.
@@ -36,7 +35,7 @@ func listenUnix(tb testing.TB) string {
 
 	socketPath := filepath.Join(path, "ferretdb.sock")
 
-	// The unix socket path must be smaller than 108 char
+	// The unix socket path must be less than 108 chars.
 	// https://man7.org/linux/man-pages/man7/unix.7.html
 	if len(socketPath) >= 108 {
 		tb.Fatalf("listen unix socket path of length %d is too long: %d %s", len(socketPath), socketPath)

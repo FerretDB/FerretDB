@@ -49,7 +49,7 @@ type SetupOpts struct {
 type SetupResult struct {
 	Ctx           context.Context
 	Collection    *mongo.Collection
-	MongoDBURI    string
+	MongoURI      string
 	StateProvider *state.Provider
 }
 
@@ -93,7 +93,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	return &SetupResult{
 		Ctx:           ctx,
 		Collection:    collection,
-		MongoDBURI:    uri,
+		MongoURI:      uri,
 		StateProvider: stateProvider,
 	}
 }
