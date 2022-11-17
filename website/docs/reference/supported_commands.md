@@ -131,6 +131,7 @@ The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
 
 | Command     | Argument             | Status | Comments                                                  |
 |-------------|----------------------|--------|-----------------------------------------------------------|
+| `aggregate` |                      | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
 
 ### Aggregation collection stages
 
