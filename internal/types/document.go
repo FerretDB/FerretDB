@@ -27,8 +27,8 @@ import (
 //
 // TODO Remove this type.
 type document interface {
-	Map() map[string]any
 	Keys() []string
+	Values() []any
 }
 
 // Document represents BSON document.
@@ -37,9 +37,11 @@ type Document struct {
 }
 
 // field represents a field in the document.
+//
+// The order of field is like that to reduce a pressure on gc a bit, and make vet/fieldalignment linter happy.
 type field struct {
-	key   string
 	value any
+	key   string
 }
 
 // ConvertDocument converts bson.Document to *types.Document.
@@ -51,18 +53,23 @@ func ConvertDocument(d document) (*Document, error) {
 		panic("types.ConvertDocument: d is nil")
 	}
 
-	// If both keys and map are nil, we don't need to allocate memory for fields.
-	if d.Keys() == nil && d.Map() == nil {
+	keys := d.Keys()
+	values := d.Values()
+
+	if len(keys) != len(values) {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	}
+
+	// If values are not set, we don't need to allocate memory for fields.
+	if len(values) == 0 {
 		return new(Document), nil
 	}
 
-	m := d.Map()
-
-	fields := make([]field, len(d.Keys()))
+	fields := make([]field, len(keys))
 	for i, key := range d.Keys() {
 		fields[i] = field{
 			key:   key,
-			value: m[key],
+			value: values[i],
 		}
 	}
 
@@ -100,9 +107,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
-		if err := doc.add(key, value); err != nil {
-			return nil, fmt.Errorf("types.NewDocument: %w", err)
-		}
+		doc.add(key, value)
 	}
 
 	return doc, nil
@@ -153,9 +158,9 @@ func (d *Document) Map() map[string]any {
 //
 // If there are duplicate keys in the document, the result will have duplicate keys too.
 //
-// It returns nil for nil Document.
+// If document or document's fields are not set (nil), it returns nil.
 func (d *Document) Keys() []string {
-	if d == nil {
+	if d == nil || d.fields == nil {
 		return nil
 	}
 
@@ -165,6 +170,37 @@ func (d *Document) Keys() []string {
 	}
 
 	return keys
+}
+
+// Values returns a copy of document's values in the same order as Keys().
+//
+// If document or document's fields are not set (nil), it returns nil.
+func (d *Document) Values() []any {
+	if d == nil || d.fields == nil {
+		return nil
+	}
+
+	values := make([]any, len(d.fields))
+	for i, field := range d.fields {
+		values[i] = field.value
+	}
+
+	return values
+}
+
+// FindDuplicateKey returns the first duplicate key in the document and true if duplicate exists.
+// If duplicate keys don't exist it returns empty string and false.
+func (d *Document) FindDuplicateKey() (string, bool) {
+	seen := make(map[string]struct{}, len(d.fields))
+	for _, field := range d.fields {
+		if _, ok := seen[field.key]; ok {
+			return field.key, true
+		}
+
+		seen[field.key] = struct{}{}
+	}
+
+	return "", false
 }
 
 // Command returns the first document's key. This is often used as a command name.
@@ -184,9 +220,9 @@ func (d *Document) Command() string {
 func (d *Document) add(key string, value any) error {
 	if key == "_id" {
 		// ensure that _id is the first field
-		d.fields = slices.Insert(d.fields, 0, field{key, value})
+		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
 	} else {
-		d.fields = append(d.fields, field{key, value})
+		d.fields = append(d.fields, field{key: key, value: value})
 	}
 
 	return nil
@@ -205,6 +241,8 @@ func (d *Document) Has(key string) bool {
 
 // Get returns a value at the given key.
 // If there are duplicated keys in the document, it returns the first value.
+//
+// Deprecated: as Document might have duplicate keys, Get is not a good way to get values by the given keys.
 func (d *Document) Get(key string) (any, error) {
 	for _, field := range d.fields {
 		if field.key == key {
@@ -230,7 +268,7 @@ func (d *Document) Set(key string, value any) {
 		if i := slices.Index(d.Keys(), key); i >= 0 {
 			d.fields = slices.Delete(d.fields, i, i+1)
 		}
-		d.fields = slices.Insert(d.fields, 0, field{key, value})
+		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
 
 		return
 	}
@@ -242,7 +280,7 @@ func (d *Document) Set(key string, value any) {
 		}
 	}
 
-	d.fields = append(d.fields, field{key, value})
+	d.fields = append(d.fields, field{key: key, value: value})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.

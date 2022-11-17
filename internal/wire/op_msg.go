@@ -242,7 +242,8 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-			if d.WriteTo(bufw); err != nil {
+
+			if err := d.WriteTo(bufw); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -259,7 +260,8 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 				if err != nil {
 					return nil, lazyerrors.Error(err)
 				}
-				if d.WriteTo(secw); err != nil {
+
+				if err := d.WriteTo(secw); err != nil {
 					return nil, lazyerrors.Error(err)
 				}
 			}
