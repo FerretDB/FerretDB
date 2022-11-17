@@ -151,7 +151,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targe
 		h.Close()
 	})
 
-	// use unix socket on unix only if targetUnixSocket is set.
+	// use unix socket if targetUnixSocket is set and listenUnix is set.
+	// For Windows listenUnix is not set.
 	if targetUnixSocket && listenUnix != "" {
 		unixUrl := url.URL{
 			Scheme: "mongodb",
