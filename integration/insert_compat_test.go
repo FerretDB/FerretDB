@@ -18,7 +18,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -59,6 +58,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					targetInsertRes, targetErr := targetCollection.InsertOne(ctx, insert)
 					compatInsertRes, compatErr := compatCollection.InsertOne(ctx, insert)
 
+					if targetInsertRes != nil || compatInsertRes != nil {
+						nonEmptyResults = true
+					}
+
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
@@ -75,13 +78,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr, "compat error; target returned no error")
-					}
-
-					targetID, _ := pointer.Get(targetInsertRes).InsertedID.(primitive.ObjectID)
-					compatID, _ := pointer.Get(compatInsertRes).InsertedID.(primitive.ObjectID)
-
-					if !(targetID.IsZero() && compatID.IsZero()) {
-						nonEmptyResults = true
 					}
 
 					var targetFindRes, compatFindRes bson.D
@@ -123,7 +119,7 @@ func TestInsertCompat(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"InsertIDRegex": {
-			insert:     bson.D{{"_id", "^regex$"}},
+			insert:     bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			resultType: emptyResult,
 		},
 	}
