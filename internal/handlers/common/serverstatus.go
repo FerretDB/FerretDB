@@ -19,15 +19,18 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 // ServerStatus returns a common part of serverStatus command response.
-func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Document, error) {
+func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Document, error) {
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,7 +41,7 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 		return nil, lazyerrors.Error(err)
 	}
 
-	uptime := time.Since(startTime)
+	uptime := time.Since(state.Start)
 
 	metricsDoc := types.MakeDocument(0)
 
@@ -59,6 +62,15 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 		}
 	}
 
+	telemetryState := "disabled"
+
+	switch {
+	case state.Telemetry == nil:
+		telemetryState = "undecided"
+	case pointer.GetBool(state.Telemetry):
+		telemetryState = "enabled"
+	}
+
 	res := must.NotFail(types.NewDocument(
 		"host", host,
 		"version", version.MongoDBVersion,
@@ -69,7 +81,7 @@ func ServerStatus(startTime time.Time, cm *connmetrics.ConnMetrics) (*types.Docu
 		"uptimeEstimate", int64(uptime.Seconds()),
 		"localTime", time.Now(),
 		"freeMonitoring", must.NotFail(types.NewDocument(
-			"state", "disabled",
+			"state", telemetryState,
 		)),
 		"metrics", must.NotFail(types.NewDocument(
 			"commands", metricsDoc,

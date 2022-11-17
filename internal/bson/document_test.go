@@ -168,13 +168,21 @@ var (
 		bErr: `unexpected EOF`,
 	}
 
-	fuzz1 = testCase{
-		name: "fuzz1",
-		b:    testutil.MustParseDumpFile("testdata", "fuzz1.hex"),
-		bErr: `duplicate key ""`,
+	duplicateKeys = testCase{
+		name: "duplicateKeys",
+		v: MustConvertDocument(must.NotFail(types.NewDocument(
+			"", false,
+			"", true,
+		))),
+		b: []byte{
+			0x0b, 0x00, 0x00, 0x00, // document length
+			0x08, 0x00, 0x00, // "": false
+			0x08, 0x00, 0x01, // "": true
+			0x00, // end of document
+		},
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, fuzz1}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, duplicateKeys}
 )
 
 func TestDocument(t *testing.T) {

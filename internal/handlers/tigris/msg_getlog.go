@@ -93,6 +93,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris.",
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/1443
 		state := h.StateProvider.Get()
 		if state.Telemetry == nil {
 			startupWarnings = append(
