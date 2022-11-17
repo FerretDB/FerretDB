@@ -82,8 +82,8 @@ To reference the fourth field in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
-* [Query an array](https://docs.ferretdb.io/Basic_operations/read/#retrieve-documents-containing-a-value-in-an-array)
-* [Update an array](https://docs.ferretdb.io/Basic_operations/update/#update-an-array-element)
+* [Query an array](./basic_operations/read/#retrieve-documents-containing-a-specific-value-in-an-array)
+* [Update an array](./basic_operations/update.md#update-an-array-element)
 
 ### Embedded documents
 
@@ -115,9 +115,8 @@ To reference the `city` field in the embedded document, use the dot notation `"c
 
 For dot notation examples on embedded documents, see here:
 
-* Query an embedded document
-* Update an embedded document
-* Query an array of embedded documents
+* [Query an embedded document](./basic_operations/read.md#query-on-an-embedded-or-nested-document)
+* [Update an embedded document](./basic_operations/update.md#update-an-embedded-document)
 
 ## Collections
 
