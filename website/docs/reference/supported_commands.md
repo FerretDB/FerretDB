@@ -112,7 +112,6 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$sort`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
 |                   | `$bit`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
-
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
