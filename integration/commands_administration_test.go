@@ -817,7 +817,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
 			expectedNonZero: []string{"failed", "total"},
 		},
-		// TODO: https://github.com/FerretDB/FerretDB/issues/9
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
