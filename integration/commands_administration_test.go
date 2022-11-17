@@ -21,7 +21,6 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -915,6 +914,49 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 	}
 }
 
+func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
+	// this test shouldn't be run in parallel, because it requires a specific state of the field which would be modified by the other tests.
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	for name, tc := range map[string]struct {
+		expectedStatus string
+		err            *mongo.CommandError
+		command        bson.D
+	}{
+		"Enable": {
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
+			expectedStatus: "enabled",
+		},
+		"Disable": {
+			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
+			expectedStatus: "disabled",
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
+			require.NoError(t, res.Err())
+
+			var actual bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, actual)
+
+			freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
+			assert.True(t, ok)
+
+			status, err := freeMonitoring.Get("state")
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expectedStatus, status)
+		})
+	}
+}
+
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	t.Parallel()
 
@@ -963,8 +1005,10 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
 			if err != nil {
-				if strings.Contains(err.Error(), `support for field "validator" is not implemented yet`) ||
-					strings.Contains(err.Error(), `unknown top level operator: $tigrisSchemaString`) {
+				if errorTextContains(err,
+					`support for field "validator" is not implemented yet`,
+					`unknown top level operator: $tigrisSchemaString`,
+				) {
 					err = db.CreateCollection(ctx, collName)
 				}
 			}

@@ -60,58 +60,69 @@ func (s *Flag) UnmarshalText(text []byte) error {
 //   - common DO_NOT_TRACK environment variable;
 //   - executable name;
 //   - and the previously saved state.
-func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (*bool, error) {
-	var disable bool
-
+//
+// The second returned value is true if the telemetry state should be locked, because of
+// setting telemetry via a command-line flag, an environment variable, or a filename.
+func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (state *bool, locked bool, err error) {
 	// https://consoledonottrack.com is not entirely clear about accepted values.
 	// Assume that "1", "t", "true", etc. mean that telemetry should be disabled,
 	// and other valid values, including "0" and empty string, mean undecided.
-	v, err := parseValue(dnt)
+	dntV, err := parseValue(dnt)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	if pointer.GetBool(v) {
+	if pointer.GetBool(dntV) {
 		l.Sugar().Infof("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt)
-		disable = true
+		state = pointer.ToBool(false)
+		locked = true
 	}
 
 	if strings.Contains(strings.ToLower(execName), "donottrack") {
 		l.Sugar().Infof("Telemetry is disabled by %q executable name.", execName)
-		disable = true
+		state = pointer.ToBool(false)
+		locked = true
 	}
 
-	if disable {
+	// telemetry state is disabled and locked via flag, dnt env or binary name
+	if state != nil {
 		// check for conflicts
 		if f.v != nil && *f.v {
-			return nil, fmt.Errorf("telemetry can't be enabled")
+			err = fmt.Errorf("telemetry can't be enabled")
 		}
 
-		return pointer.ToBool(false), nil
+		return
 	}
 
+	// if flag is unset, use previous unlocked state
 	if f.v == nil {
-		if prev == nil {
+		state = prev
+
+		if state == nil {
 			// undecided state, reporter would log about it during run
-			return nil, nil
+			return
 		}
 
-		if *prev {
+		if *state {
 			l.Info("Telemetry is enabled because it was enabled previously.")
 		} else {
 			l.Info("Telemetry is disabled because it was disabled previously.")
 		}
 
-		return prev, nil
+		return
 	}
 
-	if *f.v {
+	// flag is set, use it as locked state
+	state = f.v
+	locked = true
+
+	if *state {
 		l.Info("Telemetry enabled.")
 	} else {
 		l.Info("Telemetry disabled.")
 	}
 
-	return f.v, nil
+	return
 }
 
 // check interfaces

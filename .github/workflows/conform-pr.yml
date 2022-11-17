@@ -43,6 +43,7 @@ jobs:
     name: Conform PR
     runs-on: ubuntu-20.04
 
+    # No `trust` label check because we don't checkout PR's code.
     if: github.event_name != 'pull_request_target' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
