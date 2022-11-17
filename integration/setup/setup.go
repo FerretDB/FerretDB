@@ -50,6 +50,7 @@ type SetupResult struct {
 	Ctx           context.Context
 	Collection    *mongo.Collection
 	MongoURI      string
+	Port          uint16
 	StateProvider *state.Provider
 }
 
@@ -75,8 +76,6 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var uri string
 	port := *targetPortF
 	if port == 0 {
-		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
-		// TODO https://github.com/FerretDB/FerretDB/issues/1295
 		targetUnixSocket := *targetUnixSocketF
 		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
 	} else {
@@ -94,6 +93,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		Ctx:           ctx,
 		Collection:    collection,
 		MongoURI:      uri,
+		Port:          uint16(port),
 		StateProvider: stateProvider,
 	}
 }

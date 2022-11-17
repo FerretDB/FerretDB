@@ -122,9 +122,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targe
 		mode = clientconn.DiffNormalMode
 	}
 
+	listenUnix := listenUnix(tb)
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr: "127.0.0.1:0",
-		ListenUnix: listenUnix(tb),
+		ListenUnix: listenUnix,
 		ProxyAddr:  proxyAddr,
 		Mode:       mode,
 		Metrics:    metrics,
@@ -150,7 +151,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targe
 		h.Close()
 	})
 
-	if targetUnixSocket {
+	// use unix socket on unix only if targetUnixSocket is set.
+	if targetUnixSocket && listenUnix != "" {
 		unixUrl := url.URL{
 			Scheme: "mongodb",
 			Host:   l.Unix().String(),
