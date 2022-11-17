@@ -112,13 +112,25 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$sort`                 | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
 |                   | `$bit`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
+## Database Operations
+### User Management Commands
+
+| Command                    | Argument             | Status | Comments                                                  |
+|----------------------------|----------------------|--------|-----------------------------------------------------------|
+| `createUser`               |                      |        |                                                           |	
+| `dropAllUsersFromDatabase` |                      |        |                                                           |
+| `dropUser`                 |                      |        |                                                           |
+| `grantRolesToUser`         |                      |        |                                                           |
+| `revokeRolesFromUser`      |                      |        |                                                           |
+| `updateUser`               |                      |        |                                                           |
+| `usersInfo`                |                      |        |                                                           |
+
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
 
 | Command     | Argument             | Status | Comments                                                  |
 |-------------|----------------------|--------|-----------------------------------------------------------|
-| `aggregate` |                      | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
 
 ### Aggregation collection stages
 
