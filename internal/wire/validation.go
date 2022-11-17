@@ -15,10 +15,10 @@
 package wire
 
 import (
+	"errors"
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -54,11 +54,11 @@ func validateValue(v any) error {
 		}
 	case float64:
 		if math.IsNaN(v) {
-			return lazyerrors.Errorf("NaN is not supported")
+			return errors.New("NaN is not supported")
 		}
 
 		if v == 0 && math.Signbit(0) {
-			return lazyerrors.Errorf("-0 is not supported")
+			return errors.New("-0 is not supported")
 		}
 	}
 

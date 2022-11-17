@@ -73,7 +73,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			d := section.Documents[0]
 
 			if err := validateValue(d); err != nil {
-				return nil, NewValidationError(fmt.Errorf("wire.OpMsg.Document: %v", err))
+				return nil, NewValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v", d, err))
 			}
 
 			m := d.Map()
@@ -97,7 +97,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			a := types.MakeArray(len(section.Documents)) // may be zero
 			for _, d := range section.Documents {
 				if err := validateValue(d); err != nil {
-					return nil, NewValidationError(fmt.Errorf("wire.OpMsg.readFrom: validation failed for %v with: %v", d, err))
+					return nil, NewValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v", d, err))
 				}
 
 				if err := a.Append(d); err != nil {

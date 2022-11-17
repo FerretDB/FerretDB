@@ -69,7 +69,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	doc := must.NotFail(types.ConvertDocument(&q))
 
 	if err := validateValue(doc); err != nil {
-		return NewValidationError(fmt.Errorf("wire.OpQuery.ReadFrom validation failed for %v with: %v", doc, err))
+		return NewValidationError(fmt.Errorf("wire.OpQuery.ReadFrom: validation failed for %v with: %v", doc, err))
 	}
 
 	query.Query = doc
