@@ -83,6 +83,23 @@ sidebar_position: 1
 |                   | `arrayFilters`             | ⚠️  | Unimplemented                                             |
 |                   | `hint`                     | ⚠️  | Unimplemented                                             |
 
+## Update Operators
+
+The following modifiers are available in update operations, for example, in `db.collection.updateMany()` and `db.collection.findAndModify()`.
+
+| Command           | Operator                | Status | Comments                                                  |
+|-------------------|-------------------------|--------|-----------------------------------------------------------|
+| `update`          |                         |        |                                                           |
+|                   | `$currentDate`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$inc`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$min`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$max`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$mul`                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
+|                   | `$rename`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/626)  |
+|                   | `$set`                  | ❌     | [Issue](TODO)  |
+|                   | `$setOnInsert`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/666)  |
+|                   | `$unset`                | ❌     | Issues: [#666](https://github.com/FerretDB/FerretDB/issues/666) [#1242](https://github.com/FerretDB/FerretDB/issues/1242) [#1023](https://github.com/FerretDB/FerretDB/issues/1023) |
+
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
