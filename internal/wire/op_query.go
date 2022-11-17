@@ -47,8 +47,6 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 		return lazyerrors.Errorf("wire.OpQuery.ReadFrom (binary.Read): %w", err)
 	}
 
-	// TODO: add float values checks here.
-
 	var col bson.CString
 	if err := col.ReadFrom(bufr); err != nil {
 		return err
