@@ -64,7 +64,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - rm -fr .cache .task tools/.task integration/.task
+      - rm -fr .cache .task tools/.task integration/.task records tmp
       - task: env-pull
       - task: init
 
@@ -155,7 +155,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt . -handler=pg -target-unix-socket
+        -coverprofile=integration-pg.txt . -records-dir=../records -handler=pg -target-unix-socket
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -163,7 +163,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt . -handler=tigris
+        -coverprofile=integration-tigris.txt . -records-dir=../records -handler=tigris
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -171,7 +171,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-cockroach.txt . -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
+        -coverprofile=integration-cockroach.txt . -records-dir=../records -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -179,7 +179,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt . -target-port=37017 -compat-port=0
+        -coverprofile=integration-mongodb.txt . -records-dir=../records -target-port=37017 -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
