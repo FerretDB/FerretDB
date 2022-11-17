@@ -17,21 +17,29 @@
 package setup
 
 import (
+	"github.com/stretchr/testify/require"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 // listenUnix returns temporary Unix domain socket path for that test.
 func listenUnix(tb testing.TB) string {
-	// The commented out code does not generate valid Unix domain socket path on macOS (at least).
-	// Maybe the argument is too long?
-	// TODO https://github.com/FerretDB/FerretDB/issues/1295
-	socketPath := filepath.Join(tb.TempDir(), "ferretdb.sock")
+	// Unix domain socket path used in mongodb uri does not
+	// accept upper case.
+	path := strings.ToLower(tb.TempDir())
 
-	if len(socketPath) > 108 {
-		// socket file path must be less than 108 characters.
-		// TODO: generate a path if this error is common across different OS.
-		tb.Fatalf("listen unix socket path is too long: %s", socketPath)
+	// The path must exist.
+	err := os.MkdirAll(path, os.ModePerm)
+	require.NoError(tb, err)
+
+	socketPath := filepath.Join(path, "ferretdb.sock")
+
+	// The unix socket path must be smaller than 108 char
+	// https://man7.org/linux/man-pages/man7/unix.7.html
+	if len(socketPath) >= 108 {
+		tb.Fatalf("listen unix socket path of length %d is too long: %d %s", len(socketPath), socketPath)
 	}
 
 	return socketPath
