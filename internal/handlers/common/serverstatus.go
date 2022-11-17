@@ -31,8 +31,6 @@ import (
 
 // ServerStatus returns a common part of serverStatus command response.
 func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Document, error) {
-	startTime := state.Start
-
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -43,7 +41,7 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 		return nil, lazyerrors.Error(err)
 	}
 
-	uptime := time.Since(startTime)
+	uptime := time.Since(state.Start)
 
 	metricsDoc := types.MakeDocument(0)
 

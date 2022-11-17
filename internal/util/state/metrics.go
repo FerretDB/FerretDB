@@ -74,6 +74,8 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		constLabels["uuid"] = s.UUID
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/1443
+
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),
 		prometheus.GaugeValue,
