@@ -139,7 +139,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-
 			section.Documents = []*types.Document{d}
 
 		case 1:
@@ -179,7 +178,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
-
 				section.Documents = append(section.Documents, d)
 			}
 
