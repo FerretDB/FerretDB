@@ -30,9 +30,10 @@ type State struct {
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	Start          time.Time `json:"-"`
-	LatestVersion  string    `json:"-"`
-	HandlerVersion string    `json:"-"`
+	TelemetryLocked bool      `json:"-"`
+	Start           time.Time `json:"-"`
+	LatestVersion   string    `json:"-"`
+	HandlerVersion  string    `json:"-"`
 }
 
 // fill replaces all unset or invalid values with default.
@@ -54,10 +55,11 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:           s.UUID,
-		Telemetry:      telemetry,
-		Start:          s.Start,
-		LatestVersion:  s.LatestVersion,
-		HandlerVersion: s.HandlerVersion,
+		UUID:            s.UUID,
+		Telemetry:       telemetry,
+		TelemetryLocked: s.TelemetryLocked,
+		Start:           s.Start,
+		LatestVersion:   s.LatestVersion,
+		HandlerVersion:  s.HandlerVersion,
 	}
 }

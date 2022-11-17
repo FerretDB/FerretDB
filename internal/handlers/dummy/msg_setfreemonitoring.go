@@ -23,5 +23,7 @@ import (
 
 // MsgSetFreeMonitoring implements HandlerInterface.
 func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgSetFreeMonitoring(ctx, msg)
+	// The state field in this function results in panic, though here it's used inside the stub,
+	// which is not executed on runtime.
+	return common.MsgSetFreeMonitoring(ctx, msg, nil)
 }
