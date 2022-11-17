@@ -123,7 +123,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 
 		"String": {
 			filter:      bson.D{{"v", "foo"}},
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 		},
 		"StringEmpty": {
 			filter:      bson.D{{"v", ""}},
@@ -186,7 +186,7 @@ func TestQueryComparisonImplicit(t *testing.T) {
 
 		"ValueRegex": {
 			filter:      bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 		},
 	} {
 		name, tc := name, tc
@@ -292,7 +292,7 @@ func TestQueryComparisonEq(t *testing.T) {
 
 		"String": {
 			filter:      bson.D{{"v", bson.D{{"$eq", "foo"}}}},
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 		},
 		"StringDouble": {
 			filter:      bson.D{{"v", bson.D{{"$eq", "42.13"}}}},
@@ -544,15 +544,15 @@ func TestQueryComparisonGt(t *testing.T) {
 
 		"String": {
 			value:       "boo",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 		},
 		"StringWhole": {
 			value:       "42",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double"},
 		},
 		"StringEmpty": {
 			value:       "",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double", "string-whole"},
 		},
 
 		"Binary": {
@@ -740,15 +740,15 @@ func TestQueryComparisonGte(t *testing.T) {
 
 		"String": {
 			value:       "foo",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 		},
 		"StringWhole": {
 			value:       "42",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double", "string-whole"},
 		},
 		"StringEmpty": {
 			value:       "",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-empty", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double", "string-empty", "string-whole"},
 		},
 
 		"Binary": {
@@ -945,7 +945,7 @@ func TestQueryComparisonLt(t *testing.T) {
 
 		"String": {
 			value:       "goo",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-empty", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double", "string-empty", "string-whole"},
 		},
 		"StringWhole": {
 			value:       "42",
@@ -1158,7 +1158,7 @@ func TestQueryComparisonLte(t *testing.T) {
 
 		"String": {
 			value:       "foo",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-empty", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double", "string-empty", "string-whole"},
 		},
 		"StringWhole": {
 			value:       "42",
@@ -1339,7 +1339,7 @@ func TestQueryComparisonNin(t *testing.T) {
 			value: bson.A{primitive.Regex{Pattern: "foo", Options: "i"}},
 			expectedIDs: []any{
 				"array", "array-empty",
-				"array-null", "array-two",
+				"array-null",
 				"binary", "binary-empty",
 				"bool-false", "bool-true",
 				"datetime", "datetime-epoch", "datetime-year-max", "datetime-year-min",
@@ -1454,7 +1454,7 @@ func TestQueryComparisonIn(t *testing.T) {
 		},
 		"Regex": {
 			value:       bson.A{primitive.Regex{Pattern: "foo", Options: "i"}},
-			expectedIDs: []any{"array-three", "array-three-reverse", "regex", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "regex", "string"},
 		},
 
 		"NilInsteadOfArray": {

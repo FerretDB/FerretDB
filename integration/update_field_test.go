@@ -731,8 +731,8 @@ func TestUpdateFieldSet(t *testing.T) {
 		},
 		"SetTwoFields": {
 			id:       "int32-zero",
-			update:   bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", math.NaN()}}}},
-			expected: bson.D{{"_id", "int32-zero"}, {"v", math.NaN()}, {"foo", int32(12)}},
+			update:   bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
+			expected: bson.D{{"_id", "int32-zero"}, {"v", nil}, {"foo", int32(12)}},
 			stat: &mongo.UpdateResult{
 				MatchedCount:  1,
 				ModifiedCount: 1,
@@ -1079,7 +1079,7 @@ func TestUpdateFieldMixed(t *testing.T) {
 			filter: bson.D{{"_id", "test"}},
 			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
-				{"$setOnInsert", bson.D{{"v", math.NaN()}}},
+				{"$setOnInsert", bson.D{{"v", nil}}},
 			},
 			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"v", math.NaN()}},
 		},
@@ -1088,7 +1088,7 @@ func TestUpdateFieldMixed(t *testing.T) {
 			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$inc", bson.D{{"foo", int32(1)}}},
-				{"$setOnInsert", bson.D{{"v", math.NaN()}}},
+				{"$setOnInsert", bson.D{{"v", nil}}},
 			},
 			err: &mongo.WriteError{
 				Code:    40,

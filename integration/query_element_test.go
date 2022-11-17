@@ -126,7 +126,7 @@ func TestQueryElementType(t *testing.T) {
 		},
 		"String": {
 			v:           "string",
-			expectedIDs: []any{"array-three", "array-three-reverse", "string", "string-double", "string-empty", "string-whole"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string", "string-double", "string-empty", "string-whole"},
 		},
 		"Binary": {
 			v:           "binData",

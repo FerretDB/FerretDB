@@ -39,7 +39,7 @@ func TestQueryArraySize(t *testing.T) {
 		bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
 		bson.D{{"_id", "array-one"}, {"v", bson.A{"1"}}},
 		bson.D{{"_id", "array-two"}, {"v", bson.A{"1", nil}}},
-		bson.D{{"_id", "array-three"}, {"v", bson.A{"1", "2", math.NaN()}}},
+		bson.D{{"_id", "array-three"}, {"v", bson.A{"1", "2", nil}}},
 		bson.D{{"_id", "string"}, {"v", "12"}},
 		bson.D{{"_id", "document"}, {"v", bson.D{{"v", bson.A{"1", "2"}}}}},
 	})
@@ -160,7 +160,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			expectedIDs: []any{},
 		},
 		"PositionIndexAtTheEndOfArray": {
-			filter:      bson.D{{"v.1", bson.D{{"$type", "double"}}}},
+			filter:      bson.D{{"v.1", bson.D{{"$type", "string"}}}},
 			expectedIDs: []any{"array-two"},
 		},
 
@@ -170,7 +170,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		},
 		"PositionRegex": {
 			filter:      bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
-			expectedIDs: []any{"array-three", "array-three-reverse"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two"},
 		},
 
 		"NoSuchFieldPosition": {
@@ -269,7 +269,7 @@ func TestQueryElemMatchOperator(t *testing.T) {
 					{"$type", "string"},
 				}},
 			},
-			expectedIDs: []any{"array-three", "array-three-reverse"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two"},
 		},
 		"GtLt": {
 			filter: bson.D{
@@ -418,12 +418,12 @@ func TestQueryArrayAll(t *testing.T) {
 	}{
 		"String": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 			expectedErr: nil,
 		},
 		"StringRepeated": {
 			filter:      bson.D{{"v", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
-			expectedIDs: []any{"array-three", "array-three-reverse", "string"},
+			expectedIDs: []any{"array-three", "array-three-reverse", "array-two", "string"},
 			expectedErr: nil,
 		},
 		"StringEmpty": {
