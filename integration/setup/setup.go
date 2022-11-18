@@ -107,8 +107,8 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	return s.Ctx, s.Collection
 }
 
-// IsTPC returns true if uri contains a valid port number.
-func (s *SetupResult) IsTPC(tb testing.TB) bool {
+// IsTCP returns true if uri contains a valid port number.
+func (s *SetupResult) IsTCP(tb testing.TB) bool {
 	path, err := url.PathUnescape(s.MongoURI)
 	require.NoError(tb, err)
 

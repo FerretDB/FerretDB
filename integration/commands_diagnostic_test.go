@@ -196,7 +196,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	isTCP := s.IsTPC(t)
+	isTCP := s.IsTCP(t)
 
 	for name, tc := range map[string]struct {
 		query   bson.D
