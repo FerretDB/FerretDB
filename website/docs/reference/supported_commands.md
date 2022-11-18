@@ -108,6 +108,53 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$sort`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
 |                   | `$bit`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
+## Database Operations
+
+### User Management Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `createUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
+|                            | `pwd`                            | ⚠️      |                                                           |
+|                            | `customData`                     | ⚠️      |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `authenticationRestrictions`     | ⚠️      |                                                           |
+|                            | `mechanisms`                     | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `dropAllUsersFromDatabase` |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1492) |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `dropUser`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1493) |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `grantRolesToUser`         |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1494) |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `revokeRolesFromUser`      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1495) |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `updateUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1496) |
+|                            | `pwd`                            | ⚠️      |                                                           |
+|                            | `customData`                     | ⚠️      |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `authenticationRestrictions`     | ⚠️      |                                                           |
+|                            | `mechanisms`                     | ⚠️      |                                                           |
+|                            | `digestPassword`                 | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `usersInfo`                |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1497) |
+|                            | `showCredentials`                | ⚠️      |                                                           |
+|                            | `showCustomData`                 | ⚠️      |                                                           |
+|                            | `showPrivileges`                 | ⚠️      |                                                           |
+|                            | `showAuthenticationRestrictions` | ⚠️      |                                                           |
+|                            | `filter`                         | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
