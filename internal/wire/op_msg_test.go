@@ -183,8 +183,8 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
-	err: `wire.OpMsg.Document: validation failed for ` +
-		`{ insert: "values", documents: [ { v: nan.0, _id: ObjectId('637780fe448ffda2c6f4ae0a') } ], ordered: true, $db: "test" }` +
+	err: `wire.OpMsg.Document: validation failed for { insert: "values", documents: ` +
+		`[ { v: nan.0, _id: ObjectId('637780fe448ffda2c6f4ae0a') } ], ordered: true, $db: "test" }` +
 		` with: NaN is not supported`,
 }}
 
