@@ -374,12 +374,17 @@ func (d *Document) SetID() {
 	for i, key := range d.Keys() {
 		if key == "_id" {
 			idIdx = i
+			break
 		}
+	}
+
+	if idIdx == 0 {
+		return
 	}
 
 	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
 
-	slices.Delete(d.fields, idIdx, idIdx+1)
+	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }
 
 // check interfaces
