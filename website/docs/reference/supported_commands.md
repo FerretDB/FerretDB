@@ -108,6 +108,33 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$sort`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
 |                   | `$bit`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
+## Query Plan Cache Commands
+
+Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `planCacheClear`           |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1502) |
+|                            | `query`                          | ⚠️      |                                                           |
+|                            | `projection`                     | ⚠️      |                                                           |
+|                            | `sort`                           | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `planCacheClearFilters`    |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1503) |
+|                            | `query`                          | ⚠️      |                                                           |
+|                            | `sort`                           | ⚠️      |                                                           |
+|                            | `projection`                     | ⚠️      |                                                           |
+|                            | `collation`                      | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `planCacheListFilters`     |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1504) |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `planCacheSetFilter`       |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1505) |
+|                            | `query`                          | ⚠️      |                                                           |
+|                            | `sort`                           | ⚠️      |                                                           |
+|                            | `projection`                     | ⚠️      |                                                           |
+|                            | `collation`                      | ⚠️      |                                                           |
+|                            | `indexes`                        | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+
 ## Database Operations
 
 ### User Management Commands
