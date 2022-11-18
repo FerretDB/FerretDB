@@ -428,11 +428,32 @@ db.aggregate()
 
 ## Administration commands
 
-| Command                    | Argument                 | Status | Comments                                                  |
-|----------------------------|--------------------------|--------|-----------------------------------------------------------|
-| `listCollections`          |                          | ✅     | Basic command is fully supported                          |
-|                            | `filter`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
-|                            | `nameOnly`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
-|                            | `comment`                | ⚠️      | Ignored                                                   |
-|                            | `authorizedCollections`  | ⚠️      | Ignored                                                   |
-| `cloneCollectionAsCapped`  |                          | ❌     |                                                           |
+| Command                    | Argument / Option              | Property             | Status | Comments                                                  |
+|----------------------------|--------------------------------|----------------------|--------|-----------------------------------------------------------|
+| `listCollections`          |                                |                      | ✅     | Basic command is fully supported                          |
+|                            | `filter`                       |                      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
+|                            | `nameOnly`                     |                      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                            | `comment`                      |                      | ⚠️      | Ignored                                                   |
+|                            | `authorizedCollections`        |                      | ⚠️      | Ignored                                                   |
+| `cloneCollectionAsCapped`  |                                |                      | ❌     |                                                           |
+|                            | `toCollection`                 |                      | ⚠️      |                                                           |
+|                            | `size`                         |                      | ⚠️      |                                                           |
+|                            | `writeConcern`                 |                      | ⚠️      |                                                           |
+|                            | `comment`                      |                      | ⚠️      |                                                           |
+| `collMod`                  |                                |                      | ❌     |                                                           |
+|                            | `index`                        |                      | ⚠️      |                                                           |
+|                            |                                | `keyPattern`         | ⚠️      |                                                           |
+|                            |                                | `name`               | ⚠️      |                                                           |
+|                            |                                | `expireAfterSeconds` | ⚠️      |                                                           |
+|                            |                                | `hidden`             | ⚠️      |                                                           |
+|                            |                                | `prepareUnique`      | ⚠️      |                                                           |
+|                            |                                | `unique`             | ⚠️      |                                                           |
+|                            | `validator`                    |                      | ⚠️      |                                                           |
+|                            |                                | `validationLevel`    | ⚠️      |                                                           |
+|                            |                                | `validationAction`   | ⚠️      |                                                           |
+|                            |                                | `validationAction`   | ⚠️      |                                                           |
+|                            | `viewOn` (Views)               |                      | ⚠️      |                                                           |
+|                            | `pipeline` (Views)             |                      | ⚠️      |                                                           |
+|                            | `cappedSize`                   |                      | ⚠️      |                                                           |
+|                            | `cappedMax`                    |                      | ⚠️      |                                                           |
+|                            | `changeStreamPreAndPostImages` |                      | ⚠️      |                                                           |
