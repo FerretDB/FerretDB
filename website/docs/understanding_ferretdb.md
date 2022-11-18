@@ -82,7 +82,7 @@ To reference the fourth field in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
-* [Query an array](./basic_operations/read/#retrieve-documents-containing-a-specific-value-in-an-array)
+* [Query an array](./basic_operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
 * [Update an array](./basic_operations/update.md#update-an-array-element)
 
 ### Embedded documents
