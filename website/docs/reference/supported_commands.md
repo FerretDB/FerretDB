@@ -108,6 +108,15 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$sort`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
 |                   | `$bit`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
 
+## Query Plan Cache Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `planCacheClear`           |                                  | ❌     |                                                           |
+| `planCacheClearFilters`    |                                  | ❌     |                                                           |
+| `planCacheListFilters`     |                                  | ❌     |                                                           |
+| `planCacheSetFilter`       |                                  | ❌     |                                                           |
+
 ## Database Operations
 
 ### User Management Commands
