@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -50,7 +51,6 @@ type SetupResult struct {
 	Ctx           context.Context
 	Collection    *mongo.Collection
 	MongoURI      string
-	Port          uint16
 	StateProvider *state.Provider
 }
 
@@ -93,7 +93,6 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		Ctx:           ctx,
 		Collection:    collection,
 		MongoURI:      uri,
-		Port:          uint16(port),
 		StateProvider: stateProvider,
 	}
 }
@@ -106,6 +105,17 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
+}
+
+// IsTPC returns true if uri contains a valid port number.
+func (s *SetupResult) IsTPC(tb testing.TB) bool {
+	path, err := url.PathUnescape(s.MongoURI)
+	require.NoError(tb, err)
+
+	u, err := url.Parse(path)
+	require.NoError(tb, err)
+
+	return u.Port() != ""
 }
 
 // setupCollection setups a single collection for all compatible providers, if the are present.

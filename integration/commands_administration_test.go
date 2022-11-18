@@ -1047,7 +1047,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	collectionName := s.Collection.Name()
 
 	// only check port number on TCP connection, no need to check on unix socket
-	isTCP := s.Port != 0
+	isTCP := s.IsTPC(t)
 
 	// setup second client connection to check that `whatsmyuri` returns different ports
 	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoURI))
