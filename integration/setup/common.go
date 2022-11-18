@@ -50,7 +50,7 @@ var (
 	postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
-	debugSetupF = flag.Bool("debug-setup", true, "enable debug logs for tests setup") // HACK
+	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
