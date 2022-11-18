@@ -43,6 +43,7 @@ func getRandomString(tb testing.TB, length int) string {
 
 		b[i] = chars[num.Int64()]
 	}
+
 	return string(b)
 }
 
