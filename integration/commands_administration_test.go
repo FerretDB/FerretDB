@@ -993,9 +993,11 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
+	// only check port number on TCP connection, no need to check on Unix socket
+	isTCP := s.IsTCP(t)
+
 	// setup second client connection to check that `whatsmyuri` returns different ports
-	uri := fmt.Sprintf("mongodb://127.0.0.1:%d/", s.Port)
-	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(uri))
+	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoDBURI))
 	require.NoError(t, err)
 	defer client2.Disconnect(s.Ctx)
 	collection2 := client2.Database(databaseName).Collection(collectionName)
@@ -1008,15 +1010,34 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, actual)
-		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		keys := doc.Keys()
+		values := doc.Values()
 
-		// record ports to compare that they are not equal for two different clients.
-		_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
-		require.NoError(t, err)
-		assert.NotEmpty(t, port)
-		ports = append(ports, port)
+		var ok float64
+		var you string
+
+		for i, k := range keys {
+			switch k {
+			case "ok":
+				ok = values[i].(float64)
+			case "you":
+				you = values[i].(string)
+			}
+		}
+
+		assert.Equal(t, float64(1), ok)
+
+		if isTCP {
+			// record ports to compare that they are not equal for two different clients.
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+			ports = append(ports, port)
+		}
 	}
 
-	require.Equal(t, 2, len(ports))
-	assert.NotEqual(t, ports[0], ports[1])
+	if isTCP {
+		require.Equal(t, 2, len(ports))
+		assert.NotEqual(t, ports[0], ports[1])
+	}
 }
