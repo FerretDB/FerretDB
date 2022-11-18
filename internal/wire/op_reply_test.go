@@ -27,13 +27,13 @@ var replyTestCases = []testCase{{
 	name:    "handshake2",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake2_header.hex"),
 	bodyB:   testutil.MustParseDumpFile("testdata", "handshake2_body.hex"),
-	msgHeader: &MsgHeader{
+	header: &MsgHeader{
 		MessageLength: 319,
 		RequestID:     290,
 		ResponseTo:    1,
 		OpCode:        OpCodeReply,
 	},
-	msgBody: &OpReply{
+	body: &OpReply{
 		ResponseFlags:  OpReplyFlags(OpReplyAwaitCapable),
 		CursorID:       0,
 		StartingFrom:   0,
@@ -60,13 +60,13 @@ var replyTestCases = []testCase{{
 	name:    "handshake4",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake4_header.hex"),
 	bodyB:   testutil.MustParseDumpFile("testdata", "handshake4_body.hex"),
-	msgHeader: &MsgHeader{
+	header: &MsgHeader{
 		MessageLength: 319,
 		RequestID:     291,
 		ResponseTo:    2,
 		OpCode:        OpCodeReply,
 	},
-	msgBody: &OpReply{
+	body: &OpReply{
 		ResponseFlags:  OpReplyFlags(OpReplyAwaitCapable),
 		CursorID:       0,
 		StartingFrom:   0,

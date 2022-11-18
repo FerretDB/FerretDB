@@ -40,13 +40,13 @@ func lastErr(err error) error {
 var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
 type testCase struct {
-	name      string
-	headerB   []byte
-	bodyB     []byte
-	expectedB []byte
-	msgHeader *MsgHeader
-	msgBody   MsgBody
-	err       string // unwrapped
+	name    string
+	msgB    []byte // if set, then headerB and bodyB must be unset
+	headerB []byte // if set, then bodyB must be set too
+	bodyB   []byte // if set, then headerB must be set too
+	header  *MsgHeader
+	body    MsgBody
+	err     string // unwrapped
 }
 
 func testMessages(t *testing.T, testCases []testCase) {
@@ -60,27 +60,27 @@ func testMessages(t *testing.T, testCases []testCase) {
 			if (len(tc.headerB) == 0) != (len(tc.bodyB) == 0) {
 				t.Fatalf("header dump and body dump are not in sync")
 			}
-			if (len(tc.headerB) == 0) == (len(tc.expectedB) == 0) {
+			if (len(tc.headerB) == 0) == (len(tc.msgB) == 0) {
 				t.Fatalf("header/body dumps and expectedB are not in sync")
 			}
 
-			if len(tc.expectedB) == 0 {
+			if len(tc.msgB) == 0 {
 				expectedB := make([]byte, 0, len(tc.headerB)+len(tc.bodyB))
 				expectedB = append(expectedB, tc.headerB...)
 				expectedB = append(expectedB, tc.bodyB...)
-				tc.expectedB = expectedB
+				tc.msgB = expectedB
 			}
 
 			t.Run("ReadMessage", func(t *testing.T) {
 				t.Parallel()
 
-				br := bytes.NewReader(tc.expectedB)
+				br := bytes.NewReader(tc.msgB)
 				bufr := bufio.NewReader(br)
 				msgHeader, msgBody, err := ReadMessage(bufr)
 				if tc.err == "" {
 					assert.NoError(t, err)
-					assert.Equal(t, tc.msgHeader, msgHeader)
-					assert.Equal(t, tc.msgBody, msgBody)
+					assert.Equal(t, tc.header, msgHeader)
+					assert.Equal(t, tc.body, msgBody)
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
 
@@ -95,7 +95,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 			})
 
 			t.Run("WriteMessage", func(t *testing.T) {
-				if tc.msgHeader == nil {
+				if tc.header == nil {
 					t.Skip("msgHeader is nil")
 				}
 
@@ -103,12 +103,12 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				var buf bytes.Buffer
 				bufw := bufio.NewWriter(&buf)
-				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)
+				err := WriteMessage(bufw, tc.header, tc.body)
 				require.NoError(t, err)
 				err = bufw.Flush()
 				require.NoError(t, err)
 				actualB := buf.Bytes()
-				require.Equal(t, tc.expectedB, actualB)
+				require.Equal(t, tc.msgB, actualB)
 			})
 		})
 	}
@@ -116,17 +116,18 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 func fuzzMessages(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
-		f.Add(tc.expectedB)
+		f.Add(tc.msgB)
 	}
 
-	records, err := loadRecords(filepath.Join("..", "..", "records"))
-	require.NoError(f, err)
+	records := loadRecords(f, filepath.Join("..", "..", "records"))
+	for _, rec := range records {
+		msgB := make([]byte, 0, len(rec.headerB)+len(rec.bodyB))
+		msgB = append(msgB, rec.headerB...)
+		msgB = append(msgB, rec.bodyB...)
+		f.Add(msgB)
+	}
 
 	f.Logf("%d recorded messages were added to the seed corpus", len(records))
-
-	for _, rec := range records {
-		f.Add(rec.bodyB)
-	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {
 		t.Parallel()

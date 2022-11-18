@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -206,6 +207,8 @@ func main() {
 	}
 
 	logger := zap.S()
+
+	logger.Infof("NumCPU=%d, GOMAXPROCS=%d", runtime.NumCPU(), runtime.GOMAXPROCS(-1))
 
 	seedCorpus, err := os.Getwd()
 	if err != nil {

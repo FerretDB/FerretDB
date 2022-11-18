@@ -26,12 +26,12 @@ var msgTestCases = []testCase{{
 	name:    "handshake5",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake5_header.hex"),
 	bodyB:   testutil.MustParseDumpFile("testdata", "handshake5_body.hex"),
-	msgHeader: &MsgHeader{
+	header: &MsgHeader{
 		MessageLength: 92,
 		RequestID:     3,
 		OpCode:        OpCodeMsg,
 	},
-	msgBody: &OpMsg{
+	body: &OpMsg{
 		sections: []OpMsgSection{{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"buildInfo", int32(1),
@@ -52,13 +52,13 @@ var msgTestCases = []testCase{{
 	name:    "handshake6",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake6_header.hex"),
 	bodyB:   testutil.MustParseDumpFile("testdata", "handshake6_body.hex"),
-	msgHeader: &MsgHeader{
+	header: &MsgHeader{
 		MessageLength: 1931,
 		RequestID:     292,
 		ResponseTo:    3,
 		OpCode:        OpCodeMsg,
 	},
-	msgBody: &OpMsg{
+	body: &OpMsg{
 		sections: []OpMsgSection{{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"version", "5.0.0",
@@ -105,14 +105,14 @@ var msgTestCases = []testCase{{
 		}},
 	},
 }, {
-	name:      "import",
-	expectedB: testutil.MustParseDumpFile("testdata", "import.hex"),
-	msgHeader: &MsgHeader{
+	name: "import",
+	msgB: testutil.MustParseDumpFile("testdata", "import.hex"),
+	header: &MsgHeader{
 		MessageLength: 327,
 		RequestID:     7,
 		OpCode:        OpCodeMsg,
 	},
-	msgBody: &OpMsg{
+	body: &OpMsg{
 		sections: []OpMsgSection{{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"insert", "actor",
@@ -144,9 +144,9 @@ var msgTestCases = []testCase{{
 		}},
 	},
 }, {
-	name:      "msg_fuzz1",
-	expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
-	err:       `wire.OpMsg.readFrom: invalid kind 1 section length -13619152`,
+	name: "msg_fuzz1",
+	msgB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
+	err:  `wire.OpMsg.readFrom: invalid kind 1 section length -13619152`,
 }}
 
 func TestMsg(t *testing.T) {

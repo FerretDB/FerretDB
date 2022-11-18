@@ -26,13 +26,13 @@ var queryTestCases = []testCase{{
 	name:    "handshake1",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake1_header.hex"),
 	bodyB:   testutil.MustParseDumpFile("testdata", "handshake1_body.hex"),
-	msgHeader: &MsgHeader{
+	header: &MsgHeader{
 		MessageLength: 372,
 		RequestID:     1,
 		ResponseTo:    0,
 		OpCode:        OpCodeQuery,
 	},
-	msgBody: &OpQuery{
+	body: &OpQuery{
 		Flags:              0,
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
@@ -64,13 +64,13 @@ var queryTestCases = []testCase{{
 	name:    "handshake3",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake3_header.hex"),
 	bodyB:   testutil.MustParseDumpFile("testdata", "handshake3_body.hex"),
-	msgHeader: &MsgHeader{
+	header: &MsgHeader{
 		MessageLength: 372,
 		RequestID:     2,
 		ResponseTo:    0,
 		OpCode:        OpCodeQuery,
 	},
-	msgBody: &OpQuery{
+	body: &OpQuery{
 		Flags:              0,
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,

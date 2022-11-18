@@ -21,76 +21,68 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// loadRecords gets recursively all .bin files from the recordsPath directory,
-// parses their content to wire Msgs and returns them as an array of testCase
-// structs with headerB and bodyB fields set.
-// If no records are found, it returns nil and no error.
-func loadRecords(recordsPath string) ([]testCase, error) {
-	// Load recursively every file path with ".bin" extension from recordsPath directory
-	var recordFiles []string
-
-	err := filepath.WalkDir(recordsPath, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if filepath.Ext(entry.Name()) == ".bin" {
-			recordFiles = append(recordFiles, path)
-		}
-
+// loadRecords reads all .bin files from the given directory,
+// parses their content to wire messages and returns them as test cases.
+func loadRecords(tb testing.TB, dir string) []testCase {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return nil
-	})
-
-	switch {
-	case os.IsNotExist(err):
-		return nil, nil
-	case err != nil:
-		return nil, err
 	}
 
-	var resMsgs []testCase
+	var res []testCase
 
-	// Read every record file, parse their content to wire messages
-	// and store them in the testCase struct
-	for _, path := range recordFiles {
-		f, err := os.Open(path)
-		if err != nil {
-			return nil, err
+	// walk directory recursively in case we want to change its layout
+	err := filepath.WalkDir(dir, func(path string, _ fs.DirEntry, err error) error {
+		require.NoError(tb, err)
+
+		if filepath.Ext(path) != ".bin" {
+			return nil
 		}
 
+		f, err := os.Open(path)
+		require.NoError(tb, err)
 		defer f.Close()
 
-		r := bufio.NewReader(f)
+		bufr := bufio.NewReader(f)
 
 		for {
-			header, body, err := ReadMessage(r)
+			msgHeader, msgBody, err := ReadMessage(bufr)
 
 			if errors.Is(err, io.EOF) {
-				break
+				assert.Zero(tb, bufr.Buffered(), "not all bufr bytes were consumed")
+				return nil
 			}
+			require.NoError(tb, err)
 
-			if err != nil {
-				return nil, err
-			}
+			headerB, err := msgHeader.MarshalBinary()
+			require.NoError(tb, err)
 
-			headBytes, err := header.MarshalBinary()
-			if err != nil {
-				return nil, err
-			}
+			bodyB, err := msgBody.MarshalBinary()
+			require.NoError(tb, err)
 
-			bodyBytes, err := body.MarshalBinary()
-			if err != nil {
-				return nil, err
-			}
-
-			resMsgs = append(resMsgs, testCase{
-				headerB: headBytes,
-				bodyB:   bodyBytes,
+			res = append(res, testCase{
+				name:    filepath.Base(path),
+				headerB: headerB,
+				bodyB:   bodyB,
+				header:  msgHeader,
+				body:    msgBody,
 			})
 		}
-	}
+	})
 
-	return resMsgs, nil
+	require.NoError(tb, err)
+
+	return res
+}
+
+func TestRecords(t *testing.T) {
+	t.Skip("TODO") // HACK
+
+	t.Parallel()
+	testMessages(t, loadRecords(t, filepath.Join("..", "..", "records")))
 }

@@ -94,7 +94,7 @@ func (msg *MsgHeader) readFrom(r *bufio.Reader) error {
 	msg.OpCode = OpCode(binary.LittleEndian.Uint32(b[12:16]))
 
 	if msg.MessageLength < MsgHeaderLen || msg.MessageLength > MaxMsgLen {
-		return lazyerrors.Errorf("invalid message length %d", msg.MessageLength)
+		return lazyerrors.Errorf("%#v has invalid length", msg)
 	}
 
 	return nil
