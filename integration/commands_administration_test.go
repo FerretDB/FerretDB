@@ -1063,11 +1063,26 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, actual)
-		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		keys := doc.Keys()
+		values := doc.Values()
+
+		var ok float64
+		var you string
+
+		for i, k := range keys {
+			switch k {
+			case "ok":
+				ok = values[i].(float64)
+			case "you":
+				you = values[i].(string)
+			}
+		}
+
+		assert.Equal(t, float64(1), ok)
 
 		if isTCP {
 			// record ports to compare that they are not equal for two different clients.
-			_, port, err := net.SplitHostPort(must.NotFail(doc.Get("you")).(string))
+			_, port, err := net.SplitHostPort(you)
 			require.NoError(t, err)
 			assert.NotEmpty(t, port)
 			ports = append(ports, port)

@@ -26,7 +26,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -235,16 +234,36 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			assert.Equal(t, tc.command, explainResult["command"])
 
 			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
+			keys := serverInfo.Keys()
+			values := serverInfo.Values()
 
-			assert.NotEmpty(t, must.NotFail(serverInfo.Get("host")))
+			var host string
+			var port int32
+			var gitVersion string
+			var version string
+
+			for i, k := range keys {
+				switch k {
+				case "host":
+					host = values[i].(string)
+				case "port":
+					port = values[i].(int32)
+				case "gitVersion":
+					gitVersion = values[i].(string)
+				case "version":
+					version = values[i].(string)
+				}
+			}
+
+			assert.NotEmpty(t, host)
 
 			// only check port number on TCP, not on unix socket
 			if isTCP {
-				assert.NotEmpty(t, must.NotFail(serverInfo.Get("port")))
+				assert.NotEmpty(t, port)
 			}
 
-			assert.NotEmpty(t, must.NotFail(serverInfo.Get("gitVersion")))
-			assert.Regexp(t, `^6\.0\.`, must.NotFail(serverInfo.Get("version")))
+			assert.NotEmpty(t, gitVersion)
+			assert.Regexp(t, `^6\.0\.`, version)
 
 			assert.NotEmpty(t, explainResult["queryPlanner"])
 			assert.IsType(t, bson.D{}, explainResult["queryPlanner"])
