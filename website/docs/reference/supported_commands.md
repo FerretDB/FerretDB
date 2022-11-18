@@ -497,9 +497,9 @@ db.aggregate()
 |                                    |                                | `hidden`                  | ⚠️      |                                                           |
 |                                    |                                | `storageEngine`           | ⚠️      |                                                           |
 |                                    |                                | `weights`                 | ⚠️      |                                                           |
-|                                    |                                | `default_language         | ⚠️      |                                                           |
+|                                    |                                | `default_language`        | ⚠️      |                                                           |
 |                                    |                                | `language_override`       | ⚠️      |                                                           |
-|                                    |                                | `language_override`       | ⚠️      |                                                           |
+|                                    |                                | `textIndexVersion`        | ⚠️      |                                                           |
 |                                    |                                | `2dsphereIndexVersion`    | ⚠️      |                                                           |
 |                                    |                                | `bits`                    | ⚠️      |                                                           |
 |                                    |                                | `min`                     | ⚠️      |                                                           |
@@ -514,3 +514,37 @@ db.aggregate()
 |                                    | `commitQuorum`                 |                           | ⚠️      |                                                           |
 |                                    | `comment`                      |                           | ⚠️      |                                                           |
 |                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `currentOp`                        |                                |                           | ❌     |                                                           |
+|                                    | `$ownOps`                      |                           | ⚠️      |                                                           |
+|                                    | `$all`                         |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `drop`                             |                                |                           | ✅     | Basic command is fully supported                          |
+|                                    | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
+|                                    | `comment`                      |                           | ⚠️      | Ingored                                                   |
+| `dropDatabase`                     |                                |                           | ✅     | Basic command is fully supported                          |
+|                                    | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
+|                                    | `comment`                      |                           | ⚠️      | Ingored                                                   |
+| `dropConnections`                  |                                |                           | ❌     |                                                           |
+|                                    | `hostAndPort`                  |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `dropIndexes`                      |                                |                           | ❌     |                                                           |
+|                                    | `index`                        |                           | ⚠️      |                                                           |
+|                                    | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `filemd5`                          |                                |                           | ❌     |                                                           |
+| `fsync`                            |                                |                           | ❌     |                                                           |
+|                                    | `lock`                         |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `getDefaultRWConcern`              |                                |                           | ❌     |                                                           |
+|                                    | `inMemory`                     |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `getClusterParameter`              |                                |                           | ❌     |                                                           |
+| `getParameter`                     |                                |                           | ❌     |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `killCursors`                      |                                |                           | ❌     |                                                           |
+|                                    | `cursors`                      |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `killOp`                           |                                |                           | ❌     |                                                           |
+|                                    | `op`                           |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `listCollections`                  |                                |                           | ❌     |                                                           |
