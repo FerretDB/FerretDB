@@ -159,7 +159,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, prefe
 		// TODO https://github.com/FerretDB/FerretDB/issues/1507
 		u := &url.URL{
 			Scheme: "mongodb",
-			Host:   l.Unix().String(), // host??
+			Host:   l.Unix().String(),
 		}
 
 		uri := u.String()
