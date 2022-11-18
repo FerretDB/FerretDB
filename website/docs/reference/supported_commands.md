@@ -110,22 +110,24 @@ The following operators and modifiers are available in the `update` and `findAnd
 
 ## Query Plan Cache Commands
 
+Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
+
 | Command                    | Argument                         | Status | Comments                                                  |
 |----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-| `planCacheClear`           |                                  | ❌     |                                                           |
+| `planCacheClear`           |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1502) |
 |                            | `query`                          | ⚠️      |                                                           |
 |                            | `projection`                     | ⚠️      |                                                           |
 |                            | `sort`                           | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `planCacheClearFilters`    |                                  | ❌     |                                                           |
+| `planCacheClearFilters`    |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1503) |
 |                            | `query`                          | ⚠️      |                                                           |
 |                            | `sort`                           | ⚠️      |                                                           |
 |                            | `projection`                     | ⚠️      |                                                           |
 |                            | `collation`                      | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `planCacheListFilters`     |                                  | ❌     |                                                           |
+| `planCacheListFilters`     |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1504) |
 |                            | `comment`                        | ⚠️      |                                                           |
-| `planCacheSetFilter`       |                                  | ❌     |                                                           |
+| `planCacheSetFilter`       |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1505) |
 |                            | `query`                          | ⚠️      |                                                           |
 |                            | `sort`                           | ⚠️      |                                                           |
 |                            | `projection`                     | ⚠️      |                                                           |
