@@ -28,7 +28,7 @@ import (
 )
 
 // chars used for generating random string.
-// MongoDB unix socket path with upper case letter does not
+// MongoDB Unix socket path with upper case letter does not
 // work hence using lower case alphanumeric.
 const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 
@@ -65,8 +65,8 @@ func listenUnix(tb testing.TB) string {
 
 	if len(socketPath) >= 104 {
 		// This is a way to fail fast before creating a client for this socket.
-		// unix socket path must be less than 104 chars for mac, 108 for linux.
-		tb.Fatalf("listen unix socket path too long len: %d, path: %s", len(socketPath), socketPath)
+		// Unix socket path must be less than 104 chars for mac, 108 for linux.
+		tb.Fatalf("listen Unix socket path too long len: %d, path: %s", len(socketPath), socketPath)
 	}
 
 	tb.Cleanup(func() {

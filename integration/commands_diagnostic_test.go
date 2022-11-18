@@ -257,7 +257,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 
 			assert.NotEmpty(t, host)
 
-			// only check port number on TCP, not on unix socket
+			// only check port number on TCP, not on Unix socket
 			if isTCP {
 				assert.NotEmpty(t, port)
 			}

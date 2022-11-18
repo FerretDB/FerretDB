@@ -50,7 +50,7 @@ type SetupOpts struct {
 type SetupResult struct {
 	Ctx           context.Context
 	Collection    *mongo.Collection
-	MongoURI      string
+	MongoDBURI    string
 	StateProvider *state.Provider
 }
 
@@ -79,7 +79,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		targetUnixSocket := *targetUnixSocketF
 		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
 	} else {
-		uri = buildURI(tb, port)
+		uri = buildMongoDBURI(tb, port)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -92,7 +92,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	return &SetupResult{
 		Ctx:           ctx,
 		Collection:    collection,
-		MongoURI:      uri,
+		MongoDBURI:    uri,
 		StateProvider: stateProvider,
 	}
 }
@@ -109,7 +109,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 
 // IsTCP returns true if uri contains a valid port number.
 func (s *SetupResult) IsTCP(tb testing.TB) bool {
-	path, err := url.PathUnescape(s.MongoURI)
+	path, err := url.PathUnescape(s.MongoDBURI)
 	require.NoError(tb, err)
 
 	u, err := url.Parse(path)

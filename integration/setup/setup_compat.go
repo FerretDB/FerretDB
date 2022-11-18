@@ -102,13 +102,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		targetUnixSocket := *targetUnixSocketF
 		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
 	} else {
-		uri = buildURI(tb, targetPort)
+		uri = buildMongoDBURI(tb, targetPort)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatUri := buildURI(tb, compatPort)
+	compatUri := buildMongoDBURI(tb, compatPort)
 	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
 	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
 

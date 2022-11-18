@@ -94,8 +94,8 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
-// and returns listening mongoDB URI.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targetUnixSocket bool) (*state.Provider, string) {
+// and returns listening MongoDB URI.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, preferUnixSocket bool) (*state.Provider, string) {
 	tb.Helper()
 
 	p, err := state.NewProvider("")
@@ -154,60 +154,43 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, targe
 		h.Close()
 	})
 
-	// use unix socket if targetUnixSocket is set and listenUnix is set.
-	// For Windows listenUnix is not set.
-	if targetUnixSocket && listenUnix != "" {
-		unixUrl := url.URL{
+	// use Unix socket if preferred and possible
+	if preferUnixSocket && listenUnix != "" {
+		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		u := &url.URL{
 			Scheme: "mongodb",
-			Host:   l.Unix().String(),
+			Host:   l.Unix().String(), // host??
 		}
-		uri := unixUrl.String()
+
+		uri := u.String()
 		logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 		return p, uri
 	}
 
 	port := l.Addr().(*net.TCPAddr).Port
-	uri := buildURI(tb, port)
+	uri := buildMongoDBURI(tb, port)
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	return p, uri
 }
 
-// buildURI builds mongoDB URI with given TCP port number.
-func buildURI(tb testing.TB, port int) string {
+// buildMongoDBURI builds MongoDB URI with given TCP port number.
+func buildMongoDBURI(tb testing.TB, port int) string {
 	require.Greater(tb, port, 0)
 	require.Less(tb, port, 65536)
 
-	// those options should not affect anything except tests speed
-	v := url.Values{
-		// TODO: Test fails occurred on some platforms due to i/o timeout.
-		// Needs more investigation.
-		//
-		//"connectTimeoutMS":         []string{"5000"},
-		//"serverSelectionTimeoutMS": []string{"5000"},
-		//"socketTimeoutMS":          []string{"5000"},
-		//"heartbeatFrequencyMS":     []string{"30000"},
-
-		//"minPoolSize":   []string{"1"},
-		//"maxPoolSize":   []string{"1"},
-		//"maxConnecting": []string{"1"},
-		//"maxIdleTimeMS": []string{"0"},
-
-		//"directConnection": []string{"true"},
-		//"appName":          []string{tb.Name()},
-	}
-	u := url.URL{
-		Scheme:   "mongodb",
-		Host:     fmt.Sprintf("127.0.0.1:%d", port),
-		Path:     "/",
-		RawQuery: v.Encode(),
+	// TODO https://github.com/FerretDB/FerretDB/issues/1507
+	u := &url.URL{
+		Scheme: "mongodb",
+		Host:   fmt.Sprintf("127.0.0.1:%d", port),
+		Path:   "/",
 	}
 
 	return u.String()
 }
 
-// setupClient returns MongoDB client for database on given MongoDB uri.
+// setupClient returns MongoDB client for database on given MongoDB URI.
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
