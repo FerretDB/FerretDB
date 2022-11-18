@@ -36,7 +36,6 @@ func TestQueryLogical(t *testing.T) {
 
 	testCases := map[string]struct {
 		filter      bson.D
-		skip        string
 		expectedIDs []any
 		expectedErr mongo.CommandError
 	}{
@@ -274,10 +273,6 @@ func TestQueryLogical(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			filter := tc.filter

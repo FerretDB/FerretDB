@@ -43,7 +43,7 @@ func TestQueryUnknownFilterOperator(t *testing.T) {
 }
 
 func TestQuerySort(t *testing.T) {
-	t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/457")
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/457")
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
