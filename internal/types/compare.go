@@ -48,6 +48,7 @@ const (
 // Less, Greater and Equal at the same time (mostly for composite data type, e.g. embedded Array).
 //
 // Compare and contrast with test helpers in testutil package.
+// TODO: remove most of code calling this
 func Compare(docValue, filterValue any) []CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
