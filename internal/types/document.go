@@ -369,7 +369,11 @@ func (d *Document) SetID() {
 		return
 	}
 
-	var idIdx int
+	idIdx := 0
+
+	if d.fields[idIdx].key == "_id" {
+		return
+	}
 
 	for i, key := range d.Keys() {
 		if key == "_id" {

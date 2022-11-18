@@ -249,6 +249,8 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
+		upsert.SetID()
+
 		err := h.insert(ctx, params.fetchParam, upsert)
 		if err != nil {
 			return nil, false, err
