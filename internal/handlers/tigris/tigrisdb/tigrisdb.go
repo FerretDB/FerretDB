@@ -28,7 +28,7 @@ import (
 // TigrisDB represents a Tigris database connection.
 type TigrisDB struct {
 	Driver driver.Driver
-	L      *zap.Logger
+	l      *zap.Logger
 }
 
 // New returns a new TigrisDB.
@@ -40,6 +40,6 @@ func New(cfg *config.Driver, logger *zap.Logger) (*TigrisDB, error) {
 
 	return &TigrisDB{
 		Driver: d,
-		L:      logger,
+		l:      logger,
 	}, nil
 }
