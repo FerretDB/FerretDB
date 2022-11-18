@@ -163,15 +163,13 @@ var msgTestCases = []testCase{{
 	},
 	msgHeader: &MsgHeader{
 		MessageLength: 121,
-		RequestID:     14,
+		RequestID:     17,
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
 		sections: []OpMsgSection{{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"insert", "values",
-				"ordered", true,
-				"$db", "test",
 			))},
 		}, {
 			Kind:       1,
@@ -179,12 +177,19 @@ var msgTestCases = []testCase{{
 			Documents: []*types.Document{
 				must.NotFail(types.NewDocument(
 					"v", math.NaN(),
-					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
+					"_id", types.ObjectID{0x61, 0x6c, 0x75, 0x65, 0x73, 0x00, 0x04, 0x64, 0x6f, 0x63, 0x75, 0x6d},
 				)),
 			},
+		}, {
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"ordered", true,
+				"$db", "test",
+			))},
 		}},
 	},
-	err: "1231",
+	err: `wire.OpMsg.Document: validation failed for ` +
+		`{ insert: "values", documents: [ { v: nan.0, _id: ObjectId('637780fe448ffda2c6f4ae0a') } ], ordered: true, $db: "test" }` +
+		` with: NaN is not supported`,
 }}
 
 func TestMsg(t *testing.T) {

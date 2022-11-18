@@ -73,7 +73,11 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			d := section.Documents[0]
 
 			if err := validateValue(d); err != nil {
-				return nil, NewValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v", d, err))
+				return nil, NewValidationError(fmt.Errorf(
+					"wire.OpMsg.Document: validation failed for %v with: %v",
+					types.FormatAnyValue(d),
+					err,
+				))
 			}
 
 			m := d.Map()
@@ -97,7 +101,11 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			a := types.MakeArray(len(section.Documents)) // may be zero
 			for _, d := range section.Documents {
 				if err := validateValue(d); err != nil {
-					return nil, NewValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v", d, err))
+					return nil, NewValidationError(fmt.Errorf(
+						"wire.OpMsg.Document: validation failed for %v with: %v",
+						types.FormatAnyValue(d),
+						err,
+					))
 				}
 
 				if err := a.Append(d); err != nil {
@@ -203,6 +211,9 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 	}
 
 	// TODO validate checksum
+	if _, err := msg.Document(); err != nil {
+		return err
+	}
 
 	return nil
 }
