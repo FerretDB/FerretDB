@@ -53,6 +53,8 @@ var (
 	debugSetupF = flag.Bool("debug-setup", true, "enable debug logs for tests setup") // HACK
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
+	recordsDirF = flag.String("records-dir", "", "directory for record files")
+
 	startupOnce sync.Once
 )
 
@@ -123,13 +125,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: "127.0.0.1:0",
-		ListenUnix: listenUnix(tb),
-		ProxyAddr:  proxyAddr,
-		Mode:       mode,
-		Metrics:    metrics,
-		Handler:    h,
-		Logger:     logger,
+		ListenAddr:     "127.0.0.1:0",
+		ListenUnix:     listenUnix(tb),
+		ProxyAddr:      proxyAddr,
+		Mode:           mode,
+		Metrics:        metrics,
+		Handler:        h,
+		Logger:         logger,
+		TestRecordsDir: *recordsDirF,
 	})
 
 	done := make(chan struct{})
