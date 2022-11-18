@@ -88,9 +88,7 @@ func TestDocument(t *testing.T) {
 			"foo", "bar",
 			"_id", int32(42),
 		))
-		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
-
-		doc.Set("_id", "bar")
+		doc.SetID()
 		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
 	})
 
