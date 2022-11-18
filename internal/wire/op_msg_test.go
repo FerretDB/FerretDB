@@ -170,9 +170,7 @@ var msgTestCases = []testCase{{
 		sections: []OpMsgSection{{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"insert", "values",
-
-				"documents",
-				must.NotFail(types.NewArray(
+				"documents", must.NotFail(types.NewArray(
 					must.NotFail(types.NewDocument(
 						"v", math.NaN(),
 						"_id", types.ObjectID{0x63, 0x77, 0x80, 0xfe, 0x44, 0x8f, 0xfd, 0xa2, 0xc6, 0xf4, 0xae, 0x0a},
