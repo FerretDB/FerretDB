@@ -428,60 +428,89 @@ db.aggregate()
 
 ## Administration commands
 
-| Command                            | Argument / Option              | Property             | Status | Comments                                                  |
-|------------------------------------|--------------------------------|----------------------|--------|-----------------------------------------------------------|
-| `listCollections`                  |                                |                      | ✅     | Basic command is fully supported                          |
-|                                    | `filter`                       |                      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
-|                                    | `nameOnly`                     |                      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
-|                                    | `comment`                      |                      | ⚠️      | Ignored                                                   |
-|                                    | `authorizedCollections`        |                      | ⚠️      | Ignored                                                   |
-| `cloneCollectionAsCapped`          |                                |                      | ❌     |                                                           |
-|                                    | `toCollection`                 |                      | ⚠️      |                                                           |
-|                                    | `size`                         |                      | ⚠️      |                                                           |
-|                                    | `writeConcern`                 |                      | ⚠️      |                                                           |
-|                                    | `comment`                      |                      | ⚠️      |                                                           |
-| `collMod`                          |                                |                      | ❌     |                                                           |
-|                                    | `index`                        |                      | ⚠️      |                                                           |
-|                                    |                                | `keyPattern`         | ⚠️      |                                                           |
-|                                    |                                | `name`               | ⚠️      |                                                           |
-|                                    |                                | `expireAfterSeconds` | ⚠️      |                                                           |
-|                                    |                                | `hidden`             | ⚠️      |                                                           |
-|                                    |                                | `prepareUnique`      | ⚠️      |                                                           |
-|                                    |                                | `unique`             | ⚠️      |                                                           |
-|                                    | `validator`                    |                      | ⚠️      |                                                           |
-|                                    |                                | `validationLevel`    | ⚠️      |                                                           |
-|                                    |                                | `validationAction`   | ⚠️      |                                                           |
-|                                    |                                | `validationAction`   | ⚠️      |                                                           |
-|                                    | `viewOn` (Views)               |                      | ⚠️      |                                                           |
-|                                    | `pipeline` (Views)             |                      | ⚠️      |                                                           |
-|                                    | `cappedSize`                   |                      | ⚠️      |                                                           |
-|                                    | `cappedMax`                    |                      | ⚠️      |                                                           |
-|                                    | `changeStreamPreAndPostImages` |                      | ⚠️      |                                                           |
-| `compact`                          |                                |                      | ❌     |                                                           |
-|                                    | `force`                        |                      | ⚠️      |                                                           |
-|                                    | `comment`                      |                      | ⚠️      |                                                           |
-| `compactStructuredEncryptionData`  |                                |                      | ❌     |                                                           |
-|                                    | `compactionTokens`             |                      | ⚠️      |                                                           |
-| `convertToCapped`                  |                                |                      | ❌     |                                                           |
-|                                    | `size`                         |                      | ⚠️      |                                                           |
-|                                    | `writeConcern`                 |                      | ⚠️      |                                                           |
-|                                    | `comment`                      |                      | ⚠️      |                                                           |
-| `create`                           |                                |                      | ✅     | Basic command is fully supported                          |
-|                                    | `capped`                       |                      | ⚠️      | Unimplemented                                             |
-|                                    | `expireAfterSeconds`           |                      | ⚠️      | Unimplemented                                             |
-|                                    | `clusteredIndex`               |                      | ⚠️      |                                                           |
-|                                    | `changeStreamPreAndPostImages` |                      | ⚠️      |                                                           |
-|                                    | `autoIndexId`                  |                      | ⚠️      | Ingored                                                   |
-|                                    | `size`                         |                      | ⚠️      | Unimplemented                                             |
-|                                    | `max`                          |                      | ⚠️      | Unimplemented                                             |
-|                                    | `storageEngine`                |                      | ⚠️      | Ingored                                                   |
-|                                    | `validator`                    |                      | ⚠️      | Not implemented in PostgreSQL                             |
-|                                    | `validationLevel`              |                      | ⚠️      | Unimplemented                                             |
-|                                    | `validationAction`             |                      | ⚠️      | Unimplemented                                             |
-|                                    | `indexOptionDefaults`          |                      | ⚠️      | Ingored                                                   |
-|                                    | `viewOn`                       |                      | ⚠️      | Unimplemented                                             |
-|                                    | `pipeline`                     |                      | ⚠️      | Unimplemented                                             |
-|                                    | `collation`                    |                      | ⚠️      | Unimplemented                                             |
-|                                    | `writeConcern`                 |                      | ⚠️      | Ingored                                                   |
-|                                    | `encryptedFields`              |                      | ⚠️      |                                                           |
-|                                    | `comment`                      |                      | ⚠️      | Ingored                                                   |
+| Command                            | Argument / Option              | Property                  | Status | Comments                                                  |
+|------------------------------------|--------------------------------|---------------------------|--------|-----------------------------------------------------------|
+| `listCollections`                  |                                |                           | ✅     | Basic command is fully supported                          |
+|                                    | `filter`                       |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
+|                                    | `nameOnly`                     |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                                    | `comment`                      |                           | ⚠️      | Ignored                                                   |
+|                                    | `authorizedCollections`        |                           | ⚠️      | Ignored                                                   |
+| `cloneCollectionAsCapped`          |                                |                           | ❌     |                                                           |
+|                                    | `toCollection`                 |                           | ⚠️      |                                                           |
+|                                    | `size`                         |                           | ⚠️      |                                                           |
+|                                    | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `collMod`                          |                                |                           | ❌     |                                                           |
+|                                    | `index`                        |                           | ⚠️      |                                                           |
+|                                    |                                | `keyPattern`              | ⚠️      |                                                           |
+|                                    |                                | `name`                    | ⚠️      |                                                           |
+|                                    |                                | `expireAfterSeconds`      | ⚠️      |                                                           |
+|                                    |                                | `hidden`                  | ⚠️      |                                                           |
+|                                    |                                | `prepareUnique`           | ⚠️      |                                                           |
+|                                    |                                | `unique`                  | ⚠️      |                                                           |
+|                                    | `validator`                    |                           | ⚠️      |                                                           |
+|                                    |                                | `validationLevel`         | ⚠️      |                                                           |
+|                                    |                                | `validationAction`        | ⚠️      |                                                           |
+|                                    |                                | `validationAction`        | ⚠️      |                                                           |
+|                                    | `viewOn` (Views)               |                           | ⚠️      |                                                           |
+|                                    | `pipeline` (Views)             |                           | ⚠️      |                                                           |
+|                                    | `cappedSize`                   |                           | ⚠️      |                                                           |
+|                                    | `cappedMax`                    |                           | ⚠️      |                                                           |
+|                                    | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                           |
+| `compact`                          |                                |                           | ❌     |                                                           |
+|                                    | `force`                        |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `compactStructuredEncryptionData`  |                                |                           | ❌     |                                                           |
+|                                    | `compactionTokens`             |                           | ⚠️      |                                                           |
+| `convertToCapped`                  |                                |                           | ❌     |                                                           |
+|                                    | `size`                         |                           | ⚠️      |                                                           |
+|                                    | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `create`                           |                                |                           | ✅     | Basic command is fully supported                          |
+|                                    | `capped`                       |                           | ⚠️      | Unimplemented                                             |
+|                                    | `expireAfterSeconds`           |                           | ⚠️      | Unimplemented                                             |
+|                                    | `clusteredIndex`               |                           | ⚠️      |                                                           |
+|                                    | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                           |
+|                                    | `autoIndexId`                  |                           | ⚠️      | Ingored                                                   |
+|                                    | `size`                         |                           | ⚠️      | Unimplemented                                             |
+|                                    | `max`                          |                           | ⚠️      | Unimplemented                                             |
+|                                    | `storageEngine`                |                           | ⚠️      | Ingored                                                   |
+|                                    | `validator`                    |                           | ⚠️      | Not implemented in PostgreSQL                             |
+|                                    | `validationLevel`              |                           | ⚠️      | Unimplemented                                             |
+|                                    | `validationAction`             |                           | ⚠️      | Unimplemented                                             |
+|                                    | `indexOptionDefaults`          |                           | ⚠️      | Ingored                                                   |
+|                                    | `viewOn`                       |                           | ⚠️      | Unimplemented                                             |
+|                                    | `pipeline`                     |                           | ⚠️      | Unimplemented                                             |
+|                                    | `collation`                    |                           | ⚠️      | Unimplemented                                             |
+|                                    | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
+|                                    | `encryptedFields`              |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      | Ingored                                                   |
+| `createIndexes`                    |                                |                           | ❌     |                                                           |
+|                                    | `indexes`                      |                           | ⚠️      |                                                           |
+|                                    |                                | `key`                     | ⚠️      |                                                           |
+|                                    |                                | `name`                    | ⚠️      |                                                           |
+|                                    |                                | `background`              | ⚠️      |                                                           |
+|                                    |                                | `unique`                  | ⚠️      |                                                           |
+|                                    |                                | `partialFilterExpression` | ⚠️      |                                                           |
+|                                    |                                | `sparse`                  | ⚠️      |                                                           |
+|                                    |                                | `expireAfterSeconds`      | ⚠️      |                                                           |
+|                                    |                                | `hidden`                  | ⚠️      |                                                           |
+|                                    |                                | `storageEngine`           | ⚠️      |                                                           |
+|                                    |                                | `weights`                 | ⚠️      |                                                           |
+|                                    |                                | `default_language         | ⚠️      |                                                           |
+|                                    |                                | `language_override`       | ⚠️      |                                                           |
+|                                    |                                | `language_override`       | ⚠️      |                                                           |
+|                                    |                                | `2dsphereIndexVersion`    | ⚠️      |                                                           |
+|                                    |                                | `bits`                    | ⚠️      |                                                           |
+|                                    |                                | `min`                     | ⚠️      |                                                           |
+|                                    |                                | `max`                     | ⚠️      |                                                           |
+|                                    |                                | `bucketSize`              | ⚠️      |                                                           |
+|                                    |                                | `collation`               | ⚠️      |                                                           |
+|                                    |                                | `wildcardProjection`      | ⚠️      |                                                           |
+|                                    |                                | `min`                     | ⚠️      |                                                           |
+|                                    |                                | `max`                     | ⚠️      |                                                           |
+|                                    |                                | `bucketSize`              | ⚠️      |                                                           |
+|                                    | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                    | `commitQuorum`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
