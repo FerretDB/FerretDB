@@ -113,9 +113,25 @@ The following operators and modifiers are available in the `update` and `findAnd
 | Command                    | Argument                         | Status | Comments                                                  |
 |----------------------------|----------------------------------|--------|-----------------------------------------------------------|
 | `planCacheClear`           |                                  | ❌     |                                                           |
+|                            | `query`                          | ⚠️      |                                                           |
+|                            | `projection`                     | ⚠️      |                                                           |
+|                            | `sort`                           | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
 | `planCacheClearFilters`    |                                  | ❌     |                                                           |
+|                            | `query`                          | ⚠️      |                                                           |
+|                            | `sort`                           | ⚠️      |                                                           |
+|                            | `projection`                     | ⚠️      |                                                           |
+|                            | `collation`                      | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
 | `planCacheListFilters`     |                                  | ❌     |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
 | `planCacheSetFilter`       |                                  | ❌     |                                                           |
+|                            | `query`                          | ⚠️      |                                                           |
+|                            | `sort`                           | ⚠️      |                                                           |
+|                            | `projection`                     | ⚠️      |                                                           |
+|                            | `collation`                      | ⚠️      |                                                           |
+|                            | `indexes`                        | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
 
 ## Database Operations
 
