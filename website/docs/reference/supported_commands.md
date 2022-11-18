@@ -10,7 +10,7 @@ sidebar_position: 1
 |-------------------|-------------------------|--------|-----------------------------------------------------------|
 | `delete`          |                         | ✅     | Basic command is fully supported                          |
 |                   | `deletes`               | ✅     |                                                           |
-|                   | `comment`               | ⚠️     | Ignored                                                   |
+|                   | `comment`               | ⚠️     | Ignored in Tigris                                         |
 |                   | `let`                   | ⚠️     | Unimplemented                                             |
 |                   | `ordered`               | ✅     |                                                           |
 |                   | `writeConcern`          | ⚠️     | Ignored                                                   |
