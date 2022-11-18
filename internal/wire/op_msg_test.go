@@ -170,18 +170,14 @@ var msgTestCases = []testCase{{
 		sections: []OpMsgSection{{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"insert", "values",
-			))},
-		}, {
-			Kind:       1,
-			Identifier: "documents",
-			Documents: []*types.Document{
-				must.NotFail(types.NewDocument(
-					"v", math.NaN(),
-					"_id", types.ObjectID{0x61, 0x6c, 0x75, 0x65, 0x73, 0x00, 0x04, 0x64, 0x6f, 0x63, 0x75, 0x6d},
+
+				"documents",
+				must.NotFail(types.NewArray(
+					must.NotFail(types.NewDocument(
+						"v", math.NaN(),
+						"_id", types.ObjectID{0x63, 0x77, 0x80, 0xfe, 0x44, 0x8f, 0xfd, 0xa2, 0xc6, 0xf4, 0xae, 0x0a},
+					)),
 				)),
-			},
-		}, {
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"ordered", true,
 				"$db", "test",
 			))},
