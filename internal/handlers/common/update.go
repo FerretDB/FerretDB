@@ -540,12 +540,12 @@ func checkConflictingChanges(a, b *types.Document) error {
 //	 bson.D{
 //		{"$set", bson.D{{"foo", int32(12)}}},
 //		{"$inc", bson.D{{"foo", int32(1)}}},
-//		{"$setOnInsert", bson.D{{"v", math.NaN()}}},
+//		{"$setOnInsert", bson.D{{"v", nil}}},
 //	 }
 //
 // The result returned for "$setOnInsert" operator is
 //
-//	bson.D{{"v", math.NaN()}}.
+//	bson.D{{"v", nil}}.
 func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
