@@ -118,7 +118,7 @@ func (s *SetupResult) IsTCP(tb testing.TB) bool {
 	return u.Port() != ""
 }
 
-// setupCollection setups a single collection for all compatible providers, if the are present.
+// setupCollection setups a single collection for all compatible providers, if they are present.
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 

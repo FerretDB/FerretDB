@@ -394,17 +394,17 @@ func TestDatabaseName(t *testing.T) {
 					Message: fmt.Sprintf(
 						"Invalid namespace specified '%s.%s'",
 						dbName64,
-						"TestDatabaseName_Err",
+						"TestDatabaseName-Err",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName_Err"),
+				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `Invalid namespace: name_with_a-$.TestDatabaseName_Err`,
+					Message: `Invalid namespace: name_with_a-$.TestDatabaseName-Err`,
 				},
 			},
 		}
