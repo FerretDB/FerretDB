@@ -105,7 +105,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	return s.Ctx, s.Collection
 }
 
-// setupCollection setups a single collection for all compatible providers, if the are present.
+// setupCollection setups a single collection for all compatible providers, if they are present.
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
