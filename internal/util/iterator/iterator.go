@@ -12,11 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package iterator describes Iterator interface to be used to fetch documents.
 package iterator
+
+import "errors"
+
+// ErrIteratorDone  is returned when the iterator is read to the end.
+var ErrIteratorDone = errors.New("iterator is read to the end")
 
 // Interface is an iterator interface.
 type Interface[E1, E2 any] interface {
 	// Next returns a pair of values for containers, such as maps,
 	// for which elements have two values.
+	// If the iterator is at the end, it returns ErrEndOfIterator.
 	Next() (E1, E2, error)
 }
