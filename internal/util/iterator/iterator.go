@@ -15,6 +15,8 @@
 package iterator
 
 // Interface is an iterator interface.
-type Interface interface {
-	// todo
+type Interface[E1, E2 any] interface {
+	// Next returns a pair of values for containers, such as maps,
+	// for which elements have two values.
+	Next() (E1, E2, error)
 }
