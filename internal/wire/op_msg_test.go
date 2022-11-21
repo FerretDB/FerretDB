@@ -184,6 +184,12 @@ var msgTestCases = []testCase{{
 	err: `wire.OpMsg.Document: validation failed for { insert: "values", documents: ` +
 		`[ { v: nan.0, _id: ObjectId('6377f213757c0babdebc2f6a') } ], ordered: true, $db: "test" }` +
 		` with: NaN is not supported`,
+}, {
+	name:      "negative zero",
+	expectedB: []byte{},
+	msgHeader: &MsgHeader{},
+	msgBody:   &OpMsg{},
+	err:       ``,
 }}
 
 func TestMsg(t *testing.T) {

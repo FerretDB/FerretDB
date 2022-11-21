@@ -32,6 +32,15 @@ func (v ValidationError) Error() string {
 	return v.msg
 }
 
+func (v ValidationError) Document() *types.Document {
+	d := must.NotFail(types.NewDocument(
+		"ok", float64(0),
+		"errmsg", v.msg,
+	))
+
+	return d
+}
+
 // NewValidationError returns new ValidationError.
 func NewValidationError(err error) error {
 	return &ValidationError{msg: err.Error()}

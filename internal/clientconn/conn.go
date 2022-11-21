@@ -198,7 +198,38 @@ func (c *conn) run(ctx context.Context) (err error) {
 	for {
 		var reqHeader *wire.MsgHeader
 		var reqBody wire.MsgBody
+		var resHeader *wire.MsgHeader
+		var resBody wire.MsgBody
+		var validationErr *wire.ValidationError
+
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
+		if err != nil && errors.As(err, &validationErr) {
+			var res wire.OpMsg
+			must.NoError(res.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{validationErr.Document()},
+			}))
+
+			b, err := res.MarshalBinary()
+			if err != nil {
+				panic(err)
+			}
+
+			resHeader.OpCode = reqHeader.OpCode
+			resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
+			resHeader.ResponseTo = reqHeader.RequestID
+			resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
+
+			if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
+				return
+			}
+
+			if err = bufw.Flush(); err != nil {
+				return
+			}
+
+			continue
+		}
+
 		if err != nil {
 			return
 		}
@@ -211,8 +242,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var diffLogLevel zapcore.Level
 
 		// handle request unless we are in proxy mode
-		var resHeader *wire.MsgHeader
-		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
