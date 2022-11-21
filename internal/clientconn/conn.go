@@ -209,6 +209,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				Documents: []*types.Document{validationErr.Document()},
 			}))
 
+			var b []byte
 			b, err = res.MarshalBinary()
 			if err != nil {
 				panic(err)
