@@ -119,6 +119,22 @@ func TestCreateStress(t *testing.T) {
 	}
 }
 
+func TestCreateOnInsertStressSameCollection(t *testing.T) {
+	ctx, collection := setup.Setup(t)
+	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+	collPrefix := "stress_same_collection"
+
+	var err error
+	for i := 0; i < collNum; i++ {
+		_, err = db.Collection(collPrefix).InsertOne(ctx, bson.D{
+			{"foo", "bar"},
+		})
+		require.NoError(t, err)
+	}
+}
+
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
