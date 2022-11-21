@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,7 +50,7 @@ type SetupOpts struct {
 type SetupResult struct {
 	Ctx           context.Context
 	Collection    *mongo.Collection
-	Port          uint16
+	MongoDBURI    string
 	StateProvider *state.Provider
 }
 
@@ -72,25 +73,26 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
+	var uri string
 	port := *targetPortF
 	if port == 0 {
-		// TODO check targetUnixSocketF, setup Unix socket-only listener if true.
-		// TODO https://github.com/FerretDB/FerretDB/issues/1295
-		_ = *targetUnixSocketF
-		stateProvider, port = setupListener(tb, ctx, logger)
+		targetUnixSocket := *targetUnixSocketF
+		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
+	} else {
+		uri = buildMongoDBURI(tb, port)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, setupClient(tb, ctx, port), opts)
+	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri), opts)
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
 		Ctx:           ctx,
 		Collection:    collection,
-		Port:          uint16(port),
+		MongoDBURI:    uri,
 		StateProvider: stateProvider,
 	}
 }
@@ -103,6 +105,17 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
+}
+
+// IsTCP returns true if uri contains a valid port number.
+func (s *SetupResult) IsTCP(tb testing.TB) bool {
+	path, err := url.PathUnescape(s.MongoDBURI)
+	require.NoError(tb, err)
+
+	u, err := url.Parse(path)
+	require.NoError(tb, err)
+
+	return u.Port() != ""
 }
 
 // setupCollection setups a single collection for all compatible providers, if they are present.
