@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -28,8 +29,9 @@ import (
 
 // Iterator implements iterator.Interface to fetch documents from the database.
 type Iterator struct {
-	ctx  context.Context
-	rows pgx.Rows
+	ctx         context.Context
+	rows        pgx.Rows
+	currentIter atomic.Uint32
 }
 
 // NewIterator returns a new iterator for the given SQL param.
@@ -57,24 +59,29 @@ func NewIterator(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error
 }
 
 // Next implements iterator.Interface.
-func (it *Iterator) Next() (*types.Document, error) {
+//
+// If an error occurs, it returns 0, nil, and the error.
+// Possible errors are: context.Canceled, context.DeadlineExceeded, and lazy error.
+// Otherwise, as the first value it returns the number of the current iteration,
+// as the second value it returns the document.
+func (it *Iterator) Next() (uint32, *types.Document, error) {
 	if err := it.ctx.Err(); err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
 	if !it.rows.Next() {
-		return nil, iterator.ErrIteratorDone
+		return 0, nil, iterator.ErrIteratorDone
 	}
 
 	var b []byte
 	if err := it.rows.Scan(&b); err != nil {
-		return nil, lazyerrors.Error(err)
+		return 0, nil, lazyerrors.Error(err)
 	}
 
 	doc, err := pjson.Unmarshal(b)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return 0, nil, lazyerrors.Error(err)
 	}
 
-	return doc.(*types.Document), nil
+	return it.currentIter.Add(1), doc.(*types.Document), nil
 }

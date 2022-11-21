@@ -99,7 +99,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 
 		for {
-			doc, ierr := it.Next()
+			_, doc, ierr := it.Next()
 
 			switch {
 			case ierr == nil:
