@@ -43,6 +43,10 @@ type SetupCompatOpts struct {
 	// Data providers.
 	Providers []shareddata.Provider
 
+	// If true, a non-existed collection will be added to the list of collections.
+	// This is useful to test the behavior when a collection is not found.
+	AddNonExistedCollection bool
+
 	ownDatabase        bool
 	databaseName       string
 	baseCollectionName string
@@ -213,6 +217,12 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			})
 		}
 
+		collections = append(collections, collection)
+	}
+
+	if opts.AddNonExistedCollection {
+		nonExistedCollectionName := opts.baseCollectionName + "-non-existed"
+		collection := database.Collection(nonExistedCollectionName)
 		collections = append(collections, collection)
 	}
 

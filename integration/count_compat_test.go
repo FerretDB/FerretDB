@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // countCompatTestCase describes count compatibility test case.
@@ -37,7 +38,11 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 	// Use shared setup because find queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:               shareddata.AllProviders(),
+		AddNonExistedCollection: true,
+	})
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
