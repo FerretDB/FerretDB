@@ -145,7 +145,7 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 		if result == Equal && aType == numbersDataType {
 			return compareNumberOrder(a, b, order)
 		}
-		
+
 		return result
 	}
 }
