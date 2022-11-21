@@ -126,12 +126,15 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 	collNum := runtime.GOMAXPROCS(-1) * 10
 	collPrefix := "stress_same_collection"
 
-	var err error
 	for i := 0; i < collNum; i++ {
-		_, err = db.Collection(collPrefix).InsertOne(ctx, bson.D{
-			{"foo", "bar"},
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			t.Helper()
+			t.Parallel()
+			_, err := db.Collection(collPrefix).InsertOne(ctx, bson.D{
+				{"foo", "bar"},
+			})
+			require.NoError(t, err)
 		})
-		require.NoError(t, err)
 	}
 }
 
@@ -144,10 +147,15 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 
 	var err error
 	for i := 0; i < collNum; i++ {
-		_, err = db.Collection(collPrefix+fmt.Sprint(i)).InsertOne(ctx, bson.D{
-			{"foo", "bar"},
+
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			t.Helper()
+			t.Parallel()
+			_, err = db.Collection(collPrefix+fmt.Sprint(i)).InsertOne(ctx, bson.D{
+				{"foo", "bar"},
+			})
+			require.NoError(t, err)
 		})
-		require.NoError(t, err)
 	}
 }
 
