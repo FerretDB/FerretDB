@@ -81,11 +81,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 				return false, err
 			}
 
-			if _, ok := value.(*types.Array); ok {
-				result := types.Compare(value, filterValue)
-				return types.ContainsCompareResult(result, types.Equal), nil
-			}
-
 			doc = must.NotFail(types.NewDocument(filterKey, value))
 		}
 	}
