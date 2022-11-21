@@ -18,10 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -91,6 +89,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 	}
 }
 
+/*
 func TestCountCompat(t *testing.T) {
 	t.Parallel()
 
@@ -112,3 +111,4 @@ func TestCountCompat(t *testing.T) {
 
 	testCountCompat(t, testCases)
 }
+*/
