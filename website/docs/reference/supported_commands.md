@@ -533,6 +533,7 @@ db.aggregate()
 |                                    | `comment`                      |                           | ⚠️      |                                                           |
 | `filemd5`                          |                                |                           | ❌     |                                                           |
 | `fsync`                            |                                |                           | ❌     |                                                           |
+| `fsyncUnlock`                      |                                |                           | ❌     |                                                           |
 |                                    | `lock`                         |                           | ⚠️      |                                                           |
 |                                    | `comment`                      |                           | ⚠️      |                                                           |
 | `getDefaultRWConcern`              |                                |                           | ❌     |                                                           |
@@ -551,4 +552,38 @@ db.aggregate()
 |                                    | `filter`                       |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
 |                                    | `nameOnly`                     |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
 |                                    | `authorizedCollections`        |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `listDatabases`                    |                                |                           | ✅     | Basic command is fully supported                          |
+|                                    | `filter`                       |                           | ✅     |                                                           |
+|                                    | `nameOnly`                     |                           | ✅     |                                                           |
+|                                    | `authorizedDatabases`          |                           | ⚠️      | Ingored                                                   |
+|                                    | `comment`                      |                           | ⚠️      | Ingored                                                   |
+| `listIndexes`                      |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/278)  |
+|                                    | `cursor.batchSize`             |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `logRotate`                        |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/278)  |
+|                                    | `<target>`                     |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `reIndex`                          |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1516) |
+| `renameCollection`                 |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1517) |
+|                                    | `to`                           |                           | ⚠️      |                                                           |
+|                                    | `dropTarget`                   |                           | ⚠️      |                                                           |
+|                                    | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `rotateCertificates`               |                                |                           | ❌     |                                                           |
+| `setFeatureCompatibilityVersion`   |                                |                           | ❌     |                                                           |
+| `setIndexCommitQuorum`             |                                |                           | ❌     |                                                           |
+|                                    | `setIndexCommitQuorum`         |                           | ⚠️      |                                                           |
+|                                    | `indexNames`                   |                           | ⚠️      |                                                           |
+|                                    | `commitQuorum`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `setParameter`                     |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1518) |
+| `setDefaultRWConcern`              |                                |                           | ❌     |                                                           |
+|                                    | `defaultReadConcern`           |                           | ⚠️      |                                                           |
+|                                    | `defaultWriteConcern`          |                           | ⚠️      |                                                           |
+|                                    | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                    | `comment`                      |                           | ⚠️      |                                                           |
+| `shutdown`                         |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1519) |
+|                                    | `force`                        |                           | ⚠️      |                                                           |
+|                                    | `timeoutSecs`                  |                           | ⚠️      |                                                           |
 |                                    | `comment`                      |                           | ⚠️      |                                                           |
