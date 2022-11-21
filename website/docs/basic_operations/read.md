@@ -7,13 +7,9 @@ sidebar_position: 3
 The read operation retrieves documents in a collection.
 You can either retrieve all the documents in a collection, or only the documents that match a given query parameter.
 
-## Retrieve all documents in a collection
+## Retrieve a single document
 
-The `find()` command is used for retrieveing all the documents in a collection.
-
-```js
-db.collection.find()
-```
+The `findOne()` command retrieves a single document from a collection.
 
 First, populate the database with a new collection containing a list of documents.
 
@@ -44,6 +40,20 @@ db.scientists.insertMany([
     invention: "computer programming"
   }
 ])
+```
+
+Run the following `findOne()` operation to retrieve a single document from the collection:
+
+```js
+db.scientists.findOne({invention: "Turing Machine"})
+```
+
+## Retrieve all documents in a collection
+
+The `find()` command is used for retrieveing all the documents in a collection.
+
+```js
+db.collection.find()
 ```
 
 Run `db.scientists.find()` to see the complete list of documents in the collection.
@@ -192,10 +202,11 @@ The document that matches the array query is displayed in the response:
 ]
 ```
 
-## Retrieve a single document
+### Query on an embedded or nested document
 
-The `findOne()` command retrieves a single document from a collection.
+To query on an embedded document, use dot notation to specify the fields.
+The following command queries on the embedded document in the`employees` collection:
 
 ```js
-db.scientists.findOne({invention: "Turing Machine"})
+db.employees.find({"name.first": "Clarke"})
 ```
