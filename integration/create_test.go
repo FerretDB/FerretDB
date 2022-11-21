@@ -17,6 +17,7 @@ package integration
 import (
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -115,6 +116,22 @@ func TestCreateStress(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
 		})
+	}
+}
+
+func TestCreateOnInsertStressDiffCollection(t *testing.T) {
+	ctx, collection := setup.Setup(t)
+	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+	collPrefix := "stress_diff_collection_"
+
+	var err error
+	for i := 0; i < collNum; i++ {
+		_, err = db.Collection(collPrefix+fmt.Sprint(i)).InsertOne(ctx, bson.D{
+			{"foo", "bar"},
+		})
+		require.NoError(t, err)
 	}
 }
 
