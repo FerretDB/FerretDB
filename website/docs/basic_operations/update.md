@@ -74,6 +74,23 @@ db.scientists.updateOne({
 })
 ```
 
+## Replace a document
+
+Besides updating a document, you can replace it completely using the `replaceOne()` method.
+
+```js
+db.scientists.replaceOne({
+    lastname: "Bell",
+},
+{
+    lastname: "Einstein",
+    firstname: "Albert",
+    born: 1879,
+    invention: "Photoelectric effect",
+    nobel: true
+})
+```
+
 ## Update many documents
 
 Using the `updateMany()` command, you can modify many documents at once.
@@ -85,7 +102,7 @@ db.scientists.updateMany({nobel:false}, {$set: {nobel:true}})
 
 This operation updates all the documents where the field `nobel` was previously false.
 
-### Update an array element
+## Update an array element
 
 The following update example uses the `employees` collection.
 To populate the collection, run the following in your terminal:
@@ -166,19 +183,30 @@ The response from the command:
 }
 ```
 
-## Replace a document
+## Update an embedded document
 
-Besides updating a document, you can replace it completely using the `replaceOne()` method.
+To update an embedded document, use dot notation to specify the fields to modify.
+The following operation updates any embedded document that matches the specified query in the `employees` collection.
 
 ```js
-db.scientists.replaceOne({
-    lastname: "Bell",
-},
+db.employees.updateMany({
+    "name.first": "Clarke"
+}, 
 {
-    lastname: "Einstein",
-    firstname: "Albert",
-    born: 1879,
-    invention: "Photoelectric effect",
-    nobel: true
+    $set: {
+        "name.last": "Elliot"
+    }
 })
+```
+
+The following response from the command shows that a single document matching the query was updated:
+
+```js
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
 ```
