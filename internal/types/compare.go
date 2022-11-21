@@ -43,12 +43,9 @@ const (
 //
 // It converts types as needed; that may result in different types being equal.
 // For that reason, it typically should not be used in tests.
-// It returns a slice of result because a filter might match the document as
-// Less, Greater and Equal at the same time (mostly for composite data type, e.g. embedded Array).
 //
 // Compare and contrast with test helpers in testutil package.
-// TODO: remove most of code calling this
-func Compare(docValue, filterValue any) []CompareResult {
+func Compare(docValue, filterValue any) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
@@ -59,11 +56,11 @@ func Compare(docValue, filterValue any) []CompareResult {
 	switch docValue := docValue.(type) {
 	case *Document:
 		// TODO: implement document comparing https://github.com/FerretDB/FerretDB/issues/457
-		return []CompareResult{Incomparable}
+		return Incomparable
 
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
-			return []CompareResult{compareArrays(filterArr, docValue)}
+			return compareArrays(filterArr, docValue)
 		}
 
 		for i := 0; i < docValue.Len(); i++ {
@@ -74,13 +71,14 @@ func Compare(docValue, filterValue any) []CompareResult {
 			}
 
 			if res := compareScalars(docValue, filterValue); res != Incomparable {
-				return []CompareResult{res}
+				return res
 			}
 		}
-		return []CompareResult{Incomparable}
+
+		return Incomparable
 
 	default:
-		return []CompareResult{compareScalars(docValue, filterValue)}
+		return compareScalars(docValue, filterValue)
 	}
 }
 
@@ -307,14 +305,4 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	}
 
 	return Equal
-}
-
-// ContainsCompareResult returns true if the result is in an array.
-func ContainsCompareResult[T CompareResult](result []T, value T) bool {
-	for _, v := range result {
-		if v == value {
-			return true
-		}
-	}
-	return false
 }
