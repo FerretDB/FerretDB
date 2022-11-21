@@ -94,7 +94,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 func TestCountCompat(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]queryCompatTestCase{
+	testCases := map[string]countCompatTestCase{
 		"Empty": {
 			filter: bson.D{},
 		},
@@ -110,5 +110,5 @@ func TestCountCompat(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testCountCompat(t, testCases)
 }
