@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -55,8 +57,15 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					targetRes, targetErr := targetCollection.CountDocuments(ctx, filter)
-					compatRes, compatErr := compatCollection.CountDocuments(ctx, filter)
+					var targetRes, compatRes bson.D
+					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
+						{"count", targetCollection.Name()},
+						{"query", filter},
+					}).Decode(&targetRes)
+					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
+						{"count", compatCollection.Name()},
+						{"query", filter},
+					}).Decode(&compatRes)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
@@ -71,7 +80,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					t.Logf("Target (actual)   result: %v", targetRes)
 					assert.Equal(t, compatRes, targetRes)
 
-					if targetRes > 0 || compatRes > 0 {
+					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true
 					}
 				})
@@ -89,7 +98,6 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 	}
 }
 
-/*
 func TestCountCompat(t *testing.T) {
 	t.Parallel()
 
@@ -104,11 +112,9 @@ func TestCountCompat(t *testing.T) {
 			filter: bson.D{{"_id", primitive.NilObjectID}},
 		},
 		"IDNotExists": {
-			filter:     bson.D{{"_id", "count-id-not-exists"}},
-			resultType: emptyResult,
+			filter: bson.D{{"_id", "count-id-not-exists"}},
 		},
 	}
 
 	testCountCompat(t, testCases)
 }
-*/
