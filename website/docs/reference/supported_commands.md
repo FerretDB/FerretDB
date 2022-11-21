@@ -471,7 +471,7 @@ db.aggregate()
 |                                    |                                |                           | ⚠️      |                                                           |
 |                                    |                                | `timeField`               | ⚠️      |                                                           |
 |                                    |                                | `metaField`               | ⚠️      |                                                           |
-|                                    |                                | `granularity`             | ⚠️      |                                                           |                    
+|                                    |                                | `granularity`             | ⚠️      |                                                           |
 |                                    | `expireAfterSeconds`           |                           | ⚠️      | Unimplemented                                             |
 |                                    | `clusteredIndex`               |                           | ⚠️      |                                                           |
 |                                    | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                           |
