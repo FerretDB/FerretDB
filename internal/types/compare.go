@@ -278,54 +278,11 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 	}
 
 	var entireCompareResult []CompareResult
-	var subArrayEquality, gtAndLt, subArray bool
+	var gtAndLt, subArray bool
 
 	for i := 0; i < docArr.Len(); i++ {
 		docValue := must.NotFail(docArr.Get(i))
 		switch docValue := docValue.(type) {
-		case *Array:
-			filterValue, errEmptyFilterArray := filterArr.Get(i)
-			switch filterArrValue := filterValue.(type) {
-			case *Array:
-				iterationResult := compareArrays(filterArrValue, docValue)
-				if i == 0 {
-					entireCompareResult = append(entireCompareResult, iterationResult...)
-				}
-				entireCompareResult = append(entireCompareResult, Less) // always Less
-
-			default:
-				// handle empty embedded array
-				_, err := docValue.Get(0)
-				if err != nil && errEmptyFilterArray != nil {
-					return []CompareResult{Greater, Equal}
-				}
-				if err != nil {
-					return []CompareResult{Greater, Less}
-				}
-
-				subArray = true
-
-				iterationResult := compareArrays(filterArr, docValue)
-				if ContainsCompareResult(iterationResult, Equal) {
-					subArrayEquality = true
-				}
-
-				if gtAndLt {
-					continue // looking for subArrayEquality
-				}
-
-				if i == 0 {
-					if errEmptyFilterArray != nil {
-						return []CompareResult{Greater}
-					}
-
-					entireCompareResult = append(entireCompareResult, iterationResult...)
-					entireCompareResult = append(entireCompareResult, CompareOrder(docValue, filterValue, Ascending))
-				}
-
-				entireCompareResult, gtAndLt = handleInconsistencyInResults(entireCompareResult, iterationResult, subArray)
-			}
-
 		default:
 			if gtAndLt {
 				continue // looking for subArrayEquality
@@ -359,10 +316,6 @@ func compareArrays(filterArr, docArr *Array) []CompareResult {
 
 	if ContainsCompareResult(entireCompareResult, Equal) && docArr.Len() < filterArr.Len() {
 		return []CompareResult{Less}
-	}
-
-	if subArrayEquality {
-		entireCompareResult = append(entireCompareResult, Equal)
 	}
 
 	return entireCompareResult
