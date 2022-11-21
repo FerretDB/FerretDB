@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
@@ -51,6 +52,8 @@ func NewIterator(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	runtime.SetFinalizer(rows, pgx.Rows.Close)
 
 	return &Iterator{
 		ctx:  ctx,
