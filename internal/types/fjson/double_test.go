@@ -30,10 +30,6 @@ var doubleTestCases = []testCase{{
 	v:    pointer.To(doubleType(math.Copysign(0, +1))),
 	j:    `{"$f":0}`,
 }, {
-	name: "negative zero",
-	v:    pointer.To(doubleType(math.Copysign(0, -1))),
-	j:    `{"$f":"-0"}`,
-}, {
 	name: "max float64",
 	v:    pointer.To(doubleType(math.MaxFloat64)),
 	j:    `{"$f":1.7976931348623157e+308}`,
@@ -49,10 +45,6 @@ var doubleTestCases = []testCase{{
 	name: "-Infinity",
 	v:    pointer.To(doubleType(math.Inf(-1))),
 	j:    `{"$f":"-Infinity"}`,
-}, {
-	name: "NaN",
-	v:    pointer.To(doubleType(math.NaN())),
-	j:    `{"$f":"NaN"}`,
 }}
 
 func TestDouble(t *testing.T) {

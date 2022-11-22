@@ -289,14 +289,6 @@ func TestQueryEvaluationMod(t *testing.T) {
 				Message: `divisor cannot be 0`,
 			},
 		},
-		"ZeroNegativeDivisor": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `divisor cannot be 0`,
-			},
-		},
 		"DivisorSmallestNonzeroFloat64": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
 			err: &mongo.CommandError{
