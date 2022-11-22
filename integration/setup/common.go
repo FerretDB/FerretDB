@@ -53,6 +53,8 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
+	recordsDirF = flag.String("records-dir", "", "directory for record files")
+
 	startupOnce sync.Once
 )
 
@@ -92,8 +94,8 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
-// and returns listening port number.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, int) {
+// and returns listening MongoDB URI.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, preferUnixSocket bool) (*state.Provider, string) {
 	tb.Helper()
 
 	p, err := state.NewProvider("")
@@ -122,14 +124,16 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		mode = clientconn.DiffNormalMode
 	}
 
+	listenUnix := listenUnix(tb)
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: "127.0.0.1:0",
-		ListenUnix: listenUnix(tb),
-		ProxyAddr:  proxyAddr,
-		Mode:       mode,
-		Metrics:    metrics,
-		Handler:    h,
-		Logger:     logger,
+		ListenAddr:     "127.0.0.1:0",
+		ListenUnix:     listenUnix,
+		ProxyAddr:      proxyAddr,
+		Mode:           mode,
+		Metrics:        metrics,
+		Handler:        h,
+		Logger:         logger,
+		TestRecordsDir: *recordsDirF,
 	})
 
 	done := make(chan struct{})
@@ -150,54 +154,56 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		h.Close()
 	})
 
-	port := l.Addr().(*net.TCPAddr).Port
-	logger.Info("Listener started", zap.String("handler", *handlerF), zap.Int("port", port))
+	// use Unix socket if preferred and possible
+	if preferUnixSocket && listenUnix != "" {
+		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		u := &url.URL{
+			Scheme: "mongodb",
+			Host:   l.Unix().String(),
+		}
 
-	return p, port
+		uri := u.String()
+		logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+
+		return p, uri
+	}
+
+	port := l.Addr().(*net.TCPAddr).Port
+	uri := buildMongoDBURI(tb, port)
+	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+
+	return p, uri
 }
 
-// setupClient returns MongoDB client for database on 127.0.0.1:port.
-func setupClient(tb testing.TB, ctx context.Context, port int) *mongo.Client {
-	tb.Helper()
-
+// buildMongoDBURI builds MongoDB URI with given TCP port number.
+func buildMongoDBURI(tb testing.TB, port int) string {
 	require.Greater(tb, port, 0)
 	require.Less(tb, port, 65536)
 
-	// those options should not affect anything except tests speed
-	v := url.Values{
-		// TODO: Test fails occurred on some platforms due to i/o timeout.
-		// Needs more investigation.
-		//
-		//"connectTimeoutMS":         []string{"5000"},
-		//"serverSelectionTimeoutMS": []string{"5000"},
-		//"socketTimeoutMS":          []string{"5000"},
-		//"heartbeatFrequencyMS":     []string{"30000"},
-
-		//"minPoolSize":   []string{"1"},
-		//"maxPoolSize":   []string{"1"},
-		//"maxConnecting": []string{"1"},
-		//"maxIdleTimeMS": []string{"0"},
-
-		//"directConnection": []string{"true"},
-		//"appName":          []string{tb.Name()},
+	// TODO https://github.com/FerretDB/FerretDB/issues/1507
+	u := &url.URL{
+		Scheme: "mongodb",
+		Host:   fmt.Sprintf("127.0.0.1:%d", port),
+		Path:   "/",
 	}
 
-	u := url.URL{
-		Scheme:   "mongodb",
-		Host:     fmt.Sprintf("127.0.0.1:%d", port),
-		Path:     "/",
-		RawQuery: v.Encode(),
-	}
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
-	require.NoError(tb, err)
+	return u.String()
+}
 
-	err = client.Ping(ctx, nil)
+// setupClient returns MongoDB client for database on given MongoDB URI.
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
+	tb.Helper()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(tb, err)
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
 		require.NoError(tb, err)
 	})
+
+	err = client.Ping(ctx, nil)
+	require.NoError(tb, err)
 
 	return client
 }

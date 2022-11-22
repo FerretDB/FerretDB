@@ -66,7 +66,7 @@ func DatabaseName(tb testing.TB) string {
 	// database names are always lowercase
 	name := strings.ToLower(tb.Name())
 
-	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, "/", "_") // TODO switch to "-" https://github.com/FerretDB/FerretDB/issues/1321
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 
@@ -95,7 +95,7 @@ func CollectionName(tb testing.TB) string {
 	// do not use strings.ToLower because collection names can contain uppercase letters
 	name := tb.Name()
 
-	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 

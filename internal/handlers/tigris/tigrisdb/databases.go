@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -43,6 +44,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 	// TODO https://github.com/FerretDB/FerretDB/issues/1341
 	for i := 0; i < 3; i++ {
 		err = tdb.Driver.CreateDatabase(ctx, db)
+		tdb.l.Debug("createDatabaseIfNotExists", zap.String("db", db), zap.Error(err))
 
 		var driverErr *driver.Error
 
