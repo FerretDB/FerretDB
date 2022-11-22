@@ -186,13 +186,53 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                         | Status | Comments                                                  |
 |----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-| `authenticate`             |                                  | ❌     | [Issue](TODO)                                             |
+| `authenticate`             |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/40)   |
+| `getnonce`                 |                                  | ⚠️      | Deprecated since version 4.0.                             |
+| `logout`                   |                                  | ⚠️      | Deprecated since version 5.0.                             |
 
 ### Role Management Commands
 
 | Command                    | Argument                         | Status | Comments                                                  |
 |----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-| `createRole`               |                                  | ❌     | [Issue](TODO)                                             |
+| `createRole`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1528) |
+|                            | `privileges`                     | ⚠️      |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `authenticationRestrictions`     | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `dropRole`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1529) |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `dropAllRolesFromDatabase` |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1530) |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `grantPrivilegesToRole`    |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1531) |
+|                            | `privileges`                     | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `grantRolesToRole`         |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1532) |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `invalidateUserCache`      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1533) |
+| `revokePrivilegesFromRole` |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1534) |
+|                            | `privileges`                     | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `revokeRolesFromRole`      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1535) |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `rolesInfo`                |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1536) |
+|                            | `showPrivileges`                 | ⚠️      |                                                           |
+|                            | `showBuiltinRoles`               | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
+| `updateRole`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1537) |
+|                            | `privileges`                     | ⚠️      |                                                           |
+|                            | `roles`                          | ⚠️      |                                                           |
+|                            | `authenticationRestrictions`     | ⚠️      |                                                           |
+|                            | `writeConcern`                   | ⚠️      |                                                           |
+|                            | `comment`                        | ⚠️      |                                                           |
 
 ## Aggregation pipelines
 
