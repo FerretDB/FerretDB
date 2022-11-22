@@ -66,10 +66,6 @@ func TestQueryArraySize(t *testing.T) {
 			filter:      bson.D{{"v", bson.D{{"$size", 0}}}},
 			expectedIDs: []any{"array-empty"},
 		},
-		"NegativeZero": {
-			filter:      bson.D{{"v", bson.D{{"$size", math.Copysign(0, -1)}}}},
-			expectedIDs: []any{"array-empty"},
-		},
 		"NotFound": {
 			filter:      bson.D{{"v", bson.D{{"$size", 4}}}},
 			expectedIDs: []any{},
