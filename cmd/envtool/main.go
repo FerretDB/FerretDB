@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -232,12 +233,16 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	for _, db := range []string{"admin", "test"} {
 		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err = pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != pgdb.ErrAlreadyExist {
+			if err = pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 				return err
 			}
 			return nil
 		})
+		if err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
+			return err
+		}
 	}
+
 	return nil
 }
 

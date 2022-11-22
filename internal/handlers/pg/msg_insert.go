@@ -61,9 +61,11 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var inserted int32
-	//err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+
 	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
+		var doc any
+
+		doc, err = docs.Get(i)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -75,8 +77,6 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		inserted++
 	}
-	//return nil
-	//})
 
 	if err != nil {
 		return nil, err

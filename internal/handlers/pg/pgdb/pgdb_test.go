@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
@@ -111,7 +112,7 @@ func TestCreateDrop(t *testing.T) {
 		require.ErrorIs(t, err, ErrSchemaNotExist)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+			if err = CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 				return err
 			}
 			return nil
@@ -143,7 +144,7 @@ func TestCreateDrop(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 				return err
 			}
 			return nil
@@ -151,7 +152,7 @@ func TestCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+			if err = CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 				return err
 			}
 			return nil
@@ -209,7 +210,7 @@ func TestCreateDrop(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 				return err
 			}
 			return nil
@@ -272,7 +273,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 				return err
 			}
 			return nil
@@ -292,7 +293,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 				return err
 			}
 			return nil

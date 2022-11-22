@@ -163,23 +163,24 @@ func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collectio
 	// but keep in mind that it can be created in concurrent connection.
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
+		if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 			return err
 		}
 		return nil
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return false, lazyerrors.Error(err)
 	}
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		err = CreateCollection(ctx, tx, db, collection)
-		if err != nil && !errors.Is(err, ErrAlreadyExist) {
+		if err != nil {
 			return err
 		}
 		return nil
 	})
-	if err != nil {
+
+	if err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return false, lazyerrors.Error(err)
 	}
 

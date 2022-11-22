@@ -40,29 +40,28 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 		exists, err = CollectionExists(ctx, tx, db, collection)
 		return err
 	})
-
 	if err != nil {
 		return err
 	}
 
 	if !exists {
 		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
+			if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 				return lazyerrors.Error(err)
 			}
 			return nil
 		})
-		if err != nil {
+		if err != nil && errors.Is(err, ErrAlreadyExist) {
 			return err
 		}
 
 		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err := CreateCollection(ctx, tx, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
+			if err = CreateCollection(ctx, tx, db, collection); err != nil {
 				return lazyerrors.Error(err)
 			}
 			return nil
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return err
 		}
 	}

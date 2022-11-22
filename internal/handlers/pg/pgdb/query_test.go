@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestQueryDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+		if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return err
 		}
 		return nil
