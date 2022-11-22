@@ -204,7 +204,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil && errors.As(err, &validationErr) {
-			var res *wire.OpMsg
+			res := new(wire.OpMsg)
+
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{validationErr.Document()},
 			}))

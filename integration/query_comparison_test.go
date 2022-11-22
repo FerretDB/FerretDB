@@ -520,15 +520,6 @@ func TestQueryComparisonGt(t *testing.T) {
 				"int64", "int64-big", "int64-max",
 			},
 		},
-		"DoubleNegativeZero": {
-			value: math.Copysign(0, -1),
-			expectedIDs: []any{
-				"array", "array-three", "array-three-reverse", "array-two",
-				"double", "double-big", "double-max", "double-smallest", "double-whole",
-				"int32", "int32-max",
-				"int64", "int64-big", "int64-max",
-			},
-		},
 		"DoubleMax": {
 			value:       math.MaxFloat64,
 			expectedIDs: []any{},
