@@ -141,11 +141,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		if doc.HasByPath(path) {
 			result := types.Compare(setValue, must.NotFail(doc.GetByPath(path)))
-			if len(result) != 1 {
-				panic("$set: there should be only one result")
-			}
-
-			if result[0] == types.Equal {
+			if result == types.Equal {
 				continue
 			}
 		}
@@ -267,12 +263,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 			result := types.Compare(docValue, incremented)
 
-			if len(result) != 1 {
-				panic("$inc: there should be only one result")
-			}
-
 			docFloat, ok := docValue.(float64)
-			if result[0] == types.Equal &&
+			if result == types.Equal &&
 				// if the document value is NaN we should consider it as changed.
 				(ok && !math.IsNaN(docFloat)) {
 				continue

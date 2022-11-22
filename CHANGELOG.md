@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.6.2 (not released yet)
+## [v0.6.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.6.2) (2022-11-21)
 
 ### New Features 🎉
 * Provide builds for `linux/arm/v7` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1377
@@ -8,6 +8,8 @@
 
 ### Fixed Bugs 🐛
 * Fix `SchemaStats` to return empty stats by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1359
+* Fix issues for the Unix listener by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1397
+
 ### Enhancements 🛠
 * Tweak supported wire protocol versions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1261
 * Add more `NewCommandErrorMsgWithArgument` calls by @noisersup in https://github.com/FerretDB/FerretDB/pull/1358
@@ -21,6 +23,14 @@
 * Add aggregation section (collection stages) to the docs by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1411
 * Add query and write operation commands to the docs by @b1ron in https://github.com/FerretDB/FerretDB/pull/1409
 * Add aggregation section (database stages, operators) to the docs by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1448
+* Use colored emoji by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1485
+* Add update operators to the docs by @b1ron in https://github.com/FerretDB/FerretDB/pull/1481
+* Reorganize a list of supported commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1490
+* Add changelog draft by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1479
+* Add user management commands to the docs by @b1ron in https://github.com/FerretDB/FerretDB/pull/1489
+* Fix information about `delete`'s `comment` argument inside "supported commands" reference by @noisersup in https://github.com/FerretDB/FerretDB/pull/1498
+* Add query plan cache commands to the docs by @b1ron in https://github.com/FerretDB/FerretDB/pull/1501
+* Add documentation for embedded/nested documents query by @Fashander in https://github.com/FerretDB/FerretDB/pull/1478
 
 ### Other Changes 🤖
 * Do not cancel in-progress CI runs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1378
@@ -32,6 +42,13 @@
 * Minor telemetry cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1446
 * Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1477
 * Allow duplicates in `bson` documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1391
+* Implement `debugError` command by @noisersup in https://github.com/FerretDB/FerretDB/pull/1402
+* Update some TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1452
+* Record integration tests connections by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1482
+* Enable more `textlint` rules by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1484
+* Use `primitive.Regex` to test that regex `_id` is not allowed by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1486
+* Bump Tigris version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1379
+* Use `-` in test collection names by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1325
 
 ## New Contributors
 * @b1ron made their first contribution in https://github.com/FerretDB/FerretDB/pull/1409
