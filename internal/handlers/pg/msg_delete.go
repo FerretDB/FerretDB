@@ -178,9 +178,9 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 	var deleted int32
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		// fetch current items from collection
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, sp)
-		if err != nil {
-			return err
+		fetchedChan, terr := h.PgPool.QueryDocumentsOld(ctx, tx, sp)
+		if terr != nil {
+			return terr
 		}
 		defer func() {
 			// Drain the channel to prevent leaking goroutines.

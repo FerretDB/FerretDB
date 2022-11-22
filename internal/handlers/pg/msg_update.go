@@ -142,7 +142,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			sp.Filter = q
 
 			resDocs := make([]*types.Document, 0, 16)
-			fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
+			fetchedChan, err := h.PgPool.QueryDocumentsOld(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}

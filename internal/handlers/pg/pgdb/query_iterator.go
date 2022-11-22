@@ -16,8 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
-	"runtime"
 	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
@@ -35,30 +33,12 @@ type Iterator struct {
 	currentIter atomic.Uint32
 }
 
-// NewIterator returns a new iterator for the given SQL param.
-// If the table for the given SQL params doesn't exist, it returns nil and no error.
-// If an error occurs, it returns nil and that error, possibly wrapped.
-func NewIterator(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error) {
-	q, args, err := buildQuery(ctx, tx, sp)
-	if err != nil {
-		if errors.Is(err, ErrTableNotExist) {
-			return nil, nil
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	rows, err := tx.Query(ctx, q, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	runtime.SetFinalizer(rows, pgx.Rows.Close)
-
+// NewIterator returns a new iterator for the given pgx.Rows.
+func NewIterator(ctx context.Context, rows pgx.Rows) *Iterator {
 	return &Iterator{
 		ctx:  ctx,
 		rows: rows,
-	}, nil
+	}
 }
 
 // Next implements iterator.Interface.

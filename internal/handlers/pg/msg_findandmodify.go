@@ -77,9 +77,9 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		resDocs := make([]*types.Document, 0, 16)
 
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sqlParam)
-		if err != nil {
-			return err
+		fetchedChan, terr := h.PgPool.QueryDocumentsOld(ctx, tx, &sqlParam)
+		if terr != nil {
+			return terr
 		}
 		defer func() {
 			// Drain the channel to prevent leaking goroutines.

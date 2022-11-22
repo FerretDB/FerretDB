@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -31,14 +32,14 @@ import (
 )
 
 const (
-	// FetchedChannelBufSize is the size of the buffer of the channel that is used in QueryDocuments.
+	// FetchedChannelBufSize is the size of the buffer of the channel that is used in QueryDocumentsOld.
 	FetchedChannelBufSize = 3
 	// FetchedSliceCapacity is the capacity of the slice in FetchedDocs.
 	FetchedSliceCapacity = 2
 )
 
 // FetchedDocs is a struct that contains a list of documents and an error.
-// It is used in the fetched channel returned by QueryDocuments.
+// It is used in the fetched channel returned by QueryDocumentsOld.
 type FetchedDocs struct {
 	Docs []*types.Document
 	Err  error
@@ -53,7 +54,7 @@ type SQLParam struct {
 	Filter     *types.Document
 }
 
-// QueryDocuments returns a channel with buffer FetchedChannelBufSize
+// QueryDocumentsOld returns a channel with buffer FetchedChannelBufSize
 // to fetch list of documents for given FerretDB database and collection.
 //
 // If an error occurs before the fetching, the error is returned immediately.
@@ -64,7 +65,9 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
+//
+// Deprecated in favor of QueryDocuments, TODO remove in https://github.com/FerretDB/FerretDB/issues/898.
+func (pgPool *Pool) QueryDocumentsOld(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
 	q, args, err := buildQuery(ctx, tx, sp)
@@ -104,6 +107,29 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 	}()
 
 	return fetchedChan, nil
+}
+
+// QueryDocuments returns an iterator to fetch documents for given SQLParams.
+// If the collection doesn't exist, it returns nil and no error.
+// If an error occurs, it returns nil and that error, possibly wrapped.
+func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error) {
+	q, args, err := buildQuery(ctx, tx, sp)
+	if err != nil {
+		if errors.Is(err, ErrTableNotExist) {
+			return nil, nil
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	rows, err := tx.Query(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	runtime.SetFinalizer(rows, pgx.Rows.Close)
+
+	return NewIterator(ctx, rows), nil
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
