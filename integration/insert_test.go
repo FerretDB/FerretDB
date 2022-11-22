@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,10 +32,10 @@ func TestInsertSimple(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	_, err := collection.InsertOne(ctx, bson.D{{"v", -0.0}})
+	_, err := collection.InsertOne(ctx, bson.D{{"v", math.Round(-1 / 1000000000000000000.0)}})
 	require.NoError(t, err)
 
-	res := collection.FindOne(ctx, bson.D{{"v", -0.0}})
+	res := collection.FindOne(ctx, bson.D{{"v", math.Round(-1 / 1000000000000000000.0)}})
 	require.NoError(t, res.Err())
 
 	var doc bson.D

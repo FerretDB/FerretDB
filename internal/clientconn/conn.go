@@ -204,7 +204,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil && errors.As(err, &validationErr) {
-			var res wire.OpMsg
+			var res *wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{validationErr.Document()},
 			}))
@@ -215,12 +215,14 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic(err)
 			}
 
-			resHeader.OpCode = reqHeader.OpCode
-			resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
-			resHeader.ResponseTo = reqHeader.RequestID
-			resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
+			resHeader = &wire.MsgHeader{
+				OpCode:        reqHeader.OpCode,
+				RequestID:     atomic.AddInt32(&c.lastRequestID, 1),
+				ResponseTo:    reqHeader.RequestID,
+				MessageLength: int32(wire.MsgHeaderLen + len(b)),
+			}
 
-			if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
+			if err = wire.WriteMessage(bufw, resHeader, res); err != nil {
 				return
 			}
 
