@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// TODO remove in https://github.com/FerretDB/FerretDB/issues/898 when QueryDocument is removed.
 func TestQueryDocuments(t *testing.T) {
 	t.Parallel()
 
@@ -160,6 +163,99 @@ func TestQueryDocuments(t *testing.T) {
 		require.False(t, ok)
 		require.Nil(t, res.Docs)
 		require.Nil(t, res.Err)
+
+		require.NoError(t, tx.Commit(ctx))
+	})
+}
+
+func TestGetDocuments(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+
+	pool := getPool(ctx, t)
+	databaseName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
+	setupDatabase(ctx, t, pool, databaseName)
+
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+	})
+	require.NoError(t, err)
+
+	cases := []struct {
+		name       string
+		collection string
+		documents  []*types.Document
+	}{{
+		name:       "empty",
+		collection: collectionName,
+		documents:  []*types.Document{},
+	}, {
+		name:       "one",
+		collection: collectionName + "_one",
+		documents:  []*types.Document{must.NotFail(types.NewDocument("_id", "foo", "id", "1"))},
+	}, {
+		name:       "two",
+		collection: collectionName + "_two",
+		documents: []*types.Document{
+			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
+		},
+	}, {
+		name:       "three",
+		collection: collectionName + "_three",
+		documents: []*types.Document{
+			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "3")),
+		},
+	}}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			tx, err := pool.Begin(ctx)
+			require.NoError(t, err)
+			defer tx.Rollback(ctx)
+
+			for _, doc := range tc.documents {
+				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
+			}
+
+			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
+			it, err := pool.GetDocuments(ctx, tx, sp)
+			require.NoError(t, err)
+			require.NotNil(t, it)
+
+			for {
+				iter, doc, err := it.Next()
+
+				if int(iter) == len(tc.documents) {
+					assert.Equal(t, iterator.ErrIteratorDone, err)
+					break
+				}
+
+				assert.NoError(t, err)
+				assert.Equal(t, tc.documents[iter], doc)
+			}
+
+			require.NoError(t, tx.Commit(ctx))
+		})
+	}
+
+	// Special case: querying a non-existing collection.
+	t.Run("non-existing-collection", func(t *testing.T) {
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
+
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_non-existing"}
+		it, err := pool.GetDocuments(ctx, tx, sp)
+		require.NoError(t, err)
+		require.Nil(t, it)
 
 		require.NoError(t, tx.Commit(ctx))
 	})
