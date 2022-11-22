@@ -16,8 +16,13 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/jackc/pgx/v4"
 
@@ -131,37 +136,46 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, terr := h.PgPool.QueryDocuments(ctx, tx, &sp)
-		if terr != nil {
-			return terr
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
+		it, ierr := h.PgPool.GetDocuments(ctx, tx, &sp)
+		if ierr != nil {
+			return ierr
 		}
 
-		return nil
+		if it == nil {
+			// no documents found
+			return nil
+		}
+
+		for {
+			_, doc, ierr := it.Next()
+
+			switch {
+			case ierr == nil:
+				// do nothing
+			case errors.Is(ierr, iterator.ErrIteratorDone):
+				// no more documents
+				return nil
+			case errors.Is(ierr, context.Canceled), errors.Is(ierr, context.DeadlineExceeded):
+				h.L.Warn(
+					"context canceled, stopping fetching",
+					zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(ierr),
+				)
+				return nil
+			default:
+				return ierr
+			}
+
+			matches, err := common.FilterDocument(doc, filter)
+			if err != nil {
+				return err
+			}
+
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
+		}
 	})
 
 	if err != nil {
