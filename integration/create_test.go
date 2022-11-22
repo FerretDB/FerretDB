@@ -168,8 +168,6 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	var err error
-
 	for i := 0; i < collNum; i++ {
 		wg.Add(1)
 
@@ -180,7 +178,7 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 
 			<-start
 
-			_, err = db.Collection(collPrefix+fmt.Sprint(i)).InsertOne(ctx, bson.D{
+			_, err := db.Collection(collPrefix+fmt.Sprint(i)).InsertOne(ctx, bson.D{
 				{"foo", "bar"},
 			})
 			assert.NoError(t, err)
