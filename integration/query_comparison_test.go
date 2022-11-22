@@ -909,10 +909,6 @@ func TestQueryComparisonLt(t *testing.T) {
 				"int64", "int64-min", "int64-zero",
 			},
 		},
-		"DoubleNegativeZero": {
-			value:       math.Copysign(0, -1),
-			expectedIDs: []any{"int32-min", "int64-min"},
-		},
 		"DoubleSmallest": {
 			value: math.SmallestNonzeroFloat64,
 			expectedIDs: []any{
@@ -1112,14 +1108,6 @@ func TestQueryComparisonLte(t *testing.T) {
 				"double", "double-smallest", "double-whole", "double-zero",
 				"int32", "int32-min", "int32-zero",
 				"int64", "int64-min", "int64-zero",
-			},
-		},
-		"DoubleNegativeZero": {
-			value: math.Copysign(0, -1),
-			expectedIDs: []any{
-				"double-zero",
-				"int32-min", "int32-zero",
-				"int64-min", "int64-zero",
 			},
 		},
 		"DoubleSmallest": {
@@ -1503,10 +1491,6 @@ func TestQueryComparisonNe(t *testing.T) {
 		"Double": {
 			value:        42.13,
 			unexpectedID: "double",
-		},
-		"DoubleNegativeZero": {
-			value:        math.Copysign(0, -1),
-			unexpectedID: "double-negative-zero",
 		},
 		"DoubleMax": {
 			value:        math.MaxFloat64,
