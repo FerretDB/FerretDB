@@ -127,7 +127,13 @@ func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	runtime.SetFinalizer(rows, pgx.Rows.Close)
+	runtime.SetFinalizer(rows, func(rows pgx.Rows) {
+		rows.Close()
+		pgPool.Config().ConnConfig.Logger.Log(
+			ctx, pgx.LogLevelDebug, "Rows.Close finalizer executed",
+			map[string]any{"db": sp.DB, "collection": sp.Collection, "query": q},
+		)
+	})
 
 	return NewIterator(ctx, rows), nil
 }
