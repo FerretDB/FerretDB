@@ -12,7 +12,8 @@ The create operation adds a new document to a collection.
 If the collection does not exist, this operation will create it.
 The following methods are available for adding documents to a collection:
 
-[`db.collection.insertOne()`](./create.md#insert-a-single-document), [`db.collection.insertMany()`](./create.md#insert-many-documents-at-once)
+[`db.collection.insertOne()`](./create.md#insert-a-single-document),
+[`db.collection.insertMany()`](./create.md#insert-multiple-documents-at-once)
 
 ## Read operations in FerretDB
 
@@ -30,7 +31,7 @@ The update operation modifies document records in a collection.
 It changes existing documents in a collection according to the query criteria.
 The following update operations are supported:
 
-[`db.collection.updateOne()`](./update.md#modify-a-single-document), [`db.collection.updateMany()`](./update.md#modify-many-documents), [`db.collection.replaceOne()`](./update.md#replace-a-document)
+[`db.collection.updateOne()`](./update.md#update-a-single-document), [`db.collection.updateMany()`](./update.md#update-many-documents), [`db.collection.replaceOne()`](./update.md#replace-a-document)
 
 ## Delete operations in FerretDB
 

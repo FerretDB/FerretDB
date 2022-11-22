@@ -13,11 +13,13 @@ vendor/
 # trivy cache
 .cache/
 
-# packages, build artifacts
+# packages, build artifacts, temporary files
 *.deb
 *.rpm
 *.tar
+*.js
 website/build/
+tmp/
 
 # test coverage results, generated files like commit.txt, etc.
 *.txt

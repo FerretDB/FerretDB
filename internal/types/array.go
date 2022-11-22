@@ -17,8 +17,6 @@ package types
 import (
 	"fmt"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -144,12 +142,12 @@ func (a *Array) Contains(filterValue any) bool {
 		// or at least one element of a must be equal with filterValue.
 		// TODO: Compare might be inaccurate for some corner cases, we might want to fix it later.
 
-		if res := Compare(a, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+		if res := Compare(a, filterValue); res == Equal {
 			return true
 		}
 
 		for _, elem := range a.s {
-			if res := Compare(elem, filterValue); slices.Contains(res, Equal) && len(res) == 1 {
+			if res := Compare(elem, filterValue); res == Equal {
 				return true
 			}
 		}
