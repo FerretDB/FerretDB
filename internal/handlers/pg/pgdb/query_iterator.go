@@ -37,7 +37,7 @@ type Iterator struct {
 
 // NewIterator returns a new iterator for the given SQL param.
 // If the table for the given SQL params doesn't exist, it returns nil and no error.
-// If an error occurs, it returns nil and "lazy error".
+// If an error occurs, it returns nil and that error, possibly wrapped.
 func NewIterator(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error) {
 	q, args, err := buildQuery(ctx, tx, sp)
 	if err != nil {

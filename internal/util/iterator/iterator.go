@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iterator describes Iterator interface to be used to fetch documents.
+// Package iterator describes a generic Iterator interface.
 package iterator
 
 import "errors"
