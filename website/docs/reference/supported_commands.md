@@ -182,6 +182,18 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `filter`                         | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
 
+### Authentication Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `authenticate`             |                                  | ❌     | [Issue](TODO)                                             |
+
+### Role Management Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `createRole`               |                                  | ❌     | [Issue](TODO)                                             |
+
 ## Aggregation pipelines
 
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
