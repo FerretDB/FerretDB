@@ -189,7 +189,7 @@ func TestGetDocuments(t *testing.T) {
 		documents  []*types.Document
 	}{{
 		name:       "empty",
-		collection: collectionName,
+		collection: collectionName + "_empty",
 		documents:  []*types.Document{},
 	}, {
 		name:       "one",
@@ -221,6 +221,7 @@ func TestGetDocuments(t *testing.T) {
 			require.NoError(t, err)
 			defer tx.Rollback(ctx)
 
+			require.NoError(t, CreateCollection(ctx, tx, databaseName, tc.collection))
 			for _, doc := range tc.documents {
 				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
 			}
