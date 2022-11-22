@@ -210,6 +210,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}))
 
 			var b []byte
+
 			b, err = res.MarshalBinary()
 			if err != nil {
 				panic(err)

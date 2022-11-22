@@ -152,7 +152,7 @@ func ProtocolError(err error) (ProtoErr, bool) {
 
 	var validationErr *wire.ValidationError
 	if errors.As(err, &validationErr) {
-		return NewCommandError(ErrBadValue, err).(*CommandError), true
+		return NewCommandError(ErrBadValue, err).(*CommandError), true //nolint:errorlint // false positive
 	}
 
 	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
