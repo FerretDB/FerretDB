@@ -24,7 +24,7 @@ var ErrIteratorDone = errors.New("iterator is read to the end")
 type Interface[E1, E2 any] interface {
 	// Next returns a pair of values for containers, such as maps,
 	// for which elements have two values.
-	// If the iterator is at the end, it returns ErrEndOfIterator as error.
+	// If the iterator is at the end, it returns possibly wrapped ErrEndOfIterator as error.
 	// Other errors may be returned as well, they depend on the implementation and could be wrapped.
 	// Such errors should be documented in the implementation.
 	Next() (E1, E2, error)
