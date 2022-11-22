@@ -16,16 +16,16 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
-
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -248,7 +248,7 @@ func TestGetDocuments(t *testing.T) {
 				}
 
 				// iterator is done, exist from the loop.
-				if err == iterator.ErrIteratorDone {
+				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}
 
