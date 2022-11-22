@@ -40,13 +40,19 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	}
 
 	if !exists {
-		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+		//err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
 			return lazyerrors.Error(err)
 		}
+		return nil
+		//})
 
+		//err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		if err := CreateCollection(ctx, tx, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return lazyerrors.Error(err)
 		}
+		return nil
+		//})
 	}
 
 	table, err := getTableName(ctx, tx, db, collection)

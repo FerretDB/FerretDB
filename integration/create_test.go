@@ -147,7 +147,6 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 
 	var err error
 	for i := 0; i < collNum; i++ {
-
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			t.Helper()
 			t.Parallel()

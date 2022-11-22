@@ -111,7 +111,10 @@ func TestCreateDrop(t *testing.T) {
 		require.ErrorIs(t, err, ErrSchemaNotExist)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+				return err
+			}
+			return nil
 		})
 		require.NoError(t, err)
 
@@ -140,12 +143,18 @@ func TestCreateDrop(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+				return err
+			}
+			return nil
 		})
 		require.NoError(t, err)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+				return err
+			}
+			return nil
 		})
 		require.NoError(t, err)
 
@@ -200,7 +209,10 @@ func TestCreateDrop(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+				return err
+			}
+			return nil
 		})
 		require.NoError(t, err)
 
@@ -265,7 +277,10 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+				return err
+			}
+			return nil
 		})
 		require.NoError(t, err)
 
@@ -286,7 +301,10 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+			if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && err != ErrAlreadyExist {
+				return err
+			}
+			return nil
 		})
 		require.NoError(t, err)
 

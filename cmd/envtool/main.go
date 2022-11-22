@@ -230,17 +230,15 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	logger.Info("Creating databases...")
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		for _, db := range []string{"admin", "test"} {
-			if err = pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+	for _, db := range []string{"admin", "test"} {
+		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			if err = pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != pgdb.ErrAlreadyExist {
 				return err
 			}
-		}
-
-		return nil
-	})
-
-	return err
+			return nil
+		})
+	}
+	return nil
 }
 
 // setupTigris configures Tigris.
