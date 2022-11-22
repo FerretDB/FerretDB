@@ -191,7 +191,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				))))
 
-				if err = h.insert(ctx, tx, &sp, doc); err != nil {
+				if err = h.insert(ctx, &sp, doc); err != nil {
 					return err
 				}
 

@@ -5,13 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95ef9b1d-dc1c-442f-a36d-6c4276c09e97" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/cmd/envtool/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/envtool/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/integration/create_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/integration/create_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/pg/pgdb/collections.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/pg/pgdb/collections.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/pg/pgdb/databases.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/pg/pgdb/databases.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/handlers/pg/msg_insert.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/pg/msg_insert.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/handlers/pg/pgdb/insert.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/pg/pgdb/insert.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/pg/pgdb/pgdb_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/pg/pgdb/pgdb_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/handlers/pg/pgdb/query_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/handlers/pg/pgdb/query_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

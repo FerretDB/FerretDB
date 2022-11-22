@@ -29,33 +29,49 @@ import (
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
 // If the document is not valid, it returns *types.ValidationError.
-func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
+func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, doc *types.Document) error {
 	if err := doc.ValidateData(); err != nil {
 		return err
 	}
 
-	exists, err := CollectionExists(ctx, tx, db, collection)
+	var exists bool
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		exists, err = CollectionExists(ctx, tx, db, collection)
+		return err
+	})
+
 	if err != nil {
 		return err
 	}
 
 	if !exists {
-		//err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
-			return lazyerrors.Error(err)
+		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
+				return lazyerrors.Error(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
-		return nil
-		//})
 
-		//err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := CreateCollection(ctx, tx, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
-			return lazyerrors.Error(err)
+		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+			if err := CreateCollection(ctx, tx, db, collection); err != nil && !errors.Is(err, ErrAlreadyExist) {
+				return lazyerrors.Error(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
-		return nil
-		//})
 	}
 
-	table, err := getTableName(ctx, tx, db, collection)
+	var table string
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		table, err = getTableName(ctx, tx, db, collection)
+		return err
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -63,7 +79,11 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	if _, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc))); err != nil {
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)))
+		return err
+	})
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
