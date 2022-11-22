@@ -178,7 +178,7 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 	var deleted int32
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		// fetch current items from collection
-		fetchedChan, terr := h.PgPool.QueryDocumentsOld(ctx, tx, sp)
+		fetchedChan, terr := h.PgPool.QueryDocuments(ctx, tx, sp)
 		if terr != nil {
 			return terr
 		}
