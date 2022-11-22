@@ -255,7 +255,8 @@ var msgTestCases = []testCase{{
 			},
 		},
 	},
-	err: `wire.OpMsg.Document: validation failed for { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 } with: -0 is not supported`,
+	err: `wire.OpMsg.Document: validation failed for { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 }` +
+		` with: -0 is not supported`,
 }}
 
 func TestMsg(t *testing.T) {
