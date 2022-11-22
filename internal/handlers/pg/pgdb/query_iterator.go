@@ -45,7 +45,7 @@ func NewIterator(ctx context.Context, rows pgx.Rows) *Iterator {
 //
 // If an error occurs, it returns 0, nil, and the error.
 // Possible errors are: context.Canceled, context.DeadlineExceeded, and lazy error.
-// Otherwise, as the first value it returns the number of the current iteration,
+// Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
 func (it *Iterator) Next() (uint32, *types.Document, error) {
 	if err := it.ctx.Err(); err != nil {
@@ -66,5 +66,7 @@ func (it *Iterator) Next() (uint32, *types.Document, error) {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
-	return it.currentIter.Add(1), doc.(*types.Document), nil
+	defer it.currentIter.Add(1)
+
+	return it.currentIter.Load(), doc.(*types.Document), nil
 }

@@ -230,16 +230,31 @@ func TestGetDocuments(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, it)
 
+			var iterPrev uint32
 			for {
 				iter, doc, err := it.Next()
 
-				if int(iter) == len(tc.documents) {
+				switch len(tc.documents) {
+				case 0:
+					// no documents in the collection, we expect iterator to immediately return an error.
 					assert.Equal(t, iterator.ErrIteratorDone, err)
+				default:
+					if iter == 0 && iterPrev != 0 {
+						// check that iterator is done and it found everything.
+						assert.Equal(t, iterator.ErrIteratorDone, err)
+						assert.Equal(t, len(tc.documents), int(iterPrev+1))
+					}
+				}
+
+				// iterator is done, exist from the loop.
+				if err == iterator.ErrIteratorDone {
 					break
 				}
 
 				assert.NoError(t, err)
-				assert.Equal(t, tc.documents[iter], doc)
+				assert.Equal(t, tc.documents[int(iter)], doc)
+
+				iterPrev = iter
 			}
 
 			require.NoError(t, tx.Commit(ctx))
