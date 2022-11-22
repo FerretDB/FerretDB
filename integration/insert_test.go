@@ -26,7 +26,7 @@ import (
 
 // TestInsertSimple checks simple cases of doc deletion.
 func TestInsertSimple(t *testing.T) {
-	setup.SkipForTigris(t)
+	// TODO: remove this test when validation is done.
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
