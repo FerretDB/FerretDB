@@ -18,6 +18,7 @@ vendor/
 *.rpm
 *.tar
 website/build/
+tmp/
 
 # test coverage results, generated files like commit.txt, etc.
 *.txt

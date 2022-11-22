@@ -46,7 +46,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 		// do nothing
 	case *driver.Error:
 		if IsNotFound(err) {
-			tdb.L.Debug(
+			tdb.l.Debug(
 				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
 				zap.String("db", param.DB), zap.String("collection", param.Collection),
 			)
@@ -65,7 +65,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	}
 
 	filter := tdb.queryDocumentsFilter(param.Filter)
-	tdb.L.Sugar().Debugf("Read filter: %s", filter)
+	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
 	iter, err := db.Read(ctx, param.Collection, filter, nil)
 	if err != nil {

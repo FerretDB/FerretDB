@@ -142,13 +142,11 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 		return Greater
 	default:
 		result := Compare(a, b)
-		if ContainsCompareResult(result, Equal) && aType == numbersDataType {
+		if result == Equal && aType == numbersDataType {
 			return compareNumberOrder(a, b, order)
 		}
 
-		// getting result at zero index because result with more than one value is only in composite data types and
-		// since the result can be both more and less, we will simply choose a random (by zero index; only composite)
-		return result[0]
+		return result
 	}
 }
 
