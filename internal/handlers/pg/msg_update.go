@@ -67,11 +67,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var created bool
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		created, err = pgdb.CreateCollectionIfNotExist(ctx, tx, sp.DB, sp.Collection)
-		return err
-	})
+	created, err := pgdb.CreateCollectionIfNotExist(ctx, h.PgPool, sp.DB, sp.Collection)
 	if err != nil {
 		if errors.Is(pgdb.ErrInvalidTableName, err) ||
 			errors.Is(pgdb.ErrInvalidDatabaseName, err) {

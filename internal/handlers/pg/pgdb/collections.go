@@ -144,8 +144,13 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // If needed, it creates both database and collection.
 //
 // True is returned if collection was created.
-func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	exists, err := CollectionExists(ctx, tx, db, collection)
+func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) (bool, error) {
+	var exists bool
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var err error
+		exists, err = CollectionExists(ctx, tx, db, collection)
+		return err
+	})
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -157,15 +162,23 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 	// Collection (or even database) does not exist. Try to create them,
 	// but keep in mind that it can be created in concurrent connection.
 
-	if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil && err != ErrAlreadyExist {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	err = CreateCollection(ctx, tx, db, collection)
-	if errors.Is(err, ErrAlreadyExist) {
-		return false, nil
-	}
-
+	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		err = CreateCollection(ctx, tx, db, collection)
+		if err != nil && !errors.Is(err, ErrAlreadyExist) {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
