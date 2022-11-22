@@ -149,6 +149,11 @@ func ProtocolError(err error) (ProtoErr, bool) {
 		return writeErr, true
 	}
 
+	var validationErr *wire.ValidationError
+	if errors.As(err, &validationErr) {
+		return NewCommandError(ErrBadValue, err).(*CommandError), true
+	}
+
 	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
 
 	return e, false
