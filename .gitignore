@@ -13,10 +13,11 @@ vendor/
 # trivy cache
 .cache/
 
-# packages, build artifacts
+# packages, build artifacts, temporary files
 *.deb
 *.rpm
 *.tar
+*.js
 website/build/
 tmp/
 
