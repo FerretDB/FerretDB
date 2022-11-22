@@ -248,8 +248,8 @@ var msgTestCases = []testCase{{
 				Identifier: "documents",
 				Documents: []*types.Document{
 					must.NotFail(types.NewDocument(
-						"v", math.Round(-1/1000000000000000.0),
 						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
+						"v", math.Round(-1/1000000000000000.0),
 					)),
 				},
 			},
