@@ -18,12 +18,11 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -69,5 +68,5 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 
 	n := it.currentIter.Add(1)
 
-	return n-1, doc.(*types.Document), nil
+	return n - 1, doc.(*types.Document), nil
 }

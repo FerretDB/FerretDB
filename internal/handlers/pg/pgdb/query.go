@@ -27,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -112,7 +113,9 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns nil and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error) {
+func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
+	iterator.Interface[uint32, *types.Document], error,
+) {
 	q, args, err := buildQuery(ctx, tx, sp)
 	if err != nil {
 		if errors.Is(err, ErrTableNotExist) {
@@ -135,7 +138,7 @@ func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 		)
 	})
 
-	return NewIterator(ctx, rows), nil
+	return newIterator(ctx, rows), nil
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
