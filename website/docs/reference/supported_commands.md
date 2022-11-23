@@ -144,12 +144,6 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](https://docs.ferretdb.io/telemetry/#enable-telemetry) |
 | `checkFreeMonitoringStatus`|                                      | ✅     |                                                                               |
 
-## Auditing Commands
-
-| Command                    | Argument                         | Status | Comments                                                  |
-|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-|                            | `x`                              | ⚠️      |                                                           |
-
 ## Database Operations
 
 ### User Management Commands
