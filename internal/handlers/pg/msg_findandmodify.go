@@ -271,9 +271,6 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 			}
 		}
 
-		// we must place the _id to the first index of the upsert
-		upsert.MoveIDToTheFirstIndex()
-
 		err := h.insert(ctx, tx, params.sqlParam, upsert)
 		if err != nil {
 			return nil, false, err
