@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
@@ -183,86 +182,60 @@ func TestGetDocuments(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	cases := []struct {
-		name       string
-		collection string
-		documents  []*types.Document
-	}{{
-		name:       "empty",
-		collection: collectionName + "_empty",
-		documents:  []*types.Document{},
-	}, {
-		name:       "one",
-		collection: collectionName + "_one",
-		documents:  []*types.Document{must.NotFail(types.NewDocument("_id", "foo", "id", "1"))},
-	}, {
-		name:       "two",
-		collection: collectionName + "_two",
-		documents: []*types.Document{
-			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
-			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
-		},
-	}, {
-		name:       "three",
-		collection: collectionName + "_three",
-		documents: []*types.Document{
-			must.NotFail(types.NewDocument("_id", "foo", "id", "1")),
-			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
-			must.NotFail(types.NewDocument("_id", "foo", "id", "3")),
-		},
-	}}
+	t.Run("one-document", func(t *testing.T) {
+		t.Parallel()
 
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+		collection := collectionName + "-one"
+		expectedDoc := must.NotFail(types.NewDocument("_id", "foo", "id", "1"))
 
-			tx, err := pool.Begin(ctx)
-			require.NoError(t, err)
-			defer tx.Rollback(ctx)
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
 
-			require.NoError(t, CreateCollection(ctx, tx, databaseName, tc.collection))
-			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
-			}
+		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDoc))
 
-			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
-			it, err := pool.GetDocuments(ctx, tx, sp)
-			require.NoError(t, err)
-			require.NotNil(t, it)
+		sp := &SQLParam{DB: databaseName, Collection: collection}
+		it, err := pool.GetDocuments(ctx, tx, sp)
+		require.NoError(t, err)
+		require.NotNil(t, it)
 
-			var iterPrev uint32
-			for {
-				iter, doc, err := it.Next()
+		iter, doc, err := it.Next()
+		assert.NoError(t, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Equal(t, expectedDoc, doc)
 
-				switch len(tc.documents) {
-				case 0:
-					// no documents in the collection, we expect queryIterator to immediately return an error.
-					assert.Equal(t, iterator.ErrIteratorDone, err)
-				default:
-					if iter == 0 && iterPrev != 0 {
-						// check that queryIterator is done and it found everything.
-						assert.Equal(t, iterator.ErrIteratorDone, err)
-						assert.Equal(t, len(tc.documents), int(iterPrev+1))
-					}
-				}
+		iter, doc, err = it.Next()
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
 
-				// queryIterator is done, exist from the loop.
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
+		require.NoError(t, tx.Commit(ctx))
+	})
 
-				assert.NoError(t, err)
-				assert.Equal(t, tc.documents[int(iter)], doc)
+	t.Run("empty-collection", func(t *testing.T) {
+		t.Parallel()
 
-				iterPrev = iter
-			}
+		collection := collectionName + "-empty"
 
-			require.NoError(t, tx.Commit(ctx))
-		})
-	}
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
 
-	// Special case: querying a non-existent collection.
+		require.NoError(t, CreateCollection(ctx, tx, databaseName, collection))
+
+		sp := &SQLParam{DB: databaseName, Collection: collection}
+		it, err := pool.GetDocuments(ctx, tx, sp)
+		require.NoError(t, err)
+		require.NotNil(t, it)
+
+		iter, doc, err := it.Next()
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
+
+		require.NoError(t, tx.Commit(ctx))
+	})
+
 	t.Run("non-existent-collection", func(t *testing.T) {
 		t.Parallel()
 
@@ -270,7 +243,7 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		defer tx.Rollback(ctx)
 
-		sp := &SQLParam{DB: databaseName, Collection: collectionName + "_non-existing"}
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "-non-existent"}
 		it, err := pool.GetDocuments(ctx, tx, sp)
 		require.NoError(t, err)
 		require.Nil(t, it)
