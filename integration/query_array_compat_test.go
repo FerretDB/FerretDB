@@ -15,11 +15,11 @@
 package integration
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"math"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestQueryArrayCompatSize(t *testing.T) {
