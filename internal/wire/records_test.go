@@ -21,6 +21,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // loadRecords gets recursively all .bin files from the recordsPath directory,
@@ -57,7 +59,7 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 	for _, path := range recordFiles {
 		f, err := os.Open(path)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Errorf("%s: %w", path, err)
 		}
 
 		defer f.Close()
@@ -72,17 +74,17 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 			}
 
 			if err != nil {
-				return nil, err
+				return nil, lazyerrors.Errorf("%s: %w", path, err)
 			}
 
 			headBytes, err := header.MarshalBinary()
 			if err != nil {
-				return nil, err
+				return nil, lazyerrors.Errorf("%s: %w", path, err)
 			}
 
 			bodyBytes, err := body.MarshalBinary()
 			if err != nil {
-				return nil, err
+				return nil, lazyerrors.Errorf("%s: %w", path, err)
 			}
 
 			resMsgs = append(resMsgs, testCase{
