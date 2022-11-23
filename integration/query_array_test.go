@@ -247,6 +247,8 @@ func TestQueryArrayAll(t *testing.T) {
 	// Insert additional data to check more complicated cases:
 	// - a longer array of ints;
 	// - a field is called differently and needs to be found with the {$all: [null]} case.
+	// TODO Add "many-integers" to shareddata.Composites once more
+	// query tests are moved to compat, then move remaining tests to compat.
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "many-integers"}, {"customField", bson.A{42, 43, 45}}},
 	})
