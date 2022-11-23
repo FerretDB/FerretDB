@@ -22,122 +22,104 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestQueryArrayCompat(t *testing.T) {
+func TestQueryArrayCompatSize(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"AllString": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
+		"float64": {
+			filter:        bson.D{{"v", bson.D{{"$size", float64(2)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"AllStringRepeated": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
+		"int32": {
+			filter:        bson.D{{"v", bson.D{{"$size", int32(2)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"AllStringEmpty": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{""}}}}},
+		"int64": {
+			filter:        bson.D{{"v", bson.D{{"$size", int64(2)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"AllWhole": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{int32(42)}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllWholeNotFound": {
-			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(44)}}}}},
+		"InvalidUse": {
+			filter:     bson.D{{"$size", 2}},
 			resultType: emptyResult,
 		},
-		"AllZero": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllDouble": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{42.13}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllDoubleMax": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{math.MaxFloat64}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllDoubleMin": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllMultiAll": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllMultiAllWithNil": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
-		},
-		"AllEmpty": {
-			filter:     bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
+		"NotFound": {
+			filter:     bson.D{{"v", bson.D{{"$size", 4}}}},
 			resultType: emptyResult,
 		},
-		"AllNotFound": {
-			filter:     bson.D{{"v", bson.D{{"$all", bson.A{"hello"}}}}},
-			resultType: emptyResult,
+		"Zero": {
+			filter:        bson.D{{"v", bson.D{{"$size", 0}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"$allNeedsAnArrayInt": {
-			filter:     bson.D{{"v", bson.D{{"$all", 1}}}},
-			resultType: emptyResult,
-		},
-		"$allNeedsAnArrayNil": {
-			filter:     bson.D{{"v", bson.D{{"$all", nil}}}},
-			resultType: emptyResult,
-		},
-		"DotNotationPositionIndexGreaterThanArrayLength": {
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryArrayCompatDotNotation(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"PositionIndexGreaterThanArrayLength": {
 			filter:     bson.D{{"v.5", bson.D{{"$type", "double"}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationPositionIndexAtTheEndOfArray": {
+		"PositionIndexAtTheEndOfArray": {
 			filter:        bson.D{{"v.1", bson.D{{"$type", "double"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationPositionTypeNull": {
+		"PositionTypeNull": {
 			filter:        bson.D{{"v.1", bson.D{{"$type", "double"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationPositionRegex": {
+		"PositionRegex": {
 			filter:        bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationNoSuchFieldPosition": {
+		"NoSuchFieldPosition": {
 			filter:     bson.D{{"v.some.0", bson.A{42}}},
 			resultType: emptyResult,
 		},
-		"DotNotationField": {
+		"Field": {
 			filter:        bson.D{{"v.array", int32(42)}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationFieldPosition": {
+		"FieldPosition": {
 			filter:        bson.D{{"v.array.0", int32(42)}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationFieldPositionQuery": {
+		"FieldPositionQuery": {
 			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"DotNotationFieldPositionQueryNonArray": {
+		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationFieldPositionField": {
+		"FieldPositionField": {
 			filter:     bson.D{{"v.array.2.foo", "bar"}},
 			resultType: emptyResult,
 		},
-		"ElemMatchDoubleTarget": {
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryArrayCompatElemMatch(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"DoubleTarget": {
 			filter: bson.D{
 				{"_id", "double"},
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
 			resultType: emptyResult,
 		},
-		"ElemMatchGtZero": {
+		"GtZero": {
 			filter:        bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"ElemMatchGtZeroWithTypeArray": {
+		"GtZeroWithTypeArray": {
 			filter: bson.D{
 				{"v", bson.D{
 					{"$elemMatch", bson.D{
@@ -148,7 +130,7 @@ func TestQueryArrayCompat(t *testing.T) {
 			},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"ElemMatchGtZeroWithTypeString": {
+		"GtZeroWithTypeString": {
 			filter: bson.D{
 				{"v", bson.D{
 					{"$elemMatch", bson.D{
@@ -159,7 +141,7 @@ func TestQueryArrayCompat(t *testing.T) {
 			},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"ElemMatchGtLt": {
+		"GtLt": {
 			filter: bson.D{
 				{"v", bson.D{
 					{"$elemMatch", bson.D{
@@ -170,53 +152,107 @@ func TestQueryArrayCompat(t *testing.T) {
 			},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"EqualityOne": {
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryArrayCompatEquality(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"One": {
 			filter:        bson.D{{"v", bson.A{int32(42)}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"EqualityTwo": {
+		"Two": {
 			filter:     bson.D{{"v", bson.A{42, "foo"}}},
 			resultType: emptyResult,
 		},
-		"EqualityThree": {
+		"Three": {
 			filter:        bson.D{{"v", bson.A{int32(42), "foo", nil}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"EqualityThree-reverse": {
+		"Three-reverse": {
 			filter:        bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"EqualityEmpty": {
+		"Empty": {
 			filter:        bson.D{{"v", bson.A{}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"EqualityNull": {
+		"Null": {
 			filter:        bson.D{{"v", bson.A{nil}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"SizeFloat64": {
-			filter:        bson.D{{"v", bson.D{{"$size", float64(2)}}}},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryArrayCompatAll(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"String": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"SizeInt32": {
-			filter:        bson.D{{"v", bson.D{{"$size", int32(2)}}}},
+		"StringRepeated": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", "foo", "foo"}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"SizeInt64": {
-			filter:        bson.D{{"v", bson.D{{"$size", int64(2)}}}},
+		"StringEmpty": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{""}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
-		"SizeInvalidUse": {
-			filter:     bson.D{{"$size", 2}},
+		"Whole": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"WholeNotFound": {
+			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(44)}}}}},
 			resultType: emptyResult,
 		},
-		"SizeNotFound": {
-			filter:     bson.D{{"v", bson.D{{"$size", 4}}}},
+		"Zero": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"Double": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{42.13}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"DoubleMax": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{math.MaxFloat64}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"DoubleMin": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"MultiAll": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"MultiAllWithNil": {
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		},
+		"Empty": {
+			filter:     bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
 			resultType: emptyResult,
 		},
-		"SizeZero": {
-			filter:        bson.D{{"v", bson.D{{"$size", 0}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+		"NotFound": {
+			filter:     bson.D{{"v", bson.D{{"$all", bson.A{"hello"}}}}},
+			resultType: emptyResult,
+		},
+		"$allNeedsAnArrayInt": {
+			filter:     bson.D{{"v", bson.D{{"$all", 1}}}},
+			resultType: emptyResult,
+		},
+		"$allNeedsAnArrayNil": {
+			filter:     bson.D{{"v", bson.D{{"$all", nil}}}},
+			resultType: emptyResult,
 		},
 	}
 
