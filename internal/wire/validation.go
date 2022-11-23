@@ -47,7 +47,7 @@ func NewValidationError(err error) error {
 	return &ValidationError{msg: err.Error()}
 }
 
-// validateValue checks given value and return error if not supported value was encountered.
+// validateValue checks given value and returns error if not supported value was encountered.
 func validateValue(v any) error {
 	switch v := v.(type) {
 	case *types.Document:
