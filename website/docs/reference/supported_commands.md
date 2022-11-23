@@ -245,9 +245,27 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 ## Session Commands
 
-| Command                    | Argument                         | Status | Comments                                                  |
-|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-| `x`               |                                  | ❌     | [Issue](TODO) |
+Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/8)
+Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
+
+| Command                             | Argument                         | Status | Comments                                                  |
+|-------------------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `abortTransaction`                  |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1547) |
+|                                     | `txnNumber`                      | ⚠️      |                                                           |
+|                                     | `writeConcern`                   | ⚠️      |                                                           |
+|                                     | `autocommit`                     | ⚠️      |                                                           |
+|                                     | `comment`                        | ⚠️      |                                                           |
+| `commitTransaction`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1548) |
+|                                     | `txnNumber`                      | ⚠️      |                                                           |
+|                                     | `writeConcern`                   | ⚠️      |                                                           |
+|                                     | `autocommit`                     | ⚠️      |                                                           |
+|                                     | `comment`                        | ⚠️      |                                                           |
+| `endSessions`                       |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1549) |
+| `killAllSessions`                   |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1550) |
+| `killAllSessionsByPattern`          |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1551) |
+| `killSessions`                      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1552) |
+| `refreshSessions`                   |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1553) |
+| `startSession`                      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1554) |
 
 ## Aggregation pipelines
 
