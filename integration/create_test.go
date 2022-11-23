@@ -158,7 +158,6 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
-	//setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1341")
 	ctx, collection := setup.Setup(t)
 	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
 
