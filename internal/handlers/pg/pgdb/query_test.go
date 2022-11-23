@@ -212,6 +212,42 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, tx.Commit(ctx))
 	})
 
+	t.Run("two-documents-context", func(t *testing.T) {
+		t.Parallel()
+
+		collection := collectionName + "-two"
+		expectedDocs := []*types.Document{
+			must.NotFail(types.NewDocument("_id", "bar", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
+		}
+
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
+
+		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDocs[0]))
+		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDocs[1]))
+
+		ctxTest, cancel := context.WithCancel(ctx)
+		sp := &SQLParam{DB: databaseName, Collection: collection}
+		it, err := pool.GetDocuments(ctxTest, tx, sp)
+		require.NoError(t, err)
+		require.NotNil(t, it)
+
+		iter, doc, err := it.Next()
+		assert.NoError(t, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Equal(t, expectedDocs[0], doc)
+
+		cancel()
+		iter, doc, err = it.Next()
+		assert.EqualError(t, context.Canceled, err.Error())
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
+
+		require.NoError(t, tx.Commit(ctx))
+	})
+
 	t.Run("empty-collection", func(t *testing.T) {
 		t.Parallel()
 
