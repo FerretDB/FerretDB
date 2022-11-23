@@ -51,7 +51,7 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 			}
 			return nil
 		})
-		if err != nil && errors.Is(err, ErrAlreadyExist) {
+		if err != nil && !errors.Is(err, ErrAlreadyExist) {
 			return err
 		}
 
