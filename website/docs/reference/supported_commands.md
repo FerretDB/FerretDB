@@ -246,6 +246,7 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 ## Session Commands
 
 Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/8)
+
 Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
 
 | Command                             | Argument                         | Status | Comments                                                  |
