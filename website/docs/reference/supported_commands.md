@@ -135,6 +135,18 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `indexes`                        | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
 
+## Free Monitoring Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+|                            | `x`                              | ⚠️      |                                                           |
+
+## Auditing Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+|                            | `x`                              | ⚠️      |                                                           |
+
 ## Database Operations
 
 ### User Management Commands
@@ -233,6 +245,12 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `authenticationRestrictions`     | ⚠️      |                                                           |
 |                            | `writeConcern`                   | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
+
+## Session Commands
+
+| Command                    | Argument                         | Status | Comments                                                  |
+|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `x`               |                                  | ❌     | [Issue](TODO) |
 
 ## Aggregation pipelines
 
