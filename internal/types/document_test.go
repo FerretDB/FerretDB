@@ -81,15 +81,25 @@ func TestDocument(t *testing.T) {
 		doc := must.NotFail(NewDocument(
 			"_id", int32(42),
 			"foo", "bar",
+			"baz", "qux",
 		))
-		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
+		assert.Equal(t, []string{"_id", "foo", "bar"}, doc.Keys())
 
 		doc = must.NotFail(NewDocument(
 			"foo", "bar",
 			"_id", int32(42),
+			"bar", "baz",
 		))
 		doc.MoveIDToTheFirstIndex()
-		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
+		assert.Equal(t, []string{"_id", "foo", "bar"}, doc.Keys())
+
+		doc = must.NotFail(NewDocument(
+			"foo", "bar",
+			"bar", "baz",
+			"_id", int32(42),
+		))
+		doc.MoveIDToTheFirstIndex()
+		assert.Equal(t, []string{"_id", "foo", "bar"}, doc.Keys())
 	})
 
 	t.Run("SetByPath", func(t *testing.T) {
