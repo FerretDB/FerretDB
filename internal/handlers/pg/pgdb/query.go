@@ -109,7 +109,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 	return fetchedChan, nil
 }
 
-// GetDocuments returns an iterator to fetch documents for given SQLParams.
+// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns nil and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*Iterator, error) {

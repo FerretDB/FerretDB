@@ -237,17 +237,17 @@ func TestGetDocuments(t *testing.T) {
 
 				switch len(tc.documents) {
 				case 0:
-					// no documents in the collection, we expect iterator to immediately return an error.
+					// no documents in the collection, we expect queryIterator to immediately return an error.
 					assert.Equal(t, iterator.ErrIteratorDone, err)
 				default:
 					if iter == 0 && iterPrev != 0 {
-						// check that iterator is done and it found everything.
+						// check that queryIterator is done and it found everything.
 						assert.Equal(t, iterator.ErrIteratorDone, err)
 						assert.Equal(t, len(tc.documents), int(iterPrev+1))
 					}
 				}
 
-				// iterator is done, exist from the loop.
+				// queryIterator is done, exist from the loop.
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}

@@ -18,24 +18,25 @@ import (
 	"context"
 	"sync/atomic"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Iterator implements iterator.Interface to fetch documents from the database.
-type Iterator struct {
+// queryIterator implements iterator.Interface to fetch documents from the database.
+type queryIterator struct {
 	ctx         context.Context
 	rows        pgx.Rows
 	currentIter atomic.Uint32
 }
 
-// NewIterator returns a new iterator for the given pgx.Rows.
-func newIterator(ctx context.Context, rows pgx.Rows) iterator.Iterator {
-	return &Iterator{
+// NewIterator returns a new queryIterator for the given pgx.Rows.
+func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
+	return &queryIterator{
 		ctx:  ctx,
 		rows: rows,
 	}
@@ -47,7 +48,7 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Iterator {
 // Possible errors are: context.Canceled, context.DeadlineExceeded, and lazy error.
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
-func (it *Iterator) Next() (uint32, *types.Document, error) {
+func (it *queryIterator) Next() (uint32, *types.Document, error) {
 	if err := it.ctx.Err(); err != nil {
 		return 0, nil, err
 	}
