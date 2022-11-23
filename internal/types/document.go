@@ -383,10 +383,6 @@ func (d *Document) MoveIDToTheFirstIndex() {
 		}
 	}
 
-	if idIdx == 0 {
-		return
-	}
-
 	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
