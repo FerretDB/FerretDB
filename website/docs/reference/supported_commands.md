@@ -137,9 +137,12 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 ## Free Monitoring Commands
 
-| Command                    | Argument                         | Status | Comments                                                  |
-|----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-|                            | `x`                              | ⚠️      |                                                           |
+| Command                    | Argument                             | Status | Comments                                                                      |
+|----------------------------|--------------------------------------|--------|-------------------------------------------------------------------------------|
+| `setFreeMonitoring`        |                                      | ✅     | [Telemetry reporting](https://docs.ferretdb.io/telemetry/)                    |
+|                            | `action: "enable"`                   | ✅     | [`--telemetry=enable`](https://docs.ferretdb.io/telemetry/#enable-telemetry)  |
+|                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](https://docs.ferretdb.io/telemetry/#enable-telemetry) |
+| `checkFreeMonitoringStatus`|                                      | ✅     |                                                                               |
 
 ## Auditing Commands
 
