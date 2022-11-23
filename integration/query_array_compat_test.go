@@ -68,7 +68,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
 		"PositionTypeNull": {
-			filter:        bson.D{{"v.1", bson.D{{"$type", "double"}}}},
+			filter:        bson.D{{"v.0", bson.D{{"$type", "null"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
 		},
 		"PositionRegex": {
