@@ -204,10 +204,16 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil && errors.As(err, &validationErr) {
-			res := new(wire.OpMsg)
+			var res wire.OpMsg
+
+			// get protocol error to return correct error document
+			protoErr, ok := common.ProtocolError(validationErr)
+			if !ok {
+				panic(err)
+			}
 
 			must.NoError(res.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{validationErr.Document()},
+				Documents: []*types.Document{protoErr.Document()},
 			}))
 
 			var b []byte
@@ -224,7 +230,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				MessageLength: int32(wire.MsgHeaderLen + len(b)),
 			}
 
-			if err = wire.WriteMessage(bufw, resHeader, res); err != nil {
+			if err = wire.WriteMessage(bufw, resHeader, &res); err != nil {
 				return
 			}
 
