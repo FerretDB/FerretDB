@@ -34,7 +34,7 @@ type Iterator struct {
 }
 
 // NewIterator returns a new iterator for the given pgx.Rows.
-func NewIterator(ctx context.Context, rows pgx.Rows) *Iterator {
+func newIterator(ctx context.Context, rows pgx.Rows) iterator.Iterator {
 	return &Iterator{
 		ctx:  ctx,
 		rows: rows,
