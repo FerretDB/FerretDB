@@ -271,7 +271,7 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 			}
 		}
 
-		upsert.SetID()
+		upsert.MoveIDToTheFirstIndex()
 
 		err := h.insert(ctx, tx, params.sqlParam, upsert)
 		if err != nil {

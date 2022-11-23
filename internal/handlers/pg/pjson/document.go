@@ -87,7 +87,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 func (doc *documentType) MarshalJSON() ([]byte, error) {
 	td := types.Document(*doc)
 
-	td.SetID()
+	td.MoveIDToTheFirstIndex()
 
 	var buf bytes.Buffer
 

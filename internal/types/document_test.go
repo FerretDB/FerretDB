@@ -75,7 +75,7 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, int32(42), must.NotFail(b.Get("foo")))
 	})
 
-	t.Run("SetID", func(t *testing.T) {
+	t.Run("MoveIDToTheFirstIndex", func(t *testing.T) {
 		t.Parallel()
 
 		doc := must.NotFail(NewDocument(
@@ -88,7 +88,7 @@ func TestDocument(t *testing.T) {
 			"foo", "bar",
 			"_id", int32(42),
 		))
-		doc.SetID()
+		doc.MoveIDToTheFirstIndex()
 		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
 	})
 
