@@ -70,6 +70,8 @@ func validateValue(v any) error {
 		if v == 0 && math.Signbit(v) {
 			return errors.New("-0 is not supported")
 		}
+	default:
+		panic("wire.validateValue: unknown type " + types.FormatAnyValue(v))
 	}
 
 	return nil
