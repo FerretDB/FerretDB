@@ -262,8 +262,10 @@ func TestGetDocuments(t *testing.T) {
 		})
 	}
 
-	// Special case: querying a non-existing collection.
-	t.Run("non-existing-collection", func(t *testing.T) {
+	// Special case: querying a non-existent collection.
+	t.Run("non-existent-collection", func(t *testing.T) {
+		t.Parallel()
+
 		tx, err := pool.Begin(ctx)
 		require.NoError(t, err)
 		defer tx.Rollback(ctx)
