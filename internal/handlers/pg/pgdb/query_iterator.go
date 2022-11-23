@@ -67,7 +67,7 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
-	defer it.currentIter.Add(1)
+	n := it.currentIter.Add(1)
 
-	return it.currentIter.Load(), doc.(*types.Document), nil
+	return n-1, doc.(*types.Document), nil
 }
