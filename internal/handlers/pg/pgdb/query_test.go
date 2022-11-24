@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
@@ -217,7 +218,7 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, tx.Commit(ctx))
 	})
 
-	t.Run("two-documents-context", func(t *testing.T) {
+	t.Run("cancel-context", func(t *testing.T) {
 		t.Parallel()
 
 		collection := collectionName + "-two"
@@ -250,7 +251,10 @@ func TestGetDocuments(t *testing.T) {
 		assert.Equal(t, uint32(0), iter)
 		assert.Nil(t, doc)
 
-		runtime.GC() // to call finalizer
+		// To be able to commit tx, we need iterator's finalizer to be called (to close pgx.Rows).
+		// Otherwise, tx.Commit will fail with "conn busy".
+		runtime.GC()
+		time.Sleep(10 * time.Millisecond)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

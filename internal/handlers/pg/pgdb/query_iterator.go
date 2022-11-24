@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"runtime"
 	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
@@ -34,7 +35,12 @@ type queryIterator struct {
 }
 
 // NewIterator returns a new queryIterator for the given pgx.Rows.
+// It sets finalizer to close the rows.
 func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
+	runtime.SetFinalizer(rows, func(rows pgx.Rows) {
+		rows.Close()
+	})
+
 	return &queryIterator{
 		ctx:  ctx,
 		rows: rows,
