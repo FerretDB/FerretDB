@@ -51,7 +51,6 @@ func TestQuerySort(t *testing.T) {
 
 				"int64-min",
 				"int32-min",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
@@ -126,7 +125,6 @@ func TestQuerySort(t *testing.T) {
 				"int32",
 				"int64",
 				"double-smallest",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
