@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -103,17 +102,16 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			var doc *types.Document
 			_, doc, err = it.Next()
 
+			// if the context is canceled, we don't need to continue processing documents
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
 			switch {
 			case err == nil:
 				// do nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
 				// no more documents
-				return nil
-			case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-				h.L.Warn(
-					"context canceled, stopping fetching",
-					zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
-				)
 				return nil
 			default:
 				return err
