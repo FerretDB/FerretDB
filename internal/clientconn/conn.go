@@ -231,7 +231,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			if err = wire.WriteMessage(bufw, resHeader, &res); err != nil {
-				return
+				panic(err)
 			}
 
 			if err = bufw.Flush(); err != nil {
