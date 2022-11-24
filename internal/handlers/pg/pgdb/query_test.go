@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
@@ -196,7 +197,7 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		defer tx.Rollback(ctx)
 
-		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDoc))
+		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDoc))
 
 		sp := &SQLParam{DB: databaseName, Collection: collection}
 		it, err := pool.GetDocuments(ctx, tx, sp)
@@ -229,8 +230,8 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		defer tx.Rollback(ctx)
 
-		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDocs[0]))
-		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDocs[1]))
+		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDocs[0]))
+		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDocs[1]))
 
 		ctxTest, cancel := context.WithCancel(ctx)
 		sp := &SQLParam{DB: databaseName, Collection: collection}
@@ -248,6 +249,8 @@ func TestGetDocuments(t *testing.T) {
 		assert.EqualError(t, context.Canceled, err.Error())
 		assert.Equal(t, uint32(0), iter)
 		assert.Nil(t, doc)
+
+		runtime.GC() // to call finalizer
 
 		require.NoError(t, tx.Commit(ctx))
 	})
