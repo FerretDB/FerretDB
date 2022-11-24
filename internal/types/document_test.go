@@ -100,6 +100,13 @@ func TestDocument(t *testing.T) {
 		))
 		doc.MoveIDToTheFirstIndex()
 		assert.Equal(t, []string{"_id", "foo", "baz"}, doc.Keys())
+
+		doc = must.NotFail(NewDocument(
+			"foo", "bar",
+			"baz", "qux",
+		))
+		doc.MoveIDToTheFirstIndex()
+		assert.Equal(t, []string{"foo", "baz"}, doc.Keys())
 	})
 
 	t.Run("SetByPath", func(t *testing.T) {
