@@ -50,10 +50,6 @@ func TestQueryArraySize(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		"NegativeZero": {
-			filter:      bson.D{{"v", bson.D{{"$size", math.Copysign(0, -1)}}}},
-			expectedIDs: []any{"array-empty"},
-		},
 		"InvalidType": {
 			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
 			filter: bson.D{{"v", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
