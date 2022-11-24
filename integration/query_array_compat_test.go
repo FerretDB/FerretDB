@@ -20,9 +20,13 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryArrayCompatSize(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -64,11 +68,12 @@ func TestQueryArrayCompatSize(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryArrayCompatDotNotation(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -108,11 +113,12 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -182,11 +188,12 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryArrayCompatEquality(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -211,11 +218,12 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryArrayCompatAll(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -271,6 +279,5 @@ func TestQueryArrayCompatAll(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }

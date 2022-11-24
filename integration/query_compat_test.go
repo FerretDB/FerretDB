@@ -34,8 +34,7 @@ type queryCompatTestCase struct {
 }
 
 // testQueryCompat tests query compatibility test cases.
-// If skipForTigris is not empty, tigris tests are skipped.
-func testQueryCompat(t *testing.T, skipForTigris string, testCases map[string]queryCompatTestCase) {
+func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
@@ -46,10 +45,6 @@ func testQueryCompat(t *testing.T, skipForTigris string, testCases map[string]qu
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, skipForTigris)
-			}
 
 			t.Parallel()
 
@@ -115,6 +110,8 @@ func testQueryCompat(t *testing.T, skipForTigris string, testCases map[string]qu
 }
 
 func TestQueryCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -148,5 +145,5 @@ func TestQueryCompat(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, "", testCases)
+	testQueryCompat(t, testCases)
 }
