@@ -273,21 +273,6 @@ func TestQueryArrayAll(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
-		"NaN": {
-			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.NaN()}}}}},
-			expectedIDs: []any{"array-two", "double-nan"},
-			expectedErr: nil,
-		},
-
-		"$allNeedsAnArrayNan": {
-			filter:      bson.D{{"v", bson.D{{"$all", math.NaN()}}}},
-			expectedIDs: nil,
-			expectedErr: &mongo.CommandError{
-				Code:    2,
-				Message: "$all needs an array",
-				Name:    "BadValue",
-			},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
