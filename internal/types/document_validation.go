@@ -60,6 +60,7 @@ func (e *ValidationError) Code() ValidationErrorCode {
 }
 
 // ValidateData checks if the document represents a valid "data document".
+// It places `_id` field into the fields slice 0 index.
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
 	d.moveIDToTheFirstIndex()
