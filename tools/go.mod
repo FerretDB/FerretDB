@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
 	github.com/go-task/task/v3 v3.18.0
 	github.com/golangci/golangci-lint v1.50.1
-	github.com/goreleaser/nfpm/v2 v2.22.0
+	github.com/goreleaser/nfpm/v2 v2.22.1
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
