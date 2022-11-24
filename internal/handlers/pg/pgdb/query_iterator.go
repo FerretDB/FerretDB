@@ -34,7 +34,7 @@ type queryIterator struct {
 	currentIter atomic.Uint32
 }
 
-// NewIterator returns a new queryIterator for the given pgx.Rows.
+// newIterator returns a new queryIterator for the given pgx.Rows.
 // It sets finalizer to close the rows.
 func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
 	runtime.SetFinalizer(rows, func(rows pgx.Rows) {
