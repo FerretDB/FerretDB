@@ -35,11 +35,8 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1405
-	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
-		d, ok := v.(*types.Document)
-		return ok && d.Len() == 0
-	}); err != nil {
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
 
@@ -80,9 +77,18 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			"name", n,
 			"type", "collection",
 		))
+
+		_ = filter
+		// matches, err := common.FilterDocument(d, filter)
+		// if err != nil {
+		// 	return nil, lazyerrors.Error(err)
+		// }
+
+		// if matches {
 		if err = collections.Append(d); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+		// }
 	}
 
 	var reply wire.OpMsg
