@@ -249,8 +249,6 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
-		upsert.MoveIDToTheFirstIndex()
-
 		err := h.insert(ctx, params.fetchParam, upsert)
 		if err != nil {
 			return nil, false, err
