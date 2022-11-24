@@ -110,8 +110,6 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 }
 
 func TestQueryCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
