@@ -88,7 +88,8 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		it, ierr := h.PgPool.GetDocuments(ctx, tx, &sp)
+		var it iterator.Interface[uint32, *types.Document]
+		it, err = h.PgPool.GetDocuments(ctx, tx, &sp)
 		if ierr != nil {
 			return ierr
 		}
