@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -39,7 +40,10 @@ func TestQueryDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
+			return err
+		}
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -90,7 +94,7 @@ func TestQueryDocuments(t *testing.T) {
 			defer tx.Rollback(ctx)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
+				require.NoError(t, InsertDocument(ctx, pool, databaseName, tc.collection, doc))
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
@@ -121,7 +125,7 @@ func TestQueryDocuments(t *testing.T) {
 		defer tx.Rollback(ctx)
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
-			require.NoError(t, InsertDocument(ctx, tx, databaseName, collectionName+"_cancel",
+			require.NoError(t, InsertDocument(ctx, pool, databaseName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("_id", "foo", "id", fmt.Sprintf("%d", i))),
 			))
 		}

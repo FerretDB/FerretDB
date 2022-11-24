@@ -75,21 +75,38 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, int32(42), must.NotFail(b.Get("foo")))
 	})
 
-	t.Run("MoveIDToTheFirstIndex", func(t *testing.T) {
+	t.Run("moveIDToTheFirstIndex", func(t *testing.T) {
 		t.Parallel()
 
 		doc := must.NotFail(NewDocument(
 			"_id", int32(42),
 			"foo", "bar",
+			"baz", "qux",
 		))
-		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
+		assert.Equal(t, []string{"_id", "foo", "baz"}, doc.Keys())
 
 		doc = must.NotFail(NewDocument(
 			"foo", "bar",
 			"_id", int32(42),
+			"baz", "qux",
 		))
-		doc.MoveIDToTheFirstIndex()
-		assert.Equal(t, []string{"_id", "foo"}, doc.Keys())
+		doc.moveIDToTheFirstIndex()
+		assert.Equal(t, []string{"_id", "foo", "baz"}, doc.Keys())
+
+		doc = must.NotFail(NewDocument(
+			"foo", "bar",
+			"baz", "qux",
+			"_id", int32(42),
+		))
+		doc.moveIDToTheFirstIndex()
+		assert.Equal(t, []string{"_id", "foo", "baz"}, doc.Keys())
+
+		doc = must.NotFail(NewDocument(
+			"foo", "bar",
+			"baz", "qux",
+		))
+		doc.moveIDToTheFirstIndex()
+		assert.Equal(t, []string{"foo", "baz"}, doc.Keys())
 	})
 
 	t.Run("SetByPath", func(t *testing.T) {

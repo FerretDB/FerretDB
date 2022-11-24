@@ -30,18 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestQueryUnknownFilterOperator(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	filter := bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}}
-	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
-	_, err := collection.Find(ctx, filter)
-	AssertEqualError(t, errExpected, err)
-}
-
 func TestQuerySort(t *testing.T) {
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/457")
 
@@ -253,30 +241,6 @@ func TestQuerySortValue(t *testing.T) {
 				"int32-min",
 				"int64-min",
 				"null",
-			},
-		},
-		"BadSortValue": {
-			sort: bson.D{{"v", 11}},
-			err: &mongo.CommandError{
-				Code:    15975,
-				Name:    "Location15975",
-				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-			},
-		},
-		"BadSortZeroValue": {
-			sort: bson.D{{"v", 0}},
-			err: &mongo.CommandError{
-				Code:    15975,
-				Name:    "Location15975",
-				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-			},
-		},
-		"BadSortNullValue": {
-			sort: bson.D{{"v", nil}},
-			err: &mongo.CommandError{
-				Code:    15974,
-				Name:    "Location15974",
-				Message: "Illegal key in $sort specification: v: null",
 			},
 		},
 	} {
