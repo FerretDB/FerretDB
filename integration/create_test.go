@@ -17,6 +17,7 @@ package integration
 import (
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -116,6 +117,82 @@ func TestCreateStress(t *testing.T) {
 			require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
 		})
 	}
+}
+
+func TestCreateOnInsertStressSameCollection(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1341")
+	ctx, collection := setup.Setup(t)
+	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+	collPrefix := "stress_same_collection"
+
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
+
+	var wg sync.WaitGroup
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			_, err := db.Collection(collPrefix).InsertOne(ctx, bson.D{
+				{"foo", "bar"},
+			})
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
+}
+
+func TestCreateOnInsertStressDiffCollection(t *testing.T) {
+	ctx, collection := setup.Setup(t)
+	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+	collPrefix := "stress_diff_collection_"
+
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			_, err := db.Collection(collPrefix+fmt.Sprint(i)).InsertOne(ctx, bson.D{
+				{"foo", "bar"},
+			})
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
