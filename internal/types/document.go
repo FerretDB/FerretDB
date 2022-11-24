@@ -107,7 +107,8 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
-		doc.add(key, value)
+
+		doc.fields = append(doc.fields, field{key: key, value: value})
 	}
 
 	return doc, nil
@@ -213,21 +214,6 @@ func (d *Document) Command() string {
 	return keys[0]
 }
 
-// add adds the value for the given key.
-// If the key already exists, it will create a duplicate key.
-//
-// As a special case, _id always becomes the first key.
-func (d *Document) add(key string, value any) error {
-	if key == "_id" {
-		// ensure that _id is the first field
-		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
-	} else {
-		d.fields = append(d.fields, field{key: key, value: value})
-	}
-
-	return nil
-}
-
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
 	for _, field := range d.fields {
@@ -261,16 +247,6 @@ func (d *Document) Get(key string) (any, error) {
 func (d *Document) Set(key string, value any) {
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
-	}
-
-	if key == "_id" {
-		// ensure that _id is the first field
-		if i := slices.Index(d.Keys(), key); i >= 0 {
-			d.fields = slices.Delete(d.fields, i, i+1)
-		}
-		d.fields = slices.Insert(d.fields, 0, field{key: key, value: value})
-
-		return
 	}
 
 	for i, f := range d.fields {
@@ -385,6 +361,31 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 	}
 
 	return false
+}
+
+// moveIDToTheFirstIndex sets the _id field of the document at the first position.
+// If the _id field is not present, it does nothing.
+func (d *Document) moveIDToTheFirstIndex() {
+	if !d.Has("_id") {
+		return
+	}
+
+	idIdx := 0
+
+	if d.fields[idIdx].key == "_id" {
+		return
+	}
+
+	for i, key := range d.Keys() {
+		if key == "_id" {
+			idIdx = i
+			break
+		}
+	}
+
+	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
+
+	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }
 
 // check interfaces
