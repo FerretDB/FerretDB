@@ -66,7 +66,7 @@ type SQLParam struct {
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
 //
-// Deprecated in favor of GetDocuments, TODO remove in https://github.com/FerretDB/FerretDB/issues/898.
+// Deprecated: use GetDocuments, TODO remove in https://github.com/FerretDB/FerretDB/issues/898.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
