@@ -135,6 +135,15 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `indexes`                        | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
 
+## Free Monitoring Commands
+
+| Command                    | Argument                             | Status | Comments                                                                      |
+|----------------------------|--------------------------------------|--------|-------------------------------------------------------------------------------|
+| `setFreeMonitoring`        |                                      | ✅     | [Telemetry reporting](https://docs.ferretdb.io/telemetry/)                    |
+|                            | `action: "enable"`                   | ✅     | [`--telemetry=enable`](https://docs.ferretdb.io/telemetry/#enable-telemetry)  |
+|                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](https://docs.ferretdb.io/telemetry/#disable-telemetry)|
+| `getFreeMonitoringStatus`  |                                      | ✅     |                                                                               |
+
 ## Database Operations
 
 ### User Management Commands
@@ -233,6 +242,31 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `authenticationRestrictions`     | ⚠️      |                                                           |
 |                            | `writeConcern`                   | ⚠️      |                                                           |
 |                            | `comment`                        | ⚠️      |                                                           |
+
+## Session Commands
+
+Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/8)
+
+Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
+
+| Command                             | Argument                         | Status | Comments                                                  |
+|-------------------------------------|----------------------------------|--------|-----------------------------------------------------------|
+| `abortTransaction`                  |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1547) |
+|                                     | `txnNumber`                      | ⚠️      |                                                           |
+|                                     | `writeConcern`                   | ⚠️      |                                                           |
+|                                     | `autocommit`                     | ⚠️      |                                                           |
+|                                     | `comment`                        | ⚠️      |                                                           |
+| `commitTransaction`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1548) |
+|                                     | `txnNumber`                      | ⚠️      |                                                           |
+|                                     | `writeConcern`                   | ⚠️      |                                                           |
+|                                     | `autocommit`                     | ⚠️      |                                                           |
+|                                     | `comment`                        | ⚠️      |                                                           |
+| `endSessions`                       |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1549) |
+| `killAllSessions`                   |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1550) |
+| `killAllSessionsByPattern`          |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1551) |
+| `killSessions`                      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1552) |
+| `refreshSessions`                   |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1553) |
+| `startSession`                      |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1554) |
 
 ## Aggregation pipelines
 
@@ -639,3 +673,54 @@ db.aggregate()
 |                                    | `force`                        |                           | ⚠️      |                                                           |
 |                                    | `timeoutSecs`                  |                           | ⚠️      |                                                           |
 |                                    | `comment`                      |                           | ⚠️      |                                                           |
+
+## Diagnostic commands
+
+| Command           | Argument                | Status | Comments                                                  |
+|-------------------|-------------------------|--------|-----------------------------------------------------------|
+| `buildInfo`       |                         | ✅     | Basic command is fully supported                          |
+| `collStats`       |                         | ✅     | Basic command is fully supported                          |
+|                   | `collStats`             | ✅     |                                                           |
+|                   | `scale`                 | ✅     |                                                           |
+| `connPoolStats`   |                         | ❌     | Unimplemented                                             |
+| `connectionStatus`|                         | ✅     | Basic command is fully supported                          |
+|                   | `showPrivileges`        | ✅     |                                                           |
+| `dataSize`        |                         | ✅     | Basic command is fully supported                           |
+|                   | `keyPattern`            | ⚠️     | Unimplemented                                             |
+|                   | `min`                   | ⚠️     | Unimplemented                                             |
+|                   | `max`                   | ⚠️     | Unimplemented                                             |
+|                   | `estimate`              | ⚠️     | Ignored                                                   |
+| `dbHash`          |                         | ❌     | Unimplemented                                             |
+|                   | `collection`            | ⚠️      |                                                           |
+| `dbStats`         |                         | ✅     | Basic command is fully supported                          |
+|                   | `scale`                 | ✅     |                                                           |
+|                   | `freeStorage`           | ⚠️      | Unimplemented                                             |
+| `driverOIDTest`   |                         | ⚠️      | Unimplemented                                             |
+| `explain`         |                         | ✅     | Basic command is fully supported                          |
+|                   | `verbosity`             | ⚠️      | Ignored                                                   |
+|                   | `comment`               | ⚠️      | Unimplemented                                             |
+| `features`        |                         | ❌     | Unimplemented                                             |
+| `getCmdLineOpts`  |                         | ✅     | Basic command is fully supported                          |
+| `getLog`          |                         | ✅     | Basic command is fully supported                          |
+| `hostInfo`        |                         | ✅     | Basic command is fully supported                          |
+| `_isSelf`         |                         | ❌     | Unimplemented                                             |
+| `listCommands`    |                         | ✅     | Basic command is fully supported                          |
+| `lockInfo`        |                         | ❌     | Unimplemented                                             |
+| `netstat`         |                         | ❌      | Unimplemented                                            |
+| `ping`            |                         | ✅      | Basic command is fully supported                         |
+| `profile`         |                         | ❌      | Unimplemented                                            |
+|                   | `slowms`                | ⚠️      |                                                           |
+|                   | `sampleRate`            | ⚠️      |                                                           |
+|                   | `filter`                | ⚠️      |                                                           |
+| `serverStatus`    |                         | ✅     | Basic command is fully supported                          |
+| `shardConnPoolStats`|                       | ❌     | Unimplemented                                             |
+| `top`             |                         | ❌     | Unimplemented                                             |
+| `validate`        |                         | ❌     | Unimplemented                                             |
+|                   | `full`                  | ⚠️      |                                                           |
+|                   | `repair`                | ⚠️      |                                                           |
+|                   | `metadata`              | ⚠️      |                                                           |
+| `validateDBMetadata`|                       | ❌     | Unimplemented                                             |
+|                   | `apiParameters`         | ⚠️      |                                                           |
+|                   | `db`                    | ⚠️      |                                                           |
+|                   | `collections`           | ⚠️      |                                                           |
+| `whatsmyuri`      |                         | ✅     | Basic command is fully supported                          |
