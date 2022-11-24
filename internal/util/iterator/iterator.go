@@ -17,7 +17,7 @@ package iterator
 
 import "errors"
 
-// ErrIteratorDone  is returned when the iterator is read to the end.
+// ErrIteratorDone is returned when the iterator is read to the end.
 var ErrIteratorDone = errors.New("iterator is read to the end")
 
 // Interface is an iterator interface.
