@@ -60,14 +60,16 @@ func (e *ValidationError) Code() ValidationErrorCode {
 }
 
 // ValidateData checks if the document represents a valid "data document".
+// It places `_id` field into the fields slice 0 index.
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
+	d.moveIDToTheFirstIndex()
+
 	keys := d.Keys()
 
 	duplicateChecker := make(map[string]struct{}, len(keys))
 	var idPresent bool
 
-	// TODO: make sure that `_id` is the first item in the map
 	for _, key := range keys {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
