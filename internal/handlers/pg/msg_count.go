@@ -90,8 +90,8 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var it iterator.Interface[uint32, *types.Document]
 		it, err = h.PgPool.GetDocuments(ctx, tx, &sp)
-		if ierr != nil {
-			return ierr
+		if err != nil {
+			return err
 		}
 
 		if it == nil {
@@ -100,27 +100,29 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 
 		for {
-			_, doc, ierr := it.Next()
+			var doc *types.Document
+			_, doc, err = it.Next()
 
 			switch {
-			case ierr == nil:
+			case err == nil:
 				// do nothing
-			case errors.Is(ierr, iterator.ErrIteratorDone):
+			case errors.Is(err, iterator.ErrIteratorDone):
 				// no more documents
 				return nil
-			case errors.Is(ierr, context.Canceled), errors.Is(ierr, context.DeadlineExceeded):
+			case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 				h.L.Warn(
 					"context canceled, stopping fetching",
-					zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(ierr),
+					zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
 				)
 				return nil
 			default:
-				return ierr
+				return err
 			}
 
-			matches, ierr := common.FilterDocument(doc, filter)
-			if ierr != nil {
-				return ierr
+			var matches bool
+			matches, err = common.FilterDocument(doc, filter)
+			if err != nil {
+				return err
 			}
 
 			if !matches {

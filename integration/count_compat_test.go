@@ -61,15 +61,9 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					var targetRes, compatRes bson.D
-					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
-						{"count", targetCollection.Name()},
-						{"query", filter},
-					}).Decode(&targetRes)
-					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
-						{"count", compatCollection.Name()},
-						{"query", filter},
-					}).Decode(&compatRes)
+					var targetRes, compatRes int64
+					targetRes, targetErr := targetCollection.CountDocuments(ctx, filter)
+					compatRes, compatErr := compatCollection.CountDocuments(ctx, filter)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
@@ -84,7 +78,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					t.Logf("Target (actual)   result: %v", targetRes)
 					assert.Equal(t, compatRes, targetRes)
 
-					if targetRes != nil || compatRes != nil {
+					if targetRes != 0 || compatRes != 0 {
 						nonEmptyResults = true
 					}
 				})
