@@ -363,9 +363,9 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 	return false
 }
 
-// MoveIDToTheFirstIndex sets the _id field of the document at the first position.
+// moveIDToTheFirstIndex sets the _id field of the document at the first position.
 // If the _id field is not present, it does nothing.
-func (d *Document) MoveIDToTheFirstIndex() {
+func (d *Document) moveIDToTheFirstIndex() {
 	if !d.Has("_id") {
 		return
 	}

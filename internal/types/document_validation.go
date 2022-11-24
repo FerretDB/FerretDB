@@ -62,6 +62,8 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // ValidateData checks if the document represents a valid "data document".
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
+	d.moveIDToTheFirstIndex()
+
 	keys := d.Keys()
 
 	duplicateChecker := make(map[string]struct{}, len(keys))

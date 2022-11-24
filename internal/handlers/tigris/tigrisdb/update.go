@@ -27,8 +27,6 @@ import (
 // ReplaceDocument replaces a document in FerretDB database and collection.
 // If the document is not valid, it returns *types.ValidationError.
 func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string, doc *types.Document) error {
-	doc.MoveIDToTheFirstIndex()
-
 	if err := doc.ValidateData(); err != nil {
 		return err
 	}
