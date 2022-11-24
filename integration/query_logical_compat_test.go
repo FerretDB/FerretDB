@@ -83,7 +83,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompat(t, "", testCases)
 }
 
 func TestQueryLogicalCompatOr(t *testing.T) {
@@ -137,7 +137,7 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompat(t, "", testCases)
 }
 
 func TestQueryLogicalCompatNor(t *testing.T) {
@@ -180,7 +180,7 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompat(t, "", testCases)
 }
 
 func TestQueryLogicalCompatNot(t *testing.T) {
@@ -220,5 +220,5 @@ func TestQueryLogicalCompatNot(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompat(t, "", testCases)
 }

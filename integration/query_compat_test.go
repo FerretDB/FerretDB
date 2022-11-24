@@ -28,14 +28,14 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter        bson.D                   // required
-	sort          bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skipForTigris string                   // skips test for Tigris if non-empty
+	filter     bson.D                   // required
+	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testQueryCompat tests query compatibility test cases.
-func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+// If skipForTigris is not empty, tigris tests are skipped.
+func testQueryCompat(t *testing.T, skipForTigris string, testCases map[string]queryCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
@@ -47,8 +47,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			if skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, skipForTigris)
 			}
 
 			t.Parallel()
@@ -148,5 +148,5 @@ func TestQueryCompat(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompat(t, "", testCases)
 }
