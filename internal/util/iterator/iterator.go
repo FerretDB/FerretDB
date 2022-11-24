@@ -24,6 +24,6 @@ var ErrIteratorDone = errors.New("iterator is read to the end")
 type Interface[K, V any] interface {
 	// Next returns the next key/value pair, where the key is a slice index, map key, document number, etc,
 	// and the value is the slice or map value, next document, etc.
-	// Returned error could be (possibly wrapped) ErrEndOfIterator or some fatal error.
+	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error.
 	Next() (K, V, error)
 }
