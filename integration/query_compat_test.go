@@ -28,9 +28,10 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter     bson.D                   // required
-	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	filter        bson.D                   // required
+	sort          bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	resultType    compatTestCaseResultType // defaults to nonEmptyResult
+	skipForTigris string                   // skips test for Tigris if non-empty
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -45,6 +46,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
 
 			t.Parallel()
 
@@ -113,6 +118,21 @@ func TestQueryCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
+		"BadSortValue": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", 11}},
+			resultType: emptyResult,
+		},
+		"BadSortZeroValue": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", 0}},
+			resultType: emptyResult,
+		},
+		"BadSortNullValue": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", nil}},
+			resultType: emptyResult,
+		},
 		"Empty": {
 			filter: bson.D{},
 		},
@@ -121,6 +141,10 @@ func TestQueryCompat(t *testing.T) {
 		},
 		"IDObjectID": {
 			filter: bson.D{{"_id", primitive.NilObjectID}},
+		},
+		"UnknownFilterOperator": {
+			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
+			resultType: emptyResult,
 		},
 	}
 

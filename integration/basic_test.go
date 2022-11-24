@@ -60,16 +60,10 @@ func TestFindNothing(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	cursor, err := collection.Find(ctx, bson.D{})
-	require.NoError(t, err)
-
-	var docs []bson.D
-	err = cursor.All(ctx, &docs)
-	require.NoError(t, err)
-	assert.Equal(t, []bson.D(nil), docs)
-
 	var doc bson.D
-	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
+
+	// FindOne sets limit parameter to 1, Find leaves it unset.
+	err := collection.FindOne(ctx, bson.D{}).Decode(&doc)
 	require.Equal(t, mongo.ErrNoDocuments, err)
 	assert.Equal(t, bson.D(nil), doc)
 }
