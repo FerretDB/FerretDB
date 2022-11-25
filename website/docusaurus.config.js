@@ -101,6 +101,10 @@ const config = {
                 label: 'Twitter',
                 href: 'https://twitter.com/ferret_db',
               },
+              {
+                label: 'Mastodon',
+                href: 'https://techhub.social/@ferretdb',
+              },
             ],
           },
           {
