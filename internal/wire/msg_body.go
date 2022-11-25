@@ -17,6 +17,7 @@ package wire
 import (
 	"bufio"
 	"encoding"
+	"errors"
 	"fmt"
 	"io"
 
@@ -35,13 +36,16 @@ type MsgBody interface {
 
 //go-sumtype:decl MsgBody
 
+// ErrZeroRead is returned when zero bytes was read from connection,
+// indicating that connection was closed by the client.
+var ErrZeroRead = errors.New("zero bytes read")
+
 // ReadMessage reads from reader and returns wire header and body.
+//
+// Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
-		if err == io.EOF {
-			return nil, nil, err
-		}
 		return nil, nil, lazyerrors.Error(err)
 	}
 
