@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"runtime/pprof"
 	"sync"
@@ -31,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Listener accepts incoming client connections.
@@ -196,7 +196,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			logger.Info("Connection started", zap.String("conn", connID))
 
 			e = conn.run(runCtx)
-			if errors.Is(e, io.EOF) {
+			if errors.Is(e, wire.ErrZeroRead) {
 				logger.Info("Connection stopped", zap.String("conn", connID))
 			} else {
 				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
