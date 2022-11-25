@@ -18,10 +18,11 @@ import (
 	"math"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryElementExists(t *testing.T) {
