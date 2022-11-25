@@ -56,7 +56,7 @@ func TestCommandsReplication(t *testing.T) {
 			delete(m, "maxWireVersion")
 
 			minWireVersion := m["minWireVersion"].(int32)
-			assert.True(t, minWireVersion == 0 || minWireVersion == 14)
+			assert.True(t, minWireVersion == 0 || minWireVersion == 13)
 			delete(m, "minWireVersion")
 
 			expected := bson.M{
