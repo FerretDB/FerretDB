@@ -22,7 +22,7 @@
 
   coll.insertMany(docs);
 
-  const expectedErrorCode = 2;
+  const expectedErrorCode = 3;
 
   const process = db.serverStatus().process;
   const version = db.serverStatus().version;
@@ -32,7 +32,7 @@
   try {
     coll.findOne(x);
   } catch (error) {
-    assert.equal(error.code, expectedErrorCode);
+    assert.equal(error.code, expectedErrorCode, 'issue1539 failed');
     console.log('issue1539 passed')
     return;
   }
