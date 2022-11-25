@@ -22,11 +22,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -113,11 +116,12 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatEq(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -278,11 +282,12 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatGt(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1521
@@ -380,11 +385,12 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatGte(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1521
@@ -477,11 +483,12 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatLt(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1521
@@ -582,11 +589,12 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatLte(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1521
@@ -678,11 +686,12 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatNin(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	var scalarDataTypesFilter bson.A
@@ -719,11 +728,12 @@ func TestQueryComparisonCompatNin(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatIn(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	var scalarDataTypesFilter bson.A
@@ -760,11 +770,12 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatNe(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -861,8 +872,7 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
 
 func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
@@ -893,6 +903,5 @@ func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
 		},
 	}
 
-	skipForTigris := "https://github.com/FerretDB/FerretDB/issues/908"
-	testQueryCompat(t, skipForTigris, testCases)
+	testQueryCompat(t, testCases)
 }
