@@ -1,6 +1,6 @@
 /**
- * Checks to see if the find command returns a 'BadValue' error when the $size 
- * operator is given a negative number.
+ * Checks to see if the find command returns a 'BadValue' error when the $size
+ * operator is given a non-negative number.
  */
 
 (function() {
@@ -29,7 +29,7 @@
   const process = db.serverStatus().process;
   const version = db.serverStatus().version;
 
-  error = null;
+  let error = null;
   x = {v: {$size: -1}};
   try {
     coll.findOne(x);
