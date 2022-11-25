@@ -28,7 +28,7 @@
   const version = db.serverStatus().version;
   console.log(process, version);
 
-  x = {v: {$size: -1}};
+  let x = {v: {$size: -1}};
   try {
     coll.findOne(x);
   } catch (error) {
