@@ -126,6 +126,9 @@ type Interface interface {
 	// MsgListDatabases returns a summary of all the databases.
 	MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgListIndexes returns a summary of indexes of the specified collection.
+	MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgPing returns a pong response.
 	MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
