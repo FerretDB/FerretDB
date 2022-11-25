@@ -20,25 +20,21 @@
     {_id: 'double-null', v: null},
   ];
 
-  config.set('showStackTraces', true);
-
   coll.insertMany(docs);
 
   const expectedErrorCode = 2;
 
   const process = db.serverStatus().process;
   const version = db.serverStatus().version;
+  console.log(process, version);
 
-  let error = null;
   x = {v: {$size: -1}};
   try {
     coll.findOne(x);
-  } catch (e) {
-    error = e;
+  } catch (error) {
     assert.equal(error.code, expectedErrorCode);
-    console.log('test passed for ' + process + ' on version: ' + version);
+    console.log('issue1539 passed')
+    return;
   }
-  if (error == null) {
-    console.log('test failed for ' + process + ' on version: ' + version);
-  }
+  console.log('issue1539 failed');
 })();
