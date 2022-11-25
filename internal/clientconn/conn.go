@@ -250,7 +250,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 			resHeader = &wire.MsgHeader{
 				OpCode:        reqHeader.OpCode,
-				RequestID:     atomic.AddInt32(&c.lastRequestID, 1),
+				RequestID:     c.lastRequestID.Add(1),
 				ResponseTo:    reqHeader.RequestID,
 				MessageLength: int32(wire.MsgHeaderLen + len(b)),
 			}
