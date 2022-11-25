@@ -148,82 +148,6 @@ func TestQueryArrayDotNotation(t *testing.T) {
 	}
 }
 
-func TestQueryElemMatchOperator(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-	for name, tc := range map[string]struct {
-		filter      bson.D
-		expectedIDs []any
-		err         *mongo.CommandError
-	}{
-		"UnexpectedFilterString": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1541
-			filter: bson.D{{"v", bson.D{{"$elemMatch", "foo"}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$elemMatch needs an Object",
-			},
-		},
-		"WhereInsideElemMatch": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1542
-			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$where", "123"}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$where can only be applied to the top-level document",
-			},
-		},
-		"TextInsideElemMatch": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1542
-			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$text", "123"}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$text can only be applied to the top-level document",
-			},
-		},
-		"GtField": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1541
-			filter: bson.D{{"v", bson.D{
-				{
-					"$elemMatch",
-					bson.D{
-						{"$gt", int32(0)},
-						{"foo", int32(42)},
-					},
-				},
-			}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "unknown operator: foo",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
 // TestQueryArrayAll covers the case where the $all operator is used on an array or scalar.
 func TestQueryArrayAll(t *testing.T) {
 	setup.SkipForTigris(t)
@@ -235,8 +159,7 @@ func TestQueryArrayAll(t *testing.T) {
 	// Insert additional data to check more complicated cases:
 	// - a longer array of ints;
 	// - a field is called differently and needs to be found with the {$all: [null]} case.
-	// TODO Add "many-integers" to shareddata.Composites once more
-	// query tests are moved to compat, then move remaining tests to compat.
+	// TODO move tests to compat https://github.com/FerretDB/FerretDB/issues/1569
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "many-integers"}, {"customField", bson.A{42, 43, 45}}},
 	})

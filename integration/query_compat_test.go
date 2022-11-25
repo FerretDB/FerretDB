@@ -28,10 +28,9 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter        bson.D                   // required
-	sort          bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skipForTigris string                   // skips test for Tigris if non-empty
+	filter     bson.D                   // required
+	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -46,10 +45,6 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
 
 			t.Parallel()
 
