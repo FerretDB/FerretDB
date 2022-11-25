@@ -16,6 +16,8 @@ const assert = require('assert');
     {_id: 'double-null', v: null},
   ];
 
+  config.set("showStackTraces", true);
+
   coll.insertMany(docs);
 
   const expectedErrorCode = 2;
