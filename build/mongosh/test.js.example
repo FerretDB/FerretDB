@@ -1,6 +1,6 @@
 /**
  * Checks to see if the find command returns a 'BadValue' error when the $size 
- * operator is given a non-negative number.
+ * operator is given a negative number.
  */
 
 (function() {
