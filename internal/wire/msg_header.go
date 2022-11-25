@@ -79,11 +79,14 @@ const (
 	MaxMsgLen = 48000000
 )
 
+// readFrom reads header.
+//
+// Error is ErrZeroRead if zero bytes was read.
 func (msg *MsgHeader) readFrom(r *bufio.Reader) error {
 	b := make([]byte, MsgHeaderLen)
 	if n, err := io.ReadFull(r, b); err != nil {
 		if err == io.EOF {
-			return err
+			return ErrZeroRead
 		}
 		return lazyerrors.Errorf("expected %d, read %d: %w", len(b), n, err)
 	}
