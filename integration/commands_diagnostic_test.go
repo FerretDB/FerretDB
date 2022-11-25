@@ -202,11 +202,11 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		query   bson.D
 		command bson.D
 	}{
-		"count": {
+		"Count": {
 			query:   bson.D{{"count", collection.Name()}},
 			command: bson.D{{"count", collection.Name()}, {"$db", collection.Database().Name()}},
 		},
-		"find": {
+		"Find": {
 			query: bson.D{
 				{"find", collection.Name()},
 				{"filter", bson.D{{"v", bson.D{{"$gt", int32(0)}}}}},
