@@ -17,7 +17,6 @@ package wire
 import (
 	"bufio"
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -68,11 +67,9 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 		for {
 			header, body, err := ReadMessage(r)
-
-			if errors.Is(err, io.EOF) {
+			if errors.Is(err, ErrZeroRead) {
 				break
 			}
-
 			if err != nil {
 				return nil, lazyerrors.Errorf("%s: %w", path, err)
 			}
