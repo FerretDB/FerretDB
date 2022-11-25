@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -76,7 +76,7 @@ type conn struct {
 	h              handlers.Interface
 	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Router
-	lastRequestID  int32
+	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
 }
 
@@ -122,6 +122,8 @@ func newConn(opts *newConnOpts) (*conn, error) {
 // run runs the client connection until ctx is done, client disconnects,
 // or fatal error or panic is encountered.
 //
+// Returned error is always non-nil.
+//
 // The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
 	done := make(chan struct{})
@@ -146,10 +148,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 			err = errors.New("panic")
 		}
 
-		if err == nil {
-			err = ctx.Err()
-		}
-
 		// let goroutine above exit
 		close(done)
 	}()
@@ -158,24 +156,44 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	// if test record path is set, split netConn reader to write to file and bufr
 	if c.testRecordsDir != "" {
-		if err := os.MkdirAll(c.testRecordsDir, 0o777); err != nil {
-			return err
+		if err = os.MkdirAll(c.testRecordsDir, 0o777); err != nil {
+			return
 		}
 
-		filename := fmt.Sprintf(
-			"%s-%s.bin",
-			strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05.000"), ".", "-"), // Format doesn't handle "-000"
-			strings.ReplaceAll(c.netConn.RemoteAddr().String(), ":", "-"),
-		)
+		// write to temporary file first, then rename to avoid partial files
 
-		path := filepath.Join(c.testRecordsDir, filename)
+		var f *os.File
 
-		f, err := os.Create(path)
-		if err != nil {
-			return err
+		if f, err = os.CreateTemp("", "ferretdb-test-record-*.bin"); err != nil {
+			return
 		}
 
-		defer f.Close()
+		defer func() {
+			// do not store partial files
+			if !errors.Is(err, wire.ErrZeroRead) {
+				_ = f.Close()
+				_ = os.Remove(f.Name())
+
+				return
+			}
+
+			// surprisingly, Sync is required before Rename on many OS/FS combinations
+			if e := f.Sync(); e != nil {
+				c.l.Warn(e)
+			}
+
+			if e := f.Close(); e != nil {
+				c.l.Warn(e)
+			}
+
+			path := filepath.Join(
+				c.testRecordsDir,
+				fmt.Sprintf("%s-%d.bin", time.Now().Format("2006.01.02.15.04.05.000"), rand.Uint64()),
+			)
+			if e := os.Rename(f.Name(), path); e != nil {
+				c.l.Warn(e)
+			}
+		}()
 
 		r := io.TeeReader(c.netConn, f)
 		bufr = bufio.NewReader(r)
@@ -193,6 +211,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		// c.netConn is closed by the caller
+	}()
+
+	// check function contract
+	defer func() {
+		if err == nil {
+			panic("err must be non-nil")
+		}
 	}()
 
 	for {
@@ -431,7 +456,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	}
 	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
 
-	resHeader.RequestID = atomic.AddInt32(&c.lastRequestID, 1)
+	resHeader.RequestID = c.lastRequestID.Add(1)
 	resHeader.ResponseTo = reqHeader.RequestID
 
 	if result == "" {

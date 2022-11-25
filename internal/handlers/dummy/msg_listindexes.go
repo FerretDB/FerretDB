@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package common provides common code for all handlers.
-package common
+package dummy
 
-const (
-	// MinWireVersion is the minimal supported wire protocol version.
-	MinWireVersion = int32(13) // 5.0
+import (
+	"context"
 
-	// MaxWireVersion is the maximal supported wire protocol version.
-	MaxWireVersion = int32(17)
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+// MsgListIndexes implements HandlerInterface.
+func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+}
