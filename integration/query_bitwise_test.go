@@ -29,18 +29,12 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// Comparison tests cannot be moved to compat
-// Error is different for shareddata types of Int32s Scalars Doubles Int64s:
+// Bitwise tests cannot be moved to compat:
+// 1. Error message is different for shareddata types of Int32s Scalars Doubles Int64s.
 // - Message: (string) (len=85) "v takes an Array, a number, or a BinData but received: $bitsAllClear: { v: [ 1, 5 ] }",
-// + Message: (string) (len=169) "value takes an Array, a number, or a BinData but received: $bitsAllClear: &types.Document{fields:[]types.field{types.field{value:(*types.Array)(0xc00048b560), key:\"v\"}}}",
-//
-// Expected error is not returned for types of Bools DateTimes Nulls Timestamps
-// DocumentsDoubles DocumentsStrings Regexes Strings Composites ObjectIDs ObjectIDKeys:
-// compat error; target returned no error
-//
-// Not supported error is returned for type Binaries:
-// - Message: (string) (len=85) "v takes an Array, a number, or a BinData but received: $bitsAllClear: { v: [ 1, 5 ] }",
-// + Message: (string) (len=27) "BinData() not supported yet",
+// + Message: (string) (len=169) "value takes an Array, a number, or a BinData but received: $bitsAllClear: \
+//   &types.Document{fields:[]types.field{types.field{value:(*types.Array)(0xc00048b560), key:\"v\"}}}",//
+// 2. BinData is not supported for Binaries https://github.com/FerretDB/FerretDB/issues/508
 
 func TestQueryBitwiseAllClear(t *testing.T) {
 	setup.SkipForTigris(t)

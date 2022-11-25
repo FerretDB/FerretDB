@@ -20,13 +20,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryArrayCompatSize(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -60,8 +56,6 @@ func TestQueryArrayCompatSize(t *testing.T) {
 }
 
 func TestQueryArrayCompatDotNotation(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -111,8 +105,6 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -166,8 +158,6 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 }
 
 func TestQueryArrayCompatEquality(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -201,8 +191,6 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 }
 
 func TestQueryArrayCompatAll(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
