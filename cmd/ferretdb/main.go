@@ -58,7 +58,7 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
 
-	Telemetry telemetry.Flag `default:"" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
+	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Handler string `default:"pg" help:"${help_handler}"`
 

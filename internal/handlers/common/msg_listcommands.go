@@ -162,6 +162,10 @@ var Commands = map[string]command{
 		Help:    "Returns a summary of all the databases.",
 		Handler: (handlers.Interface).MsgListDatabases,
 	},
+	"listIndexes": {
+		Help:    "Returns a summary of indexes of the specified collection.",
+		Handler: (handlers.Interface).MsgListIndexes,
+	},
 	"ping": {
 		Help:    "Returns a pong response.",
 		Handler: (handlers.Interface).MsgPing,

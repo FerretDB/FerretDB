@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
 
 func TestCommandsReplication(t *testing.T) {
@@ -52,11 +53,11 @@ func TestCommandsReplication(t *testing.T) {
 			delete(m, "localTime")
 
 			maxWireVersion := m["maxWireVersion"].(int32)
-			assert.Equal(t, int32(17), maxWireVersion)
+			assert.Equal(t, common.MaxWireVersion, maxWireVersion)
 			delete(m, "maxWireVersion")
 
 			minWireVersion := m["minWireVersion"].(int32)
-			assert.True(t, minWireVersion == 0 || minWireVersion == 14)
+			assert.True(t, minWireVersion == 0 || minWireVersion == common.MinWireVersion)
 			delete(m, "minWireVersion")
 
 			expected := bson.M{
