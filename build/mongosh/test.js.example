@@ -22,7 +22,7 @@
 
   coll.insertMany(docs);
 
-  const expectedErrorCode = 3;
+  const expectedErrorCode = 2;
 
   const process = db.serverStatus().process;
   const version = db.serverStatus().version;
