@@ -168,6 +168,31 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 }
 
+func TestCommandsAdministrationListCollections(t *testing.T) {
+	t.Parallel()
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	require.Greater(t, len(targetCollections), 2)
+
+	filter := bson.D{{
+		"name", bson.D{{
+			"$in", bson.A{
+				targetCollections[0].Name(),
+				targetCollections[len(targetCollections)-1].Name(),
+			},
+		}},
+	}}
+
+	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
+	require.NoError(t, err)
+
+	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
+	require.NoError(t, err)
+
+	assert.Len(t, target, 2)
+	assert.Equal(t, compat, target)
+}
+
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	setup.SkipForTigris(t)
 
