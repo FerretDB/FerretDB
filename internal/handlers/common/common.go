@@ -17,7 +17,7 @@ package common
 
 const (
 	// MinWireVersion is the minimal supported wire protocol version.
-	MinWireVersion = int32(14) // 5.1
+	MinWireVersion = int32(13) // 5.0
 
 	// MaxWireVersion is the maximal supported wire protocol version.
 	MaxWireVersion = int32(17)
