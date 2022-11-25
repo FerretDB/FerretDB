@@ -29,20 +29,13 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// Bitwise tests cannot be moved to compat:
-// 1. Error message is different for shareddata types of Int32s Scalars Doubles Int64s.
-// - Message: (string) (len=85) "v takes an Array, a number, or a BinData but received: $bitsAllClear: { v: [ 1, 5 ] }",
-// + Message: (string) (len=169) "value takes an Array, a number, or a BinData but received: $bitsAllClear: \
-//   &types.Document{fields:[]types.field{types.field{value:(*types.Array)(0xc00048b560), key:\"v\"}}}",//
-// 2. BinData is not supported for Binaries https://github.com/FerretDB/FerretDB/issues/508
-
 func TestQueryBitwiseAllClear(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
 	require.NoError(t, err)
 	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})

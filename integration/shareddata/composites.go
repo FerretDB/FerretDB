@@ -40,7 +40,6 @@ var Composites = &Values[string]{
 		"array-three-reverse": bson.A{nil, "foo", int32(42)},
 		"array-empty":         bson.A{},
 		"array-null":          bson.A{nil},
-		"array-numbers":       bson.A{42, 43, 45},
 	},
 }
 
