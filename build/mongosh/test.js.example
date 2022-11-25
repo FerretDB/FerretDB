@@ -1,7 +1,11 @@
-const assert = require('assert');
+/**
+ * Checks to see if the find command returns a 'BadValue' error when the $size 
+ * operator is given a non-negative number.
+ */
 
 (function() {
   'use strict';
+  const assert = require('assert');
   const coll = db.issue1539;
 
   coll.drop();
@@ -16,7 +20,7 @@ const assert = require('assert');
     {_id: 'double-null', v: null},
   ];
 
-  config.set("showStackTraces", true);
+  config.set('showStackTraces', true);
 
   coll.insertMany(docs);
 
