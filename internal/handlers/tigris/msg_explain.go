@@ -65,6 +65,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var port int32
+
 	connInfo := conninfo.GetConnInfo(ctx)
 	if connInfo.PeerAddr != nil {
 		if tcpAddr, ok := connInfo.PeerAddr.(*net.TCPAddr); ok {
