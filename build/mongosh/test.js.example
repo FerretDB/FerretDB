@@ -18,14 +18,14 @@ const assert = require('assert');
 
     coll.insertMany(docs);
 
-    // "attr":{"ok":0,"code":2,"codeName":"BadValue","message":"Failed to parse $size. ...
+    let noError = ""; // bad error
+    let expectedError = "Failed to parse $size. Expected a non-negative number in: $size: -1"; // good error
 
     x = { v: { $size: -1 } };
-    assert.throws(function() {
-        coll.find(x).itcount();
-    },
-    /^MongoServerError/,
-    '...'
-    );
+    try {
+        coll.findOne(x);
+    } catch(error) {
+        assert.equal(error.message, expectedError)
+    }
 
 })();
