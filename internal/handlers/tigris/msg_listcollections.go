@@ -71,10 +71,12 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			return nil, lazyerrors.Error(err)
 		}
 
-		if matches {
-			if err = collections.Append(d); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		if !matches {
+			continue
+		}
+
+		if err = collections.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 

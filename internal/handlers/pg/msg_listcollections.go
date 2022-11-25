@@ -78,15 +78,18 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			"type", "collection",
 		))
 
-		matches, err := common.FilterDocument(d, filter)
-		if err != nil {
+		var matches bool
+
+		if matches, err = common.FilterDocument(d, filter); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if matches {
-			if err = collections.Append(d); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		if !matches {
+			continue
+		}
+
+		if err = collections.Append(d); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
