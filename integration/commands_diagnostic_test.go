@@ -25,7 +25,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsDiagnosticGetLog(t *testing.T) {
@@ -189,9 +188,7 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 
 func TestCommandsDiagnosticExplain(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
-	})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
 	ctx, collection := s.Ctx, s.Collection
 
 	isTCP := s.IsTCP(t)
