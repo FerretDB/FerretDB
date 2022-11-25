@@ -54,48 +54,12 @@ func TestQueryArraySize(t *testing.T) {
 			filter:      bson.D{{"v", bson.D{{"$size", math.Copysign(0, -1)}}}},
 			expectedIDs: []any{"array-empty"},
 		},
-		"InvalidType": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Expected a number in: $size: { $gt: 1 }`,
-			},
-		},
-		"NotWhole": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", 2.1}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Failed to parse $size. Expected an integer: $size: 2.1",
-			},
-		},
 		"NaN": {
 			filter: bson.D{{"v", bson.D{{"$size", math.NaN()}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `Failed to parse $size. Expected an integer, but found NaN in: $size: nan.0`,
-			},
-		},
-		"Infinity": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Cannot represent as a 64-bit integer: $size: inf.0`,
-			},
-		},
-		"Negative": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", -1}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Expected a non-negative number in: $size: -1`,
 			},
 		},
 	} {
@@ -137,82 +101,6 @@ func TestQueryArrayDotNotation(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
-func TestQueryElemMatchOperator(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-	for name, tc := range map[string]struct {
-		filter      bson.D
-		expectedIDs []any
-		err         *mongo.CommandError
-	}{
-		"UnexpectedFilterString": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1541
-			filter: bson.D{{"v", bson.D{{"$elemMatch", "foo"}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$elemMatch needs an Object",
-			},
-		},
-		"WhereInsideElemMatch": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1542
-			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$where", "123"}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$where can only be applied to the top-level document",
-			},
-		},
-		"TextInsideElemMatch": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1542
-			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$text", "123"}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "$text can only be applied to the top-level document",
-			},
-		},
-		"GtField": {
-			// TODO move to compat https://github.com/FerretDB/FerretDB/issues/1541
-			filter: bson.D{{"v", bson.D{
-				{
-					"$elemMatch",
-					bson.D{
-						{"$gt", int32(0)},
-						{"foo", int32(42)},
-					},
-				},
-			}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "unknown operator: foo",
 			},
 		},
 	} {
