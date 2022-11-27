@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,13 +46,6 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 				{"query", bson.D{{"_id", "double-zero"}}},
 				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
 				{"new", float64(0)},
-			},
-		},
-		"NewDoubleNaN": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "double-zero"}}},
-				{"update", bson.D{{"_id", "double-zero"}, {"v", 43.0}}},
-				{"new", math.NaN()},
 			},
 		},
 		"NewIntNonZero": {

@@ -66,7 +66,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	case OpCodeMsg:
 		var msg OpMsg
 		if err := msg.UnmarshalBinary(b); err != nil {
-			return nil, nil, lazyerrors.Error(err)
+			return &header, nil, lazyerrors.Error(err)
 		}
 
 		return &header, &msg, nil

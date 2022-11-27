@@ -39,7 +39,7 @@ func TestQueryArraySize(t *testing.T) {
 		bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
 		bson.D{{"_id", "array-one"}, {"v", bson.A{"1"}}},
 		bson.D{{"_id", "array-two"}, {"v", bson.A{"1", nil}}},
-		bson.D{{"_id", "array-three"}, {"v", bson.A{"1", "2", math.NaN()}}},
+		bson.D{{"_id", "array-three"}, {"v", bson.A{"1", "2", nil}}},
 		bson.D{{"_id", "string"}, {"v", "12"}},
 		bson.D{{"_id", "document"}, {"v", bson.D{{"v", bson.A{"1", "2"}}}}},
 	})
@@ -50,16 +50,40 @@ func TestQueryArraySize(t *testing.T) {
 		expectedIDs []any
 		err         *mongo.CommandError
 	}{
-		"NegativeZero": {
-			filter:      bson.D{{"v", bson.D{{"$size", math.Copysign(0, -1)}}}},
-			expectedIDs: []any{"array-empty"},
-		},
-		"NaN": {
-			filter: bson.D{{"v", bson.D{{"$size", math.NaN()}}}},
+		"InvalidType": {
+			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
+			filter: bson.D{{"v", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: `Failed to parse $size. Expected an integer, but found NaN in: $size: nan.0`,
+				Message: `Failed to parse $size. Expected a number in: $size: { $gt: 1 }`,
+			},
+		},
+		"NotWhole": {
+			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
+			filter: bson.D{{"v", bson.D{{"$size", 2.1}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Failed to parse $size. Expected an integer: $size: 2.1",
+			},
+		},
+		"Infinity": {
+			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
+			filter: bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Failed to parse $size. Cannot represent as a 64-bit integer: $size: inf.0`,
+			},
+		},
+		"Negative": {
+			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
+			filter: bson.D{{"v", bson.D{{"$size", -1}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: `Failed to parse $size. Expected a non-negative number in: $size: -1`,
 			},
 		},
 	} {
@@ -167,21 +191,6 @@ func TestQueryArrayAll(t *testing.T) {
 				"array-null", "array-three", "array-three-reverse", "many-integers", "null",
 			},
 			expectedErr: nil,
-		},
-		"NaN": {
-			filter:      bson.D{{"v", bson.D{{"$all", bson.A{math.NaN()}}}}},
-			expectedIDs: []any{"array-two", "double-nan"},
-			expectedErr: nil,
-		},
-
-		"$allNeedsAnArrayNan": {
-			filter:      bson.D{{"v", bson.D{{"$all", math.NaN()}}}},
-			expectedIDs: nil,
-			expectedErr: &mongo.CommandError{
-				Code:    2,
-				Message: "$all needs an array",
-				Name:    "BadValue",
-			},
 		},
 	} {
 		name, tc := name, tc

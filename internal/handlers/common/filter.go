@@ -681,15 +681,6 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case errNaN:
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
-				fmt.Sprintf(
-					`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`,
-					types.FormatAnyValue(sizeValue),
-				),
-				"$size",
-			)
 		case errInfinity:
 			return false, NewCommandErrorMsgWithArgument(
 				ErrBadValue,

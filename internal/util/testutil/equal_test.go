@@ -37,13 +37,10 @@ func TestEqual(t *testing.T) {
 		must.NotFail(types.NewDocument("baz", int32(42), "foo", "bar")),
 	)
 
-	AssertEqual(t, math.NaN(), math.NaN())
-
 	AssertEqual(t, math.Inf(+1), math.Inf(+1))
 	AssertNotEqual(t, math.Inf(-1), math.Inf(+1))
 
 	AssertEqual(t, 0.0, math.Copysign(0, +1))
-	AssertNotEqual(t, 0.0, math.Copysign(0, -1))
 	AssertNotEqual(t, math.Copysign(0, +1), math.Copysign(0, -1))
 
 	AssertEqual(

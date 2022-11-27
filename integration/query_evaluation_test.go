@@ -42,7 +42,6 @@ func TestQueryEvaluationMod(t *testing.T) {
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{{"_id", "Zero"}, {"v", 0}},
-		bson.D{{"_id", "NegativeZero"}, {"v", math.Copysign(0, -1)}},
 		bson.D{{"_id", "Int32_1"}, {"v", int32(4080)}},
 		bson.D{{"_id", "Int32_2"}, {"v", int32(1048560)}},
 		bson.D{{"_id", "Int32_3"}, {"v", int32(268435440)}},
@@ -51,7 +50,6 @@ func TestQueryEvaluationMod(t *testing.T) {
 		bson.D{{"_id", "Int64_3"}, {"v", int64(72057594040000000)}},
 		bson.D{{"_id", "Nil"}, {"v", nil}},
 		bson.D{{"_id", "String"}, {"v", "12"}},
-		bson.D{{"_id", "NaN"}, {"v", math.NaN()}},
 		bson.D{{"_id", "SmallestNonzeroFloat64"}, {"v", math.SmallestNonzeroFloat64}},
 		bson.D{{"_id", "PositiveNumber"}, {"v", 123456789}},
 		bson.D{{"_id", "NegativeNumber"}, {"v", -123456789}},
@@ -109,7 +107,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 		},
 		"MaxInt64_Divisor": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
-			expectedIDs: []any{"MaxInt64", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			expectedIDs: []any{"MaxInt64", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MaxInt64_Remainder": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
@@ -181,7 +179,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 		},
 		"MinInt64_Divisor": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_Remainder": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
@@ -189,7 +187,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 		},
 		"MinInt64_floatDivisor": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_floatRemainder": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
@@ -197,7 +195,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 		},
 		"MinInt64_minus": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_1": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
@@ -217,7 +215,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 		},
 		"MinInt64_overflowVerge": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
-			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			expectedIDs: []any{"MinInt64", "MinInt64_float", "MinInt64_minus", "MinInt64_overflowVerge", "SmallestNonzeroFloat64", "Zero"},
 		},
 		"MinInt64_overflowDivisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
@@ -291,14 +289,6 @@ func TestQueryEvaluationMod(t *testing.T) {
 				Message: `divisor cannot be 0`,
 			},
 		},
-		"ZeroNegativeDivisor": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.Copysign(0, -1), 1}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `divisor cannot be 0`,
-			},
-		},
 		"DivisorSmallestNonzeroFloat64": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
 			err: &mongo.CommandError{
@@ -309,7 +299,7 @@ func TestQueryEvaluationMod(t *testing.T) {
 		},
 		"RemainderSmallestNonzeroFloat64": {
 			filter:      bson.D{{"v", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
-			expectedIDs: []any{"NegativeZero", "SmallestNonzeroFloat64", "Zero"},
+			expectedIDs: []any{"SmallestNonzeroFloat64", "Zero"},
 		},
 		"EmptyArray": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{}}}}},
@@ -357,24 +347,6 @@ func TestQueryEvaluationMod(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: `malformed mod, divisor not a number`,
-			},
-		},
-		"DivisorNaN": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.NaN(), 1}}}}},
-			err: &mongo.CommandError{
-				Code: 2,
-				Name: "BadValue",
-				Message: `malformed mod, divisor value is invalid :: caused by :: ` +
-					`Unable to coerce NaN/Inf to integral type`,
-			},
-		},
-		"RemainderNaN": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1, math.NaN()}}}}},
-			err: &mongo.CommandError{
-				Code: 2,
-				Name: "BadValue",
-				Message: `malformed mod, remainder value is invalid :: caused by :: ` +
-					`Unable to coerce NaN/Inf to integral type`,
 			},
 		},
 		"InfinityNegative": {

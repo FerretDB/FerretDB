@@ -317,10 +317,6 @@ func TestQueryProjectionSlice(t *testing.T) {
 				Message: "First argument to $slice must be an array, but is of type: double",
 			},
 		},
-		"ArgNaN": {
-			projection:    bson.D{{"v", bson.D{{"$slice", math.NaN()}}}},
-			expectedArray: bson.A{},
-		},
 		"ArgInf": {
 			projection:    bson.D{{"v", bson.D{{"$slice", math.Inf(+1)}}}},
 			expectedArray: bson.A{int32(1), int32(2), int32(3), int32(4)},
