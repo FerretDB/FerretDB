@@ -179,11 +179,9 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 }
 
 func TestCommandsDiagnosticExplain(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1253")
-
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 	ctx, collection := s.Ctx, s.Collection
 
