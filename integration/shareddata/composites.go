@@ -35,7 +35,7 @@ var Composites = &Values[string]{
 		"document-empty":             bson.D{},
 
 		"array":               bson.A{int32(42)},
-		"array-two":           bson.A{42.13, math.NaN()},
+		"array-two":           bson.A{42.13, "foo"},
 		"array-three":         bson.A{int32(42), "foo", nil},
 		"array-three-reverse": bson.A{nil, "foo", int32(42)},
 		"array-empty":         bson.A{},

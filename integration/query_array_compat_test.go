@@ -82,7 +82,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"PositionIndexAtTheEndOfArray": {
-			filter: bson.D{{"v.1", bson.D{{"$type", "double"}}}},
+			filter: bson.D{{"v.1", bson.D{{"$type", "string"}}}},
 		},
 		"PositionTypeNull": {
 			filter: bson.D{{"v.0", bson.D{{"$type", "null"}}}},

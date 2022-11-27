@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"math"
 	"runtime"
 	"testing"
 
@@ -80,14 +79,6 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Code:    40414,
 				Name:    "Location40414",
 				Message: `BSON field 'getLog.getLog' is missing but a required field`,
-			},
-		},
-		"NaN": {
-			command: bson.D{{"getLog", math.NaN()}},
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: `BSON field 'getLog.getLog' is the wrong type 'double', expected type 'string'`,
 			},
 		},
 		"Array": {
