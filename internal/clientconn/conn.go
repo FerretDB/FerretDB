@@ -223,7 +223,49 @@ func (c *conn) run(ctx context.Context) (err error) {
 	for {
 		var reqHeader *wire.MsgHeader
 		var reqBody wire.MsgBody
+		var resHeader *wire.MsgHeader
+		var resBody wire.MsgBody
+		var validationErr *wire.ValidationError
+
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
+		if err != nil && errors.As(err, &validationErr) {
+			var res wire.OpMsg
+
+			// get protocol error to return correct error document
+			protoErr, ok := common.ProtocolError(validationErr)
+			if !ok {
+				panic(err)
+			}
+
+			must.NoError(res.SetSections(wire.OpMsgSection{
+				Documents: []*types.Document{protoErr.Document()},
+			}))
+
+			var b []byte
+
+			b, err = res.MarshalBinary()
+			if err != nil {
+				panic(err)
+			}
+
+			resHeader = &wire.MsgHeader{
+				OpCode:        reqHeader.OpCode,
+				RequestID:     c.lastRequestID.Add(1),
+				ResponseTo:    reqHeader.RequestID,
+				MessageLength: int32(wire.MsgHeaderLen + len(b)),
+			}
+
+			if err = wire.WriteMessage(bufw, resHeader, &res); err != nil {
+				panic(err)
+			}
+
+			if err = bufw.Flush(); err != nil {
+				return
+			}
+
+			continue
+		}
+
 		if err != nil {
 			return
 		}
@@ -236,8 +278,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var diffLogLevel zapcore.Level
 
 		// handle request unless we are in proxy mode
-		var resHeader *wire.MsgHeader
-		var resBody wire.MsgBody
 		var resCloseConn bool
 		if c.mode != ProxyMode {
 			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
@@ -353,8 +393,10 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		document, err = msg.Document()
 
 		command = document.Command()
+
+		resHeader.OpCode = wire.OpCodeMsg
+
 		if err == nil {
-			resHeader.OpCode = wire.OpCodeMsg
 			resBody, err = c.handleOpMsg(ctx, msg, command)
 		}
 

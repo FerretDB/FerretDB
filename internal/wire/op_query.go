@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -41,6 +42,7 @@ type OpQuery struct {
 func (query *OpQuery) msgbody() {}
 
 // readFrom composes an OpQuery from a buffered reader.
+// It may return ValidationError if the document read from bufr is invalid.
 func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	if err := binary.Read(bufr, binary.LittleEndian, &query.Flags); err != nil {
 		return lazyerrors.Errorf("wire.OpQuery.ReadFrom (binary.Read): %w", err)
@@ -60,10 +62,18 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	}
 
 	var q bson.Document
+
 	if err := q.ReadFrom(bufr); err != nil {
 		return err
 	}
-	query.Query = must.NotFail(types.ConvertDocument(&q))
+
+	doc := must.NotFail(types.ConvertDocument(&q))
+
+	if err := validateValue(doc); err != nil {
+		return NewValidationError(fmt.Errorf("wire.OpQuery.ReadFrom: validation failed for %v with: %v", doc, err))
+	}
+
+	query.Query = doc
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
