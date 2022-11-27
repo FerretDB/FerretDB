@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -147,6 +148,11 @@ func ProtocolError(err error) (ProtoErr, bool) {
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
 		return writeErr, true
+	}
+
+	var validationErr *wire.ValidationError
+	if errors.As(err, &validationErr) {
+		return NewCommandError(ErrBadValue, err).(*CommandError), true //nolint:errorlint // false positive
 	}
 
 	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
