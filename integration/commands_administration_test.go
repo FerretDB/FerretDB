@@ -258,13 +258,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":    float64(1),
 			},
 		},
-		"GetParameter_NaN": {
-			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
-			expected: map[string]any{
-				"quiet": false,
-				"ok":    float64(1),
-			},
-		},
 		"GetParameter_Nil": {
 			command: bson.D{{"getParameter", nil}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
@@ -436,24 +429,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":    float64(1),
 			},
 		},
-		"ShowDetails_NaN": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", math.NaN()}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": bson.D{
-					{"value", false},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", true},
-				},
-				"ok": float64(1),
-			},
-		},
-		"ShowDetails_NegatuveZero": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", math.Copysign(0, -1)}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": false,
-				"ok":    float64(1),
-			},
-		},
 		"ShowDetails_String": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", "1"}}}, {"quiet", true}},
 			err: &mongo.CommandError{
@@ -535,34 +510,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"AllParameters_Nil": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", nil}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": bson.D{
-					{"value", false},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", true},
-				},
-				"ok": float64(1),
-			},
-			unexpected: []string{"acceptApiVersion2"},
-		},
-		"AllParameters_NaN": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.NaN()}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": bson.D{
-					{"value", false},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", true},
-				},
-				"tlsMode": bson.D{
-					{"value", "disabled"},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", false},
-				},
-				"ok": float64(1),
-			},
-		},
-		"AllParameters_NegatuveZero": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.Copysign(0, -1)}}}, {"quiet", true}},
 			expected: map[string]any{
 				"quiet": bson.D{
 					{"value", false},

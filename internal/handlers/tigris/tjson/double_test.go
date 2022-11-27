@@ -32,11 +32,6 @@ var doubleTestCases = []testCase{{
 	schema: doubleSchema,
 	j:      `0`,
 }, {
-	name:   "negative zero",
-	v:      pointer.To(doubleType(math.Copysign(0, -1))),
-	schema: doubleSchema,
-	j:      `-0`,
-}, {
 	name:   "max float64",
 	v:      pointer.To(doubleType(math.MaxFloat64)),
 	schema: doubleSchema,
