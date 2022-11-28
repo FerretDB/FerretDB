@@ -61,6 +61,8 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
+					// RunCommand must be used to test the count command.
+					// It's not possible to use CountDocuments because it calls aggregation.
 					var targetRes, compatRes bson.D
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"count", targetCollection.Name()},
