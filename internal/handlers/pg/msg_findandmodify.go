@@ -16,13 +16,16 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v4"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -75,34 +78,52 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var it iterator.Interface[uint32, *types.Document]
+		it, err = h.PgPool.GetDocuments(ctx, tx, &sqlParam)
+		if err != nil {
+			return err
+		}
+
 		resDocs := make([]*types.Document, 0, 16)
 
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sqlParam)
+		if it != nil {
+			defer it.Close()
+
+			for {
+				var doc *types.Document
+				_, doc, err = it.Next()
+
+				var iteratorDone bool
+				switch {
+				case err == nil:
+					// do nothing
+				case errors.Is(err, iterator.ErrIteratorDone):
+					// no more documents
+					iteratorDone = true
+				case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+					h.L.Warn(
+						"context canceled, stopping fetching",
+						zap.String("db", sqlParam.DB), zap.String("collection", sqlParam.Collection), zap.Error(err),
+					)
+					return nil
+				default:
+					return err
+				}
+
+				if iteratorDone {
+					break
+				}
+
+				resDocs = append(resDocs, doc)
+			}
+		}
+
+		err = common.SortDocuments(resDocs, params.Sort)
 		if err != nil {
 			return err
 		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
 
-		var fetchedDocs []*types.Document
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
-		}
-
-		err = common.SortDocuments(fetchedDocs, params.Sort)
-		if err != nil {
-			return err
-		}
-
-		for _, doc := range fetchedDocs {
+		for _, doc := range resDocs {
 			matches, err := common.FilterDocument(doc, params.Query)
 			if err != nil {
 				return err

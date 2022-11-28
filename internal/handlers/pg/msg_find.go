@@ -134,9 +134,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		it, ierr := h.PgPool.GetDocuments(ctx, tx, &sp)
-		if ierr != nil {
-			return ierr
+		var it iterator.Interface[uint32, *types.Document]
+		it, err = h.PgPool.GetDocuments(ctx, tx, &sp)
+		if err != nil {
+			return err
 		}
 
 		if it == nil {
@@ -153,17 +154,17 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			switch {
 			case err == nil:
 				// do nothing
-			case errors.Is(ierr, iterator.ErrIteratorDone):
+			case errors.Is(err, iterator.ErrIteratorDone):
 				// no more documents
 				return nil
-			case errors.Is(ierr, context.Canceled), errors.Is(ierr, context.DeadlineExceeded):
+			case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 				h.L.Warn(
 					"context canceled, stopping fetching",
-					zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(ierr),
+					zap.String("db", sp.DB), zap.String("collection", sp.Collection), zap.Error(err),
 				)
 				return nil
 			default:
-				return ierr
+				return err
 			}
 
 			var matches bool
