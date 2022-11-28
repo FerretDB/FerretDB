@@ -144,6 +144,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return nil
 		}
 
+		defer it.Close()
+
 		for {
 			var doc *types.Document
 			_, doc, err = it.Next()
