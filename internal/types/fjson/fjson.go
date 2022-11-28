@@ -20,23 +20,29 @@
 //
 // Composite types
 //
-//	*types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//	*types.Array     JSON array
+//	Alias      types package    fjson package         JSON representation
+//
+//	object     *types.Document  *fjson.documentType   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//	array      *types.Array     *fjson.arrayType      JSON array
 //
 // Scalar types
 //
-//	float64          {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
-//	string           JSON string
-//	types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
-//	types.ObjectID   {"$o": "<ObjectID as 24 character hex string"}
-//	bool             JSON true / false values
-//	time.Time        {"$d": milliseconds since epoch as JSON number}
-//	types.NullType   JSON null
-//	types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//	int32            JSON number
-//	types.Timestamp  {"$t": "<number as string>"}
-//	int64            {"$l": "<number as string>"}
-//	TODO Decimal128  {"$n": "<number as string>"}
+//	Alias      types package    fjson package         JSON representation
+//
+//	double     float64          *fjson.doubleType     {"$f": JSON number} or {"$f": "Infinity|-Infinity|NaN"}
+//	string     string           *fjson.stringType     JSON string
+//	binData    types.Binary     *fjson.binaryType     {"$b": "<base 64 string>", "s": <subtype number>}
+//	objectId   types.ObjectID   *fjson.objectIDType   {"$o": "<ObjectID as 24 character hex string"}
+//	bool       bool             *fjson.boolType       JSON true / false values
+//	date       time.Time        *fjson.dateTimeType   {"$d": milliseconds since epoch as JSON number}
+//	null       types.NullType   *fjson.nullType       JSON null
+//	regex      types.Regex      *fjson.regexType      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//	int        int32            *fjson.int32Type      JSON number
+//	timestamp  types.Timestamp  *fjson.timestampType  {"$t": "<number as string>"}
+//	long       int64            *fjson.int64Type      {"$l": "<number as string>"}
+//
+//nolint:lll // for readability
+//nolint:dupword // false positive
 package fjson
 
 import (
