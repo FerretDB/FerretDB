@@ -28,8 +28,6 @@ import (
 )
 
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
-//
-// TODO: https://github.com/FerretDB/FerretDB/issues/1321
 var validateDatabaseNameRe = regexp.MustCompile("^[-a-z][-a-z0-9]{0,62}$")
 
 // Databases returns a sorted list of FerretDB database / PostgreSQL schema.
