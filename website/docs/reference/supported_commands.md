@@ -517,7 +517,7 @@ db.aggregate()
 | Command                            | Argument / Option              | Property                  | Status | Comments                                                  |
 |------------------------------------|--------------------------------|---------------------------|--------|-----------------------------------------------------------|
 | `listCollections`                  |                                |                           | ✅     | Basic command is fully supported                          |
-|                                    | `filter`                       |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
+|                                    | `filter`                       |                           | ✅     |                                                           |
 |                                    | `nameOnly`                     |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
 |                                    | `comment`                      |                           | ⚠️      | Ignored                                                   |
 |                                    | `authorizedCollections`        |                           | ⚠️      | Ignored                                                   |
