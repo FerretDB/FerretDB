@@ -16,6 +16,7 @@ package tigris
 
 import (
 	"context"
+	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -31,11 +32,8 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1405
-	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
-		d, ok := v.(*types.Document)
-		return ok && d.Len() == 0
-	}); err != nil {
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
 
@@ -59,12 +57,24 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
+	sort.Strings(names)
+
 	collections := types.MakeArray(len(names))
 	for _, n := range names {
 		d := must.NotFail(types.NewDocument(
 			"name", n,
 			"type", "collection",
 		))
+
+		matches, err := common.FilterDocument(d, filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !matches {
+			continue
+		}
+
 		if err = collections.Append(d); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
