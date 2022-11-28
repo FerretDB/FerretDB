@@ -18,7 +18,7 @@ slug: /diff/
 6. When insert command is called, insert documents must not have duplicate keys.
 7. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
-   * database name must not include non-latin letters, spaces, dots, dollars or dashes;
+   * database name must not include non-latin letters, spaces, dots, dollars;
    * collection name must not include non-latin letters, spaces, dots or dollars;
    * name must not start with a number;
    * database name cannot contain capital letters;
