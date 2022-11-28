@@ -28,7 +28,7 @@ import (
 )
 
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
-var validateDatabaseNameRe = regexp.MustCompile("^[-a-z][-a-z0-9]{0,62}$")
+var validateDatabaseNameRe = regexp.MustCompile("^[-_a-z][-_a-z0-9]{0,62}$")
 
 // Databases returns a sorted list of FerretDB database / PostgreSQL schema.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
@@ -70,7 +70,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 		return ErrInvalidDatabaseName
 	}
 
-	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
+	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+"'"+pgx.Identifier{db}.Sanitize()+"'")
 	if err == nil {
 		err = createSettingsTable(ctx, tx, db)
 	}
