@@ -109,15 +109,18 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return lazyerrors.Error(err)
 			}
 
-			if matches {
-				if nameOnly {
-					d = must.NotFail(types.NewDocument(
-						"name", databaseName,
-					))
-				}
-				if err = databases.Append(d); err != nil {
-					return lazyerrors.Error(err)
-				}
+			if !matches {
+				continue
+			}
+
+			if nameOnly {
+				d = must.NotFail(types.NewDocument(
+					"name", databaseName,
+				))
+			}
+
+			if err = databases.Append(d); err != nil {
+				return lazyerrors.Error(err)
 			}
 		}
 
