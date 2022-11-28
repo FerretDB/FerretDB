@@ -19,13 +19,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -176,17 +175,14 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit, nil
 }
 
-// execDelete fetches documents, filter them out and limiting with the given limit value.
-// If limit is true, only the first matched document is deleted, otherwise all matched documents are deleted.
+// execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
+// If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
 func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit bool) (int32, error) {
-	var err error
-
-	resDocs := make([]*types.Document, 0, 16)
-
 	var deleted int32
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err := h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var it iterator.Interface[uint32, *types.Document]
+		var err error
 		it, err = h.PgPool.GetDocuments(ctx, tx, sp)
 		if err != nil {
 			return err
@@ -198,6 +194,8 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 		}
 
 		defer it.Close()
+
+		resDocs := make([]*types.Document, 0, 16)
 
 		for {
 			var doc *types.Document
@@ -223,7 +221,8 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 				break
 			}
 
-			matches, err := common.FilterDocument(doc, filter)
+			var matches bool
+			matches, err = common.FilterDocument(doc, filter)
 			if err != nil {
 				return err
 			}
@@ -234,17 +233,19 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 
 			resDocs = append(resDocs, doc)
 
+			// if limit is set, no need to fetch all the documents
 			if limit {
 				break
 			}
 		}
 
-		// if no field is matched in a row, go to the next one
+		// if no documents matched, there is nothing to delete
 		if len(resDocs) == 0 {
 			return nil
 		}
 
-		rowsDeleted, err := h.delete(ctx, sp, resDocs)
+		var rowsDeleted int64
+		rowsDeleted, err = h.delete(ctx, sp, resDocs)
 		if err != nil {
 			return err
 		}
@@ -253,7 +254,6 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 
 		return nil
 	})
-
 	if err != nil {
 		return 0, err
 	}
