@@ -17,6 +17,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -169,14 +170,13 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 // AssertEqualErrorCode asserts that the expected error code is the same as the actual.
 func AssertEqualErrorCode(t *testing.T, expected, actual error) bool {
 	t.Helper()
+	var aErr, eErr *mongo.CommandError
 
-	eErr, ok := expected.(mongo.CommandError)
-	if !ok {
+	if ok := errors.As(expected, &eErr); !ok {
 		return assert.Equal(t, expected, actual)
 	}
 
-	aErr, ok := actual.(mongo.CommandError)
-	if !ok {
+	if ok := errors.As(actual, &aErr); !ok {
 		return assert.Equal(t, expected, actual)
 	}
 
