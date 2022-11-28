@@ -31,6 +31,8 @@ import (
 )
 
 func TestQueryEvaluationMod(t *testing.T) {
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1577
+
 	setup.SkipForTigris(t)
 
 	if runtime.GOARCH == "arm64" {
@@ -398,6 +400,8 @@ func TestQueryEvaluationMod(t *testing.T) {
 }
 
 func TestQueryEvaluationRegex(t *testing.T) {
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1576
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -442,23 +446,6 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			filter:      bson.D{{"v", bson.D{{"$regex", "^foo"}, {"$options", "m"}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
-		"RegexNoSuchField": {
-			filter:      bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
-			expectedIDs: []any{},
-		},
-		"RegexNoSuchFieldString": {
-			filter:      bson.D{{"no-such-field", bson.D{{"$regex", "foo"}}}},
-			expectedIDs: []any{},
-		},
-		"RegexBadOption": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
-			err: &mongo.CommandError{
-				Code:    51108,
-				Name:    "Location51108",
-				Message: ` invalid flag in regex options: 1`,
-			},
-			altMessage: `invalid flag in regex options: 1`,
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -476,148 +463,6 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
-func TestQueryEvaluationRegexErrors(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "multiline-string"}, {"v", "bar\nfoo"}},
-	})
-	require.NoError(t, err)
-
-	for name, tc := range map[string]struct {
-		filter any
-		err    *mongo.CommandError
-	}{
-		"MissingClosingParen": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: missing )",
-			},
-		},
-		"MissingClosingBracket": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: missing terminating ] for character class",
-			},
-		},
-		"InvalidEscape": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "\\uZ"}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: PCRE does not support \\L, \\l, \\N{name}, \\U, or \\u",
-			},
-		},
-		"NamedCapture": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "(?P<name)"}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: syntax error in subpattern name (missing terminator)",
-			},
-		},
-		"UnexpectedParen": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: ")"}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: unmatched parentheses",
-			},
-		},
-		"TrailingBackslash": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `abc\`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: \\ at end of pattern",
-			},
-		},
-		"InvalidRepetition": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: nothing to repeat",
-			},
-		},
-		"MissingRepetitionArgumentStar": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `*`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: nothing to repeat",
-			},
-		},
-		"MissingRepetitionArgumentPlus": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `+`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: nothing to repeat",
-			},
-		},
-		"MissingRepetitionArgumentQuestion": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `?`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: nothing to repeat",
-			},
-		},
-		"InvalidClassRange": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `[z-a]`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: range out of order in character class",
-			},
-		},
-		"InvalidNestedRepetitionOperatorStar": {
-			filter: bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: nothing to repeat",
-			},
-		},
-		"InvalidPerlOp": {
-			filter: bson.D{{"v", bson.D{{"$regex", `(?z)`}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: unrecognized character after (? or (?-",
-			},
-		},
-		"InvalidRepeatSize": {
-			filter: bson.D{{"v", bson.D{{"$regex", `(aa){3,10001}`}}}},
-			err: &mongo.CommandError{
-				Code:    51091,
-				Name:    "Location51091",
-				Message: "Regular expression is invalid: regular expression is too large",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
 		})
 	}
 }

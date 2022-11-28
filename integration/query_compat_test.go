@@ -81,9 +81,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
+						AssertEqualErrorCode(t, compatErr, targetErr)
+
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")

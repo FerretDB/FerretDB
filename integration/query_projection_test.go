@@ -70,6 +70,9 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
 
+	// Comparison fails if we add array to shareddata.
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1569
+
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
 			{"_id", "document-composite-2"},
@@ -116,6 +119,8 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 }
 
 func TestQueryProjectionSlice(t *testing.T) {
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1578
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
