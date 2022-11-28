@@ -18,9 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
@@ -205,6 +203,8 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, it)
 
+		defer it.Close()
+
 		iter, doc, err := it.Next()
 		assert.NoError(t, err)
 		assert.Equal(t, uint32(0), iter)
@@ -215,6 +215,7 @@ func TestGetDocuments(t *testing.T) {
 		assert.Equal(t, uint32(0), iter)
 		assert.Nil(t, doc)
 
+		it.Close()
 		require.NoError(t, tx.Commit(ctx))
 	})
 
@@ -240,6 +241,8 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, it)
 
+		defer it.Close()
+
 		iter, doc, err := it.Next()
 		assert.NoError(t, err)
 		assert.Equal(t, uint32(0), iter)
@@ -251,11 +254,7 @@ func TestGetDocuments(t *testing.T) {
 		assert.Equal(t, uint32(0), iter)
 		assert.Nil(t, doc)
 
-		// To be able to commit tx, we need iterator's finalizer to be called (to close pgx.Rows).
-		// Otherwise, tx.Commit will fail with "conn busy".
-		runtime.GC()
-		time.Sleep(10 * time.Millisecond)
-
+		it.Close()
 		require.NoError(t, tx.Commit(ctx))
 	})
 
@@ -275,11 +274,14 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, it)
 
+		defer it.Close()
+
 		iter, doc, err := it.Next()
 		assert.Equal(t, iterator.ErrIteratorDone, err)
 		assert.Equal(t, uint32(0), iter)
 		assert.Nil(t, doc)
 
+		it.Close()
 		require.NoError(t, tx.Commit(ctx))
 	})
 

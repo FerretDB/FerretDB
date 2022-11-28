@@ -26,4 +26,10 @@ type Interface[K, V any] interface {
 	// and the value is the slice or map value, next document, etc.
 	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error.
 	Next() (K, V, error)
+
+	// Close indicates that the iterator will no longer be used.
+	// If Close is called, future calls to Next might panic.
+	// Close must be concurrency-safe and may be called multiple times.
+	// All calls after the first will have no effect.
+	Close()
 }

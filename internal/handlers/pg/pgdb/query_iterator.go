@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"runtime"
+	"sync"
 	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
@@ -32,19 +33,31 @@ type queryIterator struct {
 	ctx         context.Context
 	rows        pgx.Rows
 	currentIter atomic.Uint32
+	closed      bool        // indicates whether Close() was called
+	mxClosed    *sync.Mutex // protects closed
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
 // It sets finalizer to close the rows.
 func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
-	runtime.SetFinalizer(rows, func(rows pgx.Rows) {
-		rows.Close()
+	// queryIterator is defined as pointer to address it in the finalizer.
+	qi := &queryIterator{
+		ctx:      ctx,
+		rows:     rows,
+		closed:   false,
+		mxClosed: new(sync.Mutex),
+	}
+
+	runtime.SetFinalizer(qi, func(qi *queryIterator) {
+		qi.mxClosed.Lock()
+		defer qi.mxClosed.Unlock()
+		if !qi.closed {
+			// TODO: ask about fatalpanic
+			panic("queryIterator.Close() has not been called")
+		}
 	})
 
-	return &queryIterator{
-		ctx:  ctx,
-		rows: rows,
-	}
+	return qi
 }
 
 // Next implements iterator.Interface.
@@ -75,4 +88,17 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 	n := it.currentIter.Add(1)
 
 	return n - 1, doc.(*types.Document), nil
+}
+
+// Close implements iterator.Interface.
+func (it *queryIterator) Close() {
+	it.mxClosed.Lock()
+	defer it.mxClosed.Unlock()
+
+	if it.closed {
+		return
+	}
+
+	it.rows.Close()
+	it.closed = true
 }
