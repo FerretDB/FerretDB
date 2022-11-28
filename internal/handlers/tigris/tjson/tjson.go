@@ -12,32 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package tjson provides converters from/to JSON with JSON Schema for built-in and `types` types.
+// Package tjson provides converters from/to Tigris JSON with schema for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
-// See https://docs.tigrisdata.com/overview/schema#data-types for more details about JSON types.
+//
+// See https://docs.tigrisdata.com/http/datamodel/types for more details.
 //
 // # Mapping
 //
 // Composite types
 //
-//	*types.Document       {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//	TODO *types.Array     JSON array
+//	Alias      types package    tjson package         JSON representation
+//
+//	object     *types.Document  *tjson.documentType   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//	array      *types.Array     TODO                  TODO
 //
 // Scalar types
 //
-//	float64               JSON number (double format)
-//	string                JSON string
-//	types.Binary          {"$b": "<base 64 string>", "s": <subtype number>}
-//	types.ObjectID	      JSON string (byte format, length is 12 bytes)
-//	bool                  JSON true|false values
-//	time.Time        	  JSON string (date-time RFC3339 format)
-//	TODO types.NullType   JSON null
-//	types.Regex           {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//	int32                 JSON number (int32 format)
-//	types.Timestamp  	  {"$t": "<number as string>"}
-//	int64                 JSON number (int64 format)
-//	TODO Decimal128       {"$n": "<number as string>"}
+//	Alias      types package    tjson package         JSON representation
+//
+//	double     float64          *tjson.doubleType     JSON number (double format)
+//	string     string           *tjson.stringType     JSON string
+//	binData    types.Binary     *tjson.binaryType     {"$b": "<base 64 string>", "s": <subtype number>}
+//	objectId   types.ObjectID   *tjson.objectIDType   JSON string (byte format, length is 12 bytes)
+//	bool       bool             *tjson.boolType       JSON true|false values
+//	date       time.Time        *tjson.dateTimeType   JSON string (date-time RFC3339 format)
+//	null       types.NullType   *tjson.nullType       JSON null
+//	regexp     types.Regex      *tjson.regexType      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//	int        int32            *tjson.int32Type      JSON number (int32 format)
+//	timestamp  types.Timestamp  *tjson.timestampType  {"$t": "<number as string>"}
+//	long       int64            *tjson.int64Type      JSON number (int64 format)
+//
+//nolint:lll // for readability
+//nolint:dupword // false positive
 package tjson
 
 import (

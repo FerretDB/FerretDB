@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pjson provides converters from/to pjson (JSON with some extensions) for built-in and `types` types.
+// Package pjson provides converters from/to jsonb with some extensions for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
 //
@@ -20,23 +20,29 @@
 //
 // Composite types
 //
-//	*types.Document  {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//	*types.Array     JSON array
+//	Alias      types package    pjson package         JSON representation
+//
+//	object     *types.Document  *pjson.documentType   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//	array      *types.Array     *pjson.arrayType      JSON array
 //
 // Scalar types
 //
-//	float64          {"$f": JSON number}
-//	string           JSON string
-//	types.Binary     {"$b": "<base 64 string>", "s": <subtype number>}
-//	types.ObjectID   {"$o": "<ObjectID as 24 character hex string"}
-//	bool             JSON true / false values
-//	time.Time        {"$d": milliseconds since epoch as JSON number}
-//	types.NullType   JSON null
-//	types.Regex      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//	int32            JSON number
-//	types.Timestamp  {"$t": "<number as string>"}
-//	int64            {"$l": "<number as string>"}
-//	TODO Decimal128  {"$n": "<number as string>"}
+//	Alias      types package    pjson package         JSON representation
+//
+//	double     float64          *pjson.doubleType     {"$f": JSON number}
+//	string     string           *pjson.stringType     JSON string
+//	binData    types.Binary     *pjson.binaryType     {"$b": "<base 64 string>", "s": <subtype number>}
+//	objectId   types.ObjectID   *pjson.objectIDType   {"$o": "<ObjectID as 24 character hex string"}
+//	bool       bool             *pjson.boolType       JSON true / false values
+//	date       time.Time        *pjson.dateTimeType   {"$d": milliseconds since epoch as JSON number}
+//	null       types.NullType   *pjson.nullType       JSON null
+//	regex      types.Regex      *pjson.regexType      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
+//	int        int32            *pjson.int32Type      JSON number
+//	timestamp  types.Timestamp  *pjson.timestampType  {"$t": "<number as string>"}
+//	long       int64            *pjson.int64Type      {"$l": "<number as string>"}
+//
+//nolint:lll // for readability
+//nolint:dupword // false positive
 package pjson
 
 import (
