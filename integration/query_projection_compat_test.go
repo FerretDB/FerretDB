@@ -18,9 +18,13 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -44,6 +48,8 @@ func TestQueryProjectionCompat(t *testing.T) {
 }
 
 func TestQueryProjectionCompatElemMatch(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -60,6 +66,8 @@ func TestQueryProjectionCompatElemMatch(t *testing.T) {
 }
 
 func TestQueryProjectionCompatSlice(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
