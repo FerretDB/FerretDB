@@ -15,6 +15,33 @@
 // Package bson provides converters from/to BSON for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
+//
+// # Mapping
+//
+// Composite types
+//
+//	Alias      types package    bson package
+//
+//	object     *types.Document  *bson.Document
+//	array      *types.Array     *bson.arrayType
+//
+// Scalar types
+//
+//	Alias      types package    bson package
+//
+//	double     float64          *bson.doubleType
+//	string     string           *bson.stringType
+//	binData    types.Binary     *bson.binaryType
+//	objectId   types.ObjectID   *bson.objectIDType
+//	bool       bool             *bson.boolType
+//	date       time.Time        *bson.dateTimeType
+//	null       types.NullType   *bson.nullType
+//	regex      types.Regex      *bson.regexType
+//	int        int32            *bson.int32Type
+//	timestamp  types.Timestamp  *bson.timestampType
+//	long       int64            *bson.int64Type
+//
+//nolint:dupword // false positive
 package bson
 
 import (
