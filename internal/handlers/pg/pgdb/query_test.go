@@ -250,7 +250,7 @@ func TestGetDocuments(t *testing.T) {
 
 		cancel()
 		iter, doc, err = it.Next()
-		assert.EqualError(t, context.Canceled, err.Error())
+		assert.Equal(t, context.Canceled, err)
 		assert.Equal(t, uint32(0), iter)
 		assert.Nil(t, doc)
 
