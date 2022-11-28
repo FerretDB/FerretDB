@@ -167,7 +167,7 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualErrorCode asserts that the expected error code is the same as the actual.
+// AssertEqualErrorCode asserts error code, name and wrapped are the same.
 func AssertEqualErrorCode(t *testing.T, expected, actual error) bool {
 	t.Helper()
 	var aErr, eErr *mongo.CommandError
@@ -179,6 +179,9 @@ func AssertEqualErrorCode(t *testing.T, expected, actual error) bool {
 	if ok := errors.As(actual, &aErr); !ok {
 		return assert.Equal(t, expected, actual)
 	}
+
+	assert.Equal(t, eErr.Name, aErr.Code)
+	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
 
 	return assert.Equal(t, eErr.Code, aErr.Code)
 }
