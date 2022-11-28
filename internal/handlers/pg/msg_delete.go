@@ -208,6 +208,7 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 				resDocs = append(resDocs, doc)
 			}
 
+			/// ???? Why limit is here
 			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 				return err
 			}
