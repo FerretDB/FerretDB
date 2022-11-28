@@ -233,11 +233,9 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 			}
 
 			resDocs = append(resDocs, doc)
-		}
 
-		if limit {
-			if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
-				return err
+			if limit {
+				break
 			}
 		}
 
