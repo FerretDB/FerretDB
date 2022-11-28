@@ -30,6 +30,7 @@ import (
 type queryCompatTestCase struct {
 	filter     bson.D                   // required
 	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	projection bson.D                   // nil for leaving projection unset
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -56,6 +57,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				sort = bson.D{{"_id", 1}}
 			}
 			opts := options.Find().SetSort(sort)
+
+			if tc.projection != nil {
+				opts = opts.SetProjection(tc.projection)
+			}
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
