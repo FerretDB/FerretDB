@@ -250,7 +250,7 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 			return err
 		}
 
-		deleted += int32(rowsDeleted)
+		deleted = int32(rowsDeleted)
 
 		return nil
 	})
