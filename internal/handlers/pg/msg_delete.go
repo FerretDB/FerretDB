@@ -98,7 +98,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sp.Filter = filter
 
-		del, err := h.execDelete(ctx, &sp, filter, limit)
+		var limited bool
+		if limit == 1 {
+			limited = true
+		}
+
+		del, err := h.execDelete(ctx, &sp, filter, limited)
 		if err == nil {
 			deleted += del
 			continue
@@ -169,8 +174,9 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 }
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
+// If limit is true, only the first matched document is deleted, otherwise all matched documents are deleted.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit int64) (int32, error) {
+func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit bool) (int32, error) {
 	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
@@ -208,9 +214,10 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 				resDocs = append(resDocs, doc)
 			}
 
-			/// ???? Why limit is here
-			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-				return err
+			if limit {
+				if resDocs, err = common.LimitDocuments(resDocs, 1); err != nil {
+					return err
+				}
 			}
 
 			// if no field is matched in a row, go to the next one
