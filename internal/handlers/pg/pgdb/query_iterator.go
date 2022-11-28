@@ -32,9 +32,9 @@ import (
 type queryIterator struct {
 	ctx         context.Context
 	rows        pgx.Rows
-	currentIter atomic.Uint32
-	closed      bool        // indicates whether Close() was called
 	mxClosed    *sync.Mutex // protects closed
+	closed      bool        // indicates whether Close() was called
+	currentIter atomic.Uint32
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -52,7 +52,6 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, 
 		qi.mxClosed.Lock()
 		defer qi.mxClosed.Unlock()
 		if !qi.closed {
-			// TODO: ask about fatalpanic
 			panic("queryIterator.Close() has not been called")
 		}
 	})
