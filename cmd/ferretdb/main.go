@@ -44,17 +44,18 @@ import (
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
-	ListenUnix string `default:""                     help:"Listen Unix domain socket path."`
+	Listen struct {
+		Addr        string `default:"127.0.0.1:27017" help:"Listen address."`
+		Unix        string `default:""                help:"Listen Unix domain socket path."`
+		TLS         string `default:""                help:"Listen TLS address."`
+		TLSCertFile string `default:""                help:"TLS cert file path."`
+		TLSKeyFile  string `default:""                help:"TLS key file path."`
+	} `embed:"" prefix:"listen-"`
 
-	ListenTLS         string `default:""              help:"Listen TLS address."`
-	ListenTLSCertFile string `default:""              help:"TLS cert file path."`
-	ListenTLSKeyFile  string `default:""              help:"TLS key file path."`
-
-	ProxyAddr string `default:"127.0.0.1:37017"       help:"Proxy address."`
-	DebugAddr string `default:"127.0.0.1:8088"        help:"${help_debug_addr}"`
-	StateDir  string `default:"."                     help:"Process state directory."`
-	Mode      string `default:"${default_mode}"       help:"${help_mode}"             enum:"${enum_mode}"`
+	ProxyAddr string `default:"127.0.0.1:37017" help:"Proxy address."`
+	DebugAddr string `default:"127.0.0.1:8088"  help:"${help_debug_addr}"`
+	StateDir  string `default:"."               help:"Process state directory."`
+	Mode      string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -286,11 +287,11 @@ func run() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:     cli.ListenAddr,
-		ListenUnix:     cli.ListenUnix,
-		ListenTLS:      cli.ListenTLS,
-		TLSCertFile:    cli.ListenTLSCertFile,
-		TLSKeyFile:     cli.ListenTLSKeyFile,
+		ListenAddr:     cli.Listen.Addr,
+		ListenUnix:     cli.Listen.Unix,
+		ListenTLS:      cli.Listen.TLS,
+		TLSCertFile:    cli.Listen.TLSCertFile,
+		TLSKeyFile:     cli.Listen.TLSKeyFile,
 		ProxyAddr:      cli.ProxyAddr,
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
