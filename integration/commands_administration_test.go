@@ -785,9 +785,9 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
-	assert.True(t, ok)
-	assert.NotEmpty(t, must.NotFail(freeMonitoring.Get("state")))
+	freeMonitoring, err := doc.Get("freeMonitoring")
+	require.NoError(t, err)
+	assert.NotEmpty(t, must.NotFail(freeMonitoring.(*types.Document).Get("state")))
 
 	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
 	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
