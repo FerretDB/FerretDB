@@ -226,10 +226,12 @@ func (d *Document) Has(key string) bool {
 }
 
 // Get returns a value at the given key.
-// If there are duplicated keys in the document, it returns the first value.
-//
-// Deprecated: as Document might have duplicate keys, Get is not a good way to get values by the given keys.
+// If the key is duplicated, it panics.
 func (d *Document) Get(key string) (any, error) {
+	if d.isKeyDuplicate(key) {
+		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
+	}
+
 	for _, field := range d.fields {
 		if field.key == key {
 			return field.value, nil
