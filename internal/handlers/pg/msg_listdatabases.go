@@ -58,7 +58,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		databases = types.MakeArray(len(databaseNames))
 		for _, databaseName := range databaseNames {
-			sizeOnDisk, err := pgdb.TablesSize(ctx, tx, databaseName)
+			var sizeOnDisk int64
+			sizeOnDisk, err = pgdb.TablesSize(ctx, tx, databaseName)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}

@@ -139,6 +139,7 @@ func TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
 
 	// iterate over result to collect sizes
 	var sizeOnDisk int64
+
 	for _, name := range tables {
 		var tableSize int64
 		fullName := pgx.Identifier{db, name}.Sanitize()
