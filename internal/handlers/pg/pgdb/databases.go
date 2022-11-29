@@ -124,7 +124,7 @@ func DatabaseSize(ctx context.Context, tx pgx.Tx) (int64, error) {
 
 	err := tx.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&size)
 	if err != nil {
-		return 0, lazyerrors.Error(err)
+		return 0, err
 	}
 
 	return size, nil
@@ -134,7 +134,7 @@ func DatabaseSize(ctx context.Context, tx pgx.Tx) (int64, error) {
 func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
 	tables, err := Tables(ctx, tx, db)
 	if err != nil {
-		return 0, lazyerrors.Error(err)
+		return 0, err
 	}
 
 	// iterate over result to collect sizes
@@ -167,7 +167,7 @@ func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64
 			}
 		}
 
-		return 0, lazyerrors.Error(err)
+		return 0, err
 	}
 
 	return sizeOnDisk, nil
