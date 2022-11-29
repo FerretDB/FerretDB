@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -78,52 +77,18 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var it iterator.Interface[uint32, *types.Document]
-		it, err = h.PgPool.GetDocuments(ctx, tx, &sqlParam)
+		docs, err := h.fetchDocs(ctx, tx, &sqlParam)
+		if err != nil {
+			return err
+		}
+
+		err = common.SortDocuments(docs, params.Sort)
 		if err != nil {
 			return err
 		}
 
 		resDocs := make([]*types.Document, 0, 16)
-
-		if it != nil {
-			defer it.Close()
-
-			for {
-				var doc *types.Document
-				_, doc, err = it.Next()
-
-				var iteratorDone bool
-				switch {
-				case err == nil:
-					// do nothing
-				case errors.Is(err, iterator.ErrIteratorDone):
-					// no more documents
-					iteratorDone = true
-				case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-					h.L.Warn(
-						"context canceled, stopping fetching",
-						zap.String("db", sqlParam.DB), zap.String("collection", sqlParam.Collection), zap.Error(err),
-					)
-					return nil
-				default:
-					return err
-				}
-
-				if iteratorDone {
-					break
-				}
-
-				resDocs = append(resDocs, doc)
-			}
-		}
-
-		err = common.SortDocuments(resDocs, params.Sort)
-		if err != nil {
-			return err
-		}
-
-		for _, doc := range resDocs {
+		for _, doc := range docs {
 			matches, err := common.FilterDocument(doc, params.Query)
 			if err != nil {
 				return err
@@ -258,6 +223,44 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	return &reply, nil
+}
+
+func (h *Handler) fetchDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
+	resDocs := make([]*types.Document, 0, 16)
+
+	var it iterator.Interface[uint32, *types.Document]
+	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
+	if err != nil {
+		return nil, err
+	}
+
+	if it == nil {
+		return resDocs, nil
+	}
+
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			return resDocs, nil
+		default:
+			return nil, err
+		}
+
+		resDocs = append(resDocs, doc)
+	}
 }
 
 // upsertParams represent parameters for Handler.upsert method.
