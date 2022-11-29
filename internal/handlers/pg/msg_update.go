@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
@@ -138,34 +140,53 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			sp.Filter = q
 
 			resDocs := make([]*types.Document, 0, 16)
-			fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
+			var it iterator.Interface[uint32, *types.Document]
+			it, err = h.PgPool.GetDocuments(ctx, tx, &sp)
 			if err != nil {
 				return err
 			}
-			defer func() {
-				// Drain the channel to prevent leaking goroutines.
-				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-				for range fetchedChan {
+
+			if it == nil {
+				// no documents found
+				return nil
+			}
+
+			defer it.Close()
+
+			for {
+				var doc *types.Document
+				_, doc, err = it.Next()
+
+				// if the context is canceled, we don't need to continue processing documents
+				if ctx.Err() != nil {
+					return ctx.Err()
 				}
-			}()
 
-			for fetchedItem := range fetchedChan {
-				if fetchedItem.Err != nil {
-					return fetchedItem.Err
+				var iteratorDone bool
+				switch {
+				case err == nil:
+					// do nothing
+				case errors.Is(err, iterator.ErrIteratorDone):
+					// no more documents
+					iteratorDone = true
+				default:
+					return err
 				}
 
-				for _, doc := range fetchedItem.Docs {
-					matches, err := common.FilterDocument(doc, q)
-					if err != nil {
-						return err
-					}
-
-					if !matches {
-						continue
-					}
-
-					resDocs = append(resDocs, doc)
+				if iteratorDone {
+					break
 				}
+
+				matches, err := common.FilterDocument(doc, q)
+				if err != nil {
+					return err
+				}
+
+				if !matches {
+					continue
+				}
+
+				resDocs = append(resDocs, doc)
 			}
 
 			if len(resDocs) == 0 {
