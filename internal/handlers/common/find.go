@@ -23,6 +23,8 @@ import (
 )
 
 // FindParams contains `find` command parameters supported by at least one handler.
+//
+//nolint:vet // for readability
 type FindParams struct {
 	DB         string
 	Collection string

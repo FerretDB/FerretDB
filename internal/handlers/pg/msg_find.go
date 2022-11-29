@@ -103,9 +103,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
 		return nil, err
 	}
+
 	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
 		return nil, err
 	}
+
 	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
 	}

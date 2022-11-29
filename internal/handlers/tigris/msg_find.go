@@ -58,8 +58,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, params.Filter)
-		if err != nil {
+		var matches bool
+
+		if matches, err = common.FilterDocument(doc, params.Filter); err != nil {
 			return nil, err
 		}
 
@@ -73,9 +74,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
 		return nil, err
 	}
+
 	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
 		return nil, err
 	}
+
 	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
 	}
