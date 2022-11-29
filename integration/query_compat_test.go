@@ -81,7 +81,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						AssertEqualErrorCode(t, compatErr, targetErr)
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}

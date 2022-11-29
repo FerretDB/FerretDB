@@ -167,23 +167,22 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualErrorCode asserts error code, name and wrapped are the same.
-func AssertEqualErrorCode(t *testing.T, expected, actual error) bool {
+// AssertMatchesCommandError asserts error code, name and wrapped are the same.
+func AssertMatchesCommandError(t *testing.T, expected, actual error) {
 	t.Helper()
 	var aErr, eErr mongo.CommandError
 
 	if ok := errors.As(expected, &eErr); !ok {
-		return assert.Equal(t, expected, actual)
+		assert.Equal(t, expected, actual)
 	}
 
 	if ok := errors.As(actual, &aErr); !ok {
-		return assert.Equal(t, expected, actual)
+		assert.Equal(t, expected, actual)
 	}
 
 	assert.Equal(t, eErr.Name, aErr.Name)
 	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
-
-	return assert.Equal(t, eErr.Code, aErr.Code)
+	assert.Equal(t, eErr.Code, aErr.Code)
 }
 
 // AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);
