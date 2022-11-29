@@ -181,6 +181,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 	resDocs := make([]*types.Document, 0, 16)
 
 	var it iterator.Interface[uint32, *types.Document]
+
 	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
 	if err != nil {
 		return nil, err

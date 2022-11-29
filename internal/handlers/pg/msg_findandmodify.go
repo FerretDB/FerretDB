@@ -75,7 +75,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err := h.fetchAndFilterDocs(ctx, tx, &sqlParam)
+		var resDocs []*types.Document
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}
