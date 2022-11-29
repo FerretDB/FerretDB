@@ -77,28 +77,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		docs, err := h.fetchDocs(ctx, tx, &sqlParam)
+		resDocs, err := h.fetchDocs(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}
 
-		err = common.SortDocuments(docs, params.Sort)
+		err = common.SortDocuments(resDocs, params.Sort)
 		if err != nil {
 			return err
-		}
-
-		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range docs {
-			matches, err := common.FilterDocument(doc, params.Query)
-			if err != nil {
-				return err
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
 		}
 
 		// findAndModify always works with a single document
@@ -257,6 +243,15 @@ func (h *Handler) fetchDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLPa
 			return resDocs, nil
 		default:
 			return nil, err
+		}
+
+		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
 		}
 
 		resDocs = append(resDocs, doc)
