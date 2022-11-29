@@ -70,7 +70,7 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 		return 0, nil, err
 	}
 
-	if !it.rows.Next() {
+	if it.rows == nil || !it.rows.Next() {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
@@ -98,6 +98,9 @@ func (it *queryIterator) Close() {
 		return
 	}
 
-	it.rows.Close()
+	if it.rows != nil {
+		it.rows.Close()
+	}
+
 	it.closed = true
 }

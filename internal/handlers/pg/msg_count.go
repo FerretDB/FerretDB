@@ -93,11 +93,6 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			return err
 		}
 
-		if it == nil {
-			// no documents found
-			return nil
-		}
-
 		defer it.Close()
 
 		for {

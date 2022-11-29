@@ -110,7 +110,7 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 }
 
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
-// If the collection doesn't exist, it returns nil and no error.
+// If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 	iterator.Interface[uint32, *types.Document], error,
@@ -118,7 +118,7 @@ func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 	q, args, err := buildQuery(ctx, tx, sp)
 	if err != nil {
 		if errors.Is(err, ErrTableNotExist) {
-			return nil, nil
+			return newIterator(ctx, nil), nil
 		}
 
 		return nil, lazyerrors.Error(err)
