@@ -29,22 +29,28 @@
 //
 // Composite types (passed by pointers)
 //
-//	*types.Document  *bson.Document       *pjson.documentType   Document
-//	*types.Array     *bson.arrayType      *pjson.arrayType      Array
+//	Alias      types package    Description
+//
+//	object     *types.Document  Document
+//	array      *types.Array     Array
 //
 // Scalar types (passed by values)
 //
-//	float64          *bson.doubleType     *pjson.doubleType     64-bit binary floating point
-//	string           *bson.stringType     *pjson.stringType     UTF-8 string
-//	types.Binary     *bson.binaryType     *pjson.binaryType     Binary data
-//	types.ObjectID   *bson.objectIDType   *pjson.objectIDType   ObjectId
-//	bool             *bson.boolType       *pjson.boolType       Boolean
-//	time.Time        *bson.dateTimeType   *pjson.dateTimeType   UTC datetime
-//	types.NullType   *bson.nullType       *pjson.nullType       Null
-//	types.Regex      *bson.regexType      *pjson.regexType      Regular expression
-//	int32            *bson.int32Type      *pjson.int32Type      32-bit integer
-//	types.Timestamp  *bson.timestampType  *pjson.timestampType  Timestamp
-//	int64            *bson.int64Type      *pjson.int64Type      64-bit integer
+//	Alias      types package    Description
+//
+//	double     float64          64-bit binary floating point
+//	string     string           UTF-8 string
+//	binData    types.Binary     Binary data
+//	objectId   types.ObjectID   Object ID
+//	bool       bool             Boolean
+//	date       time.Time        UTC datetime
+//	null       types.NullType   Null
+//	regex      types.Regex      Regular expression
+//	int        int32            32-bit integer
+//	timestamp  types.Timestamp  Timestamp
+//	long       int64            64-bit integer
+//
+//nolint:dupword // false positive
 package types
 
 import (
