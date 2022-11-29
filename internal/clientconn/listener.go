@@ -16,9 +16,11 @@ package clientconn
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -95,6 +97,13 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on %s ...", l.Unix())
 	}
 
+	if l.ListenTLS != "" {
+		var err error
+		if l.tlsListener, err = setupTLSListener(l.ListenTLS, l.TLSCertFile, l.TLSKeyFile); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
 	// close listeners on context cancellation to exit from listenLoop
 	go func() {
 		<-ctx.Done()
@@ -105,6 +114,10 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		if l.unixListener != nil {
 			l.unixListener.Close()
+		}
+
+		if l.tlsListener != nil {
+			l.tlsListener.Close()
 		}
 	}()
 
@@ -136,10 +149,48 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
+	if l.ListenTLS != "" {
+		wg.Add(1)
+
+		go func() {
+			defer func() {
+				logger.Sugar().Infof("%s stopped.", l.tlsListener.Addr())
+				wg.Done()
+			}()
+
+			acceptLoop(ctx, l.tlsListener, &wg, l, logger)
+		}()
+	}
+
 	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
 	return ctx.Err()
+}
+
+// setupTLSListener returns a new TLS listener or and error
+func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
+	if _, err := os.Stat(certFile); errors.Is(err, os.ErrNotExist) {
+		return nil, lazyerrors.Errorf("TLS certificate file %q does not exist", certFile)
+	}
+
+	if _, err := os.Stat(keyFile); errors.Is(err, os.ErrNotExist) {
+		return nil, lazyerrors.Errorf("TLS key file %q does not exist", keyFile)
+	}
+
+	cer, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	config := tls.Config{Certificates: []tls.Certificate{cer}}
+
+	listener, err := tls.Listen("tcp", addr, &config)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return listener, nil
 }
 
 // acceptLoop runs listener's connection accepting loop.
