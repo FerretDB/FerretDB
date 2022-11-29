@@ -287,17 +287,17 @@ func run() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:     cli.Listen.Addr,
-		ListenUnix:     cli.Listen.Unix,
-		ListenTLS:      cli.Listen.TLS,
-		TLSCertFile:    cli.Listen.TLSCertFile,
-		TLSKeyFile:     cli.Listen.TLSKeyFile,
-		ProxyAddr:      cli.ProxyAddr,
-		Mode:           clientconn.Mode(cli.Mode),
-		Metrics:        metrics,
-		Handler:        h,
-		Logger:         logger,
-		TestRecordsDir: cli.Test.RecordsDir,
+		ListenAddr:        cli.Listen.Addr,
+		ListenUnix:        cli.Listen.Unix,
+		ListenTLS:         cli.Listen.TLS,
+		ListenTLSCertFile: cli.Listen.TLSCertFile,
+		ListenTLSKeyFile:  cli.Listen.TLSKeyFile,
+		ProxyAddr:         cli.ProxyAddr,
+		Mode:              clientconn.Mode(cli.Mode),
+		Metrics:           metrics,
+		Handler:           h,
+		Logger:            logger,
+		TestRecordsDir:    cli.Test.RecordsDir,
 	})
 
 	metricsRegisterer.MustRegister(l)

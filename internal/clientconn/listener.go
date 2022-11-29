@@ -47,17 +47,17 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr     string
-	ListenUnix     string
-	ListenTLS      string
-	TLSCertFile    string
-	TLSKeyFile     string
-	ProxyAddr      string
-	Mode           Mode
-	Metrics        *connmetrics.ListenerMetrics
-	Handler        handlers.Interface
-	Logger         *zap.Logger
-	TestRecordsDir string // if empty, no records are created
+	ListenAddr        string
+	ListenUnix        string
+	ListenTLS         string
+	ListenTLSCertFile string
+	ListenTLSKeyFile  string
+	ProxyAddr         string
+	Mode              Mode
+	Metrics           *connmetrics.ListenerMetrics
+	Handler           handlers.Interface
+	Logger            *zap.Logger
+	TestRecordsDir    string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -99,7 +99,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	if l.ListenTLS != "" {
 		var err error
-		if l.tlsListener, err = setupTLSListener(l.ListenTLS, l.TLSCertFile, l.TLSKeyFile); err != nil {
+		if l.tlsListener, err = setupTLSListener(l.ListenTLS, l.ListenTLSCertFile, l.ListenTLSKeyFile); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
