@@ -47,9 +47,9 @@ var cli struct {
 	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
 	ListenUnix string `default:""                     help:"Listen Unix domain socket path."`
 
-	ListenTLS   string `default:""                    help:"Listen TLS address."`
-	TLSCertFile string `default:""                    help:"TLS cert file path."`
-	TLSKeyFile  string `default:""                    help:"TLS key file path."`
+	ListenTLS         string `default:""              help:"Listen TLS address."`
+	ListenTLSCertFile string `default:""              help:"TLS cert file path."`
+	ListenTLSKeyFile  string `default:""              help:"TLS key file path."`
 
 	ProxyAddr string `default:"127.0.0.1:37017"       help:"Proxy address."`
 	DebugAddr string `default:"127.0.0.1:8088"        help:"${help_debug_addr}"`
@@ -289,8 +289,8 @@ func run() {
 		ListenAddr:     cli.ListenAddr,
 		ListenUnix:     cli.ListenUnix,
 		ListenTLS:      cli.ListenTLS,
-		TLSCertFile:    cli.TLSCertFile,
-		TLSKeyFile:     cli.TLSKeyFile,
+		TLSCertFile:    cli.ListenTLSCertFile,
+		TLSKeyFile:     cli.ListenTLSKeyFile,
 		ProxyAddr:      cli.ProxyAddr,
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
