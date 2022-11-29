@@ -180,7 +180,7 @@ func AssertEqualErrorCode(t *testing.T, expected, actual error) bool {
 		return assert.Equal(t, expected, actual)
 	}
 
-	assert.Equal(t, eErr.Name, aErr.Code)
+	assert.Equal(t, eErr.Name, aErr.Name)
 	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
 
 	return assert.Equal(t, eErr.Code, aErr.Code)
