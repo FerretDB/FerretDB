@@ -51,9 +51,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			"cursor", must.NotFail(types.NewDocument(
 				// TODO "ns" field
 				"id", int64(0),
-				"firstBatch", must.NotFail(types.NewArray(
-					firstBatch,
-				)),
+				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
 		))},
