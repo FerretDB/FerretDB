@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
@@ -23,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -98,7 +100,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		sp.Filter = filter
 
-		del, err := h.execDelete(ctx, &sp, filter, limit)
+		var limited bool
+		if limit == 1 {
+			limited = true
+		}
+
+		del, err := h.execDelete(ctx, &sp, filter, limited)
 		if err == nil {
 			deleted += del
 			continue
@@ -168,66 +175,85 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit, nil
 }
 
-// execDelete fetches documents, filter them out and limiting with the given limit value.
+// execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
+// If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit int64) (int32, error) {
-	var err error
-
-	resDocs := make([]*types.Document, 0, 16)
-
+func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit bool) (int32, error) {
 	var deleted int32
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		// fetch current items from collection
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, sp)
+	err := h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		var it iterator.Interface[uint32, *types.Document]
+		var err error
+		it, err = h.PgPool.GetDocuments(ctx, tx, sp)
 		if err != nil {
 			return err
 		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
 
-		// iterate through every row and delete matching ones
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
+		if it == nil {
+			// no documents found
+			return nil
+		}
 
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
+		defer it.Close()
 
-				if !matches {
-					continue
-				}
+		resDocs := make([]*types.Document, 0, 16)
 
-				resDocs = append(resDocs, doc)
+		for {
+			var doc *types.Document
+			_, doc, err = it.Next()
+
+			// if the context is canceled, we don't need to continue processing documents
+			if ctx.Err() != nil {
+				return ctx.Err()
 			}
 
-			if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+			var iteratorDone bool
+			switch {
+			case err == nil:
+				// do nothing
+			case errors.Is(err, iterator.ErrIteratorDone):
+				// no more documents
+				iteratorDone = true
+			default:
 				return err
 			}
 
-			// if no field is matched in a row, go to the next one
-			if len(resDocs) == 0 {
-				continue
+			if iteratorDone {
+				break
 			}
 
-			rowsDeleted, err := h.delete(ctx, sp, resDocs)
+			var matches bool
+			matches, err = common.FilterDocument(doc, filter)
 			if err != nil {
 				return err
 			}
 
-			deleted += int32(rowsDeleted)
+			if !matches {
+				continue
+			}
+
+			resDocs = append(resDocs, doc)
+
+			// if limit is set, no need to fetch all the documents
+			if limit {
+				break
+			}
 		}
+
+		// if no documents matched, there is nothing to delete
+		if len(resDocs) == 0 {
+			return nil
+		}
+
+		var rowsDeleted int64
+		rowsDeleted, err = h.delete(ctx, sp, resDocs)
+		if err != nil {
+			return err
+		}
+
+		deleted = int32(rowsDeleted)
 
 		return nil
 	})
-
 	if err != nil {
 		return 0, err
 	}
