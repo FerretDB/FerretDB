@@ -26,6 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -64,6 +65,8 @@ type SQLParam struct {
 // Context cancellation is not considered an error.
 //
 // If the collection doesn't exist, fetch returns a closed channel and no error.
+//
+// Deprecated: use GetDocuments, TODO remove in https://github.com/FerretDB/FerretDB/issues/898.
 func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
 	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
 
@@ -104,6 +107,29 @@ func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam)
 	}()
 
 	return fetchedChan, nil
+}
+
+// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
+// If the collection doesn't exist, it returns nil and no error.
+// If an error occurs, it returns nil and that error, possibly wrapped.
+func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
+	iterator.Interface[uint32, *types.Document], error,
+) {
+	q, args, err := buildQuery(ctx, tx, sp)
+	if err != nil {
+		if errors.Is(err, ErrTableNotExist) {
+			return nil, nil
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	rows, err := tx.Query(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return newIterator(ctx, rows), nil
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
