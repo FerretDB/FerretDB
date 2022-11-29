@@ -19,14 +19,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-
 	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -177,7 +176,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					break
 				}
 
-				matches, err := common.FilterDocument(doc, q)
+				var matches bool
+				matches, err = common.FilterDocument(doc, q)
 				if err != nil {
 					return err
 				}
