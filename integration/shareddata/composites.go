@@ -41,6 +41,8 @@ var Composites = &Values[string]{
 		"array-empty":         bson.A{},
 		"array-null":          bson.A{nil},
 		"array-numbers":       bson.A{42, 43, 45},
+		"array-strings":       bson.A{"41", "foo"},
+		"array-four":          bson.A{43, 42, 41, 40},
 	},
 }
 

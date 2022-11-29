@@ -46,6 +46,36 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(docValue, filterValue any) CompareResult {
+	return compare(docValue, filterValue, func(result CompareResult) bool {
+		return result != Incomparable
+	})
+}
+
+func CompareGreaterThan(docValue, filterValue any) CompareResult {
+	return compare(docValue, filterValue, func(result CompareResult) bool {
+		return result == Greater
+	})
+}
+
+func CompareGreaterThanOrEq(docValue, filterValue any) CompareResult {
+	return compare(docValue, filterValue, func(result CompareResult) bool {
+		return result == Greater || result == Equal
+	})
+}
+
+func CompareLessThanOrEq(docValue, filterValue any) CompareResult {
+	return compare(docValue, filterValue, func(result CompareResult) bool {
+		return result == Less || result == Equal
+	})
+}
+
+func CompareLessThan(docValue, filterValue any) CompareResult {
+	return compare(docValue, filterValue, func(result CompareResult) bool {
+		return result == Less
+	})
+}
+
+func compare(docValue, filterValue any, cond func(CompareResult) bool) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
@@ -70,7 +100,7 @@ func Compare(docValue, filterValue any) CompareResult {
 				continue
 			}
 
-			if res := compareScalars(docValue, filterValue); res != Incomparable {
+			if res := compareScalars(docValue, filterValue); cond(res) {
 				return res
 			}
 		}

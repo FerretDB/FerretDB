@@ -353,7 +353,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareGreaterThan(fieldValue, exprValue)
 			if result != types.Greater {
 				return false, nil
 			}
@@ -365,7 +365,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareGreaterThanOrEq(fieldValue, exprValue)
 			if result != types.Equal && result != types.Greater {
 				return false, nil
 			}
@@ -377,7 +377,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareLessThan(fieldValue, exprValue)
 			if result != types.Less {
 				return false, nil
 			}
@@ -389,7 +389,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareLessThanOrEq(fieldValue, exprValue)
 			if result != types.Equal && result != types.Less {
 				return false, nil
 			}
