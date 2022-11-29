@@ -168,7 +168,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// setupTLSListener returns a new TLS listener or and error
+// setupTLSListener returns a new TLS listener or and error.
 func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
 	if _, err := os.Stat(certFile); errors.Is(err, os.ErrNotExist) {
 		return nil, lazyerrors.Errorf("TLS certificate file %q does not exist", certFile)
