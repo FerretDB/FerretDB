@@ -38,6 +38,7 @@ type Listener struct {
 	*NewListenerOpts
 	tcpListener       net.Listener
 	unixListener      net.Listener
+	tlsListener       net.Listener
 	tcpListenerReady  chan struct{}
 	unixListenerReady chan struct{}
 }
@@ -46,6 +47,9 @@ type Listener struct {
 type NewListenerOpts struct {
 	ListenAddr     string
 	ListenUnix     string
+	ListenTLS      string
+	TLSCertFile    string
+	TLSKeyFile     string
 	ProxyAddr      string
 	Mode           Mode
 	Metrics        *connmetrics.ListenerMetrics
