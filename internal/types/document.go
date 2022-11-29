@@ -229,7 +229,7 @@ func (d *Document) Has(key string) bool {
 // If the key is duplicated, it panics.
 func (d *Document) Get(key string) (any, error) {
 	if d.isKeyDuplicate(key) {
-		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
+		panic(fmt.Sprintf("types.Document.Get: key is duplicated: %s", key))
 	}
 
 	for _, field := range d.fields {
