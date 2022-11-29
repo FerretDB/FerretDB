@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -138,55 +137,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			sp.Filter = q
 
-			resDocs := make([]*types.Document, 0, 16)
-			var it iterator.Interface[uint32, *types.Document]
-			it, err = h.PgPool.GetDocuments(ctx, tx, &sp)
+			resDocs, err := h.fetchAndFilterDocs(ctx, tx, &sp)
 			if err != nil {
 				return err
-			}
-
-			if it == nil {
-				// no documents found
-				return nil
-			}
-
-			defer it.Close()
-
-			for {
-				var doc *types.Document
-				_, doc, err = it.Next()
-
-				// if the context is canceled, we don't need to continue processing documents
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-
-				var iteratorDone bool
-				switch {
-				case err == nil:
-					// do nothing
-				case errors.Is(err, iterator.ErrIteratorDone):
-					// no more documents
-					iteratorDone = true
-				default:
-					return err
-				}
-
-				if iteratorDone {
-					break
-				}
-
-				var matches bool
-				matches, err = common.FilterDocument(doc, q)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
 			}
 
 			if len(resDocs) == 0 {
