@@ -131,7 +131,7 @@ func DatabaseSize(ctx context.Context, tx pgx.Tx) (int64, error) {
 }
 
 // TablesSize returns the sum of sizes of all tables in the given database in bytes.
-func TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
+func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
 	tables, err := Tables(ctx, tx, db)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
@@ -152,7 +152,7 @@ func TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
 		// and the moment we get the size of the table. In this case, we might receive an error from the database,
 		// and transaction will be interrupted. Such errors are not critical, we can just ignore them, and
 		// we don't need to interrupt the whole transaction.
-		err = tx.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
+		err = pgPool.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
 		if err == nil {
 			sizeOnDisk += tableSize
 			continue
