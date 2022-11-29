@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -24,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -77,7 +75,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err := h.fetchDocs(ctx, tx, &sqlParam)
+		resDocs, err := h.fetchAndFilterDocs(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}
@@ -209,53 +207,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	return &reply, nil
-}
-
-func (h *Handler) fetchDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
-	resDocs := make([]*types.Document, 0, 16)
-
-	var it iterator.Interface[uint32, *types.Document]
-	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
-	if err != nil {
-		return nil, err
-	}
-
-	if it == nil {
-		return resDocs, nil
-	}
-
-	defer it.Close()
-
-	for {
-		var doc *types.Document
-		_, doc, err = it.Next()
-
-		// if the context is canceled, we don't need to continue processing documents
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-
-		switch {
-		case err == nil:
-			// do nothing
-		case errors.Is(err, iterator.ErrIteratorDone):
-			// no more documents
-			return resDocs, nil
-		default:
-			return nil, err
-		}
-
-		matches, err := common.FilterDocument(doc, sqlParam.Filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
-	}
 }
 
 // upsertParams represent parameters for Handler.upsert method.

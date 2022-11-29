@@ -133,50 +133,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var it iterator.Interface[uint32, *types.Document]
-		it, err = h.PgPool.GetDocuments(ctx, tx, &sp)
-		if err != nil {
-			return err
-		}
-
-		if it == nil {
-			// no documents found
-			return nil
-		}
-
-		defer it.Close()
-
-		for {
-			var doc *types.Document
-			_, doc, err = it.Next()
-
-			// if the context is canceled, we don't need to continue processing documents
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-
-			switch {
-			case err == nil:
-				// do nothing
-			case errors.Is(err, iterator.ErrIteratorDone):
-				// no more documents
-				return nil
-			default:
-				return err
-			}
-
-			var matches bool
-			matches, err = common.FilterDocument(doc, filter)
-			if err != nil {
-				return err
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
-		}
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		return err
 	})
 
 	if err != nil {
@@ -216,4 +174,52 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	return &reply, nil
+}
+
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
+	resDocs := make([]*types.Document, 0, 16)
+
+	var it iterator.Interface[uint32, *types.Document]
+	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
+	if err != nil {
+		return nil, err
+	}
+
+	if it == nil {
+		return resDocs, nil
+	}
+
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			return resDocs, nil
+		default:
+			return nil, err
+		}
+
+		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
 }
