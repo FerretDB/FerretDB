@@ -46,10 +46,15 @@ import (
 var cli struct {
 	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
 	ListenUnix string `default:""                     help:"Listen Unix domain socket path."`
-	ProxyAddr  string `default:"127.0.0.1:37017"      help:"Proxy address."`
-	DebugAddr  string `default:"127.0.0.1:8088"       help:"${help_debug_addr}"`
-	StateDir   string `default:"."                    help:"Process state directory."`
-	Mode       string `default:"${default_mode}"      help:"${help_mode}"             enum:"${enum_mode}"`
+
+	ListenTLS         string `default:""              help:"Listen TLS address."`
+	ListenTLSCertFile string `default:""              help:"TLS cert file path."`
+	ListenTLSKeyFile  string `default:""              help:"TLS key file path."`
+
+	ProxyAddr string `default:"127.0.0.1:37017"       help:"Proxy address."`
+	DebugAddr string `default:"127.0.0.1:8088"        help:"${help_debug_addr}"`
+	StateDir  string `default:"."                     help:"Process state directory."`
+	Mode      string `default:"${default_mode}"       help:"${help_mode}"             enum:"${enum_mode}"`
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
