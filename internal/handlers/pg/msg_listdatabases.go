@@ -53,7 +53,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		var err error
 		databaseNames, err = pgdb.Databases(ctx, tx)
 		if err != nil {
-			return lazyerrors.Error(err)
+			return err
 		}
 
 		databases = types.MakeArray(len(databaseNames))
@@ -61,7 +61,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			var sizeOnDisk int64
 			sizeOnDisk, err = h.PgPool.TablesSize(ctx, tx, databaseName)
 			if err != nil {
-				return lazyerrors.Error(err)
+				return err
 			}
 
 			d := must.NotFail(types.NewDocument(
@@ -72,7 +72,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			matches, err := common.FilterDocument(d, filter)
 			if err != nil {
-				return lazyerrors.Error(err)
+				return err
 			}
 
 			if !matches {
@@ -86,7 +86,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			}
 
 			if err = databases.Append(d); err != nil {
-				return lazyerrors.Error(err)
+				return err
 			}
 		}
 
