@@ -112,7 +112,7 @@ A data structure used for identifying and querying records in a database.
 #### JSON
 
 An acronym for JavaScript Object Notation.
-It is a structured data format with human-readable text  to store data objects composed of attribute-value pairs.
+It is a structured data format with human-readable text to store data objects composed of attribute-value pairs.
 
 #### JSONB
 
