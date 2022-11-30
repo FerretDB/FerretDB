@@ -47,17 +47,22 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr        string
-	ListenUnix        string
-	ListenTLS         string
-	ListenTLSCertFile string
-	ListenTLSKeyFile  string
-	ProxyAddr         string
-	Mode              Mode
-	Metrics           *connmetrics.ListenerMetrics
-	Handler           handlers.Interface
-	Logger            *zap.Logger
-	TestRecordsDir    string // if empty, no records are created
+	Listener       ListenerOpts
+	ProxyAddr      string
+	Mode           Mode
+	Metrics        *connmetrics.ListenerMetrics
+	Handler        handlers.Interface
+	Logger         *zap.Logger
+	TestRecordsDir string // if empty, no records are created
+}
+
+// ListenerOpts represents listener configuration options.
+type ListenerOpts struct {
+	Addr        string
+	Unix        string
+	TLS         string
+	TLSCertFile string
+	TLSKeyFile  string
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -75,9 +80,9 @@ func NewListener(opts *NewListenerOpts) *Listener {
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.Logger.Named("listener")
 
-	if l.ListenAddr != "" {
+	if l.Listener.Addr != "" {
 		var err error
-		if l.tcpListener, err = net.Listen("tcp", l.ListenAddr); err != nil {
+		if l.tcpListener, err = net.Listen("tcp", l.Listener.Addr); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -86,9 +91,9 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on %s ...", l.Addr())
 	}
 
-	if l.ListenUnix != "" {
+	if l.Listener.Unix != "" {
 		var err error
-		if l.unixListener, err = net.Listen("unix", l.ListenUnix); err != nil {
+		if l.unixListener, err = net.Listen("unix", l.Listener.Unix); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -97,9 +102,9 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on %s ...", l.Unix())
 	}
 
-	if l.ListenTLS != "" {
+	if l.Listener.TLS != "" {
 		var err error
-		if l.tlsListener, err = setupTLSListener(l.ListenTLS, l.ListenTLSCertFile, l.ListenTLSKeyFile); err != nil {
+		if l.tlsListener, err = setupTLSListener(l.Listener.TLS, l.Listener.TLSCertFile, l.Listener.TLSKeyFile); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
@@ -123,7 +128,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	var wg sync.WaitGroup
 
-	if l.ListenAddr != "" {
+	if l.Listener.Addr != "" {
 		wg.Add(1)
 
 		go func() {
@@ -136,7 +141,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.ListenUnix != "" {
+	if l.Listener.Unix != "" {
 		wg.Add(1)
 
 		go func() {
@@ -149,7 +154,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.ListenTLS != "" {
+	if l.Listener.TLS != "" {
 		wg.Add(1)
 
 		go func() {
