@@ -29,3 +29,5 @@ slug: /diff/
 
 If you encounter some other difference in behavior,
 please [join our community](https://github.com/FerretDB/FerretDB#community) to report a problem.
+
+Test.
