@@ -20,12 +20,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // waitForPort waits for the given port to be available until ctx is done.
@@ -54,6 +55,7 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 	}
 
 	connString := fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port)
+
 	for ctx.Err() == nil {
 		p, err := state.NewProvider("")
 		if err != nil {
@@ -87,7 +89,8 @@ func waitForTigrisPort(ctx context.Context, logger *zap.SugaredLogger, port uint
 		driver, err := driver.NewDriver(ctx, cfg)
 		if err == nil {
 			_, err = driver.Info(ctx)
-			driver.Close()
+			_ = driver.Close()
+
 			if err == nil {
 				return nil
 			}

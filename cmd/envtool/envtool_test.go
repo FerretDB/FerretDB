@@ -17,9 +17,10 @@ package main
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestPrintDiagnosticData(t *testing.T) {
