@@ -23,6 +23,33 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
+func TestQueryElementCompatExists(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Exists": {
+			filter: bson.D{{"_id", bson.D{{"$exists", true}}}},
+		},
+		"ExistsSecondField": {
+			filter: bson.D{{"v", bson.D{{"$exists", true}}}},
+		},
+		"NonExistentField": {
+			filter:     bson.D{{"non-existent", bson.D{{"$exists", true}}}},
+			resultType: emptyResult,
+		},
+		"ExistsFalse": {
+			filter: bson.D{{"field", bson.D{{"$exists", false}}}},
+		},
+		"NonBool": {
+			filter: bson.D{{"_id", bson.D{{"$exists", -123}}}},
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
 func TestQueryElementCompatElementType(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
 
