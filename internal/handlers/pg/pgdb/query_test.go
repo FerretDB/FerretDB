@@ -152,8 +152,14 @@ func TestGetDocuments(t *testing.T) {
 		sp := &SQLParam{DB: databaseName, Collection: collectionName + "-non-existent"}
 		it, err := pool.GetDocuments(ctx, tx, sp)
 		require.NoError(t, err)
-		require.Nil(t, it)
+		require.NotNil(t, it)
 
+		iter, doc, err := it.Next()
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
+
+		it.Close()
 		require.NoError(t, tx.Commit(ctx))
 	})
 }
