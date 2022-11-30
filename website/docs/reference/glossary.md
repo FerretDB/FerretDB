@@ -12,7 +12,7 @@ sidebar_position: 2
 
 #### aggregation
 
-A group of operations used to reduce or merge large data sets.
+A way of processsing documents in a collection and passing them through various operations or stages.
 See [list of supported aggregation operations and commands here](./supported_commands.md#aggregation-pipelines).
 
 #### aggregation pipeline
@@ -92,7 +92,7 @@ They are represented as field name-value pairs and describe the kind of data in 
 
 A data structure used for identifying and querying records in a collection.
 It helps to limit the number of documents to search through or inspect in a collection.
-Examples include unique `_id` index, user-defined index, hashed index, and partial index.
+Examples include `_id` index, user-defined index, hashed index, and partial index.
 
 ---
 
