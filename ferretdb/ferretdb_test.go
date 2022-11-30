@@ -22,7 +22,9 @@ import (
 
 func Example_tcp() {
 	f, err := New(&Config{
-		ListenAddr:    "127.0.0.1:17027",
+		Listener: ListenerConfig{
+			Addr: "127.0.0.1:17027",
+		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
 	})
@@ -58,7 +60,9 @@ func Example_tcp() {
 
 func Example_unix() {
 	f, err := New(&Config{
-		ListenUnix:    "/tmp/ferretdb-27017.sock",
+		Listener: ListenerConfig{
+			Unix: "/tmp/ferretdb-27017.sock",
+		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
 	})

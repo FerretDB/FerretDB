@@ -49,6 +49,7 @@ type Config struct {
 	TigrisURL          string
 }
 
+// ListenerConfig represents listener configuration.
 type ListenerConfig struct {
 	// Listen address.
 	// If empty, TCP listener is disabled.

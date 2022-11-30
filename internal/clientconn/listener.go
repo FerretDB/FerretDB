@@ -284,6 +284,7 @@ func (l *Listener) Unix() net.Addr {
 	return l.unixListener.Addr()
 }
 
+// TLS returns TLS listener address.
 func (l *Listener) TLS() net.Addr {
 	<-l.tlsListenerReady
 	return l.tlsListener.Addr()
