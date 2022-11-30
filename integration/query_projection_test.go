@@ -35,44 +35,16 @@ func TestQueryProjection(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
 
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{
-			{"_id", "document-composite-2"},
-			{"v", bson.A{
-				bson.D{{"field", int32(42)}},
-				bson.D{{"field", int32(44)}},
-			}},
-		},
-	})
-	require.NoError(t, err)
-
 	for name, tc := range map[string]struct {
 		projection any
 		filter     any
 		expected   bson.D
 	}{
-		"FindProjectionInclusions": {
-			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/537
-			projection: bson.D{{"foo", int32(1)}, {"42", true}},
-			expected:   bson.D{{"_id", "document-composite"}},
-		},
-		"FindProjectionExclusions": {
-			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/537
-			projection: bson.D{{"foo", int32(0)}, {"array", false}},
-			expected:   bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
-		},
 		"FindProjectionIDExclusion": {
 			filter: bson.D{{"_id", "document-composite"}},
 			// TODO: https://github.com/FerretDB/FerretDB/issues/537
 			projection: bson.D{{"_id", false}, {"array", int32(1)}},
 			expected:   bson.D{},
-		},
-		"ProjectionSliceNonArrayField": {
-			filter:     bson.D{{"_id", "document"}},
-			projection: bson.D{{"_id", bson.D{{"$slice", 1}}}},
-			expected:   bson.D{{"_id", "document"}, {"v", bson.D{{"foo", int32(42)}}}},
 		},
 	} {
 		name, tc := name, tc
@@ -97,6 +69,9 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
+
+	// Comparison fails if we add below array to shareddata.
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1569
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
@@ -144,6 +119,8 @@ func TestQueryProjectionElemMatch(t *testing.T) {
 }
 
 func TestQueryProjectionSlice(t *testing.T) {
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1578
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()

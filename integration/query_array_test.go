@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,84 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
-
-func TestQueryArraySize(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
-
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
-		bson.D{{"_id", "array-one"}, {"v", bson.A{"1"}}},
-		bson.D{{"_id", "array-two"}, {"v", bson.A{"1", nil}}},
-		bson.D{{"_id", "array-three"}, {"v", bson.A{"1", "2", nil}}},
-		bson.D{{"_id", "string"}, {"v", "12"}},
-		bson.D{{"_id", "document"}, {"v", bson.D{{"v", bson.A{"1", "2"}}}}},
-	})
-	require.NoError(t, err)
-
-	for name, tc := range map[string]struct {
-		filter      bson.D
-		expectedIDs []any
-		err         *mongo.CommandError
-	}{
-		"InvalidType": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Expected a number in: $size: { $gt: 1 }`,
-			},
-		},
-		"NotWhole": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", 2.1}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Failed to parse $size. Expected an integer: $size: 2.1",
-			},
-		},
-		"Infinity": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Cannot represent as a 64-bit integer: $size: inf.0`,
-			},
-		},
-		"Negative": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1539
-			filter: bson.D{{"v", bson.D{{"$size", -1}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `Failed to parse $size. Expected a non-negative number in: $size: -1`,
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
 
 func TestQueryArrayDotNotation(t *testing.T) {
 	setup.SkipForTigris(t)
