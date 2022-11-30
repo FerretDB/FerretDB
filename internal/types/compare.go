@@ -48,45 +48,57 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(docValue, filterValue any) CompareResult {
-	return compare(docValue, filterValue, func(result CompareResult) bool {
-		return result != Incomparable
-	})
+	return compare(docValue, filterValue, cond{greater: true, less: true, equal: true})
 }
 
 // CompareGreaterThan compares docValue for the greater than condition.
 func CompareGreaterThan(docValue, filterValue any) CompareResult {
-	return compare(docValue, filterValue, func(result CompareResult) bool {
-		return result == Greater
-	})
+	return compare(docValue, filterValue, cond{greater: true})
 }
 
 // CompareGreaterThanOrEq compares docValue for the greater than or equal to condition.
 func CompareGreaterThanOrEq(docValue, filterValue any) CompareResult {
-	return compare(docValue, filterValue, func(result CompareResult) bool {
-		return result == Greater || result == Equal
-	})
+	return compare(docValue, filterValue, cond{greater: true, equal: true})
 }
 
 // CompareLessThan compares docValue for the less than condition.
 func CompareLessThan(docValue, filterValue any) CompareResult {
-	return compare(docValue, filterValue, func(result CompareResult) bool {
-		return result == Less
-	})
+	return compare(docValue, filterValue, cond{less: true})
 }
 
 // CompareLessThanOrEq compares docValue for the less than or equal to condition.
 func CompareLessThanOrEq(docValue, filterValue any) CompareResult {
-	return compare(docValue, filterValue, func(result CompareResult) bool {
-		return result == Less || result == Equal
-	})
+	return compare(docValue, filterValue, cond{less: true, equal: true})
 }
 
-// compare compares docValue against filterValue.
+// cond is the condition used to decide whether to return the
+// comparison result or keep iterating on the array docValue.
+type cond struct {
+	greater bool
+	less    bool
+	equal   bool
+}
+
+// satisfies checks if the result satisfies the condition.
+func (c cond) satisfies(result CompareResult) bool {
+	switch result {
+	case Greater:
+		return c.greater
+	case Less:
+		return c.less
+	case Equal:
+		return c.equal
+	default:
+		return false
+	}
+}
+
+// compare docValue against filterValue.
 // If docValue or filterValue is nil, it panics.
 // If docValue and filterValue is array, it compares array elements.
 // If docValue is array and filterValue is scalar, it compares filterValue
 // to arrayValue elements and returns the first CompareResult that satisfies the condition.
-func compare(docValue, filterValue any, cond func(CompareResult) bool) CompareResult {
+func compare(docValue, filterValue any, cond cond) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
@@ -111,7 +123,7 @@ func compare(docValue, filterValue any, cond func(CompareResult) bool) CompareRe
 				continue
 			}
 
-			if res := compareScalars(docValue, filterValue); cond(res) {
+			if res := compareScalars(docValue, filterValue); cond.satisfies(res) {
 				return res
 			}
 		}
