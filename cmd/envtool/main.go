@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -301,6 +302,11 @@ var cli struct {
 
 func main() {
 	kong.Parse(&cli)
+
+	// always enable debug logging on CI
+	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
+		cli.Debug = true
+	}
 
 	level := zap.InfoLevel
 	if cli.Debug {
