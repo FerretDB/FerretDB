@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -36,95 +35,28 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"skip",
-		"returnKey",
-		"showRecordId",
-		"tailable",
-		"oplogReplay",
-		"noCursorTimeout",
-		"awaitData",
-		"allowPartialResults",
-		"collation",
-		"allowDiskUse",
-		"let",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"hint",
-		"batchSize",
-		"singleBatch",
-		"readConcern",
-		"max",
-		"min",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	var filter, sort, projection *types.Document
-	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
-		return nil, err
-	}
-	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrTypeMismatch,
-			"Expected field sort to be of type object",
-			"sort",
-		)
-	}
-	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
-		return nil, err
-	}
-
-	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	params, err := common.GetFindParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	if maxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+	if params.MaxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 		defer cancel()
 
 		ctx = ctxWithTimeout
 	}
 
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
-		}
-	}
-
 	sp := pgdb.SQLParam{
-		Filter: filter,
+		DB:         params.DB,
+		Collection: params.Collection,
+		Comment:    params.Comment,
+		Filter:     params.Filter,
 	}
 
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
-	if err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
-	}
-
-	// get comment from options.FindOne().SetComment() method
-	if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
-		return nil, err
-	}
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if filter != nil {
-		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
+	if sp.Filter != nil {
+		if sp.Comment, err = common.GetOptionalParam(sp.Filter, "$comment", sp.Comment); err != nil {
 			return nil, err
 		}
 	}
@@ -148,7 +80,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			}
 
 			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
+				matches, err := common.FilterDocument(doc, params.Filter)
 				if err != nil {
 					return err
 				}
@@ -168,13 +100,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if err = common.SortDocuments(resDocs, sort); err != nil {
+	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
 		return nil, err
 	}
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+
+	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
 		return nil, err
 	}
-	if err = common.ProjectDocuments(resDocs, projection); err != nil {
+
+	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
 	}
 
