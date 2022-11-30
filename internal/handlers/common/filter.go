@@ -593,7 +593,7 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
 			return false, NewCommandErrorMsgWithArgument(
 				ErrBadRegexOption,
-				fmt.Sprintf("invalid flag in regex options: %c", option),
+				fmt.Sprintf(" invalid flag in regex options: %c", option),
 				"$options",
 			)
 		}
