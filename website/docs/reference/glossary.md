@@ -116,7 +116,7 @@ It is a structured data format with human-readable text to store data objects co
 
 #### JSONB
 
-JSONB is a data type that stores JSON data as a decomposed binary format.
+JSONB is a data type of PostgreSQL that stores JSON data as a decomposed binary format.
 
 #### ObjectId
 
