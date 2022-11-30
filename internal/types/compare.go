@@ -88,6 +88,8 @@ func (c cond) satisfies(result CompareResult) bool {
 		return c.less
 	case Equal:
 		return c.equal
+	case Incomparable:
+		return false
 	default:
 		return false
 	}
