@@ -45,7 +45,9 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	}
 	buf.Write(b)
 
-	for _, key := range keys {
+	values := td.Values()
+
+	for i, key := range keys {
 		buf.WriteByte(',')
 
 		if b, err = json.Marshal(key); err != nil {
@@ -54,11 +56,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 		buf.Write(b)
 		buf.WriteByte(':')
 
-		value, err := td.Get(key)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		b, err := Marshal(value)
+		b, err := Marshal(values[i])
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
