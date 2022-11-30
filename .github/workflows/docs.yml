@@ -13,6 +13,11 @@ on:
   schedule:
     - cron: "42 3 * * *" # after Integration workflow
 
+# Do not run this workflow in parallel for any PR change
+# to prevent triggering Vercel's rate limits.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
