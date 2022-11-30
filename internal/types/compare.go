@@ -40,6 +40,8 @@ const (
 )
 
 // Compare compares any BSON values in the same way as MongoDB does it for filtering.
+// When it compares scalar filterValue with array docValue, it returns first item
+// which is not Incomparable.
 //
 // It converts types as needed; that may result in different types being equal.
 // For that reason, it typically should not be used in tests.
@@ -51,30 +53,39 @@ func Compare(docValue, filterValue any) CompareResult {
 	})
 }
 
+// CompareGreaterThan compares docValue for the greater than condition.
 func CompareGreaterThan(docValue, filterValue any) CompareResult {
 	return compare(docValue, filterValue, func(result CompareResult) bool {
 		return result == Greater
 	})
 }
 
+// CompareGreaterThanOrEq compares docValue for the greater than or equal to condition.
 func CompareGreaterThanOrEq(docValue, filterValue any) CompareResult {
 	return compare(docValue, filterValue, func(result CompareResult) bool {
 		return result == Greater || result == Equal
 	})
 }
 
-func CompareLessThanOrEq(docValue, filterValue any) CompareResult {
-	return compare(docValue, filterValue, func(result CompareResult) bool {
-		return result == Less || result == Equal
-	})
-}
-
+// CompareLessThan compares docValue for the less than condition.
 func CompareLessThan(docValue, filterValue any) CompareResult {
 	return compare(docValue, filterValue, func(result CompareResult) bool {
 		return result == Less
 	})
 }
 
+// CompareLessThanOrEq compares docValue for the less than or equal to condition.
+func CompareLessThanOrEq(docValue, filterValue any) CompareResult {
+	return compare(docValue, filterValue, func(result CompareResult) bool {
+		return result == Less || result == Equal
+	})
+}
+
+// compare compares docValue against filterValue.
+// If docValue or filterValue is nil, it panics.
+// If docValue and filterValue is array, it compares array elements.
+// If docValue is array and filterValue is scalar, it compares filterValue
+// to arrayValue elements and returns the first CompareResult that satisfies the condition.
 func compare(docValue, filterValue any, cond func(CompareResult) bool) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
