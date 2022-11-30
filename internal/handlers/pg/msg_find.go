@@ -16,7 +16,7 @@ package pg
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -36,145 +37,51 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"skip",
-		"returnKey",
-		"showRecordId",
-		"tailable",
-		"oplogReplay",
-		"noCursorTimeout",
-		"awaitData",
-		"allowPartialResults",
-		"collation",
-		"allowDiskUse",
-		"let",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"hint",
-		"batchSize",
-		"singleBatch",
-		"readConcern",
-		"max",
-		"min",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	var filter, sort, projection *types.Document
-	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
-		return nil, err
-	}
-	if sort, err = common.GetOptionalParam(document, "sort", sort); err != nil {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrTypeMismatch,
-			"Expected field sort to be of type object",
-			"sort",
-		)
-	}
-	if projection, err = common.GetOptionalParam(document, "projection", projection); err != nil {
-		return nil, err
-	}
-
-	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
+	params, err := common.GetFindParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	if maxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+	if params.MaxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 		defer cancel()
 
 		ctx = ctxWithTimeout
 	}
 
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
-		}
-	}
-
 	sp := pgdb.SQLParam{
-		Filter: filter,
+		DB:         params.DB,
+		Collection: params.Collection,
+		Comment:    params.Comment,
+		Filter:     params.Filter,
 	}
 
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
-	if err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-		)
-	}
-
-	// get comment from options.FindOne().SetComment() method
-	if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
-		return nil, err
-	}
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if filter != nil {
-		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
+	if sp.Filter != nil {
+		if sp.Comment, err = common.GetOptionalParam(sp.Filter, "$comment", sp.Comment); err != nil {
 			return nil, err
 		}
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
-		}
-
-		return nil
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		return err
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	if err = common.SortDocuments(resDocs, sort); err != nil {
+	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
 		return nil, err
 	}
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+
+	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
 		return nil, err
 	}
-	if err = common.ProjectDocuments(resDocs, projection); err != nil {
+
+	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
 	}
 
@@ -201,4 +108,49 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	return &reply, nil
+}
+
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
+	resDocs := make([]*types.Document, 0, 16)
+
+	var it iterator.Interface[uint32, *types.Document]
+
+	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
+	if err != nil {
+		return nil, err
+	}
+
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			return resDocs, nil
+		default:
+			return nil, err
+		}
+
+		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
 }
