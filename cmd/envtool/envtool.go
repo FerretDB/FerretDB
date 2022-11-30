@@ -155,10 +155,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	cmd := exec.Command(bin, args...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
-	cmd.Stdout = os.Stdout
-	if stdout != nil {
-		cmd.Stdout = stdout
-	}
+	cmd.Stdout = stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
@@ -169,7 +166,9 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 }
 
 func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
-	runCommand("docker-compose", []string{"logs"}, nil, logger)
+	runCommand("docker-compose", []string{"ps", "--all"}, os.Stdout, logger)
+
+	runCommand("docker-compose", []string{"logs"}, os.Stdout, logger)
 
 	var buf bytes.Buffer
 
