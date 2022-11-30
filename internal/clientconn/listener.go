@@ -43,6 +43,7 @@ type Listener struct {
 	tlsListener       net.Listener
 	tcpListenerReady  chan struct{}
 	unixListenerReady chan struct{}
+	tlsListenerReady  chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
@@ -71,6 +72,7 @@ func NewListener(opts *NewListenerOpts) *Listener {
 		NewListenerOpts:   opts,
 		tcpListenerReady:  make(chan struct{}),
 		unixListenerReady: make(chan struct{}),
+		tlsListenerReady:  make(chan struct{}),
 	}
 }
 
@@ -107,6 +109,10 @@ func (l *Listener) Run(ctx context.Context) error {
 		if l.tlsListener, err = setupTLSListener(l.Listener.TLS, l.Listener.TLSCertFile, l.Listener.TLSKeyFile); err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		close(l.tlsListenerReady)
+
+		logger.Sugar().Infof("Listening on %s ...", l.TLS())
 	}
 
 	// close listeners on context cancellation to exit from listenLoop
@@ -276,6 +282,11 @@ func (l *Listener) Addr() net.Addr {
 func (l *Listener) Unix() net.Addr {
 	<-l.unixListenerReady
 	return l.unixListener.Addr()
+}
+
+func (l *Listener) TLS() net.Addr {
+	<-l.tlsListenerReady
+	return l.tlsListener.Addr()
 }
 
 // Describe implements prometheus.Collector.
