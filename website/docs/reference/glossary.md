@@ -30,7 +30,7 @@ The telemetry service of FerretDB.
 
 #### BSON
 
-Stands for “binary JSON”, which is a serialized binary file format for storing JSON-like documents.
+BSON is a serialized binary file format for storing JSON-like documents.
 
 #### BSON types
 
@@ -86,7 +86,7 @@ See [dot notation](../understanding_ferretdb.md#dot-notation) for more details.
 #### field
 
 Similar to columns in a relational database.
-They are represented as field-value pairs and describe the kind of data in a document.
+They are represented as field name-value pairs and describe the kind of data in a document.
 
 ---
 
