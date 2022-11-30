@@ -17,6 +17,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -164,6 +165,24 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	expected.Raw = a.Raw
 
 	return assert.Equal(t, expected, a)
+}
+
+// AssertMatchesCommandError asserts error code, name and wrapped are the same.
+func AssertMatchesCommandError(t *testing.T, expected, actual error) {
+	t.Helper()
+	var aErr, eErr mongo.CommandError
+
+	if ok := errors.As(expected, &eErr); !ok {
+		assert.Equal(t, expected, actual)
+	}
+
+	if ok := errors.As(actual, &aErr); !ok {
+		assert.Equal(t, expected, actual)
+	}
+
+	assert.Equal(t, eErr.Name, aErr.Name)
+	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
+	assert.Equal(t, eErr.Code, aErr.Code)
 }
 
 // AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);
