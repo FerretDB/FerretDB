@@ -117,3 +117,58 @@ func DropDatabase(ctx context.Context, tx pgx.Tx, db string) error {
 		return lazyerrors.Error(err)
 	}
 }
+
+// DatabaseSize returns the size of the current database in bytes.
+func DatabaseSize(ctx context.Context, tx pgx.Tx) (int64, error) {
+	var size int64
+
+	err := tx.QueryRow(ctx, "SELECT pg_database_size(current_database())").Scan(&size)
+	if err != nil {
+		return 0, err
+	}
+
+	return size, nil
+}
+
+// TablesSize returns the sum of sizes of all tables in the given database in bytes.
+func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
+	tables, err := Tables(ctx, tx, db)
+	if err != nil {
+		return 0, err
+	}
+
+	// iterate over result to collect sizes
+	var sizeOnDisk int64
+
+	for _, name := range tables {
+		var tableSize int64
+		fullName := pgx.Identifier{db, name}.Sanitize()
+		// If the table was deleted after we got the list of tables, pg_total_relation_size will return null.
+		// We use COALESCE to scan this null value as 0 in this case.
+		// Even though we run the query in a transaction, the current isolation level doesn't guarantee
+		// that the table is not deleted (see https://www.postgresql.org/docs/14/transaction-iso.html).
+		// PgPool (not a transaction) is used on purpose here. In this case, transaction doesn't lock
+		// relations, and it's possible that the table/schema is deleted between the moment we get the list of tables
+		// and the moment we get the size of the table. In this case, we might receive an error from the database,
+		// and transaction will be interrupted. Such errors are not critical, we can just ignore them, and
+		// we don't need to interrupt the whole transaction.
+		err = pgPool.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
+		if err == nil {
+			sizeOnDisk += tableSize
+			continue
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case pgerrcode.UndefinedTable, pgerrcode.InvalidSchemaName:
+				// Table or schema was deleted after we got the list of tables, just ignore it
+				continue
+			}
+		}
+
+		return 0, err
+	}
+
+	return sizeOnDisk, nil
+}
