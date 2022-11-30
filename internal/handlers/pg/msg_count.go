@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
