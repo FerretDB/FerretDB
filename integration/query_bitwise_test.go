@@ -193,7 +193,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
 	require.NoError(t, err)
 	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
@@ -319,7 +319,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
 	require.NoError(t, err)
 	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
@@ -469,7 +469,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/508
+	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/508
 	_, err := collection.DeleteOne(ctx, bson.D{{"_id", "binary"}})
 	require.NoError(t, err)
 	_, err = collection.DeleteOne(ctx, bson.D{{"_id", "binary-empty"}})
