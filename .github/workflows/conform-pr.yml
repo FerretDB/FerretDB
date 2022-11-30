@@ -2,6 +2,7 @@
 # Attention! This workflow uses `pull_request_target` event that has access to secrets.
 # If you modify this workflow, make sure that you don't introduce dangerous steps.
 # See also: https://securitylab.github.com/research/github-actions-preventing-pwn-requests/.
+
 name: Conform PR
 on:
   pull_request_target:
@@ -26,9 +27,9 @@ on:
       - auto_merge_enabled
       - auto_merge_disabled
 
-# Do not run this workflow in parallel for any PR change.
+# Run at most one job for PR, but unlimited for other events.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
 
 env:
   GOPATH: /home/runner/go

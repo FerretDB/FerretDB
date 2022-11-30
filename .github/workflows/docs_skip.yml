@@ -1,0 +1,25 @@
+---
+# See https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+
+name: Docs
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+    paths-ignore:
+      - 'website/**'
+
+# Run at most one job for PR, but unlimited for other events.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+
+jobs:
+  build:
+    name: Build docs
+    runs-on: ubuntu-20.04
+
+    steps:
+      - run: 'echo "No build required"'

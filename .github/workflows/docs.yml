@@ -7,16 +7,17 @@ on:
       - opened
       - reopened
       - synchronize
+    paths:
+      - 'website/**'
   push:
     branches:
       - main
   schedule:
     - cron: "42 3 * * *" # after Integration workflow
 
-# Do not run this workflow in parallel for any PR change
-# to prevent triggering Vercel's rate limits.
+# Run at most one job for PR, but unlimited for other events.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
 
 env:
   GOPATH: /home/runner/go
