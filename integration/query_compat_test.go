@@ -30,6 +30,7 @@ import (
 type queryCompatTestCase struct {
 	filter     bson.D                   // required
 	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	projection bson.D                   // nil for leaving projection unset
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -57,6 +58,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 			opts := options.Find().SetSort(sort)
 
+			if tc.projection != nil {
+				opts = opts.SetProjection(tc.projection)
+			}
+
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
@@ -76,9 +81,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
@@ -113,6 +117,21 @@ func TestQueryCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
+		"BadSortValue": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", 11}},
+			resultType: emptyResult,
+		},
+		"BadSortZeroValue": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", 0}},
+			resultType: emptyResult,
+		},
+		"BadSortNullValue": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", nil}},
+			resultType: emptyResult,
+		},
 		"Empty": {
 			filter: bson.D{},
 		},
@@ -121,6 +140,10 @@ func TestQueryCompat(t *testing.T) {
 		},
 		"IDObjectID": {
 			filter: bson.D{{"_id", primitive.NilObjectID}},
+		},
+		"UnknownFilterOperator": {
+			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
+			resultType: emptyResult,
 		},
 	}
 

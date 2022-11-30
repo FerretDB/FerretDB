@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -24,10 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// TODO remove in https://github.com/FerretDB/FerretDB/issues/898 when QueryDocument is removed.
 func TestQueryDocuments(t *testing.T) {
 	t.Parallel()
 
@@ -39,7 +42,10 @@ func TestQueryDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+		if err := CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
+			return err
+		}
+		return nil
 	})
 	require.NoError(t, err)
 
@@ -90,7 +96,7 @@ func TestQueryDocuments(t *testing.T) {
 			defer tx.Rollback(ctx)
 
 			for _, doc := range tc.documents {
-				require.NoError(t, InsertDocument(ctx, tx, databaseName, tc.collection, doc))
+				require.NoError(t, InsertDocument(ctx, pool, databaseName, tc.collection, doc))
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: tc.collection}
@@ -121,7 +127,7 @@ func TestQueryDocuments(t *testing.T) {
 		defer tx.Rollback(ctx)
 
 		for i := 1; i <= FetchedChannelBufSize*FetchedSliceCapacity+1; i++ {
-			require.NoError(t, InsertDocument(ctx, tx, databaseName, collectionName+"_cancel",
+			require.NoError(t, InsertDocument(ctx, pool, databaseName, collectionName+"_cancel",
 				must.NotFail(types.NewDocument("_id", "foo", "id", fmt.Sprintf("%d", i))),
 			))
 		}
@@ -160,6 +166,136 @@ func TestQueryDocuments(t *testing.T) {
 		require.False(t, ok)
 		require.Nil(t, res.Docs)
 		require.Nil(t, res.Err)
+
+		require.NoError(t, tx.Commit(ctx))
+	})
+}
+
+func TestGetDocuments(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+
+	pool := getPool(ctx, t)
+	databaseName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
+	setupDatabase(ctx, t, pool, databaseName)
+
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
+	})
+	require.NoError(t, err)
+
+	t.Run("one-document", func(t *testing.T) {
+		t.Parallel()
+
+		collection := collectionName + "-one"
+		expectedDoc := must.NotFail(types.NewDocument("_id", "foo", "id", "1"))
+
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
+
+		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDoc))
+
+		sp := &SQLParam{DB: databaseName, Collection: collection}
+		it, err := pool.GetDocuments(ctx, tx, sp)
+		require.NoError(t, err)
+		require.NotNil(t, it)
+
+		defer it.Close()
+
+		iter, doc, err := it.Next()
+		assert.NoError(t, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Equal(t, expectedDoc, doc)
+
+		iter, doc, err = it.Next()
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
+
+		it.Close()
+		require.NoError(t, tx.Commit(ctx))
+	})
+
+	t.Run("cancel-context", func(t *testing.T) {
+		t.Parallel()
+
+		collection := collectionName + "-two"
+		expectedDocs := []*types.Document{
+			must.NotFail(types.NewDocument("_id", "bar", "id", "1")),
+			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
+		}
+
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
+
+		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDocs[0]))
+		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDocs[1]))
+
+		ctxTest, cancel := context.WithCancel(ctx)
+		sp := &SQLParam{DB: databaseName, Collection: collection}
+		it, err := pool.GetDocuments(ctxTest, tx, sp)
+		require.NoError(t, err)
+		require.NotNil(t, it)
+
+		defer it.Close()
+
+		iter, doc, err := it.Next()
+		assert.NoError(t, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Equal(t, expectedDocs[0], doc)
+
+		cancel()
+		iter, doc, err = it.Next()
+		assert.Equal(t, context.Canceled, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
+
+		it.Close()
+		require.NoError(t, tx.Commit(ctx))
+	})
+
+	t.Run("empty-collection", func(t *testing.T) {
+		t.Parallel()
+
+		collection := collectionName + "-empty"
+
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
+
+		require.NoError(t, CreateCollection(ctx, tx, databaseName, collection))
+
+		sp := &SQLParam{DB: databaseName, Collection: collection}
+		it, err := pool.GetDocuments(ctx, tx, sp)
+		require.NoError(t, err)
+		require.NotNil(t, it)
+
+		defer it.Close()
+
+		iter, doc, err := it.Next()
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Equal(t, uint32(0), iter)
+		assert.Nil(t, doc)
+
+		it.Close()
+		require.NoError(t, tx.Commit(ctx))
+	})
+
+	t.Run("non-existent-collection", func(t *testing.T) {
+		t.Parallel()
+
+		tx, err := pool.Begin(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback(ctx)
+
+		sp := &SQLParam{DB: databaseName, Collection: collectionName + "-non-existent"}
+		it, err := pool.GetDocuments(ctx, tx, sp)
+		require.NoError(t, err)
+		require.Nil(t, it)
 
 		require.NoError(t, tx.Commit(ctx))
 	})

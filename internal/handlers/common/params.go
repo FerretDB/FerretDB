@@ -120,7 +120,6 @@ var (
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
 	errLongExceeded          = fmt.Errorf("long exceeded")
 	errIntExceeded           = fmt.Errorf("int exceeded")
-	errNaN                   = fmt.Errorf("not a number")
 	errInfinity              = fmt.Errorf("infinity")
 )
 
@@ -130,11 +129,6 @@ func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
-		// TODO check float negative zero (math.Copysign(0, -1))
-		if math.IsNaN(value) {
-			return 0, errNaN
-		}
-
 		if math.IsInf(value, 1) {
 			return 0, errInfinity
 		}
@@ -183,8 +177,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
-		// TODO check float negative zero
-		if mask != math.Trunc(mask) || math.IsNaN(mask) || math.IsInf(mask, 0) {
+		if mask != math.Trunc(mask) || math.IsInf(mask, 0) {
 			return 0, errNotWholeNumber
 		}
 

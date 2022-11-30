@@ -168,6 +168,31 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 }
 
+func TestCommandsAdministrationListCollections(t *testing.T) {
+	t.Parallel()
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	require.Greater(t, len(targetCollections), 2)
+
+	filter := bson.D{{
+		"name", bson.D{{
+			"$in", bson.A{
+				targetCollections[0].Name(),
+				targetCollections[len(targetCollections)-1].Name(),
+			},
+		}},
+	}}
+
+	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
+	require.NoError(t, err)
+
+	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
+	require.NoError(t, err)
+
+	assert.Len(t, target, 2)
+	assert.Equal(t, compat, target)
+}
+
 func TestCommandsAdministrationGetParameter(t *testing.T) {
 	setup.SkipForTigris(t)
 
@@ -228,13 +253,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"GetParameter_Zero": {
 			command: bson.D{{"getParameter", 0}, {"quiet", 1}, {"comment", "getParameter test"}},
-			expected: map[string]any{
-				"quiet": false,
-				"ok":    float64(1),
-			},
-		},
-		"GetParameter_NaN": {
-			command: bson.D{{"getParameter", math.NaN()}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
 				"quiet": false,
 				"ok":    float64(1),
@@ -411,24 +429,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				"ok":    float64(1),
 			},
 		},
-		"ShowDetails_NaN": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", math.NaN()}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": bson.D{
-					{"value", false},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", true},
-				},
-				"ok": float64(1),
-			},
-		},
-		"ShowDetails_NegatuveZero": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", math.Copysign(0, -1)}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": false,
-				"ok":    float64(1),
-			},
-		},
 		"ShowDetails_String": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", "1"}}}, {"quiet", true}},
 			err: &mongo.CommandError{
@@ -510,34 +510,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"AllParameters_Nil": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", nil}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": bson.D{
-					{"value", false},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", true},
-				},
-				"ok": float64(1),
-			},
-			unexpected: []string{"acceptApiVersion2"},
-		},
-		"AllParameters_NaN": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.NaN()}}}, {"quiet", true}},
-			expected: map[string]any{
-				"quiet": bson.D{
-					{"value", false},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", true},
-				},
-				"tlsMode": bson.D{
-					{"value", "disabled"},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", false},
-				},
-				"ok": float64(1),
-			},
-		},
-		"AllParameters_NegatuveZero": {
-			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", math.Copysign(0, -1)}}}, {"quiet", true}},
 			expected: map[string]any{
 				"quiet": bson.D{
 					{"value", false},
@@ -813,9 +785,9 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
-	assert.True(t, ok)
-	assert.NotEmpty(t, must.NotFail(freeMonitoring.Get("state")))
+	freeMonitoring, err := doc.Get("freeMonitoring")
+	require.NoError(t, err)
+	assert.NotEmpty(t, must.NotFail(freeMonitoring.(*types.Document).Get("state")))
 
 	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
 	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))

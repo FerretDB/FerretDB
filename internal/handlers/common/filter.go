@@ -593,7 +593,7 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
 			return false, NewCommandErrorMsgWithArgument(
 				ErrBadRegexOption,
-				fmt.Sprintf("invalid flag in regex options: %c", option),
+				fmt.Sprintf(" invalid flag in regex options: %c", option),
 				"$options",
 			)
 		}
@@ -666,11 +666,6 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 
 // filterFieldExprSize handles {field: {$size: sizeValue}} filter.
 func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
-	arr, ok := fieldValue.(*types.Array)
-	if !ok {
-		return false, nil
-	}
-
 	size, err := GetWholeNumberParam(sizeValue)
 	if err != nil {
 		switch err {
@@ -684,15 +679,6 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 			return false, NewCommandErrorMsgWithArgument(
 				ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
-				"$size",
-			)
-		case errNaN:
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
-				fmt.Sprintf(
-					`Failed to parse $size. Expected an integer, but found NaN in: $size: %s`,
-					types.FormatAnyValue(sizeValue),
-				),
 				"$size",
 			)
 		case errInfinity:
@@ -718,6 +704,11 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 			),
 			"$size",
 		)
+	}
+
+	arr, ok := fieldValue.(*types.Array)
+	if !ok {
+		return false, nil
 	}
 
 	if arr.Len() != int(size) {
@@ -1309,10 +1300,6 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
 	value := must.NotFail(doc.Get(filterKey))
 
-	if _, ok := value.(*types.Array); !ok {
-		return false, nil
-	}
-
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
@@ -1348,6 +1335,10 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
 			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", key), "$elemMatch")
 		}
+	}
+
+	if _, ok := value.(*types.Array); !ok {
+		return false, nil
 	}
 
 	return filterFieldExpr(doc, filterKey, expr)

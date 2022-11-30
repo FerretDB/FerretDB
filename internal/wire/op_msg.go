@@ -71,6 +71,15 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			// do a shallow copy of the document that we would modify if there are kind 1 sections
 			doc = must.NotFail(types.NewDocument())
 			d := section.Documents[0]
+
+			if err := validateValue(d); err != nil {
+				return nil, NewValidationError(fmt.Errorf(
+					"wire.OpMsg.Document: validation failed for %v with: %v",
+					types.FormatAnyValue(d),
+					err,
+				))
+			}
+
 			m := d.Map()
 			for _, k := range d.Keys() {
 				doc.Set(k, m[k])
@@ -91,6 +100,14 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 
 			a := types.MakeArray(len(section.Documents)) // may be zero
 			for _, d := range section.Documents {
+				if err := validateValue(d); err != nil {
+					return nil, NewValidationError(fmt.Errorf(
+						"wire.OpMsg.Document: validation failed for %v with: %v",
+						types.FormatAnyValue(d),
+						err,
+					))
+				}
+
 				if err := a.Append(d); err != nil {
 					return nil, lazyerrors.Error(err)
 				}
@@ -193,11 +210,10 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 		}
 	}
 
-	if _, err := msg.Document(); err != nil {
-		return lazyerrors.Error(err)
-	}
-
 	// TODO validate checksum
+	if _, err := msg.Document(); err != nil {
+		return err
+	}
 
 	return nil
 }

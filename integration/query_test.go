@@ -30,18 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestQueryUnknownFilterOperator(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	filter := bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}}
-	errExpected := mongo.CommandError{Code: 2, Name: "BadValue", Message: "unknown operator: $someUnknownOperator"}
-	_, err := collection.Find(ctx, filter)
-	AssertEqualError(t, errExpected, err)
-}
-
 func TestQuerySort(t *testing.T) {
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/457")
 
@@ -60,10 +48,9 @@ func TestQuerySort(t *testing.T) {
 				"array-three",
 				"array-three-reverse",
 				"null",
-				"double-nan",
+
 				"int64-min",
 				"int32-min",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
@@ -138,13 +125,12 @@ func TestQuerySort(t *testing.T) {
 				"int32",
 				"int64",
 				"double-smallest",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
 				"int32-min",
 				"int64-min",
-				"double-nan",
+
 				"array-null",
 				"null",
 				"array-empty",
@@ -181,10 +167,8 @@ func TestQuerySortValue(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
-				"double-nan",
 				"int64-min",
 				"int32-min",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
@@ -249,38 +233,12 @@ func TestQuerySortValue(t *testing.T) {
 				"int32",
 				"int64",
 				"double-smallest",
-				"double-negative-zero",
 				"double-zero",
 				"int32-zero",
 				"int64-zero",
 				"int32-min",
 				"int64-min",
-				"double-nan",
 				"null",
-			},
-		},
-		"BadSortValue": {
-			sort: bson.D{{"v", 11}},
-			err: &mongo.CommandError{
-				Code:    15975,
-				Name:    "Location15975",
-				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-			},
-		},
-		"BadSortZeroValue": {
-			sort: bson.D{{"v", 0}},
-			err: &mongo.CommandError{
-				Code:    15975,
-				Name:    "Location15975",
-				Message: "$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-			},
-		},
-		"BadSortNullValue": {
-			sort: bson.D{{"v", nil}},
-			err: &mongo.CommandError{
-				Code:    15974,
-				Name:    "Location15974",
-				Message: "Illegal key in $sort specification: v: null",
 			},
 		},
 	} {
@@ -316,7 +274,7 @@ func TestQueryCount(t *testing.T) {
 	}{
 		"CountAllDocuments": {
 			command:  bson.D{{"count", collection.Name()}},
-			response: 47,
+			response: 45,
 		},
 		"CountExactlyOneDocument": {
 			command: bson.D{
