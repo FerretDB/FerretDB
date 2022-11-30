@@ -90,9 +90,9 @@ func (c cond) satisfies(result CompareResult) bool {
 		return c.equal
 	case Incomparable:
 		return false
-	default:
-		return false
 	}
+
+	panic("not reached")
 }
 
 // compare docValue against filterValue.
