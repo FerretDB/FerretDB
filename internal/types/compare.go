@@ -55,9 +55,8 @@ func Compare(docValue, filterValue any) CompareResult {
 
 	switch docValue := docValue.(type) {
 	case *Document:
-		// TODO: implement document comparing https://github.com/FerretDB/FerretDB/issues/457
-		return Incomparable
-
+		return compareDocuments(filterValue, docValue)
+		
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
 			return compareArrays(filterArr, docValue)
@@ -301,6 +300,55 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	}
 
 	if docArr.Len() < filterArr.Len() {
+		return Less
+	}
+
+	return Equal
+}
+
+// compareDocuments compares documents recursively by
+// comparing type order, key field names, key field values.
+func compareDocuments(filterValue any, docDoc *Document) CompareResult {
+	filterDoc, ok := filterValue.(*Document)
+	if !ok {
+		return compareTypeOrder(filterValue, docDoc)
+	}
+
+	if filterDoc.Len() == 0 && docDoc.Len() == 0 {
+		return Equal
+	}
+
+	if filterDoc.Len() > 0 && docDoc.Len() == 0 {
+		return Less
+	}
+
+	if filterDoc.Len() == 0 {
+		return Greater
+	}
+
+	filterKeys := filterDoc.Keys()
+	filterValues := filterDoc.Values()
+	docValues := docDoc.Values()
+
+	for i, docKey := range docDoc.Keys() {
+		if filterDoc.Len() == i {
+			return Greater
+		}
+
+		// compare keys
+		result := compareScalars(filterKeys[i], docKey)
+		if result != Equal {
+			return result
+		}
+
+		// compare values
+		result = Compare(filterValues[i], docValues[i])
+		if result != Equal {
+			return result
+		}
+	}
+
+	if docDoc.Len() < filterDoc.Len() {
 		return Less
 	}
 
