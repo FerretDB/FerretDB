@@ -121,10 +121,6 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		return nil, err
 	}
 
-	if it == nil {
-		return resDocs, nil
-	}
-
 	defer it.Close()
 
 	for {
