@@ -40,7 +40,7 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 			return nil
 		}
 
-		logger.Debugf("%s: %s", addr, err)
+		logger.Infof("%s: %s", addr, err)
 		ctxutil.Sleep(ctx, time.Second)
 	}
 
@@ -66,7 +66,7 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 			return nil
 		}
 
-		logger.Debugf("%s: %s", connString, err)
+		logger.Infof("%s: %s", connString, err)
 		ctxutil.Sleep(ctx, time.Second)
 	}
 
@@ -93,7 +93,7 @@ func waitForTigrisPort(ctx context.Context, logger *zap.SugaredLogger, port uint
 			}
 		}
 
-		logger.Debugf("%s: %s", cfg.URL, err)
+		logger.Infof("%s: %s", cfg.URL, err)
 		ctxutil.Sleep(ctx, time.Second)
 	}
 

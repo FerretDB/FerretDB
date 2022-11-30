@@ -17,8 +17,10 @@ package main
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"os/exec"
@@ -39,6 +41,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
+)
+
+var (
+	//go:embed error.tmpl
+	errorTemplateB []byte
+
+	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
 // setupPostgres configures PostgreSQL.
@@ -117,8 +126,8 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
-// run runs all setup commands.
-func run(ctx context.Context, logger *zap.SugaredLogger) error {
+// setup runs all setup commands.
+func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
 
 	if err := setupPostgres(ctx, logger); err != nil {
@@ -159,67 +168,57 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	return nil
 }
 
-//nolint:forbidigo // Printf used to make diagnostic data easier to copy.
-func printDiagnosticData(runError error, logger *zap.SugaredLogger) {
-	buffer := bytes.NewBuffer([]byte{})
-	var composeVersion string
-	composeError := runCommand("docker-compose", []string{"version"}, buffer, logger)
-	if composeError != nil {
-		composeVersion = composeError.Error()
-	} else {
-		composeVersion = buffer.String()
-	}
-	buffer.Reset()
+func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
+	runCommand("docker-compose", []string{"logs"}, nil, logger)
 
-	var dockerVersion string
-	dockerError := runCommand("docker", []string{"version"}, buffer, logger)
-	if dockerError != nil {
-		dockerVersion = dockerError.Error()
-	} else {
-		dockerVersion = buffer.String()
-	}
-
-	buffer.Reset()
+	var buf bytes.Buffer
 
 	var gitVersion string
-	gitError := runCommand("git", []string{"version"}, buffer, logger)
-	if gitError != nil {
-		gitVersion = gitError.Error()
+	if err := runCommand("git", []string{"version"}, &buf, logger); err != nil {
+		gitVersion = err.Error()
 	} else {
-		gitVersion = buffer.String()
+		gitVersion = buf.String()
+	}
+
+	buf.Reset()
+
+	var dockerVersion string
+	if err := runCommand("docker", []string{"version"}, &buf, logger); err != nil {
+		dockerVersion = err.Error()
+	} else {
+		dockerVersion = buf.String()
+	}
+
+	buf.Reset()
+
+	var composeVersion string
+	if err := runCommand("docker-compose", []string{"version"}, &buf, logger); err != nil {
+		composeVersion = err.Error()
+	} else {
+		composeVersion = buf.String()
 	}
 
 	info := version.Get()
 
-	fmt.Printf(`Looks like something went wrong.
-Please file an issue with all that information below:
+	errorTemplate.Execute(os.Stdout, map[string]any{
+		"Error": setupError,
 
-	OS: %s
-	Arch: %s
-	Version: %s
-	Commit: %s
-	Branch: %s
+		"GOOS":   runtime.GOOS,
+		"GOARCH": runtime.GOARCH,
 
-	Go version: %s
-	%s
-	%s
-	%s
+		"Version": info.Version,
+		"Commit":  info.Commit,
+		"Branch":  info.Branch,
+		"Dirty":   info.Dirty,
+		"Debug":   info.Debug,
 
-	Error: %v
-`,
-		runtime.GOOS,
-		runtime.GOARCH,
-		info.Version,
-		info.Commit,
-		info.Branch,
+		"GoVersion":      runtime.Version(),
+		"GitVersion":     strings.TrimSpace(gitVersion),
+		"DockerVersion":  strings.TrimSpace(dockerVersion),
+		"ComposeVersion": strings.TrimSpace(composeVersion),
 
-		runtime.Version(),
-		strings.TrimSpace(gitVersion),
-		strings.TrimSpace(composeVersion),
-		strings.TrimSpace(dockerVersion),
-
-		runError,
-	)
+		"NewIssueURL": "https://github.com/FerretDB/FerretDB/issues/new/choose",
+	})
 }
 
 // cli struct represents all command-line commands, fields and flags.
@@ -247,9 +246,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	err := run(ctx, logger)
-	if err != nil {
+	if err := setup(ctx, logger); err != nil {
 		printDiagnosticData(err, logger)
-		os.Exit(2)
+		os.Exit(1)
 	}
 }
