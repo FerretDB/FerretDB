@@ -75,44 +75,15 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs := make([]*types.Document, 0, 16)
-
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sqlParam)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-
-		var fetchedDocs []*types.Document
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			fetchedDocs = append(fetchedDocs, fetchedItem.Docs...)
-		}
-
-		err = common.SortDocuments(fetchedDocs, params.Sort)
+		var resDocs []*types.Document
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sqlParam)
 		if err != nil {
 			return err
 		}
 
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, params.Query)
-			if err != nil {
-				return err
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
+		err = common.SortDocuments(resDocs, params.Sort)
+		if err != nil {
+			return err
 		}
 
 		// findAndModify always works with a single document
