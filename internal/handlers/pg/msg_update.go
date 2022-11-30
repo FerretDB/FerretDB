@@ -137,35 +137,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			sp.Filter = q
 
-			resDocs := make([]*types.Document, 0, 16)
-			fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
+			resDocs, err := h.fetchAndFilterDocs(ctx, tx, &sp)
 			if err != nil {
 				return err
-			}
-			defer func() {
-				// Drain the channel to prevent leaking goroutines.
-				// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-				for range fetchedChan {
-				}
-			}()
-
-			for fetchedItem := range fetchedChan {
-				if fetchedItem.Err != nil {
-					return fetchedItem.Err
-				}
-
-				for _, doc := range fetchedItem.Docs {
-					matches, err := common.FilterDocument(doc, q)
-					if err != nil {
-						return err
-					}
-
-					if !matches {
-						continue
-					}
-
-					resDocs = append(resDocs, doc)
-				}
 			}
 
 			if len(resDocs) == 0 {

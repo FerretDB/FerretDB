@@ -54,61 +54,6 @@ type SQLParam struct {
 	Filter     *types.Document
 }
 
-// QueryDocuments returns a channel with buffer FetchedChannelBufSize
-// to fetch list of documents for given FerretDB database and collection.
-//
-// If an error occurs before the fetching, the error is returned immediately.
-// The returned channel is always non-nil.
-//
-// The channel is closed when all documents are sent; the caller should always drain the channel.
-// If an error occurs during fetching, the last message before closing the channel contains an error.
-// Context cancellation is not considered an error.
-//
-// If the collection doesn't exist, fetch returns a closed channel and no error.
-//
-// Deprecated: use GetDocuments, TODO remove in https://github.com/FerretDB/FerretDB/issues/898.
-func (pgPool *Pool) QueryDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (<-chan FetchedDocs, error) {
-	fetchedChan := make(chan FetchedDocs, FetchedChannelBufSize)
-
-	q, args, err := buildQuery(ctx, tx, sp)
-	if err != nil {
-		close(fetchedChan)
-		if errors.Is(err, ErrTableNotExist) {
-			return fetchedChan, nil
-		}
-		return fetchedChan, lazyerrors.Error(err)
-	}
-
-	rows, err := tx.Query(ctx, q, args...)
-	if err != nil {
-		close(fetchedChan)
-		return fetchedChan, lazyerrors.Error(err)
-	}
-
-	go func() {
-		defer close(fetchedChan)
-		defer rows.Close()
-
-		err := iterateFetch(ctx, fetchedChan, rows)
-		switch {
-		case err == nil:
-			// nothing
-		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-			pgPool.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelWarn, "context canceled, stopping fetching",
-				map[string]any{"db": sp.DB, "collection": sp.Collection, "error": err},
-			)
-		default:
-			pgPool.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelError, "got error, stopping fetching",
-				map[string]any{"db": sp.DB, "collection": sp.Collection, "error": err},
-			)
-		}
-	}()
-
-	return fetchedChan, nil
-}
-
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
@@ -251,62 +196,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	}
 
 	return query, args
-}
-
-// iterateFetch iterates over the rows returned by the query and sends FetchedDocs to fetched channel.
-// It returns ctx.Err() if context cancellation was received.
-func iterateFetch(ctx context.Context, fetched chan FetchedDocs, rows pgx.Rows) error {
-	for ctx.Err() == nil {
-		var allFetched bool
-		res := make([]*types.Document, 0, FetchedSliceCapacity)
-		for i := 0; i < FetchedSliceCapacity; i++ {
-			if !rows.Next() {
-				allFetched = true
-				break
-			}
-
-			var b []byte
-			if err := rows.Scan(&b); err != nil {
-				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
-			}
-
-			doc, err := pjson.Unmarshal(b)
-			if err != nil {
-				return writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)})
-			}
-
-			res = append(res, doc.(*types.Document))
-		}
-
-		if len(res) > 0 {
-			if err := writeFetched(ctx, fetched, FetchedDocs{Docs: res}); err != nil {
-				return err
-			}
-		}
-
-		if allFetched {
-			if err := rows.Err(); err != nil {
-				if ferr := writeFetched(ctx, fetched, FetchedDocs{Err: lazyerrors.Error(err)}); ferr != nil {
-					return ferr
-				}
-			}
-
-			return nil
-		}
-	}
-
-	return ctx.Err()
-}
-
-// writeFetched sends FetchedDocs to fetched channel or handles context cancellation.
-// It returns ctx.Err() if context cancellation was received.
-func writeFetched(ctx context.Context, fetched chan FetchedDocs, doc FetchedDocs) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case fetched <- doc:
-		return nil
-	}
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
