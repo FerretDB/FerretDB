@@ -12,7 +12,7 @@ sidebar_position: 2
 
 #### aggregation
 
-A group of operations used to reduce or summarize large data sets.
+A group of operations used to reduce or merge large data sets.
 See [list of supported aggregation operations and commands here](./supported_commands.md#aggregation-pipelines).
 
 #### aggregation pipeline
@@ -27,6 +27,7 @@ See [list of supported aggregation pipeline operators](./supported_commands.md#a
 #### Beacon
 
 The telemetry service of FerretDB.
+See [telemetry](../telemetry.md) for more details.
 
 #### BSON
 
@@ -54,11 +55,6 @@ See [Basic FerretDB CRUD operations here](../basic_operations/index.md).
 ---
 
 ### D
-
-#### dance
-
-The integration testing tool of FerretDB, which is named after the Ferret war dance.
-See [dance repository](https://github.com/FerretDB/dance) for more details.
 
 #### database
 
@@ -90,20 +86,13 @@ They are represented as field name-value pairs and describe the kind of data in 
 
 ---
 
-### G
-
-#### github-actions
-
-A repository that holds the shared GitHub Actions across all FerretDB repositories.
-See [github-actions repository](https://github.com/FerretDB/github-actions) for more details.
-
----
-
 ### I
 
 #### index
 
-A data structure used for identifying and querying records in a database.
+A data structure used for identifying and querying records in a collection.
+It helps to limit the number of documents to search through or inspect in a collection.
+Examples include unique `_id` index, user-defined index, hashed index, and partial index.
 
 ---
 
@@ -121,7 +110,6 @@ JSONB is a data type of PostgreSQL that stores JSON data as a decomposed binary 
 #### ObjectId
 
 A defining 12-byte type that ensures singularity and uniques within a collection and are used to represent the default values for the `_id` fields.
-It contains a 4-byte timestamp value measured in seconds, uniquely random machine and process-generated ID, and an incremental counter.
 
 #### operator
 
@@ -130,12 +118,6 @@ A keyword that starts with a `$` character to query, update, or transform data.
 ---
 
 ### P
-
-#### PJSON
-
-FerretDB’s mapping system which converts BSON into JSONB.
-It uses embedded data in BSON containing special keys that starts with `$` along with information about the data types and field order to serialize data into JSONB.
-See [this article for more details on PJSON](https://www.ferretdb.io/pjson-how-to-store-bson-in-jsonb/).
 
 #### primary key
 
@@ -153,7 +135,6 @@ FerretDB uses PostgreSQL as a database engine.
 
 #### Tigris
 
-Also known as Tigris Data.
 A database platform used by FerretDB as a database engine.
 
 ---
