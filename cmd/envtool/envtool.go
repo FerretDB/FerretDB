@@ -47,6 +47,7 @@ var (
 	//go:embed error.tmpl
 	errorTemplateB []byte
 
+	// Parsed error template.
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
@@ -165,6 +166,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	return nil
 }
 
+// printDiagnosticData prints diagnostic data and error template on stdout.
 func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	runCommand("docker-compose", []string{"ps", "--all"}, os.Stdout, logger)
 
