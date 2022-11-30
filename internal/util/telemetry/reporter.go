@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/version"
 )
@@ -109,9 +110,7 @@ func (r *Reporter) Run(ctx context.Context) {
 	for ctx.Err() == nil {
 		r.report(ctx)
 
-		delayCtx, delayCancel := context.WithTimeout(ctx, r.ReportInterval)
-		<-delayCtx.Done()
-		delayCancel()
+		ctxutil.Sleep(ctx, r.ReportInterval)
 	}
 
 	// do one last report before exiting if telemetry is explicitly enabled
