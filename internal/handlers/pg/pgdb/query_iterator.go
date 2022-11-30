@@ -32,7 +32,7 @@ import (
 type queryIterator struct {
 	ctx         context.Context
 	rows        pgx.Rows
-	close       sync.Once   // to ensure that all Close() calls after the first will have no effect.
+	close       sync.Once   // to ensure that all Close() calls after the first will have no effect
 	closed      atomic.Bool // indicates whether Close() was called.
 	currentIter atomic.Uint32
 }
@@ -47,7 +47,7 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, 
 	}
 
 	runtime.SetFinalizer(qi, func(qi *queryIterator) {
-		if !qi.closed.Load() {
+		it.close.Do(func() {
 			panic("queryIterator.Close() has not been called")
 		}
 	})
