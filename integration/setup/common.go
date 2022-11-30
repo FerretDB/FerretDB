@@ -159,7 +159,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, prefe
 		// TODO https://github.com/FerretDB/FerretDB/issues/1507
 		u := &url.URL{
 			Scheme: "mongodb",
-			Host:   l.Unix().String(),
+			Host:   l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			Path:   "/",
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/1593
+			// User:     url.UserPassword("username", "password"),
+			// RawQuery: "authMechanism=PLAIN",
 		}
 
 		uri := u.String()
@@ -185,6 +190,10 @@ func buildMongoDBURI(tb testing.TB, port int) string {
 		Scheme: "mongodb",
 		Host:   fmt.Sprintf("127.0.0.1:%d", port),
 		Path:   "/",
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1593
+		// User:     url.UserPassword("username", "password"),
+		// RawQuery: "authMechanism=PLAIN",
 	}
 
 	return u.String()
