@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"math"
 	"math/big"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/constraints"
@@ -56,7 +57,7 @@ func Compare(docValue, filterValue any) CompareResult {
 	switch docValue := docValue.(type) {
 	case *Document:
 		return compareDocuments(filterValue, docValue)
-		
+
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
 			return compareArrays(filterArr, docValue)
@@ -307,10 +308,21 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 }
 
 // compareDocuments compares documents recursively by
-// comparing type order, key field names, key field values.
+// comparing type order, field names, field values.
 func compareDocuments(filterValue any, docDoc *Document) CompareResult {
+	// TODO: filterValue could contain operators
+	// document comparison need to handle this. Return error.
+	// bson.A{
+	// 	bson.D{{"v", bson.D{{"$lt", int32(0)}}}},
+	//	bson.D{{"$and", bson.A{
+	//		bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
+	//		bson.D{{"v", bson.D{{"$lte", 42.13}}}},
+	//	}}},
+	//},
+
 	filterDoc, ok := filterValue.(*Document)
 	if !ok {
+		// filterValue is not a document, compare the type order.
 		return compareTypeOrder(filterValue, docDoc)
 	}
 
@@ -333,6 +345,12 @@ func compareDocuments(filterValue any, docDoc *Document) CompareResult {
 	for i, docKey := range docDoc.Keys() {
 		if filterDoc.Len() == i {
 			return Greater
+		}
+
+		// cannot compare keys which has operator
+		// TODO: this doesn't belong here
+		if strings.HasPrefix(filterKeys[i], "$") {
+			return Incomparable
 		}
 
 		// compare keys
