@@ -52,6 +52,9 @@ func listenUnix(tb testing.TB) string {
 	// generate random string of length 20 for the directory name.
 	dirName := getRandomString(tb, 20)
 
+	// Code below could be simplified by using os.CreateTemp.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1594
+
 	// on mac, temp dir is length 49 and like /var/folders/9p/cc9b8krs2zd1x9qx89fs1sjw0000gn/t/.
 	// on linux, temp dir is length 5 and like /tmp/.
 	tmp := os.TempDir()
