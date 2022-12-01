@@ -355,12 +355,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
 				if arrValue, ok := fieldValue.(*types.Array); ok {
-					// Comparing array fieldValue to scalar exprValue uses
-					// the largest element from the array of same type as exprValue.
+					// Filter array by only keeping the same type as exprValue.
 					arr := arrValue.FilterArrayByType(exprValue)
 
-					// The array does not contain the same type, return false.
 					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
@@ -382,12 +381,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
 				if arrValue, ok := fieldValue.(*types.Array); ok {
-					// Comparing array fieldValue to scalar exprValue uses
-					// the largest element from the array of same type as exprValue.
+					// Filter array by only keeping the same type as exprValue.
 					arr := arrValue.FilterArrayByType(exprValue)
 
-					// The array does not contain the same type, return false.
 					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
@@ -409,12 +407,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
 				if arrValue, ok := fieldValue.(*types.Array); ok {
-					// Comparing array fieldValue to scalar exprValue uses
-					// the smallest element from the array of same type as exprValue.
+					// Filter array by only keeping the same type as exprValue.
 					arr := arrValue.FilterArrayByType(exprValue)
 
-					// The array does not contain the same type, return false.
 					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
@@ -436,12 +433,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
 				if arrValue, ok := fieldValue.(*types.Array); ok {
-					// Comparing array fieldValue to scalar exprValue uses
-					// the smallest element from the array of same type as exprValue.
+					// Filter array by only keeping the same type as exprValue.
 					arr := arrValue.FilterArrayByType(exprValue)
 
-					// The array does not contain the same type, return false.
 					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
