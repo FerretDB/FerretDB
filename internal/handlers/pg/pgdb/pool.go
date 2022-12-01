@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb/sql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -74,6 +75,8 @@ func NewPool(ctx context.Context, opts *NewPoolOpts) (*Pool, error) {
 
 	config.LazyConnect = opts.Lazy
 
+	l := opts.Logger.Named("pgdb")
+
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		var v string
 		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
@@ -81,7 +84,7 @@ func NewPool(ctx context.Context, opts *NewPoolOpts) (*Pool, error) {
 		}
 
 		if err = opts.StateProvider.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
-			opts.Logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+			l.Error("Pool.AfterConnect: failed to update state", zap.Error(err))
 		}
 
 		return nil
@@ -100,7 +103,7 @@ func NewPool(ctx context.Context, opts *NewPoolOpts) (*Pool, error) {
 
 	// try to log everything; logger's configuration will skip extra levels if needed
 	config.ConnConfig.LogLevel = pgx.LogLevelTrace
-	config.ConnConfig.Logger = zapadapter.NewLogger(opts.Logger.Named("pgdb"))
+	config.ConnConfig.Logger = zapadapter.NewLogger(l)
 
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -112,10 +115,21 @@ func NewPool(ctx context.Context, opts *NewPoolOpts) (*Pool, error) {
 	}
 
 	if !opts.Lazy {
-		err = res.checkConnection(ctx)
+		if err = res.checkConnection(ctx); err != nil {
+			return nil, err
+		}
 	}
 
-	return res, err
+	if opts.OpLog {
+		err = res.InTransaction(ctx, func(tx pgx.Tx) error {
+			return sql.Install(ctx, tx, l.Named("sql"))
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return res, nil
 }
 
 // isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html

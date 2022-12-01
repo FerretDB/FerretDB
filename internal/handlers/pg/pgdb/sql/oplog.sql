@@ -1,3 +1,13 @@
+CREATE SCHEMA IF NOT EXISTS _ferretdb_internal;
+
+SET LOCAL search_path = _ferretdb_internal;
+
+CREATE OR REPLACE TABLE oplog (
+    table_name text,
+    operation text,
+    row_data jsonb
+);
+
 CREATE OR REPLACE FUNCTION oplog_insert_trigger_func() RETURNS trigger AS $$
 
 DECLARE
