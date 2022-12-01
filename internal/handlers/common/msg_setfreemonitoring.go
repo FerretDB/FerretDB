@@ -28,9 +28,9 @@ import (
 )
 
 // MsgSetFreeMonitoring is a common implementation of the setFreeMonitoring command.
-func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
-	if provider == nil {
-		panic("provider cannot be equal to nil")
+func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, stateProvider *state.Provider) (*wire.OpMsg, error) {
+	if stateProvider == nil {
+		panic("state provider cannot be equal to nil")
 	}
 
 	document, err := msg.Document()
@@ -62,7 +62,7 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 		)
 	}
 
-	if provider.Get().TelemetryLocked {
+	if stateProvider.Get().TelemetryLocked {
 		return nil, NewCommandErrorMsgWithArgument(
 			ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
@@ -70,7 +70,7 @@ func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.
 		)
 	}
 
-	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
+	if err := stateProvider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
 		return nil, NewCommandErrorMsg(errInternalError, err.Error())
 	}
 

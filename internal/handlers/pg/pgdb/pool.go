@@ -53,26 +53,35 @@ type DBStats struct {
 	CountIndexes int32
 }
 
+// NewPoolOpts represents NewPool options.
+type NewPoolOpts struct {
+	ConnString    string
+	Logger        *zap.Logger
+	StateProvider *state.Provider
+	Lazy          bool
+	OpLog         bool
+}
+
 // NewPool returns a new concurrency-safe connection pool.
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
-func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
-	config, err := pgxpool.ParseConfig(connString)
+func NewPool(ctx context.Context, opts *NewPoolOpts) (*Pool, error) {
+	config, err := pgxpool.ParseConfig(opts.ConnString)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
-	config.LazyConnect = lazy
+	config.LazyConnect = opts.Lazy
 
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		var v string
-		if err := conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
 			return err
 		}
 
-		if err := p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
-			logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+		if err = opts.StateProvider.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+			opts.Logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
 		}
 
 		return nil
@@ -91,7 +100,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 
 	// try to log everything; logger's configuration will skip extra levels if needed
 	config.ConnConfig.LogLevel = pgx.LogLevelTrace
-	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb"))
+	config.ConnConfig.Logger = zapadapter.NewLogger(opts.Logger.Named("pgdb"))
 
 	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
@@ -102,7 +111,7 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 		Pool: pool,
 	}
 
-	if !lazy {
+	if !opts.Lazy {
 		err = res.checkConnection(ctx)
 	}
 
@@ -160,12 +169,10 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 			continue
 		}
 
-		if logger != nil {
-			logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]any{
-				"name":    name,
-				"setting": setting,
-			})
-		}
+		logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]any{
+			"name":    name,
+			"setting": setting,
+		})
 	}
 
 	if err := rows.Err(); err != nil {

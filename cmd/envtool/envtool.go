@@ -65,7 +65,13 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	connString := "postgres://postgres@127.0.0.1:5432/ferretdb"
-	pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
+	pgPool, err := pgdb.NewPool(ctx, &pgdb.NewPoolOpts{
+		ConnString:    connString,
+		Logger:        logger.Desugar(),
+		Lazy:          false,
+		StateProvider: p,
+		OpLog:         false,
+	})
 	if err != nil {
 		return err
 	}

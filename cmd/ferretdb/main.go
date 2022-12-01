@@ -77,6 +77,7 @@ var cli struct {
 			ReportInterval time.Duration `default:"24h"                         help:"Testing flag: report interval."`
 			ReportTimeout  time.Duration `default:"5s"                          help:"Testing flag: report timeout."`
 		} `embed:"" prefix:"telemetry-"`
+		OpLog bool `default:"false" help:"Testing flag: enable oplog."`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -222,6 +223,10 @@ func run() {
 
 	logger := setupLogger(stateProvider)
 
+	if cli.Test.OpLog && cli.Handler != "pg" {
+		logger.Fatal("OpLog can only be used with 'pg' handler.")
+	}
+
 	ctx, stop := notifyAppTermination(context.Background())
 
 	go func() {
@@ -252,7 +257,7 @@ func run() {
 				F:              &cli.Telemetry,
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
-				P:              stateProvider,
+				StateProvider:  stateProvider,
 				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
@@ -268,7 +273,8 @@ func run() {
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
-		PostgreSQLURL: cli.PostgreSQLURL,
+		PostgreSQLURL:   cli.PostgreSQLURL,
+		PostgreSQLOpLog: cli.Test.OpLog,
 
 		TigrisClientID:     tigrisFlags.TigrisClientID,
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,

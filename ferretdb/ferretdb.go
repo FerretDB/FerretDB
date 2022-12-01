@@ -81,7 +81,8 @@ func New(config *Config) (*FerretDB, error) {
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: config.PostgreSQLURL,
+		PostgreSQLURL:   config.PostgreSQLURL,
+		PostgreSQLOpLog: false,
 
 		TigrisClientID:     config.TigrisClientID,
 		TigrisClientSecret: config.TigrisClientSecret,

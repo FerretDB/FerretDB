@@ -35,6 +35,7 @@ type NewOpts struct {
 	L             *zap.Logger
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
+	OpLog         bool
 }
 
 // New returns a new handler.

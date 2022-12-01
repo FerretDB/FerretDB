@@ -69,7 +69,7 @@ type NewReporterOpts struct {
 	F              *Flag
 	DNT            string
 	ExecName       string
-	P              *state.Provider
+	StateProvider  *state.Provider
 	ConnMetrics    *connmetrics.ConnMetrics
 	L              *zap.Logger
 	UndecidedDelay time.Duration
@@ -79,12 +79,12 @@ type NewReporterOpts struct {
 
 // NewReporter creates a new reporter.
 func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
-	t, locked, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
+	t, locked, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.StateProvider.Get().Telemetry, opts.L)
 	if err != nil {
 		return nil, err
 	}
 
-	err = opts.P.Update(func(s *state.State) {
+	err = opts.StateProvider.Update(func(s *state.State) {
 		s.Telemetry = t
 		s.TelemetryLocked = locked
 	})
@@ -103,7 +103,7 @@ func (r *Reporter) Run(ctx context.Context) {
 	r.L.Debug("Reporter started.")
 	defer r.L.Debug("Reporter stopped.")
 
-	ch := r.P.Subscribe()
+	ch := r.StateProvider.Subscribe()
 
 	r.firstReportDelay(ctx, ch)
 
@@ -114,7 +114,7 @@ func (r *Reporter) Run(ctx context.Context) {
 	}
 
 	// do one last report before exiting if telemetry is explicitly enabled
-	if pointer.GetBool(r.P.Get().Telemetry) {
+	if pointer.GetBool(r.StateProvider.Get().Telemetry) {
 		r.report(context.Background())
 	}
 }
@@ -122,7 +122,7 @@ func (r *Reporter) Run(ctx context.Context) {
 // firstReportDelay waits until telemetry reporting state is decided,
 // main context is cancelled, or timeout is reached.
 func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
-	if r.P.Get().Telemetry != nil {
+	if r.StateProvider.Get().Telemetry != nil {
 		return
 	}
 
@@ -141,7 +141,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 		case <-delayCtx.Done():
 			return
 		case <-ch:
-			if r.P.Get().Telemetry != nil {
+			if r.StateProvider.Get().Telemetry != nil {
 				return
 			}
 		}
@@ -205,7 +205,7 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 
 // report sends telemetry report unless telemetry is disabled.
 func (r *Reporter) report(ctx context.Context) {
-	s := r.P.Get()
+	s := r.StateProvider.Get()
 	if s.Telemetry != nil && !*s.Telemetry {
 		r.L.Debug("Telemetry is disabled, skipping reporting.")
 		return
@@ -264,7 +264,7 @@ func (r *Reporter) report(ctx context.Context) {
 		zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion),
 	)
 
-	err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
+	err = r.StateProvider.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
 	if err != nil {
 		r.L.Error("Failed to update state with latest version.", zap.Error(err))
 		return

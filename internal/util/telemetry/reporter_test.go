@@ -71,12 +71,12 @@ func TestNewReporterLock(t *testing.T) {
 			require.NoError(t, err)
 
 			opts := NewReporterOpts{
-				F:           tc.f,
-				DNT:         tc.dnt,
-				ExecName:    tc.execName,
-				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
-				P:           provider,
-				L:           zap.L(),
+				F:             tc.f,
+				DNT:           tc.dnt,
+				ExecName:      tc.execName,
+				ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
+				StateProvider: provider,
+				L:             zap.L(),
 			}
 
 			_, err = NewReporter(&opts)

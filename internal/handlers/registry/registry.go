@@ -49,7 +49,8 @@ type NewHandlerOpts struct {
 	StateProvider *state.Provider
 
 	// for `pg` handler
-	PostgreSQLURL string
+	PostgreSQLURL   string
+	PostgreSQLOpLog bool
 
 	// for `tigris` handler
 	TigrisClientID     string
@@ -89,7 +90,14 @@ func init() {
 	}
 
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLURL, opts.Logger, true, opts.StateProvider)
+		poolOpts := &pgdb.NewPoolOpts{
+			ConnString:    opts.PostgreSQLURL,
+			Logger:        opts.Logger,
+			Lazy:          true,
+			StateProvider: opts.StateProvider,
+			OpLog:         opts.PostgreSQLOpLog,
+		}
+		pgPool, err := pgdb.NewPool(opts.Ctx, poolOpts)
 		if err != nil {
 			return nil, err
 		}
@@ -99,6 +107,7 @@ func init() {
 			L:             opts.Logger,
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
+			OpLog:         opts.PostgreSQLOpLog,
 		}
 		return pg.New(handlerOpts)
 	}

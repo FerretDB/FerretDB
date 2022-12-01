@@ -62,7 +62,13 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 			return err
 		}
 
-		pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
+		pgPool, err := pgdb.NewPool(ctx, &pgdb.NewPoolOpts{
+			ConnString:    connString,
+			Logger:        logger.Desugar(),
+			Lazy:          false,
+			StateProvider: p,
+			OpLog:         false,
+		})
 		if err == nil {
 			pgPool.Close()
 			return nil
