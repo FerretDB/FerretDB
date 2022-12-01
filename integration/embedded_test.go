@@ -83,7 +83,7 @@ func TestEmbedded(t *testing.T) {
 func TestEmbeddedTLS(t *testing.T) {
 	t.Parallel()
 
-	cert, key := setup.GetTLSFilesPath()
+	cert, key := setup.GetTLSFilesPaths()
 	defer func() {
 		_ = os.Remove(cert)
 		_ = os.Remove(key)
@@ -105,8 +105,9 @@ func TestEmbeddedTLS(t *testing.T) {
 
 	// check that Run exits on context cancel
 	done := make(chan struct{})
+
 	go func() {
-		err := f.Run(ctx)
+		err = f.Run(ctx)
 		t.Logf("Run exited with %v.", err) // result is undefined for now
 		cancel()
 		close(done)

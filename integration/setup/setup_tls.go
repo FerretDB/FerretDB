@@ -54,6 +54,7 @@ func generateTLSPair() ([]byte, []byte) {
 	}
 
 	certBytes := &bytes.Buffer{}
+
 	err = pem.Encode(certBytes, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
 		panic(err)
@@ -74,7 +75,8 @@ func generateTLSPair() ([]byte, []byte) {
 	return certBytes.Bytes(), privateKeyBytes.Bytes()
 }
 
-func GetTLSFilesPath() (string, string) {
+// GetTLSFilesPaths returns paths to TLS files.
+func GetTLSFilesPaths() (string, string) {
 	cert, key := generateTLSPair()
 
 	var certPath, keyPath = "cert.pem", "key.pem"
