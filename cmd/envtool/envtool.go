@@ -168,9 +168,9 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
 func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
-	runCommand("docker-compose", []string{"ps", "--all"}, os.Stdout, logger)
+	runCommand("docker", []string{"compose", "ps", "--all"}, os.Stdout, logger)
 
-	runCommand("docker-compose", []string{"logs"}, os.Stdout, logger)
+	runCommand("docker", []string{"compose", "logs"}, os.Stdout, logger)
 
 	var buf bytes.Buffer
 
@@ -193,7 +193,7 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	buf.Reset()
 
 	var composeVersion string
-	if err := runCommand("docker-compose", []string{"version"}, &buf, logger); err != nil {
+	if err := runCommand("docker", []string{"compose", "version"}, &buf, logger); err != nil {
 		composeVersion = err.Error()
 	} else {
 		composeVersion = buf.String()
