@@ -55,7 +55,7 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
     volumes:
-      - ./build/mongosh:/mongosh
+      - ./build/mongosh/mongoshrc.js:/data/db/.mongoshrc.js
 
   trivy:
     build:

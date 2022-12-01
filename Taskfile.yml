@@ -308,7 +308,7 @@ tasks:
     cmds:
       - >
         docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
-        --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
+        --verbose --eval 'disableTelemetry()' --shell
 
   mongo:
     desc: "Run legacy `mongo` shell"

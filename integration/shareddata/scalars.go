@@ -36,7 +36,7 @@ var Scalars = &Values[string]{
 	data: map[string]any{
 		"double":          42.13,
 		"double-whole":    42.0,
-		"double-zero":     math.Copysign(0, +1), // the same as just 0.0 in Go
+		"double-zero":     0.0,
 		"double-max":      math.MaxFloat64,
 		"double-smallest": math.SmallestNonzeroFloat64,
 		"double-big":      doubleBig,
