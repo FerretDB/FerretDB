@@ -47,6 +47,7 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
+    command: --bind_ip 0.0.0.0 --replSet rs0
     ports:
       - 37017:27017
     extra_hosts:
@@ -56,6 +57,7 @@ services:
       - TZ=Asia/Kathmandu
     volumes:
       - ./build/mongosh:/mongosh
+      - ./build/mongo-initdb:/docker-entrypoint-initdb.d
 
   trivy:
     build:
