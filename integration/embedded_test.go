@@ -16,6 +16,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,6 +39,61 @@ func TestEmbedded(t *testing.T) {
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			Addr: "127.0.0.1:65432",
+		},
+		Handler:       "pg",
+		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+	})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	defer cancel()
+
+	// check that Run exits on context cancel
+	done := make(chan struct{})
+	go func() {
+		err := f.Run(ctx)
+		t.Logf("Run exited with %v.", err) // result is undefined for now
+		cancel()
+		close(done)
+	}()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
+	require.NoError(t, err)
+
+	filter := bson.D{{
+		"name",
+		bson.D{{
+			"$not",
+			bson.D{{
+				"$regex",
+				primitive.Regex{Pattern: "test.*"},
+			}},
+		}},
+	}}
+	names, err := client.ListDatabaseNames(ctx, filter)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"admin", "public"}, names)
+
+	require.NoError(t, client.Disconnect(ctx))
+
+	cancel()
+	<-done
+}
+
+func TestEmbeddedTLS(t *testing.T) {
+	t.Parallel()
+
+	cert, key := setup.GetTLSFilesPath()
+	defer func() {
+		_ = os.Remove(cert)
+		_ = os.Remove(key)
+	}()
+
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
+			TLS:         "127.0.0.1:47017",
+			TLSCertFile: cert,
+			TLSKeyFile:  key,
 		},
 		Handler:       "pg",
 		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),

@@ -181,12 +181,20 @@ func (l *Listener) Run(ctx context.Context) error {
 
 // setupTLSListener returns a new TLS listener or and error.
 func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
-	if _, err := os.Stat(certFile); errors.Is(err, os.ErrNotExist) {
-		return nil, lazyerrors.Errorf("TLS certificate file %q does not exist", certFile)
+	if _, err := os.Stat(certFile); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("certificate file %q does not exist", certFile)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err := os.Stat(keyFile); errors.Is(err, os.ErrNotExist) {
-		return nil, lazyerrors.Errorf("TLS key file %q does not exist", keyFile)
+	if _, err := os.Stat(keyFile); err != nil {
+		if os.IsNotExist(err) {
+			return nil, lazyerrors.Errorf("TLS key file %q does not exist", keyFile)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	cer, err := tls.LoadX509KeyPair(certFile, keyFile)
