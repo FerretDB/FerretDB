@@ -16,9 +16,8 @@ package setup
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -29,7 +28,7 @@ import (
 )
 
 func generateTLSPair() ([]byte, []byte) {
-	key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +47,7 @@ func generateTLSPair() ([]byte, []byte) {
 		BasicConstraintsValid: true,
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, key.PublicKey, key)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
 	if err != nil {
 		log.Fatalf("Failed to create certificate: %s", err)
 	}
@@ -60,7 +59,7 @@ func generateTLSPair() ([]byte, []byte) {
 		panic(err)
 	}
 
-	privateKey, err := x509.MarshalECPrivateKey(key)
+	privateKey, err := x509.MarshalPKCS8PrivateKey(key)
 	if err != nil {
 		panic(err)
 	}
