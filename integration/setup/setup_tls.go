@@ -79,14 +79,14 @@ func generateTLSPair() ([]byte, []byte) {
 func GetTLSFilesPaths() (string, string) {
 	cert, key := generateTLSPair()
 
-	var certPath, keyPath = "cert.pem", "key.pem"
+	certPath, keyPath := "cert.pem", "key.pem"
 
-	err := os.WriteFile(certPath, cert, 0644)
+	err := os.WriteFile(certPath, cert, 0o644)
 	if err != nil {
 		panic(err)
 	}
 
-	err = os.WriteFile(keyPath, key, 0644)
+	err = os.WriteFile(keyPath, key, 0o644)
 	if err != nil {
 		panic(err)
 	}
