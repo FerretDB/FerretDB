@@ -375,7 +375,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			// ensure exprValue is not array because if it's array it should be compared with array
 			if _, ok := exprValue.(*types.Array); !ok {
-
 				// if fieldValue is array, ensure it is not empty.
 				if arrValue, ok := fieldValue.(*types.Array); ok && arrValue.Len() != 0 {
 					// ensure the value of the same type was found.
@@ -399,7 +398,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			// ensure exprValue is not array because if it's array it should be compared with array
 			if _, ok := exprValue.(*types.Array); !ok {
-
 				// if fieldValue is array, ensure it is not empty.
 				if arrValue, ok := fieldValue.(*types.Array); ok && arrValue.Len() != 0 {
 					// ensure the value of the same type was found.
@@ -423,7 +421,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			// ensure exprValue is not array because if it's array it should be compared with array
 			if _, ok := exprValue.(*types.Array); !ok {
-
 				// if fieldValue is array, ensure it is not empty.
 				if arrValue, ok := fieldValue.(*types.Array); ok && arrValue.Len() != 0 {
 					// ensure the value of the same type was found.

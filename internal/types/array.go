@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -168,6 +169,7 @@ func (a *Array) MaxOfType(ref any) (any, bool) {
 			max = value
 		}
 	}
+
 	if max == nil {
 		return nil, false
 	}
@@ -185,6 +187,7 @@ func (a *Array) MinOfType(ref any) (any, bool) {
 	refType := detectDataType(ref)
 
 	var min any
+
 	for i := 0; i < a.Len(); i++ {
 		value := must.NotFail(a.Get(i))
 
@@ -209,6 +212,7 @@ func (a *Array) MinOfType(ref any) (any, bool) {
 			min = value
 		}
 	}
+
 	if min == nil {
 		return nil, false
 	}
