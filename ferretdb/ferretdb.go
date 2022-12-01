@@ -82,7 +82,7 @@ func New(config *Config) (*FerretDB, error) {
 	if config.Listener.Addr == "" &&
 		config.Listener.Unix == "" &&
 		config.Listener.TLS == "" {
-		return nil, errors.New("Listener Addr and Unix and TLS are empty")
+		return nil, errors.New("Listener Addr, Unix and TLS are empty")
 	}
 
 	p, err := state.NewProvider("")
