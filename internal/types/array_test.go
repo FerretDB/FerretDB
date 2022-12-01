@@ -93,7 +93,6 @@ func TestArray(t *testing.T) {
 }
 
 func TestArrayMinMax(t *testing.T) {
-
 	const (
 		min = "min"
 		max = "max"
