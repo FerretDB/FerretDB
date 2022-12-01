@@ -53,7 +53,7 @@ func generateTLSPair() ([]byte, []byte) {
 		log.Fatalf("Failed to create certificate: %s", err)
 	}
 
-	certBytes := &bytes.Buffer{}
+	certBytes := new(bytes.Buffer)
 
 	err = pem.Encode(certBytes, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	if err != nil {
@@ -65,7 +65,7 @@ func generateTLSPair() ([]byte, []byte) {
 		panic(err)
 	}
 
-	privateKeyBytes := &bytes.Buffer{}
+	privateKeyBytes := new(bytes.Buffer)
 
 	err = pem.Encode(privateKeyBytes, &pem.Block{Type: "EC PRIVATE KEY", Bytes: privateKey})
 	if err != nil {
