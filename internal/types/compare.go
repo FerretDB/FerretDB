@@ -40,8 +40,6 @@ const (
 )
 
 // Compare compares any BSON values in the same way as MongoDB does it for filtering.
-// When it compares scalar filterValue with array docValue, it returns first item
-// which is not Incomparable.
 //
 // It converts types as needed; that may result in different types being equal.
 // For that reason, it typically should not be used in tests.
@@ -85,12 +83,12 @@ func Compare(docValue, filterValue any) CompareResult {
 }
 
 // compareScalars compares BSON scalar values.
-func compareScalars(v1v, v2 any) CompareResult {
-	if !isScalar(v1v) || !isScalar(v2) {
+func compareScalars(v1, v2 any) CompareResult {
+	if !isScalar(v1) || !isScalar(v2) {
 		return Incomparable
 	}
 
-	switch v1 := v1v.(type) {
+	switch v1 := v1.(type) {
 	case float64:
 		switch v2 := v2.(type) {
 		case float64:
