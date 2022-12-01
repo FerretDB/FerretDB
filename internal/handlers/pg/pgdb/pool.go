@@ -77,13 +77,14 @@ func NewPool(ctx context.Context, opts *NewPoolOpts) (*Pool, error) {
 
 	l := opts.Logger.Named("pgdb")
 
+	//nolint:vet // false positive - err must not be captured by closure
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		var v string
-		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+		if err := conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
 			return err
 		}
 
-		if err = opts.StateProvider.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+		if err := opts.StateProvider.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
 			l.Error("Pool.AfterConnect: failed to update state", zap.Error(err))
 		}
 

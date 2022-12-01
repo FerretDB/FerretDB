@@ -133,17 +133,22 @@ func (f *FerretDB) Run(ctx context.Context) error {
 // TCP's connection string is returned if both TCP and Unix listeners are enabled.
 func (f *FerretDB) MongoDBURI() string {
 	var u *url.URL
+	q := url.Values{
+		"directConnection": []string{"true"},
+	}
 
 	if f.config.ListenAddr != "" {
 		u = &url.URL{
-			Scheme: "mongodb",
-			Host:   f.l.Addr().String(),
-			Path:   "/",
+			Scheme:   "mongodb",
+			Host:     f.l.Addr().String(),
+			Path:     "/",
+			RawQuery: q.Encode(),
 		}
 	} else {
 		u = &url.URL{
-			Scheme: "mongodb",
-			Host:   f.l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			Scheme:   "mongodb",
+			Host:     f.l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			RawQuery: q.Encode(),
 		}
 	}
 

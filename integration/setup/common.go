@@ -157,14 +157,19 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, prefe
 	// use Unix socket if preferred and possible
 	if preferUnixSocket && listenUnix != "" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		q := url.Values{
+			"directConnection": []string{"true"},
+			// "authMechanism":    []string{"PLAIN"}, TODO https://github.com/FerretDB/FerretDB/issues/1593
+		}
+
 		u := &url.URL{
-			Scheme: "mongodb",
-			Host:   l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
-			Path:   "/",
+			Scheme:   "mongodb",
+			Host:     l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			Path:     "/",
+			RawQuery: q.Encode(),
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/1593
 			// User:     url.UserPassword("username", "password"),
-			// RawQuery: "authMechanism=PLAIN",
 		}
 
 		uri := u.String()
@@ -186,14 +191,19 @@ func buildMongoDBURI(tb testing.TB, port int) string {
 	require.Less(tb, port, 65536)
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
+	q := url.Values{
+		"directConnection": []string{"true"},
+		// "authMechanism":    []string{"PLAIN"}, TODO https://github.com/FerretDB/FerretDB/issues/1593
+	}
+
 	u := &url.URL{
-		Scheme: "mongodb",
-		Host:   fmt.Sprintf("127.0.0.1:%d", port),
-		Path:   "/",
+		Scheme:   "mongodb",
+		Host:     fmt.Sprintf("127.0.0.1:%d", port),
+		Path:     "/",
+		RawQuery: q.Encode(),
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1593
 		// User:     url.UserPassword("username", "password"),
-		// RawQuery: "authMechanism=PLAIN",
 	}
 
 	return u.String()

@@ -1,9 +1,5 @@
-CREATE SCHEMA IF NOT EXISTS _ferretdb_internal;
-
-SET LOCAL search_path = _ferretdb_internal;
-
 CREATE OR REPLACE TABLE oplog (
-    table_name text,
+    ts bigint NOT NULL,
     operation text,
     row_data jsonb
 );
@@ -23,7 +19,3 @@ BEGIN
 END;
 
 $$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER oplog_insert_trigger
-    AFTER INSERT ON oplog
-    FOR EACH ROW EXECUTE PROCEDURE oplog_insert_trigger_func();
