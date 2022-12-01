@@ -16,7 +16,6 @@ package types
 
 import (
 	"fmt"
-
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -132,6 +131,89 @@ func (a *Array) Max() any {
 	}
 
 	return max
+}
+
+// MaxOfType returns the maximum value of the same type as ref from the array.
+// If the array does not contain the same type, it returns false.
+func (a *Array) MaxOfType(ref any) (any, bool) {
+	if a == nil || a.Len() == 0 {
+		panic("cannot get Max value; array is nil or empty")
+	}
+
+	refType := detectDataType(ref)
+
+	var max any
+
+	for i := 0; i < a.Len(); i++ {
+		value := must.NotFail(a.Get(i))
+
+		vType := detectDataType(value)
+		if refType != vType {
+			// ignore different type
+			continue
+		}
+
+		if max == nil {
+			// set max to the first value of the same type.
+			max = value
+			continue
+		}
+
+		result := Compare(max, value)
+		if result == Equal && refType == numbersDataType {
+			result = compareNumberOrder(max, value, Ascending)
+		}
+
+		if result == Less {
+			max = value
+		}
+	}
+	if max == nil {
+		return nil, false
+	}
+
+	return max, true
+}
+
+// MinOfType returns the minimum value of the same type as ref from the array.
+// If the array does not contain the same type, it returns false.
+func (a *Array) MinOfType(ref any) (any, bool) {
+	if a == nil || a.Len() == 0 {
+		panic("cannot get Max value; array is nil or empty")
+	}
+
+	refType := detectDataType(ref)
+
+	var min any
+	for i := 0; i < a.Len(); i++ {
+		value := must.NotFail(a.Get(i))
+
+		vType := detectDataType(value)
+		if refType != vType {
+			// ignore different type
+			continue
+		}
+
+		if min == nil {
+			// set min to the first value of the same type.
+			min = value
+			continue
+		}
+
+		result := Compare(min, value)
+		if result == Equal && refType == numbersDataType {
+			result = compareNumberOrder(min, value, Ascending)
+		}
+
+		if result == Greater {
+			min = value
+		}
+	}
+	if min == nil {
+		return nil, false
+	}
+
+	return min, true
 }
 
 // Contains checks if the Array contains the given value.
