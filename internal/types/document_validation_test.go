@@ -53,7 +53,7 @@ func TestDocumentValidateData(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar", "foo", "baz")),
-			reason: nil,
+			reason: errors.New(`invalid key: "foo" (duplicate keys are not allowed)`),
 		},
 		"Inf+": {
 			doc:    must.NotFail(NewDocument("v", math.Inf(1))),
