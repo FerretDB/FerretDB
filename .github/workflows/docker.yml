@@ -59,7 +59,7 @@ env:
 jobs:
   build:
     name: Build image
-    runs-on: [ubuntu-22.04, trusted] # FIXME
+    runs-on: [ubuntu-22.04, trusted]
 
     if: >
       github.event_name != 'pull_request_target' ||
