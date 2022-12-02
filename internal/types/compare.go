@@ -56,8 +56,10 @@ func Compare(docValue, filterValue any) CompareResult {
 
 	switch docValue := docValue.(type) {
 	case *Document:
-		return compareDocuments(filterValue, docValue)
-
+		if filterDoc, ok := filterValue.(*Document); ok {
+			return compareDocuments(docValue, filterDoc)
+		}
+		return compareTypeOrder(docValue, filterValue)
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
 			return compareArrays(filterArr, docValue)
@@ -309,7 +311,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 
 // compareDocuments compares documents recursively by
 // comparing type order, field names, field values.
-func compareDocuments(filterValue any, docDoc *Document) CompareResult {
+func compareDocuments(docDoc, filterDoc *Document) CompareResult {
 	// TODO: filterValue could contain operators
 	// document comparison need to handle this. Return error.
 	// bson.A{
@@ -320,17 +322,11 @@ func compareDocuments(filterValue any, docDoc *Document) CompareResult {
 	//	}}},
 	//},
 
-	filterDoc, ok := filterValue.(*Document)
-	if !ok {
-		// filterValue is not a document, compare the type order.
-		return compareTypeOrder(filterValue, docDoc)
-	}
-
-	if filterDoc.Len() == 0 && docDoc.Len() == 0 {
+	if docDoc.Len() == 0 && filterDoc.Len() == 0 {
 		return Equal
 	}
 
-	if filterDoc.Len() > 0 && docDoc.Len() == 0 {
+	if docDoc.Len() == 0 && filterDoc.Len() > 0 {
 		return Less
 	}
 
@@ -354,13 +350,13 @@ func compareDocuments(filterValue any, docDoc *Document) CompareResult {
 		}
 
 		// compare keys
-		result := compareScalars(filterKeys[i], docKey)
+		result := compareScalars(docKey, filterKeys[i])
 		if result != Equal {
 			return result
 		}
 
 		// compare values
-		result = Compare(filterValues[i], docValues[i])
+		result = Compare(docValues[i], filterValues[i])
 		if result != Equal {
 			return result
 		}

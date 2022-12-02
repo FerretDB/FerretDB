@@ -121,7 +121,7 @@ const (
 )
 
 // CompareOrder detects the data type for two values and compares them.
-// When the types are equal and number type, it compares their values using Compare.
+// When the types are equal, it compares their values using Compare.
 func CompareOrder(a, b any, order SortType) CompareResult {
 	if a == nil {
 		panic("CompareOrder: a is nil")

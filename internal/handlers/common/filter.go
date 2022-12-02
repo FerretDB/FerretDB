@@ -353,6 +353,23 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
+			if docValue, ok := fieldValue.(*types.Document); ok {
+				var v any
+				for i, k := range docValue.Keys() {
+					if k == exprKey {
+						v = docValue.Values()[i]
+						break
+					}
+				}
+
+				if v == nil {
+					// key was not found
+					return false, nil
+				}
+
+				fieldValue = v
+			}
+
 			result := types.Compare(fieldValue, exprValue)
 			if result != types.Greater {
 				return false, nil
@@ -363,6 +380,23 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+			}
+
+			if docValue, ok := fieldValue.(*types.Document); ok {
+				var v any
+				for i, k := range docValue.Keys() {
+					if k == exprKey {
+						v = docValue.Values()[i]
+						break
+					}
+				}
+
+				if v == nil {
+					// key was not found
+					return false, nil
+				}
+
+				fieldValue = v
 			}
 
 			result := types.Compare(fieldValue, exprValue)
@@ -377,6 +411,23 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
+			if docValue, ok := fieldValue.(*types.Document); ok {
+				var v any
+				for i, k := range docValue.Keys() {
+					if k == exprKey {
+						v = docValue.Values()[i]
+						break
+					}
+				}
+
+				if v == nil {
+					// key was not found
+					return false, nil
+				}
+
+				fieldValue = v
+			}
+
 			result := types.Compare(fieldValue, exprValue)
 			if result != types.Less {
 				return false, nil
@@ -387,6 +438,23 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+			}
+
+			if docValue, ok := fieldValue.(*types.Document); ok {
+				var v any
+				for i, k := range docValue.Keys() {
+					if k == exprKey {
+						v = docValue.Values()[i]
+						break
+					}
+				}
+
+				if v == nil {
+					// key was not found
+					return false, nil
+				}
+
+				fieldValue = v
 			}
 
 			result := types.Compare(fieldValue, exprValue)
