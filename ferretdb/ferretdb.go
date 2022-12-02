@@ -51,7 +51,7 @@ type Config struct {
 
 // ListenerConfig represents listener configuration.
 type ListenerConfig struct {
-	// Listen address.
+	// Listen TCP address.
 	// If empty, TCP listener is disabled.
 	Addr string
 
