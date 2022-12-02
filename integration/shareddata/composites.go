@@ -40,7 +40,7 @@ var Composites = &Values[string]{
 		"array-three-reverse": bson.A{nil, "foo", int32(42)},
 		"array-empty":         bson.A{},
 		"array-null":          bson.A{nil},
-		"array-numbers-asc":   bson.A{int32(42), int32(43), int32(45)},
+		"array-numbers-asc":   bson.A{int32(42), int64(43), 45.5},
 		"array-strings-desc":  bson.A{"c", "b", "a"},
 		"array-composite":     bson.A{nil, primitive.Timestamp{T: 42, I: 13}, false, "z", primitive.NilObjectID},
 	},
