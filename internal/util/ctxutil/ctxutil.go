@@ -43,3 +43,10 @@ func WithDelay(done <-chan struct{}, delay time.Duration) (context.Context, cont
 
 	return ctx, cancel
 }
+
+// Sleep pauses the current goroutine until d has passed or ctx is canceled.
+func Sleep(ctx context.Context, d time.Duration) {
+	sleepCtx, cancel := context.WithTimeout(ctx, d)
+	defer cancel()
+	<-sleepCtx.Done()
+}

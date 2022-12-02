@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -23,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -63,37 +65,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		fetchedChan, err := h.PgPool.QueryDocuments(ctx, tx, &sp)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			// Drain the channel to prevent leaking goroutines.
-			// TODO Offer a better design instead of channels: https://github.com/FerretDB/FerretDB/issues/898.
-			for range fetchedChan {
-			}
-		}()
-
-		for fetchedItem := range fetchedChan {
-			if fetchedItem.Err != nil {
-				return fetchedItem.Err
-			}
-
-			for _, doc := range fetchedItem.Docs {
-				matches, err := common.FilterDocument(doc, params.Filter)
-				if err != nil {
-					return err
-				}
-
-				if !matches {
-					continue
-				}
-
-				resDocs = append(resDocs, doc)
-			}
-		}
-
-		return nil
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		return err
 	})
 
 	if err != nil {
@@ -135,4 +108,49 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	return &reply, nil
+}
+
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
+	resDocs := make([]*types.Document, 0, 16)
+
+	var it iterator.Interface[uint32, *types.Document]
+
+	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
+	if err != nil {
+		return nil, err
+	}
+
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			return resDocs, nil
+		default:
+			return nil, err
+		}
+
+		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
 }

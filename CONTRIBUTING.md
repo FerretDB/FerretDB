@@ -20,7 +20,8 @@ You can find a list of good issues for first-time contributors [there](https://g
 
 The supported way of contributing to FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
 with PostgreSQL and other dependencies running inside Docker containers via Docker Compose.
-On Linux, `docker` and `docker-compose` should be installed on the host.
+On Linux, `docker` (with `docker compose` subcommand a.k.a. [Compose V2](https://docs.docker.com/compose/compose-v2/),
+not old `docker-compose` tool) should be installed on the host.
 On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-desktop/) should be used.
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
