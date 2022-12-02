@@ -355,6 +355,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
 				var v any
+
 				for i, k := range docValue.Keys() {
 					if k == exprKey {
 						v = docValue.Values()[i]
@@ -384,6 +385,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
 				var v any
+
 				for i, k := range docValue.Keys() {
 					if k == exprKey {
 						v = docValue.Values()[i]
@@ -413,6 +415,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
 				var v any
+
 				for i, k := range docValue.Keys() {
 					if k == exprKey {
 						v = docValue.Values()[i]
@@ -442,6 +445,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
 				var v any
+
 				for i, k := range docValue.Keys() {
 					if k == exprKey {
 						v = docValue.Values()[i]

@@ -144,7 +144,6 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 	}
 
 	return result
-
 }
 
 // compareNumberOrder detects the number type for two values and compares them.
@@ -176,6 +175,7 @@ func compareNumberOrder(a, b any, order SortType) CompareResult {
 func compareTypeOrder(a, b any) CompareResult {
 	aType := detectDataType(a)
 	bType := detectDataType(b)
+
 	switch {
 	case aType < bType:
 		return Less

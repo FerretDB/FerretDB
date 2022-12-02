@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/constraints"
-
+	
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -59,6 +59,7 @@ func Compare(docValue, filterValue any) CompareResult {
 		if filterDoc, ok := filterValue.(*Document); ok {
 			return compareDocuments(docValue, filterDoc)
 		}
+
 		return compareTypeOrder(docValue, filterValue)
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
