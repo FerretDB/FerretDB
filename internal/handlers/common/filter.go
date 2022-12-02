@@ -386,24 +386,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 			}
 
-			if docValue, ok := fieldValue.(*types.Document); ok {
-				var v any
-
-				for i, k := range docValue.Keys() {
-					if k == exprKey {
-						v = docValue.Values()[i]
-						break
-					}
-				}
-
-				if v == nil {
-					// key was not found
-					return false, nil
-				}
-
-				fieldValue = v
-			}
-
 			result := types.Compare(fieldValue, exprValue)
 			if result != types.Equal && result != types.Greater {
 				return false, nil
@@ -425,24 +407,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				}
 			}
 
-			if docValue, ok := fieldValue.(*types.Document); ok {
-				var v any
-
-				for i, k := range docValue.Keys() {
-					if k == exprKey {
-						v = docValue.Values()[i]
-						break
-					}
-				}
-
-				if v == nil {
-					// key was not found
-					return false, nil
-				}
-
-				fieldValue = v
-			}
-
 			result := types.Compare(fieldValue, exprValue)
 			if result != types.Less {
 				return false, nil
@@ -462,24 +426,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// They are not the same type, return false.
 					return false, nil
 				}
-			}
-
-			if docValue, ok := fieldValue.(*types.Document); ok {
-				var v any
-
-				for i, k := range docValue.Keys() {
-					if k == exprKey {
-						v = docValue.Values()[i]
-						break
-					}
-				}
-
-				if v == nil {
-					// key was not found
-					return false, nil
-				}
-
-				fieldValue = v
 			}
 
 			result := types.Compare(fieldValue, exprValue)
