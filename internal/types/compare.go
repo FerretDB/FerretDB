@@ -310,43 +310,44 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 }
 
 // compareDocuments compares documents recursively by
-// comparing type order, field names, field values.
-func compareDocuments(docDoc, filterDoc *Document) CompareResult {
-	if docDoc.Len() == 0 && filterDoc.Len() == 0 {
+// comparing them in the order of types, field names and field values.
+func compareDocuments(a, b *Document) CompareResult {
+	if a.Len() == 0 && b.Len() == 0 {
 		return Equal
 	}
 
-	if docDoc.Len() == 0 && filterDoc.Len() > 0 {
+	if a.Len() == 0 && b.Len() > 0 {
 		return Less
 	}
 
-	if filterDoc.Len() == 0 {
+	if b.Len() == 0 {
 		return Greater
 	}
 
-	filterKeys := filterDoc.Keys()
-	filterValues := filterDoc.Values()
-	docValues := docDoc.Values()
+	aKeys := a.Keys()
+	bKeys := b.Keys()
+	bValues := b.Values()
+	aValues := a.Values()
 
-	for i, docKey := range docDoc.Keys() {
-		if filterDoc.Len() == i {
+	for i, docKey := range aKeys {
+		if b.Len() == i {
 			return Greater
 		}
 
 		// compare keys
-		result := compareScalars(docKey, filterKeys[i])
+		result := compareScalars(docKey, bKeys[i])
 		if result != Equal {
 			return result
 		}
 
 		// compare values
-		result = Compare(docValues[i], filterValues[i])
+		result = Compare(aValues[i], bValues[i])
 		if result != Equal {
 			return result
 		}
 	}
 
-	if docDoc.Len() < filterDoc.Len() {
+	if a.Len() < b.Len() {
 		return Less
 	}
 
