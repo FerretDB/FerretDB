@@ -329,20 +329,23 @@ func compareDocuments(a, b *Document) CompareResult {
 	bValues := b.Values()
 	aValues := a.Values()
 
-	for i, docKey := range aKeys {
+	for i, aKey := range aKeys {
 		if b.Len() == i {
 			return Greater
 		}
 
+		// compare type
+		if result := compareTypeOrder(aValues[i], bValues[i]); result != Equal {
+			return result
+		}
+
 		// compare keys
-		result := compareScalars(docKey, bKeys[i])
-		if result != Equal {
+		if result := compareScalars(aKey, bKeys[i]); result != Equal {
 			return result
 		}
 
 		// compare values
-		result = Compare(aValues[i], bValues[i])
-		if result != Equal {
+		if result := Compare(aValues[i], bValues[i]); result != Equal {
 			return result
 		}
 	}

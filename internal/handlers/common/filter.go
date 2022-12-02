@@ -340,7 +340,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return result != types.Equal, nil
 				}
 
-				return false, nil
+				return true, nil
 			case types.Regex:
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "Can't have regex as arg to $ne.", exprKey)
 			default:
@@ -352,29 +352,19 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$gt":
 			// {field: {$gt: exprValue}}
-			if _, ok := exprValue.(types.Regex); ok {
+			switch exprValue.(type) {
+			case *types.Document, *types.Array:
+			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
-			}
-
-			if docValue, ok := fieldValue.(*types.Document); ok {
-				var v any
-
-				for i, k := range docValue.Keys() {
-					if k == exprKey {
-						v = docValue.Values()[i]
-						break
-					}
-				}
-
-				if v == nil {
-					// key was not found
+			default:
+				switch fieldValue.(type) {
+				case *types.Document:
+					// Cannot perform $gt on scalar exprValue to document fieldValue.
+					// They are not the same type, return false.
 					return false, nil
 				}
-
-				fieldValue = v
 			}
-
 			result := types.Compare(fieldValue, exprValue)
 			if result != types.Greater {
 				return false, nil
@@ -382,9 +372,18 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$gte":
 			// {field: {$gte: exprValue}}
-			if _, ok := exprValue.(types.Regex); ok {
+			switch exprValue.(type) {
+			case *types.Document, *types.Array:
+			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+			default:
+				switch fieldValue.(type) {
+				case *types.Document:
+					// Cannot perform $gte on scalar exprValue to document fieldValue.
+					// They are not the same type, return false.
+					return false, nil
+				}
 			}
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
@@ -412,9 +411,18 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$lt":
 			// {field: {$lt: exprValue}}
-			if _, ok := exprValue.(types.Regex); ok {
+			switch exprValue.(type) {
+			case *types.Document, *types.Array:
+			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+			default:
+				switch fieldValue.(type) {
+				case *types.Document:
+					// Cannot perform $lt on scalar exprValue to document fieldValue.
+					// They are not the same type, return false.
+					return false, nil
+				}
 			}
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
@@ -442,9 +450,18 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$lte":
 			// {field: {$lte: exprValue}}
-			if _, ok := exprValue.(types.Regex); ok {
+			switch exprValue.(type) {
+			case *types.Document, *types.Array:
+			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+			default:
+				switch fieldValue.(type) {
+				case *types.Document:
+					// Cannot perform $lte on scalar exprValue to document fieldValue.
+					// They are not the same type, return false.
+					return false, nil
+				}
 			}
 
 			if docValue, ok := fieldValue.(*types.Document); ok {
