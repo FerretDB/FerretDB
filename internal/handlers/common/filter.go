@@ -308,7 +308,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		if !strings.HasPrefix(exprKey, "$") {
 			if documentValue, ok := fieldValue.(*types.Document); ok {
-				return matchDocuments(documentValue, expr), nil
+				result := types.Compare(documentValue, expr)
+				return result == types.Equal, nil
 			}
 			return false, nil
 		}
@@ -319,7 +320,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
 				if fieldValue, ok := fieldValue.(*types.Document); ok {
-					return matchDocuments(exprValue, fieldValue), nil
+					result := types.Compare(exprValue, fieldValue)
+					return result == types.Equal, nil
 				}
 				return false, nil
 			default:
@@ -334,8 +336,10 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
 				if fieldValue, ok := fieldValue.(*types.Document); ok {
-					return !matchDocuments(exprValue, fieldValue), nil
+					result := types.Compare(exprValue, fieldValue)
+					return result != types.Equal, nil
 				}
+
 				return false, nil
 			case types.Regex:
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "Can't have regex as arg to $ne.", exprKey)
@@ -486,9 +490,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
 						}
 					}
-					fieldValue, ok := fieldValue.(*types.Document)
-					if ok && matchDocuments(fieldValue, arrValue) {
-						found = true
+
+					if fieldValue, ok := fieldValue.(*types.Document); ok {
+						if result := types.Compare(fieldValue, arrValue); result == types.Equal {
+							found = true
+						}
 					}
 				case types.Regex:
 					match, err := filterFieldRegex(fieldValue, arrValue)
@@ -530,9 +536,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
 						}
 					}
-					fieldValue, ok := fieldValue.(*types.Document)
-					if ok && matchDocuments(fieldValue, arrValue) {
-						found = true
+
+					if fieldValue, ok := fieldValue.(*types.Document); ok {
+						if result := types.Compare(fieldValue, arrValue); result == types.Equal {
+							found = true
+						}
 					}
 				case types.Regex:
 					match, err := filterFieldRegex(fieldValue, arrValue)
