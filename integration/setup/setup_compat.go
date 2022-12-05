@@ -102,7 +102,9 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var stateProvider *state.Provider
 	var uriOpts uriOptions
+
 	uriOpts.port = *targetPortF
+
 	if uriOpts.port == 0 {
 		stateProvider, uriOpts.host, uriOpts.port = setupListener(tb, ctx, logger)
 
