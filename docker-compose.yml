@@ -56,8 +56,8 @@ services:
       - TZ=Asia/Kathmandu
     entrypoint: ["mongod","--config","/etc/mongod.conf"]
     volumes:
-      - ./build/certs:/etc/ssl
       - ./build/mongosh:/mongosh
+      - ./build/certs:/etc/ssl
       - ./build/mongod/mongod.conf:/etc/mongod.conf
 
   trivy:
