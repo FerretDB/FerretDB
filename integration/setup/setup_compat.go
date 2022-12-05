@@ -114,11 +114,9 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	}
 
 	if *compatTLSF {
-		uriOpts = uriOptions{
-			tls:             true,
-			tlsCAFilePath:   "build/certs/rootCA.pem",
-			tlsCertFilePath: "build/certs/client.pem",
-		}
+		uriOpts.tls = true
+		uriOpts.tlsCAFilePath = "build/certs/rootCA.pem"
+		uriOpts.tlsCertFilePath = "build/certs/client.pem"
 	}
 
 	uri := buildMongoDBURI(tb, uriOpts)
