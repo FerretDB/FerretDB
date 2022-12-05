@@ -16,7 +16,7 @@ slug: /diff/
 4. FerretDB does not support the `NaN` and -0 (negative zero) values.
 5. Document restrictions:
    * document keys must not contain `$` or `.` signs;
-   * document values must not contain `Infinity` or `-Infinity` values.
+   * document values must not contain `Infinity` or `-Infinity`.
 6. When insert command is called, insert documents must not have duplicate keys.
 7. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
