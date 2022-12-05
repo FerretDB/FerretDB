@@ -16,6 +16,7 @@ package shareddata
 
 import (
 	"math"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,7 +44,42 @@ var Composites = &Values[string]{
 		"array-numbers-asc":   bson.A{int32(42), int64(43), 45.5},
 		"array-strings-desc":  bson.A{"c", "b", "a"},
 		"array-documents":     bson.A{bson.D{{"field", int32(42)}}, bson.D{{"field", int32(44)}}},
-		"array-composite":     bson.A{nil, primitive.Timestamp{T: 42, I: 13}, false, "z", primitive.NilObjectID},
+		"array-composite": bson.A{
+			42.13,
+			42.0,
+			math.Copysign(0, +1),
+			math.MaxFloat64,
+			math.SmallestNonzeroFloat64,
+			doubleBig,
+			"foo",
+			"42.13",
+			"42",
+			"",
+			primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+			primitive.Binary{Data: []byte{}},
+			primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+			primitive.NilObjectID,
+			false,
+			true,
+			primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+			primitive.NewDateTimeFromTime(time.Unix(0, 0)),
+			primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+			primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+			nil,
+			primitive.Regex{Pattern: "foo", Options: "i"},
+			primitive.Regex{},
+			int32(42),
+			int32(0),
+			int32(math.MaxInt32),
+			int32(math.MinInt32),
+			primitive.Timestamp{T: 42, I: 13},
+			primitive.Timestamp{I: 1},
+			int64(42),
+			int64(0),
+			int64(math.MaxInt64),
+			int64(math.MinInt64),
+			int64Big,
+		},
 	},
 }
 

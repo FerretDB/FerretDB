@@ -68,11 +68,11 @@ func Compare(docValue, filterValue any) CompareResult {
 		for i := 0; i < docValue.Len(); i++ {
 			docValue := must.NotFail(docValue.Get(i))
 			switch docValue.(type) {
-			case *Document, *Array:
-				continue
+			case *Array:
+				panic("nested array not supported")
 			}
 
-			if res := compareScalars(docValue, filterValue); res != Incomparable {
+			if res := Compare(docValue, filterValue); res == Equal {
 				return res
 			}
 		}
