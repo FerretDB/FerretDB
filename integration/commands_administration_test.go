@@ -325,7 +325,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -447,7 +447,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -463,7 +463,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -501,7 +501,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
