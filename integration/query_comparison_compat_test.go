@@ -413,23 +413,22 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
 		},
 		"DocumentShuffledKeys": {
-			filter:     bson.D{{"v", bson.D{{"$eq", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
-			resultType: emptyResult,
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentDotNotation": {
-			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
+			filter: bson.D{{"v.foo", bson.D{{"$gte", int32(42)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentNull": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", nil}}}}}},
 		},
 		"DocumentEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{}}}}},
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.A{}}}}},
@@ -529,23 +528,23 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
 		},
 		"DocumentShuffledKeys": {
-			filter:     bson.D{{"v", bson.D{{"$eq", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
-			resultType: emptyResult,
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentDotNotation": {
-			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
+			filter: bson.D{{"v.foo", bson.D{{"$lt", int32(43)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentNull": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"foo", nil}}}}}},
 		},
 		"DocumentEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{}}}}},
+			filter:     bson.D{{"v", bson.D{{"$lt", bson.D{}}}}},
+			resultType: emptyResult,
 		},
 		"ArrayEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", bson.A{}}}}},
@@ -653,23 +652,22 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
 		},
 		"DocumentShuffledKeys": {
-			filter:     bson.D{{"v", bson.D{{"$eq", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
-			resultType: emptyResult,
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentDotNotation": {
-			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
+			filter: bson.D{{"v.foo", bson.D{{"$lte", int32(42)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentNull": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"foo", nil}}}}}},
 		},
 		"DocumentEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{}}}}},
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$lte", bson.A{}}}}},

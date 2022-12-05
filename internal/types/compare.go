@@ -59,7 +59,7 @@ func Compare(docValue, filterValue any) CompareResult {
 			return compareDocuments(docValue, filterDoc)
 		}
 
-		return compareTypeOrder(docValue, filterValue)
+		return Incomparable
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
 			return compareArrays(filterArr, docValue)
