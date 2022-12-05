@@ -73,19 +73,35 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var uri string
+	var unixHost string
+	var tcpPort int
+	var uriOpts connOpts
+
 	port := *targetPortF
 	if port == 0 {
-		targetUnixSocket := *targetUnixSocketF
-		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
-	} else {
-		uri = buildMongoDBURI(tb, port)
+		stateProvider, unixHost, tcpPort = setupListener(tb, ctx, logger)
+
+		if *targetUnixSocketF {
+			uriOpts.host = unixHost
+		} else {
+			uriOpts.port = tcpPort
+		}
 	}
+
+	if *compatTLSF {
+		uriOpts = connOpts{
+			tlsCAFilePath:   "build/certs/rootCA.pem",
+			tlsCertFilePath: "build/certs/client.pem",
+		}
+	}
+
+	uri := buildMongoDBURI(tb, uriOpts)
+	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri), opts)
+	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri, false), opts)
 
 	level.SetLevel(*logLevelF)
 
