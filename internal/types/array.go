@@ -134,6 +134,25 @@ func (a *Array) Max() any {
 	return max
 }
 
+// FilterArrayByType returns a new array which contains
+// only elements of the same BSON type as ref.
+// All numbers are treated as the same type.
+func (a *Array) FilterArrayByType(ref any) *Array {
+	refType := detectDataType(ref)
+	arr := MakeArray(0)
+
+	for i := 0; i < a.Len(); i++ {
+		value := must.NotFail(a.Get(i))
+		vType := detectDataType(value)
+
+		if refType == vType {
+			arr.Append(value)
+		}
+	}
+
+	return arr
+}
+
 // Contains checks if the Array contains the given value.
 func (a *Array) Contains(filterValue any) bool {
 	switch filterValue := filterValue.(type) {
