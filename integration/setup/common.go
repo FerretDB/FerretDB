@@ -161,16 +161,18 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 	return p, l.Unix().String(), port
 }
 
-// connOpts represents MongoDB connection options.
-type connOpts struct {
-	host            string
+// uriOptions represents MongoDB connection options.
+// nolint:fieldalignment // this structure used only once
+type uriOptions struct {
 	port            int
+	host            string
+	tls             bool
 	tlsCertFilePath string
 	tlsCAFilePath   string
 }
 
 // buildMongoDBURI builds MongoDB URI with given connection parameters.
-func buildMongoDBURI(tb testing.TB, opts connOpts) string {
+func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
 	require.Greater(tb, opts.port, 0)
 	require.Less(tb, opts.port, 65536)
 
@@ -186,9 +188,11 @@ func buildMongoDBURI(tb testing.TB, opts connOpts) string {
 	}
 
 	values := u.Query()
-	values.Set("tls", "true")
-	values.Set("tlsCertificateKeyFile", opts.tlsCertFilePath)
-	values.Set("tlsCAFile", opts.tlsCAFilePath)
+	if opts.tls {
+		values.Set("tls", "true")
+		values.Set("tlsCertificateKeyFile", opts.tlsCertFilePath)
+		values.Set("tlsCAFile", opts.tlsCAFilePath)
+	}
 
 	return u.String()
 }

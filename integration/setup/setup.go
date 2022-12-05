@@ -75,7 +75,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var stateProvider *state.Provider
 	var unixHost string
 	var tcpPort int
-	var uriOpts connOpts
+	var uriOpts uriOptions
 
 	port := *targetPortF
 	if port == 0 {
@@ -89,7 +89,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 
 	if *compatTLSF {
-		uriOpts = connOpts{
+		uriOpts = uriOptions{
+			tls:             true,
 			tlsCAFilePath:   "build/certs/rootCA.pem",
 			tlsCertFilePath: "build/certs/client.pem",
 		}
