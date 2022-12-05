@@ -47,7 +47,7 @@ var (
 	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	compatPortF       = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
-	compatTLSF = flag.Bool("compat-tls", true, "enable TLS for client connection")
+	compatTLSF = flag.Bool("compat-tls", false, "enable TLS for client connection")
 
 	postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
 
