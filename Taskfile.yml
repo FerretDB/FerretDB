@@ -291,7 +291,12 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker compose run --rm trivy filesystem . --ignorefile=./build/.trivyignore --cache-dir=./.cache/trivy --exit-code=1
+      - >
+        docker compose run --rm trivy filesystem .
+        --secret-config=./build/trivy-secret.yaml
+        --ignorefile=./build/.trivyignore
+        --cache-dir=./.cache/trivy
+        --exit-code=1
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
