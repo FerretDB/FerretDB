@@ -28,11 +28,6 @@ type doubleType float64
 // pjsontype implements pjsontype interface.
 func (d *doubleType) pjsontype() {}
 
-// doubleJSON is a JSON object representation of the doubleType.
-type doubleJSON struct {
-	F any `json:"$f"`
-}
-
 // UnmarshalJSON implements pjsontype interface.
 func (d *doubleType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
@@ -43,7 +38,7 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o doubleJSON
+	var o float64
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
