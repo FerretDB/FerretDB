@@ -10,6 +10,7 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_tigris
+  SERVICES: postgres tigris mongodb
 
 tasks:
   # invoked when `task` is run without arguments
@@ -68,44 +69,49 @@ tasks:
       - task: env-pull
       - task: init
 
-  env-setup:
-    deps: [gen-version]
-    cmds:
-      - go run {{.RACEFLAG}} ./cmd/envtool/main.go
-
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
-        --build
-        postgres tigris cockroach mongodb
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        --build --pull=always
+        {{.SERVICES}}
 
   env-up-detach-offline:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
-        postgres tigris mongodb
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        {{.SERVICES}}
+
+  env-setup:
+    deps: [gen-version]
+    cmds:
+      - go run {{.RACEFLAG}} ./cmd/envtool
+
+  env-logs:
+    cmds:
+      - docker compose ps --all
+      - docker compose logs --follow
 
   env-up:
     desc: "Start development environment"
     deps: [env-up-detach, env-setup]
     cmds:
-      - docker-compose logs --follow
+      - task: env-logs
 
   env-up-offline:
     deps: [env-up-detach-offline, env-setup]
     cmds:
-      - docker-compose logs --follow
+      - task: env-logs
 
   env-pull:
     desc: "Pull development environment's Docker images"
     cmds:
-      - docker-compose build --pull
+      - docker compose build --pull
 
   env-down:
     desc: "Stop development environment"
     cmds:
-      - docker-compose down --remove-orphans --timeout=0 --volumes
+      - docker compose down --remove-orphans --timeout=0 --volumes
 
   env-data:
     desc: "Fill `test` database with data for experiments"
@@ -223,9 +229,9 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus generated {{.FUZZCORPUS}}
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus seed {{.FUZZCORPUS}}
-      - go run {{.RACEFLAG}} ./cmd/fuzztool/fuzztool.go corpus {{.FUZZCORPUS}} generated
+      - go run {{.RACEFLAG}} ./cmd/fuzztool corpus generated {{.FUZZCORPUS}}
+      - go run {{.RACEFLAG}} ./cmd/fuzztool corpus seed {{.FUZZCORPUS}}
+      - go run {{.RACEFLAG}} ./cmd/fuzztool corpus {{.FUZZCORPUS}} generated
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover"
@@ -285,7 +291,12 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker-compose run --rm trivy filesystem . --ignorefile=./build/.trivyignore --cache-dir=./.cache/trivy --exit-code=1
+      - >
+        docker compose run --rm trivy filesystem .
+        --secret-config=./build/trivy-secret.yaml
+        --ignorefile=./build/.trivyignore
+        --cache-dir=./.cache/trivy
+        --exit-code=1
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
@@ -295,20 +306,20 @@ tasks:
   psql:
     desc: "Run psql"
     cmds:
-      - docker-compose exec postgres psql -U postgres -d ferretdb
+      - docker compose exec postgres psql -U postgres -d ferretdb
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
-        docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
+        docker compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
         --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
 
   mongo:
     desc: "Run legacy `mongo` shell"
     cmds:
       - >
-        docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
+        docker compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
         --verbose
 
   docker-init:
@@ -316,6 +327,7 @@ tasks:
       - docker buildx create --driver=docker-container --name=ferretdb --use=false
 
   docker-local:
+    desc: "Build `ferretdb-local` Docker image"
     deps: [gen-version]
     cmds:
       - >
@@ -325,6 +337,22 @@ tasks:
         --build-arg RACEFLAG={{.RACEFLAG}}
         --tag=ferretdb-local
         --load .
+    vars:
+      VERSION:
+        sh: cat internal/util/version/gen/version.txt
+      COMMIT:
+        sh: cat internal/util/version/gen/commit.txt
+
+  docker-cache:
+    deps: [gen-version]
+    cmds:
+      - >
+        docker buildx build --builder=ferretdb
+        --build-arg VERSION={{.VERSION}}
+        --build-arg COMMIT={{.COMMIT}}
+        --build-arg RACEFLAG={{.RACEFLAG}}
+        --platform=linux/arm/v7,linux/arm64,linux/amd64
+        .
     vars:
       VERSION:
         sh: cat internal/util/version/gen/version.txt
@@ -360,7 +388,7 @@ tasks:
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
       - >
-        docker-compose run --rm debian /bin/sh -c
+        docker compose run --rm debian /bin/sh -c
         'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
@@ -374,7 +402,7 @@ tasks:
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
       - >
-        docker-compose run --rm centos /bin/sh -c
+        docker compose run --rm centos /bin/sh -c
         'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
@@ -386,16 +414,16 @@ tasks:
     desc: "Format, lint and build documentation"
     deps: [docs-fmt]
     cmds:
-      - docker-compose run --rm docusaurus-docs build
+      - docker compose run --rm docusaurus-docs build
 
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
-      - docker-compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
-      - docker-compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 
   docs-dev:
     desc: "Start documentation development server"
     cmds:
-      - docker-compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+      - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0

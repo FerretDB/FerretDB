@@ -32,8 +32,7 @@ import (
 type queryIterator struct {
 	ctx         context.Context
 	rows        pgx.Rows
-	mxClosed    *sync.Mutex // protects closed
-	closed      bool        // indicates whether Close() was called
+	closeOnce   sync.Once
 	currentIter atomic.Uint32
 }
 
@@ -41,22 +40,18 @@ type queryIterator struct {
 // It sets finalizer to close the rows.
 func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
 	// queryIterator is defined as pointer to address it in the finalizer.
-	qi := &queryIterator{
-		ctx:      ctx,
-		rows:     rows,
-		closed:   false,
-		mxClosed: new(sync.Mutex),
+	it := &queryIterator{
+		ctx:  ctx,
+		rows: rows,
 	}
 
-	runtime.SetFinalizer(qi, func(qi *queryIterator) {
-		qi.mxClosed.Lock()
-		defer qi.mxClosed.Unlock()
-		if !qi.closed {
+	runtime.SetFinalizer(it, func(it *queryIterator) {
+		it.closeOnce.Do(func() {
 			panic("queryIterator.Close() has not been called")
-		}
+		})
 	})
 
-	return qi
+	return it
 }
 
 // Next implements iterator.Interface.
@@ -70,7 +65,7 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 		return 0, nil, err
 	}
 
-	if !it.rows.Next() {
+	if it.rows == nil || !it.rows.Next() {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
@@ -91,13 +86,9 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (it *queryIterator) Close() {
-	it.mxClosed.Lock()
-	defer it.mxClosed.Unlock()
-
-	if it.closed {
-		return
-	}
-
-	it.rows.Close()
-	it.closed = true
+	it.closeOnce.Do(func() {
+		if it.rows != nil {
+			it.rows.Close()
+		}
+	})
 }

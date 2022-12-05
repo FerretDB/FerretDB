@@ -152,7 +152,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
-				time.Sleep(time.Second)
+				ctxutil.Sleep(ctx, time.Second)
 			}
 			continue
 		}

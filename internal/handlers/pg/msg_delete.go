@@ -188,11 +188,6 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 			return err
 		}
 
-		if it == nil {
-			// no documents found
-			return nil
-		}
-
 		defer it.Close()
 
 		resDocs := make([]*types.Document, 0, 16)
