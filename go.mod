@@ -18,7 +18,7 @@ require (
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.3.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20221114191408-850992195362
-	golang.org/x/sys v0.2.0
+	golang.org/x/sys v0.3.0
 )
 
 require (
