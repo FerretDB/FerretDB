@@ -27,7 +27,7 @@ env:
 jobs:
   short-test:
     name: Short test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -65,7 +65,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -124,7 +124,7 @@ jobs:
 
   golangci-lint:
     name: golangci-lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -144,7 +144,7 @@ jobs:
 
   fuzz-short:
     name: Fuzz short
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
