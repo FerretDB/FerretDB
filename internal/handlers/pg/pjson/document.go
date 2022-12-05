@@ -89,6 +89,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 
 	var buf bytes.Buffer
 
+	// TODO
 	buf.WriteString(`{"$k":`)
 
 	keys := td.Keys()
