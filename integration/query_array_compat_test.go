@@ -277,6 +277,18 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"$all", nil}}}},
 			resultType: emptyResult,
 		},
+		"WholeInTheMiddle": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(43)}}}}},
+		},
+		"WholeTwoRepeated": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(42), int32(43), int32(43), int32(42)}}}}},
+		},
+		"Nil": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
+		},
+		"NilRepeated": {
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
+		},
 	}
 
 	testQueryCompat(t, testCases)

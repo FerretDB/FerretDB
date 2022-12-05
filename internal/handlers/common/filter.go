@@ -358,13 +358,33 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
-				switch fieldValue.(type) {
+				switch v := fieldValue.(type) {
 				case *types.Document:
 					// Cannot perform $gt on scalar exprValue to document fieldValue.
 					// They are not the same type, return false.
 					return false, nil
+				case *types.Array:
+					// Filter the array by only keeping the same type as exprValue.
+					// This is because array comparison with greater than compares
+					// against the maximum value of the same type from the array.
+					// All numbers are treated as the same type.
+					// Example:
+					// expr {v: {$gt: 42}}
+					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+					// Above compares the maximum number of array 41.5 to the filter 42,
+					// and results in Less. Other values "foo" and nil which are
+					// not number type are not considered for $gt comparison.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Max()
 				}
 			}
+
 			result := types.Compare(fieldValue, exprValue)
 			if result != types.Greater {
 				return false, nil
@@ -378,11 +398,30 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
-				switch fieldValue.(type) {
+				switch v := fieldValue.(type) {
 				case *types.Document:
 					// Cannot perform $gte on scalar exprValue to document fieldValue.
 					// They are not the same type, return false.
 					return false, nil
+				case *types.Array:
+					// Filter the array by only keeping the same type as exprValue.
+					// This is because array comparison with greater than or equal to compares
+					// against the maximum value of the same type from the array.
+					// All numbers are treated as the same type.
+					// Example:
+					// expr {v: {$gte: 42}}
+					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+					// Above compares the maximum number of array 41.5 to the filter 42,
+					// and results in Less. Other values "foo" and nil which are
+					// not number type are not considered for $gte comparison.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Max()
 				}
 			}
 
@@ -399,11 +438,30 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
-				switch fieldValue.(type) {
+				switch v := fieldValue.(type) {
 				case *types.Document:
 					// Cannot perform $lt on scalar exprValue to document fieldValue.
 					// They are not the same type, return false.
 					return false, nil
+				case *types.Array:
+					// Filter the array by only keeping the same type as exprValue.
+					// This is because array comparison with less than compares
+					// against the minimum value of the same type from the array.
+					// All numbers are treated as the same type.
+					// Example:
+					// expr {v: {$gte: 42}}
+					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+					// Above compares the minimum number of array 40 to the filter 42,
+					// and results in Less. Other values "foo" and nil which are
+					// not number type are not considered for $lt comparison.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Min()
 				}
 			}
 
@@ -420,11 +478,30 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			default:
-				switch fieldValue.(type) {
+				switch v := fieldValue.(type) {
 				case *types.Document:
 					// Cannot perform $lte on scalar exprValue to document fieldValue.
 					// They are not the same type, return false.
 					return false, nil
+				case *types.Array:
+					// Filter the array by only keeping the same type as exprValue.
+					// This is because array comparison with less than or equal to compares
+					// against the minimum value of the same type from the array.
+					// All numbers are treated as the same type.
+					// Example:
+					// expr {v: {$gte: 42}}
+					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+					// Above compares the minimum number of array 40 to the filter 42,
+					// and results in Less. Other values "foo" and nil which are
+					// not number type are not considered for $lt comparison.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Min()
 				}
 			}
 

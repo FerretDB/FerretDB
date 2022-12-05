@@ -96,13 +96,13 @@ func TestMultiFlag(t *testing.T) {
 				update:         bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 				multi:          false,
 				stat:           bson.D{{"n", int32(1)}, {"nModified", int32(1)}, {"ok", float64(1)}},
-				expectedToFind: 5,
+				expectedToFind: 6,
 			},
 			"True": {
 				filter:         bson.D{{"v", int32(42)}},
 				update:         bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 				multi:          true,
-				stat:           bson.D{{"n", int32(6)}, {"nModified", int32(6)}, {"ok", float64(1)}},
+				stat:           bson.D{{"n", int32(7)}, {"nModified", int32(7)}, {"ok", float64(1)}},
 				expectedToFind: 0,
 			},
 		} {

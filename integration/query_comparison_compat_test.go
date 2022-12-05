@@ -501,6 +501,9 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 		"Int32Max": {
 			filter: bson.D{{"v", bson.D{{"$gte", int32(math.MaxInt32)}}}},
 		},
+		"Int32Desc": {
+			filter: bson.D{{"v", bson.D{{"$gte", int32(45)}}}},
+		},
 		"Timestamp": {
 			filter: bson.D{{"v", bson.D{{"$gte", primitive.Timestamp{T: 41, I: 12}}}}},
 		},
@@ -583,6 +586,9 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		"StringEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", ""}}}},
 			resultType: emptyResult,
+		},
+		"StringAsc": {
+			filter: bson.D{{"v", bson.D{{"$lt", "b"}}}},
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$lt", primitive.Binary{Subtype: 0x80, Data: []byte{43}}}}}},
@@ -704,6 +710,9 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 		},
 		"StringEmpty": {
 			filter: bson.D{{"v", bson.D{{"$lte", ""}}}},
+		},
+		"StringAsc": {
+			filter: bson.D{{"v", bson.D{{"$lte", "a"}}}},
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$lte", primitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},

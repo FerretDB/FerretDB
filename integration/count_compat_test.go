@@ -28,8 +28,9 @@ import (
 
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
-	filter     bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	filter         bson.D                   // required
+	collectionName string                   // defaults to the collection created by setup.
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testCountCompat tests count compatibility test cases.
@@ -51,6 +52,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 			t.Parallel()
 
+			collectionName := tc.collectionName
 			filter := tc.filter
 			require.NotNil(t, filter, "filter should be set")
 
@@ -61,15 +63,24 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
+					var targetCollectionName, compatCollectionName string
+					if collectionName != "" {
+						targetCollectionName = collectionName
+						compatCollectionName = collectionName
+					} else {
+						targetCollectionName = targetCollection.Name()
+						compatCollectionName = compatCollection.Name()
+					}
+
 					// RunCommand must be used to test the count command.
 					// It's not possible to use CountDocuments because it calls aggregation.
 					var targetRes, compatRes bson.D
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
-						{"count", targetCollection.Name()},
+						{"count", targetCollectionName},
 						{"query", filter},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
-						{"count", compatCollection.Name()},
+						{"count", compatCollectionName},
 						{"query", filter},
 					}).Decode(&compatRes)
 
@@ -119,6 +130,19 @@ func TestCountCompat(t *testing.T) {
 		},
 		"IDNotExists": {
 			filter: bson.D{{"_id", "count-id-not-exists"}},
+		},
+		"IDBool": {
+			filter: bson.D{{"_id", "bool-true"}},
+		},
+		"FieldTrue": {
+			filter: bson.D{{"v", true}},
+		},
+		"FieldTypeArrays": {
+			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
+		},
+		"NonExistingCollection": {
+			collectionName: "doesnotexist",
+			filter:         bson.D{{"v", true}},
 		},
 	}
 
