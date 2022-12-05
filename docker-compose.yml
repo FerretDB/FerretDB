@@ -105,12 +105,10 @@ services:
       - 3000:3000
     volumes:
       # package.json and package-lock.json are not bound; container image already contains them.
-      # But we need them in the repo for Vercel.
-      # TODO https://github.com/FerretDB/FerretDB/issues/1133
+      - ./website/build:/workdir/docusaurus-docs/build:rw
       - ./website/docs:/workdir/docusaurus-docs/docs:ro
       - ./website/src:/workdir/docusaurus-docs/src:ro
       - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
       - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
-      - ./website/build:/workdir/docusaurus-docs/build:rw
