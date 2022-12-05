@@ -353,7 +353,19 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$gt":
 			// {field: {$gt: exprValue}}
 			switch exprValue.(type) {
-			case *types.Document, *types.Array:
+			case *types.Document:
+				if v, ok := fieldValue.(*types.Array); ok {
+					// Filter the array by only keeping the same type as exprValue.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Max()
+				}
+			case *types.Array:
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -393,7 +405,19 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$gte":
 			// {field: {$gte: exprValue}}
 			switch exprValue.(type) {
-			case *types.Document, *types.Array:
+			case *types.Document:
+				if v, ok := fieldValue.(*types.Array); ok {
+					// Filter the array by only keeping the same type as exprValue.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Max()
+				}
+			case *types.Array:
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -433,7 +457,19 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$lt":
 			// {field: {$lt: exprValue}}
 			switch exprValue.(type) {
-			case *types.Document, *types.Array:
+			case *types.Document:
+				if v, ok := fieldValue.(*types.Array); ok {
+					// Filter the array by only keeping the same type as exprValue.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Min()
+				}
+			case *types.Array:
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -473,7 +509,19 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		case "$lte":
 			// {field: {$lte: exprValue}}
 			switch exprValue.(type) {
-			case *types.Document, *types.Array:
+			case *types.Document:
+				if v, ok := fieldValue.(*types.Array); ok {
+					// Filter the array by only keeping the same type as exprValue.
+					arr := v.FilterArrayByType(exprValue)
+
+					if arr.Len() == 0 {
+						// The array does not contain any element with the same type as exprValue.
+						return false, nil
+					}
+
+					fieldValue = arr.Min()
+				}
+			case *types.Array:
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)

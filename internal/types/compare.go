@@ -296,7 +296,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			return orderResult
 		}
 
-		iterationResult := compareScalars(docValue, filterValue)
+		iterationResult := Compare(docValue, filterValue)
 		if iterationResult != Equal {
 			return iterationResult
 		}
