@@ -73,18 +73,14 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var unixHost string
-	var tcpPort int
 	var uriOpts uriOptions
 
-	port := *targetPortF
-	if port == 0 {
-		stateProvider, unixHost, tcpPort = setupListener(tb, ctx, logger)
+	uriOpts.port = *targetPortF
+	if uriOpts.port == 0 {
+		stateProvider, uriOpts.host, uriOpts.port = setupListener(tb, ctx, logger)
 
 		if *targetUnixSocketF {
-			uriOpts.host = unixHost
-		} else {
-			uriOpts.port = tcpPort
+			uriOpts.unixSocket = true
 		}
 	}
 

@@ -102,16 +102,12 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var stateProvider *state.Provider
 	var uriOpts uriOptions
-	var unixHost string
-	var tcpPort int
-	targetPort := *targetPortF
-	if targetPort == 0 {
-		stateProvider, unixHost, tcpPort = setupListener(tb, ctx, logger)
+	uriOpts.port = *targetPortF
+	if uriOpts.port == 0 {
+		stateProvider, uriOpts.host, uriOpts.port = setupListener(tb, ctx, logger)
 
 		if *targetUnixSocketF {
-			uriOpts.host = unixHost
-		} else {
-			uriOpts.port = tcpPort
+			uriOpts.unixSocket = true
 		}
 	}
 
@@ -137,7 +133,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	return &SetupCompatResult{
 		Ctx:               ctx,
 		TargetCollections: targetCollections,
-		TargetPort:        uint16(targetPort),
+		TargetPort:        uint16(uriOpts.port),
 		CompatCollections: compatCollections,
 		CompatPort:        uint16(compatPort),
 		StateProvider:     stateProvider,

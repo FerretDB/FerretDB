@@ -167,6 +167,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 type uriOptions struct {
 	port            int
 	host            string
+	unixSocket      bool
 	tls             bool
 	tlsCertFilePath string
 	tlsCAFilePath   string
@@ -174,8 +175,10 @@ type uriOptions struct {
 
 // buildMongoDBURI builds MongoDB URI with given connection parameters.
 func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
-	require.Greater(tb, opts.port, 0)
-	require.Less(tb, opts.port, 65536)
+	if !opts.unixSocket {
+		require.Greater(tb, opts.port, 0)
+		require.Less(tb, opts.port, 65536)
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
