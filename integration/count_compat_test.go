@@ -28,9 +28,8 @@ import (
 
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
-	filter         bson.D                   // required
-	collectionName string                   // defaults to the collection created by setup.
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	filter     bson.D                   // required
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testCountCompat tests count compatibility test cases.
@@ -52,7 +51,6 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 			t.Parallel()
 
-			collectionName := tc.collectionName
 			filter := tc.filter
 			require.NotNil(t, filter, "filter should be set")
 
@@ -63,24 +61,15 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					var targetCollectionName, compatCollectionName string
-					if collectionName != "" {
-						targetCollectionName = collectionName
-						compatCollectionName = collectionName
-					} else {
-						targetCollectionName = targetCollection.Name()
-						compatCollectionName = compatCollection.Name()
-					}
-
 					// RunCommand must be used to test the count command.
 					// It's not possible to use CountDocuments because it calls aggregation.
 					var targetRes, compatRes bson.D
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
-						{"count", targetCollectionName},
+						{"count", targetCollection.Name()},
 						{"query", filter},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
-						{"count", compatCollectionName},
+						{"count", compatCollection.Name()},
 						{"query", filter},
 					}).Decode(&compatRes)
 
@@ -139,10 +128,6 @@ func TestCountCompat(t *testing.T) {
 		},
 		"FieldTypeArrays": {
 			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
-		},
-		"NonExistingCollection": {
-			collectionName: "doesnotexist",
-			filter:         bson.D{{"v", true}},
 		},
 	}
 
