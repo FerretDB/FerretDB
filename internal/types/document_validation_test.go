@@ -51,6 +51,10 @@ func TestDocumentValidateData(t *testing.T) {
 			doc:    must.NotFail(NewDocument("v.foo", "bar")),
 			reason: errors.New(`invalid key: "v.foo" (key must not contain '.' sign)`),
 		},
+		"DuplicateKeys": {
+			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar", "foo", "baz")),
+			reason: errors.New(`invalid key: "foo" (duplicate keys are not allowed)`),
+		},
 		"Inf+": {
 			doc:    must.NotFail(NewDocument("v", math.Inf(1))),
 			reason: errors.New(`invalid value: { "v": +Inf } (infinity values are not allowed)`),
