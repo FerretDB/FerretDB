@@ -70,7 +70,7 @@ func marshalSchema(td *types.Document) (json.RawMessage, error) {
 			buf.WriteByte('}')
 
 		case *types.Array:
-			buf.WriteString(`{"t": "array", "$s":`)
+			buf.WriteString(`{"t": "array", "$i":`)
 
 			// todo recursive schema for each element
 
