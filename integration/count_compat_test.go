@@ -29,7 +29,7 @@ import (
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
 	filter         bson.D                   // required
-	collectionName string                   // default to the collection created by setup.
+	collectionName string                   // defaults to the collection created by setup.
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 }
 

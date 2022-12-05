@@ -135,7 +135,7 @@ func (a *Array) Max() any {
 }
 
 // FilterArrayByType returns a new array which contains
-// only elements of the same type as ref.
+// only elements of the same BSON type as ref.
 // All numbers are treated as the same type.
 func (a *Array) FilterArrayByType(ref any) *Array {
 	refType := detectDataType(ref)

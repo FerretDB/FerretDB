@@ -42,6 +42,7 @@ var Composites = &Values[string]{
 		"array-null":          bson.A{nil},
 		"array-numbers-asc":   bson.A{int32(42), int64(43), 45.5},
 		"array-strings-desc":  bson.A{"c", "b", "a"},
+		"array-documents":     bson.A{bson.D{{"field", int32(42)}}, bson.D{{"field", int32(44)}}},
 		"array-composite":     bson.A{nil, primitive.Timestamp{T: 42, I: 13}, false, "z", primitive.NilObjectID},
 	},
 }
