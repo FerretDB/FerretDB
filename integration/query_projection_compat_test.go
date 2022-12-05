@@ -64,21 +64,3 @@ func TestQueryProjectionCompatElemMatch(t *testing.T) {
 
 	testQueryCompat(t, testCases)
 }
-
-func TestQueryProjectionCompatSlice(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
-		"ElemMatch": {
-			filter: bson.D{{"_id", "document-composite"}},
-			projection: bson.D{{
-				"v",
-				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
-			}},
-		},
-	}
-
-	testQueryCompat(t, testCases)
-}
