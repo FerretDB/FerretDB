@@ -163,7 +163,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 
 // uriOptions represents MongoDB connection options.
 //
-//nolint:govet // this structure used only once
+//nolint:vet // this structure used only once
 type uriOptions struct {
 	port            int
 	host            string
