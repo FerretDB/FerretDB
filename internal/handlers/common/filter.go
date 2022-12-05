@@ -439,7 +439,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// and results in Less. Other values "foo" and nil which are
 					// not number type are not considered for $gte comparison.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
 						// The array does not contain any element with the same type as exprValue.
 						return false, nil
