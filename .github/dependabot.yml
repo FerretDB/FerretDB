@@ -1,4 +1,6 @@
 ---
+# run on Wednesday after deps repo
+
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -6,7 +8,7 @@ updates:
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "thursday"
+      day: "wednesday"
       time: "01:42"
 
   - package-ecosystem: "docker"
@@ -14,14 +16,14 @@ updates:
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "thursday"
+      day: "wednesday"
       time: "01:42"
   - package-ecosystem: "docker"
     directory: "/build/deps"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "thursday"
+      day: "wednesday"
       time: "01:42"
 
   - package-ecosystem: "gomod"
@@ -29,19 +31,19 @@ updates:
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "thursday"
+      day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/integration"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "thursday"
+      day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/tools"
     labels: [deps]
     schedule:
       interval: "weekly"
-      day: "thursday"
+      day: "wednesday"
       time: "01:42"
