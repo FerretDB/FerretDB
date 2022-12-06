@@ -175,12 +175,13 @@ type uriOptions struct {
 
 // buildMongoDBURI builds MongoDB URI with given connection parameters.
 func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
-	host := opts.host
-
 	if !opts.unixSocket {
 		require.Greater(tb, opts.port, 0)
 		require.Less(tb, opts.port, 65536)
+	}
 
+	host := opts.host
+	if host == "" {
 		host = fmt.Sprintf("127.0.0.1:%d", opts.port)
 	}
 
