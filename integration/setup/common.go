@@ -153,7 +153,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (prov
 		h.Close()
 	})
 
-	return p, l.Addr().String(), l.Addr().(*net.TCPAddr).Port
+	return p, l.Unix().String(), l.Addr().(*net.TCPAddr).Port
 }
 
 // uriOptions represents MongoDB URI options.
