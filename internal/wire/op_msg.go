@@ -93,10 +93,12 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 		}
 
 		values := s.Values()
+
 		for i, k := range s.Keys() {
 			if res.Has(k) {
 				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
 			}
+
 			res.Set(k, values[i])
 		}
 	}
