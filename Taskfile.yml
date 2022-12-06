@@ -327,6 +327,7 @@ tasks:
       - docker buildx create --driver=docker-container --name=ferretdb --use=false
 
   docker-local:
+    desc: "Build `ferretdb-local` Docker image"
     deps: [gen-version]
     cmds:
       - >
@@ -336,6 +337,22 @@ tasks:
         --build-arg RACEFLAG={{.RACEFLAG}}
         --tag=ferretdb-local
         --load .
+    vars:
+      VERSION:
+        sh: cat internal/util/version/gen/version.txt
+      COMMIT:
+        sh: cat internal/util/version/gen/commit.txt
+
+  docker-cache:
+    deps: [gen-version]
+    cmds:
+      - >
+        docker buildx build --builder=ferretdb
+        --build-arg VERSION={{.VERSION}}
+        --build-arg COMMIT={{.COMMIT}}
+        --build-arg RACEFLAG={{.RACEFLAG}}
+        --platform=linux/arm/v7,linux/arm64,linux/amd64
+        .
     vars:
       VERSION:
         sh: cat internal/util/version/gen/version.txt
