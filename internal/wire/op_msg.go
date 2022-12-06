@@ -76,9 +76,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 
 			a := types.MakeArray(len(section.Documents)) // may be zero
 			for _, d := range section.Documents {
-				if err := a.Append(d); err != nil {
-					return nil, lazyerrors.Error(err)
-				}
+				must.NoError(a.Append(d))
 			}
 
 			s = must.NotFail(types.NewDocument(section.Identifier, a))

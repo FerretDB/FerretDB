@@ -323,7 +323,7 @@ var msgTestCases = []testCase{{
 		0x03, 0x71, 0x00, // document "q"
 		0x10, 0x00, 0x00, 0x00, // document size
 		0x01, 0x61, 0x00, // double "a"
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x40, // FIXME
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x40, // 20.0
 		0x00, // end of document
 
 		0x03, 0x75, 0x00, // document "u"
@@ -331,7 +331,7 @@ var msgTestCases = []testCase{{
 		0x03, 0x24, 0x69, 0x6e, 0x63, 0x00, // document "$inc"
 		0x10, 0x00, 0x00, 0x00, // document size
 		0x01, 0x61, 0x00, // double "a"
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f, // FIXME
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f, // 1.0
 		0x00, // end of document
 		0x00, // end of document
 
@@ -354,23 +354,24 @@ var msgTestCases = []testCase{{
 		0xf1, 0xfc, 0xd1, 0xae, // checksum
 	},
 	msgHeader: &MsgHeader{
-		MessageLength: 118,
-		RequestID:     15,
+		MessageLength: 154,
+		RequestID:     11,
 		ResponseTo:    0,
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+		Checksum: 2932997361,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "updates",
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"q", must.NotFail(types.NewDocument(
-					"a", float64(100500),
+					"a", float64(20),
 				)),
 				"u", must.NotFail(types.NewDocument(
 					"$inc", must.NotFail(types.NewDocument(
-						"a", float64(500100),
+						"a", float64(1),
 					)),
 				)),
 				"multi", false,
