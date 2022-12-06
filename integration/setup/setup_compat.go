@@ -119,7 +119,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		}
 	}
 
-	uri = buildMongoDBURI(tb, uriOptions{port: targetPort, unixSocketPath: unixSocketPath})
+	uri = buildMongoDBURI(tb, uriOptions{port: targetPort, host: unixSocketPath})
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)

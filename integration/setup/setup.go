@@ -91,7 +91,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		}
 	}
 
-	uri = buildMongoDBURI(tb, uriOptions{port: port, unixSocketPath: unixSocketPath})
+	uri = buildMongoDBURI(tb, uriOptions{port: port, host: unixSocketPath})
 
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 

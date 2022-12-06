@@ -93,8 +93,8 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is done,
-// and returns state provider, unix socket path and TCP port.
+// setupListener starts in-process FerretDB server that runs until ctx is done.
+// It returns state provider, unix socket path or TCP port.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, string, int) {
 	tb.Helper()
 
@@ -164,13 +164,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 
 // uriOptions represents MongoDB URI options.
 type uriOptions struct {
-	unixSocketPath string
-	port           int
+	host string
+	port int
 }
 
-// buildMongoDBURI builds MongoDB URI with given TCP port number.
+// buildMongoDBURI builds MongoDB URI with given URI options.
 func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
-	host := opts.unixSocketPath
+	host := opts.host
 
 	if host == "" {
 		require.Greater(tb, opts.port, 0)
