@@ -159,7 +159,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (prov
 // uriOptions represents MongoDB URI options.
 type uriOptions struct {
 	unixSocketPath string
-	unix           bool
 	port           int
 }
 
@@ -167,7 +166,7 @@ type uriOptions struct {
 func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
 	host := opts.unixSocketPath
 
-	if !opts.unix {
+	if host == "" {
 		require.Greater(tb, opts.port, 0)
 		require.Less(tb, opts.port, 65536)
 

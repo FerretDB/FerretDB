@@ -101,20 +101,25 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var uri, socketPath string
+	var uri, unixSocketPath string
 	targetPort := *targetPortF
 	targetUnixSocket := *targetUnixSocketF
 
 	if targetPort == 0 {
+		var socketPath string
 		stateProvider, socketPath, targetPort = setupListener(tb, ctx, logger)
 
 		// use Unix socket if preferred and possible
 		// TODO https://github.com/FerretDB/FerretDB/issues/1507
 		// TODO https://github.com/FerretDB/FerretDB/issues/1594
 		// TODO https://github.com/FerretDB/FerretDB/issues/1593
+
+		if targetUnixSocket {
+			unixSocketPath = socketPath
+		}
 	}
 
-	uri = buildMongoDBURI(tb, uriOptions{port: targetPort, unixSocketPath: socketPath, unix: targetUnixSocket})
+	uri = buildMongoDBURI(tb, uriOptions{port: targetPort, unixSocketPath: unixSocketPath})
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
