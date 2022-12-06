@@ -32,6 +32,11 @@ func TestCompare(t *testing.T) {
 		skip     string
 		expected CompareResult
 	}{
+		"EmptyArrayCompareNullFieldArray": {
+			a:        must.NotFail(NewArray()),
+			b:        must.NotFail(NewArray(NullType{})),
+			expected: Less,
+		},
 		"UnsetCompareNullTypeFieldDocument": {
 			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
 			a:        must.NotFail(NewDocument()),
