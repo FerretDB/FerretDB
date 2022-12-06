@@ -290,7 +290,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		Checksum: 1737537506,
+		checksum: 1737537506,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "documents",
@@ -361,7 +361,7 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		Checksum: 2932997361,
+		checksum: 2932997361,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "updates",

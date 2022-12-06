@@ -39,8 +39,8 @@ type OpMsgSection struct {
 // OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
 type OpMsg struct {
 	FlagBits OpMsgFlags
-	Checksum uint32
 
+	checksum uint32
 	sections []OpMsgSection
 }
 
@@ -188,12 +188,13 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 	}
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		if err := binary.Read(bufr, binary.LittleEndian, &msg.Checksum); err != nil {
+		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		// TODO validate checksum https://github.com/FerretDB/FerretDB/issues/1626
 	}
 
-	// TODO validate checksum
 	if _, err := msg.Document(); err != nil {
 		return err
 	}
@@ -282,7 +283,10 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	}
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		if err := binary.Write(bufw, binary.LittleEndian, msg.Checksum); err != nil {
+		// TODO validate checksum if present (mainly for tests), update if not
+		// https://github.com/FerretDB/FerretDB/issues/1626
+
+		if err := binary.Write(bufw, binary.LittleEndian, msg.checksum); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -302,7 +306,7 @@ func (msg *OpMsg) String() string {
 
 	m := map[string]any{
 		"FlagBits": msg.FlagBits,
-		"Checksum": msg.Checksum,
+		"Checksum": msg.checksum,
 	}
 
 	sections := make([]map[string]any, len(msg.sections))
