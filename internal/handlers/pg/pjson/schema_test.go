@@ -17,16 +17,18 @@ package pjson
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSchemaMarshalUnmarshal(t *testing.T) {
 	expected := schema{
-		Keys: []string{"_id", "name", "distance", "data"},
+		Keys: []string{"_id", "data", "distance", "name"},
 		Properties: map[string]*elem{
 			"_id":      objectIDSchema,
 			"name":     stringSchema,
@@ -40,18 +42,41 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 	actualB = testutil.IndentJSON(t, actualB)
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
-		"$k": ["_id", "balance", "data", "name"],
-		"_id": {"type": "string"},
-		"distance": {"type": "double"},
-		"data": {"type": "binData", "subtype": "generic"},
-		"name": {"type": "string"}
+		"$k": ["_id", "data", "distance", "name"],
+		"_id": {"t": "string"},
+		"data": {"t": "binData", "subtype": "generic"},
+		"distance": {"t": "double"},
+		"name": {"t": "string"}
 	}`))
 
 	assert.Equal(t, string(expectedB), string(actualB))
 
-	var actual schema
+	/*var actual schema
 	err = actual.unmarshal(expectedB)
 	require.NoError(t, err)
 
-	assert.Equal(t, expected, actual)
+	assert.Equal(t, expected, actual)*/
+}
+
+func TestSchemaUnmarshal(t *testing.T) {
+	var actual schema
+	err := actual.Unmarshal([]byte(`{
+		"$k": ["_id", "data", "distance", "name"], 
+		"_id": {"t": "objectId"},
+		"data": {"t": "binData", "s": 0}, 
+		"distance": {"t": "double"}, 
+		"name": {"t": "string"}
+	}`))
+	require.NoError(t, err)
+
+	expected := &schema{
+		Keys: []string{"_id", "data", "distance", "name"},
+		Properties: map[string]*elem{
+			"_id":      objectIDSchema,
+			"data":     binDataSchema(byte(types.BinaryGeneric)),
+			"distance": doubleSchema,
+			"name":     stringSchema,
+		},
+	}
+	assert.Equal(t, expected, &actual)
 }

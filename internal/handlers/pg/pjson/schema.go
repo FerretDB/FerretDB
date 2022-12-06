@@ -23,17 +23,17 @@ import (
 
 // schema is a document's schema to unmarshal the document correctly.
 type schema struct {
-	Keys       []string         `json:"$k"`
+	Keys       []string
 	Properties map[string]*elem // each elem from $k
 }
 
 // elem describes an element of schema.
 type elem struct {
-	Type    schemaType // t, for each field
-	Schema  *schema    // $s, only for objects
-	Items   []*elem    // i, only for arrays
-	Subtype byte       // s, only for binData
-	Options string     // o, only for regex
+	Type    schemaType `json:"t"`  // for each field
+	Schema  *schema    `json:"$s"` // only for objects
+	Items   []*elem    `json:"i"`  // only for arrays
+	Subtype byte       `json:"s"`  // only for binData
+	Options string     `json:"o"`  // only for regex
 }
 
 // schemaType represents possible types in the schema.
@@ -100,12 +100,42 @@ var (
 )
 
 func (s *schema) Marshal() ([]byte, error) {
-	b, err := json.Marshal(s)
+	var buf bytes.Buffer
+
+	buf.WriteString(`{"$k":`)
+
+	keys := s.Keys
+	if keys == nil {
+		keys = []string{}
+	}
+
+	b, err := json.Marshal(keys)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return b, nil
+	buf.Write(b)
+
+	for _, key := range keys {
+		buf.WriteByte(',')
+
+		if b, err = json.Marshal(key); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+		buf.WriteByte(':')
+
+		if b, err = json.Marshal(s.Properties[key]); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+	}
+
+	buf.WriteByte('}')
+
+	return buf.Bytes(), nil
 }
 
 // marshalSchema marshals document's schema.
@@ -209,37 +239,57 @@ func (s *schema) Marshal() ([]byte, error) {
 }
 */
 
-// unmarshal parses the JSON-encoded schema.
-func (s *schema) unmarshal(b []byte) error {
-	r := bytes.NewReader(b)
+// Unmarshal parses the JSON-encoded schema.
+func (s *schema) Unmarshal(data []byte) error {
+	if bytes.Equal(data, []byte("null")) {
+		panic("null data")
+	}
+
+	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	if err := dec.Decode(s); err != nil {
-		return err
+	var rawMessages map[string]json.RawMessage
+	if err := dec.Decode(&rawMessages); err != nil {
+		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
-	// Add $k properties that are necessary for documents.
-	s.addDocumentProperties()
+	b, ok := rawMessages["$k"]
+	if !ok {
+		return lazyerrors.Errorf("pjson.schema.Unmarshal: missing $k")
+	}
+
+	var keys []string
+	if err := json.Unmarshal(b, &keys); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	s.Keys = keys
+	delete(rawMessages, "$k")
+
+	if len(keys) != len(rawMessages) {
+		return lazyerrors.Errorf("pjson.schema.Unmarshal: %d elements in $k, %d in total", len(keys), len(rawMessages))
+	}
+
+	s.Properties = make(map[string]*elem, len(keys))
+
+	for _, key := range keys {
+		b, ok = rawMessages[key]
+
+		if !ok {
+			return lazyerrors.Errorf("pjson.schema.Unmarshal: missing key %q", key)
+		}
+
+		var e elem
+		if err := json.Unmarshal(b, &e); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		s.Properties[key] = &e
+	}
 
 	return nil
-}
-
-// addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
-func (s *schema) addDocumentProperties() {
-	for _, prop := range s.Properties {
-		switch prop.Type {
-		case schemaTypeObject:
-			prop.Schema.addDocumentProperties()
-		case schemaTypeArray:
-			for _, item := range prop.Items {
-				if item.Type == schemaTypeObject {
-					item.Schema.addDocumentProperties()
-				}
-			}
-		}
-	}
 }
