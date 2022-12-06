@@ -84,6 +84,8 @@ func testMessages(t *testing.T, testCases []testCase) {
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
 
+					require.NotNil(t, msgHeader)
+					require.NotNil(t, msgBody)
 					assert.NotPanics(t, func() { _ = msgHeader.String() })
 					assert.NotPanics(t, func() { _ = msgBody.String() })
 
