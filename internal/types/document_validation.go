@@ -137,7 +137,6 @@ func (d *Document) ValidateData() error {
 				}
 			}
 		case float64:
-			// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
 			if math.IsInf(v, 0) {
 				return newValidationError(
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),

@@ -10,8 +10,8 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.1
 	go.mongodb.org/mongo-driver v1.10.4
-	go.uber.org/zap v1.23.0
-	golang.org/x/exp v0.0.0-20221114191408-850992195362
+	go.uber.org/zap v1.24.0
+	golang.org/x/exp v0.0.0-20221204150635-6dcec336b2bb
 )
 
 require (
@@ -65,7 +65,7 @@ require (
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220526192754-51939a95c655 // indirect
