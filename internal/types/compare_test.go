@@ -27,9 +27,9 @@ func TestCompare(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		skip     string
 		a        any
 		b        any
+		skip     string
 		expected CompareResult
 	}{
 		"UnsetCompareNullTypeFieldDocument": {
