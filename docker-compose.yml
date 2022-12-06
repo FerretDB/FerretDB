@@ -1,5 +1,6 @@
-# This file is used for the development of FerretDB, not for actually running it.
 ---
+# This file is used for the development of FerretDB, not for actually running it.
+
 version: "3.8"
 
 services:
@@ -96,6 +97,15 @@ services:
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
+  wrangler:
+    build:
+      context: ./build/deps
+      dockerfile: ferretdb-wrangler.Dockerfile
+    container_name: ferretdb_ferretdb-wrangler
+    ports:
+      - 8976:8976 # simplifies authentication for testing
+    volumes:
+      - ./website/build:/workdir
   docusaurus-docs:
     build:
       context: ./build/deps
@@ -104,7 +114,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      # package.json and package-lock.json are not bound; container image already contains them.
+      # container image already contains package.json and package-lock.json
       - ./website/build:/workdir/docusaurus-docs/build:rw
       - ./website/docs:/workdir/docusaurus-docs/docs:ro
       - ./website/src:/workdir/docusaurus-docs/src:ro
