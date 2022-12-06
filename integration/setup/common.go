@@ -156,10 +156,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (prov
 	return p, l.Addr().String(), l.Addr().(*net.TCPAddr).Port
 }
 
+// uriOptions represents MongoDB URI options.
 type uriOptions struct {
-	port           int
-	unix           bool
 	unixSocketPath string
+	unix           bool
+	port           int
 }
 
 // buildMongoDBURI builds MongoDB URI with given TCP port number.
