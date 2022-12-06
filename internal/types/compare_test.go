@@ -17,8 +17,9 @@ package types
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // TestCompare tests edge cases of the comparison.
@@ -31,29 +32,29 @@ func TestCompare(t *testing.T) {
 		b        any
 		expected CompareResult
 	}{
-		"NullDocumentCompareDocument": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
-			a:        must.NotFail(NewDocument("foo", "bar")),
-			b:        must.NotFail(NewDocument("foo", nil)),
-			expected: Greater,
-		},
-		"DocumentCompareNullDocument": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
-			a:        must.NotFail(NewDocument("foo", nil)),
-			b:        must.NotFail(NewDocument("foo", "bar")),
-			expected: Less,
-		},
-		"UnsetCompareNullFieldDocument": {
+		"UnsetCompareNullTypeFieldDocument": {
 			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
 			a:        must.NotFail(NewDocument()),
-			b:        must.NotFail(NewDocument("foo", nil)),
+			b:        must.NotFail(NewDocument("foo", NullType{})),
 			expected: Equal,
 		},
-		"NullFieldCompareUnsetDocument": {
+		"NullTypeFieldCompareUnsetDocument": {
 			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
-			a:        must.NotFail(NewDocument("foo", nil)),
+			a:        must.NotFail(NewDocument("foo", NullType{})),
 			b:        must.NotFail(NewDocument()),
 			expected: Equal,
+		},
+		"ArrayCompareNumber": {
+			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
+			a:        must.NotFail(NewArray(1)),
+			b:        2,
+			expected: Less,
+		},
+		"NumberCompareArray": {
+			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
+			a:        1,
+			b:        must.NotFail(NewArray(2)),
+			expected: Greater,
 		},
 	} {
 		name, tc := name, tc
