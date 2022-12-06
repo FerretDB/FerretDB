@@ -95,7 +95,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
 // and returns listening MongoDB URI.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, preferUnixSocket bool) (*state.Provider, string) {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (provider *state.Provider, socketPath string, port int) {
 	tb.Helper()
 
 	p, err := state.NewProvider("")
@@ -124,10 +124,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, prefe
 		mode = clientconn.DiffNormalMode
 	}
 
-	listenUnix := listenUnix(tb)
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:     "127.0.0.1:0",
-		ListenUnix:     listenUnix,
+		ListenUnix:     listenUnix(tb),
 		ProxyAddr:      proxyAddr,
 		Mode:           mode,
 		Metrics:        metrics,
@@ -154,41 +153,23 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, prefe
 		h.Close()
 	})
 
-	// use Unix socket if preferred and possible
-	if preferUnixSocket && listenUnix != "" {
-		// TODO https://github.com/FerretDB/FerretDB/issues/1507
-		u := &url.URL{
-			Scheme: "mongodb",
-			Host:   l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
-			Path:   "/",
+	return p, l.Addr().String(), l.Addr().(*net.TCPAddr).Port
+}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/1593
-			// User:     url.UserPassword("username", "password"),
-			// RawQuery: "authMechanism=PLAIN",
-		}
-
-		uri := u.String()
-		logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
-
-		return p, uri
-	}
-
-	port := l.Addr().(*net.TCPAddr).Port
-	uri := buildMongoDBURI(tb, port)
-	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
-
-	return p, uri
+type uriOptions struct {
+	port int
+	host string
 }
 
 // buildMongoDBURI builds MongoDB URI with given TCP port number.
-func buildMongoDBURI(tb testing.TB, port int) string {
-	require.Greater(tb, port, 0)
-	require.Less(tb, port, 65536)
+func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
+	require.Greater(tb, opts.port, 0)
+	require.Less(tb, opts.port, 65536)
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   fmt.Sprintf("127.0.0.1:%d", port),
+		Host:   fmt.Sprintf("127.0.0.1:%d", opts.port),
 		Path:   "/",
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1593

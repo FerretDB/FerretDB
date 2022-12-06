@@ -73,14 +73,33 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var uri string
+	var uri, socketPath string
 	port := *targetPortF
+
 	if port == 0 {
+		stateProvider, socketPath, port = setupListener(tb, ctx, logger)
+
 		targetUnixSocket := *targetUnixSocketF
-		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
-	} else {
-		uri = buildMongoDBURI(tb, port)
+		// use Unix socket if preferred and possible
+		if targetUnixSocket {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1507
+			u := &url.URL{
+				Scheme: "mongodb",
+				Host:   socketPath, // TODO https://github.com/FerretDB/FerretDB/issues/1594
+				Path:   "/",
+
+				// TODO https://github.com/FerretDB/FerretDB/issues/1593
+				// User:     url.UserPassword("username", "password"),
+				// RawQuery: "authMechanism=PLAIN",
+			}
+
+			uri = u.String()
+		}
 	}
+
+	uri = buildMongoDBURI(tb, uriOptions{port: port})
+
+	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)

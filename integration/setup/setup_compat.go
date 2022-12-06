@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -101,19 +102,36 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var uri string
+	var uri, socketPath string
 	targetPort := *targetPortF
 	if targetPort == 0 {
 		targetUnixSocket := *targetUnixSocketF
-		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
-	} else {
-		uri = buildMongoDBURI(tb, targetPort)
+		stateProvider, socketPath, targetPort = setupListener(tb, ctx, logger)
+
+		// use Unix socket if preferred and possible
+		if targetUnixSocket {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1507
+			u := &url.URL{
+				Scheme: "mongodb",
+				Host:   socketPath, // TODO https://github.com/FerretDB/FerretDB/issues/1594
+				Path:   "/",
+
+				// TODO https://github.com/FerretDB/FerretDB/issues/1593
+				// User:     url.UserPassword("username", "password"),
+				// RawQuery: "authMechanism=PLAIN",
+			}
+
+			uri = u.String()
+		}
+
 	}
+
+	uri = buildMongoDBURI(tb, uriOptions{port: targetPort})
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatUri := buildMongoDBURI(tb, compatPort)
+	compatUri := buildMongoDBURI(tb, uriOptions{port: compatPort})
 	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
 	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
 
