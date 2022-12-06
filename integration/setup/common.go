@@ -124,9 +124,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		mode = clientconn.DiffNormalMode
 	}
 
+	listenUnix := listenUnix(tb)
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		ListenAddr:     "127.0.0.1:0",
-		ListenUnix:     listenUnix(tb),
+		ListenUnix:     listenUnix,
 		ProxyAddr:      proxyAddr,
 		Mode:           mode,
 		Metrics:        metrics,
@@ -153,7 +154,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		h.Close()
 	})
 
-	return p, l.Unix().String(), l.Addr().(*net.TCPAddr).Port
+	var unixSocketPath string
+	if listenUnix != "" {
+		unixSocketPath = l.Unix().String()
+	}
+
+	return p, unixSocketPath, l.Addr().(*net.TCPAddr).Port
 }
 
 // uriOptions represents MongoDB URI options.
