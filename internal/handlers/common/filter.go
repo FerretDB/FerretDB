@@ -352,20 +352,36 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$gt":
 			// {field: {$gt: exprValue}}
-			switch exprValue.(type) {
+			// Array and non-array comparison with $gt compares the non-array
+			// value against the maximum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the maximum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gt: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the maximum number of array 41.5 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $gt comparison.
+			switch exprV := exprValue.(type) {
 			case *types.Document:
 				if v, ok := fieldValue.(*types.Array); ok {
-					// Filter the array by only keeping the same type as exprValue.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
 					fieldValue = arr.Max()
 				}
 			case *types.Array:
+				if d, ok := fieldValue.(*types.Document); ok {
+					arr := exprV.FilterArrayByType(d)
+					if arr.Len() == 0 {
+						return false, nil
+					}
+					exprValue = arr.Max()
+				}
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -376,20 +392,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// They are not the same type, return false.
 					return false, nil
 				case *types.Array:
-					// Filter the array by only keeping the same type as exprValue.
-					// This is because array comparison with greater than compares
-					// against the maximum value of the same type from the array.
-					// All numbers are treated as the same type.
-					// Example:
-					// expr {v: {$gt: 42}}
-					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
-					// Above compares the maximum number of array 41.5 to the filter 42,
-					// and results in Less. Other values "foo" and nil which are
-					// not number type are not considered for $gt comparison.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
@@ -404,20 +408,36 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$gte":
 			// {field: {$gte: exprValue}}
-			switch exprValue.(type) {
+			// Array and non-array comparison with $gte compares the non-array
+			// value against the maximum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the maximum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gte: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the maximum number of array 41.5 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $gte comparison.
+			switch exprV := exprValue.(type) {
 			case *types.Document:
 				if v, ok := fieldValue.(*types.Array); ok {
-					// Filter the array by only keeping the same type as exprValue.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
 					fieldValue = arr.Max()
 				}
 			case *types.Array:
+				if d, ok := fieldValue.(*types.Document); ok {
+					arr := exprV.FilterArrayByType(d)
+					if arr.Len() == 0 {
+						return false, nil
+					}
+					exprValue = arr.Max()
+				}
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -428,19 +448,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// They are not the same type, return false.
 					return false, nil
 				case *types.Array:
-					// Filter the array by only keeping the same type as exprValue.
-					// This is because array comparison with greater than or equal to compares
-					// against the maximum value of the same type from the array.
-					// All numbers are treated as the same type.
-					// Example:
-					// expr {v: {$gte: 42}}
-					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
-					// Above compares the maximum number of array 41.5 to the filter 42,
-					// and results in Less. Other values "foo" and nil which are
-					// not number type are not considered for $gte comparison.
 					arr := v.FilterArrayByType(exprValue)
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
@@ -449,26 +458,44 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 			result := types.Compare(fieldValue, exprValue)
+			fmt.Println("chi  s", fieldValue, exprValue, result)
+
 			if result != types.Equal && result != types.Greater {
 				return false, nil
 			}
 
 		case "$lt":
 			// {field: {$lt: exprValue}}
-			switch exprValue.(type) {
+			// Array and non-array comparison with $lt compares the non-array
+			// value against the minimum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the minimum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gte: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the minimum number of array 40 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $lt comparison.
+			switch exprV := exprValue.(type) {
 			case *types.Document:
 				if v, ok := fieldValue.(*types.Array); ok {
-					// Filter the array by only keeping the same type as exprValue.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
 					fieldValue = arr.Min()
 				}
 			case *types.Array:
+				if d, ok := fieldValue.(*types.Document); ok {
+					arr := exprV.FilterArrayByType(d)
+					if arr.Len() == 0 {
+						return false, nil
+					}
+					exprValue = arr.Min()
+				}
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -479,20 +506,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// They are not the same type, return false.
 					return false, nil
 				case *types.Array:
-					// Filter the array by only keeping the same type as exprValue.
-					// This is because array comparison with less than compares
-					// against the minimum value of the same type from the array.
-					// All numbers are treated as the same type.
-					// Example:
-					// expr {v: {$gte: 42}}
-					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
-					// Above compares the minimum number of array 40 to the filter 42,
-					// and results in Less. Other values "foo" and nil which are
-					// not number type are not considered for $lt comparison.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
@@ -507,20 +522,36 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$lte":
 			// {field: {$lte: exprValue}}
-			switch exprValue.(type) {
+			// Array and non-array comparison with $lte compares the non-array
+			// value against the minimum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the minimum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gte: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the minimum number of array 40 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $lt comparison.
+			switch exprV := exprValue.(type) {
 			case *types.Document:
 				if v, ok := fieldValue.(*types.Array); ok {
-					// Filter the array by only keeping the same type as exprValue.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 
 					fieldValue = arr.Min()
 				}
 			case *types.Array:
+				if d, ok := fieldValue.(*types.Document); ok {
+					arr := exprV.FilterArrayByType(d)
+					if arr.Len() == 0 {
+						return false, nil
+					}
+					exprValue = arr.Max()
+				}
 			case types.Regex:
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
@@ -531,20 +562,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// They are not the same type, return false.
 					return false, nil
 				case *types.Array:
-					// Filter the array by only keeping the same type as exprValue.
-					// This is because array comparison with less than or equal to compares
-					// against the minimum value of the same type from the array.
-					// All numbers are treated as the same type.
-					// Example:
-					// expr {v: {$gte: 42}}
-					// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
-					// Above compares the minimum number of array 40 to the filter 42,
-					// and results in Less. Other values "foo" and nil which are
-					// not number type are not considered for $lt comparison.
 					arr := v.FilterArrayByType(exprValue)
-
 					if arr.Len() == 0 {
-						// The array does not contain any element with the same type as exprValue.
 						return false, nil
 					}
 

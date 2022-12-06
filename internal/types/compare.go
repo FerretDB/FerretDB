@@ -59,7 +59,7 @@ func Compare(docValue, filterValue any) CompareResult {
 			return compareDocuments(docValue, filterDoc)
 		}
 
-		return Incomparable
+		return compareTypeOrder(docValue, filterValue)
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
 			return compareArrays(filterArr, docValue)
@@ -69,7 +69,7 @@ func Compare(docValue, filterValue any) CompareResult {
 			docValue := must.NotFail(docValue.Get(i))
 			switch docValue.(type) {
 			case *Array:
-				panic("nested array not supported")
+				panic("compare: nested array not supported")
 			}
 
 			if res := Compare(docValue, filterValue); res == Equal {
