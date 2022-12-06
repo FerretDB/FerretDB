@@ -17,13 +17,11 @@ package pjson
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestSchemaMarshalUnmarshal(t *testing.T) {
@@ -31,9 +29,9 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 		Keys: []string{"_id", "data", "distance", "name"},
 		Properties: map[string]*elem{
 			"_id":      objectIDSchema,
-			"name":     stringSchema,
+			"data":     binDataSchema(byte(types.BinaryFunction)),
 			"distance": doubleSchema,
-			"data":     binDataSchema(byte(types.BinaryGeneric)),
+			"name":     stringSchema,
 		},
 	}
 
@@ -43,8 +41,8 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
 		"$k": ["_id", "data", "distance", "name"],
-		"_id": {"t": "string"},
-		"data": {"t": "binData", "subtype": "generic"},
+		"_id": {"t": "objectId"},
+		"data": {"t": "binData", "s": 1},
 		"distance": {"t": "double"},
 		"name": {"t": "string"}
 	}`))
@@ -63,7 +61,7 @@ func TestSchemaUnmarshal(t *testing.T) {
 	err := actual.Unmarshal([]byte(`{
 		"$k": ["_id", "data", "distance", "name"], 
 		"_id": {"t": "objectId"},
-		"data": {"t": "binData", "s": 0}, 
+		"data": {"t": "binData", "s": 1}, 
 		"distance": {"t": "double"}, 
 		"name": {"t": "string"}
 	}`))
@@ -73,7 +71,7 @@ func TestSchemaUnmarshal(t *testing.T) {
 		Keys: []string{"_id", "data", "distance", "name"},
 		Properties: map[string]*elem{
 			"_id":      objectIDSchema,
-			"data":     binDataSchema(byte(types.BinaryGeneric)),
+			"data":     binDataSchema(byte(types.BinaryFunction)),
 			"distance": doubleSchema,
 			"name":     stringSchema,
 		},

@@ -29,11 +29,11 @@ type schema struct {
 
 // elem describes an element of schema.
 type elem struct {
-	Type    schemaType `json:"t"`  // for each field
-	Schema  *schema    `json:"$s"` // only for objects
-	Items   []*elem    `json:"i"`  // only for arrays
-	Subtype byte       `json:"s"`  // only for binData
-	Options string     `json:"o"`  // only for regex
+	Type    schemaType `json:"t"`            // for each field
+	Schema  *schema    `json:"$s,omitempty"` // only for objects
+	Items   []*elem    `json:"i,omitempty"`  // only for arrays
+	Subtype byte       `json:"s,omitempty"`  // only for binData
+	Options string     `json:"o,omitempty"`  // only for regex
 }
 
 // schemaType represents possible types in the schema.
