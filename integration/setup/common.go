@@ -175,15 +175,19 @@ type uriOptions struct {
 
 // buildMongoDBURI builds MongoDB URI with given connection parameters.
 func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
+	host := opts.host
+
 	if !opts.unixSocket {
 		require.Greater(tb, opts.port, 0)
 		require.Less(tb, opts.port, 65536)
+
+		host = fmt.Sprintf("127.0.0.1:%d", opts.port)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   fmt.Sprintf("127.0.0.1:%d", opts.port),
+		Host:   host,
 		Path:   "/",
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1593
