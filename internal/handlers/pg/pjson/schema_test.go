@@ -49,11 +49,11 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	assert.Equal(t, string(expectedB), string(actualB))
 
-	/*var actual schema
-	err = actual.unmarshal(expectedB)
+	var actual schema
+	err = actual.Unmarshal(expectedB)
 	require.NoError(t, err)
 
-	assert.Equal(t, expected, actual)*/
+	assert.Equal(t, expected, actual)
 }
 
 func TestSchemaUnmarshal(t *testing.T) {
