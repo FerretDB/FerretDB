@@ -898,7 +898,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
-			expectedStatus: "enabled",
+			expectedStatus: "pending",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
