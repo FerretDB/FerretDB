@@ -15,9 +15,9 @@
 package types
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/require"
 )
 
