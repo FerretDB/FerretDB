@@ -94,7 +94,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done,
-// and returns listening MongoDB URI.
+// and returns state provider, unix socket path and TCP port.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, string, int) {
 	tb.Helper()
 
