@@ -1,33 +1,115 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package pjson
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // schema is a document's schema to unmarshal the document correctly.
 type schema struct {
-	Keys       []string         // $k
+	Keys       []string         `json:"$k"`
 	Properties map[string]*elem // each elem from $k
 }
 
 // elem describes an element of schema.
 type elem struct {
-	Type       string    // type, for each field
-	Properties *schema   // $s, only for objects
-	Items      []*schema // $i, only for arrays
-	Size       string    // s, only for binData
-	Options    string    // o, only for regex
+	Type    schemaType // t, for each field
+	Schema  *schema    // $s, only for objects
+	Items   []*elem    // i, only for arrays
+	Subtype byte       // s, only for binData
+	Options string     // o, only for regex
+}
+
+// schemaType represents possible types in the schema.
+type schemaType string
+
+// List of possible types in the schema.
+const (
+	schemaTypeObject    schemaType = "object"
+	schemaTypeArray     schemaType = "array"
+	schemaTypeDouble    schemaType = "double"
+	schemaTypeString    schemaType = "string"
+	schemaTypeBinData   schemaType = "binData"
+	schemaTypeObjectID  schemaType = "objectId"
+	schemaTypeBool      schemaType = "bool"
+	schemaTypeDate      schemaType = "date"
+	schemaTypeNull      schemaType = "null"
+	schemaTypeRegex     schemaType = "regex"
+	schemaTypeInt       schemaType = "int"
+	schemaTypeTimestamp schemaType = "timestamp"
+	schemaTypeLong      schemaType = "long"
+)
+
+// Schemas for scalar types.
+var (
+	doubleSchema = &elem{
+		Type: schemaTypeDouble,
+	}
+	stringSchema = &elem{
+		Type: schemaTypeString,
+	}
+	binDataSchema = func(subtype byte) *elem {
+		return &elem{
+			Type:    schemaTypeBinData,
+			Subtype: subtype,
+		}
+	}
+	objectIDSchema = &elem{
+		Type: schemaTypeObjectID,
+	}
+	boolSchema = &elem{
+		Type: schemaTypeBool,
+	}
+	dateSchema = &elem{
+		Type: schemaTypeDate,
+	}
+	nullSchema = &elem{
+		Type: schemaTypeNull,
+	}
+	regexSchema = func(options string) *elem {
+		return &elem{
+			Type:    schemaTypeRegex,
+			Options: options,
+		}
+	}
+	intSchema = &elem{
+		Type: schemaTypeInt,
+	}
+	timestampSchema = &elem{
+		Type: schemaTypeTimestamp,
+	}
+	longSchema = &elem{
+		Type: schemaTypeLong,
+	}
+)
+
+func (s *schema) Marshal() ([]byte, error) {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return b, nil
 }
 
 // marshalSchema marshals document's schema.
-func marshalSchema(td *types.Document) (json.RawMessage, error) {
+/* func marshalSchema(td *types.Document) (json.RawMessage, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString(`{"$k":`)
@@ -125,11 +207,39 @@ func marshalSchema(td *types.Document) (json.RawMessage, error) {
 
 	return buf.Bytes(), nil
 }
+*/
 
-// unmarshalSchema unmarshals document's schema.
-func unmarshalSchema(b json.RawMessage) {
-	/*b, ok := b["$k"]
-	if !ok {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing $k")
-	}*/
+// unmarshal parses the JSON-encoded schema.
+func (s *schema) unmarshal(b []byte) error {
+	r := bytes.NewReader(b)
+	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(s); err != nil {
+		return err
+	}
+	if err := checkConsumed(dec, r); err != nil {
+		return err
+	}
+
+	// Add $k properties that are necessary for documents.
+	s.addDocumentProperties()
+
+	return nil
+}
+
+// addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
+func (s *schema) addDocumentProperties() {
+	for _, prop := range s.Properties {
+		switch prop.Type {
+		case schemaTypeObject:
+			prop.Schema.addDocumentProperties()
+		case schemaTypeArray:
+			for _, item := range prop.Items {
+				if item.Type == schemaTypeObject {
+					item.Schema.addDocumentProperties()
+				}
+			}
+		}
+	}
 }

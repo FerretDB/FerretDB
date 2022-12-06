@@ -52,7 +52,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing $s")
 	}
 
-	unmarshalSchema(b)
+	// unmarshalSchema(b)
 
 	var keys []string
 	if err := json.Unmarshal(b, &keys); err != nil {
@@ -92,7 +92,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString(`{"$s":`)
-	buf.Write(must.NotFail(marshalSchema(&td)))
+	// buf.Write(must.NotFail(marshalSchema(&td)))
 
 	keys := td.Keys()
 
