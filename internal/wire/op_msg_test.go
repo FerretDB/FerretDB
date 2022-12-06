@@ -233,30 +233,27 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{
-			{
-				Documents: []*types.Document{
-					must.NotFail(types.NewDocument(
-						"insert", "TestInsertSimple",
-						"ordered", true,
-						"$db", "testinsertsimple",
-					)),
-				},
+		sections: []OpMsgSection{{
+			Documents: []*types.Document{
+				must.NotFail(types.NewDocument(
+					"insert", "TestInsertSimple",
+					"ordered", true,
+					"$db", "testinsertsimple",
+				)),
 			},
-			{
-				Kind:       1,
-				Identifier: "documents",
-				Documents: []*types.Document{
-					must.NotFail(types.NewDocument(
-						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
-						"v", math.Copysign(0, -1),
-					)),
-				},
+		}, {
+			Kind:       1,
+			Identifier: "documents",
+			Documents: []*types.Document{
+				must.NotFail(types.NewDocument(
+					"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
+					"v", math.Copysign(0, -1),
+				)),
 			},
-		},
+		}},
 	},
-	err: `wire.OpMsg.Document: validation failed for { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 }` +
-		` with: -0 is not supported`,
+	err: `wire.OpMsg.Document: validation failed for ` +
+		`{ documents: [ { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 } ] } with: -0 is not supported`,
 }, {
 	name: "MultiSectionInsert",
 	expectedB: []byte{
@@ -297,13 +294,14 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+		Checksum: 1737537506,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "documents",
 			Documents: []*types.Document{
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
-					"a", int64(3),
+					"a", float64(3),
 				)),
 			},
 		}, {
