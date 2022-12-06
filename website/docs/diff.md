@@ -14,7 +14,9 @@ slug: /diff/
 2. FerretDB does not support NUL (`\0`) characters in strings.
 3. FerretDB does not support nested arrays.
 4. FerretDB does not support the `NaN` and -0 (negative zero) values.
-5. Document keys must not contain `$` or `.` signs.
+5. Document restrictions:
+   * document keys must not contain `$` or `.` signs;
+   * document fields of double type must not contain `Infinity` or `-Infinity` values.
 6. When insert command is called, insert documents must not have duplicate keys.
 7. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
