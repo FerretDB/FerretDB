@@ -75,29 +75,18 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var stateProvider *state.Provider
 	var uri, socketPath string
 	port := *targetPortF
+	targetUnixSocket := *targetUnixSocketF
 
 	if port == 0 {
 		stateProvider, socketPath, port = setupListener(tb, ctx, logger)
 
-		targetUnixSocket := *targetUnixSocketF
 		// use Unix socket if preferred and possible
-		if targetUnixSocket {
-			// TODO https://github.com/FerretDB/FerretDB/issues/1507
-			u := &url.URL{
-				Scheme: "mongodb",
-				Host:   socketPath, // TODO https://github.com/FerretDB/FerretDB/issues/1594
-				Path:   "/",
-
-				// TODO https://github.com/FerretDB/FerretDB/issues/1593
-				// User:     url.UserPassword("username", "password"),
-				// RawQuery: "authMechanism=PLAIN",
-			}
-
-			uri = u.String()
-		}
+		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		// TODO https://github.com/FerretDB/FerretDB/issues/1594
+		// TODO https://github.com/FerretDB/FerretDB/issues/1593
 	}
 
-	uri = buildMongoDBURI(tb, uriOptions{port: port})
+	uri = buildMongoDBURI(tb, uriOptions{port: port, unixSocketPath: socketPath, unix: targetUnixSocket})
 
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 

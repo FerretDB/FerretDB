@@ -17,7 +17,6 @@ package setup
 import (
 	"context"
 	"errors"
-	"net/url"
 	"strings"
 	"testing"
 
@@ -104,29 +103,18 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	var stateProvider *state.Provider
 	var uri, socketPath string
 	targetPort := *targetPortF
+	targetUnixSocket := *targetUnixSocketF
+
 	if targetPort == 0 {
-		targetUnixSocket := *targetUnixSocketF
 		stateProvider, socketPath, targetPort = setupListener(tb, ctx, logger)
 
 		// use Unix socket if preferred and possible
-		if targetUnixSocket {
-			// TODO https://github.com/FerretDB/FerretDB/issues/1507
-			u := &url.URL{
-				Scheme: "mongodb",
-				Host:   socketPath, // TODO https://github.com/FerretDB/FerretDB/issues/1594
-				Path:   "/",
-
-				// TODO https://github.com/FerretDB/FerretDB/issues/1593
-				// User:     url.UserPassword("username", "password"),
-				// RawQuery: "authMechanism=PLAIN",
-			}
-
-			uri = u.String()
-		}
-
+		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		// TODO https://github.com/FerretDB/FerretDB/issues/1594
+		// TODO https://github.com/FerretDB/FerretDB/issues/1593
 	}
 
-	uri = buildMongoDBURI(tb, uriOptions{port: targetPort})
+	uri = buildMongoDBURI(tb, uriOptions{port: targetPort, unixSocketPath: socketPath, unix: targetUnixSocket})
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)

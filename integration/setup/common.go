@@ -157,19 +157,26 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (prov
 }
 
 type uriOptions struct {
-	port int
-	host string
+	port           int
+	unix           bool
+	unixSocketPath string
 }
 
 // buildMongoDBURI builds MongoDB URI with given TCP port number.
 func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
-	require.Greater(tb, opts.port, 0)
-	require.Less(tb, opts.port, 65536)
+	host := opts.unixSocketPath
+
+	if !opts.unix {
+		require.Greater(tb, opts.port, 0)
+		require.Less(tb, opts.port, 65536)
+
+		host = fmt.Sprintf("127.0.0.1:%d", opts.port)
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   fmt.Sprintf("127.0.0.1:%d", opts.port),
+		Host:   host,
 		Path:   "/",
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1593
