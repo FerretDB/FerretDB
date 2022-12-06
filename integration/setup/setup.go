@@ -75,9 +75,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var stateProvider *state.Provider
 	var uri, unixSocketPath string
 	port := *targetPortF
-	targetUnixSocket := *targetUnixSocketF
 
 	if port == 0 {
+		targetUnixSocket := *targetUnixSocketF
+
 		var socketPath string
 		stateProvider, socketPath, port = setupListener(tb, ctx, logger)
 

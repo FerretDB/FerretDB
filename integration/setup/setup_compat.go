@@ -103,9 +103,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	var stateProvider *state.Provider
 	var uri, unixSocketPath string
 	targetPort := *targetPortF
-	targetUnixSocket := *targetUnixSocketF
 
 	if targetPort == 0 {
+		targetUnixSocket := *targetUnixSocketF
+
 		var socketPath string
 		stateProvider, socketPath, targetPort = setupListener(tb, ctx, logger)
 
