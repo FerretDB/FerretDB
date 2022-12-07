@@ -26,9 +26,34 @@ import (
 
 func TestSchemaMarshalUnmarshal(t *testing.T) {
 	expected := schema{
-		Keys: []string{"_id", "data", "distance", "name"},
+		Keys: []string{"_id", "arr", "data", "distance", "name"},
 		Properties: map[string]*elem{
-			"_id":      objectIDSchema,
+			"_id": objectIDSchema,
+			"arr": {
+				Type: schemaTypeArray,
+				Items: []*elem{
+					boolSchema,
+					dateSchema,
+					regexSchema("i"),
+					{
+						Type: schemaTypeObject,
+						Schema: &schema{
+							Keys: []string{"bar", "baz", "arr"},
+							Properties: map[string]*elem{
+								"bar": nullSchema,
+								"baz": longSchema,
+								"arr": {
+									Type: schemaTypeArray,
+									Items: []*elem{
+										intSchema,
+										timestampSchema,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"data":     binDataSchema(byte(types.BinaryFunction)),
 			"distance": doubleSchema,
 			"name":     stringSchema,
@@ -40,14 +65,28 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 	actualB = testutil.IndentJSON(t, actualB)
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
-		"$k": ["_id", "data", "distance", "name"],
+		"$k": ["_id", "arr", "data", "distance", "name"],
 		"_id": {"t": "objectId"},
+		"arr": {"t": "array", "i": [
+			{"t": "bool"},
+			{"t": "date"},
+			{"t": "regex", "o": "i"},
+			{"t": "object", "$s": {
+				"$k": ["bar", "baz", "arr"],
+				"bar": {"t": "null"},
+				"baz": {"t": "long"},
+				"arr": {"t": "array", "i": [
+					{"t": "int"}, 
+					{"t": "timestamp"}
+				]}
+			}}
+		]},
 		"data": {"t": "binData", "s": 1},
 		"distance": {"t": "double"},
 		"name": {"t": "string"}
 	}`))
 
-	assert.Equal(t, string(expectedB), string(actualB))
+	require.Equal(t, string(expectedB), string(actualB))
 
 	var actual schema
 	err = actual.Unmarshal(expectedB)

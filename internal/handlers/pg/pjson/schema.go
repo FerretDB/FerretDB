@@ -126,8 +126,17 @@ func (s *schema) Marshal() ([]byte, error) {
 		buf.Write(b)
 		buf.WriteByte(':')
 
-		if b, err = json.Marshal(s.Properties[key]); err != nil {
-			return nil, lazyerrors.Error(err)
+		switch s.Properties[key].Type {
+		case schemaTypeObject:
+			if b, err = s.Properties[key].Schema.Marshal(); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		case schemaTypeArray:
+
+		default:
+			if b, err = json.Marshal(s.Properties[key]); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 
 		buf.Write(b)
@@ -292,4 +301,35 @@ func (s *schema) Unmarshal(data []byte) error {
 	}
 
 	return nil
+}
+
+func (el *elem) Marshal() ([]byte, error) {
+	var b []byte
+	var err error
+
+	switch el.Type {
+	case schemaTypeObject:
+		return el.Schema.Marshal()
+
+	case schemaTypeArray:
+		for _, e := range el.Items {
+			var buf bytes.Buffer
+
+			buf.WriteString(`[`)
+
+			if b, err = e.Marshal(); err != nil {
+				return nil, err
+			}
+
+			buf.WriteString(`]`)
+			return buf.Bytes(), nil
+		}
+
+	default:
+		if b, err = json.Marshal(el); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return b, nil
 }
