@@ -49,6 +49,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
+	command: "buildInfo",
 }, {
 	name:    "handshake6",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake6_header.hex"),
@@ -105,6 +106,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
+	command: "version",
 }, {
 	name:      "import",
 	expectedB: testutil.MustParseDumpFile("testdata", "import.hex"),
@@ -144,6 +146,7 @@ var msgTestCases = []testCase{{
 			},
 		}},
 	},
+	command: "insert",
 }, {
 	name:      "msg_fuzz1",
 	expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
@@ -249,7 +252,9 @@ var msgTestCases = []testCase{{
 		}},
 	},
 	err: `wire.OpMsg.Document: validation failed for ` +
-		`{ documents: [ { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 } ] } with: -0 is not supported`,
+		`{ insert: "TestInsertSimple", ordered: true, $db: "testinsertsimple", ` +
+		`documents: [ { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 } ] } ` +
+		`with: -0 is not supported`,
 }, {
 	name: "MultiSectionInsert",
 	expectedB: []byte{
@@ -306,6 +311,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
+	command: "insert",
 }, {
 	name: "MultiSectionUpdate",
 	expectedB: []byte{
@@ -385,6 +391,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
+	command: "update",
 }}
 
 func TestMsg(t *testing.T) {
