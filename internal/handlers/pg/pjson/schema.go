@@ -300,11 +300,21 @@ func (el *elem) Marshal() ([]byte, error) {
 
 	switch el.Type {
 	case schemaTypeObject:
-		return el.Schema.Marshal()
+		var buf bytes.Buffer
+		buf.WriteString(`{"t": "object", "$s":`)
+
+		if b, err = el.Schema.Marshal(); err != nil {
+			return nil, err
+		}
+
+		buf.Write(b)
+
+		buf.WriteString(`}`)
+		return buf.Bytes(), nil
 
 	case schemaTypeArray:
 		var buf bytes.Buffer
-		buf.WriteString(`[`)
+		buf.WriteString(`{"t": "array", "i": [`)
 
 		for i, e := range el.Items {
 			if b, err = e.Marshal(); err != nil {
@@ -318,14 +328,13 @@ func (el *elem) Marshal() ([]byte, error) {
 			}
 		}
 
-		buf.WriteString(`]`)
+		buf.WriteString(`]}`)
 		return buf.Bytes(), nil
 
 	default:
-		if b, err = json.Marshal(el); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		return json.Marshal(el)
 	}
+}
 
-	return b, nil
+func (el *elem) Unmarshal(data []byte) error {
 }
