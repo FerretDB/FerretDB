@@ -254,6 +254,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return Equal
 	}
+
 	if filterArr.Len() > 0 && docArr.Len() == 0 {
 		return Less
 	}
