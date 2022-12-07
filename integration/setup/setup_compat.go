@@ -120,22 +120,24 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		}
 	}
 
-	tls := *compatTLSF
-
 	uri = buildMongoDBURI(tb, uriOptions{
 		port: targetPort,
 		host: unixSocketPath,
-		tls: tls,
-		tlsCertFilePath: "build/certs/client.pem",
-		tlsCAFilePath: "build/certs/rootCA.pem",
 	})
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatUri := buildMongoDBURI(tb, uriOptions{port: compatPort})
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
+	tls := *compatTLSF
+
+	compatUri := buildMongoDBURI(tb, uriOptions{
+		port:            compatPort,
+		tls:             tls,
+		tlsCertFilePath: "build/certs/client.pem",
+		tlsCAFilePath:   "build/certs/rootCA.pem",
+	})
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri, false), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri, tls), opts)
 
 	level.SetLevel(*logLevelF)
 

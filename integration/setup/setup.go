@@ -95,12 +95,11 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tls := *compatTLSF
 
 	uri = buildMongoDBURI(tb, uriOptions{
-		port: port,
-		host: unixSocketPath,
-		tls: tls,
-		tlsCAFilePath: "build/certs/rootCA.pem",
+		port:            port,
+		host:            unixSocketPath,
+		tls:             tls,
+		tlsCAFilePath:   "build/certs/rootCA.pem",
 		tlsCertFilePath: "build/certs/client.pem",
-
 	})
 
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
@@ -108,7 +107,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri, false), opts)
+	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri, tls), opts)
 
 	level.SetLevel(*logLevelF)
 
