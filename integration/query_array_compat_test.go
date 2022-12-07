@@ -78,7 +78,8 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"PositionIndexGreaterThanArrayLength": {
-			filter: bson.D{{"v.5", bson.D{{"$type", "double"}}}},
+			filter:     bson.D{{"v.5", bson.D{{"$type", "double"}}}},
+			resultType: emptyResult,
 		},
 		"PositionIndexAtTheEndOfArray": {
 			filter: bson.D{{"v.1", bson.D{{"$type", "string"}}}},

@@ -1478,9 +1478,16 @@ func filterByComparisonOperandApplicable(fieldValue, exprValue any) bool {
 	}
 
 	switch exprValue.(type) {
+	case *types.Document:
+		_, ok := fieldValue.(*types.Document)
+		return ok
+	case *types.Array:
+		_, ok := fieldValue.(*types.Array)
+		return ok
 	case float64, int32, int64:
 		switch fieldValue.(type) {
 		case float64, int32, int64:
+			return true
 		default:
 			return false
 		}
@@ -1499,14 +1506,11 @@ func filterByComparisonOperandApplicable(fieldValue, exprValue any) bool {
 	case time.Time:
 		_, ok := fieldValue.(time.Time)
 		return ok
-	case *types.Document:
-		_, ok := fieldValue.(*types.Document)
-		return ok
-	case *types.Array:
-		_, ok := fieldValue.(*types.Array)
-		return ok
 	case types.NullType:
 		_, ok := fieldValue.(types.NullType)
+		return ok
+	case types.Regex:
+		_, ok := fieldValue.(types.Regex)
 		return ok
 	case types.Timestamp:
 		_, ok := fieldValue.(types.Timestamp)
@@ -1514,6 +1518,4 @@ func filterByComparisonOperandApplicable(fieldValue, exprValue any) bool {
 	default:
 		panic("unsupported type")
 	}
-
-	return true
 }
