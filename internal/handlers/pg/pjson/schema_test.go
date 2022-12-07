@@ -66,24 +66,28 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 	expectedB := testutil.IndentJSON(t, []byte(`{
 		"$k": ["_id", "arr", "data", "distance", "name"],
-		"_id": {"t": "objectId"},
-		"arr": {"t": "array", "i": [
-			{"t": "bool"},
-			{"t": "date"},
-			{"t": "regex", "o": "i"},
-			{"t": "object", "$s": {
-				"$k": ["bar", "baz", "arr"],
-				"bar": {"t": "null"},
-				"baz": {"t": "long"},
-				"arr": {"t": "array", "i": [
-					{"t": "int"}, 
-					{"t": "timestamp"}
-				]}
-			}}
-		]},
-		"data": {"t": "binData", "s": 1},
-		"distance": {"t": "double"},
-		"name": {"t": "string"}
+		"p": {
+			"_id": {"t": "objectId"},
+			"arr": {"t": "array", "i": [
+				{"t": "bool"},
+				{"t": "date"},
+				{"t": "regex", "o": "i"},
+				{"t": "object", "$s": {
+					"$k": ["bar", "baz", "arr"],
+					"p": {
+						"arr": {"t": "array", "i": [
+							{"t": "int"}, 
+							{"t": "timestamp"}
+						]},
+						"bar": {"t": "null"},
+						"baz": {"t": "long"}
+					}
+				}}
+			]},
+			"data": {"t": "binData", "s": 1},
+			"distance": {"t": "double"},
+			"name": {"t": "string"}
+		}
 	}`))
 
 	require.Equal(t, string(expectedB), string(actualB))

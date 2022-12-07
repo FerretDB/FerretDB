@@ -23,8 +23,8 @@ import (
 
 // schema is a document's schema to unmarshal the document correctly.
 type schema struct {
-	Keys       []string
-	Properties map[string]*elem // each elem from $k
+	Keys       []string         `json:"$k"` // to preserve order
+	Properties map[string]*elem `json:"p"`
 }
 
 // elem describes an element of schema.
@@ -100,42 +100,12 @@ var (
 )
 
 func (s *schema) Marshal() ([]byte, error) {
-	var buf bytes.Buffer
-
-	buf.WriteString(`{"$k":`)
-
-	keys := s.Keys
-	if keys == nil {
-		keys = []string{}
-	}
-
-	b, err := json.Marshal(keys)
+	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	buf.Write(b)
-
-	for _, key := range keys {
-		buf.WriteByte(',')
-
-		if b, err = json.Marshal(key); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		buf.Write(b)
-		buf.WriteByte(':')
-
-		if b, err = s.Properties[key].Marshal(); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		buf.Write(b)
-	}
-
-	buf.WriteByte('}')
-
-	return buf.Bytes(), nil
+	return b, nil
 }
 
 // marshalSchema marshals document's schema.
@@ -240,102 +210,17 @@ func (s *schema) Marshal() ([]byte, error) {
 */
 
 // Unmarshal parses the JSON-encoded schema.
-func (s *schema) Unmarshal(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		panic("null data")
-	}
-
-	r := bytes.NewReader(data)
+func (s *schema) Unmarshal(b []byte) error {
+	r := bytes.NewReader(b)
 	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
 
-	var rawMessages map[string]json.RawMessage
-	if err := dec.Decode(&rawMessages); err != nil {
-		return lazyerrors.Error(err)
+	if err := dec.Decode(s); err != nil {
+		return err
 	}
-
 	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	b, ok := rawMessages["$k"]
-	if !ok {
-		return lazyerrors.Errorf("pjson.schema.Unmarshal: missing $k")
-	}
-
-	var keys []string
-	if err := json.Unmarshal(b, &keys); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	s.Keys = keys
-	delete(rawMessages, "$k")
-
-	if len(keys) != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.schema.Unmarshal: %d elements in $k, %d in total", len(keys), len(rawMessages))
-	}
-
-	s.Properties = make(map[string]*elem, len(keys))
-
-	for _, key := range keys {
-		b, ok = rawMessages[key]
-
-		if !ok {
-			return lazyerrors.Errorf("pjson.schema.Unmarshal: missing key %q", key)
-		}
-
-		var e elem
-		if err := json.Unmarshal(b, &e); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		s.Properties[key] = &e
+		return err
 	}
 
 	return nil
 }
-
-func (el *elem) Marshal() ([]byte, error) {
-	var b []byte
-	var err error
-
-	switch el.Type {
-	case schemaTypeObject:
-		var buf bytes.Buffer
-		buf.WriteString(`{"t": "object", "$s":`)
-
-		if b, err = el.Schema.Marshal(); err != nil {
-			return nil, err
-		}
-
-		buf.Write(b)
-
-		buf.WriteString(`}`)
-		return buf.Bytes(), nil
-
-	case schemaTypeArray:
-		var buf bytes.Buffer
-		buf.WriteString(`{"t": "array", "i": [`)
-
-		for i, e := range el.Items {
-			if b, err = e.Marshal(); err != nil {
-				return nil, err
-			}
-
-			buf.Write(b)
-
-			if i != len(el.Items)-1 {
-				buf.WriteByte(',')
-			}
-		}
-
-		buf.WriteString(`]}`)
-		return buf.Bytes(), nil
-
-	default:
-		return json.Marshal(el)
-	}
-}
-
-/*func (el *elem) Unmarshal(data []byte) error {
-
-}*/
