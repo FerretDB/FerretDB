@@ -336,5 +336,6 @@ func (el *elem) Marshal() ([]byte, error) {
 	}
 }
 
-func (el *elem) Unmarshal(data []byte) error {
-}
+/*func (el *elem) Unmarshal(data []byte) error {
+
+}*/
