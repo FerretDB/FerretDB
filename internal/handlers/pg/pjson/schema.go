@@ -316,10 +316,10 @@ func (el *elem) Marshal() ([]byte, error) {
 			if i != len(el.Items)-1 {
 				buf.WriteByte(',')
 			}
-
-			buf.WriteString(`]`)
-			return buf.Bytes(), nil
 		}
+
+		buf.WriteString(`]`)
+		return buf.Bytes(), nil
 
 	default:
 		if b, err = json.Marshal(el); err != nil {
