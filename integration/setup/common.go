@@ -167,11 +167,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 
 // uriOptions represents MongoDB URI options.
 type uriOptions struct {
-	host            string
-	port            int
-	tls             bool
-	tlsCertFilePath string
-	tlsCAFilePath   string
+	host          string
+	port          int
+	tlsCAFilePath string
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options.
@@ -197,7 +195,7 @@ func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
 	}
 
 	values := u.Query()
-	if opts.tls {
+	if opts.tlsCAFilePath != "" {
 		_, err := os.Stat(opts.tlsCAFilePath)
 		require.NoError(tb, err)
 

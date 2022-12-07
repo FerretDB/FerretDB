@@ -130,10 +130,14 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	tls := *compatTLSF
 
+	var tlsCAFilePath string
+	if tls {
+		tlsCAFilePath = "../build/certs/rootCA.pem"
+	}
+
 	compatUri := buildMongoDBURI(tb, uriOptions{
 		port:          compatPort,
-		tls:           tls,
-		tlsCAFilePath: "../build/certs/rootCA.pem",
+		tlsCAFilePath: tlsCAFilePath,
 	})
 	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri, false), opts)
 	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri, tls), opts)

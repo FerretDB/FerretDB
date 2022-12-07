@@ -94,11 +94,15 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	tls := *compatTLSF
 
+	var tlsCAFilePath string
+	if tls {
+		tlsCAFilePath = "../build/certs/rootCA.pem"
+	}
+
 	uri = buildMongoDBURI(tb, uriOptions{
 		port:          port,
 		host:          unixSocketPath,
-		tls:           tls,
-		tlsCAFilePath: "../build/certs/rootCA.pem",
+		tlsCAFilePath: tlsCAFilePath,
 	})
 
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
