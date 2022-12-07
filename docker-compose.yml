@@ -76,7 +76,7 @@ services:
   centos:
     build:
       context: ./build/deps
-      dockerfile: centos7.Dockerfile
+      dockerfile: ubi9.Dockerfile
     container_name: ferretdb_centos
     volumes:
       - ./build/rpm:/rpm
