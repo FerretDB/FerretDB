@@ -166,8 +166,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 
 // uriOptions represents MongoDB URI options.
 type uriOptions struct {
-	host string
-	port int
+	host            string
+	port            int
 	tls             bool
 	tlsCertFilePath string
 	tlsCAFilePath   string
@@ -201,6 +201,8 @@ func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
 		values.Set("tlsCertificateKeyFile", opts.tlsCertFilePath)
 		values.Set("tlsCAFile", opts.tlsCAFilePath)
 	}
+
+	u.RawQuery = values.Encode()
 
 	return u.String()
 }
