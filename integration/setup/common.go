@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"sync"
 	"testing"
 
@@ -197,8 +198,10 @@ func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
 
 	values := u.Query()
 	if opts.tls {
+		_, err := os.Stat(opts.tlsCAFilePath)
+		require.NoError(tb, err)
+
 		values.Set("tls", "true")
-		values.Set("tlsCertificateKeyFile", opts.tlsCertFilePath)
 		values.Set("tlsCAFile", opts.tlsCAFilePath)
 	}
 
