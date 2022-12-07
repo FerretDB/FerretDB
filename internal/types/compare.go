@@ -59,26 +59,17 @@ func Compare(docValue, filterValue any) CompareResult {
 			return compareDocuments(docValue, filterDoc)
 		}
 
+		if filterArray, ok := filterValue.(*Array); ok {
+			return compareNonArrayToArray(docValue, filterArray)
+		}
+
 		return compareTypeOrder(docValue, filterValue)
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
 			return compareArrays(filterArr, docValue)
 		}
 
-		for i := 0; i < docValue.Len(); i++ {
-			docValue := must.NotFail(docValue.Get(i))
-			switch docValue.(type) {
-			case *Array:
-				panic("compare: nested array not supported")
-			}
-
-			if res := Compare(docValue, filterValue); res == Equal {
-				return res
-			}
-		}
-
-		return Incomparable
-
+		return compareArrayToNonArray(docValue, filterValue)
 	default:
 		return compareScalars(docValue, filterValue)
 	}
@@ -355,4 +346,62 @@ func compareDocuments(a, b *Document) CompareResult {
 	}
 
 	return Equal
+}
+
+// compareNonArrayToArray compares a non-array value to array.
+func compareNonArrayToArray(a any, bs *Array) CompareResult {
+	var result CompareResult
+	var comparable bool
+
+	for i := 0; i < bs.Len(); i++ {
+		b := must.NotFail(bs.Get(i))
+
+		result = compareTypeOrder(a, b)
+		if result != Equal {
+			continue
+		}
+
+		result = Compare(a, b)
+		if result == Equal {
+			return result
+		}
+		comparable = true
+	}
+
+	if !comparable {
+		return Greater
+	}
+
+	// result is not `Equal` just return the result
+	// from the previous iteration.
+	return result
+}
+
+// compareArrayToNonArray compares array to a non-array value.
+func compareArrayToNonArray(as *Array, b any) CompareResult {
+	var result CompareResult
+	var comparable bool
+
+	for i := 0; i < as.Len(); i++ {
+		a := must.NotFail(as.Get(i))
+
+		result = compareTypeOrder(a, b)
+		if result != Equal {
+			continue
+		}
+
+		result = Compare(a, b)
+		if result == Equal {
+			return result
+		}
+		comparable = true
+	}
+
+	if !comparable {
+		return Less
+	}
+
+	// result is not `Equal` just return the result
+	// from the previous iteration.
+	return result
 }

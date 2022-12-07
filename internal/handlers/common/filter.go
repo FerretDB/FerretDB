@@ -458,8 +458,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 			result := types.Compare(fieldValue, exprValue)
-			fmt.Println("chi  s", fieldValue, exprValue, result)
-
 			if result != types.Equal && result != types.Greater {
 				return false, nil
 			}
