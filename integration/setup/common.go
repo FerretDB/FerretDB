@@ -214,12 +214,6 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, tls bool) *mong
 
 	opts := options.Client().ApplyURI(uri)
 
-	if tls {
-		opts = opts.SetAuth(options.Credential{
-			AuthMechanism: "MONGODB-X509",
-		})
-	}
-
 	client, err := mongo.Connect(ctx, opts)
 	require.NoError(tb, err)
 
