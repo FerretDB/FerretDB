@@ -73,24 +73,36 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var uriOpts uriOptions
+	var uri, unixSocketPath string
+	port := *targetPortF
 
-	uriOpts.port = *targetPortF
-	if uriOpts.port == 0 {
-		stateProvider, uriOpts.host, uriOpts.port = setupListener(tb, ctx, logger)
+	if port == 0 {
+		targetUnixSocket := *targetUnixSocketF
 
-		if *targetUnixSocketF {
-			uriOpts.unixSocket = true
+		var socketPath string
+		stateProvider, socketPath, port = setupListener(tb, ctx, logger)
+
+		// use Unix socket if preferred and possible
+		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		// TODO https://github.com/FerretDB/FerretDB/issues/1594
+		// TODO https://github.com/FerretDB/FerretDB/issues/1593
+
+		if targetUnixSocket {
+			unixSocketPath = socketPath
 		}
 	}
 
-	if *compatTLSF {
-		uriOpts.tls = true
-		uriOpts.tlsCAFilePath = "build/certs/rootCA.pem"
-		uriOpts.tlsCertFilePath = "build/certs/client.pem"
-	}
+	tls := *compatTLSF
 
-	uri := buildMongoDBURI(tb, uriOpts)
+	uri = buildMongoDBURI(tb, uriOptions{
+		port: port,
+		host: unixSocketPath,
+		tls: tls,
+		tlsCAFilePath: "build/certs/rootCA.pem",
+		tlsCertFilePath: "build/certs/client.pem",
+
+	})
+
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	// register cleanup function after setupListener registers its own to preserve full logs

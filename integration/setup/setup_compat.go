@@ -101,39 +101,48 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var stateProvider *state.Provider
-	var uriOpts uriOptions
+	var uri, unixSocketPath string
+	targetPort := *targetPortF
 
-	uriOpts.port = *targetPortF
+	if targetPort == 0 {
+		targetUnixSocket := *targetUnixSocketF
 
-	if uriOpts.port == 0 {
-		stateProvider, uriOpts.host, uriOpts.port = setupListener(tb, ctx, logger)
+		var socketPath string
+		stateProvider, socketPath, targetPort = setupListener(tb, ctx, logger)
 
-		if *targetUnixSocketF {
-			uriOpts.unixSocket = true
+		// use Unix socket if preferred and possible
+		// TODO https://github.com/FerretDB/FerretDB/issues/1507
+		// TODO https://github.com/FerretDB/FerretDB/issues/1594
+		// TODO https://github.com/FerretDB/FerretDB/issues/1593
+
+		if targetUnixSocket {
+			unixSocketPath = socketPath
 		}
 	}
 
-	if *compatTLSF {
-		uriOpts.tls = true
-		uriOpts.tlsCAFilePath = "build/certs/rootCA.pem"
-		uriOpts.tlsCertFilePath = "build/certs/client.pem"
-	}
+	tls := *compatTLSF
 
-	uri := buildMongoDBURI(tb, uriOpts)
+	uri = buildMongoDBURI(tb, uriOptions{
+		port: targetPort,
+		host: unixSocketPath,
+		tls: tls,
+		tlsCertFilePath: "build/certs/client.pem",
+		tlsCAFilePath: "build/certs/rootCA.pem",
+	})
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatUri := buildMongoDBURI(tb, uriOpts)
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri, false), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri, false), opts)
+	compatUri := buildMongoDBURI(tb, uriOptions{port: compatPort})
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupCompatResult{
 		Ctx:               ctx,
 		TargetCollections: targetCollections,
-		TargetPort:        uint16(uriOpts.port),
+		TargetPort:        uint16(targetPort),
 		CompatCollections: compatCollections,
 		CompatPort:        uint16(compatPort),
 		StateProvider:     stateProvider,
