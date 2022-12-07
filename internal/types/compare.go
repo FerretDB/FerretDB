@@ -59,10 +59,6 @@ func Compare(docValue, filterValue any) CompareResult {
 			return compareDocuments(docValue, filterDoc)
 		}
 
-		if filterArray, ok := filterValue.(*Array); ok {
-			return compareNonArrayToArray(docValue, filterArray)
-		}
-
 		return compareTypeOrder(docValue, filterValue)
 	case *Array:
 		if filterArr, ok := filterValue.(*Array); ok {
@@ -348,35 +344,6 @@ func compareDocuments(a, b *Document) CompareResult {
 	return Equal
 }
 
-// compareNonArrayToArray compares a non-array value to array.
-func compareNonArrayToArray(a any, bs *Array) CompareResult {
-	var result CompareResult
-	var comparable bool
-
-	for i := 0; i < bs.Len(); i++ {
-		b := must.NotFail(bs.Get(i))
-
-		result = compareTypeOrder(a, b)
-		if result != Equal {
-			continue
-		}
-
-		result = Compare(a, b)
-		if result == Equal {
-			return result
-		}
-		comparable = true
-	}
-
-	if !comparable {
-		return Greater
-	}
-
-	// result is not `Equal` just return the result
-	// from the previous iteration.
-	return result
-}
-
 // compareArrayToNonArray compares array to a non-array value.
 func compareArrayToNonArray(as *Array, b any) CompareResult {
 	var result CompareResult
@@ -398,6 +365,9 @@ func compareArrayToNonArray(as *Array, b any) CompareResult {
 	}
 
 	if !comparable {
+		// This happens upon empty array or array only containing
+		// different type. Nothing which can be compared was in the array
+		// hence the array is less than the value a.
 		return Less
 	}
 

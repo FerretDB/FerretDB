@@ -69,7 +69,7 @@ func TestCompare(t *testing.T) {
 		"EmptyDocumentCompareEmptyArray": {
 			a:        must.NotFail(NewDocument()),
 			b:        must.NotFail(NewArray()),
-			expected: Greater,
+			expected: Less,
 		},
 		"DocumentCompareDocument": {
 			a:        must.NotFail(NewDocument("a", must.NotFail(NewDocument()))),
@@ -90,7 +90,7 @@ func TestCompare(t *testing.T) {
 		"DocumentCompareEmptyArray": {
 			a:        must.NotFail(NewDocument("foo", "bar")),
 			b:        must.NotFail(NewArray()),
-			expected: Greater,
+			expected: Less,
 		},
 		"EmptyArrayCompareDocument": {
 			a:        must.NotFail(NewArray()),
@@ -106,15 +106,6 @@ func TestCompare(t *testing.T) {
 			a:        must.NotFail(NewArray(must.NotFail(NewDocument("foo", "baz")))),
 			b:        must.NotFail(NewDocument("foo", "bar")),
 			expected: Greater,
-		},
-		"DocumentCompareEqualArray": {
-			a: must.NotFail(NewDocument("foo", "bar")),
-			b: must.NotFail(NewArray(
-				must.NotFail(NewDocument("foo", "a")),
-				must.NotFail(NewDocument("foo", "b")),
-				must.NotFail(NewDocument("foo", "bar")),
-			)),
-			expected: Equal,
 		},
 		"ArrayCompareEqualDocument": {
 			a: must.NotFail(NewArray(
@@ -132,7 +123,7 @@ func TestCompare(t *testing.T) {
 				must.NotFail(NewDocument("foo", "b")),
 				must.NotFail(NewDocument("foo", "bar")),
 			)),
-			expected: Greater,
+			expected: Less,
 		},
 		"ArrayCompareGreaterDocument": {
 			a: must.NotFail(NewArray(
