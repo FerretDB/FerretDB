@@ -65,19 +65,19 @@ services:
     volumes:
       - .:/workdir
 
-  # for building .deb and .rpm packages
-  debian:
+  # for testing .deb and .rpm packages
+  ubuntu:
     build:
       context: ./build/deps
-      dockerfile: debian11.Dockerfile
-    container_name: ferretdb_debian
+      dockerfile: ubuntu2204.Dockerfile
+    container_name: ferretdb_ubuntu
     volumes:
       - ./build/deb:/deb
-  centos:
+  ubi:
     build:
       context: ./build/deps
-      dockerfile: centos7.Dockerfile
-    container_name: ferretdb_centos
+      dockerfile: ubi9.Dockerfile
+    container_name: ferretdb_ubi
     volumes:
       - ./build/rpm:/rpm
 
