@@ -61,11 +61,7 @@ func Compare(docValue, filterValue any) CompareResult {
 
 		return compareTypeOrder(docValue, filterValue)
 	case *Array:
-		if filterArr, ok := filterValue.(*Array); ok {
-			return compareArrays(filterArr, docValue)
-		}
-
-		return compareArrayToNonArray(docValue, filterValue)
+		return compareArray(docValue, filterValue)
 	default:
 		return compareScalars(docValue, filterValue)
 	}
@@ -344,8 +340,12 @@ func compareDocuments(a, b *Document) CompareResult {
 	return Equal
 }
 
-// compareArrayToNonArray compares array to a non-array value.
-func compareArrayToNonArray(as *Array, b any) CompareResult {
+// compareArray compares array to any value.
+func compareArray(as *Array, b any) CompareResult {
+	if bs, ok := b.(*Array); ok {
+		return compareArrays(bs, as)
+	}
+
 	var result CompareResult
 	var comparable bool
 
