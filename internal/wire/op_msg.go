@@ -56,51 +56,63 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 
 // Document returns the value of msg as a types.Document.
 func (msg *OpMsg) Document() (*types.Document, error) {
-	res := types.MakeDocument(2)
+	// Sections of kind 1 may come before the section of kind 0,
+	// but the command is defined by the first key in the section of kind 0.
+	// Reorder documents to set keys in the right order.
+
+	docs := make([]*types.Document, 0, len(msg.sections))
 
 	for _, section := range msg.sections {
-		var s *types.Document
-
-		switch section.Kind {
-		case 0:
-			if l := len(section.Documents); l != 1 {
-				return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
-			}
-
-			s = section.Documents[0]
-
-		case 1:
-			if section.Identifier == "" {
-				return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
-			}
-
-			a := types.MakeArray(len(section.Documents)) // may be zero
-			for _, d := range section.Documents {
-				must.NoError(a.Append(d))
-			}
-
-			s = must.NotFail(types.NewDocument(section.Identifier, a))
-
-		default:
-			return nil, lazyerrors.Errorf("wire.OpMsg.Document: unknown kind %d", section.Kind)
+		if section.Kind != 0 {
+			continue
 		}
 
-		if err := validateValue(s); err != nil {
-			return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
-				types.FormatAnyValue(s),
-				err,
-			))
+		if l := len(section.Documents); l != 1 {
+			return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
 		}
 
-		values := s.Values()
+		docs = append(docs, section.Documents[0])
+	}
 
-		for i, k := range s.Keys() {
+	for _, section := range msg.sections {
+		if section.Kind == 0 {
+			continue
+		}
+
+		if section.Kind != 1 {
+			panic(fmt.Sprintf("unknown kind %d", section.Kind))
+		}
+
+		if section.Identifier == "" {
+			return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
+		}
+
+		a := types.MakeArray(len(section.Documents))
+		for _, d := range section.Documents {
+			must.NoError(a.Append(d))
+		}
+
+		docs = append(docs, must.NotFail(types.NewDocument(section.Identifier, a)))
+	}
+
+	res := types.MakeDocument(2)
+
+	for _, doc := range docs {
+		values := doc.Values()
+
+		for i, k := range doc.Keys() {
 			if res.Has(k) {
 				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
 			}
-
 			res.Set(k, values[i])
 		}
+	}
+
+	if err := validateValue(res); err != nil {
+		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
+			types.FormatAnyValue(res),
+			err,
+		))
 	}
 
 	return res, nil
@@ -326,6 +338,8 @@ func (msg *OpMsg) String() string {
 				docs[j] = json.RawMessage(b)
 			}
 			s["Documents"] = docs
+		default:
+			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
 		sections[i] = s
