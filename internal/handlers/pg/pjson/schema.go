@@ -21,81 +21,81 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// schema is a document's schema to unmarshal the document correctly.
+// schema describes document/object schema needed to unmarshal pjson document.
 type schema struct {
-	Keys       []string         `json:"$k"` // to preserve order
-	Properties map[string]*elem `json:"p"`
+	Properties map[string]*elem `json:"p"`  // document's properties
+	Keys       []string         `json:"$k"` // to preserve properties' order
 }
 
 // elem describes an element of schema.
 type elem struct {
-	Type    schemaType `json:"t"`            // for each field
-	Schema  *schema    `json:"$s,omitempty"` // only for objects
-	Items   []*elem    `json:"i,omitempty"`  // only for arrays
-	Subtype byte       `json:"s,omitempty"`  // only for binData
-	Options string     `json:"o,omitempty"`  // only for regex
+	Type    elemType `json:"t"`            // for each field
+	Schema  *schema  `json:"$s,omitempty"` // only for objects
+	Options string   `json:"o,omitempty"`  // only for regex
+	Items   []*elem  `json:"i,omitempty"`  // only for arrays
+	Subtype byte     `json:"s,omitempty"`  // only for binData
 }
 
-// schemaType represents possible types in the schema.
-type schemaType string
+// elemType represents possible types of schema elements.
+type elemType string
 
-// List of possible types in the schema.
+// List of possible types in the schema elements.
 const (
-	schemaTypeObject    schemaType = "object"
-	schemaTypeArray     schemaType = "array"
-	schemaTypeDouble    schemaType = "double"
-	schemaTypeString    schemaType = "string"
-	schemaTypeBinData   schemaType = "binData"
-	schemaTypeObjectID  schemaType = "objectId"
-	schemaTypeBool      schemaType = "bool"
-	schemaTypeDate      schemaType = "date"
-	schemaTypeNull      schemaType = "null"
-	schemaTypeRegex     schemaType = "regex"
-	schemaTypeInt       schemaType = "int"
-	schemaTypeTimestamp schemaType = "timestamp"
-	schemaTypeLong      schemaType = "long"
+	elemTypeObject    elemType = "object"
+	elemTypeArray     elemType = "array"
+	elemTypeDouble    elemType = "double"
+	elemTypeString    elemType = "string"
+	elemTypeBinData   elemType = "binData"
+	elemTypeObjectID  elemType = "objectId"
+	elemTypeBool      elemType = "bool"
+	elemTypeDate      elemType = "date"
+	elemTypeNull      elemType = "null"
+	elemTypeRegex     elemType = "regex"
+	elemTypeInt       elemType = "int"
+	elemTypeTimestamp elemType = "timestamp"
+	elemTypeLong      elemType = "long"
 )
 
 // Schemas for scalar types.
 var (
 	doubleSchema = &elem{
-		Type: schemaTypeDouble,
+		Type: elemTypeDouble,
 	}
 	stringSchema = &elem{
-		Type: schemaTypeString,
+		Type: elemTypeString,
 	}
 	binDataSchema = func(subtype byte) *elem {
 		return &elem{
-			Type:    schemaTypeBinData,
+			Type:    elemTypeBinData,
 			Subtype: subtype,
 		}
 	}
 	objectIDSchema = &elem{
-		Type: schemaTypeObjectID,
+		Type: elemTypeObjectID,
 	}
 	boolSchema = &elem{
-		Type: schemaTypeBool,
+		Type: elemTypeBool,
 	}
 	dateSchema = &elem{
-		Type: schemaTypeDate,
+		Type: elemTypeDate,
 	}
 	nullSchema = &elem{
-		Type: schemaTypeNull,
+		Type: elemTypeNull,
 	}
 	regexSchema = func(options string) *elem {
 		return &elem{
-			Type:    schemaTypeRegex,
+			Type:    elemTypeRegex,
 			Options: options,
 		}
 	}
 	intSchema = &elem{
-		Type: schemaTypeInt,
+		Type: elemTypeInt,
 	}
 	timestampSchema = &elem{
-		Type: schemaTypeTimestamp,
+		Type: elemTypeTimestamp,
 	}
 	longSchema = &elem{
-		Type: schemaTypeLong,
+		Type: elemTypeLong,
 	}
 )
 
@@ -116,10 +116,11 @@ func (s *schema) Unmarshal(b []byte) error {
 	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(s); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
+
 	if err := checkConsumed(dec, r); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	return nil

@@ -16,6 +16,7 @@ package shareddata
 
 import (
 	"math"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -42,7 +43,20 @@ var Composites = &Values[string]{
 		"array-null":          bson.A{nil},
 		"array-numbers-asc":   bson.A{int32(42), int64(43), 45.5},
 		"array-strings-desc":  bson.A{"c", "b", "a"},
-		"array-composite":     bson.A{nil, primitive.Timestamp{T: 42, I: 13}, false, "z", primitive.NilObjectID},
+		"array-documents":     bson.A{bson.D{{"field", int32(42)}}, bson.D{{"field", int32(44)}}},
+		"array-composite": bson.A{
+			42.13,
+			"foo",
+			primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+			primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+			true,
+			primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+			nil,
+			primitive.Regex{Pattern: "foo", Options: "i"},
+			int32(42),
+			primitive.Timestamp{T: 42, I: 13},
+			int64(41),
+		},
 	},
 }
 

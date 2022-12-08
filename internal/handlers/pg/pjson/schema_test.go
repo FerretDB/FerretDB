@@ -28,35 +28,34 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		schema schema
 		json   string
+		schema schema
 	}{
 		"AllTypes": {
 			schema: schema{
-				Keys: []string{"_id", "arr", "data", "distance", "name"},
 				Properties: map[string]*elem{
 					"_id": objectIDSchema,
 					"arr": {
-						Type: schemaTypeArray,
+						Type: elemTypeArray,
 						Items: []*elem{
 							boolSchema,
 							dateSchema,
 							regexSchema("i"),
 							{
-								Type: schemaTypeObject,
+								Type: elemTypeObject,
 								Schema: &schema{
-									Keys: []string{"bar", "baz", "arr"},
 									Properties: map[string]*elem{
 										"bar": nullSchema,
 										"baz": longSchema,
 										"arr": {
-											Type: schemaTypeArray,
+											Type: elemTypeArray,
 											Items: []*elem{
 												intSchema,
 												timestampSchema,
 											},
 										},
 									},
+									Keys: []string{"bar", "baz", "arr"},
 								},
 							},
 						},
@@ -65,9 +64,9 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 					"distance": doubleSchema,
 					"name":     stringSchema,
 				},
+				Keys: []string{"_id", "arr", "data", "distance", "name"},
 			},
 			json: `{
-				"$k": ["_id", "arr", "data", "distance", "name"],
 				"p": {
 					"_id": {"t": "objectId"},
 					"arr": {"t": "array", "i": [
@@ -75,7 +74,6 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 						{"t": "date"},
 						{"t": "regex", "o": "i"},
 						{"t": "object", "$s": {
-							"$k": ["bar", "baz", "arr"],
 							"p": {
 								"arr": {"t": "array", "i": [
 									{"t": "int"}, 
@@ -83,51 +81,68 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 								]},
 								"bar": {"t": "null"},
 								"baz": {"t": "long"}
-							}
+							},
+							"$k": ["bar", "baz", "arr"]
 						}}
 					]},
 					"data": {"t": "binData", "s": 1},
 					"distance": {"t": "double"},
 					"name": {"t": "string"}
-				}
+				},
+				"$k": ["_id", "arr", "data", "distance", "name"]
 			}`,
 		},
 		"Embedded": {
 			schema: schema{
-				Keys: []string{"obj"},
 				Properties: map[string]*elem{
 					"obj": {
-						Type: schemaTypeObject,
+						Type: elemTypeObject,
 						Schema: &schema{
-							Keys: []string{"arr", "empty-arr"},
 							Properties: map[string]*elem{
 								"arr": {
-									Type: schemaTypeArray,
+									Type: elemTypeArray,
 									Items: []*elem{
 										{
-											Type: schemaTypeObject,
+											Type: elemTypeObject,
+										},
+										{
+											Type: elemTypeObject,
+											Schema: &schema{
+												Properties: map[string]*elem{
+													"foo": {
+														Type: elemTypeArray,
+													},
+												},
+												Keys: []string{"foo"},
+											},
 										},
 									},
 								},
 								"empty-arr": {
-									Type: schemaTypeArray,
+									Type: elemTypeArray,
 								},
 							},
+							Keys: []string{"arr", "empty-arr"},
 						},
 					},
 				},
+				Keys: []string{"obj"},
 			},
 			json: `{
-				"$k": ["obj"],
 				"p": {
 					"obj": {"t": "object", "$s": {
-						"$k": ["arr", "empty-arr"],
 						"p": {	
-							"arr": {"t": "array", "i": [{"t": "object"}]},
+							"arr": {"t": "array", "i": [
+								{"t": "object"}, {"t": "object", "$s": {
+									"p": {"foo": {"t": "array"}}, "$k": ["foo"]
+								}}
+							]},
 							"empty-arr": {"t": "array"}				
-						}
+						},
+						"$k": ["arr", "empty-arr"]
 					}}
-				}
+				},
+				"$k": ["obj"]
 			}`,
 		},
 	} {
