@@ -166,6 +166,17 @@ func TestUpdateCompat(t *testing.T) {
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
 		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateCompatFilter(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
 		"ReplaceDocumentFilter": {
 			filter:  bson.D{{"v", bson.D{{"$eq", true}}}},
 			replace: bson.D{{"replacement-value", int32(1)}},
