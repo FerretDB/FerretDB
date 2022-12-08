@@ -200,6 +200,7 @@ func TestQuerySortValue(t *testing.T) {
 				"timestamp",
 				"regex-empty",
 				"regex",
+				"unset",
 			},
 		},
 		"DescValueScalar": {
@@ -239,6 +240,7 @@ func TestQuerySortValue(t *testing.T) {
 				"int32-min",
 				"int64-min",
 				"null",
+				"unset",
 			},
 		},
 	} {

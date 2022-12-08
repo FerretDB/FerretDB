@@ -38,13 +38,11 @@ func TestCompare(t *testing.T) {
 			expected: Less,
 		},
 		"UnsetCompareNullTypeFieldDocument": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
 			a:        must.NotFail(NewDocument()),
 			b:        must.NotFail(NewDocument("foo", NullType{})),
 			expected: Equal,
 		},
 		"NullTypeFieldCompareUnsetDocument": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1023",
 			a:        must.NotFail(NewDocument("foo", NullType{})),
 			b:        must.NotFail(NewDocument()),
 			expected: Equal,
