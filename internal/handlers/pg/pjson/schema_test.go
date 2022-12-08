@@ -110,8 +110,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 											Schema: &schema{
 												Properties: map[string]*elem{
 													"foo": {
-														Type:  elemTypeArray,
-														Items: []*elem{},
+														Type: elemTypeArray,
 													},
 												},
 												Keys: []string{"foo"},
