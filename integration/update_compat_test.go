@@ -166,10 +166,6 @@ func TestUpdateCompat(t *testing.T) {
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
 		},
-		"ReplaceDocumentFilter": {
-			filter:  bson.D{{"v", bson.D{{"$eq", true}}}},
-			replace: bson.D{{"replacement-value", int32(1)}},
-		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -181,6 +177,10 @@ func TestUpdateCompatArray(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
+		"ReplaceDocumentFilter": {
+			filter:  bson.D{{"v", bson.D{{"$eq", true}}}},
+			replace: bson.D{{"replacement-value", int32(1)}},
+		},
 		"ReplaceDotNotationFilter": {
 			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
 			replace: bson.D{{"replacement-value", int32(1)}},
