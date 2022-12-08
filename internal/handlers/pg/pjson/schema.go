@@ -99,6 +99,7 @@ var (
 	}
 )
 
+// Marshal returns the JSON encoding of schema.
 func (s *schema) Marshal() ([]byte, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
@@ -106,6 +107,22 @@ func (s *schema) Marshal() ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// Unmarshal parses the JSON-encoded schema.
+func (s *schema) Unmarshal(b []byte) error {
+	r := bytes.NewReader(b)
+	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(s); err != nil {
+		return err
+	}
+	if err := checkConsumed(dec, r); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // marshalSchema marshals document's schema.
@@ -208,19 +225,3 @@ func (s *schema) Marshal() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 */
-
-// Unmarshal parses the JSON-encoded schema.
-func (s *schema) Unmarshal(b []byte) error {
-	r := bytes.NewReader(b)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	if err := dec.Decode(s); err != nil {
-		return err
-	}
-	if err := checkConsumed(dec, r); err != nil {
-		return err
-	}
-
-	return nil
-}
