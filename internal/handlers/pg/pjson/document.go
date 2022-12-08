@@ -24,13 +24,20 @@ import (
 )
 
 // documentType represents BSON Document type.
-type documentType types.Document
+type documentType struct {
+	document *types.Document
+	schema   *schema
+}
 
 // pjsontype implements pjsontype interface.
 func (doc *documentType) pjsontype() {}
 
 // UnmarshalJSON implements pjsontype interface.
 func (doc *documentType) UnmarshalJSON(data []byte) error {
+	if doc.schema == nil {
+		panic("doc schema is nil")
+	}
+
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -47,32 +54,20 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	b, ok := rawMessages["$s"]
-	if !ok {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing $s")
-	}
-
-	// unmarshalSchema(b)
-
-	var keys []string
-	if err := json.Unmarshal(b, &keys); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
+	if len(doc.schema.Keys) != len(rawMessages) {
+		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(doc.schema.Keys), len(rawMessages))
 	}
 
 	td := must.NotFail(types.NewDocument())
 
-	for _, key := range keys {
-		b, ok = rawMessages[key]
+	for _, key := range doc.schema.Keys {
+		b, ok := rawMessages[key]
 
 		if !ok {
 			return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
 
-		v, err := Unmarshal(b)
+		v, err := unmarshalElem(b, doc.schema.Properties[key])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -80,14 +75,14 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		td.Set(key, v)
 	}
 
-	*doc = documentType(*td)
+	doc.document = td
 
 	return nil
 }
 
 // MarshalJSON implements pjsontype interface.
 func (doc *documentType) MarshalJSON() ([]byte, error) {
-	td := types.Document(*doc)
+	td := doc.document
 
 	var buf bytes.Buffer
 

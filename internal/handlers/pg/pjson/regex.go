@@ -28,12 +28,6 @@ type regexType types.Regex
 // pjsontype implements pjsontype interface.
 func (regex *regexType) pjsontype() {}
 
-// regexJSON is a JSON object representation of the regexType.
-type regexJSON struct {
-	R string `json:"$r"`
-	O string `json:"o"`
-}
-
 // UnmarshalJSON implements pjsontype interface.
 func (regex *regexType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
@@ -44,7 +38,7 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o regexJSON
+	var o string
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -54,8 +48,7 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 	}
 
 	*regex = regexType{
-		Pattern: o.R,
-		Options: o.O,
+		Pattern: o,
 	}
 
 	return nil
@@ -63,10 +56,7 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements pjsontype interface.
 func (regex *regexType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(regexJSON{
-		R: regex.Pattern,
-		O: regex.Options,
-	})
+	res, err := json.Marshal(regex.Pattern)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

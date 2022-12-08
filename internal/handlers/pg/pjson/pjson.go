@@ -18,11 +18,13 @@
 //
 // # Mapping
 //
+// PJSON uses schema to map values to data types.
+//
 // Composite types
 //
 //	Alias      types package    pjson package         JSON representation
 //
-//	object     *types.Document  *pjson.documentType   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
+//	object     *types.Document  *pjson.documentType   {"<key 1>": <value 1>, "<key 2>": <value 2>, ...}
 //	array      *types.Array     *pjson.arrayType      JSON array
 //
 // Scalar types
@@ -87,9 +89,9 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 func fromPJSON(v pjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
-		return pointer.To(types.Document(*v))
+		return pointer.To(v.document)
 	case *arrayType:
-		return pointer.To(types.Array(*v))
+		return pointer.To(v.array)
 	case *doubleType:
 		return float64(*v)
 	case *stringType:
@@ -121,9 +123,9 @@ func fromPJSON(v pjsontype) any {
 func toPJSON(v any) pjsontype {
 	switch v := v.(type) {
 	case *types.Document:
-		return pointer.To(documentType(*v))
+		return pointer.To(documentType{document: v})
 	case *types.Array:
-		return pointer.To(arrayType(*v))
+		return pointer.To(arrayType{array: v})
 	case float64:
 		return pointer.To(doubleType(v))
 	case string:
@@ -151,9 +153,52 @@ func toPJSON(v any) pjsontype {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// Unmarshal decodes the given pjson-encoded data.
+// Unmarshal decodes the given pjson-encoded data document.
 func Unmarshal(data []byte) (any, error) {
-	var v any
+	var v map[string]json.RawMessage
+	r := bytes.NewReader(data)
+	dec := json.NewDecoder(r)
+
+	err := dec.Decode(&v)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err := checkConsumed(dec, r); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	sch, ok := v["$s"]
+	if !ok {
+		return nil, lazyerrors.Errorf("schema is not set")
+	}
+
+	var schema schema
+	err = json.Unmarshal(sch, &schema)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	delete(v, "$s")
+
+	if len(schema.Keys) != len(v) {
+		return nil, lazyerrors.Errorf("document must have the same number of keys and values (keys: %d, values: %d)", len(schema.Keys), len(v))
+	}
+
+	var d documentType
+	d.schema = &schema
+	err = d.UnmarshalJSON(data)
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &d, nil
+}
+
+// unmarshalElem decodes the given pjson-encoded data element by the given schema.
+func unmarshalElem(data []byte, sch *elem) (any, error) {
+	var v json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
 
@@ -168,58 +213,61 @@ func Unmarshal(data []byte) (any, error) {
 
 	var res pjsontype
 
-	switch v := v.(type) {
-	case map[string]any:
-		switch {
-		case v["$k"] != nil:
-			var o documentType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$f"] != nil:
-			var o doubleType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$b"] != nil:
-			var o binaryType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$o"] != nil:
-			var o objectIDType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$d"] != nil:
-			var o dateTimeType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$r"] != nil:
-			var o regexType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$t"] != nil:
-			var o timestampType
-			err = o.UnmarshalJSON(data)
-			res = &o
-		case v["$l"] != nil:
-			var o int64Type
-			err = o.UnmarshalJSON(data)
-			res = &o
-		default:
-			err = lazyerrors.Errorf("pjson.Unmarshal: unhandled map %v", v)
-		}
-	case []any:
-		var o arrayType
-		err = o.UnmarshalJSON(data)
-		res = &o
-	case string:
-		res = pointer.To(stringType(v))
-	case bool:
-		res = pointer.To(boolType(v))
-	case nil:
-		res = new(nullType)
-	case float64:
-		res = pointer.To(int32Type(v))
+	switch sch.Type {
+	case elemTypeObject:
+		var d documentType
+		d.schema = sch.Schema
+		err = d.UnmarshalJSON(data)
+		res = &d
+	case elemTypeArray:
+		var a arrayType
+		a.schemas = sch.Items
+		err = a.UnmarshalJSON(data)
+		res = &a
+	case elemTypeDouble:
+		var d doubleType
+		err = d.UnmarshalJSON(data)
+		res = &d
+	case elemTypeString:
+		var s stringType
+		err = s.UnmarshalJSON(data)
+		res = &s
+	case elemTypeBinData:
+		var b binaryType
+		err = b.UnmarshalJSON(data)
+		b.Subtype = types.BinarySubtype(sch.Subtype)
+		res = &b
+	case elemTypeBool:
+		var b boolType
+		err = b.UnmarshalJSON(data)
+		res = &b
+	case elemTypeDate:
+		var d dateTimeType
+		err = d.UnmarshalJSON(data)
+		res = &d
+	case elemTypeNull:
+		var n nullType
+		err = n.UnmarshalJSON(data)
+		res = &n
+	case elemTypeRegex:
+		var r regexType
+		err = r.UnmarshalJSON(data)
+		r.Options = sch.Options
+		res = &r
+	case elemTypeInt:
+		var i int32Type
+		err = i.UnmarshalJSON(data)
+		res = &i
+	case elemTypeTimestamp:
+		var t timestampType
+		err = t.UnmarshalJSON(data)
+		res = &t
+	case elemTypeLong:
+		var l int64Type
+		err = l.UnmarshalJSON(data)
+		res = &l
 	default:
-		err = lazyerrors.Errorf("pjson.Unmarshal: unhandled element %[1]T (%[1]v)", v)
+		return nil, lazyerrors.Errorf("pjson.unmarshalElem: unhandled type %q", sch.Type)
 	}
 
 	if err != nil {

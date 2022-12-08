@@ -23,7 +23,7 @@ import (
 )
 
 func convertDocument(d *types.Document) *documentType {
-	res := documentType(*d)
+	res := documentType{document: d}
 	return &res
 }
 

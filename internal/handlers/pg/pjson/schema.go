@@ -17,6 +17,11 @@ package pjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -126,8 +131,8 @@ func (s *schema) Unmarshal(b []byte) error {
 	return nil
 }
 
-// marshalSchema marshals document's schema.
-/* func marshalSchema(td *types.Document) (json.RawMessage, error) {
+// makeSchema makes schema for the given document based on its data.
+func makeSchema(td *types.Document) (json.RawMessage, error) {
 	var buf bytes.Buffer
 
 	buf.WriteString(`{"$k":`)
@@ -154,66 +159,7 @@ func (s *schema) Unmarshal(b []byte) error {
 		buf.Write(b)
 		buf.WriteByte(':')
 
-		value := must.NotFail(td.Get(key))
-
-		switch val := value.(type) {
-		case *types.Document:
-			buf.WriteString(`{"t": "object", "$s":`)
-
-			b, err := marshalSchema(val)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			buf.Write(b)
-
-			buf.WriteByte('}')
-
-		case *types.Array:
-			buf.WriteString(`{"t": "array", "$i":`)
-
-			// todo recursive schema for each element
-
-			buf.WriteByte('}')
-
-		case float64:
-			buf.WriteString(`{"t": "double"}`)
-
-		case string:
-			buf.WriteString(`{"t": "string"}`)
-
-		case types.Binary:
-			buf.WriteString(`{"t": "binData", "s": 0}`) // todo
-
-		case types.ObjectID:
-			buf.WriteString(`{"t": "objectId"}`)
-
-		case bool:
-			buf.WriteString(`{"t": "bool"}`)
-
-		case time.Time:
-			buf.WriteString(`{"t": "date"}`)
-
-		case types.NullType:
-			buf.WriteString(`{"t": "null"}`)
-
-		case types.Regex:
-			buf.WriteString(`{"t": "regex", "o": ""}`) // todo
-
-		case int32:
-			buf.WriteString(`{"t": "int"}`)
-
-		case types.Timestamp:
-			buf.WriteString(`{"t": "timestamp"}`)
-
-		case int64:
-			buf.WriteString(`{"t": "long"}`)
-
-		default:
-			panic(fmt.Sprintf("pjson.marshalSchema: unknown type %[1]T (value %[1]q)", val))
-		}
-
-		b, err := Marshal(value)
+		b, err := makeElemSchema(must.NotFail(td.Get(key)))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -225,4 +171,90 @@ func (s *schema) Unmarshal(b []byte) error {
 
 	return buf.Bytes(), nil
 }
-*/
+
+// makeElemSchema makes schema for the given element based on its data.
+func makeElemSchema(value any) ([]byte, error) {
+	var buf bytes.Buffer
+
+	switch val := value.(type) {
+	case *types.Document:
+		buf.WriteString(`{"t": "object", "$s":`)
+
+		b, err := makeSchema(val)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+
+		buf.WriteByte('}')
+
+	case *types.Array:
+		buf.WriteString(`{"t": "array", "$i":`)
+
+		for i := 0; i < val.Len(); i++ {
+			if i > 0 {
+				buf.WriteByte(',')
+			}
+
+			b, err := makeElemSchema(must.NotFail(val.Get(i)))
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			buf.Write(b)
+		}
+
+		buf.WriteByte('}')
+
+	case float64:
+		buf.WriteString(`{"t": "double"}`)
+
+	case string:
+		buf.WriteString(`{"t": "string"}`)
+
+	case types.Binary:
+		subtype, err := json.Marshal(val.Subtype)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		buf.WriteString(`{"t": "binData", "s": `)
+		buf.Write(subtype)
+		buf.WriteString(`}`)
+
+	case types.ObjectID:
+		buf.WriteString(`{"t": "objectId"}`)
+
+	case bool:
+		buf.WriteString(`{"t": "bool"}`)
+
+	case time.Time:
+		buf.WriteString(`{"t": "date"}`)
+
+	case types.NullType:
+		buf.WriteString(`{"t": "null"}`)
+
+	case types.Regex:
+		options, err := json.Marshal(val.Options)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		buf.WriteString(`{"t": "regex", "o": "`)
+		buf.Write(options)
+		buf.WriteString(`"}`)
+
+	case int32:
+		buf.WriteString(`{"t": "int"}`)
+
+	case types.Timestamp:
+		buf.WriteString(`{"t": "timestamp"}`)
+
+	case int64:
+		buf.WriteString(`{"t": "long"}`)
+
+	default:
+		panic(fmt.Sprintf("pjson.marshalSchema: unknown type %[1]T (value %[1]q)", val))
+	}
+
+	return buf.Bytes(), nil
+}
