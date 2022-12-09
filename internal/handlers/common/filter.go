@@ -279,67 +279,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		fieldValue, err := doc.Get(filterKey)
 		if err != nil && exprKey != "$exists" && exprKey != "$not" {
-			// TODO simplify unset logic
-			// comparing not existent field with null should return true
-
-			if _, ok := exprValue.(types.NullType); ok {
-				switch exprKey {
-				case "$eq", "$gte", "$lte":
-					// filter {v:{$eq: null}}       value {_id: unset} -> true
-					// filter {v:{$gte: null}}      value {_id: unset} -> true
-					// filter {v:{$lte: null}}      value {_id: unset} -> true
-					return true, nil
-				}
-				// filter {v:{$ne: null}}       value {_id: unset} -> false
-				return false, nil
-			}
-
-			// this applies only if exprValue is not null
-			if exprKey == "$ne" {
-				// filter {v:{$ne: "foo"}}       value {_id: unset} -> true
-				return true, nil
-			}
-
-			if arr, ok := exprValue.(*types.Array); ok {
-				switch exprKey {
-				case "$nin":
-					if filtered := arr.FilterArrayByType(types.Regex{}); filtered.Len() == 1 {
-						// Regex   {v:{$nin:[{$regex :"^$"}]}       value {_id: unset} -> true
-						return true, nil
-					}
-					if filtered := arr.FilterArrayByType(&types.Document{}); filtered.Len() == 0 {
-						// Scalar type    {v:{$nin:[32. 50]}}       value {_id: unset} -> false
-						return false, nil
-					}
-					// Document type  {v:{$nin:[{a:b} {c:d}]}}  value {_id: unset} -> true
-					return true, nil
-				case "$in":
-					if filtered := arr.FilterArrayByType(types.Regex{}); filtered.Len() == 1 {
-						// Regex   {v:{$in:[{$regex :"^$"}]}       value {_id: unset} -> false
-						return false, nil
-					}
-					if filtered := arr.FilterArrayByType(&types.Document{}); filtered.Len() == 0 {
-						// Scalar type    {v:{$in:[32. 50]}}       value {_id: unset} -> true
-						return true, nil
-					}
-					// Document type  {v:{$in:[{a:b} {c:d}]}}  value {_id: unset} -> false
-					return false, nil
-				case "$all":
-					// comparing not existent field with {$all: [null, null, ..., null]} should return true
-					// (at least one null needs to be presented in the $all array)
-					filtered := arr.FilterArrayByType(types.NullType{})
-					if filtered.Len() != 0 && filtered.Len() == arr.Len() {
-						// filter {$all: [null, null, ..., null]}  value {_id: unset} -> true
-						return true, nil
-					}
-					// filter {$all: []}  value {_id: unset} -> false
-					return false, nil
-				}
-				return false, nil
-			}
-
 			// exit when not $exists or $not filters and no such field
-			return false, nil
+			return filterUnsetFieldValue(exprKey, exprValue), nil
 		}
 
 		if !strings.HasPrefix(exprKey, "$") {
@@ -1554,4 +1495,49 @@ func filterByComparisonOperandApplicable(fieldValue, exprValue any) bool {
 	default:
 		panic("unsupported type")
 	}
+}
+
+// filterUnsetFieldValue is used when a document does not contain the key used
+// by filter.
+func filterUnsetFieldValue(exprKey string, exprValue any) bool {
+	if _, isNull := exprValue.(types.NullType); isNull {
+		switch exprKey {
+		case "$eq", "$gte", "$lte":
+			// missing value is equal to null.
+			return true
+		}
+
+		return false
+	}
+
+	if exprKey == "$ne" {
+		// missing value cannot be equal to anything other than null.
+		return true
+	}
+
+	if arr, ok := exprValue.(*types.Array); ok {
+		switch exprKey {
+		case "$nin":
+			if regexInArray := arr.FilterArrayByType(types.Regex{}); regexInArray.Len() == 1 {
+				return true
+			}
+
+			docInArray := arr.FilterArrayByType(&types.Document{})
+			return docInArray.Len() != 0
+		case "$in":
+			if regexInArray := arr.FilterArrayByType(types.Regex{}); regexInArray.Len() == 1 {
+				return false
+			}
+
+			docInArray := arr.FilterArrayByType(&types.Document{})
+			return docInArray.Len() == 0
+		case "$all":
+			// comparing non-existent field with any null should return true
+			// example: {$all: [null, null, ..., null]}
+			nullInArray := arr.FilterArrayByType(types.NullType{})
+			return nullInArray.Len() == arr.Len()
+		}
+	}
+
+	return false
 }
