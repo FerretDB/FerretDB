@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 
@@ -30,6 +31,7 @@ import (
 type testCase struct {
 	name   string
 	v      pjsontype
+	sch    elem
 	j      string
 	canonJ string // canonical form without extra object fields, zero values, etc.
 	jErr   string // unwrapped
@@ -112,7 +114,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 			t.Run("Unmarshal", func(t *testing.T) {
 				t.Parallel()
 
-				v, err := Unmarshal([]byte(tc.j))
+				v, err := Unmarshal([]byte(tc.j), &tc.sch)
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
@@ -183,7 +185,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// Instead, we compare with round-trip result.
 
 		v := newFunc()
-		if err := v.UnmarshalJSON([]byte(j)); err != nil {
+		if _, err := unmarshalJSON(v, j); err != nil {
 			t.Skip()
 		}
 
@@ -209,7 +211,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// test UnmarshalJSON
 		{
 			actualV := newFunc()
-			err := actualV.UnmarshalJSON([]byte(j))
+			_, err := unmarshalJSON(v, j)
 			require.NoError(t, err)
 			assertEqual(t, v, actualV)
 		}
@@ -231,7 +233,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
-					err = v.UnmarshalJSON(data)
+					_, err = unmarshalJSON(v, string(data))
 				}
 
 				b.StopTimer()
@@ -247,4 +249,40 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 			})
 		})
 	}
+}
+
+// unmarshalJSON encapsulates type switch and calls UnmarshalJSON or UnmarshalJSONWithSchema on the given value.
+// It is called this way as pjsontype itself doesn't implement json.Unmarshaler interface.
+// This function returns true if UnmarshalJSON is implemented and called and false if not.
+func unmarshalJSON(v pjsontype, j string) (bool, error) {
+	var err error
+	switch v := v.(type) {
+	case *documentType:
+		// UnmarshalJSON is not supported for documents.
+		return false, nil
+	case *doubleType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *stringType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *binaryType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *objectIDType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *boolType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *dateTimeType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *regexType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *int32Type:
+		err = v.UnmarshalJSON([]byte(j))
+	case *timestampType:
+		err = v.UnmarshalJSON([]byte(j))
+	case *int64Type:
+		err = v.UnmarshalJSON([]byte(j))
+	default:
+		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
+	}
+
+	return true, err
 }

@@ -64,7 +64,6 @@ import (
 type pjsontype interface {
 	pjsontype() // seal for go-sumtype
 
-	json.Unmarshaler
 	json.Marshaler
 }
 
@@ -89,9 +88,9 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 func fromPJSON(v pjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
-		return pointer.To(v.document)
+		return pointer.To(types.Document(*v))
 	case *arrayType:
-		return pointer.To(v.array)
+		return pointer.To(types.Array(*v))
 	case *doubleType:
 		return float64(*v)
 	case *stringType:
@@ -153,8 +152,9 @@ func toPJSON(v any) pjsontype {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// Unmarshal decodes the given pjson-encoded data document.
-func Unmarshal(data []byte) (any, error) {
+// unmarshalDoc decodes the top-level document.
+// It decodes document's schema from the `$s` field and uses it to decode the data of the document.
+func unmarshalDoc(data []byte) (any, error) {
 	var v map[string]json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -196,8 +196,8 @@ func Unmarshal(data []byte) (any, error) {
 	return &d, nil
 }
 
-// unmarshalElem decodes the given pjson-encoded data element by the given schema.
-func unmarshalElem(data []byte, sch *elem) (any, error) {
+// UnmarshalElem decodes the given pjson-encoded data element by the given schema.
+func UnmarshalElem(data []byte, sch *elem) (any, error) {
 	var v json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -216,8 +216,7 @@ func unmarshalElem(data []byte, sch *elem) (any, error) {
 	switch sch.Type {
 	case elemTypeObject:
 		var d documentType
-		d.schema = sch.Schema
-		err = d.UnmarshalJSON(data)
+		err = d.UnmarshalJSONWithSchema(data, sch.Schema)
 		res = &d
 	case elemTypeArray:
 		var a arrayType

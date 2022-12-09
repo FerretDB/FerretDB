@@ -24,18 +24,15 @@ import (
 )
 
 // documentType represents BSON Document type.
-type documentType struct {
-	document *types.Document
-	schema   *schema
-}
+type documentType types.Document
 
 // pjsontype implements pjsontype interface.
 func (doc *documentType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
-func (doc *documentType) UnmarshalJSON(data []byte) error {
-	if doc.schema == nil {
-		panic("doc schema is nil")
+// UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
+func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error {
+	if sch == nil {
+		panic("schema is not set")
 	}
 
 	if bytes.Equal(data, []byte("null")) {
@@ -54,20 +51,20 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	if len(doc.schema.Keys) != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(doc.schema.Keys), len(rawMessages))
+	if len(sch.Keys) != len(rawMessages) {
+		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(sch.Keys), len(rawMessages))
 	}
 
 	td := must.NotFail(types.NewDocument())
 
-	for _, key := range doc.schema.Keys {
+	for _, key := range sch.Keys {
 		b, ok := rawMessages[key]
 
 		if !ok {
 			return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
 
-		v, err := unmarshalElem(b, doc.schema.Properties[key])
+		v, err := UnmarshalElem(b, sch.Properties[key])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -75,7 +72,7 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		td.Set(key, v)
 	}
 
-	doc.document = td
+	*doc = td
 
 	return nil
 }

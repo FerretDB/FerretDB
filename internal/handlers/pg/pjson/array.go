@@ -23,17 +23,14 @@ import (
 )
 
 // arrayType represents BSON Array type.
-type arrayType struct {
-	array   *types.Array
-	schemas []*elem
-}
+type arrayType types.Array
 
 // pjsontype implements pjsontype interface.
 func (a *arrayType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
-func (a *arrayType) UnmarshalJSON(data []byte) error {
-	if a.schemas == nil {
+// UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
+func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error {
+	if schemas == nil {
 		panic("array schemas is nil")
 	}
 
@@ -56,7 +53,7 @@ func (a *arrayType) UnmarshalJSON(data []byte) error {
 	ta := types.MakeArray(len(rawMessages))
 
 	for i, el := range rawMessages {
-		v, err := unmarshalElem(el, a.schemas[i])
+		v, err := UnmarshalElem(el, schemas[i])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -66,7 +63,7 @@ func (a *arrayType) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	a.array = ta
+	*a = arrayType(*ta)
 
 	return nil
 }
@@ -76,7 +73,7 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
 
-	ta := a.array
+	ta := types.Array(*a)
 	l := ta.Len()
 
 	for i := 0; i < l; i++ {
