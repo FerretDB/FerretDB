@@ -278,9 +278,17 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" && exprKey != "$not" {
-			// exit when not $exists or $not filters and no such field
-			return filterUnsetFieldValue(exprKey, exprValue), nil
+		if err != nil {
+			switch exprKey {
+			case "$exists", "$not", "$elemMatch":
+			case "$type":
+				if v, ok := exprValue.(string); ok && v == "null" {
+					return false, nil
+				}
+				fieldValue = types.NullType{}
+			default:
+				fieldValue = types.NullType{}
+			}
 		}
 
 		if !strings.HasPrefix(exprKey, "$") {
@@ -1495,49 +1503,4 @@ func filterByComparisonOperandApplicable(fieldValue, exprValue any) bool {
 	default:
 		panic("unsupported type")
 	}
-}
-
-// filterUnsetFieldValue is used when a document does not contain the key used
-// by filter.
-func filterUnsetFieldValue(exprKey string, exprValue any) bool {
-	if _, isNull := exprValue.(types.NullType); isNull {
-		switch exprKey {
-		case "$eq", "$gte", "$lte":
-			// missing value is equal to null.
-			return true
-		}
-
-		return false
-	}
-
-	if exprKey == "$ne" {
-		// missing value cannot be equal to anything other than null.
-		return true
-	}
-
-	if arr, ok := exprValue.(*types.Array); ok {
-		switch exprKey {
-		case "$nin":
-			if regexInArray := arr.FilterArrayByType(types.Regex{}); regexInArray.Len() == 1 {
-				return true
-			}
-
-			docInArray := arr.FilterArrayByType(&types.Document{})
-			return docInArray.Len() != 0
-		case "$in":
-			if regexInArray := arr.FilterArrayByType(types.Regex{}); regexInArray.Len() == 1 {
-				return false
-			}
-
-			docInArray := arr.FilterArrayByType(&types.Document{})
-			return docInArray.Len() == 0
-		case "$all":
-			// comparing non-existent field with any null should return true
-			// example: {$all: [null, null, ..., null]}
-			nullInArray := arr.FilterArrayByType(types.NullType{})
-			return nullInArray.Len() == arr.Len()
-		}
-	}
-
-	return false
 }
