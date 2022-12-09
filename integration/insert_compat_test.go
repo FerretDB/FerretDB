@@ -122,7 +122,7 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	d := bson.D{}
-	var nestedObj = createNestedDocument(kDefaultMaxAllowableDepth+1, d)
+	nestedDoc := createNestedDocument(kDefaultMaxAllowableDepth+1, d)
 
 	testCases := map[string]insertCompatTestCase{
 		"InsertEmptyDocument": {
@@ -137,7 +137,7 @@ func TestInsertCompat(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"InsertMaxAllowableDepth": {
-			insert:     nestedObj,
+			insert:     nestedDoc,
 			resultType: emptyResult,
 		},
 	}
