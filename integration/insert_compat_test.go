@@ -16,6 +16,7 @@ package integration
 
 import (
 	"errors"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -107,8 +108,21 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 	}
 }
 
+const kDefaultMaxAllowableDepth = 200 // https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bson_depth.h#L40
+
+func createNestedDocument(i int, nestedDoc bson.D) bson.D {
+	if i == 0 {
+		return nestedDoc
+	}
+
+	return bson.D{{strconv.Itoa(i), createNestedDocument(i-1, nestedDoc)}}
+}
+
 func TestInsertCompat(t *testing.T) {
 	t.Parallel()
+
+	d := bson.D{}
+	var nestedObj = createNestedDocument(kDefaultMaxAllowableDepth+1, d)
 
 	testCases := map[string]insertCompatTestCase{
 		"InsertEmptyDocument": {
@@ -120,6 +134,10 @@ func TestInsertCompat(t *testing.T) {
 		},
 		"InsertIDRegex": {
 			insert:     bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			resultType: emptyResult,
+		},
+		"InsertMaxAllowableDepth": {
+			insert:     nestedObj,
 			resultType: emptyResult,
 		},
 	}
