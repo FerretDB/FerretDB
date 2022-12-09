@@ -303,7 +303,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if arr, ok := exprValue.(*types.Array); ok {
 				switch exprKey {
 				case "$nin":
-					if filtered := arr.FilterArrayByType(types.Regex{}); filtered.Len() >= 1 {
+					if filtered := arr.FilterArrayByType(types.Regex{}); filtered.Len() == 1 {
 						// Regex   {v:{$nin:[{$regex :"^$"}]}       value {_id: unset} -> true
 						return true, nil
 					}
@@ -314,7 +314,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					// Document type  {v:{$nin:[{a:b} {c:d}]}}  value {_id: unset} -> true
 					return true, nil
 				case "$in":
-					if filtered := arr.FilterArrayByType(types.Regex{}); filtered.Len() >= 1 {
+					if filtered := arr.FilterArrayByType(types.Regex{}); filtered.Len() == 1 {
 						// Regex   {v:{$in:[{$regex :"^$"}]}       value {_id: unset} -> false
 						return false, nil
 					}

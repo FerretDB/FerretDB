@@ -36,9 +36,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	if update.Len() == 0 {
 		// replace to empty doc
 		for _, key := range doc.Keys() {
-			if key != "_id" {
-				changed = true
+			changed = true
 
+			if key != "_id" {
 				doc.Remove(key)
 			}
 		}
