@@ -108,7 +108,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 	}
 }
 
-const kDefaultMaxAllowableDepth = 200 // https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bson_depth.h#L40
+// https://github.com/mongodb/mongo/blob/master/src/mongo/bson/bson_depth.h#L40
+const kDefaultMaxAllowableDepth = 200
 
 func createNestedDocument(i int, nestedDoc bson.D) bson.D {
 	if i == 0 {
@@ -121,8 +122,10 @@ func createNestedDocument(i int, nestedDoc bson.D) bson.D {
 func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
-	d := bson.D{}
-	nestedDoc := createNestedDocument(kDefaultMaxAllowableDepth+1, d)
+	const exceedsMaxAllowable = kDefaultMaxAllowableDepth + 1
+
+	nestedDoc := bson.D{}
+	nestedDoc = createNestedDocument(exceedsMaxAllowable, nestedDoc)
 
 	testCases := map[string]insertCompatTestCase{
 		"InsertEmptyDocument": {
