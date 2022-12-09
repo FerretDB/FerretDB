@@ -56,12 +56,12 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 	return func(a, b *types.Document) bool {
 		aField, err := a.Get(sortKey)
 		if err != nil {
-			return false
+			return sortType == types.Ascending
 		}
 
 		bField, err := b.Get(sortKey)
 		if err != nil {
-			return false
+			return sortType != types.Ascending
 		}
 
 		result := types.CompareOrder(aField, bField, sortType)
