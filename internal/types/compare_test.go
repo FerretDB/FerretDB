@@ -37,16 +37,6 @@ func TestCompare(t *testing.T) {
 			b:        must.NotFail(NewArray(NullType{})),
 			expected: Less,
 		},
-		"UnsetCompareNullTypeFieldDocument": {
-			a:        must.NotFail(NewDocument()),
-			b:        must.NotFail(NewDocument("foo", NullType{})),
-			expected: Equal,
-		},
-		"NullTypeFieldCompareUnsetDocument": {
-			a:        must.NotFail(NewDocument("foo", NullType{})),
-			b:        must.NotFail(NewDocument()),
-			expected: Equal,
-		},
 		"ArrayCompareNumber": {
 			a:        must.NotFail(NewArray(int32(1))),
 			b:        int32(2),

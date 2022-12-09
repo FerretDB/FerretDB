@@ -300,14 +300,6 @@ func compareDocuments(a, b *Document) CompareResult {
 		return Equal
 	}
 
-	if a.Len() == 0 && b.Len() > 0 {
-		return Less
-	}
-
-	if b.Len() == 0 {
-		return Greater
-	}
-
 	aKeys := a.Keys()
 	bKeys := b.Keys()
 	bValues := b.Values()
@@ -315,7 +307,13 @@ func compareDocuments(a, b *Document) CompareResult {
 
 	for i, aKey := range aKeys {
 		if b.Len() == i {
-			return Greater
+			for j := i; j < a.Len(); j++ {
+				if _, isANull := aValues[j].(NullType); !isANull {
+					return Greater
+				}
+			}
+
+			return Equal
 		}
 
 		// compare type
@@ -335,7 +333,11 @@ func compareDocuments(a, b *Document) CompareResult {
 	}
 
 	if a.Len() < b.Len() {
-		return Less
+		for _, bValue := range bValues {
+			if _, isANull := bValue.(NullType); !isANull {
+				return Less
+			}
+		}
 	}
 
 	return Equal
