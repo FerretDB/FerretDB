@@ -151,19 +151,18 @@ func TestQueryCompat(t *testing.T) {
 }
 
 func TestQueryCompatSort(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/457")
+
 	t.Parallel()
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/636
 	testCases := map[string]queryCompatTestCase{
 		"Asc": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", 1}, {"_id", 1}},
-			resultType: emptyResult,
+			filter: bson.D{},
+			sort:   bson.D{{"v", 1}, {"_id", 1}},
 		},
 		"Desc": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", -1}, {"_id", 1}},
-			resultType: emptyResult,
+			filter: bson.D{},
+			sort:   bson.D{{"v", -1}, {"_id", 1}},
 		},
 	}
 
