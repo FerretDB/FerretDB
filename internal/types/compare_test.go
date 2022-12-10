@@ -50,16 +50,75 @@ func TestCompare(t *testing.T) {
 			expected: Equal,
 		},
 		"ArrayCompareNumber": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
-			a:        must.NotFail(NewArray(1)),
-			b:        2,
+			a:        must.NotFail(NewArray(int32(1))),
+			b:        int32(2),
 			expected: Less,
 		},
 		"NumberCompareArray": {
 			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
-			a:        1,
-			b:        must.NotFail(NewArray(2)),
+			a:        int32(1),
+			b:        must.NotFail(NewArray(int32(2))),
 			expected: Greater,
+		},
+		"NullCompareEmptyArray": {
+			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
+			a:        NullType{},
+			b:        must.NotFail(NewArray()),
+			expected: Greater,
+		},
+		"EmptyDocumentCompareEmptyArrayUsesSortOrder": {
+			a:        must.NotFail(NewDocument()),
+			b:        must.NotFail(NewArray()),
+			expected: Less,
+		},
+		"DocumentCompareEmptyArrayUsesSortOrder": {
+			a:        must.NotFail(NewDocument("foo", "bar")),
+			b:        must.NotFail(NewArray()),
+			expected: Less,
+		},
+		"DocumentCompareArrayUsesSortOrder": {
+			a: must.NotFail(NewDocument("foo", "bar")),
+			b: must.NotFail(NewArray(
+				must.NotFail(NewDocument("foo", "bar")),
+			)),
+			expected: Less,
+		},
+		"EmptyArrayCompareEmptyDocument": {
+			a:        must.NotFail(NewArray()),
+			b:        must.NotFail(NewDocument()),
+			expected: Less,
+		},
+		"EmptyArrayCompareDocument": {
+			a:        must.NotFail(NewArray()),
+			b:        must.NotFail(NewDocument("foo", "bar")),
+			expected: Less,
+		},
+		"ArrayCompareEqualDocument": {
+			a: must.NotFail(NewArray(
+				must.NotFail(NewDocument("foo", "a")),
+				must.NotFail(NewDocument("foo", "b")),
+				must.NotFail(NewDocument("foo", "bar")),
+			)),
+			b:        must.NotFail(NewDocument("foo", "bar")),
+			expected: Equal,
+		},
+		"ArrayCompareGreaterDocument": {
+			a: must.NotFail(NewArray(
+				must.NotFail(NewDocument("foo", "a")),
+				must.NotFail(NewDocument("foo", "b")),
+				must.NotFail(NewDocument("foo", "baz")),
+			)),
+			b:        must.NotFail(NewDocument("foo", "bar")),
+			expected: Greater,
+		},
+		"ArrayCompareLessDocument": {
+			a: must.NotFail(NewArray(
+				must.NotFail(NewDocument("foo", "a")),
+				must.NotFail(NewDocument("foo", "b")),
+				must.NotFail(NewDocument("foo", "bar")),
+			)),
+			b:        must.NotFail(NewDocument("foo", "baz")),
+			expected: Less,
 		},
 	} {
 		name, tc := name, tc

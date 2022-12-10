@@ -55,28 +55,13 @@ func Compare(docValue, filterValue any) CompareResult {
 
 	switch docValue := docValue.(type) {
 	case *Document:
-		// TODO: implement document comparing https://github.com/FerretDB/FerretDB/issues/457
-		return Incomparable
+		if filterDoc, ok := filterValue.(*Document); ok {
+			return compareDocuments(docValue, filterDoc)
+		}
 
+		return compareTypeOrder(docValue, filterValue)
 	case *Array:
-		if filterArr, ok := filterValue.(*Array); ok {
-			return compareArrays(filterArr, docValue)
-		}
-
-		for i := 0; i < docValue.Len(); i++ {
-			docValue := must.NotFail(docValue.Get(i))
-			switch docValue.(type) {
-			case *Document, *Array:
-				continue
-			}
-
-			if res := compareScalars(docValue, filterValue); res != Incomparable {
-				return res
-			}
-		}
-
-		return Incomparable
-
+		return compareArray(docValue, filterValue)
 	default:
 		return compareScalars(docValue, filterValue)
 	}
@@ -269,6 +254,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return Equal
 	}
+
 	if filterArr.Len() > 0 && docArr.Len() == 0 {
 		return Less
 	}
@@ -294,7 +280,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			return orderResult
 		}
 
-		iterationResult := compareScalars(docValue, filterValue)
+		iterationResult := Compare(docValue, filterValue)
 		if iterationResult != Equal {
 			return iterationResult
 		}
@@ -305,4 +291,88 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	}
 
 	return Equal
+}
+
+// compareDocuments compares documents recursively by
+// comparing them in the order of types, field names and field values.
+func compareDocuments(a, b *Document) CompareResult {
+	if a.Len() == 0 && b.Len() == 0 {
+		return Equal
+	}
+
+	if a.Len() == 0 && b.Len() > 0 {
+		return Less
+	}
+
+	if b.Len() == 0 {
+		return Greater
+	}
+
+	aKeys := a.Keys()
+	bKeys := b.Keys()
+	bValues := b.Values()
+	aValues := a.Values()
+
+	for i, aKey := range aKeys {
+		if b.Len() == i {
+			return Greater
+		}
+
+		// compare type
+		if result := compareTypeOrder(aValues[i], bValues[i]); result != Equal {
+			return result
+		}
+
+		// compare keys
+		if result := compareScalars(aKey, bKeys[i]); result != Equal {
+			return result
+		}
+
+		// compare values
+		if result := Compare(aValues[i], bValues[i]); result != Equal {
+			return result
+		}
+	}
+
+	if a.Len() < b.Len() {
+		return Less
+	}
+
+	return Equal
+}
+
+// compareArray compares array to any value.
+func compareArray(as *Array, b any) CompareResult {
+	if bs, ok := b.(*Array); ok {
+		return compareArrays(bs, as)
+	}
+
+	var result CompareResult
+	var comparable bool
+
+	for i := 0; i < as.Len(); i++ {
+		a := must.NotFail(as.Get(i))
+
+		result = compareTypeOrder(a, b)
+		if result != Equal {
+			continue
+		}
+
+		result = Compare(a, b)
+		if result == Equal {
+			return result
+		}
+		comparable = true
+	}
+
+	if !comparable {
+		// This happens upon empty array or array only containing
+		// different type. Nothing which can be compared was in the array
+		// hence the array is less than the value a.
+		return Less
+	}
+
+	// result is not `Equal` just return the result
+	// from the previous iteration.
+	return result
 }

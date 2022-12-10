@@ -32,6 +32,7 @@ import (
 type updateCompatTestCase struct {
 	update        bson.D                   // required if replace is nil
 	replace       bson.D                   // required if update is nil
+	filter        bson.D                   // defaults to  bson.D{{"_id", id}}
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
 	skip          string                   // skips test if non-empty
 	skipForTigris string                   // skips test for Tigris if non-empty
@@ -81,7 +82,11 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 						t.Run(fmt.Sprint(id), func(t *testing.T) {
 							t.Helper()
 
-							filter := bson.D{{"_id", id}}
+							filter := tc.filter
+							if tc.filter == nil {
+								filter = bson.D{{"_id", id}}
+							}
+
 							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
 							var targetErr, compatErr error
 
@@ -160,6 +165,25 @@ func TestUpdateCompat(t *testing.T) {
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateCompatArray(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"ReplaceDocumentFilter": {
+			filter:  bson.D{{"v", bson.D{{"$eq", true}}}},
+			replace: bson.D{{"replacement-value", int32(1)}},
+		},
+		"ReplaceDotNotationFilter": {
+			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
+			replace: bson.D{{"replacement-value", int32(1)}},
 		},
 	}
 
