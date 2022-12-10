@@ -180,7 +180,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 
 		switch tag(t) {
 		case tagDocument:
-			// TODO check maximum nesting
+			// TODO check maximum nesting https://github.com/FerretDB/FerretDB/issues/1639
 
 			var v Document
 			if err := v.ReadFrom(bufr); err != nil {
@@ -195,7 +195,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			fields = append(fields, field{key: key, value: value})
 
 		case tagArray:
-			// TODO check maximum nesting
+			// TODO check maximum nesting https://github.com/FerretDB/FerretDB/issues/1639
 
 			var v arrayType
 			if err := v.ReadFrom(bufr); err != nil {
