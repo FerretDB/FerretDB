@@ -41,7 +41,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 				"p": {
 					"foo": {"t": "string"}
 				},
-				"$k": ["p"]
+				"$k": ["foo"]
 			}, 
 			"foo": "bar"
 		}`,

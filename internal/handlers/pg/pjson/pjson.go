@@ -54,6 +54,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/AlekSi/pointer"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -154,7 +156,7 @@ func toPJSON(v any) pjsontype {
 
 // Unmarshal decodes the top-level document.
 // It decodes document's schema from the `$s` field and uses it to decode the data of the document.
-func Unmarshal(data []byte) (any, error) {
+func Unmarshal(data []byte) (*types.Document, error) {
 	var v map[string]json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -184,14 +186,23 @@ func Unmarshal(data []byte) (any, error) {
 		return nil, lazyerrors.Errorf("document must have the same number of keys and values (keys: %d, values: %d)", len(schema.Keys), len(v))
 	}
 
-	var d documentType
-	err = d.UnmarshalJSONWithSchema(data, &schema)
+	d := must.NotFail(types.NewDocument())
+	for _, key := range schema.Keys {
+		b, ok := v[key]
 
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		if !ok {
+			return nil, lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
+		}
+
+		v, err := UnmarshalElem(b, schema.Properties[key])
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		d.Set(key, v)
 	}
 
-	return &d, nil
+	return d, nil
 }
 
 // UnmarshalElem decodes the given pjson-encoded data element by the given schema.
