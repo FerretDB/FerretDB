@@ -86,7 +86,7 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		b, err := Marshal(el)
+		b, err := MarshalElem(el)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

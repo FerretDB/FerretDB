@@ -48,7 +48,7 @@ func SetDocumentByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, id any, doc *
 
 	sql += pgx.Identifier{sp.DB, table}.Sanitize() + " SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
-	tag, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)), must.NotFail(pjson.Marshal(id)))
+	tag, err := tx.Exec(ctx, sql, must.NotFail(pjson.MarshalWithSchema(doc)), must.NotFail(pjson.MarshalElem(id)))
 	if err != nil {
 		return 0, err
 	}

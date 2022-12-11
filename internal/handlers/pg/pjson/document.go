@@ -107,7 +107,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		b, err = Marshal(value)
+		b, err = MarshalElem(value)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

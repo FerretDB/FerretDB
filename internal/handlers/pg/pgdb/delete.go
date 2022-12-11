@@ -37,7 +37,7 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 
 	for i, id := range ids {
 		placeholders[i] = p.Next()
-		idsMarshalled[i] = must.NotFail(pjson.Marshal(id))
+		idsMarshalled[i] = must.NotFail(pjson.MarshalElem(id))
 	}
 
 	sql := `DELETE `

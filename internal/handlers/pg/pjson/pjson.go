@@ -315,8 +315,8 @@ func MarshalWithSchema(d *types.Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Marshal encodes given built-in or types' package value into pjson.
-func Marshal(v any) ([]byte, error) {
+// MarshalElem encodes given built-in or types' package value into pjson.
+func MarshalElem(v any) ([]byte, error) {
 	if v == nil {
 		panic("v is nil")
 	}
