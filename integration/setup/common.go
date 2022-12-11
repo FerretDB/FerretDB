@@ -116,8 +116,6 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		path = opts.unixSocketPath
 	}
 
-	var user *url.Userinfo
-
 	q := make(url.Values)
 
 	if opts.tls {
@@ -130,6 +128,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1593
+	var user *url.Userinfo
 	// user = url.UserPassword("username", "password")
 	// q.Set("authMechanism", "PLAIN")
 
