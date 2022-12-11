@@ -17,11 +17,6 @@ package pjson
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"time"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
