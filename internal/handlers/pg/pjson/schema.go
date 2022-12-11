@@ -195,7 +195,7 @@ func makeElemSchema(value any) ([]byte, error) {
 		buf.WriteByte('}')
 
 	case *types.Array:
-		buf.WriteString(`{"t": "array", "$i":[`)
+		buf.WriteString(`{"t": "array", "i":[`)
 
 		for i := 0; i < val.Len(); i++ {
 			if i > 0 {
@@ -246,9 +246,9 @@ func makeElemSchema(value any) ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		buf.WriteString(`{"t": "regex", "o": "`)
+		buf.WriteString(`{"t": "regex", "o":`)
 		buf.Write(options)
-		buf.WriteString(`"}`)
+		buf.WriteString(`}`)
 
 	case int32:
 		buf.WriteString(`{"t": "int"}`)

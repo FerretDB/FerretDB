@@ -16,6 +16,7 @@ package pjson
 
 import (
 	"testing"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 
@@ -205,7 +206,7 @@ func TestMakeSchema(t *testing.T) {
 							},
 						},
 					},
-					"data":     binDataSchema(byte(types.BinaryFunction)),
+					"data":     binDataSchema(byte(types.BinaryGeneric)),
 					"distance": doubleSchema,
 					"name":     stringSchema,
 				},
@@ -213,48 +214,68 @@ func TestMakeSchema(t *testing.T) {
 			},
 			doc: must.NotFail(types.NewDocument(
 				"_id", types.NewObjectID(),
-				"arr", must.NotFail(types.NewArray()),
-				"distance", 1.1,
-				"name", "foo",
+				"arr", must.NotFail(types.NewArray(
+					true,
+					time.Now(),
+					types.Regex{Pattern: "foo$", Options: "i"},
+					must.NotFail(types.NewDocument(
+						"bar", types.Null,
+						"baz", int64(42),
+						"arr", must.NotFail(types.NewArray(
+							int32(42), types.NextTimestamp(time.Now()),
+						)),
+					)),
+					"data", types.Binary{B: []byte("foo"), Subtype: types.BinaryGeneric},
+					"distance", 1.1,
+					"name", "foo",
+				)),
 			)),
 		},
-		/*		"Embedded": {
-				schema: schema{
-					Properties: map[string]*elem{
-						"obj": {
-							Type: elemTypeObject,
-							Schema: &schema{
-								Properties: map[string]*elem{
-									"arr": {
-										Type: elemTypeArray,
-										Items: []*elem{
-											{
-												Type: elemTypeObject,
-											},
-											{
-												Type: elemTypeObject,
-												Schema: &schema{
-													Properties: map[string]*elem{
-														"foo": {
-															Type: elemTypeArray,
-														},
+		"Embedded": {
+			schema: schema{
+				Properties: map[string]*elem{
+					"obj": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{
+								"arr": {
+									Type: elemTypeArray,
+									Items: []*elem{
+										{
+											Type: elemTypeObject,
+										},
+										{
+											Type: elemTypeObject,
+											Schema: &schema{
+												Properties: map[string]*elem{
+													"foo": {
+														Type: elemTypeArray,
 													},
-													Keys: []string{"foo"},
 												},
+												Keys: []string{"foo"},
 											},
 										},
 									},
-									"empty-arr": {
-										Type: elemTypeArray,
-									},
 								},
-								Keys: []string{"arr", "empty-arr"},
+								"empty-arr": {
+									Type: elemTypeArray,
+								},
 							},
+							Keys: []string{"arr", "empty-arr"},
 						},
 					},
-					Keys: []string{"obj"},
 				},
-			},*/
+				Keys: []string{"obj"},
+			},
+			doc: must.NotFail(types.NewDocument(
+				"obj", must.NotFail(types.NewDocument(
+					"arr", must.NotFail(types.NewArray(
+						must.NotFail(types.NewDocument()),
+						must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray()))),
+					)),
+					"empty-arr", must.NotFail(types.NewArray()),
+				)))),
+		},
 	} {
 		tc := tc
 
@@ -268,6 +289,8 @@ func TestMakeSchema(t *testing.T) {
 			expected, err := tc.schema.Marshal()
 			require.NoError(t, err)
 			expected = testutil.IndentJSON(t, expected)
+
+			assert.Equal(t, string(expected), string(actual))
 		})
 	}
 }
