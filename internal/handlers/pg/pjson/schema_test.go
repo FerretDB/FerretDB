@@ -263,7 +263,11 @@ func TestMakeSchema(t *testing.T) {
 
 			actual, err := makeSchema(tc.doc)
 			require.NoError(t, err)
-			assert.Equal(t, tc.schema, actual)
+			actual = testutil.IndentJSON(t, actual)
+
+			expected, err := tc.schema.Marshal()
+			require.NoError(t, err)
+			expected = testutil.IndentJSON(t, expected)
 		})
 	}
 }

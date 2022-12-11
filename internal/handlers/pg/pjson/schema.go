@@ -131,7 +131,7 @@ func (s *schema) Unmarshal(b []byte) error {
 }
 
 // makeSchema makes schema for the given document based on its data.
-func makeSchema(td *types.Document) (json.RawMessage, error) {
+func makeSchema(td *types.Document) ([]byte, error) {
 	var buf bytes.Buffer
 
 	keys := td.Keys()
@@ -139,7 +139,7 @@ func makeSchema(td *types.Document) (json.RawMessage, error) {
 		keys = []string{}
 	}
 
-	buf.WriteString(`"p":{`)
+	buf.WriteString(`{"p":{`)
 
 	for i, key := range keys {
 		var b []byte
@@ -195,7 +195,7 @@ func makeElemSchema(value any) ([]byte, error) {
 		buf.WriteByte('}')
 
 	case *types.Array:
-		buf.WriteString(`{"t": "array", "$i":`)
+		buf.WriteString(`{"t": "array", "$i":[`)
 
 		for i := 0; i < val.Len(); i++ {
 			if i > 0 {
@@ -210,7 +210,7 @@ func makeElemSchema(value any) ([]byte, error) {
 			buf.Write(b)
 		}
 
-		buf.WriteByte('}')
+		buf.WriteString(`]}`)
 
 	case float64:
 		buf.WriteString(`{"t": "double"}`)
