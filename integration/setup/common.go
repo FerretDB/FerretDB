@@ -107,6 +107,7 @@ type buildMongoDBURIOpts struct {
 // buildMongoDBURI builds MongoDB URI with given URI options.
 func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	var host, path string
+
 	if opts.hostPort != "" {
 		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
 		host = opts.hostPort
