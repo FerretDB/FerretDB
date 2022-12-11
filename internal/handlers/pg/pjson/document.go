@@ -52,7 +52,8 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 	}
 
 	if len(sch.Keys) != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(sch.Keys), len(rawMessages))
+		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total",
+			len(sch.Keys), len(rawMessages))
 	}
 
 	td := must.NotFail(types.NewDocument())
@@ -72,14 +73,14 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 		td.Set(key, v)
 	}
 
-	*doc = td
+	*doc = documentType(*td)
 
 	return nil
 }
 
 // MarshalJSON implements pjsontype interface.
 func (doc *documentType) MarshalJSON() ([]byte, error) {
-	td := doc.document
+	td := types.Document(*doc)
 
 	var buf bytes.Buffer
 

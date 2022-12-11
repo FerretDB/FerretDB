@@ -17,8 +17,12 @@ package pjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // schema describes document/object schema needed to unmarshal pjson document.
@@ -213,6 +217,7 @@ func makeElemSchema(value any) ([]byte, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		buf.WriteString(`{"t": "binData", "s": `)
 		buf.Write(subtype)
 		buf.WriteString(`}`)
@@ -234,6 +239,7 @@ func makeElemSchema(value any) ([]byte, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		buf.WriteString(`{"t": "regex", "o": "`)
 		buf.Write(options)
 		buf.WriteString(`"}`)

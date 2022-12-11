@@ -24,8 +24,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 type testCase struct {
@@ -99,26 +97,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 				t.Parallel()
 
 				v := newFunc()
-				err := v.UnmarshalJSON([]byte(tc.j))
+				err := unmarshalJSON(v, &tc)
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
 					assertEqual(t, tc.v, v)
-					return
-				}
-
-				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
-			})
-
-			t.Run("Unmarshal", func(t *testing.T) {
-				t.Parallel()
-
-				v, err := Unmarshal([]byte(tc.j), &tc.sch)
-
-				if tc.jErr == "" {
-					require.NoError(t, err)
-					assertEqual(t, tc.v, toPJSON(v))
 					return
 				}
 
@@ -172,7 +155,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		}
 	}
 
-	f.Fuzz(func(t *testing.T, j string) {
+	/*f.Fuzz(func(t *testing.T, tc *testCase) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
@@ -185,7 +168,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// Instead, we compare with round-trip result.
 
 		v := newFunc()
-		if _, err := unmarshalJSON(v, j); err != nil {
+		if err := unmarshalJSON(v, tc); err != nil {
 			t.Skip()
 		}
 
@@ -211,11 +194,11 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// test UnmarshalJSON
 		{
 			actualV := newFunc()
-			_, err := unmarshalJSON(v, j)
+			err := unmarshalJSON(v, tc)
 			require.NoError(t, err)
 			assertEqual(t, v, actualV)
 		}
-	})
+	})*/
 }
 
 func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
@@ -233,7 +216,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
-					_, err = unmarshalJSON(v, string(data))
+					err = unmarshalJSON(v, &tc)
 				}
 
 				b.StopTimer()
@@ -252,37 +235,34 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 }
 
 // unmarshalJSON encapsulates type switch and calls UnmarshalJSON or UnmarshalJSONWithSchema on the given value.
-// It is called this way as pjsontype itself doesn't implement json.Unmarshaler interface.
-// This function returns true if UnmarshalJSON is implemented and called and false if not.
-func unmarshalJSON(v pjsontype, j string) (bool, error) {
+func unmarshalJSON(v pjsontype, tc *testCase) error {
 	var err error
 	switch v := v.(type) {
 	case *documentType:
-		// UnmarshalJSON is not supported for documents.
-		return false, nil
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch.Schema)
 	case *doubleType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *stringType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *binaryType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *objectIDType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *boolType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *dateTimeType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *regexType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *int32Type:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *timestampType:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	case *int64Type:
-		err = v.UnmarshalJSON([]byte(j))
+		err = v.UnmarshalJSON([]byte(tc.j))
 	default:
 		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
 	}
 
-	return true, err
+	return err
 }

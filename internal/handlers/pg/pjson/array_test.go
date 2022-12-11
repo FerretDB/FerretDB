@@ -23,7 +23,7 @@ import (
 )
 
 func convertArray(a *types.Array) *arrayType {
-	res := arrayType{array: a}
+	res := arrayType(*a)
 	return &res
 }
 

@@ -152,9 +152,9 @@ func toPJSON(v any) pjsontype {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// unmarshalDoc decodes the top-level document.
+// Unmarshal decodes the top-level document.
 // It decodes document's schema from the `$s` field and uses it to decode the data of the document.
-func unmarshalDoc(data []byte) (any, error) {
+func Unmarshal(data []byte) (any, error) {
 	var v map[string]json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
@@ -164,7 +164,7 @@ func unmarshalDoc(data []byte) (any, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := checkConsumed(dec, r); err != nil {
+	if err = checkConsumed(dec, r); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -174,8 +174,7 @@ func unmarshalDoc(data []byte) (any, error) {
 	}
 
 	var schema schema
-	err = json.Unmarshal(sch, &schema)
-	if err != nil {
+	if err = json.Unmarshal(sch, &schema); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -234,6 +233,10 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 		err = b.UnmarshalJSON(data)
 		b.Subtype = types.BinarySubtype(sch.Subtype)
 		res = &b
+	case elemTypeObjectID:
+		var o objectIDType
+		err = o.UnmarshalJSON(data)
+		res = &o
 	case elemTypeBool:
 		var b boolType
 		err = b.UnmarshalJSON(data)
@@ -272,6 +275,44 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 	}
 
 	return fromPJSON(res), nil
+}
+
+// MarshalWithSchema encodes the given document and set its schema in the field $s.
+func MarshalWithSchema(d *types.Document) ([]byte, error) {
+	if d == nil {
+		panic("v is nil")
+	}
+
+	schema, err := makeSchema(d)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+
+	buf.WriteString(`{"$s":`)
+	buf.Write(schema)
+
+	keys := d.Keys()
+	values := d.Values()
+
+	for i, key := range keys {
+		buf.WriteByte(',')
+		buf.WriteString(`"`)
+		buf.WriteString(key)
+		buf.WriteString(`":`)
+
+		b, err := toPJSON(values[i]).MarshalJSON()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+	}
+
+	buf.WriteByte('}')
+
+	return buf.Bytes(), nil
 }
 
 // Marshal encodes given built-in or types' package value into pjson.
