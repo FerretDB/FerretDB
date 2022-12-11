@@ -122,9 +122,9 @@ func fromPJSON(v pjsontype) any {
 func toPJSON(v any) pjsontype {
 	switch v := v.(type) {
 	case *types.Document:
-		return pointer.To(documentType{document: v})
+		return pointer.To(documentType(*v))
 	case *types.Array:
-		return pointer.To(arrayType{array: v})
+		return pointer.To(arrayType(*v))
 	case float64:
 		return pointer.To(doubleType(v))
 	case string:
@@ -186,8 +186,7 @@ func unmarshalDoc(data []byte) (any, error) {
 	}
 
 	var d documentType
-	d.schema = &schema
-	err = d.UnmarshalJSON(data)
+	err = d.UnmarshalJSONWithSchema(data, &schema)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -220,8 +219,7 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 		res = &d
 	case elemTypeArray:
 		var a arrayType
-		a.schemas = sch.Items
-		err = a.UnmarshalJSON(data)
+		err = a.UnmarshalJSONWithSchema(data, sch.Items)
 		res = &a
 	case elemTypeDouble:
 		var d doubleType
