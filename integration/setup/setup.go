@@ -55,7 +55,10 @@ type SetupResult struct {
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
 func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
-	u, err := url.Parse(s.MongoDBURI)
+	uri, err := url.PathUnescape(s.MongoDBURI)
+	require.NoError(tb, err)
+
+	u, err := url.Parse(uri)
 	require.NoError(tb, err)
 
 	return u.Host == ""

@@ -31,17 +31,11 @@ func unixSocketPath(tb testing.TB) string {
 	f, err := os.CreateTemp("", "ferretdb-*.sock")
 	require.NoError(tb, err)
 
-	// remove file so listener could use it
+	// remove file so listener could create it (and remove it itself on stop)
 	err = f.Close()
 	require.NoError(tb, err)
 	err = os.Remove(f.Name())
 	require.NoError(tb, err)
-
-	// remove it after test
-	tb.Cleanup(func() {
-		err = os.Remove(f.Name())
-		require.NoError(tb, err)
-	})
 
 	return f.Name()
 }
