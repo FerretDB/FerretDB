@@ -139,6 +139,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		Scheme:   "mongodb",
 		Host:     host,
 		Path:     path,
+		RawPath:  url.PathEscape(path),
 		User:     user,
 		RawQuery: q.Encode(),
 	}
@@ -239,7 +240,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	opts := options.Client().ApplyURI(uri)
 
 	client, err := mongo.Connect(ctx, opts)
-	require.NoError(tb, err)
+	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)

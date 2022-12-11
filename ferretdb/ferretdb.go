@@ -140,9 +140,11 @@ func (f *FerretDB) MongoDBURI() string {
 			Path:   "/",
 		}
 	} else {
+		path := f.l.Unix().String()
 		u = &url.URL{
-			Scheme: "mongodb",
-			Path:   f.l.Unix().String(),
+			Scheme:  "mongodb",
+			Path:    path,
+			RawPath: url.PathEscape(path),
 		}
 	}
 

@@ -83,5 +83,5 @@ func Example_unix() {
 	cancel()
 	<-done
 
-	// Output: mongodb:///tmp/ferretdb-27017.sock
+	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock
 }

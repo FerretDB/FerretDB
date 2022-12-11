@@ -25,14 +25,19 @@ import (
 
 // unixSocketPath returns temporary Unix domain socket path for that test.
 func unixSocketPath(tb testing.TB) string {
-	// do not use tb.TempDir() because generate path is too long on macOS
+	tb.Helper()
 
+	// do not use tb.TempDir() because generate path is too long on macOS
 	f, err := os.CreateTemp("", "ferretdb-*.sock")
 	require.NoError(tb, err)
 
+	// remove file so listener could use it
 	err = f.Close()
 	require.NoError(tb, err)
+	err = os.Remove(f.Name())
+	require.NoError(tb, err)
 
+	// remove it after test
 	tb.Cleanup(func() {
 		err = os.Remove(f.Name())
 		require.NoError(tb, err)
