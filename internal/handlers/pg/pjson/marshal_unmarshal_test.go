@@ -17,6 +17,8 @@ package pjson
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -57,9 +59,12 @@ func TestMarshalUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.doc, doc)
 
-			b, err := Marshal(tc.doc)
+			actualB, err := Marshal(tc.doc)
 			require.NoError(t, err)
-			assert.Equal(t, tc.json, string(b))
+			actualB = testutil.IndentJSON(t, actualB)
+
+			expectedB := testutil.IndentJSON(t, []byte(tc.json))
+			assert.Equal(t, string(expectedB), string(actualB))
 		})
 	}
 }

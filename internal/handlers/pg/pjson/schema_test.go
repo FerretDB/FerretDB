@@ -17,6 +17,8 @@ package pjson
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -162,6 +164,105 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 			err = actual.Unmarshal(expectedB)
 			require.NoError(t, err)
 
+			assert.Equal(t, tc.schema, actual)
+		})
+	}
+}
+
+func TestMakeSchema(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		doc    *types.Document
+		schema schema
+	}{
+		"AllTypes": {
+			schema: schema{
+				Properties: map[string]*elem{
+					"_id": objectIDSchema,
+					"arr": {
+						Type: elemTypeArray,
+						Items: []*elem{
+							boolSchema,
+							dateSchema,
+							regexSchema("i"),
+							{
+								Type: elemTypeObject,
+								Schema: &schema{
+									Properties: map[string]*elem{
+										"bar": nullSchema,
+										"baz": longSchema,
+										"arr": {
+											Type: elemTypeArray,
+											Items: []*elem{
+												intSchema,
+												timestampSchema,
+											},
+										},
+									},
+									Keys: []string{"bar", "baz", "arr"},
+								},
+							},
+						},
+					},
+					"data":     binDataSchema(byte(types.BinaryFunction)),
+					"distance": doubleSchema,
+					"name":     stringSchema,
+				},
+				Keys: []string{"_id", "arr", "data", "distance", "name"},
+			},
+			doc: must.NotFail(types.NewDocument(
+				"_id", types.NewObjectID(),
+				"arr", must.NotFail(types.NewArray()),
+				"distance", 1.1,
+				"name", "foo",
+			)),
+		},
+		/*		"Embedded": {
+				schema: schema{
+					Properties: map[string]*elem{
+						"obj": {
+							Type: elemTypeObject,
+							Schema: &schema{
+								Properties: map[string]*elem{
+									"arr": {
+										Type: elemTypeArray,
+										Items: []*elem{
+											{
+												Type: elemTypeObject,
+											},
+											{
+												Type: elemTypeObject,
+												Schema: &schema{
+													Properties: map[string]*elem{
+														"foo": {
+															Type: elemTypeArray,
+														},
+													},
+													Keys: []string{"foo"},
+												},
+											},
+										},
+									},
+									"empty-arr": {
+										Type: elemTypeArray,
+									},
+								},
+								Keys: []string{"arr", "empty-arr"},
+							},
+						},
+					},
+					Keys: []string{"obj"},
+				},
+			},*/
+	} {
+		tc := tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			actual, err := makeSchema(tc.doc)
+			require.NoError(t, err)
 			assert.Equal(t, tc.schema, actual)
 		})
 	}

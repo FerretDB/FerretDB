@@ -134,22 +134,16 @@ func (s *schema) Unmarshal(b []byte) error {
 func makeSchema(td *types.Document) (json.RawMessage, error) {
 	var buf bytes.Buffer
 
-	buf.WriteString(`{"$k":`)
-
 	keys := td.Keys()
 	if keys == nil {
 		keys = []string{}
 	}
 
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	buf.WriteString(`"p":{`)
 
-	buf.Write(b)
-
-	for _, key := range keys {
-		buf.WriteByte(',')
+	for i, key := range keys {
+		var b []byte
+		var err error
 
 		if b, err = json.Marshal(key); err != nil {
 			return nil, lazyerrors.Error(err)
@@ -158,14 +152,26 @@ func makeSchema(td *types.Document) (json.RawMessage, error) {
 		buf.Write(b)
 		buf.WriteByte(':')
 
-		b, err := makeElemSchema(must.NotFail(td.Get(key)))
+		b, err = makeElemSchema(must.NotFail(td.Get(key)))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		buf.Write(b)
+
+		if i != len(keys)-1 {
+			buf.WriteByte(',')
+		}
 	}
 
+	buf.WriteString(`},"$k":`)
+
+	b, err := json.Marshal(keys)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	buf.Write(b)
 	buf.WriteByte('}')
 
 	return buf.Bytes(), nil
