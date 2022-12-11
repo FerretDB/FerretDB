@@ -277,8 +277,9 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 	return fromPJSON(res), nil
 }
 
-// MarshalWithSchema encodes the given document and set its schema in the field $s.
-func MarshalWithSchema(d *types.Document) ([]byte, error) {
+// Marshal encodes the given document and set its schema in the field $s.
+// Use it when you need to encode a document with schema, for example, when you want to store it in a database.
+func Marshal(d *types.Document) ([]byte, error) {
 	if d == nil {
 		panic("v is nil")
 	}
@@ -316,6 +317,7 @@ func MarshalWithSchema(d *types.Document) ([]byte, error) {
 }
 
 // MarshalElem encodes given built-in or types' package value into pjson.
+// Use it when you need to encode a single value, for example in a where clause.
 func MarshalElem(v any) ([]byte, error) {
 	if v == nil {
 		panic("v is nil")

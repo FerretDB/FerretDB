@@ -80,7 +80,7 @@ func createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
 
 	settings := must.NotFail(types.NewDocument("collections", must.NotFail(types.NewDocument())))
 	sql = fmt.Sprintf(`INSERT INTO %s (settings) VALUES ($1)`, pgx.Identifier{db, settingsTableName}.Sanitize())
-	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.MarshalWithSchema(settings)))
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -196,7 +196,7 @@ func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table st
 
 	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
 
-	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.MarshalWithSchema(settings)))
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -225,7 +225,7 @@ func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection stri
 
 	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
 
-	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.MarshalWithSchema(settings)))
+	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

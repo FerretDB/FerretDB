@@ -79,7 +79,7 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 		` (_jsonb) VALUES ($1)`
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		_, err = tx.Exec(ctx, sql, must.NotFail(pjson.MarshalWithSchema(doc)))
+		_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)))
 		return err
 	})
 	if err != nil {
