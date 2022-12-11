@@ -41,7 +41,9 @@ import (
 )
 
 var (
-	targetPortF       = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
+	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
+	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
+
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
@@ -121,7 +123,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	if opts.tls {
 		q.Set("tls", "true")
 
-		p := filepath.Join("build", "certs", "rootCA.pem")
+		p := filepath.Join("..", "build", "certs", "rootCA.pem")
 		_, err := os.Stat(p)
 		require.NoError(tb, err)
 		q.Set("tlsCAFile", p)
@@ -147,6 +149,11 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 // It returns MongoDB URI for that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
+
+	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/38
+	require.False(tb, *targetTLSF, "-target-tls must be false for in-process FerretDB")
 
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
@@ -209,7 +216,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	})
 
 	opts := &buildMongoDBURIOpts{
-		tls: false, // TODO https://github.com/FerretDB/FerretDB/issues/38
+		tls: *targetTLSF,
 	}
 
 	if listenUnix == "" {

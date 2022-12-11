@@ -85,6 +85,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	} else {
 		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
 		})
 	}
 

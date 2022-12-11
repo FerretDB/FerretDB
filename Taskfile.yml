@@ -189,7 +189,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt . -records-dir=../records
-        -target-port=37017 -compat-port=0
+        -target-port=37017 -target-tls -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
