@@ -1019,7 +1019,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 	collectionName := s.Collection.Name()
 
 	// only check port number on TCP connection, no need to check on Unix socket
-	isTCP := s.IsTCP(t)
+	isUnix := s.IsUnixSocket(t)
 
 	// setup second client connection to check that `whatsmyuri` returns different ports
 	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoDBURI))
@@ -1052,7 +1052,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 
 		assert.Equal(t, float64(1), ok)
 
-		if isTCP {
+		if !isUnix {
 			// record ports to compare that they are not equal for two different clients.
 			_, port, err := net.SplitHostPort(you)
 			require.NoError(t, err)
@@ -1061,7 +1061,7 @@ func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
 		}
 	}
 
-	if isTCP {
+	if !isUnix {
 		require.Equal(t, 2, len(ports))
 		assert.NotEqual(t, ports[0], ports[1])
 	}

@@ -19,10 +19,9 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
-	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -46,9 +45,9 @@ var (
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
-	compatPortF       = flag.Int("compat-port", 37017, "second system's port for compatibility tests; if 0, they are skipped")
 
-	compatTLSF = flag.Bool("compat-tls", false, "enable TLS for client connection")
+	compatPortF = flag.Int("compat-port", 37017, "compat system's port for compatibility tests; if 0, they are skipped")
+	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
 
 	postgreSQLURLF = flag.String("postgresql-url", "postgres://postgres@127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
 
@@ -96,9 +95,57 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
+// buildMongoDBURIOpts represents buildMongoDBURI's options.
+type buildMongoDBURIOpts struct {
+	hostPort       string
+	unixSocketPath string
+	tls            bool
+}
+
+// buildMongoDBURI builds MongoDB URI with given URI options.
+func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
+	var host, path string
+	if opts.hostPort != "" {
+		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
+		host = opts.hostPort
+		path = "/"
+	} else {
+		require.NotEmpty(tb, opts.unixSocketPath, "neither hostPort nor unixSocketPath are set")
+		path = opts.unixSocketPath
+	}
+
+	var user *url.Userinfo
+
+	q := make(url.Values)
+
+	if opts.tls {
+		q.Set("tls", "true")
+
+		p := filepath.Join("build", "certs", "rootCA.pem")
+		_, err := os.Stat(p)
+		require.NoError(tb, err)
+		q.Set("tlsCAFile", p)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1593
+	// user = url.UserPassword("username", "password")
+	// q.Set("authMechanism", "PLAIN")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1507
+	u := &url.URL{
+		Scheme:   "mongodb",
+		Host:     host,
+		Path:     path,
+		User:     user,
+		RawQuery: q.Encode(),
+	}
+
+	return u.String()
+}
+
 // setupListener starts in-process FerretDB server that runs until ctx is done.
-// It returns state provider, Unix socket path or TCP port.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*state.Provider, string, int) {
+// It returns MongoDB URI for that listener.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
 	p, err := state.NewProvider("")
@@ -127,9 +174,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		mode = clientconn.DiffNormalMode
 	}
 
-	listenUnix := listenUnix(tb)
+	var listenUnix string
+	if *targetUnixSocketF {
+		listenUnix = unixSocketPath(tb)
+	}
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:     "127.0.0.1:0",
+		ListenAddr:     "127.0.0.1:0", // always setup TCP listener
 		ListenUnix:     listenUnix,
 		ProxyAddr:      proxyAddr,
 		Mode:           mode,
@@ -157,59 +208,24 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*sta
 		h.Close()
 	})
 
-	var unixSocketPath string
-	if listenUnix != "" {
-		unixSocketPath = l.Unix().String()
+	opts := &buildMongoDBURIOpts{
+		tls: false, // TODO https://github.com/FerretDB/FerretDB/issues/38
 	}
 
-	return p, unixSocketPath, l.Addr().(*net.TCPAddr).Port
-}
-
-// uriOptions represents MongoDB URI options.
-type uriOptions struct {
-	host          string
-	port          int
-	tlsCAFilePath string
-}
-
-// buildMongoDBURI builds MongoDB URI with given URI options.
-func buildMongoDBURI(tb testing.TB, opts uriOptions) string {
-	host := opts.host
-
-	if host == "" {
-		require.Greater(tb, opts.port, 0)
-		require.Less(tb, opts.port, 65536)
-
-		host = fmt.Sprintf("127.0.0.1:%d", opts.port)
+	if listenUnix == "" {
+		opts.hostPort = l.Addr().String()
+	} else {
+		opts.unixSocketPath = l.Unix().String()
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1507
-	u := &url.URL{
-		Scheme: "mongodb",
-		Host:   host,
-		Path:   "/",
+	uri := buildMongoDBURI(tb, opts)
+	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1593
-		// User:     url.UserPassword("username", "password"),
-		// RawQuery: "authMechanism=PLAIN",
-	}
-
-	values := u.Query()
-	if opts.tlsCAFilePath != "" {
-		_, err := os.Stat(opts.tlsCAFilePath)
-		require.NoError(tb, err)
-
-		values.Set("tls", "true")
-		values.Set("tlsCAFile", opts.tlsCAFilePath)
-	}
-
-	u.RawQuery = values.Encode()
-
-	return u.String()
+	return uri
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.
-func setupClient(tb testing.TB, ctx context.Context, uri string, tls bool) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	opts := options.Client().ApplyURI(uri)

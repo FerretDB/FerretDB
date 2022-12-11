@@ -142,7 +142,7 @@ func (f *FerretDB) MongoDBURI() string {
 	} else {
 		u = &url.URL{
 			Scheme: "mongodb",
-			Host:   f.l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			Path:   f.l.Unix().String(),
 		}
 	}
 
