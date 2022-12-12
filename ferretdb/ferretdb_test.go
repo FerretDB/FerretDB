@@ -89,3 +89,37 @@ func Example_unix() {
 
 	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock
 }
+
+func Example_tls() {
+	f, err := New(&Config{
+		Listener: ListenerConfig{
+			TLS:         "127.0.0.1:47017",
+			TLSCertFile: "cert.pem",
+			TLSKeyFile:  "key.pem",
+		},
+		Handler:       "pg",
+		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+
+	go func() {
+		log.Print(f.Run(ctx))
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+	fmt.Println(uri)
+
+	// Use MongoDB URI as usual.
+
+	cancel()
+	<-done
+
+	// Output: mongodb://127.0.0.1:47017?tls=true&tlsCertFilePath=cert.pem&tlsKeyFilePath=key.pem
+}
