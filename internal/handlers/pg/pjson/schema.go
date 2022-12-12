@@ -137,8 +137,8 @@ func makeSchema(td *types.Document) ([]byte, error) {
 	var buf bytes.Buffer
 
 	keys := td.Keys()
-	if keys == nil {
-		keys = []string{}
+	if len(keys) == 0 {
+		return []byte("{}"), nil
 	}
 
 	buf.WriteString(`{"p":{`)
@@ -185,26 +185,12 @@ func makeElemSchema(value any) ([]byte, error) {
 
 	switch val := value.(type) {
 	case *types.Document:
-		buf.WriteString(`{"t": "object", "$s":`)
+		buf.WriteString(`{"t": "object"`)
 
-		b, err := makeSchema(val)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		if val.Len() > 0 {
+			buf.WriteString(`, "$s":`)
 
-		buf.Write(b)
-
-		buf.WriteByte('}')
-
-	case *types.Array:
-		buf.WriteString(`{"t": "array", "i":[`)
-
-		for i := 0; i < val.Len(); i++ {
-			if i > 0 {
-				buf.WriteByte(',')
-			}
-
-			b, err := makeElemSchema(must.NotFail(val.Get(i)))
+			b, err := makeSchema(val)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -212,7 +198,31 @@ func makeElemSchema(value any) ([]byte, error) {
 			buf.Write(b)
 		}
 
-		buf.WriteString(`]}`)
+		buf.WriteByte('}')
+
+	case *types.Array:
+		buf.WriteString(`{"t": "array"`)
+
+		if val.Len() > 0 {
+			buf.WriteString(`, "i":[`)
+
+			for i := 0; i < val.Len(); i++ {
+				if i > 0 {
+					buf.WriteByte(',')
+				}
+
+				b, err := makeElemSchema(must.NotFail(val.Get(i)))
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				buf.Write(b)
+			}
+
+			buf.WriteByte(']')
+		}
+
+		buf.WriteByte('}')
 
 	case float64:
 		buf.WriteString(`{"t": "double"}`)
