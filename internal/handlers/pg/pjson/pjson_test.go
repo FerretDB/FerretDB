@@ -240,6 +240,8 @@ func unmarshalJSON(v pjsontype, tc *testCase) error {
 	switch v := v.(type) {
 	case *documentType:
 		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch.Schema)
+	case *arrayType:
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch.Items)
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *stringType:

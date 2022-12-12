@@ -23,11 +23,11 @@ import (
 var regexTestCases = []testCase{{
 	name: "normal",
 	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
-	j:    `{"$r":"hoffman","o":"i"}`,
+	j:    `"hoffman"`,
 }, {
 	name: "empty",
 	v:    pointer.To(regexType{Pattern: "", Options: ""}),
-	j:    `{"$r":"","o":""}`,
+	j:    `""`,
 }, {
 	name: "EOF",
 	j:    `{`,
