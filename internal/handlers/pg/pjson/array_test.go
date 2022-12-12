@@ -18,8 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -47,18 +45,18 @@ var arrayTestCases = []testCase{{
 		Type: elemTypeArray,
 		Items: []*elem{
 			{Type: elemTypeArray},
-			{Type: elemTypeBinData, Subtype: pointer.To(types.BinaryUser)},
-			{Type: elemTypeBool},
-			{Type: elemTypeDate},
+			binDataSchema(types.BinaryUser),
+			boolSchema,
+			dateSchema,
 			{Type: elemTypeObject},
-			{Type: elemTypeDouble},
-			{Type: elemTypeInt},
-			{Type: elemTypeLong},
-			{Type: elemTypeString},
-			{Type: elemTypeNull},
+			doubleSchema,
+			intSchema,
+			longSchema,
+			stringSchema,
+			nullSchema,
 		},
 	},
-	j: `[[],Qg==,true,1627378542123,{},42.13,42,42,"foo",null]`,
+	j: `[[],"Qg==",true,1627378542123,{},42.13,42,42,"foo",null]`,
 }, {
 	name: "EOF",
 	j:    `[`,
