@@ -38,10 +38,6 @@ var doubleTestCases = []testCase{{
 	v:    pointer.To(doubleType(math.SmallestNonzeroFloat64)),
 	j:    "5e-324",
 }, {
-	name: "+Infinity",
-	v:    pointer.To(doubleType(math.Inf(+1))),
-	j:    `{"$f":"Infinity"}`,
-}, {
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
