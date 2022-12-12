@@ -29,7 +29,7 @@ import (
 type testCase struct {
 	name   string
 	v      pjsontype
-	sch    elem
+	sch    *elem
 	j      string
 	canonJ string // canonical form without extra object fields, zero values, etc.
 	jErr   string // unwrapped
@@ -247,7 +247,7 @@ func unmarshalJSON(v pjsontype, tc *testCase) error {
 	case *stringType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *binaryType:
-		err = v.UnmarshalJSONWithSchema([]byte(tc.j), &tc.sch)
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch)
 	case *objectIDType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *boolType:
@@ -255,7 +255,7 @@ func unmarshalJSON(v pjsontype, tc *testCase) error {
 	case *dateTimeType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *regexType:
-		err = v.UnmarshalJSONWithSchema([]byte(tc.j), &tc.sch)
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch)
 	case *int32Type:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *timestampType:

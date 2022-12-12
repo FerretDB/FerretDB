@@ -17,8 +17,6 @@ package pjson
 import (
 	"testing"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -28,21 +26,15 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
-	sch: elem{
-		Type:    elemTypeBinData,
-		Subtype: pointer.To(types.BinaryUser),
-	},
-	j: `"Zm9v"`,
+	sch: binDataSchema(types.BinaryUser),
+	j:   `"Zm9v"`,
 }, {
 	name: "empty",
 	v: &binaryType{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	sch: elem{
-		Type:    elemTypeBinData,
-		Subtype: pointer.To(types.BinaryGeneric),
-	},
+	sch:    binDataSchema(types.BinaryGeneric),
 	j:      ``,
 	canonJ: ``,
 }, {

@@ -23,10 +23,12 @@ import (
 var regexTestCases = []testCase{{
 	name: "normal",
 	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
+	sch:  regexSchema("i"),
 	j:    `"hoffman"`,
 }, {
 	name: "empty",
 	v:    pointer.To(regexType{Pattern: "", Options: ""}),
+	sch:  regexSchema(""),
 	j:    `""`,
 }, {
 	name: "EOF",

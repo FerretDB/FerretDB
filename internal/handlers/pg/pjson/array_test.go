@@ -43,7 +43,7 @@ var arrayTestCases = []testCase{{
 		"foo",
 		types.Null,
 	))),
-	sch: elem{
+	sch: &elem{
 		Type: elemTypeArray,
 		Items: []*elem{
 			{Type: elemTypeArray},
