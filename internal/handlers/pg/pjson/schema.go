@@ -35,11 +35,11 @@ type schema struct {
 
 // elem describes an element of schema.
 type elem struct {
-	Type    elemType `json:"t"`            // for each field
-	Schema  *schema  `json:"$s,omitempty"` // only for objects
-	Options *string  `json:"o,omitempty"`  // only for regex
-	Items   []*elem  `json:"i,omitempty"`  // only for arrays
-	Subtype *byte    `json:"s,omitempty"`  // only for binData
+	Type    elemType             `json:"t"`            // for each field
+	Schema  *schema              `json:"$s,omitempty"` // only for objects
+	Options *string              `json:"o,omitempty"`  // only for regex
+	Items   []*elem              `json:"i,omitempty"`  // only for arrays
+	Subtype *types.BinarySubtype `json:"s,omitempty"`  // only for binData
 }
 
 // elemType represents possible types of schema elements.
@@ -70,7 +70,7 @@ var (
 	stringSchema = &elem{
 		Type: elemTypeString,
 	}
-	binDataSchema = func(subtype byte) *elem {
+	binDataSchema = func(subtype types.BinarySubtype) *elem {
 		return &elem{
 			Type:    elemTypeBinData,
 			Subtype: pointer.To(subtype),
