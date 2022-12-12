@@ -162,7 +162,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt . -records-dir=../records
-        -handler=pg -target-unix-socket
+        -handler=pg -target-unix-socket -compat-tls
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -171,7 +171,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -records-dir=../records
-        -handler=tigris
+        -handler=tigris -compat-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -180,7 +180,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-cockroach.txt . -records-dir=../records
-        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
+        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -189,7 +189,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt . -records-dir=../records
-        -target-port=37017 -compat-port=0
+        -target-port=37017 -target-tls -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -312,15 +312,9 @@ tasks:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
-        docker compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
+        docker compose exec mongodb mongosh
+        'mongodb://host.docker.internal:27017/test?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
-
-  mongo:
-    desc: "Run legacy `mongo` shell"
-    cmds:
-      - >
-        docker compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
-        --verbose
 
   docker-init:
     cmds:

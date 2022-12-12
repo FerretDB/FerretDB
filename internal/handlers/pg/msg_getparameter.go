@@ -48,7 +48,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"settableAtStartup", true,
 		)),
 		"tlsMode", must.NotFail(types.NewDocument(
-			"value", "disabled",
+			"value", "preferTLS",
 			"settableAtRuntime", true,
 			"settableAtStartup", false,
 		)),
