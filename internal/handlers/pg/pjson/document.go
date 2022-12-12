@@ -58,6 +58,8 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 
 	td := must.NotFail(types.NewDocument())
 
+	// TODO: rawMessages[$k]!!!
+
 	for _, key := range sch.Keys {
 		b, ok := rawMessages[key]
 
