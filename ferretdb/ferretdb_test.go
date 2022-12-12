@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path"
 )
 
 func Example_tcp() {
@@ -91,11 +92,14 @@ func Example_unix() {
 }
 
 func Example_tls() {
+	certPath := path.Join("..", "build", "certs", "server-cert.pem")
+	keyPath := path.Join("..", "build", "certs", "server-key.pem")
+
 	f, err := New(&Config{
 		Listener: ListenerConfig{
 			TLS:         "127.0.0.1:47017",
-			TLSCertFile: "cert.pem",
-			TLSKeyFile:  "key.pem",
+			TLSCertFile: certPath,
+			TLSKeyFile:  keyPath,
 		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
@@ -121,5 +125,5 @@ func Example_tls() {
 	cancel()
 	<-done
 
-	// Output: mongodb://127.0.0.1:47017?tls=true&tlsCertFilePath=cert.pem&tlsKeyFilePath=key.pem
+	// Output: mongodb://127.0.0.1:47017
 }
