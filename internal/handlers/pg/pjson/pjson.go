@@ -241,14 +241,7 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 		res = &s
 	case elemTypeBinData:
 		var b binaryType
-		err = b.UnmarshalJSON(data)
-
-		if sch.Subtype == nil {
-			err = lazyerrors.Errorf("subtype is not set")
-		} else {
-			b.Subtype = types.BinarySubtype(*sch.Subtype)
-		}
-
+		err = b.UnmarshalJSONWithSchema(data, sch)
 		res = &b
 	case elemTypeObjectID:
 		var o objectIDType

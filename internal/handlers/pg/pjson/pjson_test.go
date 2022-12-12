@@ -78,7 +78,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			require.NotEmpty(t, tc.name, "name should not be empty")
-			require.NotEmpty(t, tc.j, "j should not be empty")
+			//			require.NotEmpty(t, tc.j, "j should not be empty")
 
 			t.Parallel()
 
@@ -247,7 +247,7 @@ func unmarshalJSON(v pjsontype, tc *testCase) error {
 	case *stringType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *binaryType:
-		err = v.UnmarshalJSON([]byte(tc.j))
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), &tc.sch)
 	case *objectIDType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *boolType:

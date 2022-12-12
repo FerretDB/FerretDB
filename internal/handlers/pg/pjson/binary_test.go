@@ -17,6 +17,8 @@ package pjson
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -26,31 +28,30 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
-	j: `{"$b":"Zm9v","s":128}`,
+	sch: elem{
+		Type:    elemTypeBinData,
+		Subtype: pointer.To(types.BinaryUser),
+	},
+	j: `"Zm9v"`,
 }, {
 	name: "empty",
 	v: &binaryType{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	j:      `{"$b":""}`,
-	canonJ: `{"$b":"","s":0}`,
+	sch: elem{
+		Type:    elemTypeBinData,
+		Subtype: pointer.To(types.BinaryGeneric),
+	},
+	j:      ``,
+	canonJ: ``,
 }, {
 	name: "invalid subtype",
 	v: &binaryType{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
-	j: `{"$b":"","s":255}`,
-}, {
-	name: "extra JSON fields",
-	v: &binaryType{
-		Subtype: types.BinaryUser,
-		B:       []byte("foo"),
-	},
-	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
-	canonJ: `{"$b":"Zm9v","s":128}`,
-	jErr:   `json: unknown field "foo"`,
+	j: ``,
 }, {
 	name: "EOF",
 	j:    `{`,
