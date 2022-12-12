@@ -31,10 +31,6 @@ func (doc *documentType) pjsontype() {}
 
 // UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
 func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error {
-	if sch == nil {
-		panic("schema is not set")
-	}
-
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -49,6 +45,10 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if len(rawMessages) > 0 && sch == nil {
+		return lazyerrors.Errorf("document schema is nil for non-empty document")
 	}
 
 	if len(sch.Keys) != len(rawMessages) {

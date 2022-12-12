@@ -30,10 +30,6 @@ func (a *arrayType) pjsontype() {}
 
 // UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
 func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error {
-	if schemas == nil {
-		panic("array schemas is nil")
-	}
-
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -48,6 +44,10 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error 
 
 	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if len(rawMessages) > 0 && schemas == nil {
+		return lazyerrors.Errorf("array schemas is nil for non-empty array")
 	}
 
 	ta := types.MakeArray(len(rawMessages))
