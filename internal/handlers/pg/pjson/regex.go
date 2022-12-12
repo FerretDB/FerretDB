@@ -28,8 +28,8 @@ type regexType types.Regex
 // pjsontype implements pjsontype interface.
 func (regex *regexType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
-func (regex *regexType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSONWithSchema TODO
+func (regex *regexType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -47,8 +47,13 @@ func (regex *regexType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
+	if sch.Options == nil {
+		return lazyerrors.Errorf("regex options is nil")
+	}
+
 	*regex = regexType{
 		Pattern: o,
+		Options: *sch.Options,
 	}
 
 	return nil

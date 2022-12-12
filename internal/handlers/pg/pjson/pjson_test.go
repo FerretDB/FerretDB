@@ -255,7 +255,7 @@ func unmarshalJSON(v pjsontype, tc *testCase) error {
 	case *dateTimeType:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *regexType:
-		err = v.UnmarshalJSON([]byte(tc.j))
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), &tc.sch)
 	case *int32Type:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *timestampType:

@@ -261,14 +261,7 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 		res = &n
 	case elemTypeRegex:
 		var r regexType
-		err = r.UnmarshalJSON(data)
-
-		if sch.Options == nil {
-			err = lazyerrors.Errorf("options is not set")
-		} else {
-			r.Options = *sch.Options
-		}
-
+		err = r.UnmarshalJSONWithSchema(data, sch)
 		res = &r
 	case elemTypeInt:
 		var i int32Type
