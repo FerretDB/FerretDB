@@ -185,7 +185,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	isTCP := s.IsTCP(t)
+	isUnix := s.IsUnixSocket(t)
 
 	for name, tc := range map[string]struct {
 		query   bson.D
@@ -247,7 +247,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			assert.NotEmpty(t, host)
 
 			// only check port number on TCP, not on Unix socket
-			if isTCP {
+			if !isUnix {
 				assert.NotEmpty(t, port)
 			}
 
