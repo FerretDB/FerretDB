@@ -51,7 +51,7 @@ func Example_tcp() {
 	//
 	// [...]
 	//
-	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	cancel()
 	<-done
@@ -120,7 +120,19 @@ func Example_tls() {
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
 
-	// Use MongoDB URI as usual.
+	// Use MongoDB URI as usual. To connect to TLS listener, set TLS config.
+	// For example:
+	//
+	// import "go.mongodb.org/mongo-driver/mongo"
+	// import "go.mongodb.org/mongo-driver/mongo/options"
+	//
+	// [...]
+	//
+	// 	tlsConfig, err := options.BuildTLSConfig(map[string]interface{}{
+	//		"tlsCAFile": path.Join("path", "to", "rootCA.pem"),
+	//	})
+	//
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri).SetTLSConfig(tlsConfig))
 
 	cancel()
 	<-done
