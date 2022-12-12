@@ -121,6 +121,8 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	q := make(url.Values)
 
 	if opts.tls {
+		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
+
 		q.Set("tls", "true")
 
 		p := filepath.Join("..", "build", "certs", "rootCA.pem")
