@@ -166,8 +166,8 @@ func TestQuerySortValue(t *testing.T) {
 		"AscValueScalar": {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
-				"unset",
 				"null",
+				"unset",
 				"int64-min",
 				"int32-min",
 				"double-zero",

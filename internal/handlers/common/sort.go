@@ -56,7 +56,9 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 	return func(a, b *types.Document) bool {
 		aField, err := a.Get(sortKey)
 		if err != nil {
-			return sortType == types.Ascending
+			// sort order treats null and non-existent field equivalent.
+			// set aField to null for sort accordingly.
+			aField = types.NullType{}
 		}
 
 		bField, err := b.Get(sortKey)
