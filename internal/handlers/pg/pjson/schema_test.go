@@ -18,12 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -191,8 +190,6 @@ func TestMakeSchema(t *testing.T) {
 								Type: elemTypeObject,
 								Schema: &schema{
 									Properties: map[string]*elem{
-										"bar": nullSchema,
-										"baz": longSchema,
 										"arr": {
 											Type: elemTypeArray,
 											Items: []*elem{
@@ -200,8 +197,10 @@ func TestMakeSchema(t *testing.T) {
 												timestampSchema,
 											},
 										},
+										"bar": nullSchema,
+										"baz": longSchema,
 									},
-									Keys: []string{"bar", "baz", "arr"},
+									Keys: []string{"arr", "bar", "baz"},
 								},
 							},
 						},
@@ -219,16 +218,17 @@ func TestMakeSchema(t *testing.T) {
 					time.Now(),
 					types.Regex{Pattern: "foo$", Options: "i"},
 					must.NotFail(types.NewDocument(
-						"bar", types.Null,
-						"baz", int64(42),
 						"arr", must.NotFail(types.NewArray(
 							int32(42), types.NextTimestamp(time.Now()),
 						)),
+						"bar", types.Null,
+						"baz", int64(42),
 					)),
-					"data", types.Binary{B: []byte("foo"), Subtype: types.BinaryGeneric},
-					"distance", 1.1,
-					"name", "foo",
 				)),
+
+				"data", types.Binary{B: []byte("foo"), Subtype: types.BinaryGeneric},
+				"distance", 1.1,
+				"name", "foo",
 			)),
 		},
 		"Embedded": {

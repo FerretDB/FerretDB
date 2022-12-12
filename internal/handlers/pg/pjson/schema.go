@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -35,9 +37,9 @@ type schema struct {
 type elem struct {
 	Type    elemType `json:"t"`            // for each field
 	Schema  *schema  `json:"$s,omitempty"` // only for objects
-	Options string   `json:"o,omitempty"`  // only for regex
+	Options *string  `json:"o,omitempty"`  // only for regex
 	Items   []*elem  `json:"i,omitempty"`  // only for arrays
-	Subtype byte     `json:"s,omitempty"`  // only for binData
+	Subtype *byte    `json:"s,omitempty"`  // only for binData
 }
 
 // elemType represents possible types of schema elements.
@@ -71,7 +73,7 @@ var (
 	binDataSchema = func(subtype byte) *elem {
 		return &elem{
 			Type:    elemTypeBinData,
-			Subtype: subtype,
+			Subtype: pointer.To(subtype),
 		}
 	}
 	objectIDSchema = &elem{
@@ -89,7 +91,7 @@ var (
 	regexSchema = func(options string) *elem {
 		return &elem{
 			Type:    elemTypeRegex,
-			Options: options,
+			Options: pointer.To(options),
 		}
 	}
 	intSchema = &elem{

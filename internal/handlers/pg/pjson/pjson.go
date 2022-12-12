@@ -54,12 +54,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/AlekSi/pointer"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // pjsontype is a type that can be marshaled from/to pjson.
@@ -187,6 +186,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 	}
 
 	d := must.NotFail(types.NewDocument())
+
 	for _, key := range schema.Keys {
 		b, ok := v[key]
 
@@ -242,7 +242,13 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 	case elemTypeBinData:
 		var b binaryType
 		err = b.UnmarshalJSON(data)
-		b.Subtype = types.BinarySubtype(sch.Subtype)
+
+		if sch.Subtype == nil {
+			err = lazyerrors.Errorf("subtype is not set")
+		} else {
+			b.Subtype = types.BinarySubtype(*sch.Subtype)
+		}
+
 		res = &b
 	case elemTypeObjectID:
 		var o objectIDType
@@ -263,7 +269,13 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 	case elemTypeRegex:
 		var r regexType
 		err = r.UnmarshalJSON(data)
-		r.Options = sch.Options
+
+		if sch.Options == nil {
+			err = lazyerrors.Errorf("options is not set")
+		} else {
+			r.Options = *sch.Options
+		}
+
 		res = &r
 	case elemTypeInt:
 		var i int32Type

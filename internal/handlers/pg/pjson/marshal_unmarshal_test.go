@@ -17,21 +17,20 @@ package pjson
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		json string
 		doc  *types.Document
+		json string
 	}{
 		"Empty": {
 			json: `{"$s":{}}`,
