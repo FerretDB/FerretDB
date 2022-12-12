@@ -15,79 +15,24 @@
 package setup
 
 import (
-	"bytes"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"log"
-	"math/big"
 	"os"
-	"time"
+	"path"
 )
-
-func generateTLSPair() ([]byte, []byte) {
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		panic(err)
-	}
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"FerretDB"},
-		},
-		NotBefore: time.Now(),
-		// Make it valid for short amount of time to avoid accidental use.
-		NotAfter: time.Now().Add(time.Minute * 20),
-
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-	}
-
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	if err != nil {
-		log.Fatalf("Failed to create certificate: %s", err)
-	}
-
-	certBytes := new(bytes.Buffer)
-
-	err = pem.Encode(certBytes, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	if err != nil {
-		panic(err)
-	}
-
-	privateKey, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		panic(err)
-	}
-
-	privateKeyBytes := new(bytes.Buffer)
-
-	err = pem.Encode(privateKeyBytes, &pem.Block{Type: "EC PRIVATE KEY", Bytes: privateKey})
-	if err != nil {
-		panic(err)
-	}
-
-	return certBytes.Bytes(), privateKeyBytes.Bytes()
-}
 
 // GetTLSFilesPaths returns paths to TLS files.
 func GetTLSFilesPaths() (string, string) {
-	cert, key := generateTLSPair()
+	certPath := path.Join("..", "build", "certs", "server-cert.pem")
 
-	certPath, keyPath := "cert.pem", "key.pem"
-
-	err := os.WriteFile(certPath, cert, 0o644)
+	_, err := os.Stat(certPath)
 	if err != nil {
-		panic(err)
+		panic("server certificate not found")
 	}
 
-	err = os.WriteFile(keyPath, key, 0o644)
+	keyPath := path.Join("..", "build", "certs", "server-key.pem")
+
+	_, err = os.Stat(keyPath)
 	if err != nil {
-		panic(err)
+		panic("server key not found")
 	}
 
 	return certPath, keyPath

@@ -16,7 +16,6 @@ package integration
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -84,10 +83,6 @@ func TestEmbeddedTLS(t *testing.T) {
 	t.Parallel()
 
 	cert, key := setup.GetTLSFilesPaths()
-	defer func() {
-		_ = os.Remove(cert)
-		_ = os.Remove(key)
-	}()
 
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
