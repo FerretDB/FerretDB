@@ -16,6 +16,7 @@ package integration
 
 import (
 	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,7 +109,12 @@ func TestEmbeddedTLS(t *testing.T) {
 		close(done)
 	}()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
+	tlsConfig, err := options.BuildTLSConfig(map[string]interface{}{
+		"tlsCAFile": path.Join("..", "build", "certs", "rootCA.pem"),
+	})
+	require.NoError(t, err)
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()).SetTLSConfig(tlsConfig))
 	require.NoError(t, err)
 
 	filter := bson.D{{
