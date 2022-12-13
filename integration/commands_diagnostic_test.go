@@ -312,10 +312,13 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	// setup second client connection to check that `whatsmyuri` returns different ports
 	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoDBURI))
 	require.NoError(t, err)
+
 	defer client2.Disconnect(s.Ctx)
+
 	collection2 := client2.Database(databaseName).Collection(collectionName)
 
 	var ports []string
+
 	for _, collection := range []*mongo.Collection{collection1, collection2} {
 		var actual bson.D
 		command := bson.D{{"whatsmyuri", int32(1)}}

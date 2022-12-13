@@ -36,11 +36,13 @@ func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg,
 
 	command := document.Command()
 
-	var db, collection string
-	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
-	if collection, err = GetRequiredParam[string](document, command); err != nil {
+
+	collection, err := GetRequiredParam[string](document, command)
+	if err != nil {
 		return nil, err
 	}
 
