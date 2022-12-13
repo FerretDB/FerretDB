@@ -167,6 +167,7 @@ func TestQuerySortValue(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
+				"unset",
 				"int64-min",
 				"int32-min",
 				"double-zero",
@@ -239,6 +240,7 @@ func TestQuerySortValue(t *testing.T) {
 				"int32-min",
 				"int64-min",
 				"null",
+				"unset",
 			},
 		},
 	} {
