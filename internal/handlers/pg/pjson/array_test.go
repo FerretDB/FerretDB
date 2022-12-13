@@ -58,12 +58,13 @@ var arrayTestCases = []testCase{
 			},
 		},
 		j: `[[],"Qg==",true,1627378542123,{},42.13,42,42,"foo",null]`,
-	}, /* {
+	}, {
 		name: "EOF",
 		sch:  &elem{Type: elemTypeArray, Items: []*elem{}},
 		j:    `[`,
 		jErr: `unexpected EOF`,
-	}*/}
+	},
+}
 
 func TestArray(t *testing.T) {
 	t.Parallel()
