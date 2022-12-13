@@ -35,15 +35,16 @@ var binaryTestCases = []testCase{{
 		B:       []byte{},
 	},
 	sch:    binDataSchema(types.BinaryGeneric),
-	j:      ``,
-	canonJ: ``,
+	j:      `""`,
+	canonJ: `""`,
 }, {
 	name: "invalid subtype",
 	v: &binaryType{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
-	j: ``,
+	sch: binDataSchema(0xff),
+	j:   `""`,
 }, {
 	name: "EOF",
 	j:    `{`,
