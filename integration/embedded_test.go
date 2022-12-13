@@ -36,103 +36,80 @@ func TestEmbedded(t *testing.T) {
 
 	t.Parallel()
 
-	f, err := ferretdb.New(&ferretdb.Config{
-		Listener: ferretdb.ListenerConfig{
-			Addr: "127.0.0.1:65432",
-		},
-		Handler:       "pg",
-		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
-	})
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	defer cancel()
-
-	// check that Run exits on context cancel
-	done := make(chan struct{})
-	go func() {
-		err := f.Run(ctx)
-		t.Logf("Run exited with %v.", err) // result is undefined for now
-		cancel()
-		close(done)
-	}()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
-	require.NoError(t, err)
-
-	filter := bson.D{{
-		"name",
-		bson.D{{
-			"$not",
-			bson.D{{
-				"$regex",
-				primitive.Regex{Pattern: "test.*"},
-			}},
-		}},
-	}}
-	names, err := client.ListDatabaseNames(ctx, filter)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "public"}, names)
-
-	require.NoError(t, client.Disconnect(ctx))
-
-	cancel()
-	<-done
-}
-
-func TestEmbeddedTLS(t *testing.T) {
-	t.Parallel()
-
 	cert, key := setup.GetTLSFilesPaths(t)
-
-	f, err := ferretdb.New(&ferretdb.Config{
-		Listener: ferretdb.ListenerConfig{
-			TLS:         "127.0.0.1:47017",
-			TLSCertFile: cert,
-			TLSKeyFile:  key,
-		},
-		Handler:       "pg",
-		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
-	})
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	defer cancel()
-
-	// check that Run exits on context cancel
-	done := make(chan struct{})
-
-	go func() {
-		err = f.Run(ctx)
-		t.Logf("Run exited with %v.", err) // result is undefined for now
-		cancel()
-		close(done)
-	}()
 
 	tlsConfig, err := options.BuildTLSConfig(map[string]interface{}{
 		"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
 	})
 	require.NoError(t, err)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()).SetTLSConfig(tlsConfig))
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		config *ferretdb.Config
+		opts   *options.ClientOptions
+	}{
+		"TCP": {
+			config: &ferretdb.Config{
+				Listener: ferretdb.ListenerConfig{
+					Addr: "127.0.0.1:65432",
+				},
+				Handler:       "pg",
+				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+			},
+			opts: options.Client(),
+		},
+		"TLS": {
+			config: &ferretdb.Config{
+				Listener: ferretdb.ListenerConfig{
+					TLS:         "127.0.0.1:47017",
+					TLSCertFile: cert,
+					TLSKeyFile:  key,
+				},
+				Handler:       "pg",
+				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+			},
+			opts: options.Client().SetTLSConfig(tlsConfig),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	filter := bson.D{{
-		"name",
-		bson.D{{
-			"$not",
-			bson.D{{
-				"$regex",
-				primitive.Regex{Pattern: "test.*"},
-			}},
-		}},
-	}}
-	names, err := client.ListDatabaseNames(ctx, filter)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "public"}, names)
+			f, err := ferretdb.New(tc.config)
+			require.NoError(t, err)
 
-	require.NoError(t, client.Disconnect(ctx))
+			ctx, cancel := context.WithCancel(testutil.Ctx(t))
+			defer cancel()
 
-	cancel()
-	<-done
+			// check that Run exits on context cancel
+			done := make(chan struct{})
+			go func() {
+				err := f.Run(ctx)
+				t.Logf("Run exited with %v.", err) // result is undefined for now
+				cancel()
+				close(done)
+			}()
+
+			client, err := mongo.Connect(ctx, tc.opts.ApplyURI(f.MongoDBURI()))
+			require.NoError(t, err)
+
+			filter := bson.D{{
+				"name",
+				bson.D{{
+					"$not",
+					bson.D{{
+						"$regex",
+						primitive.Regex{Pattern: "test.*"},
+					}},
+				}},
+			}}
+			names, err := client.ListDatabaseNames(ctx, filter)
+			require.NoError(t, err)
+			assert.Equal(t, []string{"admin", "public"}, names)
+
+			require.NoError(t, client.Disconnect(ctx))
+
+			cancel()
+			<-done
+		})
+	}
 }
