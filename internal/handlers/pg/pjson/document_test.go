@@ -124,6 +124,7 @@ var (
 						Type: elemTypeBool,
 					},
 				},
+				Keys: []string{"ismaster", "client", "compression", "loadBalanced"},
 			},
 		},
 		j: `{"ismaster":true,` +

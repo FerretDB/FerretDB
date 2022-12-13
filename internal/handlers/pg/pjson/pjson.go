@@ -207,6 +207,10 @@ func Unmarshal(data []byte) (*types.Document, error) {
 
 // UnmarshalElem decodes the given pjson-encoded data element by the given schema.
 func UnmarshalElem(data []byte, sch *elem) (any, error) {
+	if bytes.Equal(data, []byte("null")) {
+		return fromPJSON(new(nullType)), nil
+	}
+
 	var v json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
