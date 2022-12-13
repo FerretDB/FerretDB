@@ -197,8 +197,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		listenerOpts.Addr = ""
 
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join("..", "build", "certs", "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join("..", "build", "certs", "server-key.pem")
+		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile = getTLSFilesPaths(tb)
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
