@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path"
+	"path/filepath"
 )
 
 func Example_tcp() {
@@ -92,8 +92,8 @@ func Example_unix() {
 }
 
 func Example_tls() {
-	certPath := path.Join("..", "build", "certs", "server-cert.pem")
-	keyPath := path.Join("..", "build", "certs", "server-key.pem")
+	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
+	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
 
 	f, err := New(&Config{
 		Listener: ListenerConfig{
