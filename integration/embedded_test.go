@@ -72,7 +72,8 @@ func TestEmbedded(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			f, err := ferretdb.New(tc.config)
+			var f *ferretdb.FerretDB
+			f, err = ferretdb.New(tc.config)
 			require.NoError(t, err)
 
 			ctx, cancel := context.WithCancel(testutil.Ctx(t))
@@ -81,13 +82,14 @@ func TestEmbedded(t *testing.T) {
 			// check that Run exits on context cancel
 			done := make(chan struct{})
 			go func() {
-				err := f.Run(ctx)
+				err = f.Run(ctx)
 				t.Logf("Run exited with %v.", err) // result is undefined for now
 				cancel()
 				close(done)
 			}()
 
-			client, err := mongo.Connect(ctx, tc.opts.ApplyURI(f.MongoDBURI()))
+			var client *mongo.Client
+			client, err = mongo.Connect(ctx, tc.opts.ApplyURI(f.MongoDBURI()))
 			require.NoError(t, err)
 
 			filter := bson.D{{
@@ -100,7 +102,9 @@ func TestEmbedded(t *testing.T) {
 					}},
 				}},
 			}}
-			names, err := client.ListDatabaseNames(ctx, filter)
+
+			var names []string
+			names, err = client.ListDatabaseNames(ctx, filter)
 			require.NoError(t, err)
 			assert.Equal(t, []string{"admin", "public"}, names)
 
