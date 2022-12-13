@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Validate implements HandlerInterface.
-func (h *Handler) Validate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgValidate implements HandlerInterface.
+func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return common.Validate(ctx, msg, h.l)
 }

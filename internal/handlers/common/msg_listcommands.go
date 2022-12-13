@@ -184,7 +184,7 @@ var Commands = map[string]command{
 	},
 	"validate": {
 		Help:    "Validate collection.",
-		Handler: handlers.Interface.Validate,
+		Handler: handlers.Interface.MsgValidate,
 	},
 	"whatsmyuri": {
 		Help:    "Returns peer information.",
