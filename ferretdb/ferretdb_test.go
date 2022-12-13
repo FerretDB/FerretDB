@@ -128,7 +128,7 @@ func Example_tls() {
 	//
 	// [...]
 	//
-	// mongo.Connect(ctx, options.Client().ApplyURI(uri).SetTLSConfig(tlsConfig))
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	cancel()
 	<-done
