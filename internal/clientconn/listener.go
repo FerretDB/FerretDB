@@ -209,6 +209,8 @@ func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	fmt.Println("TLS listener address " + listener.Addr().String())
+
 	return listener, nil
 }
 

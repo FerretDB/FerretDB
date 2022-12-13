@@ -187,11 +187,22 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		listenUnix = unixSocketPath(tb)
 	}
 
+	listenerOpts := clientconn.ListenerOpts{
+		Addr: "127.0.0.1:0",
+		Unix: listenUnix,
+	}
+
+	tls := *targetTLSF
+	if tls {
+		listenerOpts.Addr = ""
+
+		listenerOpts.TLS = "127.0.0.1:0"
+		listenerOpts.TLSCertFile = filepath.Join("..", "build", "certs", "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join("..", "build", "certs", "server-key.pem")
+	}
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Listener: clientconn.ListenerOpts{
-			Addr: "127.0.0.1:0", // always setup TCP listener
-			Unix: listenUnix,
-		},
+		Listener:       listenerOpts,
 		ProxyAddr:      proxyAddr,
 		Mode:           mode,
 		Metrics:        metrics,
@@ -222,10 +233,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		tls: *targetTLSF,
 	}
 
-	if listenUnix == "" {
-		opts.hostPort = l.Addr().String()
-	} else {
+	switch {
+	case tls:
+		opts.hostPort = l.TLS().String()
+	case listenUnix != "":
 		opts.unixSocketPath = l.Unix().String()
+	default:
+		opts.hostPort = l.Addr().String()
 	}
 
 	uri := buildMongoDBURI(tb, opts)
