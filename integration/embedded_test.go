@@ -32,8 +32,6 @@ import (
 )
 
 func TestEmbedded(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	cert, key := setup.GetTLSFilesPaths(t)
