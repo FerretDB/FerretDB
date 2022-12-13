@@ -246,14 +246,16 @@ tasks:
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017
+        --mode=diff-normal --listen-tls=127.0.0.1:47017 --listen-tls-cert-file=./build/certs/server-cert.pem 
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-tigris:
     deps: [build-testcover]
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --handler=tigris
+        --mode=diff-normal --listen-addr=:27017 --handler=tigris --listen-tls=127.0.0.1:47017 
+        --listen-tls-cert-file=./build/certs/server-cert.pem --listen-tls-key-file=./build/certs/server-key.pem
 
   run-cockroach:
     deps: [build-testcover]
@@ -261,6 +263,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
+        --listen-tls=127.0.0.1:47017 --listen-tls-cert-file=./build/certs/server-cert.pem 
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
@@ -268,7 +272,8 @@ tasks:
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-proxy --listen-addr=:27017
+        --mode=diff-proxy --listen-addr=:27017 --listen-tls=127.0.0.1:47017 
+        --listen-tls-cert-file=./build/certs/server-cert.pem --listen-tls-key-file=./build/certs/server-key.pem
 
   lint:
     desc: "Run linters"
