@@ -23,5 +23,5 @@ import (
 
 // MsgGetFreeMonitoringStatus implements HandlerInterface.
 func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgGetFreeMonitoringStatus(ctx, msg, h.StateProvider.Get())
+	return common.GetFreeMonitoringStatus(ctx, msg, h.StateProvider.Get())
 }

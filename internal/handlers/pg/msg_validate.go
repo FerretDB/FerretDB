@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgSetFreeMonitoring implements HandlerInterface.
-func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.SetFreeMonitoring(ctx, msg, h.StateProvider)
+// Validate implements HandlerInterface.
+func (h *Handler) Validate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.Validate(ctx, msg, h.L)
 }

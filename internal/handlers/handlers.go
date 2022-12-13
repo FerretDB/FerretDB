@@ -141,6 +141,9 @@ type Interface interface {
 	// MsgUpdate updates documents that are matched by the query.
 	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// Validate validates collection.
+	Validate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgWhatsMyURI returns peer information.
 	MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 }

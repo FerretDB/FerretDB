@@ -673,8 +673,7 @@ func TestQueryExactMatches(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
