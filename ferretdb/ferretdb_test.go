@@ -128,14 +128,10 @@ func Example_tls() {
 	//
 	// [...]
 	//
-	// 	tlsConfig, err := options.BuildTLSConfig(map[string]interface{}{
-	//		"tlsCAFile": path.Join("path", "to", "rootCA.pem"),
-	//	})
-	//
 	// mongo.Connect(ctx, options.Client().ApplyURI(uri).SetTLSConfig(tlsConfig))
 
 	cancel()
 	<-done
 
-	// Output: mongodb://127.0.0.1:47017
+	// Output: mongodb://127.0.0.1:47017?tls=true
 }
