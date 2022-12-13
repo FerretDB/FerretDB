@@ -283,11 +283,14 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			case "$exists", "$not", "$elemMatch":
 			case "$type":
 				if v, ok := exprValue.(string); ok && v == "null" {
+					// null and unset are different for $type operator.
 					return false, nil
 				}
-				fieldValue = types.NullType{}
 			default:
-				fieldValue = types.NullType{}
+				// Set non-existent field to null for the operator
+				// to compute result. The comparison treats non-existent
+				// field on documents as equivalent.
+				fieldValue = types.Null
 			}
 		}
 
