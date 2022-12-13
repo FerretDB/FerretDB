@@ -123,7 +123,10 @@ const (
 // CompareOrder detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
 //
-// If a or b is array, the minimum element of each array
+// At the moment, CompareOrder involving array returns
+// gives incorrect order.
+//
+// TODO: If a or b is array, the minimum element of each array
 // is used for Ascending sort, and maximum element for
 // Descending sort. Hence, an element of an array is used
 // for type comparison and value comparison.
