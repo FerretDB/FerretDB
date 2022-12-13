@@ -21,8 +21,8 @@ import (
 	"testing"
 )
 
-// getTLSFilesPaths returns paths to TLS files.
-func getTLSFilesPaths(t testing.TB) (string, string) {
+// GetTLSFilesPaths returns paths to TLS files.
+func GetTLSFilesPaths(t testing.TB) (string, string) {
 	certPath := path.Join("..", "build", "certs", "server-cert.pem")
 
 	_, err := os.Stat(certPath)

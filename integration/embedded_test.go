@@ -83,7 +83,7 @@ func TestEmbedded(t *testing.T) {
 func TestEmbeddedTLS(t *testing.T) {
 	t.Parallel()
 
-	cert, key := setup.GetTLSFilesPaths()
+	cert, key := setup.GetTLSFilesPaths(t)
 
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
