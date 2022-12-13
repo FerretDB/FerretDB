@@ -17,7 +17,6 @@ package integration
 import (
 	"context"
 	"crypto/tls"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"path/filepath"
 	"testing"
 
@@ -30,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/ferretdb"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
