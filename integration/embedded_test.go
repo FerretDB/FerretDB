@@ -32,6 +32,8 @@ import (
 )
 
 func TestEmbedded(t *testing.T) {
+	setup.SkipForTigris(t)
+
 	t.Parallel()
 
 	cert, key := setup.GetTLSFilesPaths(t)
@@ -72,8 +74,7 @@ func TestEmbedded(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var f *ferretdb.FerretDB
-			f, err = ferretdb.New(tc.config)
+			f, err := ferretdb.New(tc.config)
 			require.NoError(t, err)
 
 			ctx, cancel := context.WithCancel(testutil.Ctx(t))
@@ -88,8 +89,7 @@ func TestEmbedded(t *testing.T) {
 				close(done)
 			}()
 
-			var client *mongo.Client
-			client, err = mongo.Connect(ctx, tc.opts.ApplyURI(f.MongoDBURI()))
+			client, err := mongo.Connect(ctx, tc.opts.ApplyURI(f.MongoDBURI()))
 			require.NoError(t, err)
 
 			filter := bson.D{{
