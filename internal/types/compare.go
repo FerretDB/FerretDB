@@ -45,6 +45,39 @@ const (
 // For that reason, it typically should not be used in tests.
 //
 // Compare and contrast with test helpers in testutil package.
+//
+// Comparison between two different types, such
+// as string and number are not equal but also there
+// is no conclusive answer to greater nor less.
+//
+// Example:
+// Let's have docValue="foo" and filterValue=5.
+// For example operator maybe `$gt` e.g. {v: {$gt: 5}},
+// or `$lt` e.g. {v: {$lt: 5}},
+// but Compare(...) does not have information about operator.
+// If the value is {v: "foo"}, both $gt and $lt expect falsy
+// response so returning Greater, Less or Equal would not work.
+// Returning Incomparable result indicates inequality.
+//
+// Example array:
+// Let's have docValue=["foo", 5, 7] and filterValue=6.
+// For an operator {v: {$eq: 6}},
+// if the value is {v: ["foo", 5, 7]}
+// The comparison iterates through array until it
+// finds an Equal one. When it does not find, it returns
+// the last comparison result. For this case it returns
+// Greater by comparing docValue 7 and filterValue 6.
+//
+// For the same example, array of value does not work for filters
+// such as {v: {$gt: 6}} and {v: {$lt: 6}}, because
+// `$lt` operator expect comparison to be performed on
+// minimum number in the array docValue 5 and filterValue 6.
+// While `gt` operator expects comparison to be performed on
+// maximum number in the array docValue 7 and filterValue 6.
+// For `$gte` and `$lte` it has similar issue.
+// For `$gt`, `$gte`, `$lt` and `$lte`, the max/min of
+// the docValue needs to be passed into Compare(...)
+// instead of passing an array of doc value.
 func Compare(docValue, filterValue any) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
