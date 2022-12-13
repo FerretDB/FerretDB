@@ -133,5 +133,5 @@ func Example_tls() {
 	cancel()
 	<-done
 
-	// Output: mongodb://127.0.0.1:47017?tls=true
+	// Output: mongodb://127.0.0.1:47017/?tls=true
 }
