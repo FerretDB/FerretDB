@@ -15,10 +15,11 @@
 package setup
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // GetTLSFilesPaths returns paths to TLS files.
