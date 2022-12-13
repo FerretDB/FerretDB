@@ -16,6 +16,8 @@ package integration
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"path/filepath"
 	"testing"
 
@@ -38,14 +40,9 @@ func TestEmbedded(t *testing.T) {
 
 	cert, key := setup.GetTLSFilesPaths(t)
 
-	tlsConfig, err := options.BuildTLSConfig(map[string]interface{}{
-		"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
-	})
-	require.NoError(t, err)
-
 	for name, tc := range map[string]struct {
-		config *ferretdb.Config
-		opts   *options.ClientOptions
+		config    *ferretdb.Config
+		tlsConfig *tls.Config
 	}{
 		"TCP": {
 			config: &ferretdb.Config{
@@ -55,7 +52,6 @@ func TestEmbedded(t *testing.T) {
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 			},
-			opts: options.Client(),
 		},
 		"TLS": {
 			config: &ferretdb.Config{
@@ -67,7 +63,9 @@ func TestEmbedded(t *testing.T) {
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 			},
-			opts: options.Client().SetTLSConfig(tlsConfig),
+			tlsConfig: must.NotFail(options.BuildTLSConfig(map[string]interface{}{
+				"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
+			})),
 		},
 	} {
 		name, tc := name, tc
@@ -89,7 +87,7 @@ func TestEmbedded(t *testing.T) {
 				close(done)
 			}()
 
-			client, err := mongo.Connect(ctx, tc.opts.ApplyURI(f.MongoDBURI()))
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()).SetTLSConfig(tc.tlsConfig))
 			require.NoError(t, err)
 
 			filter := bson.D{{
