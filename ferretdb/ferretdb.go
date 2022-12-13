@@ -156,6 +156,17 @@ func (f *FerretDB) MongoDBURI() string {
 	var u *url.URL
 
 	switch {
+	case f.config.Listener.TLS != "":
+		q := make(url.Values)
+
+		q.Set("tls", "true")
+
+		u = &url.URL{
+			Scheme:   "mongodb",
+			Host:     f.l.TLS().String(),
+			Path:     "/",
+			RawQuery: q.Encode(),
+		}
 	case f.config.Listener.Addr != "":
 		u = &url.URL{
 			Scheme: "mongodb",
@@ -168,11 +179,6 @@ func (f *FerretDB) MongoDBURI() string {
 			Scheme:  "mongodb",
 			Path:    path,
 			RawPath: url.PathEscape(path),
-		}
-	case f.config.Listener.TLS != "":
-		u = &url.URL{
-			Scheme: "mongodb",
-			Host:   f.l.TLS().String(),
 		}
 	}
 

@@ -16,7 +16,7 @@ package integration
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -110,7 +110,7 @@ func TestEmbeddedTLS(t *testing.T) {
 	}()
 
 	tlsConfig, err := options.BuildTLSConfig(map[string]interface{}{
-		"tlsCAFile": path.Join("..", "build", "certs", "rootCA.pem"),
+		"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
 	})
 	require.NoError(t, err)
 

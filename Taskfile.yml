@@ -171,7 +171,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -records-dir=../records
-        -handler=tigris -compat-tls
+        -handler=tigris -target-tls -compat-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
