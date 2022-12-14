@@ -17,15 +17,14 @@ package integration
 import (
 	"context"
 	"crypto/tls"
-	"path/filepath"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"path/filepath"
+	"testing"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -43,6 +42,7 @@ func TestEmbedded(t *testing.T) {
 	for name, tc := range map[string]struct {
 		config    *ferretdb.Config
 		tlsConfig *tls.Config
+		embedErr  error
 	}{
 		"TCP": {
 			config: &ferretdb.Config{
