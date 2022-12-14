@@ -28,7 +28,7 @@ type regexType types.Regex
 // pjsontype implements pjsontype interface.
 func (regex *regexType) pjsontype() {}
 
-// UnmarshalJSONWithSchema TODO
+// UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
 func (regex *regexType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

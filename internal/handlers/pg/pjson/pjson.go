@@ -169,32 +169,32 @@ func Unmarshal(data []byte) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	sch, ok := v["$s"]
+	jsch, ok := v["$s"]
 	if !ok {
 		return nil, lazyerrors.Errorf("schema is not set")
 	}
 
-	var schema schema
-	if err = json.Unmarshal(sch, &schema); err != nil {
+	var sch schema
+	if err = json.Unmarshal(jsch, &sch); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	delete(v, "$s")
 
-	if len(schema.Keys) != len(v) {
-		return nil, lazyerrors.Errorf("document must have the same number of keys and values (keys: %d, values: %d)", len(schema.Keys), len(v))
+	if len(sch.Keys) != len(v) {
+		return nil, lazyerrors.Errorf("document must have the same number of keys and values (keys: %d, values: %d)", len(sch.Keys), len(v))
 	}
 
 	d := must.NotFail(types.NewDocument())
 
-	for _, key := range schema.Keys {
+	for _, key := range sch.Keys {
 		b, ok := v[key]
 
 		if !ok {
 			return nil, lazyerrors.Errorf("pjson.UnmarshalJSON: missing key %q", key)
 		}
 
-		v, err := UnmarshalElem(b, schema.Properties[key])
+		v, err := UnmarshalElem(b, sch.Properties[key])
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

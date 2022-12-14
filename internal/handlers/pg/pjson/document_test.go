@@ -348,7 +348,10 @@ var (
 								"target_os":   stringSchema,
 								"cppdefines":  stringSchema,
 							},
-							Keys: []string{"distmod", "distarch", "cc", "ccflags", "cxx", "cxxflags", "linkflags", "target_arch", "target_os", "cppdefines"},
+							Keys: []string{
+								"distmod", "distarch", "cc", "ccflags", "cxx", "cxxflags", "linkflags",
+								"target_arch", "target_os", "cppdefines",
+							},
 						},
 					},
 					"bits":              intSchema,
@@ -357,7 +360,10 @@ var (
 					"storageEngines":    {Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema, stringSchema}},
 					"ok":                doubleSchema,
 				},
-				Keys: []string{"version", "gitVersion", "modules", "allocator", "javascriptEngine", "sysInfo", "versionArray", "openssl", "buildEnvironment", "bits", "debug", "maxBsonObjectSize", "storageEngines", "ok"},
+				Keys: []string{
+					"version", "gitVersion", "modules", "allocator", "javascriptEngine", "sysInfo", "versionArray",
+					"openssl", "buildEnvironment", "bits", "debug", "maxBsonObjectSize", "storageEngines", "ok",
+				},
 			},
 		},
 		j: `{` +
@@ -410,7 +416,9 @@ var (
 			Type: elemTypeObject,
 			Schema: &schema{
 				Properties: map[string]*elem{
-					"binary":    {Type: elemTypeArray, Items: []*elem{binDataSchema(types.BinaryUser), binDataSchema(types.BinaryGeneric)}},
+					"binary": {Type: elemTypeArray, Items: []*elem{
+						binDataSchema(types.BinaryUser), binDataSchema(types.BinaryGeneric),
+					}},
 					"bool":      {Type: elemTypeArray, Items: []*elem{boolSchema, boolSchema}},
 					"datetime":  {Type: elemTypeArray, Items: []*elem{dateSchema, dateSchema}},
 					"double":    {Type: elemTypeArray, Items: []*elem{doubleSchema, doubleSchema}},

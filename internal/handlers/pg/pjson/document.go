@@ -53,12 +53,11 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 
 	if len(sch.Keys) != len(rawMessages) {
 		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total",
-			len(sch.Keys), len(rawMessages))
+			len(sch.Keys), len(rawMessages),
+		)
 	}
 
 	td := must.NotFail(types.NewDocument())
-
-	// TODO: rawMessages[$k]!!!
 
 	for _, key := range sch.Keys {
 		b, ok := rawMessages[key]

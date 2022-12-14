@@ -18,14 +18,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestSchemaMarshalUnmarshal(t *testing.T) {
@@ -135,7 +133,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 									Items: []*elem{
 										{
 											Type:   elemTypeObject,
-											Schema: &schema{},
+											Schema: new(schema),
 										},
 										{
 											Type: elemTypeObject,

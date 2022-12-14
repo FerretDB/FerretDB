@@ -22,12 +22,11 @@ import (
 	"math"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type testCase struct {

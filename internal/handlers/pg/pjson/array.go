@@ -52,7 +52,8 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error 
 
 	if len(schemas) != len(rawMessages) {
 		return lazyerrors.Errorf("pjson.arrayType.UnmarshalJSON: %d elements in schema, %d in total",
-			len(schemas), len(rawMessages))
+			len(schemas), len(rawMessages),
+		)
 	}
 
 	ta := types.MakeArray(len(rawMessages))
