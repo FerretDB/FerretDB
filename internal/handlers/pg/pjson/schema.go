@@ -105,16 +105,6 @@ var (
 	}
 )
 
-// Marshal returns the JSON encoding of schema.
-func (s *schema) Marshal() ([]byte, error) {
-	b, err := json.Marshal(s)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return b, nil
-}
-
 // Unmarshal parses the JSON-encoded schema.
 func (s *schema) Unmarshal(b []byte) error {
 	r := bytes.NewReader(b)
@@ -144,6 +134,10 @@ func makeSchema(td *types.Document) ([]byte, error) {
 	buf.WriteString(`{"p":{`)
 
 	for i, key := range keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+
 		var b []byte
 		var err error
 
@@ -160,10 +154,6 @@ func makeSchema(td *types.Document) ([]byte, error) {
 		}
 
 		buf.Write(b)
-
-		if i != len(keys)-1 {
-			buf.WriteByte(',')
-		}
 	}
 
 	buf.WriteString(`},"$k":`)
@@ -201,24 +191,22 @@ func makeElemSchema(value any) ([]byte, error) {
 	case *types.Array:
 		buf.WriteString(`{"t": "array"`)
 
-		if val.Len() > 0 {
-			buf.WriteString(`, "i":[`)
+		buf.WriteString(`, "i":[`)
 
-			for i := 0; i < val.Len(); i++ {
-				if i > 0 {
-					buf.WriteByte(',')
-				}
-
-				b, err := makeElemSchema(must.NotFail(val.Get(i)))
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				buf.Write(b)
+		for i := 0; i < val.Len(); i++ {
+			if i > 0 {
+				buf.WriteByte(',')
 			}
 
-			buf.WriteByte(']')
+			b, err := makeElemSchema(must.NotFail(val.Get(i)))
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			buf.Write(b)
 		}
+
+		buf.WriteByte(']')
 
 		buf.WriteByte('}')
 
