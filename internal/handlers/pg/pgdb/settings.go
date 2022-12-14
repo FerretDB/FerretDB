@@ -42,6 +42,41 @@ const (
 	maxTableNameLength = 63
 )
 
+// addSettingsIfNotExists returns settings (pg table name) for the given database and collection.
+// If such settings don't exist, it creates them.
+// TODO replace pgPool with tx.
+func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection string) (string, error) {
+	var tableName string
+
+	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := CreateCollectionIfNotExist(ctx, pgPool, db, collection); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		tableName = formatCollectionName(collection)
+		settings := must.NotFail(types.NewDocument(
+			"table", tableName,
+			"collection", collection,
+		))
+
+		if err := insert(ctx, tx, db, settingsTableName, settings); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
+	})
+
+	if err != nil && !errors.Is(err, ErrAlreadyExist) {
+		return "", err
+	}
+
+	return tableName, nil
+}
+
 // createSettingsTable creates FerretDB settings table if it doesn't exist.
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.

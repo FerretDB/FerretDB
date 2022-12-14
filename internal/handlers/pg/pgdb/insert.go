@@ -75,16 +75,21 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 		return lazyerrors.Error(err)
 	}
 
-	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
-		` (_jsonb) VALUES ($1)`
-
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)))
-		return err
+		return insert(ctx, tx, db, table, doc)
 	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	return nil
+}
+
+// insert marshals and inserts a document into the given pg table in the given schema.
+func insert(ctx context.Context, tx pgx.Tx, schema, table string, doc *types.Document) error {
+	sql := `INSERT INTO ` + pgx.Identifier{schema, table}.Sanitize() +
+		` (_jsonb) VALUES ($1)`
+
+	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)))
+	return err
 }
