@@ -131,10 +131,9 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		q.Set("tlsCAFile", p)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1593
 	var user *url.Userinfo
-	// user = url.UserPassword("username", "password")
-	// q.Set("authMechanism", "PLAIN")
+	user = url.UserPassword("username", "password")
+	q.Set("authMechanism", "PLAIN")
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
