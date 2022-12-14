@@ -55,9 +55,7 @@ var (
 			Type: elemTypeObject,
 			Schema: &schema{
 				Properties: map[string]*elem{
-					"ismaster": {
-						Type: elemTypeBool,
-					},
+					"ismaster": {Type: elemTypeBool},
 					"client": {
 						Type: elemTypeObject,
 						Schema: &schema{
@@ -66,12 +64,8 @@ var (
 									Type: elemTypeObject,
 									Schema: &schema{
 										Properties: map[string]*elem{
-											"name": {
-												Type: elemTypeString,
-											},
-											"version": {
-												Type: elemTypeString,
-											},
+											"name":    {Type: elemTypeString},
+											"version": {Type: elemTypeString},
 										},
 										Keys: []string{"name", "version"},
 									},
@@ -80,18 +74,10 @@ var (
 									Type: elemTypeObject,
 									Schema: &schema{
 										Properties: map[string]*elem{
-											"type": {
-												Type: elemTypeString,
-											},
-											"name": {
-												Type: elemTypeString,
-											},
-											"architecture": {
-												Type: elemTypeString,
-											},
-											"version": {
-												Type: elemTypeString,
-											},
+											"type":         {Type: elemTypeString},
+											"name":         {Type: elemTypeString},
+											"architecture": {Type: elemTypeString},
+											"version":      {Type: elemTypeString},
 										},
 										Keys: []string{"type", "name", "architecture", "version"},
 									},
@@ -103,9 +89,7 @@ var (
 									Type: elemTypeObject,
 									Schema: &schema{
 										Properties: map[string]*elem{
-											"name": {
-												Type: elemTypeString,
-											},
+											"name": {Type: elemTypeString},
 										},
 										Keys: []string{"name"},
 									},
@@ -115,14 +99,10 @@ var (
 						},
 					},
 					"compression": {
-						Type: elemTypeArray,
-						Items: []*elem{
-							{Type: elemTypeString},
-						},
+						Type:  elemTypeArray,
+						Items: []*elem{{Type: elemTypeString}},
 					},
-					"loadBalanced": {
-						Type: elemTypeBool,
-					},
+					"loadBalanced": {Type: elemTypeBool},
 				},
 				Keys: []string{"ismaster", "client", "compression", "loadBalanced"},
 			},
