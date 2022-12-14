@@ -326,25 +326,44 @@ var (
 					"javascriptEngine": stringSchema,
 					"sysInfo":          stringSchema,
 					"versionArray":     {Type: elemTypeArray, Items: []*elem{intSchema, intSchema, intSchema, intSchema}},
-					"openssl": {Type: elemTypeObject, Schema: &schema{
-						Properties: map[string]*elem{"running": stringSchema, "compiled": stringSchema},
-						Keys:       []string{"running", "compiled"},
-					}},
-					"buildEnvironment":  {Type: elemTypeObject, Schema: &schema{}},
+					"openssl": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{"running": stringSchema, "compiled": stringSchema},
+							Keys:       []string{"running", "compiled"},
+						},
+					},
+					"buildEnvironment": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{
+								"distmod":     stringSchema,
+								"distarch":    stringSchema,
+								"cc":          stringSchema,
+								"ccflags":     stringSchema,
+								"cxx":         stringSchema,
+								"cxxflags":    stringSchema,
+								"linkflags":   stringSchema,
+								"target_arch": stringSchema,
+								"target_os":   stringSchema,
+								"cppdefines":  stringSchema,
+							},
+							Keys: []string{"distmod", "distarch", "cc", "ccflags", "cxx", "cxxflags", "linkflags", "target_arch", "target_os", "cppdefines"},
+						},
+					},
 					"bits":              intSchema,
 					"debug":             boolSchema,
 					"maxBsonObjectSize": intSchema,
-					"storageEngines":    {Type: elemTypeArray, Items: []*elem{stringSchema}},
+					"storageEngines":    {Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema, stringSchema}},
 					"ok":                doubleSchema,
-					"minWireVersion":    intSchema,
 				},
-				Keys: []string{"version", "gitVersion", "modules", "allocator", "javascriptEngine", "sysInfo"},
+				Keys: []string{"version", "gitVersion", "modules", "allocator", "javascriptEngine", "sysInfo", "versionArray", "openssl", "buildEnvironment", "bits", "debug", "maxBsonObjectSize", "storageEngines", "ok"},
 			},
 		},
 		j: `{` +
 			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9","modules":[],` +
 			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated","versionArray":[5,0,0,0],` +
-			`"openssl":{"$k":["running","compiled"],"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
+			`"openssl":{"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
 			`"compiled":"OpenSSL 1.1.1f  31 Mar 2020"},` +
 			`"buildEnvironment":{"distmod":"ubuntu2004","distarch":"x86_64",` +
 			`"cc":"/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",` +
@@ -418,7 +437,7 @@ var (
 		jErr: `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3 /*handshake4, all, eof*/}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4 /*all, eof*/}
 )
 
 func TestDocument(t *testing.T) {
