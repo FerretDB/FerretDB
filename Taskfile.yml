@@ -255,7 +255,7 @@ tasks:
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --handler=tigris 
+        --mode=diff-normal --listen-addr=:27017 --handler=tigris
         --listen-tls=:47017 --listen-tls-cert-file=./build/certs/server-cert.pem 
         --listen-tls-key-file=./build/certs/server-key.pem
 
@@ -274,7 +274,7 @@ tasks:
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-proxy --listen-addr=:27017 
+        --mode=diff-proxy --listen-addr=:27017
         --listen-tls=:47017 --listen-tls-cert-file=./build/certs/server-cert.pem 
         --listen-tls-key-file=./build/certs/server-key.pem
 
