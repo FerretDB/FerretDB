@@ -12,66 +12,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package common
 
 import (
 	"context"
 
-	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDrop implements HandlerInterface.
-func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// Validate is a common implementation of the validate command.
+func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	Ignored(document, l, "full", "repair", "metadata")
 
 	command := document.Command()
 
-	db, err := common.GetRequiredParam[string](document, "$db")
+	db, err := GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := common.GetRequiredParam[string](document, command)
+	collection, err := GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
-	}
-
-	err = h.db.Driver.UseDatabase(db).DropCollection(ctx, collection)
-	switch err := err.(type) {
-	case nil:
-		// do nothing
-	case *driver.Error:
-		if tigrisdb.IsNotFound(err) {
-			return nil, common.NewCommandErrorMsg(common.ErrNamespaceNotFound, "ns not found")
-		}
-		return nil, lazyerrors.Error(err)
-	default:
-		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"nIndexesWas", int32(1), // TODO
 			"ns", db+"."+collection,
+			"nInvalidDocuments", int32(0),
+			"nNonCompliantDocuments", int32(0),
+			"nrecords", int32(-1), // TODO
+			"nIndexes", int32(1),
+			// "keysPerIndex", TODO
+			// "indexDetails", TODO
+			"valid", true,
+			"repaired", false,
+			"warnings", types.MakeArray(0),
+			"errors", types.MakeArray(0),
+			"extraIndexEntries", types.MakeArray(0),
+			"missingIndexEntries", types.MakeArray(0),
+			"corruptRecords", types.MakeArray(0),
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

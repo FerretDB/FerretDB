@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package tigris
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgSetFreeMonitoring implements HandlerInterface.
-func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.SetFreeMonitoring(ctx, msg, h.StateProvider)
+// MsgValidate implements HandlerInterface.
+func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.Validate(ctx, msg, h.L)
 }

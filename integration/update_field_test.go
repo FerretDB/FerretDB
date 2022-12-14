@@ -954,7 +954,7 @@ func TestUpdateFieldSetOnInsert(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, collection := setup.Setup(t, shareddata.Composites, shareddata.Scalars)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			opts := options.Update().SetUpsert(true)
 			actualUpdateStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)
