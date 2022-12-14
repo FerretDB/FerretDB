@@ -191,7 +191,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 		b, ok := v[key]
 
 		if !ok {
-			return nil, lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
+			return nil, lazyerrors.Errorf("pjson.UnmarshalJSON: missing key %q", key)
 		}
 
 		v, err := UnmarshalElem(b, schema.Properties[key])
@@ -228,10 +228,18 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 
 	switch sch.Type {
 	case elemTypeObject:
+		if sch.Schema == nil {
+			return nil, lazyerrors.Errorf("pjson.UnmarshalElem: schema is not set")
+		}
+
 		var d documentType
 		err = d.UnmarshalJSONWithSchema(data, sch.Schema)
 		res = &d
 	case elemTypeArray:
+		if sch.Items == nil {
+			return nil, lazyerrors.Errorf("pjson.UnmarshalElem: schema's items are not set")
+		}
+
 		var a arrayType
 		err = a.UnmarshalJSONWithSchema(data, sch.Items)
 		res = &a

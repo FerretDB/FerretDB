@@ -187,16 +187,14 @@ func makeElemSchema(value any) ([]byte, error) {
 	case *types.Document:
 		buf.WriteString(`{"t": "object"`)
 
-		if val.Len() > 0 {
-			buf.WriteString(`, "$s":`)
+		buf.WriteString(`, "$s":`)
 
-			b, err := makeSchema(val)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			buf.Write(b)
+		b, err := makeSchema(val)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
+
+		buf.Write(b)
 
 		buf.WriteByte('}')
 
