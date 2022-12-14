@@ -132,6 +132,9 @@ type Interface interface {
 	// MsgPing returns a pong response.
 	MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgSASLStart starts the SASL authentication process.
+	MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgServerStatus returns an overview of the databases state.
 	MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
