@@ -12,30 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build unix
-
 package setup
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testing.TB) string {
-	tb.Helper()
+// GetTLSFilesPaths returns paths to TLS files.
+func GetTLSFilesPaths(t testing.TB) (string, string) {
+	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
 
-	// do not use tb.TempDir() because generated path is too long on macOS
-	f, err := os.CreateTemp("", "ferretdb-*.sock")
-	require.NoError(tb, err)
+	_, err := os.Stat(certPath)
+	require.NoError(t, err)
 
-	// remove file so listener could create it (and remove it itself on stop)
-	err = f.Close()
-	require.NoError(tb, err)
-	err = os.Remove(f.Name())
-	require.NoError(tb, err)
+	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
 
-	return f.Name()
+	_, err = os.Stat(keyPath)
+	require.NoError(t, err)
+
+	return certPath, keyPath
 }

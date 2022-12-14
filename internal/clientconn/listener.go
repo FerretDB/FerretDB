@@ -16,9 +16,11 @@ package clientconn
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -38,14 +40,15 @@ type Listener struct {
 	*NewListenerOpts
 	tcpListener       net.Listener
 	unixListener      net.Listener
+	tlsListener       net.Listener
 	tcpListenerReady  chan struct{}
 	unixListenerReady chan struct{}
+	tlsListenerReady  chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	ListenAddr     string
-	ListenUnix     string
+	Listener       ListenerOpts
 	ProxyAddr      string
 	Mode           Mode
 	Metrics        *connmetrics.ListenerMetrics
@@ -54,12 +57,22 @@ type NewListenerOpts struct {
 	TestRecordsDir string // if empty, no records are created
 }
 
+// ListenerOpts represents listener configuration options.
+type ListenerOpts struct {
+	Addr        string
+	Unix        string
+	TLS         string
+	TLSCertFile string
+	TLSKeyFile  string
+}
+
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
 func NewListener(opts *NewListenerOpts) *Listener {
 	return &Listener{
 		NewListenerOpts:   opts,
 		tcpListenerReady:  make(chan struct{}),
 		unixListenerReady: make(chan struct{}),
+		tlsListenerReady:  make(chan struct{}),
 	}
 }
 
@@ -69,9 +82,9 @@ func NewListener(opts *NewListenerOpts) *Listener {
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.Logger.Named("listener")
 
-	if l.ListenAddr != "" {
+	if l.Listener.Addr != "" {
 		var err error
-		if l.tcpListener, err = net.Listen("tcp", l.ListenAddr); err != nil {
+		if l.tcpListener, err = net.Listen("tcp", l.Listener.Addr); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -80,15 +93,26 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on %s ...", l.Addr())
 	}
 
-	if l.ListenUnix != "" {
+	if l.Listener.Unix != "" {
 		var err error
-		if l.unixListener, err = net.Listen("unix", l.ListenUnix); err != nil {
+		if l.unixListener, err = net.Listen("unix", l.Listener.Unix); err != nil {
 			return lazyerrors.Error(err)
 		}
 
 		close(l.unixListenerReady)
 
 		logger.Sugar().Infof("Listening on %s ...", l.Unix())
+	}
+
+	if l.Listener.TLS != "" {
+		var err error
+		if l.tlsListener, err = setupTLSListener(l.Listener.TLS, l.Listener.TLSCertFile, l.Listener.TLSKeyFile); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		close(l.tlsListenerReady)
+
+		logger.Sugar().Infof("Listening on %s ...", l.TLS())
 	}
 
 	// close listeners on context cancellation to exit from listenLoop
@@ -102,11 +126,15 @@ func (l *Listener) Run(ctx context.Context) error {
 		if l.unixListener != nil {
 			l.unixListener.Close()
 		}
+
+		if l.tlsListener != nil {
+			l.tlsListener.Close()
+		}
 	}()
 
 	var wg sync.WaitGroup
 
-	if l.ListenAddr != "" {
+	if l.Listener.Addr != "" {
 		wg.Add(1)
 
 		go func() {
@@ -119,7 +147,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.ListenUnix != "" {
+	if l.Listener.Unix != "" {
 		wg.Add(1)
 
 		go func() {
@@ -132,10 +160,56 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
+	if l.Listener.TLS != "" {
+		wg.Add(1)
+
+		go func() {
+			defer func() {
+				logger.Sugar().Infof("%s stopped.", l.tlsListener.Addr())
+				wg.Done()
+			}()
+
+			acceptLoop(ctx, l.tlsListener, &wg, l, logger)
+		}()
+	}
+
 	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
 	return ctx.Err()
+}
+
+// setupTLSListener returns a new TLS listener or and error.
+func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
+	if _, err := os.Stat(certFile); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("certificate file %q does not exist", certFile)
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, err := os.Stat(keyFile); err != nil {
+		if os.IsNotExist(err) {
+			return nil, lazyerrors.Errorf("TLS key file %q does not exist", keyFile)
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	cer, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	config := tls.Config{Certificates: []tls.Certificate{cer}}
+
+	listener, err := tls.Listen("tcp", addr, &config)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return listener, nil
 }
 
 // acceptLoop runs listener's connection accepting loop.
@@ -216,6 +290,12 @@ func (l *Listener) Addr() net.Addr {
 func (l *Listener) Unix() net.Addr {
 	<-l.unixListenerReady
 	return l.unixListener.Addr()
+}
+
+// TLS returns TLS listener address.
+func (l *Listener) TLS() net.Addr {
+	<-l.tlsListenerReady
+	return l.tlsListener.Addr()
 }
 
 // Describe implements prometheus.Collector.
