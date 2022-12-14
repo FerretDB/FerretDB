@@ -211,6 +211,10 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 		return fromPJSON(new(nullType)), nil
 	}
 
+	if sch == nil {
+		return nil, lazyerrors.Errorf("schema is not set")
+	}
+
 	var v json.RawMessage
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
