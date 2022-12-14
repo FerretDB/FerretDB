@@ -410,15 +410,15 @@ var (
 			Type: elemTypeObject,
 			Schema: &schema{
 				Properties: map[string]*elem{
-					"binary":    {Type: elemTypeArray, Items: []*elem{binDataSchema(0x42), binDataSchema(0x00)}},
-					"bool":      {Type: elemTypeArray, Items: []*elem{boolSchema}},
-					"datetime":  {Type: elemTypeArray, Items: []*elem{dateSchema}},
-					"double":    {Type: elemTypeArray, Items: []*elem{doubleSchema}},
-					"int32":     {Type: elemTypeArray, Items: []*elem{intSchema}},
-					"int64":     {Type: elemTypeArray, Items: []*elem{longSchema}},
-					"objectID":  {Type: elemTypeArray, Items: []*elem{objectIDSchema}},
-					"string":    {Type: elemTypeArray, Items: []*elem{stringSchema}},
-					"timestamp": {Type: elemTypeArray, Items: []*elem{timestampSchema}},
+					"binary":    {Type: elemTypeArray, Items: []*elem{binDataSchema(types.BinaryUser), binDataSchema(types.BinaryGeneric)}},
+					"bool":      {Type: elemTypeArray, Items: []*elem{boolSchema, boolSchema}},
+					"datetime":  {Type: elemTypeArray, Items: []*elem{dateSchema, dateSchema}},
+					"double":    {Type: elemTypeArray, Items: []*elem{doubleSchema, doubleSchema}},
+					"int32":     {Type: elemTypeArray, Items: []*elem{intSchema, intSchema}},
+					"int64":     {Type: elemTypeArray, Items: []*elem{longSchema, longSchema}},
+					"objectID":  {Type: elemTypeArray, Items: []*elem{objectIDSchema, objectIDSchema}},
+					"string":    {Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema}},
+					"timestamp": {Type: elemTypeArray, Items: []*elem{timestampSchema, timestampSchema}},
 				},
 				Keys: []string{"binary", "bool", "datetime", "double", "int32", "int64", "objectID", "string", "timestamp"},
 			},
@@ -428,7 +428,7 @@ var (
 			`"datetime":[1627378542123,-62135596800000],"double":[42.13,0],` +
 			`"int32":[42,0],"int64":[42,0],` +
 			`"objectID":["420000000000000000000000","000000000000000000000000"],` +
-			`"string":["foo",""],"timestamp":["42","0"]}`,
+			`"string":["foo",""],"timestamp":[42,0]}`,
 	}
 
 	eof = testCase{
@@ -437,7 +437,7 @@ var (
 		jErr: `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4 /*all, eof*/}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all /*eof*/}
 )
 
 func TestDocument(t *testing.T) {
