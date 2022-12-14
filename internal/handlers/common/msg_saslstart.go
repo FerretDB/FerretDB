@@ -16,9 +16,10 @@ package common
 
 import (
 	"context"
-	"log"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -26,10 +27,38 @@ import (
 func MsgSASLStart(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	doc, err := msg.Document()
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	log.Println(doc)
+	_, err = GetRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	_, err = GetRequiredParam[int32](doc, "saslStart")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = GetRequiredParam[string](doc, "mechanism")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = GetRequiredParam[types.Binary](doc, "payload")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = GetOptionalParam(doc, "autoAuthorize", int32(0))
+	if err != nil {
+		return nil, err
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument())},
+	}))
+
+	return &reply, nil
 }

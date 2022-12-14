@@ -170,6 +170,10 @@ var Commands = map[string]command{
 		Help:    "Returns a pong response.",
 		Handler: (handlers.Interface).MsgPing,
 	},
+	"saslStart": {
+		Help:    "Starts a SASL conversation.",
+		Handler: (handlers.Interface).MsgSASLStart,
+	},
 	"serverStatus": {
 		Help:    "Returns an overview of the databases state.",
 		Handler: (handlers.Interface).MsgServerStatus,
