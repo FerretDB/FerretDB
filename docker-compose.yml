@@ -47,6 +47,7 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
+    command: --config /etc/mongod.conf
     ports:
       - 37017:27017
     extra_hosts:
@@ -55,6 +56,8 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
     volumes:
+      - ./build/certs:/etc/certs
+      - ./build/mongod.conf:/etc/mongod.conf
       - ./build/mongosh:/mongosh
 
   trivy:

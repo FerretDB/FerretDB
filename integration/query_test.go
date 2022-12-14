@@ -167,6 +167,7 @@ func TestQuerySortValue(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
+				"unset",
 				"int64-min",
 				"int32-min",
 				"double-zero",
@@ -239,6 +240,7 @@ func TestQuerySortValue(t *testing.T) {
 				"int32-min",
 				"int64-min",
 				"null",
+				"unset",
 			},
 		},
 	} {
@@ -673,8 +675,7 @@ func TestQueryExactMatches(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{

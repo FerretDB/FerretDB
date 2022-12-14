@@ -12,16 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package setup
 
 import (
-	"context"
+	"os"
+	"path/filepath"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/stretchr/testify/require"
 )
 
-// MsgSetFreeMonitoring implements HandlerInterface.
-func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.SetFreeMonitoring(ctx, msg, h.StateProvider)
+// GetTLSFilesPaths returns paths to TLS files.
+func GetTLSFilesPaths(t testing.TB) (string, string) {
+	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
+
+	_, err := os.Stat(certPath)
+	require.NoError(t, err)
+
+	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
+
+	_, err = os.Stat(keyPath)
+	require.NoError(t, err)
+
+	return certPath, keyPath
 }

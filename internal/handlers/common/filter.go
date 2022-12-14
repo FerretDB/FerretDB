@@ -278,32 +278,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" && exprKey != "$not" {
-			// comparing not existent field with null should return true
-			if _, ok := exprValue.(types.NullType); ok {
-				return true, nil
-			}
-
-			// comparing not existent field with {$all: [null, null, ..., null]} should return true
-			// (at least one null needs to be presented in the $all array)
-			if exprKey == "$all" {
-				all, ok := exprValue.(*types.Array)
-				if ok && all.Len() > 0 {
-					isNull := true
-					for i := 0; i < all.Len(); i++ {
-						if _, ok := must.NotFail(all.Get(i)).(types.NullType); !ok {
-							isNull = false
-							break
-						}
-					}
-					if isNull {
-						return true, nil
-					}
+		if err != nil {
+			switch exprKey {
+			case "$exists", "$not", "$elemMatch":
+			case "$type":
+				if v, ok := exprValue.(string); ok && v == "null" {
+					// null and unset are different for $type operator.
+					return false, nil
 				}
+			default:
+				// Set non-existent field to null for the operator
+				// to compute result. The comparison treats non-existent
+				// field on documents as equivalent.
+				fieldValue = types.Null
 			}
-
-			// exit when not $exists or $not filters and no such field
-			return false, nil
 		}
 
 		if !strings.HasPrefix(exprKey, "$") {
@@ -1422,8 +1410,6 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 // Returns false if doc value is not an array.
 // TODO: https://github.com/FerretDB/FerretDB/issues/364
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
-	value := must.NotFail(doc.Get(filterKey))
-
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
@@ -1459,6 +1445,11 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
 			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", key), "$elemMatch")
 		}
+	}
+
+	value, err := doc.Get(filterKey)
+	if err != nil {
+		return false, nil
 	}
 
 	if _, ok := value.(*types.Array); !ok {
