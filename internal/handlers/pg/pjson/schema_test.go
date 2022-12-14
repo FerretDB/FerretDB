@@ -134,14 +134,16 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 									Type: elemTypeArray,
 									Items: []*elem{
 										{
-											Type: elemTypeObject,
+											Type:   elemTypeObject,
+											Schema: &schema{},
 										},
 										{
 											Type: elemTypeObject,
 											Schema: &schema{
 												Properties: map[string]*elem{
 													"foo": {
-														Type: elemTypeArray,
+														Type:  elemTypeArray,
+														Items: []*elem{},
 													},
 												},
 												Keys: []string{"foo"},
@@ -150,7 +152,8 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 									},
 								},
 								"empty-arr": {
-									Type: elemTypeArray,
+									Type:  elemTypeArray,
+									Items: []*elem{},
 								},
 							},
 							Keys: []string{"arr", "empty-arr"},
@@ -164,11 +167,11 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 					"obj": {"t": "object", "$s": {
 						"p": {	
 							"arr": {"t": "array", "i": [
-								{"t": "object", "s": {}}, {"t": "object", "$s": {
-									"p": {"foo": {"t": "array"}}, "$k": ["foo"]
+								{"t": "object", "$s": {}}, {"t": "object", "$s": {
+									"p": {"foo": {"t": "array", "i":[]}}, "$k": ["foo"]
 								}}
 							]},
-							"empty-arr": {"t": "array", "i": []}				
+							"empty-arr": {"t": "array", "i":[]}				
 						},
 						"$k": ["arr", "empty-arr"]
 					}}
