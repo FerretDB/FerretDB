@@ -28,7 +28,7 @@ type binaryType types.Binary
 // pjsontype implements pjsontype interface.
 func (bin *binaryType) pjsontype() {}
 
-// UnmarshalJSONWithSchema TODO.
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
 func (bin *binaryType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

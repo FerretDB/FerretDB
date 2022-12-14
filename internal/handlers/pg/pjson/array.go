@@ -28,7 +28,7 @@ type arrayType types.Array
 // pjsontype implements pjsontype interface.
 func (a *arrayType) pjsontype() {}
 
-// UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
 func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
