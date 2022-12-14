@@ -34,9 +34,8 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	sch:    binDataSchema(types.BinaryGeneric),
-	j:      `""`,
-	canonJ: `""`,
+	sch: binDataSchema(types.BinaryGeneric),
+	j:   `""`,
 }, {
 	name: "invalid subtype",
 	v: &binaryType{
