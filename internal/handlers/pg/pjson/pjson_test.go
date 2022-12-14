@@ -22,6 +22,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -148,14 +150,14 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 	for _, tc := range testCases {
-		f.Add(tc.j)
+		f.Add(tc.j, tc.sch)
 
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ)
+			f.Add(tc.canonJ, tc.sch)
 		}
 	}
 
-	/*f.Fuzz(func(t *testing.T, tc *testCase) {
+	f.Fuzz(func(t *testing.T, j string, sch *elem) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
@@ -168,7 +170,11 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// Instead, we compare with round-trip result.
 
 		v := newFunc()
-		if err := unmarshalJSON(v, tc); err != nil {
+		tc := testCase{
+			sch: sch,
+			j:   j,
+		}
+		if err := unmarshalJSON(v, &tc); err != nil {
 			t.Skip()
 		}
 
@@ -194,11 +200,15 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// test UnmarshalJSON
 		{
 			actualV := newFunc()
-			err := unmarshalJSON(v, tc)
+			tc := testCase{
+				sch: sch,
+				j:   j,
+			}
+			err := unmarshalJSON(v, &tc)
 			require.NoError(t, err)
 			assertEqual(t, v, actualV)
 		}
-	})*/
+	})
 }
 
 func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
