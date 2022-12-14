@@ -57,7 +57,7 @@ func TestEmbedded(t *testing.T) {
 		"TLS": {
 			config: &ferretdb.Config{
 				Listener: ferretdb.ListenerConfig{
-					TLS:         "127.0.0.1:47017",
+					TLS:         "127.0.0.1:65433",
 					TLSCertFile: cert,
 					TLSKeyFile:  key,
 				},

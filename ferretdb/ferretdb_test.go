@@ -97,7 +97,7 @@ func Example_tls() {
 
 	f, err := New(&Config{
 		Listener: ListenerConfig{
-			TLS:         "127.0.0.1:47017",
+			TLS:         "127.0.0.1:27018",
 			TLSCertFile: certPath,
 			TLSKeyFile:  keyPath,
 		},
@@ -133,5 +133,5 @@ func Example_tls() {
 	cancel()
 	<-done
 
-	// Output: mongodb://127.0.0.1:47017/?tls=true
+	// Output: mongodb://127.0.0.1:27018/?tls=true
 }
