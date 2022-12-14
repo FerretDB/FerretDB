@@ -258,7 +258,7 @@ func makeElemSchema(value any) ([]byte, error) {
 		buf.WriteString(`{"t": "long"}`)
 
 	default:
-		panic(fmt.Sprintf("pjson.marshalSchema: unknown type %[1]T (value %[1]q)", val))
+		panic(fmt.Sprintf("pjson.makeElemSchema: unknown type %[1]T (value %[1]q)", val))
 	}
 
 	return buf.Bytes(), nil

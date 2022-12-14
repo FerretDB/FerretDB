@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.8.0 (to be released)
+
+### What's Changed
+
+In this release, we made a big change in the way FerretDB stores data in PostgreSQL.
+
+Previously, we were storing information about data types in the fields themselves.
+Starting from this release, we store information about data types (document's schema) in a special field.
+
+This will allow us to implement more query push downs in the future.
+
+There are no changes in the API, but since the data is stored in a different way, this change is not backward compatible.
+Please make a dump of your database before upgrading, delete the databases, upgrade FerretDB, and restore the dump afterwards.
+
 ## [v0.7.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.0) (2022-12-05)
 
 ### New Features 🎉
