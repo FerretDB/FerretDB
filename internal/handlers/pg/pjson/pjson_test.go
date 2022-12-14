@@ -22,6 +22,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 
 	"github.com/stretchr/testify/assert"
@@ -150,18 +152,26 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 	for _, tc := range testCases {
-		f.Add(tc.j, tc.sch)
+		sch := must.NotFail(json.Marshal(tc.sch))
+		f.Add(tc.j, string(sch))
 
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ, tc.sch)
+			f.Add(tc.canonJ, string(sch))
 		}
 	}
 
-	f.Fuzz(func(t *testing.T, j string, sch *elem) {
+	f.Fuzz(func(t *testing.T, j, jsch string) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
 		if j == "null" {
+			t.Skip()
+		}
+
+		// no reason to fuzz all the possible input for schemas,
+		// so if sch is not a valid schema, skip the test
+		var sch elem
+		if err := json.Unmarshal([]byte(jsch), &sch); err != nil {
 			t.Skip()
 		}
 
@@ -171,7 +181,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 
 		v := newFunc()
 		tc := testCase{
-			sch: sch,
+			sch: &sch,
 			j:   j,
 		}
 		if err := unmarshalJSON(v, &tc); err != nil {
@@ -201,7 +211,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		{
 			actualV := newFunc()
 			tc := testCase{
-				sch: sch,
+				sch: &sch,
 				j:   j,
 			}
 			err := unmarshalJSON(v, &tc)
