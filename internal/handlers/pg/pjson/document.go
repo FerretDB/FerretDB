@@ -47,7 +47,12 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 		return lazyerrors.Error(err)
 	}
 
-	if len(rawMessages) > 0 && sch == nil {
+	if len(rawMessages) == 0 {
+		*doc = documentType{}
+		return nil
+	}
+
+	if sch == nil {
 		return lazyerrors.Errorf("document schema is nil for non-empty document")
 	}
 
