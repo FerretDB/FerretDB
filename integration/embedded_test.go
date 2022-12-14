@@ -16,6 +16,8 @@ package integration
 
 import (
 	"context"
+	"crypto/tls"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/ferretdb"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -35,44 +38,79 @@ func TestEmbedded(t *testing.T) {
 
 	t.Parallel()
 
-	f, err := ferretdb.New(&ferretdb.Config{
-		ListenAddr:    "127.0.0.1:65432",
-		Handler:       "pg",
-		PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
-	})
-	require.NoError(t, err)
+	cert, key := setup.GetTLSFilesPaths(t)
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	defer cancel()
+	for name, tc := range map[string]struct {
+		config    *ferretdb.Config
+		tlsConfig *tls.Config
+		embedErr  error
+	}{
+		"TCP": {
+			config: &ferretdb.Config{
+				Listener: ferretdb.ListenerConfig{
+					Addr: "127.0.0.1:65432",
+				},
+				Handler:       "pg",
+				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+			},
+		},
+		"TLS": {
+			config: &ferretdb.Config{
+				Listener: ferretdb.ListenerConfig{
+					TLS:         "127.0.0.1:65433",
+					TLSCertFile: cert,
+					TLSKeyFile:  key,
+				},
+				Handler:       "pg",
+				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+			},
+			tlsConfig: must.NotFail(options.BuildTLSConfig(map[string]interface{}{
+				"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
+			})),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	// check that Run exits on context cancel
-	done := make(chan struct{})
-	go func() {
-		err := f.Run(ctx)
-		t.Logf("Run exited with %v.", err) // result is undefined for now
-		cancel()
-		close(done)
-	}()
+			f, err := ferretdb.New(tc.config)
+			require.NoError(t, err)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
-	require.NoError(t, err)
+			ctx, cancel := context.WithCancel(testutil.Ctx(t))
+			defer cancel()
 
-	filter := bson.D{{
-		"name",
-		bson.D{{
-			"$not",
-			bson.D{{
-				"$regex",
-				primitive.Regex{Pattern: "test.*"},
-			}},
-		}},
-	}}
-	names, err := client.ListDatabaseNames(ctx, filter)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"admin", "public"}, names)
+			// check that Run exits on context cancel
+			done := make(chan struct{})
+			go func() {
+				err = f.Run(ctx)
+				t.Logf("Run exited with %v.", err) // result is undefined for now
+				cancel()
+				close(done)
+			}()
 
-	require.NoError(t, client.Disconnect(ctx))
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()).SetTLSConfig(tc.tlsConfig))
+			require.NoError(t, err)
 
-	cancel()
-	<-done
+			filter := bson.D{{
+				"name",
+				bson.D{{
+					"$not",
+					bson.D{{
+						"$regex",
+						primitive.Regex{Pattern: "test.*"},
+					}},
+				}},
+			}}
+
+			var names []string
+			names, err = client.ListDatabaseNames(ctx, filter)
+			require.NoError(t, err)
+			assert.Equal(t, []string{"admin", "public"}, names)
+
+			require.NoError(t, client.Disconnect(ctx))
+
+			cancel()
+			<-done
+		})
+	}
 }

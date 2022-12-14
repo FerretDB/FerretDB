@@ -156,9 +156,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/38
-	require.False(tb, *targetTLSF, "-target-tls must be false for in-process FerretDB")
-
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
@@ -190,9 +187,22 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		listenUnix = unixSocketPath(tb)
 	}
 
+	listenerOpts := clientconn.ListenerOpts{
+		Unix: listenUnix,
+	}
+
+	hostPort := "127.0.0.1:0"
+
+	tls := *targetTLSF
+	if tls {
+		listenerOpts.TLS = hostPort
+		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile = GetTLSFilesPaths(tb)
+	} else {
+		listenerOpts.Addr = hostPort
+	}
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:     "127.0.0.1:0", // always setup TCP listener
-		ListenUnix:     listenUnix,
+		Listener:       listenerOpts,
 		ProxyAddr:      proxyAddr,
 		Mode:           mode,
 		Metrics:        metrics,
@@ -223,10 +233,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		tls: *targetTLSF,
 	}
 
-	if listenUnix == "" {
-		opts.hostPort = l.Addr().String()
-	} else {
+	switch {
+	case tls:
+		opts.hostPort = l.TLS().String()
+	case listenUnix != "":
 		opts.unixSocketPath = l.Unix().String()
+	default:
+		opts.hostPort = l.Addr().String()
 	}
 
 	uri := buildMongoDBURI(tb, opts)
