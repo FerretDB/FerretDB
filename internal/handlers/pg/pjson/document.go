@@ -29,7 +29,7 @@ type documentType types.Document
 // pjsontype implements pjsontype interface.
 func (doc *documentType) pjsontype() {}
 
-// UnmarshalJSONWithSchema unmarshals the JSON data with given schema.
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
 func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
