@@ -122,15 +122,7 @@ const (
 
 // CompareOrder detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
-//
-// At the moment, CompareOrder involving array returns
-// gives incorrect order.
-//
-// TODO: If a or b is array, the minimum element of each array
-// is used for Ascending sort, and maximum element for
-// Descending sort. Hence, an element of an array is used
-// for type comparison and value comparison.
-// Empty Array is smaller than Null.
+// Use this it for getting sort order.
 func CompareOrder(a, b any, order SortType) CompareResult {
 	if a == nil {
 		panic("CompareOrder: a is nil")
@@ -147,12 +139,102 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 		return result
 	}
 
-	result = Compare(a, b)
-	if result == Equal && detectDataType(a) == numbersDataType {
-		return compareNumberOrder(a, b, order)
+	return Compare(a, b)
+}
+
+// CompareForSort detects the data type for two values and compares them.
+// If a or b is array, the minimum element of each array
+// is used for Ascending sort, and maximum element for
+// Descending sort. Hence, an element of an array is used
+// for type comparison and value comparison.
+// Empty Array is smaller than Null.
+//
+// Use it for sorting documents such as sort().
+func CompareForSort(a, b any, order SortType) CompareResult {
+	if a == nil {
+		panic("CompareOrder: a is nil")
+	}
+	if b == nil {
+		panic("CompareOrder: b is nil")
+	}
+	if order != Ascending && order != Descending {
+		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
 
-	return result
+	a, b = unwrapArray(a, b, order)
+	arrA, isAArray := a.(*Array)
+	arrB, isBArray := b.(*Array)
+
+	switch {
+	case isAArray && arrA.Len() == 0 && isBArray && arrB.Len() == 0:
+		return Equal
+	case isAArray && arrA.Len() == 0:
+		return getLess(order)
+	case isBArray && arrB.Len() == 0:
+		return getGreater(order)
+	}
+
+	result := CompareOrder(a, b, order)
+	if result == Equal {
+		return Equal
+	}
+	if result == Less {
+		return getLess(order)
+	}
+	return getGreater(order)
+}
+
+// CompareOrderForOperator detects the data type for two values and compares them.
+// If a or b is array, the array is filtered by the same type as
+// non-array type.
+// Use it for $gt $lt comparison.
+func CompareOrderForOperator(a, b any, order SortType) CompareResult {
+	if a == nil {
+		panic("CompareOrder: a is nil")
+	}
+	if b == nil {
+		panic("CompareOrder: b is nil")
+	}
+	if order != Ascending && order != Descending {
+		panic(fmt.Sprintf("CompareOrder: order is %v", order))
+	}
+
+	arrA, isAArray := a.(*Array)
+	arrB, isBArray := b.(*Array)
+
+	switch {
+	case isAArray && isBArray:
+	case isAArray && !isBArray:
+		arrA = arrA.FilterArrayByType(b)
+		if arrA.Len() == 0 {
+			if order == Ascending {
+				return Greater
+			}
+			return Less
+		}
+		a = getComparisonElement(arrA, order)
+	case isBArray && arrB.Len() == 0:
+		arrB = arrB.FilterArrayByType(a)
+		if arrB.Len() == 0 {
+			return getGreater(order)
+		}
+		b = getComparisonElement(arrB, order)
+	}
+
+	if result := compareTypeOrder(a, b); result != Equal {
+		// they are not the same type, so no match
+		if order == Ascending {
+			return Greater
+		}
+		return Less
+	}
+
+	result := compareTypeOrder(a, b)
+	if result != Equal {
+		return result
+	}
+
+	return Compare(a, b)
 }
 
 // compareNumberOrder detects the number type for two values and compares them.
@@ -193,4 +275,76 @@ func compareTypeOrder(a, b any) CompareResult {
 	default:
 		return Equal
 	}
+}
+
+// unwrapArray gets an element used for comparison from an array.
+// If a or b is array, the minimum element of each array
+// is used for Ascending sort, and maximum element for
+// Descending sort. Hence, an element of an array is used
+// for type comparison and value comparison.
+func unwrapArray(a, b any, order SortType) (any, any) {
+	switch arrA := a.(type) {
+	case *Array:
+		switch arrB := b.(type) {
+		case *Array:
+			if arrB.Len() == 0 {
+				return arrA, arrB
+			}
+
+			b = getComparisonElement(arrB, order)
+		default:
+			// a is an array but b is not an array
+		}
+
+		if arrA.Len() == 0 {
+			return arrA, b
+		}
+
+		a = getComparisonElement(arrA, order)
+		return a, b
+
+	default:
+		switch arrB := b.(type) {
+		case *Array:
+			// a is not an array but b is an array
+			if arrB.Len() == 0 {
+				return arrA, arrB
+			}
+
+			b = getComparisonElement(arrB, order)
+		default:
+			// both not array
+		}
+		return a, b
+	}
+}
+
+// getComparisonElement gets an element from an array to
+// use for comparison.
+func getComparisonElement(arr *Array, order SortType) any {
+	if order == Ascending {
+		return arr.Min()
+	}
+
+	if order == Descending {
+		return arr.Max()
+	}
+
+	panic("unsupported sort type")
+}
+
+// getLess computes response Less for sort type.
+func getLess(order SortType) CompareResult {
+	if order == Ascending {
+		return Less
+	}
+	return Greater
+}
+
+// getGreater computes response Greater for sort type.
+func getGreater(order SortType) CompareResult {
+	if order == Ascending {
+		return Greater
+	}
+	return Less
 }

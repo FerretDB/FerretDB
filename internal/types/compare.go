@@ -283,7 +283,7 @@ func compareNumbers(a float64, b int64) CompareResult {
 // returns Less when an index of the document array is less than the index of the filter array;
 // returns Greater when an index of the document array is greater than the index of the filter array;
 // returns Incomparable when an index comparison detects Composite types.
-func compareArrays(filterArr, docArr *Array) CompareResult {
+func compareArrays(docArr, filterArr *Array) CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return Equal
 	}
@@ -377,7 +377,7 @@ func compareDocuments(a, b *Document) CompareResult {
 // compareArray compares array to any value.
 func compareArray(as *Array, b any) CompareResult {
 	if bs, ok := b.(*Array); ok {
-		return compareArrays(bs, as)
+		return compareArrays(as, bs)
 	}
 
 	var result CompareResult
