@@ -433,11 +433,18 @@ var (
 
 	eof = testCase{
 		name: "EOF",
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{},
+				Keys:       []string{},
+			},
+		},
 		j:    `[`,
 		jErr: `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all /*eof*/}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
 )
 
 func TestDocument(t *testing.T) {
