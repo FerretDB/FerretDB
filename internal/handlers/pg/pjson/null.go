@@ -15,6 +15,8 @@
 package pjson
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -23,6 +25,12 @@ type nullType types.NullType
 
 // pjsontype implements pjsontype interface.
 func (*nullType) pjsontype() {}
+
+// UnmarshalJSON implements json.Unmarshaler interface.
+// In principle, this should never be called, as the nullType must be caught by the potential caller of this method.
+func (*nullType) UnmarshalJSON(data []byte) error {
+	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
+}
 
 // MarshalJSON implements pjsontype interface.
 func (*nullType) MarshalJSON() ([]byte, error) {
