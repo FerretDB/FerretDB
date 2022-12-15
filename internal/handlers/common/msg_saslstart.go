@@ -19,7 +19,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
