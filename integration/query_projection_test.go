@@ -32,8 +32,7 @@ func TestQueryProjection(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		projection any

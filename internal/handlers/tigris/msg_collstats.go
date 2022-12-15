@@ -34,13 +34,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	command := document.Command()
 
-	var db, collection string
-
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
 		return nil, err
 	}
 
