@@ -271,7 +271,7 @@ func fuzzJSON(f *testing.F, testCases []testCase) {
 			j = string(b)
 		}
 
-		// test Unmarshal
+		// test UnmarshalJSON
 		{
 			actualV, err := Unmarshal([]byte(j), &s)
 			require.NoError(t, err)
@@ -284,7 +284,7 @@ func benchmark(b *testing.B, testCases []testCase) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("Unmarshal", func(b *testing.B) {
+			b.Run("UnmarshalJSON", func(b *testing.B) {
 				data := []byte(tc.j)
 				var v any
 				var err error

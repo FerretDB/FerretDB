@@ -41,7 +41,7 @@ var boolTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(boolType(true)),
 	j:      `true`,
-	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
+	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
 }}
 
 func TestBool(t *testing.T) {

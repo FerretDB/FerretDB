@@ -46,7 +46,7 @@ var regexTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
 	j:      `{"$r":"hoffman","o":"i"}`,
-	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
+	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
 }}
 
 func TestRegex(t *testing.T) {

@@ -41,7 +41,7 @@ var objectIDTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(objectIDType{0x62, 0xea, 0x6a, 0x94, 0x3d, 0x44, 0xb1, 0x0e, 0x1b, 0x6b, 0x87, 0x97}),
 	j:      `"YupqlD1EsQ4ba4eX"`,
-	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
+	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
 }}
 
 func TestObjectID(t *testing.T) {
