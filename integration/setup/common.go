@@ -119,6 +119,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	}
 
 	q := make(url.Values)
+	var user *url.Userinfo
 
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
@@ -129,11 +130,10 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		_, err := os.Stat(p)
 		require.NoError(tb, err)
 		q.Set("tlsCAFile", p)
-	}
 
-	var user *url.Userinfo
-	user = url.UserPassword("username", "password")
-	q.Set("authMechanism", "PLAIN")
+		user = url.UserPassword("username", "password")
+		q.Set("authMechanism", "PLAIN")
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
