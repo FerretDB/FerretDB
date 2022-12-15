@@ -175,7 +175,7 @@ func makeElemSchema(value any) ([]byte, error) {
 
 	switch val := value.(type) {
 	case *types.Document:
-		buf.WriteString(`{"t": "object"`)
+		buf.WriteString(`{"t":"object"`)
 
 		buf.WriteString(`, "$s":`)
 
