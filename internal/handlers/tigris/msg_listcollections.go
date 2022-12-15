@@ -47,8 +47,8 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
-	var db string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 

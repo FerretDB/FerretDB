@@ -75,13 +75,8 @@ func TestInsertFind(t *testing.T) {
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
 
-	var docs []bson.D
-	for _, provider := range providers {
-		docs = append(docs, provider.Docs()...)
-	}
-
-	for _, expected := range docs {
-		expected := expected
+	for _, expected := range shareddata.Docs(providers...) {
+		expected := expected.(bson.D)
 		id, ok := expected.Map()["_id"]
 		require.True(t, ok)
 

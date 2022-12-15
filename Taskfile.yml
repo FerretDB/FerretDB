@@ -171,7 +171,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -records-dir=../records
-        -handler=tigris -compat-tls
+        -handler=tigris -target-tls -compat-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -247,6 +247,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-tigris:
     deps: [build-testcover]
@@ -254,6 +256,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017 --handler=tigris
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-cockroach:
     deps: [build-testcover]
@@ -261,6 +265,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
@@ -269,6 +275,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-proxy --listen-addr=:27017
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   lint:
     desc: "Run linters"
@@ -313,7 +321,7 @@ tasks:
     cmds:
       - >
         docker compose exec mongodb mongosh
-        'mongodb://host.docker.internal:27017/test?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
+        'mongodb://host.docker.internal:27018/test?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
 
   docker-init:
