@@ -39,9 +39,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 		"Filled": {
 			json: `{
 			"$s": {
-				"p": {
-					"foo": {"t": "string"}
-				},
+				"p": {"foo": {"t": "string"}},
 				"$k": ["foo"]
 			}, 
 			"foo": "bar"
