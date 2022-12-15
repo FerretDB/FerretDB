@@ -123,11 +123,13 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 // This is used by sort operation.
 func CompareOrderForSort(a, b any, order SortType) CompareResult {
 	if a == nil {
-		panic("CompareOrder: a is nil")
+		panic("CompareOrderForSort: a is nil")
 	}
+
 	if b == nil {
-		panic("CompareOrder: b is nil")
+		panic("CompareOrderForSort: b is nil")
 	}
+
 	if order != Ascending && order != Descending {
 		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
@@ -146,22 +148,13 @@ func CompareOrderForSort(a, b any, order SortType) CompareResult {
 		b = getComparisonElementFromArray(arrB, order)
 	}
 
-	// empty array is less than Null, return early for empty array.
-	switch {
-	case isAArray && arrA.Len() == 0 && isBArray && arrB.Len() == 0:
-		return Equal
-	case isAArray && arrA.Len() == 0:
+	if isAArray && arrA.Len() == 0 {
+		// empty array is the lowest on the sort order.
 		if order == Ascending {
 			return Less
 		}
 
 		return Greater
-	case isBArray && arrB.Len() == 0:
-		if order == Ascending {
-			return Greater
-		}
-
-		return Less
 	}
 
 	if result := compareTypeOrder(a, b); result != Equal {
@@ -188,11 +181,13 @@ func CompareOrderForSort(a, b any, order SortType) CompareResult {
 // It is used by $gt, $gte, $lt and $lte comparison.
 func CompareOrderForOperator(a, b any, order SortType) CompareResult {
 	if a == nil {
-		panic("CompareOrder: a is nil")
+		panic("CompareOrderForOperator: a is nil")
 	}
+
 	if b == nil {
-		panic("CompareOrder: b is nil")
+		panic("CompareOrderForOperator: b is nil")
 	}
+
 	if order != Ascending && order != Descending {
 		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
@@ -207,11 +202,11 @@ func CompareOrderForOperator(a, b any, order SortType) CompareResult {
 	}
 
 	if isAArray && arrA.Len() == 0 && isBArray && arrB.Len() == 0 {
-		// empty array is the lowest on the sort order.
 		return Equal
 	}
 
 	if !isAArray && isBArray && arrB.Len() == 0 {
+		// empty array is the lowest on the sort order.
 		if order == Ascending {
 			return Greater
 		}

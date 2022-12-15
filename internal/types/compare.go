@@ -93,6 +93,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return compareOrdered(v1, v)
 		}
+
 		return compareTypeOrder(v1, v2)
 
 	case Binary:
@@ -104,9 +105,11 @@ func compareScalars(v1, v2 any) CompareResult {
 		if v1l != v2l {
 			return compareOrdered(v1l, v2l)
 		}
+
 		if v1.Subtype != v.Subtype {
 			return compareOrdered(v1.Subtype, v.Subtype)
 		}
+
 		return CompareResult(bytes.Compare(v1.B, v.B))
 
 	case ObjectID:
@@ -114,6 +117,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if !ok {
 			return compareTypeOrder(v1, v2)
 		}
+
 		return CompareResult(bytes.Compare(v1[:], v[:]))
 
 	case bool:
@@ -121,9 +125,11 @@ func compareScalars(v1, v2 any) CompareResult {
 		if !ok {
 			return compareTypeOrder(v1, v2)
 		}
+
 		if v1 == v {
 			return Equal
 		}
+
 		if v {
 			return Less
 		}
@@ -134,6 +140,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if !ok {
 			return compareTypeOrder(v1, v2)
 		}
+
 		return compareOrdered(v1.UnixMilli(), v.UnixMilli())
 
 	case NullType:
@@ -141,6 +148,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return Equal
 		}
+
 		return compareTypeOrder(v1, v2)
 
 	case Regex:
@@ -148,8 +156,10 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			v1 := must.NotFail(v1.Compile())
 			v := must.NotFail(v.Compile())
+
 			return compareOrdered(v1.String(), v.String())
 		}
+
 		return compareTypeOrder(v1, v2)
 
 	case int32:
@@ -169,6 +179,7 @@ func compareScalars(v1, v2 any) CompareResult {
 		if ok {
 			return compareOrdered(v1, v)
 		}
+
 		return compareTypeOrder(v1, v2)
 
 	case int64:
@@ -231,10 +242,6 @@ func compareOrdered[T constraints.Ordered](a, b T) CompareResult {
 
 // compareNumbers compares BSON numbers.
 func compareNumbers(a float64, b int64) CompareResult {
-	if math.IsNaN(a) {
-		panic("unsupported order")
-	}
-
 	// TODO figure out correct precision
 	bigA := new(big.Float).SetFloat64(a).SetPrec(100000)
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
