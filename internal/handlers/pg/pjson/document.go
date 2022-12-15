@@ -71,7 +71,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 			return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
 
-		v, err := UnmarshalElem(b, sch.Properties[key])
+		v, err := unmarshalElem(b, sch.Properties[key])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
