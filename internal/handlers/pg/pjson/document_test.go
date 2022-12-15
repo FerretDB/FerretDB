@@ -391,6 +391,7 @@ var (
 			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
+			"null", must.NotFail(types.NewArray(types.Null, types.Null)),
 		))),
 		sch: &elem{
 			Type: elemTypeObject,
@@ -407,8 +408,11 @@ var (
 					"objectID":  {Type: elemTypeArray, Items: []*elem{objectIDSchema, objectIDSchema}},
 					"string":    {Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema}},
 					"timestamp": {Type: elemTypeArray, Items: []*elem{timestampSchema, timestampSchema}},
+					"null":      {Type: elemTypeArray, Items: []*elem{nullSchema, nullSchema}},
 				},
-				Keys: []string{"binary", "bool", "datetime", "double", "int32", "int64", "objectID", "string", "timestamp"},
+				Keys: []string{
+					"binary", "bool", "datetime", "double", "int32", "int64", "objectID", "string", "timestamp", "null",
+				},
 			},
 		},
 		j: `{` +
@@ -416,7 +420,7 @@ var (
 			`"datetime":[1627378542123,-62135596800000],"double":[42.13,0],` +
 			`"int32":[42,0],"int64":[42,0],` +
 			`"objectID":["420000000000000000000000","000000000000000000000000"],` +
-			`"string":["foo",""],"timestamp":[42,0]}`,
+			`"string":["foo",""],"timestamp":[42,0],"null":[null,null]}`,
 	}
 
 	eof = testCase{
