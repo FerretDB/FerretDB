@@ -308,7 +308,7 @@ func UnmarshalElem(data []byte, sch *elem) (any, error) {
 		err = l.UnmarshalJSON(data)
 		res = &l
 	default:
-		return nil, lazyerrors.Errorf("pjson.unmarshalElem: unhandled type %q", sch.Type)
+		return nil, lazyerrors.Errorf("pjson.UnmarshalElem: unhandled type %q", sch.Type)
 	}
 
 	if err != nil {
