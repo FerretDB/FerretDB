@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgSASLStart implements the SASLStart command.
 func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return common.MsgSASLStart(ctx, msg)
 }
