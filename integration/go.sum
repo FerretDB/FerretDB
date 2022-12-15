@@ -410,8 +410,8 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/tidwall/pretty v1.0.0 h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.14 h1:lZ4WbH5PREpMQqIr6zgUcbze8e5wpyJdos46A0aWxYQ=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.14/go.mod h1:E1wI4sV0uNvDLPyq0l5YZhVLWUod1Vi1FhKf5bRhDeI=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.16 h1:aHJc8Mcos3Exg0nxvg5VNLt6vQLtM8JRHhkBTwU80us=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.16/go.mod h1:E1wI4sV0uNvDLPyq0l5YZhVLWUod1Vi1FhKf5bRhDeI=
 github.com/ugorji/go v1.1.7/go.mod h1:kZn38zHttfInRq0xu/PH0az30d+z6vm202qpg1oXVMw=
 github.com/ugorji/go v1.2.7/go.mod h1:nF9osbDWLy6bDVv/Rtoh6QgnvNDpmCalQV5urGCCS6M=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=

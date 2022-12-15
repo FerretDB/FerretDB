@@ -39,7 +39,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	common.Ignored(document, h.L, "comment", "authorizedDatabases")
 
-	databaseNames, err := h.db.Driver.ListDatabases(ctx)
+	databaseNames, err := h.db.Driver.ListProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
