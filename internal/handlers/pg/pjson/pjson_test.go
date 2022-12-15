@@ -135,7 +135,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := MarshalElem(fromPJSON(tc.v))
+				actualJ, err := MarshalSingleValue(fromPJSON(tc.v))
 				require.NoError(t, err)
 
 				expectedJ := tc.j

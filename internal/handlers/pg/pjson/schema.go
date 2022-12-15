@@ -122,8 +122,8 @@ func (s *schema) Unmarshal(b []byte) error {
 	return nil
 }
 
-// makeSchema makes schema for the given document based on its data.
-func makeSchema(td *types.Document) ([]byte, error) {
+// marshalSchemaForDoc makes schema for the given document based on its data.
+func marshalSchemaForDoc(td *types.Document) ([]byte, error) {
 	var buf bytes.Buffer
 
 	keys := td.Keys()
@@ -148,7 +148,7 @@ func makeSchema(td *types.Document) ([]byte, error) {
 		buf.Write(b)
 		buf.WriteByte(':')
 
-		b, err = makeElemSchema(must.NotFail(td.Get(key)))
+		b, err = marshalElemForSingleValue(must.NotFail(td.Get(key)))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -169,8 +169,8 @@ func makeSchema(td *types.Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// makeElemSchema makes schema for the given element based on its data.
-func makeElemSchema(value any) ([]byte, error) {
+// marshalElemForSingleValue makes schema for the given element based on its data.
+func marshalElemForSingleValue(value any) ([]byte, error) {
 	var buf bytes.Buffer
 
 	switch val := value.(type) {
@@ -179,7 +179,7 @@ func makeElemSchema(value any) ([]byte, error) {
 
 		buf.WriteString(`,"$s":`)
 
-		b, err := makeSchema(val)
+		b, err := marshalSchemaForDoc(val)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -198,7 +198,7 @@ func makeElemSchema(value any) ([]byte, error) {
 				buf.WriteByte(',')
 			}
 
-			b, err := makeElemSchema(must.NotFail(val.Get(i)))
+			b, err := marshalElemForSingleValue(must.NotFail(val.Get(i)))
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -258,7 +258,7 @@ func makeElemSchema(value any) ([]byte, error) {
 		buf.WriteString(`{"t":"long"}`)
 
 	default:
-		panic(fmt.Sprintf("pjson.makeElemSchema: unknown type %[1]T (value %[1]q)", val))
+		panic(fmt.Sprintf("pjson.marshalElemForSingleValue: unknown type %[1]T (value %[1]q)", val))
 	}
 
 	return buf.Bytes(), nil

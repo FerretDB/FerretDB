@@ -190,7 +190,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 			assert.Equal(t, tc.schema, unm)
 
 			// Schema made from doc
-			made, err := makeSchema(tc.doc)
+			made, err := marshalSchemaForDoc(tc.doc)
 			require.NoError(t, err)
 
 			expectedB := testutil.IndentJSON(t, []byte(tc.json))
