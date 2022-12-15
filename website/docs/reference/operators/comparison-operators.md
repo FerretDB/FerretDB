@@ -169,7 +169,7 @@ The output:
 
 *Syntax*: `{ field: { $gte: value } }`
 
-The greater than or equal operator `$gte`.
+The greater than or equal operator `$gte` selects document with values that are greater than or equal to the specified query.
 The following operation selects documents based on the specified query, where the field `age` is greater than or equal to `21`.
 
 ```js
@@ -215,7 +215,7 @@ The output:
 
 *Syntax*: `{ field: { $lt: value } }`
 
-The less than operator `$lt`.
+The less than operator `$lt` selects document with values that are less than the specified query.
 The following operation queries for documents where the field `age` is less than `25`.
 
 ```js
@@ -253,7 +253,7 @@ The output:
 
 *Syntax*: `{ field: { $lte: value } }`
 
-The less than or equal operator `$lte`.
+The less than or equal operator `$lte` selects document with values that are less than or equal to the specified query.
 The following operation queries for documents where the field `age` is less than or equal to `21`.
 
 ```js
@@ -284,12 +284,14 @@ The output:
 *Syntax*: `{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }`
 
 The `$in` operator selects documents that contain any of the values in a specified array.
-The following operation queries the `employees` collection for documents where the `catalog` array contains `printer` and `crayons`.
+For a document to be returned, the field must contain at least one of the values in the specified array query.
+
+The following operation queries the `employees` collection for documents where the value of the field `age` is either `21` or `35`.
 
 ```js
 db.employees.find({
-   catalog: {
-      $in: [ "printer", "crayons" ]
+   age: {
+      $in: [ 21, 35 ]
    }
 })
 ```
@@ -299,12 +301,12 @@ The output:
 ```js
 [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: 'Earl', last: 'Thomas' },
-    employeeID: 1234,
-    age: 23,
+    _id: ObjectId("639a3cce071b6bed396a8f0d"),
+    name: { first: 'Sam', last: 'Johnson' },
+    employeeID: 2234,
+    age: 35,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -360,12 +362,12 @@ The output:
 *Syntax*: `{ field: { $nin: [ <value1>, <value2> ... <valueN> ] } }`
 
 The `$nin` operator selects documents that does not contain any of the values in a specified array.
-The following operation queries the `employees` collection for documents where the `catalog` array does not contain `printer` or `crayons` values.
+The following operation queries the `employees` collection for documents where the value of the field `age` is not `21` or `35`.
 
 ```js
 db.employees.find({
-   catalog: {
-      $nin: [ "printer", "crayons" ]
+   age: {
+      $nin: [ 21, 35 ]
    }
 })
 ```
@@ -375,11 +377,11 @@ The output:
 ```js
 [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
-    name: { first: 'Sam', last: 'Johnson' },
-    employeeID: 2234,
-    age: 35,
+    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    name: { first: 'Earl', last: 'Thomas' },
+    employeeID: 1234,
+    age: 23,
     role: 'salesperson',
-    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
   }
 ]
