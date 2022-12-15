@@ -47,7 +47,7 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error 
 	}
 
 	if len(rawMessages) > 0 && schemas == nil {
-		return lazyerrors.Errorf("array schema is nil for non-empty array")
+		return lazyerrors.Errorf("pjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array")
 	}
 
 	if len(schemas) != len(rawMessages) {
