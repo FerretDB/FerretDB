@@ -95,6 +95,10 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 	keys := td.Keys()
 
 	for i, key := range keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+
 		var b []byte
 		var err error
 
@@ -116,10 +120,6 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 		}
 
 		buf.Write(b)
-
-		if i != len(keys)-1 {
-			buf.WriteByte(',')
-		}
 	}
 
 	buf.WriteByte('}')
