@@ -52,8 +52,8 @@ const (
 // Example:
 // Let's have docValue="foo" and filterValue=5.
 // For example operator maybe `$gt` e.g. {v: {$gt: 5}},
-// or `$lt` e.g. {v: {$lt: 5}},
-// but Compare(...) does not have information about operator.
+// or `$lt` e.g. {v: {$lt: 5}}, but Compare(...) does
+// not have information about operator.
 // If the value is {v: "foo"}, both $gt and $lt expect falsy
 // response so returning Greater, Less or Equal would not work.
 //
@@ -74,8 +74,8 @@ const (
 // maximum number in the array docValue 7 and filterValue 6.
 // For `$gte` and `$lte` it has similar issue.
 // For `$gt`, `$gte`, `$lt` and `$lte`, the max/min of
-// the docValue needs to be passed into Compare(...)
-// instead of passing an array of doc value.
+// the docValue needs to be passed into Compare(...) instead
+// of passing an array of doc value.
 func Compare(docValue, filterValue any) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
@@ -277,7 +277,7 @@ func compareNumbers(a float64, b int64) CompareResult {
 // compareArrays compares indices of a filter array according to indices of a document array;
 // returns Equal when an array equals to filter array;
 // returns Less when an index of the document array is less than the index of the filter array;
-// returns Greater when an index of the document array is greater than the index of the filter array;
+// returns Greater when an index of the document array is greater than the index of the filter array.
 func compareArrays(docArr, filterArr *Array) CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return Equal
