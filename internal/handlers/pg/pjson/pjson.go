@@ -185,20 +185,30 @@ func Unmarshal(data []byte) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// decode schema from the $s field of the document
 	jsch, ok := v["$s"]
 	if !ok {
 		return nil, lazyerrors.Errorf("schema is not set")
 	}
 
 	var sch schema
-	if err = json.Unmarshal(jsch, &sch); err != nil {
+	r = bytes.NewReader(jsch)
+	dec = json.NewDecoder(r)
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(sch); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err := checkConsumed(dec, r); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	delete(v, "$s")
 
+	// decode data from the rest of the document using the schema
 	if len(sch.Keys) != len(v) {
-		return nil, lazyerrors.Errorf("document must have the same number of keys and values (keys: %d, values: %d)", len(sch.Keys), len(v))
+		return nil, lazyerrors.Errorf("pjson.Unmarshal: document must have the same number of keys and values (keys: %d, values: %d)", len(sch.Keys), len(v))
 	}
 
 	d := must.NotFail(types.NewDocument())
@@ -207,7 +217,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 		b, ok := v[key]
 
 		if !ok {
-			return nil, lazyerrors.Errorf("pjson.UnmarshalJSON: missing key %q", key)
+			return nil, lazyerrors.Errorf("pjson.Unmarshal: missing key %q", key)
 		}
 
 		v, err := unmarshalSignleValue(b, sch.Properties[key])
