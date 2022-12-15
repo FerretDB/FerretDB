@@ -19,29 +19,45 @@
 // # Mapping
 //
 // PJSON uses schema to map values to data types.
+// Schema is stored in the `$s` field of the document and contains information about the fields:
+//
+//	{
+//	   "$s": {
+//	     "keys": ["field1", "field2", ...],
+//	     "properties": {
+//	       "field1": {<schema>},
+//	       "field2": {<schema>},
+//	       ...
+//	   }
+//	   "field1": <json representation>,
+//	   "field2": <json representation>,
+//	   ...
+//	}
 //
 // Composite types
 //
-//	Alias      types package    pjson package         JSON representation
+//	Alias      types package    pjson package        pjson schema                                            JSON representation
 //
-//	object     *types.Document  *pjson.documentType   {"<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//	array      *types.Array     *pjson.arrayType      JSON array
+//	object     *types.Document  *pjson.documentType  {"t":"object", "$s": {"k":[<keys>], "p":{<properties>}} JSON object
+//	array      *types.Array     *pjson.arrayType     {"t":"array", "i": [<item 1>, <item 2>]}                JSON array
 //
 // Scalar types
 //
-//	Alias      types package    pjson package         JSON representation
+//		Alias      types package   pjson package         pjson schema                         JSON representation
 //
-//	double     float64          *pjson.doubleType     {"$f": JSON number}
-//	string     string           *pjson.stringType     JSON string
-//	binData    types.Binary     *pjson.binaryType     {"$b": "<base 64 string>", "s": <subtype number>}
-//	objectId   types.ObjectID   *pjson.objectIDType   {"$o": "<ObjectID as 24 character hex string"}
-//	bool       bool             *pjson.boolType       JSON true / false values
-//	date       time.Time        *pjson.dateTimeType   {"$d": milliseconds since epoch as JSON number}
-//	null       types.NullType   *pjson.nullType       JSON null
-//	regex      types.Regex      *pjson.regexType      {"$r": "<string without terminating 0x0>", "o": "<string without terminating 0x0>"}
-//	int        int32            *pjson.int32Type      JSON number
-//	timestamp  types.Timestamp  *pjson.timestampType  {"$t": "<number as string>"}
-//	long       int64            *pjson.int64Type      {"$l": "<number as string>"}
+//		double     float64         *pjson.doubleType    {"t":"double"}                        JSON number
+//		string     string          *pjson.stringType    {"t":"string"}                        JSON string
+//		binData    types.Binary    *pjson.binaryType    {"t":"binData",
+//		                                                 "s":<subtype number>}                "<base 64 string>"
+//		objectId   types.ObjectID  *pjson.objectIDType  {"t":"objectId"}                      "<ObjectID as 24 character hex string>"
+//		bool       bool            *pjson.boolType      {"t":"bool"}                          JSON true / false values
+//		date       time.Time       *pjson.dateTimeType  {"t":"date"}   						  milliseconds since epoch as JSON number
+//		null       types.NullType  *pjson.nullType      {"t":"null"}                          JSON null
+//		regex      types.Regex     *pjson.regexType     {"t":"regex",
+//	                                                	 "o": "<string w/o terminating 0x0>"} "<string w/o terminating 0x0>"
+//		int        int32           *pjson.int32Type     {"t":"int"}   			              JSON number
+//		timestamp  types.Timestamp *pjson.timestampType {"t":"timestamp"}                     JSON number
+//		long       int64           *pjson.int64Type     {"t":"long"}                          JSON number
 //
 //nolint:lll // for readability
 //nolint:dupword // false positive
