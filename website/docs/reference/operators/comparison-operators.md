@@ -9,7 +9,7 @@ Go to the comparison query operators:
 
 |Operator|Description|
 |-------|-----------|
-|[`$eq`](#eq)| Equal to |
+|[`$eq`](#eq)| Matches documents equal to specified query|
 |[`$gt`](#gt)| Matches documents greater than specified query|
 |[`$gte`](#gte)| Matches documents greater than or equal to specified query|
 |[`$lt`](#lt)| Matches documents less than specified query|
