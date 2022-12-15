@@ -47,8 +47,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		collName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			_, err := tdb.Driver.DeleteProject(ctx, dbName)
-			require.NoError(t, err)
+			_, e := tdb.Driver.DeleteProject(ctx, dbName)
+			require.NoError(t, e)
 		})
 
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
@@ -72,8 +72,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
-			_, err := tdb.Driver.DeleteProject(ctx, dbName)
-			require.NoError(t, err)
+			_, e := tdb.Driver.DeleteProject(ctx, dbName)
+			require.NoError(t, e)
 		})
 
 		created, err := tdb.createDatabaseIfNotExists(ctx, dbName)
@@ -105,8 +105,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, tdb.Driver.UseDatabase(dbName).CreateOrUpdateCollection(ctx, collName, schema))
 
 		t.Cleanup(func() {
-			_, err := tdb.Driver.DeleteProject(ctx, dbName)
-			require.NoError(t, err)
+			_, e := tdb.Driver.DeleteProject(ctx, dbName)
+			require.NoError(t, e)
 		})
 
 		created, err := tdb.createDatabaseIfNotExists(ctx, dbName)
