@@ -12,7 +12,7 @@ Go to the comparison query operators:
 |[`$eq`](#eq)| Equal to |
 |[`$gt`](#gt)| Matches documents greater than specified query|
 |[`$gte`](#gte)| Matches documents greater than or equal to specified query|
-|[`$lt`](#lt)| Matches documents less than specified values|
+|[`$lt`](#lt)| Matches documents less than specified query|
 |[`$lte`](#lte)| Matches documents less than or equal to specified query|
 |[`$in`](#in)| Matches documents containing values in a specified array query|
 |[`$ne`](#ne)| Matches documents that are not equal to specified query|
