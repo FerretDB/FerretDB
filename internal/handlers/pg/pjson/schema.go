@@ -123,7 +123,7 @@ func (s *schema) Unmarshal(b []byte) error {
 }
 
 // marshalSchemaForDoc makes schema for the given document based on its data.
-// The result is json encoded schema that can be used to unmarshal the document.
+// The result is json encoded schema that can be used to unmarshal the given document.
 func marshalSchemaForDoc(td *types.Document) ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -170,7 +170,8 @@ func marshalSchemaForDoc(td *types.Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// marshalElemForSingleValue makes schema for the given element based on its data.
+// marshalElemForSingleValue makes elem for the given element based on its data.
+// The result is json encoded elem that can be used to unmarshal the given value.
 func marshalElemForSingleValue(value any) ([]byte, error) {
 	var buf bytes.Buffer
 
