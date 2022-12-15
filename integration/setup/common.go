@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -287,4 +288,35 @@ func startup() {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
 	})
+}
+
+func GetTargetURI(tb testing.TB) (context.Context, string) {
+	tb.Helper()
+
+	startup()
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+
+	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	if *debugSetupF {
+		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+	logger := testutil.Logger(tb, level)
+
+	var uri string
+	if *targetPortF == 0 {
+		uri = setupListener(tb, ctx, logger)
+	} else {
+		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
+			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
+		})
+	}
+
+	// register cleanup function after setupListener registers its own to preserve full logs
+	tb.Cleanup(cancel)
+
+	level.SetLevel(*logLevelF)
+
+	return ctx, uri
 }
