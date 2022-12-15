@@ -290,6 +290,7 @@ func startup() {
 	})
 }
 
+// GetTargetURI returns target uri and context.
 func GetTargetURI(tb testing.TB) (context.Context, string) {
 	tb.Helper()
 

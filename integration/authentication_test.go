@@ -18,11 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestAuthentication(t *testing.T) {
