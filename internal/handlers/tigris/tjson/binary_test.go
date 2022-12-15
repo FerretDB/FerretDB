@@ -77,7 +77,7 @@ var binaryTestCases = []testCase{{
 		B:       []byte("foo"),
 	},
 	j:    `{"$b":"Zm9v","s":128}`,
-	sErr: `tjson.UnmarshalJSON: unhandled type "invalid"`,
+	sErr: `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestBinary(t *testing.T) {

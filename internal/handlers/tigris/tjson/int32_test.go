@@ -52,7 +52,7 @@ var int32TestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(int32Type(42)),
 	j:      `42`,
-	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestInt32(t *testing.T) {

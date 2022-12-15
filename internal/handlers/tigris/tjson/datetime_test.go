@@ -57,7 +57,7 @@ var dateTimeTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(dateTimeType(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))),
 	j:      `"2021-11-01T10:18:42.123Z"`,
-	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestDateTime(t *testing.T) {

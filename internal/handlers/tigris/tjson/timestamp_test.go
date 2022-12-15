@@ -46,7 +46,7 @@ var timestampTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(timestampType(1)),
 	j:      `{"$t":"1"}`,
-	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestTimestamp(t *testing.T) {

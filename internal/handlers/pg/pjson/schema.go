@@ -105,8 +105,8 @@ var (
 	}
 )
 
-// UnmarshalJSON implements json.Unmarshaler interface.
-func (s *schema) UnmarshalJSON(b []byte) error {
+// Unmarshal parses the JSON-encoded schema.
+func (s *schema) Unmarshal(b []byte) error {
 	r := bytes.NewReader(b)
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()

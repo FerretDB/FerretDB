@@ -57,7 +57,7 @@ var doubleTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(doubleType(42.13)),
 	j:      `42.13`,
-	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestDouble(t *testing.T) {

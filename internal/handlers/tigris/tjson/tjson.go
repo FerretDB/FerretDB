@@ -181,7 +181,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 		case Byte, UUID, DateTime:
 			fallthrough
 		default:
-			err = lazyerrors.Errorf("tjson.UnmarshalJSON: unhandled format %q for type %q", f, t)
+			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
 		}
 	case Number:
 		switch f := schema.Format; f {
@@ -196,7 +196,7 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 		case Byte, UUID, DateTime:
 			fallthrough
 		default:
-			err = lazyerrors.Errorf("tjson.UnmarshalJSON: unhandled format %q for type %q", f, t)
+			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
 		}
 	case String:
 		switch f := schema.Format; f {
@@ -217,14 +217,14 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 		case Double, Float, Int64, Int32:
 			fallthrough
 		default:
-			err = lazyerrors.Errorf("tjson.UnmarshalJSON: unhandled format %q for type %q", f, t)
+			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled format %q for type %q", f, t)
 		}
 	case Boolean:
 		var o boolType
 		err = o.UnmarshalJSON(data)
 		res = &o
 	case Array:
-		err = lazyerrors.Errorf("tjson.UnmarshalJSON: unhandled type %q", t)
+		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled type %q", t)
 	case Object:
 		var v map[string]json.RawMessage
 		r := bytes.NewReader(data)
@@ -254,10 +254,10 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 			err = o.UnmarshalJSON(data)
 			res = &o
 		default:
-			err = lazyerrors.Errorf("tjson.UnmarshalJSON: unhandled map %v", v)
+			err = lazyerrors.Errorf("tjson.Unmarshal: unhandled map %v", v)
 		}
 	default:
-		err = lazyerrors.Errorf("tjson.UnmarshalJSON: unhandled type %q", t)
+		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled type %q", t)
 	}
 
 	if err != nil {

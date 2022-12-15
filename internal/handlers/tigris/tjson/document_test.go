@@ -251,7 +251,7 @@ func prepareTestCases() []testCase {
 		v:      convertDocument(invalidDoc),
 		schema: &Schema{Type: "invalid"},
 		j:      `{"$k":["_id"],"_id":"foo"}`,
-		sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
+		sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 	}
 
 	return []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, mismatchedSchema, invalidSchema}

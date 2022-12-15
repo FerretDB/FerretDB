@@ -185,7 +185,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 			// Schema unmarshalled from json
 			var unm schema
-			err := unm.UnmarshalJSON([]byte(tc.json))
+			err := unm.Unmarshal([]byte(tc.json))
 			require.NoError(t, err)
 			assert.Equal(t, tc.schema, unm)
 

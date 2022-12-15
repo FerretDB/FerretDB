@@ -46,7 +46,7 @@ var stringTestCases = []testCase{{
 	schema: &Schema{Type: "invalid"},
 	v:      pointer.To(stringType("foo")),
 	j:      `"foo"`,
-	sErr:   `tjson.UnmarshalJSON: unhandled type "invalid"`,
+	sErr:   `tjson.Unmarshal: unhandled type "invalid"`,
 }}
 
 func TestString(t *testing.T) {
