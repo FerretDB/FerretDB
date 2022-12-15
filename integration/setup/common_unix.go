@@ -27,7 +27,7 @@ import (
 func unixSocketPath(tb testing.TB) string {
 	tb.Helper()
 
-	// do not use tb.TempDir() because generate path is too long on macOS
+	// do not use tb.TempDir() because generated path is too long on macOS
 	f, err := os.CreateTemp("", "ferretdb-*.sock")
 	require.NoError(tb, err)
 
