@@ -175,9 +175,9 @@ func makeElemSchema(value any) ([]byte, error) {
 
 	switch val := value.(type) {
 	case *types.Document:
-		buf.WriteString(`{"t": "object"`)
+		buf.WriteString(`{"t":"object"`)
 
-		buf.WriteString(`, "$s":`)
+		buf.WriteString(`,"$s":`)
 
 		b, err := makeSchema(val)
 		if err != nil {
@@ -189,9 +189,9 @@ func makeElemSchema(value any) ([]byte, error) {
 		buf.WriteByte('}')
 
 	case *types.Array:
-		buf.WriteString(`{"t": "array"`)
+		buf.WriteString(`{"t":"array"`)
 
-		buf.WriteString(`, "i":[`)
+		buf.WriteString(`,"i":[`)
 
 		for i := 0; i < val.Len(); i++ {
 			if i > 0 {
@@ -211,10 +211,10 @@ func makeElemSchema(value any) ([]byte, error) {
 		buf.WriteByte('}')
 
 	case float64:
-		buf.WriteString(`{"t": "double"}`)
+		buf.WriteString(`{"t":"double"}`)
 
 	case string:
-		buf.WriteString(`{"t": "string"}`)
+		buf.WriteString(`{"t":"string"}`)
 
 	case types.Binary:
 		subtype, err := json.Marshal(val.Subtype)
@@ -222,21 +222,21 @@ func makeElemSchema(value any) ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		buf.WriteString(`{"t": "binData", "s": `)
+		buf.WriteString(`{"t":"binData","s":`)
 		buf.Write(subtype)
 		buf.WriteString(`}`)
 
 	case types.ObjectID:
-		buf.WriteString(`{"t": "objectId"}`)
+		buf.WriteString(`{"t":"objectId"}`)
 
 	case bool:
-		buf.WriteString(`{"t": "bool"}`)
+		buf.WriteString(`{"t":"bool"}`)
 
 	case time.Time:
-		buf.WriteString(`{"t": "date"}`)
+		buf.WriteString(`{"t":"date"}`)
 
 	case types.NullType:
-		buf.WriteString(`{"t": "null"}`)
+		buf.WriteString(`{"t":"null"}`)
 
 	case types.Regex:
 		options, err := json.Marshal(val.Options)
@@ -244,18 +244,18 @@ func makeElemSchema(value any) ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		buf.WriteString(`{"t": "regex", "o":`)
+		buf.WriteString(`{"t":"regex","o":`)
 		buf.Write(options)
 		buf.WriteString(`}`)
 
 	case int32:
-		buf.WriteString(`{"t": "int"}`)
+		buf.WriteString(`{"t":"int"}`)
 
 	case types.Timestamp:
-		buf.WriteString(`{"t": "timestamp"}`)
+		buf.WriteString(`{"t":"timestamp"}`)
 
 	case int64:
-		buf.WriteString(`{"t": "long"}`)
+		buf.WriteString(`{"t":"long"}`)
 
 	default:
 		panic(fmt.Sprintf("pjson.makeElemSchema: unknown type %[1]T (value %[1]q)", val))
