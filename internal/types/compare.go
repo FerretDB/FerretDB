@@ -242,8 +242,6 @@ func compareInvert(res CompareResult) CompareResult {
 		return Greater
 	case Greater:
 		return Less
-	default:
-		panic("unsupported order")
 	}
 
 	panic("not reached")

@@ -21,7 +21,6 @@ import (
 )
 
 //go:generate ../../bin/stringer -linecomment -type compareTypeOrderResult
-//go:generate ../../bin/stringer -linecomment -type numberOrderResult
 //go:generate ../../bin/stringer -linecomment -type SortType
 
 // compareTypeOrderResult represents the comparison order of data types.
@@ -78,34 +77,6 @@ func detectDataType(value any) compareTypeOrderResult {
 		return numbersDataType
 	default:
 		panic(fmt.Sprintf("value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
-	}
-}
-
-// numberOrderResult represents the comparison order of numbers.
-type numberOrderResult uint8
-
-const (
-	_ numberOrderResult = iota
-	doubleNegativeZero
-	doubleDT
-	int32DT
-	int64DT
-)
-
-// detectNumberType returns a sequence for float64, int32 and int64 types.
-func detectNumberType(value any) numberOrderResult {
-	switch value := value.(type) {
-	case float64:
-		if value == 0 && math.Signbit(value) {
-			return doubleNegativeZero
-		}
-		return doubleDT
-	case int32:
-		return int32DT
-	case int64:
-		return int64DT
-	default:
-		panic(fmt.Sprintf("detectNumberType: value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
 	}
 }
 
@@ -235,31 +206,6 @@ func CompareOrderForOperator(a, b any, order SortType) CompareResult {
 	}
 
 	return Compare(a, b)
-}
-
-// compareNumberOrder detects the number type for two values and compares them.
-func compareNumberOrder(a, b any, order SortType) CompareResult {
-	if a == nil {
-		panic("compareNumberOrder: a is nil")
-	}
-	if b == nil {
-		panic("compareNumberOrder: b is nil")
-	}
-
-	aNumberType := detectNumberType(a)
-	bNumberType := detectNumberType(b)
-	switch {
-	case aNumberType < bNumberType && order == Ascending:
-		return Less
-	case aNumberType > bNumberType && order == Ascending:
-		return Greater
-	case aNumberType < bNumberType && order == Descending:
-		return Greater
-	case aNumberType > bNumberType && order == Descending:
-		return Less
-	default:
-		return Equal
-	}
 }
 
 // compareTypeOrder detects the data type for two values and compares them.

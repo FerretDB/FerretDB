@@ -67,11 +67,7 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 		}
 
 		result := types.CompareForSort(aField, bField, sortType)
-		if result == types.Less {
-			return true
-		}
-
-		return false
+		return result == types.Less
 	}
 }
 
