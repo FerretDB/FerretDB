@@ -40,17 +40,14 @@ func TestMarshalUnmarshal(t *testing.T) {
 			json: `{
 			"$s": {
 				"p": {
-					"foo": {"t": "string"},
-					"foon": {"t": "null"}
+					"foo": {"t": "string"}
 				},
-				"$k": ["foo", "foon"]
+				"$k": ["foo"]
 			}, 
-			"foo": "bar",
-			"foon": null
+			"foo": "bar"
 		}`,
 			doc: must.NotFail(types.NewDocument(
 				"foo", "bar",
-				"foon", types.Null,
 			)),
 		},
 	} {
