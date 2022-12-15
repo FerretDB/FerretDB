@@ -33,7 +33,7 @@ func (dt *dateTimeType) String() string {
 	return time.Time(*dt).Format(time.RFC3339Nano)
 }
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

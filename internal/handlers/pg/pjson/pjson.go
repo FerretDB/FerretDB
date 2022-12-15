@@ -288,9 +288,7 @@ func unmarshalElem(data []byte, sch *elem) (any, error) {
 		err = d.UnmarshalJSON(data)
 		res = &d
 	case elemTypeNull:
-		var n nullType
-		err = n.UnmarshalJSON(data)
-		res = &n
+		panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 	case elemTypeRegex:
 		var r regexType
 		err = r.UnmarshalJSONWithSchema(data, sch)

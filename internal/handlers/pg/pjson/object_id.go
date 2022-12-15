@@ -29,7 +29,7 @@ type objectIDType types.ObjectID
 // pjsontype implements pjsontype interface.
 func (obj *objectIDType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

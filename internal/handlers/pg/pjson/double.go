@@ -27,7 +27,7 @@ type doubleType float64
 // pjsontype implements pjsontype interface.
 func (d *doubleType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (d *doubleType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

@@ -28,7 +28,7 @@ type timestampType types.Timestamp
 // pjsontype implements pjsontype interface.
 func (ts *timestampType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (ts *timestampType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
