@@ -132,6 +132,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		q.Set("tlsCAFile", p)
 
 		user = url.UserPassword("username", "password")
+
 		q.Set("authMechanism", "PLAIN")
 	}
 
