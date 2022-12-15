@@ -123,6 +123,7 @@ func (s *schema) Unmarshal(b []byte) error {
 }
 
 // marshalSchemaForDoc makes schema for the given document based on its data.
+// The result is json encoded schema that can be used to unmarshal the document.
 func marshalSchemaForDoc(td *types.Document) ([]byte, error) {
 	var buf bytes.Buffer
 
