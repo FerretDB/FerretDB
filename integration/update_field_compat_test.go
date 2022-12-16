@@ -173,6 +173,132 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+func TestUpdateFieldCompatMin(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"Int32Lower": {
+			update:        bson.D{{"$min", bson.D{{"v", int32(30)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Int32Higher": {
+			update:        bson.D{{"$min", bson.D{{"v", int32(60)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Int32Negative": {
+			update:        bson.D{{"$min", bson.D{{"v", int32(-22)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Document": {
+			update: bson.D{{"$min", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/457",
+		},
+		"EmptyDocument": {
+			update: bson.D{{"$min", bson.D{{"v", bson.D{{}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/457",
+		},
+		"Double": {
+			update: bson.D{{"$min", bson.D{{"v", 54.32}}}},
+		},
+		"DoubleNegative": {
+			update:        bson.D{{"$min", bson.D{{"v", -54.32}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"NotExisting": {
+			update:        bson.D{{"$min", bson.D{{"v", int32(60)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"MultipleQueries": {
+			update:        bson.D{{"$min", bson.D{{"a", int32(30)}, {"v", int32(39)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"MultipleQueriesSorted": {
+			update: bson.D{{"$min", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1637",
+		},
+		"DuplicateKeys": {
+			update:     bson.D{{"$min", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
+			resultType: emptyResult,
+		},
+		"StringIntegerHigher": {
+			update:        bson.D{{"$min", bson.D{{"v", "60"}}}},
+			skipForTigris: "In compat collection `v` will be a string, in Tigris - a number.",
+		},
+		"StringIntegerLower": {
+			update:        bson.D{{"$min", bson.D{{"v", "30"}}}},
+			skipForTigris: "In compat collection `v` will be a string, in Tigris - a number.",
+		},
+		"StringDouble": {
+			update: bson.D{{"$min", bson.D{{"v", "54.32"}}}},
+		},
+		"StringDoubleNegative": {
+			update: bson.D{{"$min", bson.D{{"v", "-54.32"}}}},
+		},
+		"StringLexicographicHigher": {
+			update: bson.D{{"$min", bson.D{{"v", "goo"}}}},
+		},
+		"StringLexicographicLower": {
+			update: bson.D{{"$min", bson.D{{"v", "eoo"}}}},
+		},
+		"StringLexicographicUpperCase": {
+			update: bson.D{{"$min", bson.D{{"v", "Foo"}}}},
+		},
+		"BoolTrue": {
+			update: bson.D{{"$min", bson.D{{"v", true}}}},
+		},
+		"BoolFalse": {
+			update:        bson.D{{"$min", bson.D{{"v", false}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"EmptyOperand": {
+			update:     bson.D{{"$min", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"DateTime": {
+			update:        bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"DateTimeLower": {
+			update:        bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayEmpty": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayOne": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Array": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{int32(42), "foo", nil}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayReverse": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{nil, "foo", int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayNull": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{nil}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArraySlice": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{int32(42), "foo"}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayShuffledValues": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{"foo", nil, int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayDocuments": {
+			update:        bson.D{{"$min", bson.D{{"v", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", nil}}}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatUnset(t *testing.T) {
 	t.Parallel()
 

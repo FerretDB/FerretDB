@@ -91,6 +91,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$min":
+			changed, err = processMinFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
+
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
@@ -368,6 +374,48 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	return changed, nil
 }
 
+// processMinFieldExpression changes document according to $min operator.
+// If the document was changed it returns true.
+func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	minExpression := updateV.(*types.Document)
+
+	var changed bool
+
+	for _, field := range minExpression.Keys() {
+		val, _ := doc.Get(field)
+
+		minVal, err := minExpression.Get(field)
+		if err != nil {
+			// if min field does not exist, don't change anything
+			continue
+		}
+
+		// if the document value was found, compare it with min value
+		if val != nil {
+			res := types.CompareOrder(val, minVal, types.Ascending)
+			switch res {
+			case types.Equal:
+				fallthrough
+			case types.Less:
+				continue
+			case types.Greater:
+			default:
+				return changed, NewCommandErrorMsgWithArgument(
+					ErrNotImplemented,
+					"document comparison is not implemented",
+					"$min",
+				)
+			}
+		}
+
+		doc.Set(field, minVal)
+
+		changed = true
+	}
+
+	return changed, nil
+}
+
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
 func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
@@ -431,6 +479,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$min", update)
+	if err != nil {
+		return err
+	}
+
 	set, err := extractValueFromUpdateOperator("$set", update)
 	if err != nil {
 		return err
@@ -471,6 +524,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$inc":
 			fallthrough
 		case "$max":
+			fallthrough
+		case "$min":
 			fallthrough
 		case "$set":
 			fallthrough
