@@ -113,7 +113,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	if opts.hostPort != "" {
 		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
 		host = opts.hostPort
-		path = "/"
+		path = "admin"
 	} else {
 		require.NotEmpty(tb, opts.unixSocketPath, "neither hostPort nor unixSocketPath are set")
 		path = opts.unixSocketPath
