@@ -107,7 +107,7 @@ db.catalog.insertMany([
 ])
 ```
 
-## `$and`
+## $and
 
 *Syntax*: `{ $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }`
 
