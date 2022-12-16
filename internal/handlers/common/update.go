@@ -382,13 +382,13 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	var changed bool
 
 	for _, field := range minExpression.Keys() {
-		val, _ := doc.Get(field)
-
 		minVal, err := minExpression.Get(field)
 		if err != nil {
 			// if min field does not exist, don't change anything
 			continue
 		}
+
+		val, _ := doc.Get(field)
 
 		// if the document value was found, compare it with min value
 		if val != nil {
@@ -399,12 +399,6 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			case types.Less:
 				continue
 			case types.Greater:
-			default:
-				return changed, NewCommandErrorMsgWithArgument(
-					ErrNotImplemented,
-					"document comparison is not implemented",
-					"$min",
-				)
 			}
 		}
 

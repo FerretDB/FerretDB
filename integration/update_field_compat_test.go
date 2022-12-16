@@ -244,7 +244,8 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			update: bson.D{{"$min", bson.D{{"v", "Foo"}}}},
 		},
 		"BoolTrue": {
-			update: bson.D{{"$min", bson.D{{"v", true}}}},
+			update:        bson.D{{"$min", bson.D{{"v", true}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"BoolFalse": {
 			update:        bson.D{{"$min", bson.D{{"v", false}}}},
