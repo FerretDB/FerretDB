@@ -43,7 +43,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 	// If we detect that other creation is in flight, we give up to three attempts to create the database.
 	// TODO https://github.com/FerretDB/FerretDB/issues/1341
 	for i := 0; i < 3; i++ {
-		err = tdb.Driver.CreateDatabase(ctx, db)
+		_, err = tdb.Driver.CreateProject(ctx, db)
 		tdb.l.Debug("createDatabaseIfNotExists", zap.String("db", db), zap.Error(err))
 
 		var driverErr *driver.Error

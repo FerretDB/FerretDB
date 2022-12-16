@@ -119,7 +119,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	logger.Info("Creating databases...")
 	for _, db := range []string{"admin", "test"} {
-		if err = driver.CreateDatabase(ctx, db); err != nil {
+		if _, err = driver.CreateProject(ctx, db); err != nil {
 			return err
 		}
 	}
