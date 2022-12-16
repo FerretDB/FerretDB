@@ -148,13 +148,22 @@ func CompareOrderForSort(a, b any, order SortType) CompareResult {
 		b = getComparisonElementFromArray(arrB, order)
 	}
 
-	if isAArray && arrA.Len() == 0 {
-		// empty array is the lowest on the sort order.
+	// empty array is the lowest on the sort order.
+	switch {
+	case isAArray && arrA.Len() == 0 && isBArray && arrB.Len() == 0:
+		return Equal
+	case isAArray && arrA.Len() == 0:
 		if order == Ascending {
 			return Less
 		}
 
 		return Greater
+	case isBArray && arrB.Len() == 0:
+		if order == Ascending {
+			return Greater
+		}
+
+		return Less
 	}
 
 	if result := compareTypeOrder(a, b); result != Equal {
