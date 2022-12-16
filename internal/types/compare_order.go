@@ -137,17 +137,6 @@ func CompareOrderForSort(a, b any, order SortType) CompareResult {
 	arrA, isAArray := a.(*Array)
 	arrB, isBArray := b.(*Array)
 
-	// sort does not compare array itself, it compares
-	// minimum element in array for ascending sort and
-	// maximum element in array for descending sort.
-	if isAArray {
-		a = getComparisonElementFromArray(arrA, order)
-	}
-
-	if isBArray {
-		b = getComparisonElementFromArray(arrB, order)
-	}
-
 	// empty array is the lowest on the sort order.
 	switch {
 	case isAArray && arrA.Len() == 0 && isBArray && arrB.Len() == 0:
@@ -164,6 +153,17 @@ func CompareOrderForSort(a, b any, order SortType) CompareResult {
 		}
 
 		return Less
+	}
+
+	// sort does not compare array itself, it compares
+	// minimum element in array for ascending sort and
+	// maximum element in array for descending sort.
+	if isAArray {
+		a = getComparisonElementFromArray(arrA, order)
+	}
+
+	if isBArray {
+		b = getComparisonElementFromArray(arrB, order)
 	}
 
 	if result := compareTypeOrder(a, b); result != Equal {
