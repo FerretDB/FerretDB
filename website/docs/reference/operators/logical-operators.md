@@ -127,9 +127,9 @@ db.catalog.find({
          }
       },
       {
-         stock: {
+         stock:{
             $ne: 0
-            }
+         }
       }
    ]
 })
@@ -177,22 +177,25 @@ Select the documents that match these expressions:
 
 ```js
 db.catalog.find({
-   $or:[{
-        $and:[{
-            discount: true
-        },
-        {
-            stock:{
-                $ne: 0
+   $or:[
+      {
+         $and:[
+            {
+               discount: true
+            },
+            {
+               stock:{
+                  $ne: 0
+               }
             }
-        }]
-    },
-    {
-        price: {
+         ]
+      },
+      {
+         price:{
             $lte: 60
-        }
-    }
-    ],
+         }
+      }
+   ]
 })
 ```
 
@@ -296,22 +299,25 @@ Select the documents that fail to match any of these expressions:
 
 ```js
 db.catalog.find({
-   $nor:[{
-        $and:[{
-            discount: true
-        },
-        {
-            stock:{
-                $ne: 0
+   $nor:[
+      {
+         $and:[
+            {
+               discount: true
+            },
+            {
+               stock:{
+                  $ne: 0
+               }
             }
-        }]
-    },
-    {
-        price: {
+         ]
+      },
+      {
+         price:{
             $lte: 60
-        }
-    }
-    ],
+         }
+      }
+   ]
 })
 ```
 
