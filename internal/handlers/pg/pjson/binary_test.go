@@ -48,6 +48,14 @@ var binaryTestCases = []testCase{{
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
+}, {
+	name: "NilSubtype",
+	sch: &elem{
+		Type:    elemTypeBinData,
+		Subtype: nil,
+	},
+	j:    `"Zm9v"`,
+	jErr: `binary subtype is nil`,
 }}
 
 func TestBinary(t *testing.T) {
