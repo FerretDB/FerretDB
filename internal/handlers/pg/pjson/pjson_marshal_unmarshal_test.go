@@ -65,3 +65,38 @@ func TestMarshalUnmarshal(t *testing.T) {
 		})
 	}
 }
+
+// TestUnmarshalInvalid checks that invalid data is not ignored.
+func TestUnmarshalInvalid(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		json     string
+		expected string
+	}{
+		"NoData": {
+			json:     `{"$s":{"p": {"foo": {"t": "string"}},"$k": ["foo"]}}`,
+			expected: `document must have the same number of keys and values`,
+		},
+		"ExtraFieldsInSchema": {
+			json: `{
+				"$s": {
+					"p": {"foo": {"t": "string"}},
+					"$k": ["foo"],
+					"unknown": "field"
+				}, 
+				"foo": "bar"
+			}`,
+			expected: `json: unknown field "unknown"`,
+		},
+	} {
+		tc := tc
+
+		t.Run(name, func(t *testing.T) {
+			doc, err := Unmarshal([]byte(tc.json))
+			require.NotNil(t, err)
+			require.Contains(t, err.Error(), tc.expected)
+			require.Nil(t, doc)
+		})
+	}
+}
