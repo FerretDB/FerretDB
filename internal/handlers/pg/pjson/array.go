@@ -59,7 +59,7 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error 
 	ta := types.MakeArray(len(rawMessages))
 
 	for i, el := range rawMessages {
-		v, err := unmarshalSignleValue(el, schemas[i])
+		v, err := unmarshalSingleValue(el, schemas[i])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

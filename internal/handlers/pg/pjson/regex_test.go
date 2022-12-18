@@ -34,6 +34,15 @@ var regexTestCases = []testCase{{
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
+}, {
+	name: "NilOptions",
+	v:    pointer.To(regexType{Pattern: "hoffman", Options: ""}),
+	sch: &elem{
+		Type:    elemTypeRegex,
+		Options: nil,
+	},
+	j:    `"hoffman"`,
+	jErr: `regex options is nil`,
 }}
 
 func TestRegex(t *testing.T) {

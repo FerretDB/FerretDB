@@ -220,7 +220,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 			return nil, lazyerrors.Errorf("pjson.Unmarshal: missing key %q", key)
 		}
 
-		v, err := unmarshalSignleValue(b, sch.Properties[key])
+		v, err := unmarshalSingleValue(b, sch.Properties[key])
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -231,8 +231,8 @@ func Unmarshal(data []byte) (*types.Document, error) {
 	return d, nil
 }
 
-// unmarshalSignleValue decodes the given pjson-encoded data element by the given schema.
-func unmarshalSignleValue(data []byte, sch *elem) (any, error) {
+// unmarshalSingleValue decodes the given pjson-encoded data element by the given schema.
+func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
 	if bytes.Equal(data, []byte("null")) {
 		return fromPJSON(new(nullType)), nil
 	}
@@ -259,7 +259,7 @@ func unmarshalSignleValue(data []byte, sch *elem) (any, error) {
 	switch sch.Type {
 	case elemTypeObject:
 		if sch.Schema == nil {
-			return nil, lazyerrors.Errorf("pjson.unmarshalSignleValue: schema is not set")
+			return nil, lazyerrors.Errorf("pjson.unmarshalSingleValue: schema is not set")
 		}
 
 		var d documentType
@@ -267,7 +267,7 @@ func unmarshalSignleValue(data []byte, sch *elem) (any, error) {
 		res = &d
 	case elemTypeArray:
 		if sch.Items == nil {
-			return nil, lazyerrors.Errorf("pjson.unmarshalSignleValue: schema's items are not set")
+			return nil, lazyerrors.Errorf("pjson.unmarshalSingleValue: schema's items are not set")
 		}
 
 		var a arrayType
@@ -316,7 +316,7 @@ func unmarshalSignleValue(data []byte, sch *elem) (any, error) {
 		err = l.UnmarshalJSON(data)
 		res = &l
 	default:
-		return nil, lazyerrors.Errorf("pjson.unmarshalSignleValue: unhandled type %q", sch.Type)
+		return nil, lazyerrors.Errorf("pjson.unmarshalSingleValue: unhandled type %q", sch.Type)
 	}
 
 	if err != nil {
