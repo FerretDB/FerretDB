@@ -120,6 +120,16 @@ func TestUnmarshalInvalid(t *testing.T) {
 			}`,
 			expected: `document must have the same number of keys and values`,
 		},
+		"MixedUpKeys": {
+			json: `{
+				"$s": {
+					"p": {"foo": {"t": "string"}},
+					"$k": ["foo"]
+				}, 
+				"fizz": "buzz"
+			}`,
+			expected: `missing key "foo"`,
+		},
 	} {
 		tc := tc
 
