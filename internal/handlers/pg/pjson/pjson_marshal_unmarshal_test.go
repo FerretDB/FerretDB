@@ -66,7 +66,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}
 }
 
-// TestUnmarshalInvalid checks that invalid data is not ignored.
+// TestUnmarshalInvalid checks that in case of invalid data, we return errors and not just ignore issues.
 func TestUnmarshalInvalid(t *testing.T) {
 	t.Parallel()
 
@@ -90,7 +90,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 			json:     `{"$s":{"p":{}, "$k": []}, "foo": "bar"}`,
 			expected: `document must have the same number of keys and values`,
 		},
-		"ExtraFieldsInSchema": {
+		"ExtraFieldInSchema": {
 			json: `{
 				"$s": {
 					"p": {"foo": {"t": "string"}},
@@ -100,6 +100,17 @@ func TestUnmarshalInvalid(t *testing.T) {
 				"foo": "bar"
 			}`,
 			expected: `json: unknown field "unknown"`,
+		},
+		"ExtraFieldInDoc": {
+			json: `{
+				"$s": {
+					"p": {"foo": {"t": "string"}},
+					"$k": ["foo"]
+				}, 
+				"foo": "bar",
+				"fizz": "buzz"
+			}`,
+			expected: `document must have the same number of keys and values`,
 		},
 	} {
 		tc := tc

@@ -63,6 +63,21 @@ var arrayTestCases = []testCase{
 		sch:  &elem{Type: elemTypeArray, Items: []*elem{}},
 		j:    `[`,
 		jErr: `unexpected EOF`,
+	}, {
+		name: "SchemaIsNil",
+		sch:  &elem{},
+		j:    `["foo"]`,
+		jErr: `pjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array`,
+	}, {
+		name: "ExtraElemsInSchema",
+		sch:  &elem{Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema}},
+		j:    `["foo"]`,
+		jErr: `pjson.arrayType.UnmarshalJSON: 2 elements in schema, 1 in total`,
+	}, {
+		name: "ExtraElemsInArray",
+		sch:  &elem{Type: elemTypeArray, Items: []*elem{stringSchema}},
+		j:    `["foo", "bar"]`,
+		jErr: `pjson.arrayType.UnmarshalJSON: 1 elements in schema, 2 in total`,
 	},
 }
 
