@@ -436,7 +436,27 @@ var (
 		jErr: `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+	nilSchema = testCase{
+		name: "NilSchema",
+		sch: &elem{
+			Type:   elemTypeObject,
+			Schema: nil,
+		},
+		j:    `{"foo": "bar"}`,
+		jErr: `document schema is nil for non-empty document`,
+	}
+
+	emptySchema = testCase{
+		name: "NilSchema",
+		sch: &elem{
+			Type:   elemTypeObject,
+			Schema: new(schema),
+		},
+		j:    `{"foo": "bar"}`,
+		jErr: `pjson.documentType.UnmarshalJSON: 0 elements in $k, 1 in total`,
+	}
+
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, nilSchema, emptySchema}
 )
 
 func TestDocument(t *testing.T) {
