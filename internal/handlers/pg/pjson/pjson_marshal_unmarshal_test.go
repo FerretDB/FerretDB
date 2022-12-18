@@ -78,6 +78,18 @@ func TestUnmarshalInvalid(t *testing.T) {
 			json:     `{"$s":{"p": {"foo": {"t": "string"}},"$k": ["foo"]}}`,
 			expected: `document must have the same number of keys and values`,
 		},
+		"NoSchema": {
+			json:     `{"foo": "bar"}`,
+			expected: `schema is not set`,
+		},
+		"NoDataNoSchema": {
+			json:     `{}`,
+			expected: `schema is not set`,
+		},
+		"EmptySchema": {
+			json:     `{"$s":{"p":{}, "$k": []}, "foo": "bar"}`,
+			expected: `document must have the same number of keys and values`,
+		},
 		"ExtraFieldsInSchema": {
 			json: `{
 				"$s": {
