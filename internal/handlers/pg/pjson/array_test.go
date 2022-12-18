@@ -65,7 +65,7 @@ var arrayTestCases = []testCase{
 		jErr: `unexpected EOF`,
 	}, {
 		name: "SchemaIsNil",
-		sch:  &elem{},
+		sch:  new(elem),
 		j:    `["foo"]`,
 		jErr: `pjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array`,
 	}, {
