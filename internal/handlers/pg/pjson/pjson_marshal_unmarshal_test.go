@@ -78,6 +78,14 @@ func TestUnmarshalInvalid(t *testing.T) {
 			json:     `{"$s":{"p": {"foo": {"t": "string"}},"$k": ["foo"]}}`,
 			expected: `document must have the same number of keys and values`,
 		},
+		"InvalidData": {
+			json:     `"foo"`,
+			expected: `json: cannot unmarshal string into Go value of type map`,
+		},
+		"ExtraData": {
+			json:     `{"$s":{"p": {"foo": {"t": "string"}},"$k": ["foo"]}, "foo": "bar"}foo`,
+			expected: `3 bytes remains in the decoder: foo`,
+		},
 		"NoSchema": {
 			json:     `{"foo": "bar"}`,
 			expected: `schema is not set`,
