@@ -105,23 +105,6 @@ var (
 	}
 )
 
-// unmarshal decodes the given json-encoded schema.
-func (s *schema) Decode(b []byte) error {
-	r := bytes.NewReader(b)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-
-	if err := dec.Decode(s); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
-}
-
 // marshalSchemaForDoc makes schema for the given document based on its data.
 // The result is json encoded schema that can be used to unmarshal the given document.
 func marshalSchemaForDoc(td *types.Document) ([]byte, error) {

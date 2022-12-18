@@ -15,6 +15,7 @@
 package pjson
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -185,7 +186,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 
 			// Schema unmarshalled from json
 			var unm schema
-			err := unm.UnmarshalJSON([]byte(tc.json))
+			err := json.Unmarshal([]byte(tc.json), &unm)
 			require.NoError(t, err)
 			assert.Equal(t, tc.schema, unm)
 

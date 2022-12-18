@@ -196,7 +196,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 	dec = json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	if err := dec.Decode(sch); err != nil {
+	if err := dec.Decode(&sch); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
