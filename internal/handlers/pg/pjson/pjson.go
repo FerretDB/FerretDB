@@ -23,8 +23,8 @@
 //
 //	{
 //	   "$s": {
-//	     "keys": ["field1", "field2", ...],
-//	     "properties": {
+//	     "$k": ["field1", "field2", ...],
+//	     "p": {
 //	       "field1": {<schema>},
 //	       "field2": {<schema>},
 //	       ...
@@ -38,7 +38,7 @@
 //
 //	Alias      types package    pjson package        pjson schema                                            JSON representation
 //
-//	object     *types.Document  *pjson.documentType  {"t":"object", "$s": {"k":[<keys>], "p":{<properties>}} JSON object
+//	object     *types.Document  *pjson.documentType  {"t":"object", "$s": {"$k":[<keys>], "p":{<properties>}} JSON object
 //	array      *types.Array     *pjson.arrayType     {"t":"array", "i": [<item 1>, <item 2>]}                JSON array
 //
 // Scalar types
