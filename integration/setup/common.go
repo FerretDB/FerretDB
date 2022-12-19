@@ -129,7 +129,6 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		_, err := os.Stat(p)
 		require.NoError(tb, err)
 		q.Set("tlsCAFile", p)
-
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1593
