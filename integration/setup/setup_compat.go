@@ -112,7 +112,6 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
 		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
 		tls:      *compatTLSF,
-		compat:   true,
 	})
 
 	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetURI), opts)

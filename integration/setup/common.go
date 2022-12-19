@@ -103,7 +103,6 @@ type buildMongoDBURIOpts struct {
 	hostPort       string
 	unixSocketPath string
 	tls            bool
-	compat         bool
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options.
@@ -120,7 +119,6 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	}
 
 	q := make(url.Values)
-	var user *url.Userinfo
 
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
@@ -132,12 +130,12 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		require.NoError(tb, err)
 		q.Set("tlsCAFile", p)
 
-		if !opts.compat {
-			user = url.UserPassword("username", "password")
-
-			q.Set("authMechanism", "PLAIN")
-		}
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1593
+	var user *url.Userinfo
+	// user = url.UserPassword("username", "password")
+	// q.Set("authMechanism", "PLAIN")
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
