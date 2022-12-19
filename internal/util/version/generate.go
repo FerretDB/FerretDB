@@ -41,6 +41,7 @@ func runGit(args ...string) []byte {
 	return b
 }
 
+// saveFile stores the given bytes in the given file with logging.
 func saveFile(b []byte, filename string) {
 	log.Printf("%s: %s", filename, b)
 	must.NoError(os.WriteFile(filepath.Join("gen", filename), b, 0o666))
