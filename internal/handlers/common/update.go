@@ -86,20 +86,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$max":
-			if updateVDoc, ok := updateV.(*types.Document); ok {
-				updateV = updateVDoc.SortFieldsByKey()
-			}
-
 			changed, err = processMaxFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$min":
-			if updateVDoc, ok := updateV.(*types.Document); ok {
-				updateV = updateVDoc.SortFieldsByKey()
-			}
-
 			changed, err = processMinFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
@@ -344,6 +336,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
+	maxExpression = maxExpression.SortFieldsByKey()
 
 	var changed bool
 
@@ -386,6 +379,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	minExpression := updateV.(*types.Document)
+	minExpression = minExpression.SortFieldsByKey()
 
 	var changed bool
 
