@@ -76,7 +76,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 	}{
 		"NoData": {
 			json:     `{"$s":{"p": {"foo": {"t": "string"}},"$k": ["foo"]}}`,
-			expected: `document must have the same number of keys and values`,
+			expected: `the data must have the same number of schema keys and document fields`,
 		},
 		"InvalidData": {
 			json:     `"foo"`,
@@ -96,7 +96,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 		},
 		"EmptySchema": {
 			json:     `{"$s":{"p":{}, "$k": []}, "foo": "bar"}`,
-			expected: `document must have the same number of keys and values`,
+			expected: `the data must have the same number of schema keys and document fields`,
 		},
 		"ExtraFieldInSchema": {
 			json: `{
@@ -118,7 +118,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 				"foo": "bar",
 				"fizz": "buzz"
 			}`,
-			expected: `document must have the same number of keys and values`,
+			expected: `the data must have the same number of schema keys and document fields`,
 		},
 		"MixedUpKeys": {
 			json: `{

@@ -212,7 +212,10 @@ func Unmarshal(data []byte) (*types.Document, error) {
 
 	// decode data from the rest of the document using the schema
 	if len(sch.Keys) != len(v) {
-		return nil, lazyerrors.Errorf("pjson.Unmarshal: document must have the same number of keys and values (keys: %d, values: %d)", len(sch.Keys), len(v))
+		return nil, lazyerrors.Errorf(
+			"pjson.Unmarshal: the data must have the same number of schema keys and document fields (keys: %d, fields: %d)",
+			len(sch.Keys), len(v),
+		)
 	}
 
 	d := must.NotFail(types.NewDocument())
