@@ -115,7 +115,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image ${{ steps.extract.outputs.ghcr }}
-        run: bin/task docker-push DOCKER_IMAGE=${{ steps.extract.outputs.ghcr }}
+        run: bin/task docker-push DOCKER_IMAGES=${{ steps.extract.outputs.ghcr }}
 
       - name: Check dirty
         run: |

@@ -26,10 +26,10 @@
 
 1. `task docker-cache`
 2. `task docker-push` with four tags (`X.Y.Z` without leading `v` and `latest` for both ghcr.io and Docker Hub):
-   * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
-   * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
-   * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
-   * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
+   * `task docker-push DOCKER_IMAGES=ferretdb/ferretdb:latest`
+   * `task docker-push DOCKER_IMAGES=ferretdb/ferretdb:<tag>`
+   * `task docker-push DOCKER_IMAGES=ghcr.io/ferretdb/ferretdb:latest`
+   * `task docker-push DOCKER_IMAGES=ghcr.io/ferretdb/ferretdb:<tag>`
    * Check <https://hub.docker.com/r/ferretdb/ferretdb/tags>, <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>.
 
 ## Release
