@@ -172,7 +172,7 @@ var Commands = map[string]command{
 	},
 	"saslStart": {
 		Help:    "Starts a SASL conversation.",
-		Handler: (handlers.Interface).MsgSASLStart,
+		Handler: handlers.Interface.MsgSASLStart,
 	},
 	"serverStatus": {
 		Help:    "Returns an overview of the databases state.",
