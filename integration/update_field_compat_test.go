@@ -117,8 +117,8 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"MultipleQueriesSorted": {
-			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1637",
+			update:        bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
@@ -245,8 +245,8 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"MultipleQueriesSorted": {
-			update: bson.D{{"$min", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1637",
+			update:        bson.D{{"$min", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$min", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},

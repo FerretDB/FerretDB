@@ -86,12 +86,20 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$max":
+			if updateVDoc, ok := updateV.(*types.Document); ok {
+				updateV = updateVDoc.SortFieldsByKey()
+			}
+
 			changed, err = processMaxFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$min":
+			if updateVDoc, ok := updateV.(*types.Document); ok {
+				updateV = updateVDoc.SortFieldsByKey()
+			}
+
 			changed, err = processMinFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
