@@ -151,8 +151,6 @@ func TestQueryCompat(t *testing.T) {
 }
 
 func TestQueryCompatSort(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/457")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
