@@ -133,7 +133,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		require.NoError(tb, err)
 		q.Set("tlsCAFile", p)
 
-		if opts.compat {
+		if !opts.compat {
 			user = url.UserPassword("username", "password")
 
 			q.Set("authMechanism", "PLAIN")
