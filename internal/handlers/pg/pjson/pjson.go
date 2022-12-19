@@ -19,7 +19,8 @@
 // # Mapping
 //
 // PJSON uses schema to map values to data types.
-// Schema is stored in the `$s` field of the document and contains information about the fields:
+// Schema is stored in the `$s` field of the document and contains information about the fields.
+// A document with schema looks like this:
 //
 //	{
 //	   "$s": {
