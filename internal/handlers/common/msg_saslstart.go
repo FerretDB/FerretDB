@@ -58,6 +58,7 @@ func MsgSASLStart(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"done", true,
 			"ok", float64(1),
 		))},
 	}))

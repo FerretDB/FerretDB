@@ -98,6 +98,28 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
+// checkMongoDBURI returns true if given MongoDB URI is working.
+func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
+	tb.Helper()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err == nil {
+		defer client.Disconnect(ctx)
+
+		err = client.Ping(ctx, nil)
+	}
+
+	if err != nil {
+		tb.Logf("checkMongoDBURI: %s: %s", uri, err)
+
+		return false
+	}
+
+	tb.Logf("checkMongoDBURI: %s: connected", uri)
+
+	return true
+}
+
 // buildMongoDBURIOpts represents buildMongoDBURI's options.
 type buildMongoDBURIOpts struct {
 	hostPort       string
@@ -105,17 +127,18 @@ type buildMongoDBURIOpts struct {
 	tls            bool
 }
 
-// buildMongoDBURI builds MongoDB URI with given URI options.
-func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
-	var host, path string
+// buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
+func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) string {
+	tb.Helper()
+
+	var host string
 
 	if opts.hostPort != "" {
 		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
 		host = opts.hostPort
-		path = "/"
 	} else {
 		require.NotEmpty(tb, opts.unixSocketPath, "neither hostPort nor unixSocketPath are set")
-		path = opts.unixSocketPath
+		host = opts.unixSocketPath
 	}
 
 	q := make(url.Values)
@@ -131,22 +154,30 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		q.Set("tlsCAFile", p)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1593
-	var user *url.Userinfo
-	// user = url.UserPassword("username", "password")
-	// q.Set("authMechanism", "PLAIN")
+	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
+	q.Set("authMechanism", "PLAIN")
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     host,
-		Path:     path,
-		RawPath:  url.PathEscape(path),
-		User:     user,
+		User:     url.UserPassword("username", "password"),
+		Path:     "/",
 		RawQuery: q.Encode(),
 	}
 
-	return u.String()
+	res := u.String()
+
+	// if authMechanism=PLAIN doesn't work, remove it and try again
+	if !checkMongoDBURI(tb, ctx, u.String()) {
+		q.Del("authMechanism")
+		u.RawQuery = q.Encode()
+		res = u.String()
+
+		require.True(tb, checkMongoDBURI(tb, ctx, res), "Can't connect to %q", res)
+	}
+
+	return res
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
@@ -242,7 +273,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		opts.hostPort = l.Addr().String()
 	}
 
-	uri := buildMongoDBURI(tb, opts)
+	uri := buildMongoDBURI(tb, ctx, opts)
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	return uri
