@@ -345,10 +345,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			if ok := filterByComparisonOperandApplicable(fieldValue, exprValue); !ok {
-				return false, nil
-			}
-
 			// Array and non-array comparison with $gt compares the non-array
 			// value against the maximum value of the same BSON type value of the array.
 			// Filter the array by only keeping the same type as the non-array value,
@@ -361,20 +357,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// Above compares the maximum number of array 41.5 to the filter 42,
 			// and results in Less. Other values "foo" and nil which are
 			// not number type are not considered for $gt comparison.
-			_, isExprArray := exprValue.(*types.Array)
-			arrField, isFieldArray := fieldValue.(*types.Array)
 
-			if !isExprArray && isFieldArray {
-				// exprValue is not an array but fieldValue is an array
-				arr := arrField.FilterArrayByType(exprValue)
-				if arr.Len() == 0 {
-					return false, nil
-				}
-
-				fieldValue = arr.Max()
-			}
-
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Descending)
 			if result != types.Greater {
 				return false, nil
 			}
@@ -384,10 +368,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
-			}
-
-			if ok := filterByComparisonOperandApplicable(fieldValue, exprValue); !ok {
-				return false, nil
 			}
 
 			// Array and non-array comparison with $gte compares the non-array
@@ -402,20 +382,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// Above compares the maximum number of array 41.5 to the filter 42,
 			// and results in Less. Other values "foo" and nil which are
 			// not number type are not considered for $gte comparison.
-			_, isExprArray := exprValue.(*types.Array)
-			arrField, isFieldArray := fieldValue.(*types.Array)
-
-			if !isExprArray && isFieldArray {
-				// exprValue is not an array but fieldValue is an array
-				arr := arrField.FilterArrayByType(exprValue)
-				if arr.Len() == 0 {
-					return false, nil
-				}
-
-				fieldValue = arr.Max()
-			}
-
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Descending)
 			if result != types.Equal && result != types.Greater {
 				return false, nil
 			}
@@ -425,10 +392,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
-			}
-
-			if ok := filterByComparisonOperandApplicable(fieldValue, exprValue); !ok {
-				return false, nil
 			}
 
 			// Array and non-array comparison with $lt compares the non-array
@@ -443,20 +406,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// Above compares the minimum number of array 40 to the filter 42,
 			// and results in Less. Other values "foo" and nil which are
 			// not number type are not considered for $lt comparison.
-			_, isExprArray := exprValue.(*types.Array)
-			arrField, isFieldArray := fieldValue.(*types.Array)
 
-			if !isExprArray && isFieldArray {
-				// exprValue is not an array but fieldValue is an array
-				arr := arrField.FilterArrayByType(exprValue)
-				if arr.Len() == 0 {
-					return false, nil
-				}
-
-				fieldValue = arr.Min()
-			}
-
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Ascending)
 			if result != types.Less {
 				return false, nil
 			}
@@ -466,10 +417,6 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
-			}
-
-			if ok := filterByComparisonOperandApplicable(fieldValue, exprValue); !ok {
-				return false, nil
 			}
 
 			// Array and non-array comparison with $lte compares the non-array
@@ -484,20 +431,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// Above compares the minimum number of array 40 to the filter 42,
 			// and results in Less. Other values "foo" and nil which are
 			// not number type are not considered for $lt comparison.
-			_, isExprArray := exprValue.(*types.Array)
-			arrField, isFieldArray := fieldValue.(*types.Array)
 
-			if !isExprArray && isFieldArray {
-				// exprValue is not an array but fieldValue is an array
-				arr := arrField.FilterArrayByType(exprValue)
-				if arr.Len() == 0 {
-					return false, nil
-				}
-
-				fieldValue = arr.Min()
-			}
-
-			result := types.Compare(fieldValue, exprValue)
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Ascending)
 			if result != types.Equal && result != types.Less {
 				return false, nil
 			}
@@ -1457,56 +1392,4 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 	}
 
 	return filterFieldExpr(doc, filterKey, expr)
-}
-
-// filterByComparisonOperandApplicable returns true if comparison operands
-// $gt, $gte, $lt and $lte can be applied to fieldValue and exprValue.
-func filterByComparisonOperandApplicable(fieldValue, exprValue any) bool {
-	if _, ok := fieldValue.(*types.Array); ok {
-		// array is special since it could contain values
-		// which maybe the same type as operand.
-		return true
-	}
-
-	switch exprValue.(type) {
-	case *types.Document:
-		_, ok := fieldValue.(*types.Document)
-		return ok
-	case *types.Array:
-		_, ok := fieldValue.(*types.Array)
-		return ok
-	case float64, int32, int64:
-		switch fieldValue.(type) {
-		case float64, int32, int64:
-			return true
-		default:
-			return false
-		}
-	case string:
-		_, ok := fieldValue.(string)
-		return ok
-	case types.Binary:
-		_, ok := fieldValue.(types.Binary)
-		return ok
-	case types.ObjectID:
-		_, ok := fieldValue.(types.ObjectID)
-		return ok
-	case bool:
-		_, ok := fieldValue.(bool)
-		return ok
-	case time.Time:
-		_, ok := fieldValue.(time.Time)
-		return ok
-	case types.NullType:
-		_, ok := fieldValue.(types.NullType)
-		return ok
-	case types.Regex:
-		_, ok := fieldValue.(types.Regex)
-		return ok
-	case types.Timestamp:
-		_, ok := fieldValue.(types.Timestamp)
-		return ok
-	default:
-		panic("unsupported type")
-	}
 }
