@@ -55,7 +55,7 @@ var binaryTestCases = []testCase{{
 		Subtype: nil,
 	},
 	j:    `"Zm9v"`,
-	jErr: `binary subtype is nil`,
+	jErr: `binary subtype in the schema is nil`,
 }}
 
 func TestBinary(t *testing.T) {

@@ -453,7 +453,7 @@ var (
 			Schema: new(schema),
 		},
 		j:    `{"foo": "bar"}`,
-		jErr: `pjson.documentType.UnmarshalJSON: 0 elements in $k, 1 in total`,
+		jErr: `pjson.documentType.UnmarshalJSON: 0 elements in $k in the schema, 1 in the document`,
 	}
 
 	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, nilSchema, emptySchema}

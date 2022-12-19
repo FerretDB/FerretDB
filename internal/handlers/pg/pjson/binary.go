@@ -52,7 +52,7 @@ func (bin *binaryType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	bin.B = o
 
 	if sch.Subtype == nil {
-		return lazyerrors.Errorf("binary subtype is nil")
+		return lazyerrors.Errorf("binary subtype in the schema is nil")
 	}
 
 	bin.Subtype = *sch.Subtype

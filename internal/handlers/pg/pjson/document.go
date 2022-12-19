@@ -57,7 +57,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 	}
 
 	if len(sch.Keys) != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total",
+		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k in the schema, %d in the document",
 			len(sch.Keys), len(rawMessages),
 		)
 	}
