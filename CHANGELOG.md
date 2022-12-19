@@ -14,6 +14,42 @@ This will allow us to implement more query push downs in the future.
 There are no changes in the API, but since the data is stored in a different way, this change is not backward compatible.
 Please make a dump of your database before upgrading, delete the databases, upgrade FerretDB, and restore the dump afterwards.
 
+
+## [v0.7.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.1) (2022-12-19)
+
+### New Features 🎉
+* Add basic TLS support by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1586
+* Add `validate` command stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1645
+
+### Fixed Bugs 🐛
+* Fix parsing of `OP_MSG` packets with multiple sections by @b1ron in https://github.com/FerretDB/FerretDB/pull/1611
+* Fix parsing of `OP_MSG` packets with multiple sections by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1633
+* Fix comparison with unset fields by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1634
+
+### Enhancements 🛠
+* Compare documents by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1597
+
+### Documentation 📄
+* Infinity values are not allowed in documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1622
+
+### Other Changes 🤖
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1609
+* Update release checklist by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1621
+* Compare unit tests for edge cases by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1624
+* Bump Go and other deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1629
+* Refactor integration tests setup functions by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1625
+* Fix `.deb`/`.rpm` package testing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1631
+* Bump `golang.org/x/net` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1640
+* Introduce schema for `pjson` format by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1635
+* Use TLS for MongoDB in integration tests by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1623
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1644
+* Bump Tigris deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1651
+* Remove Incomparable by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1646
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/27?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.7.0...v0.7.1).
+
+
 ## [v0.7.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.0) (2022-12-05)
 
 ### New Features 🎉
