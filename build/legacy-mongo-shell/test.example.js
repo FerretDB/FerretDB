@@ -23,5 +23,5 @@
 
     assert.eq(expected, actual);
 
-    print("mongorc.js test passed!")
+    print("test.js passed!")
 })();

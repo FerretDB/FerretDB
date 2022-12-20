@@ -330,7 +330,7 @@ tasks:
       - >
         docker compose run --rm legacy-mongo-shell mongo
         'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
-        --verbose --shell
+        /legacy-mongo-shell/test.js
 
   docker-init:
     cmds:

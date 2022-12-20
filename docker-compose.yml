@@ -71,7 +71,7 @@ services:
       - TZ=Asia/Kathmandu
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/legacy-mongo-shell/mongorc.js:/etc/mongorc.js
+      - ./build/legacy-mongo-shell/test.js:/legacy-mongo-shell/test.js
 
   trivy:
     build:
