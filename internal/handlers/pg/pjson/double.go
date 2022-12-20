@@ -17,7 +17,6 @@ package pjson
 import (
 	"bytes"
 	"encoding/json"
-	"math"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -28,12 +27,7 @@ type doubleType float64
 // pjsontype implements pjsontype interface.
 func (d *doubleType) pjsontype() {}
 
-// doubleJSON is a JSON object representation of the doubleType.
-type doubleJSON struct {
-	F any `json:"$f"`
-}
-
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (d *doubleType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -43,8 +37,8 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o doubleJSON
-	if err := dec.Decode(&o); err != nil {
+	var f float64
+	if err := dec.Decode(&f); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -52,49 +46,14 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	switch f := o.F.(type) {
-	case float64:
-		*d = doubleType(f)
-	case string:
-		switch f {
-		case "-0":
-			*d = doubleType(math.Copysign(0, -1))
-		case "Infinity":
-			*d = doubleType(math.Inf(+1))
-		case "-Infinity":
-			*d = doubleType(math.Inf(-1))
-		case "NaN":
-			*d = doubleType(math.NaN())
-		default:
-			return lazyerrors.Errorf("pjson.Double.UnmarshalJSON: unexpected string %q", f)
-		}
-	default:
-		return lazyerrors.Errorf("pjson.Double.UnmarshalJSON: unexpected type %[1]T: %[1]v", f)
-	}
-
+	*d = doubleType(f)
 	return nil
 }
 
 // MarshalJSON implements pjsontype interface.
 func (d *doubleType) MarshalJSON() ([]byte, error) {
 	f := float64(*d)
-
-	var o doubleJSON
-
-	switch {
-	case f == 0 && math.Signbit(f):
-		o.F = "-0"
-	case math.IsInf(f, 1):
-		o.F = "Infinity"
-	case math.IsInf(f, -1):
-		o.F = "-Infinity"
-	case math.IsNaN(f):
-		o.F = "NaN"
-	default:
-		o.F = f
-	}
-
-	res, err := json.Marshal(o)
+	res, err := json.Marshal(f)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
