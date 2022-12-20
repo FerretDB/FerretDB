@@ -28,12 +28,7 @@ type timestampType types.Timestamp
 // pjsontype implements pjsontype interface.
 func (ts *timestampType) pjsontype() {}
 
-// timestampJSON is a JSON object representation of the timestampType.
-type timestampJSON struct {
-	T uint64 `json:"$t,string"`
-}
-
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (ts *timestampType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -43,7 +38,7 @@ func (ts *timestampType) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o timestampJSON
+	var o uint64
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -52,16 +47,14 @@ func (ts *timestampType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*ts = timestampType(o.T)
+	*ts = timestampType(o)
 
 	return nil
 }
 
 // MarshalJSON implements pjsontype interface.
 func (ts *timestampType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(timestampJSON{
-		T: uint64(*ts),
-	})
+	res, err := json.Marshal(uint64(*ts))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

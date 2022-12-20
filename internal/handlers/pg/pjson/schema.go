@@ -17,8 +17,14 @@ package pjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"time"
 
+	"github.com/AlekSi/pointer"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // schema describes document/object schema needed to unmarshal pjson document.
@@ -29,11 +35,11 @@ type schema struct {
 
 // elem describes an element of schema.
 type elem struct {
-	Type    elemType `json:"t"`            // for each field
-	Schema  *schema  `json:"$s,omitempty"` // only for objects
-	Options string   `json:"o,omitempty"`  // only for regex
-	Items   []*elem  `json:"i,omitempty"`  // only for arrays
-	Subtype byte     `json:"s,omitempty"`  // only for binData
+	Type    elemType             `json:"t"`            // for each field
+	Schema  *schema              `json:"$s,omitempty"` // only for objects
+	Options *string              `json:"o,omitempty"`  // only for regex
+	Items   []*elem              `json:"i,omitempty"`  // only for arrays
+	Subtype *types.BinarySubtype `json:"s,omitempty"`  // only for binData
 }
 
 // elemType represents possible types of schema elements.
@@ -64,10 +70,10 @@ var (
 	stringSchema = &elem{
 		Type: elemTypeString,
 	}
-	binDataSchema = func(subtype byte) *elem {
+	binDataSchema = func(subtype types.BinarySubtype) *elem {
 		return &elem{
 			Type:    elemTypeBinData,
-			Subtype: subtype,
+			Subtype: pointer.To(subtype),
 		}
 	}
 	objectIDSchema = &elem{
@@ -85,7 +91,7 @@ var (
 	regexSchema = func(options string) *elem {
 		return &elem{
 			Type:    elemTypeRegex,
-			Options: options,
+			Options: pointer.To(options),
 		}
 	}
 	intSchema = &elem{
@@ -99,29 +105,146 @@ var (
 	}
 )
 
-// Marshal returns the JSON encoding of schema.
-func (s *schema) Marshal() ([]byte, error) {
-	b, err := json.Marshal(s)
+// marshalSchemaForDoc makes schema for the given document based on its data.
+// The result is json encoded schema that can be used to unmarshal the given document.
+func marshalSchemaForDoc(td *types.Document) ([]byte, error) {
+	var buf bytes.Buffer
+
+	keys := td.Keys()
+	if len(keys) == 0 {
+		return []byte("{}"), nil
+	}
+
+	buf.WriteString(`{"p":{`)
+
+	for i, key := range keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+
+		var b []byte
+		var err error
+
+		if b, err = json.Marshal(key); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+		buf.WriteByte(':')
+
+		b, err = marshalElemForSingleValue(must.NotFail(td.Get(key)))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+	}
+
+	buf.WriteString(`},"$k":`)
+
+	b, err := json.Marshal(keys)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return b, nil
+	buf.Write(b)
+	buf.WriteByte('}')
+
+	return buf.Bytes(), nil
 }
 
-// Unmarshal parses the JSON-encoded schema.
-func (s *schema) Unmarshal(b []byte) error {
-	r := bytes.NewReader(b)
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
+// marshalElemForSingleValue makes elem for the given element based on its data.
+// The result is json encoded elem that can be used to unmarshal the given value.
+func marshalElemForSingleValue(value any) ([]byte, error) {
+	var buf bytes.Buffer
 
-	if err := dec.Decode(s); err != nil {
-		return lazyerrors.Error(err)
+	switch val := value.(type) {
+	case *types.Document:
+		buf.WriteString(`{"t":"object"`)
+
+		buf.WriteString(`,"$s":`)
+
+		b, err := marshalSchemaForDoc(val)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.Write(b)
+
+		buf.WriteByte('}')
+
+	case *types.Array:
+		buf.WriteString(`{"t":"array"`)
+
+		buf.WriteString(`,"i":[`)
+
+		for i := 0; i < val.Len(); i++ {
+			if i > 0 {
+				buf.WriteByte(',')
+			}
+
+			b, err := marshalElemForSingleValue(must.NotFail(val.Get(i)))
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			buf.Write(b)
+		}
+
+		buf.WriteByte(']')
+
+		buf.WriteByte('}')
+
+	case float64:
+		buf.WriteString(`{"t":"double"}`)
+
+	case string:
+		buf.WriteString(`{"t":"string"}`)
+
+	case types.Binary:
+		subtype, err := json.Marshal(val.Subtype)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.WriteString(`{"t":"binData","s":`)
+		buf.Write(subtype)
+		buf.WriteString(`}`)
+
+	case types.ObjectID:
+		buf.WriteString(`{"t":"objectId"}`)
+
+	case bool:
+		buf.WriteString(`{"t":"bool"}`)
+
+	case time.Time:
+		buf.WriteString(`{"t":"date"}`)
+
+	case types.NullType:
+		buf.WriteString(`{"t":"null"}`)
+
+	case types.Regex:
+		options, err := json.Marshal(val.Options)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		buf.WriteString(`{"t":"regex","o":`)
+		buf.Write(options)
+		buf.WriteString(`}`)
+
+	case int32:
+		buf.WriteString(`{"t":"int"}`)
+
+	case types.Timestamp:
+		buf.WriteString(`{"t":"timestamp"}`)
+
+	case int64:
+		buf.WriteString(`{"t":"long"}`)
+
+	default:
+		panic(fmt.Sprintf("pjson.marshalElemForSingleValue: unknown type %[1]T (value %[1]q)", val))
 	}
 
-	if err := checkConsumed(dec, r); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
+	return buf.Bytes(), nil
 }

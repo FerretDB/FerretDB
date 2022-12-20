@@ -27,7 +27,7 @@ type boolType bool
 // pjsontype implements pjsontype interface.
 func (b *boolType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (b *boolType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

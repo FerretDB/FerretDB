@@ -81,7 +81,7 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 
 	n := it.currentIter.Add(1)
 
-	return n - 1, doc.(*types.Document), nil
+	return n - 1, doc, nil
 }
 
 // Close implements iterator.Interface.
