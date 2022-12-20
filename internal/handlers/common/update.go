@@ -137,13 +137,15 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
-		// $set and $setOnInsert do not set null and empty array value.
-		if _, ok := setValue.(types.NullType); ok {
-			continue
-		}
+		if setOnInsert {
+			// $setOnInsert do not set null and empty array value.
+			if _, ok := setValue.(types.NullType); ok {
+				continue
+			}
 
-		if arr, ok := setValue.(*types.Array); ok && arr.Len() == 0 {
-			continue
+			if arr, ok := setValue.(*types.Array); ok && arr.Len() == 0 {
+				continue
+			}
 		}
 
 		path := types.NewPathFromString(setKey)
@@ -237,14 +239,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	var changed bool
 
 	for _, incKey := range incDoc.Keys() {
-		incValue, err := incDoc.Get(incKey)
-		if err != nil {
-			// if incValue field does not exist, return error.
-			return false, NewWriteErrorMsg(
-				ErrUnsuitableValueType,
-				err.Error(),
-			)
-		}
+		incValue := must.NotFail(incDoc.Get(incKey))
 
 		path := types.NewPathFromString(incKey)
 
