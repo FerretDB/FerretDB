@@ -76,7 +76,13 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 	}
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return insert(ctx, tx, db, table, doc)
+		p := insertParams{
+			schema:         db,
+			table:          table,
+			doc:            doc,
+			ignoreConflict: false,
+		}
+		return insert(ctx, tx, p)
 	})
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -85,11 +91,23 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 	return nil
 }
 
+// insertParams describes the parameters for inserting a document into a table.
+type insertParams struct {
+	schema         string          // pg schema name
+	table          string          // pg table name
+	doc            *types.Document // document to insert
+	ignoreConflict bool            // ignore conflict on insert
+}
+
 // insert marshals and inserts a document into the given pg table in the given schema.
-func insert(ctx context.Context, tx pgx.Tx, schema, table string, doc *types.Document) error {
-	sql := `INSERT INTO ` + pgx.Identifier{schema, table}.Sanitize() +
+func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
+	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)))
+	if p.ignoreConflict {
+		sql += ` ON CONFLICT DO NOTHING`
+	}
+
+	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
 	return err
 }

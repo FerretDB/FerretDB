@@ -73,7 +73,13 @@ func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection st
 			"collection", collection,
 		))
 
-		if err := insert(ctx, tx, db, settingsTableName, settings); err != nil {
+		p := insertParams{
+			schema:         db,
+			table:          settingsTableName,
+			doc:            settings,
+			ignoreConflict: true,
+		}
+		if err := insert(ctx, tx, p); err != nil {
 			return lazyerrors.Error(err)
 		}
 

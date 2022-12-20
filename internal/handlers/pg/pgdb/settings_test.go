@@ -34,4 +34,7 @@ func TestSettingsCreateDelete(t *testing.T) {
 
 	_, err := addSettingsIfNotExists(ctx, pool, databaseName, collectionName)
 	require.NoError(t, err)
+
+	_, err = addSettingsIfNotExists(ctx, pool, databaseName, collectionName)
+	require.NoError(t, err)
 }

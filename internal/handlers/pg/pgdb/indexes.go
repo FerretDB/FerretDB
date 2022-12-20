@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// indexParams describes the parameters for creating an index.
 type indexParams struct {
 	schema   string // pg schema name
 	table    string // pg table name
