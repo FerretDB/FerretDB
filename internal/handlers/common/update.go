@@ -228,7 +228,14 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	var changed bool
 
 	for _, incKey := range incDoc.Keys() {
-		incValue := must.NotFail(incDoc.Get(incKey))
+		incValue, err := incDoc.Get(incKey)
+		if err != nil {
+			// if incValue field does not exist, return error.
+			return false, NewWriteErrorMsg(
+				ErrUnsuitableValueType,
+				err.Error(),
+			)
+		}
 
 		path := types.NewPathFromString(incKey)
 

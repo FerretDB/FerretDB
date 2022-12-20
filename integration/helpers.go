@@ -184,6 +184,23 @@ func AssertMatchesCommandError(t *testing.T, expected, actual error) {
 	assert.Equal(t, eErr.Code, aErr.Code)
 }
 
+// AssertMatchesWriteErrorCode asserts error code.
+func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
+	t.Helper()
+
+	aErr, ok := actual.(mongo.WriteException)
+	if !ok || len(aErr.WriteErrors) != 1 {
+		assert.Equal(t, expected, actual)
+	}
+
+	eErr, ok := actual.(mongo.WriteException)
+	if !ok || len(eErr.WriteErrors) != 1 {
+		assert.Equal(t, expected, actual)
+	}
+
+	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
+}
+
 // AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 //

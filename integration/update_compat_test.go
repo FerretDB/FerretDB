@@ -111,7 +111,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									}
 								}
 
-								assert.Equal(t, compatErr, targetErr)
+								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}

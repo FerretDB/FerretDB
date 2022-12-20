@@ -80,9 +80,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		"DoubleIncrementIntField": {
 			update: bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
 		},
-		"DoubleIncrementLongField": {
-			update: bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
-		},
 		"DoubleIntIncrement": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 		},
@@ -95,35 +92,14 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		"DoubleBigDoubleIncrement": {
 			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
 		},
-		"DoubleMaxDoublePositiveIncrement": {
-			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
-		},
 		"DoubleMaxDoubleNegativeIncrement": {
 			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
-		},
-		"IntIncrement": {
-			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 		},
 		"IntNegativeIncrement": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(-1)}}}},
 		},
-		"IntIncrementDoubleField": {
-			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
-		},
-		"IntIncrementLongField": {
-			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
-		},
-		"LongIncrement": {
-			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
-		},
 		"LongNegativeIncrement": {
 			update: bson.D{{"$inc", bson.D{{"v", int64(-1)}}}},
-		},
-		"LongIncrementDoubleField": {
-			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
-		},
-		"LongIncrementIntField": {
-			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
 		},
 		"FieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
@@ -145,6 +121,21 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"DocumentDotNotationArrayFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
+		},
+		"IncOnString": {
+			update: bson.D{{"$inc", "string"}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1660",
+		},
+		"IncWithStringValue": {
+			update: bson.D{{"$inc", bson.D{{"v", "bad value"}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1660",
+		},
+		"DoubleIncOnNullValue": {
+			update: bson.D{{"$inc", bson.D{{"v", float64(1)}}}},
+		},
+		"ArrayDotNotationFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
 		},
 	}
