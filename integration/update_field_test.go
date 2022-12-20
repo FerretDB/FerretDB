@@ -459,58 +459,14 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 			expected bson.D
 			stat     *mongo.UpdateResult
 		}{
-			"Pop": {
-				id:       "array-three",
-				update:   bson.D{{"$pop", bson.D{{"v", 1}}}},
-				expected: bson.D{{"_id", "array-three"}, {"v", bson.A{int32(42), "foo"}}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"PopFirst": {
-				id:       "array-three",
-				update:   bson.D{{"$pop", bson.D{{"v", -1}}}},
-				expected: bson.D{{"_id", "array-three"}, {"v", bson.A{"foo", nil}}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
 			"PopDotNotation": {
+				// TODO remove https://github.com/FerretDB/FerretDB/issues/1663
 				id:       "document-composite",
 				update:   bson.D{{"$pop", bson.D{{"v.array", 1}}}},
 				expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo"}}}}},
 				stat: &mongo.UpdateResult{
 					MatchedCount:  1,
 					ModifiedCount: 1,
-					UpsertedCount: 0,
-				},
-			},
-			"PopEmptyArray": {
-				id:       "array-empty",
-				update:   bson.D{{"$pop", bson.D{{"v", 1}}}},
-				expected: bson.D{{"_id", "array-empty"}, {"v", bson.A{}}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
-					UpsertedCount: 0,
-				},
-			},
-			"PopNoSuchKey": {
-				id:       "array",
-				update:   bson.D{{"$pop", bson.D{{"foo", 1}}}},
-				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
-			},
-			"PopEmptyValue": {
-				id:       "array",
-				update:   bson.D{{"$pop", bson.D{}}},
-				expected: bson.D{{"_id", "array"}, {"v", bson.A{int32(42)}}},
-				stat: &mongo.UpdateResult{
-					MatchedCount:  1,
-					ModifiedCount: 0,
 					UpsertedCount: 0,
 				},
 			},

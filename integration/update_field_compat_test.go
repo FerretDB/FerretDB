@@ -470,6 +470,27 @@ func TestUpdateFieldCompatPop(t *testing.T) {
 			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
 			resultType: emptyResult,
 		},
+		"Pop": {
+			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
+		},
+		"PopFirst": {
+			update: bson.D{{"$pop", bson.D{{"v", -1}}}},
+		},
+		"PopDotNotation": {
+			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
+		},
+		"PopEmptyArray": {
+			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
+		},
+		"PopNoSuchKey": {
+			update:     bson.D{{"$pop", bson.D{{"foo", 1}}}},
+			resultType: emptyResult,
+		},
+		"PopEmptyValue": {
+			update:     bson.D{{"$pop", bson.D{}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
