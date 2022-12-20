@@ -12,31 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package setup
 
 import (
-	"log"
-	"reflect"
+	"os"
+	"path/filepath"
+	"testing"
 
-	"golang.org/x/exp/slices"
-
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/stretchr/testify/require"
 )
 
-// matchDocuments returns true if 2 documents are equal.
-//
-// TODO move into types.Compare.
-func matchDocuments(a, b *types.Document) bool {
-	if a == nil {
-		log.Panicf("%v is nil", a)
-	}
-	if b == nil {
-		log.Panicf("%v is nil", b)
-	}
+// GetTLSFilesPaths returns paths to TLS files.
+func GetTLSFilesPaths(t testing.TB) (string, string) {
+	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
 
-	keys := a.Keys()
-	if !slices.Equal(keys, b.Keys()) {
-		return false
-	}
-	return reflect.DeepEqual(a.Map(), b.Map())
+	_, err := os.Stat(certPath)
+	require.NoError(t, err)
+
+	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
+
+	_, err = os.Stat(keyPath)
+	require.NoError(t, err)
+
+	return certPath, keyPath
 }

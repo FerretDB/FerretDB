@@ -39,8 +39,8 @@ type OpMsgSection struct {
 // OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
 type OpMsg struct {
 	FlagBits OpMsgFlags
-	Checksum uint32
 
+	checksum uint32
 	sections []OpMsgSection
 }
 
@@ -56,71 +56,66 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 
 // Document returns the value of msg as a types.Document.
 func (msg *OpMsg) Document() (*types.Document, error) {
-	var doc *types.Document
+	// Sections of kind 1 may come before the section of kind 0,
+	// but the command is defined by the first key in the section of kind 0.
+	// Reorder documents to set keys in the right order.
+
+	docs := make([]*types.Document, 0, len(msg.sections))
 
 	for _, section := range msg.sections {
-		switch section.Kind {
-		case 0:
-			if l := len(section.Documents); l != 1 {
-				return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
+		if section.Kind != 0 {
+			continue
+		}
+
+		if l := len(section.Documents); l != 1 {
+			return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
+		}
+
+		docs = append(docs, section.Documents[0])
+	}
+
+	for _, section := range msg.sections {
+		if section.Kind == 0 {
+			continue
+		}
+
+		if section.Kind != 1 {
+			panic(fmt.Sprintf("unknown kind %d", section.Kind))
+		}
+
+		if section.Identifier == "" {
+			return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
+		}
+
+		a := types.MakeArray(len(section.Documents))
+		for _, d := range section.Documents {
+			must.NoError(a.Append(d))
+		}
+
+		docs = append(docs, must.NotFail(types.NewDocument(section.Identifier, a)))
+	}
+
+	res := types.MakeDocument(2)
+
+	for _, doc := range docs {
+		values := doc.Values()
+
+		for i, k := range doc.Keys() {
+			if res.Has(k) {
+				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
 			}
-			if doc != nil {
-				return nil, lazyerrors.Errorf("wire.OpMsg.Document: doc is not empty already: %+v", doc)
-			}
-
-			// do a shallow copy of the document that we would modify if there are kind 1 sections
-			doc = must.NotFail(types.NewDocument())
-			d := section.Documents[0]
-
-			if err := validateValue(d); err != nil {
-				return nil, NewValidationError(fmt.Errorf(
-					"wire.OpMsg.Document: validation failed for %v with: %v",
-					types.FormatAnyValue(d),
-					err,
-				))
-			}
-
-			m := d.Map()
-			for _, k := range d.Keys() {
-				doc.Set(k, m[k])
-			}
-
-		case 1:
-			if section.Identifier == "" {
-				return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
-			}
-			if doc == nil {
-				return nil, lazyerrors.New("wire.OpMsg.Document: doc is empty")
-			}
-
-			m := doc.Map()
-			if _, ok := m[section.Identifier]; ok {
-				return nil, lazyerrors.Errorf("wire.OpMsg.Document: doc already has %q key", section.Identifier)
-			}
-
-			a := types.MakeArray(len(section.Documents)) // may be zero
-			for _, d := range section.Documents {
-				if err := validateValue(d); err != nil {
-					return nil, NewValidationError(fmt.Errorf(
-						"wire.OpMsg.Document: validation failed for %v with: %v",
-						types.FormatAnyValue(d),
-						err,
-					))
-				}
-
-				if err := a.Append(d); err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-			}
-
-			doc.Set(section.Identifier, a)
-
-		default:
-			return nil, lazyerrors.Errorf("wire.OpMsg.Document: unknown kind %d", section.Kind)
+			res.Set(k, values[i])
 		}
 	}
 
-	return doc, nil
+	if err := validateValue(res); err != nil {
+		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
+			types.FormatAnyValue(res),
+			err,
+		))
+	}
+
+	return res, nil
 }
 
 func (msg *OpMsg) msgbody() {}
@@ -205,12 +200,13 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 	}
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		if err := binary.Read(bufr, binary.LittleEndian, &msg.Checksum); err != nil {
+		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		// TODO validate checksum https://github.com/FerretDB/FerretDB/issues/1626
 	}
 
-	// TODO validate checksum
 	if _, err := msg.Document(); err != nil {
 		return err
 	}
@@ -299,7 +295,10 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	}
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		if err := binary.Write(bufw, binary.LittleEndian, msg.Checksum); err != nil {
+		// TODO validate checksum if present (mainly for tests), update if not
+		// https://github.com/FerretDB/FerretDB/issues/1626
+
+		if err := binary.Write(bufw, binary.LittleEndian, msg.checksum); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -319,7 +318,7 @@ func (msg *OpMsg) String() string {
 
 	m := map[string]any{
 		"FlagBits": msg.FlagBits,
-		"Checksum": msg.Checksum,
+		"Checksum": msg.checksum,
 	}
 
 	sections := make([]map[string]any, len(msg.sections))
@@ -339,6 +338,8 @@ func (msg *OpMsg) String() string {
 				docs[j] = json.RawMessage(b)
 			}
 			s["Documents"] = docs
+		default:
+			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
 		sections[i] = s

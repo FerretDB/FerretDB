@@ -72,14 +72,14 @@ tasks:
   env-up-detach:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
-        --build
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        --build --pull=always
         {{.SERVICES}}
 
   env-up-detach-offline:
     cmds:
       - >
-        docker-compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         {{.SERVICES}}
 
   env-setup:
@@ -89,8 +89,8 @@ tasks:
 
   env-logs:
     cmds:
-      - docker-compose ps --all
-      - docker-compose logs --follow
+      - docker compose ps --all
+      - docker compose logs --follow
 
   env-up:
     desc: "Start development environment"
@@ -106,12 +106,12 @@ tasks:
   env-pull:
     desc: "Pull development environment's Docker images"
     cmds:
-      - docker-compose build --pull
+      - docker compose build --pull
 
   env-down:
     desc: "Stop development environment"
     cmds:
-      - docker-compose down --remove-orphans --timeout=0 --volumes
+      - docker compose down --remove-orphans --timeout=0 --volumes
 
   env-data:
     desc: "Fill `test` database with data for experiments"
@@ -162,7 +162,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt . -records-dir=../records
-        -handler=pg -target-unix-socket
+        -handler=pg -target-unix-socket -compat-tls
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -171,7 +171,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt . -records-dir=../records
-        -handler=tigris
+        -handler=tigris -target-tls -compat-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -180,7 +180,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-cockroach.txt . -records-dir=../records
-        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
+        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -189,7 +189,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt . -records-dir=../records
-        -target-port=37017 -compat-port=0
+        -target-port=37017 -target-tls -compat-port=0
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -247,6 +247,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-tigris:
     deps: [build-testcover]
@@ -254,6 +256,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017 --handler=tigris
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-cockroach:
     deps: [build-testcover]
@@ -261,6 +265,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
@@ -269,6 +275,8 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
         --mode=diff-proxy --listen-addr=:27017
+        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
 
   lint:
     desc: "Run linters"
@@ -291,7 +299,12 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker-compose run --rm trivy filesystem . --ignorefile=./build/.trivyignore --cache-dir=./.cache/trivy --exit-code=1
+      - >
+        docker compose run --rm trivy filesystem .
+        --secret-config=./build/trivy-secret.yaml
+        --ignorefile=./build/.trivyignore
+        --cache-dir=./.cache/trivy
+        --exit-code=1
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
@@ -301,27 +314,22 @@ tasks:
   psql:
     desc: "Run psql"
     cmds:
-      - docker-compose exec postgres psql -U postgres -d ferretdb
+      - docker compose exec postgres psql -U postgres -d ferretdb
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
-        docker-compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
-        --verbose --eval 'disableTelemetry()' --shell
-
-  mongo:
-    desc: "Run legacy `mongo` shell"
-    cmds:
-      - >
-        docker-compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
-        --verbose
+        docker compose exec mongodb mongosh
+        'mongodb://host.docker.internal:27018/test?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
 
   docker-init:
     cmds:
       - docker buildx create --driver=docker-container --name=ferretdb --use=false
 
   docker-local:
+    desc: "Build `ferretdb-local` Docker image"
     deps: [gen-version]
     cmds:
       - >
@@ -340,20 +348,32 @@ tasks:
   docker-push:
     deps: [gen-version]
     cmds:
-      - test {{.DOCKER_IMAGE}}
       - >
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --build-arg RACEFLAG={{.RACEFLAG}}
         --platform=linux/arm/v7,linux/arm64,linux/amd64
-        --tag={{.DOCKER_IMAGE}}
+        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --push .
     vars:
       VERSION:
         sh: cat internal/util/version/gen/version.txt
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
+
+  docker-push-release:
+    cmds:
+      - task: docker-push
+        vars:
+          DOCKER_IMAGES: >
+              ferretdb/ferretdb:latest,
+              ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
+              ghcr.io/ferretdb/ferretdb:latest,
+              ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
+    vars:
+      VERSION:
+        sh: cat internal/util/version/gen/version.txt
 
   packages:
     cmds:
@@ -366,7 +386,7 @@ tasks:
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
       - >
-        docker-compose run --rm debian /bin/sh -c
+        docker compose run --rm ubuntu /bin/sh -c
         'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
@@ -380,7 +400,7 @@ tasks:
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
       - >
-        docker-compose run --rm centos /bin/sh -c
+        docker compose run --rm ubi /bin/sh -c
         'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
@@ -392,16 +412,16 @@ tasks:
     desc: "Format, lint and build documentation"
     deps: [docs-fmt]
     cmds:
-      - docker-compose run --rm docusaurus-docs build
+      - docker compose run --rm docusaurus-docs build
 
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
-      - docker-compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
-      - docker-compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 
   docs-dev:
     desc: "Start documentation development server"
     cmds:
-      - docker-compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+      - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0

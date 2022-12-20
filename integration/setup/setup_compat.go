@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -28,7 +29,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -57,10 +57,7 @@ type SetupCompatOpts struct {
 type SetupCompatResult struct {
 	Ctx               context.Context
 	TargetCollections []*mongo.Collection
-	TargetPort        uint16
 	CompatCollections []*mongo.Collection
-	CompatPort        uint16
-	StateProvider     *state.Provider
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
@@ -70,8 +67,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	startup()
 
 	// skip tests for MongoDB as soon as possible
-	compatPort := *compatPortF
-	if compatPort == 0 {
+	if *compatPortF == 0 {
 		tb.Skip("compatibility tests require second system")
 	}
 
@@ -100,32 +96,33 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	}
 	logger := testutil.Logger(tb, level)
 
-	var stateProvider *state.Provider
-	var uri string
-	targetPort := *targetPortF
-	if targetPort == 0 {
-		targetUnixSocket := *targetUnixSocketF
-		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
+	var targetURI string
+	if *targetPortF == 0 {
+		targetURI = setupListener(tb, ctx, logger)
 	} else {
-		uri = buildMongoDBURI(tb, targetPort)
+		targetURI = buildMongoDBURI(tb, &buildMongoDBURIOpts{
+			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
+		})
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatUri := buildMongoDBURI(tb, compatPort)
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
+	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
+		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
+		tls:      *compatTLSF,
+	})
+
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetURI), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatURI), opts)
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupCompatResult{
 		Ctx:               ctx,
 		TargetCollections: targetCollections,
-		TargetPort:        uint16(targetPort),
 		CompatCollections: compatCollections,
-		CompatPort:        uint16(compatPort),
-		StateProvider:     stateProvider,
 	}
 }
 

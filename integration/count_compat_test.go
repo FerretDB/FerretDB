@@ -120,6 +120,15 @@ func TestCountCompat(t *testing.T) {
 		"IDNotExists": {
 			filter: bson.D{{"_id", "count-id-not-exists"}},
 		},
+		"IDBool": {
+			filter: bson.D{{"_id", "bool-true"}},
+		},
+		"FieldTrue": {
+			filter: bson.D{{"v", true}},
+		},
+		"FieldTypeArrays": {
+			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
+		},
 	}
 
 	testCountCompat(t, testCases)

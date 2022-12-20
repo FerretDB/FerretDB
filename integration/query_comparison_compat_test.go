@@ -290,8 +290,26 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 
 	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1521
 	testCases := map[string]queryCompatTestCase{
+		"Document": {
+			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+		},
+		"DocumentShuffledKeys": {
+			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentDotNotation": {
+			filter: bson.D{{"v.foo", bson.D{{"$gt", int32(41)}}}},
+		},
+		"DocumentReverse": {
+			filter:     bson.D{{"v", bson.D{{"$gt", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			resultType: emptyResult,
+		},
+		"DocumentNull": {
+			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", nil}}}}}},
+		},
+		"DocumentEmpty": {
+			filter: bson.D{{"v", bson.D{{"$gt", bson.D{}}}}},
+		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.A{}}}}},
 		},
@@ -311,8 +329,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.A{int32(42), "foo"}}}}},
 		},
 		"ArrayShuffledValues": {
-			filter:     bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
-			resultType: emptyResult,
+			filter: bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gt", 41.13}}}},
@@ -393,8 +410,25 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 
 	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1521
 	testCases := map[string]queryCompatTestCase{
+		"Document": {
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+		},
+		"DocumentShuffledKeys": {
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentDotNotation": {
+			filter: bson.D{{"v.foo", bson.D{{"$gte", int32(42)}}}},
+		},
+		"DocumentReverse": {
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentNull": {
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", nil}}}}}},
+		},
+		"DocumentEmpty": {
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{}}}}},
+		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.A{}}}}},
 		},
@@ -414,8 +448,7 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.A{int32(42), "foo"}}}}},
 		},
 		"ArrayShuffledValues": {
-			filter:     bson.D{{"v", bson.D{{"$gte", bson.A{"foo", nil, int32(42)}}}}},
-			resultType: emptyResult,
+			filter: bson.D{{"v", bson.D{{"$gte", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gte", 41.13}}}},
@@ -466,6 +499,9 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 		"Int32Max": {
 			filter: bson.D{{"v", bson.D{{"$gte", int32(math.MaxInt32)}}}},
 		},
+		"Int32Desc": {
+			filter: bson.D{{"v", bson.D{{"$gte", int32(45)}}}},
+		},
 		"Timestamp": {
 			filter: bson.D{{"v", bson.D{{"$gte", primitive.Timestamp{T: 41, I: 12}}}}},
 		},
@@ -491,8 +527,26 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 
 	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1521
 	testCases := map[string]queryCompatTestCase{
+		"Document": {
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+		},
+		"DocumentShuffledKeys": {
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentDotNotation": {
+			filter: bson.D{{"v.foo", bson.D{{"$lt", int32(43)}}}},
+		},
+		"DocumentReverse": {
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentNull": {
+			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"foo", nil}}}}}},
+		},
+		"DocumentEmpty": {
+			filter:     bson.D{{"v", bson.D{{"$lt", bson.D{}}}}},
+			resultType: emptyResult,
+		},
 		"ArrayEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", bson.A{}}}}},
 			resultType: emptyResult,
@@ -530,6 +584,9 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		"StringEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", ""}}}},
 			resultType: emptyResult,
+		},
+		"StringAsc": {
+			filter: bson.D{{"v", bson.D{{"$lt", "b"}}}},
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$lt", primitive.Binary{Subtype: 0x80, Data: []byte{43}}}}}},
@@ -597,8 +654,25 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 
 	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1521
 	testCases := map[string]queryCompatTestCase{
+		"Document": {
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+		},
+		"DocumentShuffledKeys": {
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentDotNotation": {
+			filter: bson.D{{"v.foo", bson.D{{"$lte", int32(42)}}}},
+		},
+		"DocumentReverse": {
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+		},
+		"DocumentNull": {
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"foo", nil}}}}}},
+		},
+		"DocumentEmpty": {
+			filter: bson.D{{"v", bson.D{{"$lte", bson.D{}}}}},
+		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$lte", bson.A{}}}}},
 		},
@@ -634,6 +708,9 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 		},
 		"StringEmpty": {
 			filter: bson.D{{"v", bson.D{{"$lte", ""}}}},
+		},
+		"StringAsc": {
+			filter: bson.D{{"v", bson.D{{"$lte", "a"}}}},
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$lte", primitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
@@ -869,6 +946,12 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},
 			resultType: emptyResult,
+		},
+		"Document": {
+			filter: bson.D{{"v", bson.D{{"$ne", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+		},
+		"DocumentShuffledKeys": {
+			filter: bson.D{{"v", bson.D{{"$ne", bson.D{{"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}}}},
 		},
 	}
 

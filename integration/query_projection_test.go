@@ -32,8 +32,7 @@ func TestQueryProjection(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		projection any
@@ -59,61 +58,6 @@ func TestQueryProjection(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, actual, 1)
 			AssertEqualDocuments(t, tc.expected, actual[0])
-		})
-	}
-}
-
-func TestQueryProjectionElemMatch(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
-
-	// Comparison fails if we add below array to shareddata.
-	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1569
-
-	_, err := collection.InsertMany(ctx, []any{
-		bson.D{
-			{"_id", "document-composite-2"},
-			{"v", bson.A{
-				bson.D{{"field", int32(42)}},
-				bson.D{{"field", int32(44)}},
-			}},
-		},
-	})
-	require.NoError(t, err)
-
-	for name, tc := range map[string]struct {
-		projection  any
-		expectedIDs []any
-	}{
-		"ElemMatch": {
-			projection: bson.D{{
-				"v",
-				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
-			}},
-			expectedIDs: []any{
-				"document-composite-2",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cursor, err := collection.Find(
-				ctx,
-				bson.D{{"_id", "document-composite-2"}},
-				options.Find().SetProjection(tc.projection),
-				options.Find().SetSort(bson.D{{"_id", 1}}),
-			)
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
 		})
 	}
 }

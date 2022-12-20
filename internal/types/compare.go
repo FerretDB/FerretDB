@@ -33,10 +33,9 @@ type CompareResult int8
 // Values match results of comparison functions such as bytes.Compare.
 // They do not match MongoDB SortType values where 1 means ascending order and -1 means descending.
 const (
-	Equal        CompareResult = 0   // ==
-	Less         CompareResult = -1  // <
-	Greater      CompareResult = 1   // >
-	Incomparable CompareResult = 127 // ≹
+	Equal   CompareResult = 0  // ==
+	Less    CompareResult = -1 // <
+	Greater CompareResult = 1  // >
 )
 
 // Compare compares any BSON values in the same way as MongoDB does it for filtering.
@@ -55,28 +54,13 @@ func Compare(docValue, filterValue any) CompareResult {
 
 	switch docValue := docValue.(type) {
 	case *Document:
-		// TODO: implement document comparing https://github.com/FerretDB/FerretDB/issues/457
-		return Incomparable
+		if filterDoc, ok := filterValue.(*Document); ok {
+			return compareDocuments(docValue, filterDoc)
+		}
 
+		return compareTypeOrder(docValue, filterValue)
 	case *Array:
-		if filterArr, ok := filterValue.(*Array); ok {
-			return compareArrays(filterArr, docValue)
-		}
-
-		for i := 0; i < docValue.Len(); i++ {
-			docValue := must.NotFail(docValue.Get(i))
-			switch docValue.(type) {
-			case *Document, *Array:
-				continue
-			}
-
-			if res := compareScalars(docValue, filterValue); res != Incomparable {
-				return res
-			}
-		}
-
-		return Incomparable
-
+		return compareArray(docValue, filterValue)
 	default:
 		return compareScalars(docValue, filterValue)
 	}
@@ -85,7 +69,7 @@ func Compare(docValue, filterValue any) CompareResult {
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
 	if !isScalar(v1) || !isScalar(v2) {
-		return Incomparable
+		return compareTypeOrder(v1, v2)
 	}
 
 	switch v1 := v1.(type) {
@@ -101,102 +85,113 @@ func compareScalars(v1, v2 any) CompareResult {
 		case int64:
 			return compareNumbers(v1, v2)
 		default:
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
 
 	case string:
-		v2, ok := v2.(string)
+		v, ok := v2.(string)
 		if ok {
-			return compareOrdered(v1, v2)
+			return compareOrdered(v1, v)
 		}
-		return Incomparable
+
+		return compareTypeOrder(v1, v2)
 
 	case Binary:
-		v2, ok := v2.(Binary)
+		v, ok := v2.(Binary)
 		if !ok {
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
-		v1l, v2l := len(v1.B), len(v2.B)
+		v1l, v2l := len(v1.B), len(v.B)
 		if v1l != v2l {
 			return compareOrdered(v1l, v2l)
 		}
-		if v1.Subtype != v2.Subtype {
-			return compareOrdered(v1.Subtype, v2.Subtype)
+
+		if v1.Subtype != v.Subtype {
+			return compareOrdered(v1.Subtype, v.Subtype)
 		}
-		return CompareResult(bytes.Compare(v1.B, v2.B))
+
+		return CompareResult(bytes.Compare(v1.B, v.B))
 
 	case ObjectID:
-		v2, ok := v2.(ObjectID)
+		v, ok := v2.(ObjectID)
 		if !ok {
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
-		return CompareResult(bytes.Compare(v1[:], v2[:]))
+
+		return CompareResult(bytes.Compare(v1[:], v[:]))
 
 	case bool:
-		v2, ok := v2.(bool)
+		v, ok := v2.(bool)
 		if !ok {
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
-		if v1 == v2 {
+
+		if v1 == v {
 			return Equal
 		}
-		if v2 {
+
+		if v {
 			return Less
 		}
 		return Greater
 
 	case time.Time:
-		v2, ok := v2.(time.Time)
+		v, ok := v2.(time.Time)
 		if !ok {
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
-		return compareOrdered(v1.UnixMilli(), v2.UnixMilli())
+
+		return compareOrdered(v1.UnixMilli(), v.UnixMilli())
 
 	case NullType:
 		_, ok := v2.(NullType)
 		if ok {
 			return Equal
 		}
-		return Incomparable
+
+		return compareTypeOrder(v1, v2)
 
 	case Regex:
-		v2, ok := v2.(Regex)
+		v, ok := v2.(Regex)
 		if ok {
 			v1 := must.NotFail(v1.Compile())
-			v2 := must.NotFail(v2.Compile())
-			return compareOrdered(v1.String(), v2.String())
+			v := must.NotFail(v.Compile())
+
+			return compareOrdered(v1.String(), v.String())
 		}
-		return Incomparable
+
+		return compareTypeOrder(v1, v2)
 
 	case int32:
-		switch v2 := v2.(type) {
+		switch v := v2.(type) {
 		case float64:
-			return compareInvert(compareNumbers(v2, int64(v1)))
+			return compareInvert(compareNumbers(v, int64(v1)))
 		case int32:
-			return compareOrdered(v1, v2)
+			return compareOrdered(v1, v)
 		case int64:
-			return compareOrdered(int64(v1), v2)
+			return compareOrdered(int64(v1), v)
 		default:
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
 
 	case Timestamp:
-		v2, ok := v2.(Timestamp)
+		v, ok := v2.(Timestamp)
 		if ok {
-			return compareOrdered(v1, v2)
+			return compareOrdered(v1, v)
 		}
-		return Incomparable
+
+		return compareTypeOrder(v1, v2)
 
 	case int64:
-		switch v2 := v2.(type) {
+		switch v := v2.(type) {
 		case float64:
-			return compareInvert(compareNumbers(v2, v1))
+			return compareInvert(compareNumbers(v, v1))
 		case int32:
-			return compareOrdered(v1, int64(v2))
+			return compareOrdered(v1, int64(v))
 		case int64:
-			return compareOrdered(v1, v2)
+			return compareOrdered(v1, v)
 		default:
-			return Incomparable
+			return compareTypeOrder(v1, v2)
 		}
 	}
 
@@ -217,7 +212,7 @@ func isScalar(v any) bool {
 	return false
 }
 
-// compareInvert swaps Less and Greater, keeping Equal and Incomparable.
+// compareInvert swaps Less and Greater, keeping Equal.
 func compareInvert(res CompareResult) CompareResult {
 	switch res {
 	case Equal:
@@ -226,8 +221,6 @@ func compareInvert(res CompareResult) CompareResult {
 		return Greater
 	case Greater:
 		return Less
-	case Incomparable:
-		return Incomparable
 	}
 
 	panic("not reached")
@@ -243,16 +236,12 @@ func compareOrdered[T constraints.Ordered](a, b T) CompareResult {
 	case a > b:
 		return Greater
 	default:
-		return Incomparable
+		panic("unsupported order")
 	}
 }
 
 // compareNumbers compares BSON numbers.
 func compareNumbers(a float64, b int64) CompareResult {
-	if math.IsNaN(a) {
-		return Incomparable
-	}
-
 	// TODO figure out correct precision
 	bigA := new(big.Float).SetFloat64(a).SetPrec(100000)
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
@@ -263,12 +252,12 @@ func compareNumbers(a float64, b int64) CompareResult {
 // compareArrays compares indices of a filter array according to indices of a document array;
 // returns Equal when an array equals to filter array;
 // returns Less when an index of the document array is less than the index of the filter array;
-// returns Greater when an index of the document array is greater than the index of the filter array;
-// returns Incomparable when an index comparison detects Composite types.
-func compareArrays(filterArr, docArr *Array) CompareResult {
+// returns Greater when an index of the document array is greater than the index of the filter array.
+func compareArrays(docArr, filterArr *Array) CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return Equal
 	}
+
 	if filterArr.Len() > 0 && docArr.Len() == 0 {
 		return Less
 	}
@@ -294,7 +283,7 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 			return orderResult
 		}
 
-		iterationResult := compareScalars(docValue, filterValue)
+		iterationResult := Compare(docValue, filterValue)
 		if iterationResult != Equal {
 			return iterationResult
 		}
@@ -305,4 +294,88 @@ func compareArrays(filterArr, docArr *Array) CompareResult {
 	}
 
 	return Equal
+}
+
+// compareDocuments compares documents recursively by
+// comparing them in the order of types, field names and field values.
+func compareDocuments(a, b *Document) CompareResult {
+	if a.Len() == 0 && b.Len() == 0 {
+		return Equal
+	}
+
+	if a.Len() == 0 && b.Len() > 0 {
+		return Less
+	}
+
+	if b.Len() == 0 {
+		return Greater
+	}
+
+	aKeys := a.Keys()
+	bKeys := b.Keys()
+	bValues := b.Values()
+	aValues := a.Values()
+
+	for i, aKey := range aKeys {
+		if b.Len() == i {
+			return Greater
+		}
+
+		// compare type
+		if result := compareTypeOrder(aValues[i], bValues[i]); result != Equal {
+			return result
+		}
+
+		// compare keys
+		if result := compareScalars(aKey, bKeys[i]); result != Equal {
+			return result
+		}
+
+		// compare values
+		if result := Compare(aValues[i], bValues[i]); result != Equal {
+			return result
+		}
+	}
+
+	if a.Len() < b.Len() {
+		return Less
+	}
+
+	return Equal
+}
+
+// compareArray compares array to any value.
+func compareArray(as *Array, b any) CompareResult {
+	if bs, ok := b.(*Array); ok {
+		return compareArrays(as, bs)
+	}
+
+	var result CompareResult
+	var comparable bool
+
+	for i := 0; i < as.Len(); i++ {
+		a := must.NotFail(as.Get(i))
+
+		result = compareTypeOrder(a, b)
+		if result != Equal {
+			continue
+		}
+
+		result = Compare(a, b)
+		if result == Equal {
+			return result
+		}
+		comparable = true
+	}
+
+	if !comparable {
+		// This happens upon empty array or array only containing
+		// different type. Nothing which can be compared was in the array
+		// hence the array is less than the value a.
+		return Less
+	}
+
+	// result is not `Equal` just return the result
+	// from the previous iteration.
+	return result
 }

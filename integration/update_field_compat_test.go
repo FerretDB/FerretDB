@@ -113,8 +113,12 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 
 		"MultipleQueries": {
-			update:        bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+			update:        bson.D{{"$max", bson.D{{"a", int32(30)}, {"v", int32(39)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"MultipleQueriesSorted": {
+			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"a", int32(30)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1637",
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
@@ -162,6 +166,38 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DateTimeLower": {
 			update:        bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayEmpty": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayOne": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"Array": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{int32(42), "foo", nil}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayReverse": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{nil, "foo", int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayNull": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{nil}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArraySlice": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{int32(42), "foo"}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayShuffledValues": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{"foo", nil, int32(42)}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+		},
+		"ArrayDocuments": {
+			update:        bson.D{{"$max", bson.D{{"v", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", nil}}}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 	}

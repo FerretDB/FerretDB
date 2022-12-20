@@ -66,11 +66,12 @@ func (d *Document) ValidateData() error {
 	d.moveIDToTheFirstIndex()
 
 	keys := d.Keys()
+	values := d.Values()
 
 	duplicateChecker := make(map[string]struct{}, len(keys))
 	var idPresent bool
 
-	for _, key := range keys {
+	for i, key := range keys {
 		// Tests for this case are in `dance`.
 		if !utf8.ValidString(key) {
 			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
@@ -95,7 +96,7 @@ func (d *Document) ValidateData() error {
 			idPresent = true
 		}
 
-		value := must.NotFail(d.Get(key))
+		value := values[i]
 
 		switch v := value.(type) {
 		case *Document:
@@ -136,7 +137,6 @@ func (d *Document) ValidateData() error {
 				}
 			}
 		case float64:
-			// TODO Add dance tests for infinity: https://github.com/FerretDB/FerretDB/issues/1151
 			if math.IsInf(v, 0) {
 				return newValidationError(
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),

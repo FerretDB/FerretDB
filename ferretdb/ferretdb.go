@@ -32,13 +32,7 @@ import (
 
 // Config represents FerretDB configuration.
 type Config struct {
-	// Listen address.
-	// If empty, TCP listener is disabled.
-	ListenAddr string
-
-	// Listen Unix domain socket path.
-	// If empty, Unix listener is disabled.
-	ListenUnix string
+	Listener ListenerConfig
 
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
@@ -55,6 +49,27 @@ type Config struct {
 	TigrisURL          string
 }
 
+// ListenerConfig represents listener configuration.
+type ListenerConfig struct {
+	// Listen TCP address.
+	// If empty, TCP listener is disabled.
+	Addr string
+
+	// Listen Unix domain socket path.
+	// If empty, Unix listener is disabled.
+	Unix string
+
+	// Listen TLS address.
+	// If empty, TLS listener is disabled.
+	TLS string
+
+	// TLSCertFile path.
+	TLSCertFile string
+
+	// TLSKeyFile path.
+	TLSKeyFile string
+}
+
 // FerretDB represents an instance of embeddable FerretDB implementation.
 type FerretDB struct {
 	config *Config
@@ -64,8 +79,10 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	if config.ListenAddr == "" && config.ListenUnix == "" {
-		return nil, errors.New("both ListenAddr and ListenUnix are empty")
+	if config.Listener.Addr == "" &&
+		config.Listener.Unix == "" &&
+		config.Listener.TLS == "" {
+		return nil, errors.New("Listener Addr, Unix and TLS are empty")
 	}
 
 	p, err := state.NewProvider("")
@@ -93,12 +110,17 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: config.ListenAddr,
-		ListenUnix: config.ListenUnix,
-		Mode:       clientconn.NormalMode,
-		Metrics:    metrics,
-		Handler:    h,
-		Logger:     logger,
+		Listener: clientconn.ListenerOpts{
+			Addr:        config.Listener.Addr,
+			Unix:        config.Listener.Unix,
+			TLS:         config.Listener.TLS,
+			TLSCertFile: config.Listener.TLSCertFile,
+			TLSKeyFile:  config.Listener.TLSKeyFile,
+		},
+		Mode:    clientconn.NormalMode,
+		Metrics: metrics,
+		Handler: h,
+		Logger:  logger,
 	})
 
 	return &FerretDB{
@@ -133,16 +155,30 @@ func (f *FerretDB) Run(ctx context.Context) error {
 func (f *FerretDB) MongoDBURI() string {
 	var u *url.URL
 
-	if f.config.ListenAddr != "" {
+	switch {
+	case f.config.Listener.TLS != "":
+		q := make(url.Values)
+
+		q.Set("tls", "true")
+
+		u = &url.URL{
+			Scheme:   "mongodb",
+			Host:     f.l.TLS().String(),
+			Path:     "/",
+			RawQuery: q.Encode(),
+		}
+	case f.config.Listener.Addr != "":
 		u = &url.URL{
 			Scheme: "mongodb",
 			Host:   f.l.Addr().String(),
 			Path:   "/",
 		}
-	} else {
+	case f.config.Listener.Unix != "":
+		path := f.l.Unix().String()
 		u = &url.URL{
-			Scheme: "mongodb",
-			Host:   f.l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			Scheme:  "mongodb",
+			Path:    path,
+			RawPath: url.PathEscape(path),
 		}
 	}
 

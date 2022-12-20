@@ -27,8 +27,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgSetFreeMonitoring is a common implementation of the setFreeMonitoring command.
-func MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
+// SetFreeMonitoring is a common implementation of the setFreeMonitoring command.
+func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
 	if provider == nil {
 		panic("provider cannot be equal to nil")
 	}

@@ -278,37 +278,26 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 		exprValue := must.NotFail(expr.Get(exprKey))
 
 		fieldValue, err := doc.Get(filterKey)
-		if err != nil && exprKey != "$exists" && exprKey != "$not" {
-			// comparing not existent field with null should return true
-			if _, ok := exprValue.(types.NullType); ok {
-				return true, nil
-			}
-
-			// comparing not existent field with {$all: [null, null, ..., null]} should return true
-			// (at least one null needs to be presented in the $all array)
-			if exprKey == "$all" {
-				all, ok := exprValue.(*types.Array)
-				if ok && all.Len() > 0 {
-					isNull := true
-					for i := 0; i < all.Len(); i++ {
-						if _, ok := must.NotFail(all.Get(i)).(types.NullType); !ok {
-							isNull = false
-							break
-						}
-					}
-					if isNull {
-						return true, nil
-					}
+		if err != nil {
+			switch exprKey {
+			case "$exists", "$not", "$elemMatch":
+			case "$type":
+				if v, ok := exprValue.(string); ok && v == "null" {
+					// null and unset are different for $type operator.
+					return false, nil
 				}
+			default:
+				// Set non-existent field to null for the operator
+				// to compute result. The comparison treats non-existent
+				// field on documents as equivalent.
+				fieldValue = types.Null
 			}
-
-			// exit when not $exists or $not filters and no such field
-			return false, nil
 		}
 
 		if !strings.HasPrefix(exprKey, "$") {
 			if documentValue, ok := fieldValue.(*types.Document); ok {
-				return matchDocuments(documentValue, expr), nil
+				result := types.Compare(documentValue, expr)
+				return result == types.Equal, nil
 			}
 			return false, nil
 		}
@@ -319,7 +308,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
 				if fieldValue, ok := fieldValue.(*types.Document); ok {
-					return matchDocuments(exprValue, fieldValue), nil
+					result := types.Compare(exprValue, fieldValue)
+					return result == types.Equal, nil
 				}
 				return false, nil
 			default:
@@ -334,9 +324,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
 				if fieldValue, ok := fieldValue.(*types.Document); ok {
-					return !matchDocuments(exprValue, fieldValue), nil
+					result := types.Compare(exprValue, fieldValue)
+					return result != types.Equal, nil
 				}
-				return false, nil
+
+				return true, nil
 			case types.Regex:
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "Can't have regex as arg to $ne.", exprKey)
 			default:
@@ -353,7 +345,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			// Array and non-array comparison with $gt compares the non-array
+			// value against the maximum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the maximum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gt: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the maximum number of array 41.5 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $gt comparison.
+
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Descending)
 			if result != types.Greater {
 				return false, nil
 			}
@@ -365,7 +370,19 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			// Array and non-array comparison with $gte compares the non-array
+			// value against the maximum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the maximum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gte: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the maximum number of array 41.5 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $gte comparison.
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Descending)
 			if result != types.Equal && result != types.Greater {
 				return false, nil
 			}
@@ -377,7 +394,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			// Array and non-array comparison with $lt compares the non-array
+			// value against the minimum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the minimum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gte: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the minimum number of array 40 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $lt comparison.
+
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Ascending)
 			if result != types.Less {
 				return false, nil
 			}
@@ -389,7 +419,20 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
 			}
 
-			result := types.Compare(fieldValue, exprValue)
+			// Array and non-array comparison with $lte compares the non-array
+			// value against the minimum value of the same BSON type value of the array.
+			// Filter the array by only keeping the same type as the non-array value,
+			// then find the minimum value from the array.
+			// If array does not contain same BSON type, returns false.
+			// All numbers are treated as the same type.
+			// Example:
+			// expr {v: {$gte: 42}}
+			// value [{v: 40}, {v: 41.5}, {v: "foo"}, {v: nil}]
+			// Above compares the minimum number of array 40 to the filter 42,
+			// and results in Less. Other values "foo" and nil which are
+			// not number type are not considered for $lt comparison.
+
+			result := types.CompareOrderForOperator(fieldValue, exprValue, types.Ascending)
 			if result != types.Equal && result != types.Less {
 				return false, nil
 			}
@@ -414,9 +457,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
 						}
 					}
-					fieldValue, ok := fieldValue.(*types.Document)
-					if ok && matchDocuments(fieldValue, arrValue) {
-						found = true
+
+					if fieldValue, ok := fieldValue.(*types.Document); ok {
+						if result := types.Compare(fieldValue, arrValue); result == types.Equal {
+							found = true
+						}
 					}
 				case types.Regex:
 					match, err := filterFieldRegex(fieldValue, arrValue)
@@ -458,9 +503,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
 						}
 					}
-					fieldValue, ok := fieldValue.(*types.Document)
-					if ok && matchDocuments(fieldValue, arrValue) {
-						found = true
+
+					if fieldValue, ok := fieldValue.(*types.Document); ok {
+						if result := types.Compare(fieldValue, arrValue); result == types.Equal {
+							found = true
+						}
 					}
 				case types.Regex:
 					match, err := filterFieldRegex(fieldValue, arrValue)
@@ -1298,8 +1345,6 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 // Returns false if doc value is not an array.
 // TODO: https://github.com/FerretDB/FerretDB/issues/364
 func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
-	value := must.NotFail(doc.Get(filterKey))
-
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
@@ -1335,6 +1380,11 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
 			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", key), "$elemMatch")
 		}
+	}
+
+	value, err := doc.Get(filterKey)
+	if err != nil {
+		return false, nil
 	}
 
 	if _, ok := value.(*types.Array); !ok {

@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -27,7 +28,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -48,10 +48,20 @@ type SetupOpts struct {
 
 // SetupResult represents setup results.
 type SetupResult struct {
-	Ctx           context.Context
-	Collection    *mongo.Collection
-	MongoDBURI    string
-	StateProvider *state.Provider
+	Ctx        context.Context
+	Collection *mongo.Collection
+	MongoDBURI string
+}
+
+// IsUnixSocket returns true if MongoDB URI is a Unix socket.
+func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
+	uri, err := url.PathUnescape(s.MongoDBURI)
+	require.NoError(tb, err)
+
+	u, err := url.Parse(uri)
+	require.NoError(tb, err)
+
+	return u.Host == ""
 }
 
 // SetupWithOpts setups the test according to given options.
@@ -72,14 +82,14 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := testutil.Logger(tb, level)
 
-	var stateProvider *state.Provider
 	var uri string
-	port := *targetPortF
-	if port == 0 {
-		targetUnixSocket := *targetUnixSocketF
-		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
+	if *targetPortF == 0 {
+		uri = setupListener(tb, ctx, logger)
 	} else {
-		uri = buildMongoDBURI(tb, port)
+		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
+			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
+		})
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -90,10 +100,9 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
-		Ctx:           ctx,
-		Collection:    collection,
-		MongoDBURI:    uri,
-		StateProvider: stateProvider,
+		Ctx:        ctx,
+		Collection: collection,
+		MongoDBURI: uri,
 	}
 }
 
@@ -105,17 +114,6 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
-}
-
-// IsTCP returns true if uri contains a valid port number.
-func (s *SetupResult) IsTCP(tb testing.TB) bool {
-	path, err := url.PathUnescape(s.MongoDBURI)
-	require.NoError(tb, err)
-
-	u, err := url.Parse(path)
-	require.NoError(tb, err)
-
-	return u.Port() != ""
 }
 
 // setupCollection setups a single collection for all compatible providers, if they are present.

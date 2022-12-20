@@ -149,3 +149,20 @@ func TestQueryCompat(t *testing.T) {
 
 	testQueryCompat(t, testCases)
 }
+
+func TestQueryCompatSort(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Asc": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", 1}, {"_id", 1}},
+		},
+		"Desc": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", -1}, {"_id", 1}},
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}

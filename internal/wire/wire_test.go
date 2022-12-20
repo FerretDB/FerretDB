@@ -46,6 +46,7 @@ type testCase struct {
 	expectedB []byte
 	msgHeader *MsgHeader
 	msgBody   MsgBody
+	command   string // only for OpMsg
 	err       string // unwrapped
 }
 
@@ -77,21 +78,27 @@ func testMessages(t *testing.T, testCases []testCase) {
 				br := bytes.NewReader(tc.expectedB)
 				bufr := bufio.NewReader(br)
 				msgHeader, msgBody, err := ReadMessage(bufr)
-				if tc.err == "" {
-					assert.NoError(t, err)
-					assert.Equal(t, tc.msgHeader, msgHeader)
-					assert.Equal(t, tc.msgBody, msgBody)
-					assert.Zero(t, br.Len(), "not all br bytes were consumed")
-					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
-
-					assert.NotPanics(t, func() { _ = msgHeader.String() })
-					assert.NotPanics(t, func() { _ = msgBody.String() })
-
+				if tc.err != "" {
+					require.Equal(t, tc.err, lastErr(err).Error())
 					return
 				}
 
-				require.Error(t, err)
-				require.Equal(t, tc.err, lastErr(err).Error())
+				assert.NoError(t, err)
+				assert.Equal(t, tc.msgHeader, msgHeader)
+				assert.Equal(t, tc.msgBody, msgBody)
+				assert.Zero(t, br.Len(), "not all br bytes were consumed")
+				assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
+
+				require.NotNil(t, msgHeader)
+				require.NotNil(t, msgBody)
+				assert.NotPanics(t, func() { _ = msgHeader.String() })
+				assert.NotPanics(t, func() { _ = msgBody.String() })
+
+				if msg, ok := tc.msgBody.(*OpMsg); ok {
+					d, err := msg.Document()
+					require.NoError(t, err)
+					assert.Equal(t, tc.command, d.Command())
+				}
 			})
 
 			t.Run("WriteMessage", func(t *testing.T) {
@@ -147,6 +154,10 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 
 			assert.NotPanics(t, func() { _ = msgHeader.String() })
 			assert.NotPanics(t, func() { _ = msgBody.String() })
+
+			if msg, ok := msgBody.(*OpMsg); ok {
+				assert.NotPanics(t, func() { msg.Document() })
+			}
 
 			// remove random tail
 			expectedB = b[:len(b)-bufr.Buffered()-br.Len()]

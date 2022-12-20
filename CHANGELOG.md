@@ -1,5 +1,113 @@
 # Changelog
 
+## v0.8.0 (to be released)
+
+### What's Changed
+
+In this release, we made a big change in the way FerretDB stores data in PostgreSQL.
+
+Previously, we were storing information about data types in the fields themselves.
+Starting from this release, we store information about data types (document's schema) in a special field.
+
+This will allow us to implement more query push downs in the future.
+
+There are no changes in the API, but since the data is stored in a different way, this change is not backward compatible.
+Please make a dump of your database before upgrading, delete the databases, upgrade FerretDB, and restore the dump afterwards.
+
+
+## [v0.7.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.1) (2022-12-19)
+
+### New Features 🎉
+* Add basic TLS support by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1586
+* Add `validate` command stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1645
+
+### Fixed Bugs 🐛
+* Fix parsing of `OP_MSG` packets with multiple sections by @b1ron in https://github.com/FerretDB/FerretDB/pull/1611
+* Fix parsing of `OP_MSG` packets with multiple sections by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1633
+* Fix comparison with unset fields by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1634
+
+### Enhancements 🛠
+* Compare documents by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1597
+
+### Documentation 📄
+* Infinity values are not allowed in documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1622
+
+### Other Changes 🤖
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1609
+* Update release checklist by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1621
+* Compare unit tests for edge cases by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1624
+* Bump Go and other deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1629
+* Refactor integration tests setup functions by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1625
+* Fix `.deb`/`.rpm` package testing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1631
+* Bump `golang.org/x/net` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1640
+* Introduce schema for `pjson` format by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1635
+* Use TLS for MongoDB in integration tests by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1623
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1644
+* Bump Tigris deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1651
+* Remove Incomparable by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1646
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/27?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.7.0...v0.7.1).
+
+
+## [v0.7.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.0) (2022-12-05)
+
+### New Features 🎉
+* Add `msg_explain` implementation for Tigris by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1574
+* Add `filter` support to `listCollections` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1567
+
+### Fixed Bugs 🐛
+* Fix parallel collection inserts for PostgreSQL by @noisersup in https://github.com/FerretDB/FerretDB/pull/1513
+* Fix validation for documents with duplicate keys by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1602
+* Fix greater and less operators on array value comparison by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1585
+
+### Enhancements 🛠
+* Downgrade min wire protocol version to 13 / 5.0 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1571
+* Make default telemetry state a bit more clear by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1561
+* Add documents validation to `wire` package by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1401
+* Allow `-` in database names by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1582
+* Support more default `find` parameters by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1588
+
+### Documentation 📄
+* Add authentication and role management commands to the docs by @b1ron in https://github.com/FerretDB/FerretDB/pull/1527
+* Add section for diagnostic command `buildInfo` and `collStats` by @Fashander in https://github.com/FerretDB/FerretDB/pull/1480
+* Add session and free monitoring commands to the docs by @b1ron in https://github.com/FerretDB/FerretDB/pull/1546
+* Add Mastodon links by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1555
+* Add glossary section to documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/1583
+
+### Other Changes 🤖
+* Simplify array comparison, remove `[]CompareResult` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1499
+* Disable CockroachDB on GitHub Actions by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1524
+* Add placeholder for testing scripts by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1525
+* Add path to record loading error message by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1543
+* Move array query tests to compat tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1526
+* Move `_id` field check to separate function by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1544
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1562
+* Implement `listIndexes` command stub by @noisersup in https://github.com/FerretDB/FerretDB/pull/1565
+* Do not record partial files by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1566
+* Sync label descriptions and issue templates by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1573
+* Auto-merge is required now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1563
+* Move more query tests to compat and change filter bad value check order by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1560
+* Move more tests to compat query tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1570
+* Fix test names to make them more consistent by @noisersup in https://github.com/FerretDB/FerretDB/pull/1575
+* Update documentation for types, add aliases by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1580
+* Simplify documents fetching for the `count` operator by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1487
+* Simplify documents fetching for `delete` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1584
+* Fix `listIndexes` stub by @noisersup in https://github.com/FerretDB/FerretDB/pull/1591
+* Move query tests to compat by comparing the error code instead of the error message by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1579
+* Add TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1595
+* Simplify documents fetching for `find`, `findAndModify`, and `update` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1538
+* Improve `iterator.Interface` implementation in `pgdb.queryIterator` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1592
+* Refactor `pg`'s `MsgListDatabases` and `pgdb` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1596
+* Fix `Conform PR` workflow by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1599
+* Improve `envtool` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1598
+* Replace `docker-compose` with `docker compose` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1606
+* Add test certificates by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1612
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/26?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.6.2...v0.7.0).
+
+
 ## [v0.6.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.6.2) (2022-11-21)
 
 ### New Features 🎉

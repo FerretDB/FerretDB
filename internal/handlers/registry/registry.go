@@ -84,8 +84,8 @@ func Handlers() []string {
 
 // init registers handlers that are always enabled.
 func init() {
-	registry["dummy"] = func(*NewHandlerOpts) (handlers.Interface, error) {
-		return dummy.New()
+	registry["dummy"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		return dummy.New(opts.Logger)
 	}
 
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {

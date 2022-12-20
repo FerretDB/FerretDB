@@ -56,7 +56,9 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 	return func(a, b *types.Document) bool {
 		aField, err := a.Get(sortKey)
 		if err != nil {
-			return false
+			// sort order treats null and non-existent field equivalent,
+			// hence use null for sorting.
+			aField = types.Null
 		}
 
 		bField, err := b.Get(sortKey)
@@ -64,28 +66,9 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 			return false
 		}
 
-		result := types.CompareOrder(aField, bField, sortType)
+		result := types.CompareOrderForSort(aField, bField, sortType)
 
-		switch result {
-		case types.Less:
-			switch sortType {
-			case types.Ascending:
-				return true
-			case types.Descending:
-				return false
-			}
-		case types.Greater:
-			switch sortType {
-			case types.Ascending:
-				return false
-			case types.Descending:
-				return true
-			}
-		case types.Incomparable, types.Equal:
-			return false
-		}
-
-		return false
+		return result == types.Less
 	}
 }
 

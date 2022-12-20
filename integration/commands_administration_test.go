@@ -17,7 +17,6 @@ package integration
 import (
 	"fmt"
 	"math"
-	"net"
 	"runtime"
 	"sort"
 	"strconv"
@@ -325,7 +324,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -447,7 +446,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -463,7 +462,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -501,7 +500,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtStartup", true},
 				},
 				"tlsMode": bson.D{
-					{"value", "disabled"},
+					{"value", "preferTLS"},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", false},
 				},
@@ -1004,65 +1003,4 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	close(start)
 
 	wg.Wait()
-}
-
-// TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
-// It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
-func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-
-	s := setup.SetupWithOpts(t, nil)
-	collection1 := s.Collection
-	databaseName := s.Collection.Database().Name()
-	collectionName := s.Collection.Name()
-
-	// only check port number on TCP connection, no need to check on Unix socket
-	isTCP := s.IsTCP(t)
-
-	// setup second client connection to check that `whatsmyuri` returns different ports
-	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoDBURI))
-	require.NoError(t, err)
-	defer client2.Disconnect(s.Ctx)
-	collection2 := client2.Database(databaseName).Collection(collectionName)
-
-	var ports []string
-	for _, collection := range []*mongo.Collection{collection1, collection2} {
-		var actual bson.D
-		command := bson.D{{"whatsmyuri", int32(1)}}
-		err := collection.Database().RunCommand(s.Ctx, command).Decode(&actual)
-		require.NoError(t, err)
-
-		doc := ConvertDocument(t, actual)
-		keys := doc.Keys()
-		values := doc.Values()
-
-		var ok float64
-		var you string
-
-		for i, k := range keys {
-			switch k {
-			case "ok":
-				ok = values[i].(float64)
-			case "you":
-				you = values[i].(string)
-			}
-		}
-
-		assert.Equal(t, float64(1), ok)
-
-		if isTCP {
-			// record ports to compare that they are not equal for two different clients.
-			_, port, err := net.SplitHostPort(you)
-			require.NoError(t, err)
-			assert.NotEmpty(t, port)
-			ports = append(ports, port)
-		}
-	}
-
-	if isTCP {
-		require.Equal(t, 2, len(ports))
-		assert.NotEqual(t, ports[0], ports[1])
-	}
 }

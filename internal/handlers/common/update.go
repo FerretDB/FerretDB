@@ -36,9 +36,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 	if update.Len() == 0 {
 		// replace to empty doc
 		for _, key := range doc.Keys() {
-			if key != "_id" {
-				changed = true
+			changed = true
 
+			if key != "_id" {
 				doc.Remove(key)
 			}
 		}
@@ -352,7 +352,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				continue
 			case types.Less:
 				// if document value is less than max value, update the value
-			case types.Incomparable:
+			default:
 				return changed, NewCommandErrorMsgWithArgument(
 					ErrNotImplemented,
 					"document comparison is not implemented",

@@ -24,6 +24,32 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+var (
+	int32Array   = must.NotFail(NewArray(int32(42), int32(50), int32(2), int32(30)))
+	int64Array   = must.NotFail(NewArray(int64(42), int64(50), int64(2), int64(30)))
+	intArray     = must.NotFail(NewArray(int64(42), int64(50), int32(50), int64(2), int32(2), int64(30)))
+	floatArray   = must.NotFail(NewArray(42.0, 50.1, 2.2, 30.3))
+	numericArray = must.NotFail(NewArray(int64(2), int32(2), 2.0))
+	zeroArray    = must.NotFail(NewArray(int64(0), int32(0), math.Copysign(0, +1), math.Copysign(0, -1)))
+	emptyArray   = must.NotFail(NewArray())
+
+	stingArray = must.NotFail(NewArray("foo", "zoo", "", "bar"))
+
+	scalarTypesArray = must.NotFail(NewArray(
+		int32(42),
+		int64(42),
+		float64(42),
+		"foo",
+		Binary{},
+		ObjectID{},
+		true,
+		time.Time{},
+		NullType{},
+		Regex{},
+		Timestamp(42),
+	))
+)
+
 func TestArray(t *testing.T) {
 	t.Parallel()
 
@@ -67,31 +93,6 @@ func TestArray(t *testing.T) {
 }
 
 func TestArrayMinMax(t *testing.T) {
-	var (
-		int32Array   = must.NotFail(NewArray(int32(42), int32(50), int32(2), int32(30)))
-		int64Array   = must.NotFail(NewArray(int64(42), int64(50), int64(2), int64(30)))
-		intArray     = must.NotFail(NewArray(int64(42), int64(50), int32(50), int64(2), int32(2), int64(30)))
-		floatArray   = must.NotFail(NewArray(42.0, 50.1, 2.2, 30.3))
-		numericArray = must.NotFail(NewArray(int64(2), int32(2), 2.0))
-		zeroArray    = must.NotFail(NewArray(int64(0), int32(0), math.Copysign(0, +1), math.Copysign(0, -1)))
-
-		stingArray = must.NotFail(NewArray("foo", "zoo", "", "bar"))
-
-		scalarTypesArray = must.NotFail(NewArray(
-			int32(42),
-			int64(42),
-			float64(42),
-			"foo",
-			Binary{},
-			ObjectID{},
-			true,
-			time.Time{},
-			NullType{},
-			Regex{},
-			Timestamp(42),
-		))
-	)
-
 	const (
 		min = "min"
 		max = "max"
@@ -115,7 +116,7 @@ func TestArrayMinMax(t *testing.T) {
 		"IntMin": {
 			arr:           intArray,
 			minOrMax:      min,
-			expectedValue: int32(2),
+			expectedValue: int64(2),
 		},
 		"FloatMin": {
 			arr:           floatArray,
@@ -125,12 +126,12 @@ func TestArrayMinMax(t *testing.T) {
 		"NumericMin": {
 			arr:           numericArray,
 			minOrMax:      min,
-			expectedValue: 2.0,
+			expectedValue: int64(2),
 		},
 		"ZeroMin": {
 			arr:           zeroArray,
 			minOrMax:      min,
-			expectedValue: math.Copysign(0, -1),
+			expectedValue: int64(0),
 		},
 		"StringMin": {
 			arr:           stingArray,
@@ -193,6 +194,124 @@ func TestArrayMinMax(t *testing.T) {
 			}
 
 			assert.Equal(t, res, tc.expectedValue)
+		})
+	}
+}
+
+func TestFilterArrayByType(t *testing.T) {
+	for name, tc := range map[string]struct {
+		arr           *Array
+		refValue      any
+		expectedArray any
+	}{
+		"Int32": {
+			arr:      scalarTypesArray,
+			refValue: int32(42),
+			expectedArray: must.NotFail(NewArray(
+				int32(42),
+				int64(42),
+				float64(42),
+			)),
+		},
+		"Int64": {
+			arr:      scalarTypesArray,
+			refValue: int64(42),
+			expectedArray: must.NotFail(NewArray(
+				int32(42),
+				int64(42),
+				float64(42),
+			)),
+		},
+		"Float64": {
+			arr:      scalarTypesArray,
+			refValue: 240.2,
+			expectedArray: must.NotFail(NewArray(
+				int32(42),
+				int64(42),
+				float64(42),
+			)),
+		},
+		"Zero": {
+			arr:      scalarTypesArray,
+			refValue: math.Copysign(0, +1),
+			expectedArray: must.NotFail(NewArray(
+				int32(42),
+				int64(42),
+				float64(42),
+			)),
+		},
+		"String": {
+			arr:      scalarTypesArray,
+			refValue: "a",
+			expectedArray: must.NotFail(NewArray(
+				"foo",
+			)),
+		},
+		"Binary": {
+			arr:      scalarTypesArray,
+			refValue: Binary{},
+			expectedArray: must.NotFail(NewArray(
+				Binary{},
+			)),
+		},
+		"ObjectID": {
+			arr:      scalarTypesArray,
+			refValue: ObjectID{},
+			expectedArray: must.NotFail(NewArray(
+				ObjectID{},
+			)),
+		},
+		"Boolean": {
+			arr:      scalarTypesArray,
+			refValue: true,
+			expectedArray: must.NotFail(NewArray(
+				true,
+			)),
+		},
+		"Time": {
+			arr:      scalarTypesArray,
+			refValue: time.Time{},
+			expectedArray: must.NotFail(NewArray(
+				time.Time{},
+			)),
+		},
+		"NullType": {
+			arr:      scalarTypesArray,
+			refValue: NullType{},
+			expectedArray: must.NotFail(NewArray(
+				NullType{},
+			)),
+		},
+		"Regex": {
+			arr:      scalarTypesArray,
+			refValue: Regex{},
+			expectedArray: must.NotFail(NewArray(
+				Regex{},
+			)),
+		},
+		"Timestamp": {
+			arr:      scalarTypesArray,
+			refValue: Timestamp(42),
+			expectedArray: must.NotFail(NewArray(
+				Timestamp(42),
+			)),
+		},
+		"EmptyArray": {
+			arr:           emptyArray,
+			refValue:      Timestamp(42),
+			expectedArray: emptyArray,
+		},
+		"Nil": {
+			arr:           nil,
+			refValue:      Timestamp(42),
+			expectedArray: emptyArray,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			res := tc.arr.FilterArrayByType(tc.refValue)
+
+			assert.Equal(t, tc.expectedArray, res)
 		})
 	}
 }

@@ -167,6 +167,7 @@ func TestQuerySortValue(t *testing.T) {
 			sort: bson.D{{"v", 1}, {"_id", 1}},
 			expectedIDs: []any{
 				"null",
+				"unset",
 				"int64-min",
 				"int32-min",
 				"double-zero",
@@ -239,6 +240,7 @@ func TestQuerySortValue(t *testing.T) {
 				"int32-min",
 				"int64-min",
 				"null",
+				"unset",
 			},
 		},
 	} {
@@ -258,68 +260,6 @@ func TestQuerySortValue(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
-func TestQueryCount(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-	for name, tc := range map[string]struct {
-		command  any
-		response int32
-	}{
-		"CountAllDocuments": {
-			command:  bson.D{{"count", collection.Name()}},
-			response: 45,
-		},
-		"CountExactlyOneDocument": {
-			command: bson.D{
-				{"count", collection.Name()},
-				{"query", bson.D{{"v", true}}},
-			},
-			response: 1,
-		},
-		"CountExactlyOneDocumentWithIdFilter": {
-			command: bson.D{
-				{"count", collection.Name()},
-				{"query", bson.D{{"_id", "bool-true"}}},
-			},
-			response: 1,
-		},
-		"CountArrays": {
-			command: bson.D{
-				{"count", collection.Name()},
-				{"query", bson.D{{"v", bson.D{{"$type", "array"}}}}},
-			},
-			response: 6,
-		},
-		"CountNonExistingCollection": {
-			command: bson.D{
-				{"count", "doesnotexist"},
-				{"query", bson.D{{"v", true}}},
-			},
-			response: 0,
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.NoError(t, err)
-
-			m := actual.Map()
-
-			assert.Equal(t, float64(1), m["ok"])
-
-			keys := CollectKeys(t, actual)
-			assert.Contains(t, keys, "n")
-			assert.Equal(t, tc.response, m["n"])
 		})
 	}
 }
@@ -735,8 +675,7 @@ func TestQueryExactMatches(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{
