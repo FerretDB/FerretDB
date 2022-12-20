@@ -21,3 +21,11 @@ body:
     attributes:
       label: Where?
       description: Include a permalink if possible.
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: What should be done to consider this issue done?
+      render: |
+        - [ ] integration tests added
+        - [ ] documentation updated
