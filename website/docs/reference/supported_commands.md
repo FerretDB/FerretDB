@@ -87,7 +87,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 |-------------------|-------------|--------|-----------------------------------------------------------|
 | `$currentDate`    |             | ✅     |                                                           |
 | `$inc`            |             | ✅     |                                                           |
-| `$min`            |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/623)  |
+| `$min`            |             | ✅     |                                                           |
 | `$max`            |             | ✅     |                                                           |
 | `$mul`            |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/625)  |
 | `$rename`         |             | ✅     |                                                           |
