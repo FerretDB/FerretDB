@@ -116,7 +116,7 @@ func TestArrayMinMax(t *testing.T) {
 		"IntMin": {
 			arr:           intArray,
 			minOrMax:      min,
-			expectedValue: int32(2),
+			expectedValue: int64(2),
 		},
 		"FloatMin": {
 			arr:           floatArray,
@@ -126,12 +126,12 @@ func TestArrayMinMax(t *testing.T) {
 		"NumericMin": {
 			arr:           numericArray,
 			minOrMax:      min,
-			expectedValue: 2.0,
+			expectedValue: int64(2),
 		},
 		"ZeroMin": {
 			arr:           zeroArray,
 			minOrMax:      min,
-			expectedValue: math.Copysign(0, -1),
+			expectedValue: int64(0),
 		},
 		"StringMin": {
 			arr:           stingArray,

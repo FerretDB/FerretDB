@@ -202,12 +202,7 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*ty
 		return nil, lazyerrors.Error(err)
 	}
 
-	settings, ok := doc.(*types.Document)
-	if !ok {
-		return nil, lazyerrors.Errorf("invalid settings document: %v", doc)
-	}
-
-	return settings, nil
+	return doc, nil
 }
 
 // setTableInSettings sets the table name for given collection in settings table.

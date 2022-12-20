@@ -345,39 +345,35 @@ tasks:
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
 
-  docker-cache:
-    deps: [gen-version]
-    cmds:
-      - >
-        docker buildx build --builder=ferretdb
-        --build-arg VERSION={{.VERSION}}
-        --build-arg COMMIT={{.COMMIT}}
-        --build-arg RACEFLAG={{.RACEFLAG}}
-        --platform=linux/arm/v7,linux/arm64,linux/amd64
-        .
-    vars:
-      VERSION:
-        sh: cat internal/util/version/gen/version.txt
-      COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
-
   docker-push:
     deps: [gen-version]
     cmds:
-      - test {{.DOCKER_IMAGE}}
       - >
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --build-arg RACEFLAG={{.RACEFLAG}}
         --platform=linux/arm/v7,linux/arm64,linux/amd64
-        --tag={{.DOCKER_IMAGE}}
+        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --push .
     vars:
       VERSION:
         sh: cat internal/util/version/gen/version.txt
       COMMIT:
         sh: cat internal/util/version/gen/commit.txt
+
+  docker-push-release:
+    cmds:
+      - task: docker-push
+        vars:
+          DOCKER_IMAGES: >
+              ferretdb/ferretdb:latest,
+              ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
+              ghcr.io/ferretdb/ferretdb:latest,
+              ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
+    vars:
+      VERSION:
+        sh: cat internal/util/version/gen/version.txt
 
   packages:
     cmds:
