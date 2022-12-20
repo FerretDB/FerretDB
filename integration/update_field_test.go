@@ -501,40 +501,8 @@ func TestUpdateFieldPopArrayOperator(t *testing.T) {
 			err    *mongo.WriteError
 			alt    string
 		}{
-			"PopNotValidValueString": {
-				id:     "array",
-				update: bson.D{{"$pop", bson.D{{"v", "foo"}}}},
-				err: &mongo.WriteError{
-					Code:    9,
-					Message: "Expected a number in: v: \"foo\"",
-				},
-			},
-			"PopNotValidValueInt": {
-				id:     "array",
-				update: bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
-				err: &mongo.WriteError{
-					Code:    9,
-					Message: "$pop expects 1 or -1, found: 42",
-				},
-			},
-			"PopOnNonArray": {
-				id:     "int32",
-				update: bson.D{{"$pop", bson.D{{"v", 1}}}},
-				err: &mongo.WriteError{
-					Code:    14,
-					Message: "Path 'v' contains an element of non-array type 'int'",
-				},
-			},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/666
-			//"PopLastAndFirst": {
-			//	id:     "array-three",
-			//	update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
-			//	err: &mongo.WriteError{
-			//		Code:    40,
-			//		Message: "Updating the path 'v' would create a conflict at 'v'",
-			//	},
-			//},
 			"PopDotNotationNonArray": {
+				// TODO remove https://github.com/FerretDB/FerretDB/issues/1663
 				id:     "document-composite",
 				update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
 				err: &mongo.WriteError{

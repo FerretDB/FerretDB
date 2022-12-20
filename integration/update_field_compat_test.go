@@ -480,9 +480,6 @@ func TestUpdateFieldCompatPop(t *testing.T) {
 			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
 		},
-		"PopEmptyArray": {
-			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
-		},
 		"PopNoSuchKey": {
 			update:     bson.D{{"$pop", bson.D{{"foo", 1}}}},
 			resultType: emptyResult,
@@ -490,6 +487,22 @@ func TestUpdateFieldCompatPop(t *testing.T) {
 		"PopEmptyValue": {
 			update:     bson.D{{"$pop", bson.D{}}},
 			resultType: emptyResult,
+		},
+		"PopNotValidValueString": {
+			update:     bson.D{{"$pop", bson.D{{"v", "foo"}}}},
+			resultType: emptyResult,
+		},
+		"PopNotValidValueInt": {
+			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
+			resultType: emptyResult,
+		},
+		"PopLastAndFirst": {
+			update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/666",
+		},
+		"PopDotNotationNonArray": {
+			update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
 		},
 	}
 
