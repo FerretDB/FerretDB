@@ -32,7 +32,7 @@ func SetDocumentByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, id any, doc *
 		return 0, err
 	}
 
-	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
+	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return 0, err
 	}

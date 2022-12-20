@@ -68,7 +68,7 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 
 	var table string
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err = getTableName(ctx, tx, db, collection)
+		table, err = getSettings(ctx, tx, db, collection)
 		return err
 	})
 	if err != nil {

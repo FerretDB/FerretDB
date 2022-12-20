@@ -56,7 +56,7 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDoc))
 
 		sp := &SQLParam{DB: databaseName, Collection: collection}
-		it, err := pool.GetDocuments(ctx, tx, sp)
+		it, err := GetDocuments(ctx, tx, sp)
 		require.NoError(t, err)
 		require.NotNil(t, it)
 
@@ -94,7 +94,7 @@ func TestGetDocuments(t *testing.T) {
 
 		ctxTest, cancel := context.WithCancel(ctx)
 		sp := &SQLParam{DB: databaseName, Collection: collection}
-		it, err := pool.GetDocuments(ctxTest, tx, sp)
+		it, err := GetDocuments(ctxTest, tx, sp)
 		require.NoError(t, err)
 		require.NotNil(t, it)
 
@@ -127,7 +127,7 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, CreateCollection(ctx, tx, databaseName, collection))
 
 		sp := &SQLParam{DB: databaseName, Collection: collection}
-		it, err := pool.GetDocuments(ctx, tx, sp)
+		it, err := GetDocuments(ctx, tx, sp)
 		require.NoError(t, err)
 		require.NotNil(t, it)
 
@@ -150,7 +150,7 @@ func TestGetDocuments(t *testing.T) {
 		defer tx.Rollback(ctx)
 
 		sp := &SQLParam{DB: databaseName, Collection: collectionName + "-non-existent"}
-		it, err := pool.GetDocuments(ctx, tx, sp)
+		it, err := GetDocuments(ctx, tx, sp)
 		require.NoError(t, err)
 		require.NotNil(t, it)
 

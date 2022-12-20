@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -42,54 +45,140 @@ const (
 // addSettingsIfNotExists returns settings (pg table name) for the given database and collection.
 // If such settings don't exist, it creates them.
 // TODO replace pgPool with tx.
-func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection string) (string, error) {
+func addSettingsIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	var tableName string
 
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-			return lazyerrors.Error(err)
-		}
+	if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+		return "", lazyerrors.Error(err)
+	}
 
-		// Create settings table and index if needed and insert a row to describe the collection.
-		err := createTableIfNotExists(ctx, tx, db, settingsTableName)
-		if err != nil {
-			return err
-		}
+	// Create settings table and index if needed and insert a row to describe the collection.
+	err := createTableIfNotExists(ctx, tx, db, settingsTableName)
+	if err != nil {
+		return "", err
+	}
 
-		params := indexParams{
-			schema:   db,
-			table:    settingsTableName,
-			field:    "table",
-			isUnique: true,
-		}
-		err = createIndexIfNotExists(ctx, tx, params)
-		if err != nil {
-			return err
-		}
-
-		tableName = formatCollectionName(collection)
-		settings := must.NotFail(types.NewDocument(
-			"table", tableName,
-			"collection", collection,
-		))
-
-		p := insertParams{
-			schema:         db,
-			table:          settingsTableName,
-			doc:            settings,
-			ignoreConflict: true,
-		}
-		if err := insert(ctx, tx, p); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		return nil
+	// Index to ensure that table name is unique
+	err = createIndexIfNotExists(ctx, tx, indexParams{
+		schema:   db,
+		table:    settingsTableName,
+		field:    "table",
+		isUnique: true,
 	})
 	if err != nil {
 		return "", err
 	}
 
+	// Index to ensure that collection name is unique
+	err = createIndexIfNotExists(ctx, tx, indexParams{
+		schema:   db,
+		table:    settingsTableName,
+		field:    "collection",
+		isUnique: true,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	tableName = formatCollectionName(collection)
+	settings := must.NotFail(types.NewDocument(
+		"table", tableName,
+		"collection", collection,
+	))
+
+	p := insertParams{
+		schema:         db,
+		table:          settingsTableName,
+		doc:            settings,
+		ignoreConflict: true,
+	}
+	if err := insert(ctx, tx, p); err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	if err != nil {
+		return "", err
+	}
+
 	return tableName, nil
+}
+
+// getSettings returns settings (table name) for the given database and collection.
+// If such settings don't exist, it returns an error.
+func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+	it, err := buildIterator(ctx, tx, iteratorParams{
+		schema: db,
+		table:  settingsTableName,
+		filter: must.NotFail(types.NewDocument("collection", collection)),
+	})
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	_, doc, err := it.Next()
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	it.Close()
+
+	table, err := doc.Get("table")
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return table.(string), nil
+}
+
+// Collections returns a sorted list of FerretDB collection names.
+//
+// It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
+func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
+	schemaExists, err := schemaExists(ctx, tx, db)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !schemaExists {
+		return nil, ErrSchemaNotExist
+	}
+
+	var collections []string
+	defer slices.Sort(collections) // sort the result before returning
+
+	sp := SQLParam{
+		DB:         db,
+		Collection: settingsTableName,
+	}
+
+	it, err := GetDocuments(ctx, tx, &sp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			return collections, nil
+		default:
+			return nil, err
+		}
+
+		collections = append(collections, must.NotFail(doc.Get("collection")).(string))
+	}
 }
 
 // createSettingsTable creates FerretDB settings table if it doesn't exist.
@@ -141,7 +230,7 @@ func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection st
 // getTableName returns the name of the table for given collection or error.
 // If the settings table doesn't exist, it will be created.
 // If the record for collection doesn't exist, it will be created.
-func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+/*func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -151,7 +240,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 		return formatCollectionName(collection), nil
 	}
 
-	/*	tables, err := tables(ctx, tx, db)
+		tables, err := tables(ctx, tx, db)
 		if err != nil {
 			return "", lazyerrors.Error(err)
 		}
@@ -161,7 +250,7 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 			if err != nil {
 				return "", err
 			}
-		}*/
+		}
 
 	settings, err := getSettingsTable(ctx, tx, db, false)
 	if err != nil {
@@ -186,11 +275,11 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 	}
 
 	return tableName, nil
-}
+}*/
 
 // getSettingsTable returns FerretDB settings table.
 // If lock is true, the table's row will be locked through SELECT FOR UPDATE, use it if you need to modify settings.
-func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*types.Document, error) {
+/*func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*types.Document, error) {
 	sql := fmt.Sprintf(`SELECT settings FROM %s`, pgx.Identifier{db, settingsTableName}.Sanitize())
 
 	if lock {
@@ -218,14 +307,14 @@ func getSettingsTable(ctx context.Context, tx pgx.Tx, db string, lock bool) (*ty
 	}
 
 	return doc, nil
-}
+}*/
 
 // setTableInSettings sets the table name for given collection in settings table.
 // As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
 // explicit lock is used to prevent concurrent modifications.
 // If the collection is already present in settings, ErrAlreadyExist will be returned.
-func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table string) error {
-	settings, err := getSettingsTable(ctx, tx, db, true)
+/*func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table string) error {
+	settings, err := getSettings(ctx, tx, db, true)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -248,33 +337,13 @@ func setTableInSettings(ctx context.Context, tx pgx.Tx, db, collection, table st
 
 	return nil
 }
+*/
 
 // removeTableFromSettings removes collection from FerretDB settings table.
 // As it's not possible to modify the settings table with a single operator (the data need to be retrieved first),
 // explicit lock is used to prevent concurrent modifications.
 // If the collection is not present in settings, ErrTableNotExist will be returned.
 func removeTableFromSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	settings, err := getSettingsTable(ctx, tx, db, true)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	collections := must.NotFail(settings.Get("collections")).(*types.Document)
-
-	if !collections.Has(collection) {
-		return ErrTableNotExist
-	}
-
-	collections.Remove(collection)
-	settings.Set("collections", collections)
-
-	sql := fmt.Sprintf(`UPDATE %s SET settings = $1`, pgx.Identifier{db, settingsTableName}.Sanitize())
-
-	_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(settings)))
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
 	return nil
 }
 

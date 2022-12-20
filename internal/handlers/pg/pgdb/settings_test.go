@@ -17,6 +17,8 @@ package pgdb
 import (
 	"testing"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -32,9 +34,22 @@ func TestSettingsCreateDelete(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	_, err := addSettingsIfNotExists(ctx, pool, databaseName, collectionName)
-	require.NoError(t, err)
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		created, err := addSettingsIfNotExists(ctx, tx, databaseName, collectionName)
+		require.NoError(t, err)
 
-	_, err = addSettingsIfNotExists(ctx, pool, databaseName, collectionName)
+		var found string
+
+		found, err = getSettings(ctx, tx, databaseName, collectionName)
+		require.NoError(t, err)
+
+		assert.Equal(t, created, found)
+
+		// adding settings that already exist should not fail
+		_, err = addSettingsIfNotExists(ctx, tx, databaseName, collectionName)
+		require.NoError(t, err)
+
+		return nil
+	})
 	require.NoError(t, err)
 }

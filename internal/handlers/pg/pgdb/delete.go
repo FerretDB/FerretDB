@@ -26,7 +26,7 @@ import (
 
 // DeleteDocumentsByID deletes documents by given IDs.
 func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any) (int64, error) {
-	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
+	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return 0, err
 	}

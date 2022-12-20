@@ -25,45 +25,11 @@ import (
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // validateCollectionNameRe validates collection names.
 var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,119}$")
-
-// Collections returns a sorted list of FerretDB collection names.
-//
-// It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
-func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
-	schemaExists, err := schemaExists(ctx, tx, db)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if !schemaExists {
-		return nil, ErrSchemaNotExist
-	}
-
-	settings, err := getSettingsTable(ctx, tx, db, false)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	collectionsDoc := must.NotFail(settings.Get("collections"))
-
-	collections, ok := collectionsDoc.(*types.Document)
-	if !ok {
-		return nil, lazyerrors.Errorf("invalid settings document: %v", collectionsDoc)
-	}
-
-	// TODO sort collections on update
-	names := collections.Keys()
-	slices.Sort(names)
-
-	return names, nil
-}
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
@@ -101,20 +67,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrSchemaNotExist
 	}
 
-	table := formatCollectionName(collection)
-	tables, err := tables(ctx, tx, db)
-	if err != nil {
-		return err
-	}
-	if slices.Contains(tables, table) {
-		return ErrAlreadyExist
-	}
-
-	err = setTableInSettings(ctx, tx, db, collection, table)
-	if errors.Is(err, ErrAlreadyExist) {
-		return ErrAlreadyExist
-	}
-
+	table, err := addSettingsIfNotExists(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
