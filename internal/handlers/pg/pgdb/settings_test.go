@@ -35,7 +35,7 @@ func TestSettings(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		created, err := addSettingsIfNotExists(ctx, tx, databaseName, collectionName)
+		created, err := upsertSettings(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
 		var found string
@@ -46,7 +46,7 @@ func TestSettings(t *testing.T) {
 		assert.Equal(t, created, found)
 
 		// adding settings that already exist should not fail
-		_, err = addSettingsIfNotExists(ctx, tx, databaseName, collectionName)
+		_, err = upsertSettings(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
 		err = removeSettings(ctx, tx, databaseName, collectionName)

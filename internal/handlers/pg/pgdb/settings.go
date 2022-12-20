@@ -37,7 +37,7 @@ const (
 	maxTableNameLength = 63
 )
 
-// addSettingsIfNotExists returns PostgreSQL table name for the given FerretDB database and collection names.
+// upsertSettings returns PostgreSQL table name for the given FerretDB database and collection names.
 // If such settings don't exist, it creates them.
 //
 // It makes a document with _id and table fields and stores it in the settingsTableName table.
@@ -47,7 +47,7 @@ const (
 //
 // If a PostgreSQL conflict occurs, it returns a possible wrapped transactionConflictError error
 // which indicates that the caller could retry the transaction.
-func addSettingsIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	var tableName string
 
 	if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {

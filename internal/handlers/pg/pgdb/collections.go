@@ -111,7 +111,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrSchemaNotExist
 	}
 
-	table, err := addSettingsIfNotExists(ctx, tx, db, collection)
+	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
