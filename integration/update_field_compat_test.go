@@ -71,6 +71,82 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
 			resultType: emptyResult,
 		},
+		"DoubleIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", float64(42.13)}}}},
+		},
+		"DoubleNegativeIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", float64(-42.13)}}}},
+		},
+		"DoubleIncrementIntField": {
+			update: bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
+		},
+		"DoubleIncrementLongField": {
+			update: bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
+		},
+		"DoubleIntIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
+		},
+		"DoubleLongIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
+		},
+		"DoubleDoubleBigIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", float64(2 << 60)}}}},
+		},
+		"DoubleBigDoubleIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+		},
+		"DoubleMaxDoublePositiveIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", 42.13}}}},
+		},
+		"DoubleMaxDoubleNegativeIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", -42.13}}}},
+		},
+		"IntIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
+		},
+		"IntNegativeIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(-1)}}}},
+		},
+		"IntIncrementDoubleField": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
+		},
+		"IntIncrementLongField": {
+			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
+		},
+		"LongIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
+		},
+		"LongNegativeIncrement": {
+			update: bson.D{{"$inc", bson.D{{"v", int64(-1)}}}},
+		},
+		"LongIncrementDoubleField": {
+			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
+		},
+		"LongIncrementIntField": {
+			update: bson.D{{"$inc", bson.D{{"v", int64(1)}}}},
+		},
+		"FieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
+		},
+		"IncTwoFields": {
+			update: bson.D{{"$inc", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
+		},
+		"DotNotationDocumentFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+		},
+		"DotNotationDocumentFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"foo.0.baz", int32(1)}}}},
+		},
+		"DocumentDotNotationArrayFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
