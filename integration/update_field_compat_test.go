@@ -306,6 +306,14 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update:     bson.D{{"$unset", bson.D{{"v", ""}, {"v", ""}}}},
 			resultType: emptyResult,
 		},
+		"Empty": {
+			update:     bson.D{{"$unset", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"EmptyArray": {
+			update:     bson.D{{"$unset", bson.A{}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)

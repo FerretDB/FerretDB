@@ -373,66 +373,6 @@ func TestUpdateFieldSet(t *testing.T) {
 	}
 }
 
-func TestUpdateFieldUnset(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		id           string
-		update       bson.D
-		expected     bson.D
-		expectedStat *mongo.UpdateResult
-		err          *mongo.WriteError
-		alt          string
-	}{
-		"Empty": {
-			id:       "string",
-			update:   bson.D{{"$unset", bson.D{}}},
-			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
-			expectedStat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-		},
-		"EmptyArray": {
-			id:     "document-composite",
-			update: bson.D{{"$unset", bson.A{}}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type array instead. " +
-					"For example: {$mod: {<field>: ...}} not {$unset: []}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-			opts := options.Update().SetUpsert(true)
-			actualStat, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, opts)
-
-			if tc.err != nil {
-				require.Nil(t, tc.expected)
-				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
-				return
-			}
-
-			require.NoError(t, err)
-			actualStat.UpsertedID = nil
-			assert.Equal(t, tc.expectedStat, actualStat)
-
-			var actual bson.D
-			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
-			require.NoError(t, err)
-			AssertEqualDocuments(t, tc.expected, actual)
-		})
-	}
-}
-
 func TestUpdateFieldMixed(t *testing.T) {
 	setup.SkipForTigris(t)
 
