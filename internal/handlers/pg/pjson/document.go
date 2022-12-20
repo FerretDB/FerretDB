@@ -29,8 +29,8 @@ type documentType types.Document
 // pjsontype implements pjsontype interface.
 func (doc *documentType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
-func (doc *documentType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
+func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -47,30 +47,31 @@ func (doc *documentType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	b, ok := rawMessages["$k"]
-	if !ok {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing $k")
+	if len(rawMessages) == 0 {
+		*doc = documentType{}
+		return nil
 	}
 
-	var keys []string
-	if err := json.Unmarshal(b, &keys); err != nil {
-		return lazyerrors.Error(err)
+	if sch == nil {
+		return lazyerrors.Errorf("document schema is nil for non-empty document")
 	}
 
-	if len(keys)+1 != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k, %d in total", len(keys), len(rawMessages))
+	if len(sch.Keys) != len(rawMessages) {
+		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k in the schema, %d in the document",
+			len(sch.Keys), len(rawMessages),
+		)
 	}
 
 	td := must.NotFail(types.NewDocument())
 
-	for _, key := range keys {
-		b, ok = rawMessages[key]
+	for _, key := range sch.Keys {
+		b, ok := rawMessages[key]
 
 		if !ok {
 			return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
 
-		v, err := Unmarshal(b)
+		v, err := unmarshalSingleValue(b, sch.Properties[key])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -89,22 +90,17 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 
 	var buf bytes.Buffer
 
-	buf.WriteString(`{"$k":`)
+	buf.WriteString(`{`)
 
 	keys := td.Keys()
-	if keys == nil {
-		keys = []string{}
-	}
 
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	for i, key := range keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
 
-	buf.Write(b)
-
-	for _, key := range keys {
-		buf.WriteByte(',')
+		var b []byte
+		var err error
 
 		if b, err = json.Marshal(key); err != nil {
 			return nil, lazyerrors.Error(err)
@@ -118,7 +114,7 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		b, err := Marshal(value)
+		b, err = MarshalSingleValue(value)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

@@ -15,12 +15,15 @@
 package pjson
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -30,8 +33,27 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 	for name, tc := range map[string]struct {
 		json   string
 		schema schema
+		doc    *types.Document
 	}{
 		"AllTypes": {
+			doc: must.NotFail(types.NewDocument(
+				"_id", types.NewObjectID(),
+				"arr", must.NotFail(types.NewArray(
+					true,
+					time.Now(),
+					types.Regex{Pattern: "foo$", Options: "i"},
+					must.NotFail(types.NewDocument(
+						"arr", must.NotFail(types.NewArray(
+							int32(42), types.NextTimestamp(time.Now()),
+						)),
+						"bar", types.Null,
+						"baz", int64(42),
+					)),
+				)),
+				"data", types.Binary{B: []byte("foo"), Subtype: types.BinaryGeneric},
+				"distance", 1.1,
+				"name", "foo",
+			)),
 			schema: schema{
 				Properties: map[string]*elem{
 					"_id": objectIDSchema,
@@ -45,8 +67,6 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 								Type: elemTypeObject,
 								Schema: &schema{
 									Properties: map[string]*elem{
-										"bar": nullSchema,
-										"baz": longSchema,
 										"arr": {
 											Type: elemTypeArray,
 											Items: []*elem{
@@ -54,13 +74,15 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 												timestampSchema,
 											},
 										},
+										"bar": nullSchema,
+										"baz": longSchema,
 									},
-									Keys: []string{"bar", "baz", "arr"},
+									Keys: []string{"arr", "bar", "baz"},
 								},
 							},
 						},
 					},
-					"data":     binDataSchema(byte(types.BinaryFunction)),
+					"data":     binDataSchema(types.BinaryGeneric),
 					"distance": doubleSchema,
 					"name":     stringSchema,
 				},
@@ -82,10 +104,10 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 								"bar": {"t": "null"},
 								"baz": {"t": "long"}
 							},
-							"$k": ["bar", "baz", "arr"]
+							"$k": ["arr", "bar", "baz"]
 						}}
 					]},
-					"data": {"t": "binData", "s": 1},
+					"data": {"t": "binData", "s": 0},
 					"distance": {"t": "double"},
 					"name": {"t": "string"}
 				},
@@ -93,6 +115,14 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 			}`,
 		},
 		"Embedded": {
+			doc: must.NotFail(types.NewDocument(
+				"obj", must.NotFail(types.NewDocument(
+					"arr", must.NotFail(types.NewArray(
+						must.NotFail(types.NewDocument()),
+						must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray()))),
+					)),
+					"empty-arr", must.NotFail(types.NewArray()),
+				)))),
 			schema: schema{
 				Properties: map[string]*elem{
 					"obj": {
@@ -103,14 +133,16 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 									Type: elemTypeArray,
 									Items: []*elem{
 										{
-											Type: elemTypeObject,
+											Type:   elemTypeObject,
+											Schema: new(schema),
 										},
 										{
 											Type: elemTypeObject,
 											Schema: &schema{
 												Properties: map[string]*elem{
 													"foo": {
-														Type: elemTypeArray,
+														Type:  elemTypeArray,
+														Items: []*elem{},
 													},
 												},
 												Keys: []string{"foo"},
@@ -119,7 +151,8 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 									},
 								},
 								"empty-arr": {
-									Type: elemTypeArray,
+									Type:  elemTypeArray,
+									Items: []*elem{},
 								},
 							},
 							Keys: []string{"arr", "empty-arr"},
@@ -133,11 +166,11 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 					"obj": {"t": "object", "$s": {
 						"p": {	
 							"arr": {"t": "array", "i": [
-								{"t": "object"}, {"t": "object", "$s": {
-									"p": {"foo": {"t": "array"}}, "$k": ["foo"]
+								{"t": "object", "$s": {}}, {"t": "object", "$s": {
+									"p": {"foo": {"t": "array", "i":[]}}, "$k": ["foo"]
 								}}
 							]},
-							"empty-arr": {"t": "array"}				
+							"empty-arr": {"t": "array", "i":[]}				
 						},
 						"$k": ["arr", "empty-arr"]
 					}}
@@ -151,18 +184,19 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			actualB, err := tc.schema.Marshal()
+			// Schema unmarshalled from json
+			var unm schema
+			err := json.Unmarshal([]byte(tc.json), &unm)
 			require.NoError(t, err)
-			actualB = testutil.IndentJSON(t, actualB)
+			assert.Equal(t, tc.schema, unm)
+
+			// Schema made from doc
+			made, err := marshalSchemaForDoc(tc.doc)
+			require.NoError(t, err)
 
 			expectedB := testutil.IndentJSON(t, []byte(tc.json))
+			actualB := testutil.IndentJSON(t, made)
 			require.Equal(t, string(expectedB), string(actualB))
-
-			var actual schema
-			err = actual.Unmarshal(expectedB)
-			require.NoError(t, err)
-
-			assert.Equal(t, tc.schema, actual)
 		})
 	}
 }

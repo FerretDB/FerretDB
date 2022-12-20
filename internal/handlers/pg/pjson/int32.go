@@ -27,7 +27,7 @@ type int32Type int32
 // pjsontype implements pjsontype interface.
 func (i *int32Type) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (i *int32Type) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
