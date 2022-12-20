@@ -291,67 +291,8 @@ func TestUpdateFieldSet(t *testing.T) {
 		stat     *mongo.UpdateResult
 		alt      string
 	}{
-		"Many": {
-			id:       "string",
-			update:   bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
-			expected: bson.D{{"_id", "string"}, {"v", "foo"}, {"bar", bson.A{}}, {"foo", int32(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"NilOperand": {
-			id:     "string",
-			update: bson.D{{"$set", nil}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type null instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: null}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"String": {
-			id:     "string",
-			update: bson.D{{"$set", "string"}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type string instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: \"string\"}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"Array": {
-			id:     "string",
-			update: bson.D{{"$set", bson.A{}}},
-			err: &mongo.WriteError{
-				Code: 9,
-				Message: "Modifiers operate on fields but we found type array instead. " +
-					"For example: {$mod: {<field>: ...}} not {$set: []}",
-			},
-			alt: "Modifiers operate on fields but we found another type instead",
-		},
-		"EmptyDoc": {
-			id:       "string",
-			update:   bson.D{{"$set", bson.D{}}},
-			expected: bson.D{{"_id", "string"}, {"v", "foo"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-		},
-		"OkSetString": {
-			id:       "string",
-			update:   bson.D{{"$set", bson.D{{"v", "ok value"}}}},
-			expected: bson.D{{"_id", "string"}, {"v", "ok value"}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"ArrayNil": {
+			// TODO remove https://github.com/FerretDB/FerretDB/issues/1662
 			id:       "string",
 			update:   bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
 			expected: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
@@ -361,67 +302,8 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"FieldNotExist": {
-			id:       "string",
-			update:   bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
-			expected: bson.D{{"_id", "string"}, {"v", "foo"}, {"foo", int32(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"Double": {
-			id:       "double",
-			update:   bson.D{{"$set", bson.D{{"v", float64(1)}}}},
-			expected: bson.D{{"_id", "double"}, {"v", float64(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"EmptyArray": {
-			id:       "double",
-			update:   bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
-			expected: bson.D{{"_id", "double"}, {"v", bson.A{}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"Null": {
-			id:       "double",
-			update:   bson.D{{"$set", bson.D{{"v", nil}}}},
-			expected: bson.D{{"_id", "double"}, {"v", nil}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"Int32": {
-			id:       "double",
-			update:   bson.D{{"$set", bson.D{{"v", int32(1)}}}},
-			expected: bson.D{{"_id", "double"}, {"v", int32(1)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"SetTwoFields": {
-			id:       "int32-zero",
-			update:   bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
-			expected: bson.D{{"_id", "int32-zero"}, {"v", nil}, {"foo", int32(12)}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"SetSameValueInt": {
+			// TODO remove https://github.com/FerretDB/FerretDB/issues/1662
 			id:       "int32",
 			update:   bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
@@ -432,6 +314,7 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"DotNotationDocumentFieldExist": {
+			// TODO remove https://github.com/FerretDB/FerretDB/issues/1661
 			id:       "document-composite",
 			update:   bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
 			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(1)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
@@ -441,17 +324,8 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"DotNotationDocumentFieldNotExist": {
-			id:       "int32",
-			update:   bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
-			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}, {"foo", bson.D{{"bar", int32(1)}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"DotNotationArrayFieldExist": {
+			// TODO remove https://github.com/FerretDB/FerretDB/issues/1661
 			id:       "document-composite",
 			update:   bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
 			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(1), "foo", nil}}}}},
@@ -461,21 +335,8 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"DotNotationArrayFieldNotExist": {
-			id:     "int32",
-			update: bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
-			expected: bson.D{
-				{"_id", "int32"},
-				{"v", int32(42)},
-				{"foo", bson.D{{"0", bson.D{{"baz", int32(1)}}}}},
-			},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 		"DocumentDotNotationArrayFieldNotExist": {
+			// TODO remove https://github.com/FerretDB/FerretDB/issues/1661
 			id:     "document",
 			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
 			expected: bson.D{

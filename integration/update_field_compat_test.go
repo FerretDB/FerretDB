@@ -322,6 +322,72 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
 			resultType: emptyResult,
 		},
+		"Many": {
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+		},
+		"NilOperand": {
+			update:     bson.D{{"$set", nil}},
+			resultType: emptyResult,
+		},
+		"String": {
+			update:     bson.D{{"$set", "string"}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			update:     bson.D{{"$set", bson.A{}}},
+			resultType: emptyResult,
+		},
+		"EmptyDoc": {
+			update:     bson.D{{"$set", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"OkSetString": {
+			update: bson.D{{"$set", bson.D{{"v", "ok value"}}}},
+		},
+		"ArrayNil": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
+		},
+		"FieldNotExist": {
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
+		},
+		"Double": {
+			update: bson.D{{"$set", bson.D{{"v", float64(1)}}}},
+		},
+		"EmptyArray": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
+		},
+		"Null": {
+			update: bson.D{{"$set", bson.D{{"v", nil}}}},
+		},
+		"Int32": {
+			update: bson.D{{"$set", bson.D{{"v", int32(1)}}}},
+		},
+		"SetTwoFields": {
+			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
+		},
+		"SetSameValueInt": {
+			update: bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
+		},
+		"DotNotationDocumentFieldExist": {
+			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
+		},
+		"DotNotationDocumentFieldNotExist": {
+			update: bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
+		},
+		"DocumentDotNotationArrayFieldNotExist": {
+			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
