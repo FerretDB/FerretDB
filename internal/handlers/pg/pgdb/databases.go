@@ -71,9 +71,9 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 	}
 
 	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
-	if err == nil {
+	/*if err == nil {
 		err = createSettingsTable(ctx, tx, db)
-	}
+	}*/
 
 	if err == nil || errors.Is(err, ErrAlreadyExist) {
 		return nil

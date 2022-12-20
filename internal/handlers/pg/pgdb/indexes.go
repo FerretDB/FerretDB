@@ -13,3 +13,51 @@
 // limitations under the License.
 
 package pgdb
+
+import (
+	"context"
+	"errors"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+type indexParams struct {
+	schema   string // pg schema name
+	table    string // pg table name
+	field    string // _jsonb's nested field name
+	isUnique bool   // whether the index is unique
+}
+
+// createIndexIfNotExists creates a new index for the given params if it does not exist.
+func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error {
+	var err error
+
+	unique := ""
+	if p.isUnique {
+		unique = " UNIQUE"
+	}
+
+	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{p.table + "_" + p.field}.Sanitize() +
+		` ON ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
+		` ((_jsonb->>'` + pgx.Identifier{p.field}.Sanitize() + `'))`
+
+	if _, err = tx.Exec(ctx, sql); err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+		return newTransactionConflictError(err)
+	default:
+		return lazyerrors.Error(err)
+	}
+}

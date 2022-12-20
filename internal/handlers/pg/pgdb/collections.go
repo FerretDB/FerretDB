@@ -119,24 +119,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return lazyerrors.Error(err)
 	}
 
-	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
-	if _, err = tx.Exec(ctx, sql); err == nil {
-		return nil
-	}
-
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Error(err)
-	}
+	return createTableIfNotExists(ctx, tx, db, table)
 }
 
 // CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
@@ -226,4 +209,32 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	}
 
 	return nil
+}
+
+// createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
+// If the table doesn't exist, it creates it.
+// If the table already exists, it does nothing.
+// If PostgreSQL can't create a table due to a concurrent connection (conflict), it returns errTransactionConflict.
+// Otherwise, it returns some other possibly wrapped error.
+func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
+	var err error
+
+	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
+	if _, err = tx.Exec(ctx, sql); err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
+		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+		// Reproducible by integration tests.
+		return newTransactionConflictError(err)
+	default:
+		return lazyerrors.Error(err)
+	}
 }

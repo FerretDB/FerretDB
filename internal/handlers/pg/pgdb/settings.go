@@ -20,10 +20,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -53,8 +50,21 @@ func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection st
 			return lazyerrors.Error(err)
 		}
 
-		if _, err := CreateCollectionIfNotExist(ctx, pgPool, db, collection); err != nil {
-			return lazyerrors.Error(err)
+		// Create settings table and index if needed and insert a row to describe the collection.
+		err := createTableIfNotExists(ctx, tx, db, settingsTableName)
+		if err != nil {
+			return err
+		}
+
+		params := indexParams{
+			schema:   db,
+			table:    settingsTableName,
+			field:    "table",
+			isUnique: true,
+		}
+		err = createIndexIfNotExists(ctx, tx, params)
+		if err != nil {
+			return err
 		}
 
 		tableName = formatCollectionName(collection)
@@ -69,8 +79,7 @@ func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection st
 
 		return nil
 	})
-
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
+	if err != nil {
 		return "", err
 	}
 
@@ -80,7 +89,7 @@ func addSettingsIfNotExists(ctx context.Context, pgPool *Pool, db, collection st
 // createSettingsTable creates FerretDB settings table if it doesn't exist.
 // Settings table is used to store FerretDB settings like collections names mapping.
 // That table consists of a single document with settings.
-func createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
+/*func createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
 	tables, err := tables(ctx, tx, db)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -121,7 +130,7 @@ func createSettingsTable(ctx context.Context, tx pgx.Tx, db string) error {
 	}
 
 	return nil
-}
+}*/
 
 // getTableName returns the name of the table for given collection or error.
 // If the settings table doesn't exist, it will be created.
@@ -136,17 +145,17 @@ func getTableName(ctx context.Context, tx pgx.Tx, db, collection string) (string
 		return formatCollectionName(collection), nil
 	}
 
-	tables, err := tables(ctx, tx, db)
-	if err != nil {
-		return "", lazyerrors.Error(err)
-	}
-
-	if !slices.Contains(tables, settingsTableName) {
-		err = createSettingsTable(ctx, tx, db)
+	/*	tables, err := tables(ctx, tx, db)
 		if err != nil {
-			return "", err
+			return "", lazyerrors.Error(err)
 		}
-	}
+
+		if !slices.Contains(tables, settingsTableName) {
+			err = createSettingsTable(ctx, tx, db)
+			if err != nil {
+				return "", err
+			}
+		}*/
 
 	settings, err := getSettingsTable(ctx, tx, db, false)
 	if err != nil {
