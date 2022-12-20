@@ -145,7 +145,7 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
-	query += ` SELECT _jsonb `
+	query += `SELECT _jsonb `
 
 	if c := sp.Comment; c != "" {
 		// prevent SQL injections
