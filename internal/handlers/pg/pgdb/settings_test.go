@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestSettingsCreateDelete(t *testing.T) {
+func TestSettings(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
@@ -47,6 +47,9 @@ func TestSettingsCreateDelete(t *testing.T) {
 
 		// adding settings that already exist should not fail
 		_, err = addSettingsIfNotExists(ctx, tx, databaseName, collectionName)
+		require.NoError(t, err)
+
+		err = removeSettings(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
 		return nil

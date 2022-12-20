@@ -29,7 +29,6 @@ import (
 type indexParams struct {
 	schema   string // pg schema name
 	table    string // pg table name
-	field    string // _jsonb's nested field name
 	isUnique bool   // whether the index is unique
 }
 
@@ -42,9 +41,9 @@ func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error
 		unique = " UNIQUE"
 	}
 
-	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{p.table + "_" + p.field}.Sanitize() +
+	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{p.table + "_id"}.Sanitize() +
 		` ON ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
-		` ((_jsonb->>'` + pgx.Identifier{p.field}.Sanitize() + `'))`
+		` ((_jsonb->>'_id'))`
 
 	if _, err = tx.Exec(ctx, sql); err == nil {
 		return nil

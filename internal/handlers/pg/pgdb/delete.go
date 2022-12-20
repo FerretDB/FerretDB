@@ -31,6 +31,22 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 		return 0, err
 	}
 
+	return deleteByIds(ctx, tx, deleteParams{
+		schema:  sp.DB,
+		table:   table,
+		comment: sp.Comment,
+	}, ids)
+}
+
+// deleteParams describes the parameters for deleting a document from a table.
+type deleteParams struct {
+	schema  string // pg schema name
+	table   string // pg table name
+	comment string // comment to add to the query
+}
+
+// insert marshals and inserts a document into the given pg table in the given schema.
+func deleteByIds(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))
@@ -42,14 +58,14 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 
 	sql := `DELETE `
 
-	if sp.Comment != "" {
-		sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-		sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+	if d.comment != "" {
+		d.comment = strings.ReplaceAll(d.comment, "/*", "/ *")
+		d.comment = strings.ReplaceAll(d.comment, "*/", "* /")
 
-		sql += `/* ` + sp.Comment + ` */ `
+		sql += `/* ` + d.comment + ` */ `
 	}
 
-	sql += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize() +
+	sql += `FROM ` + pgx.Identifier{d.schema, d.table}.Sanitize() +
 		` WHERE _jsonb->'_id' IN (` + strings.Join(placeholders, ", ") + `)`
 
 	tag, err := tx.Exec(ctx, sql, idsMarshalled...)

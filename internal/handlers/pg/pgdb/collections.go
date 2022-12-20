@@ -20,16 +20,60 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // validateCollectionNameRe validates collection names.
 var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,119}$")
+
+// Collections returns a sorted list of FerretDB collection names.
+//
+// It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
+func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
+	it, err := buildIterator(ctx, tx, iteratorParams{
+		schema: db,
+		table:  settingsTableName,
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var collections []string
+	defer slices.Sort(collections) // sort the result before returning
+
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			return collections, nil
+		default:
+			return nil, err
+		}
+
+		collections = append(collections, must.NotFail(doc.Get("collection")).(string))
+	}
+}
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
@@ -146,7 +190,7 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrTableNotExist
 	}
 
-	err = removeTableFromSettings(ctx, tx, db, collection)
+	err = removeSettings(ctx, tx, db, collection)
 	if err != nil && !errors.Is(err, ErrTableNotExist) {
 		return lazyerrors.Error(err)
 	}

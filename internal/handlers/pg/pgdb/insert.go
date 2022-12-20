@@ -34,36 +34,11 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 		return err
 	}
 
-	var exists bool
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		exists, err = CollectionExists(ctx, tx, db, collection)
-		return err
-	})
-	if err != nil {
-		return err
-	}
+	var err error
 
-	if !exists {
-		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-				return lazyerrors.Error(err)
-			}
-			return nil
-		})
-		if err != nil && !errors.Is(err, ErrAlreadyExist) {
-			return err
-		}
-
-		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err = CreateCollection(ctx, tx, db, collection); err != nil {
-				return lazyerrors.Error(err)
-			}
-			return nil
-		})
-		if err != nil && !errors.Is(err, ErrAlreadyExist) {
-			return err
-		}
+	_, err = CreateCollectionIfNotExist(ctx, pgPool, db, collection)
+	if err != nil && !errors.Is(err, ErrAlreadyExist) {
+		return err
 	}
 
 	var table string
@@ -77,10 +52,10 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		p := insertParams{
-			schema:         db,
-			table:          table,
-			doc:            doc,
-			ignoreConflict: false,
+			schema: db,
+			table:  table,
+			doc:    doc,
+			upsert: false,
 		}
 		return insert(ctx, tx, p)
 	})
@@ -93,19 +68,19 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 
 // insertParams describes the parameters for inserting a document into a table.
 type insertParams struct {
-	schema         string          // pg schema name
-	table          string          // pg table name
-	doc            *types.Document // document to insert
-	ignoreConflict bool            // ignore conflict on insert
+	schema string          // pg schema name
+	table  string          // pg table name
+	doc    *types.Document // document to insert
+	upsert bool            // on conflict do update
 }
 
-// insert marshals and inserts a document into the given pg table in the given schema.
+// insert marshals and inserts a document with the given params.
 func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	if p.ignoreConflict {
-		sql += ` ON CONFLICT DO NOTHING`
+	if p.upsert {
+		sql += ` ON CONFLICT ((_jsonb->>'_id')) DO UPDATE SET _jsonb = $1`
 	}
 
 	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
