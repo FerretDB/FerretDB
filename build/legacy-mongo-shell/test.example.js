@@ -1,3 +1,5 @@
+// Move to test.js and run with `task mongo-test`.
+
 (function() {
     "use strict";
 

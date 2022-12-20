@@ -59,6 +59,7 @@ services:
       - ./build/certs:/etc/certs
       - ./build/mongod.conf:/etc/mongod.conf
 
+  # for test scripts
   legacy-mongo-shell:
     build:
       context: ./build/deps
