@@ -364,14 +364,14 @@ tasks:
   docker-push:
     deps: [gen-version]
     cmds:
-      - test {{.DOCKER_IMAGE}}
+      - test {{.DOCKER_IMAGES}}
       - >
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --build-arg RACEFLAG={{.RACEFLAG}}
         --platform=linux/arm/v7,linux/arm64,linux/amd64
-        --tag={{.DOCKER_IMAGE}}
+        --tag={{.DOCKER_IMAGES}}
         --push .
     vars:
       VERSION:
