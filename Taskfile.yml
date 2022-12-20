@@ -328,7 +328,7 @@ tasks:
     desc: "Run legacy MongoDB shell (`mongo`) with test script"
     cmds:
       - >
-        docker compose run --rm legacy-mongo-shell mongo
+        docker compose run --rm legacy-mongo-shell
         'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
         /legacy-mongo-shell/test.js
 

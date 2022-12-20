@@ -1,1 +1,1 @@
-FROM ghcr.io/ferretdb/legacy-mongo-shell:6.0.3-3
+FROM ghcr.io/ferretdb/legacy-mongo-shell:6.0.3-4
