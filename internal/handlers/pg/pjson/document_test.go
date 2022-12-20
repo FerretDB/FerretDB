@@ -51,12 +51,68 @@ var (
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		))),
-		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
-			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
-			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{
+					"ismaster": {Type: elemTypeBool},
+					"client": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{
+								"driver": {
+									Type: elemTypeObject,
+									Schema: &schema{
+										Properties: map[string]*elem{
+											"name":    {Type: elemTypeString},
+											"version": {Type: elemTypeString},
+										},
+										Keys: []string{"name", "version"},
+									},
+								},
+								"os": {
+									Type: elemTypeObject,
+									Schema: &schema{
+										Properties: map[string]*elem{
+											"type":         {Type: elemTypeString},
+											"name":         {Type: elemTypeString},
+											"architecture": {Type: elemTypeString},
+											"version":      {Type: elemTypeString},
+										},
+										Keys: []string{"type", "name", "architecture", "version"},
+									},
+								},
+								"platform": {
+									Type: elemTypeString,
+								},
+								"application": {
+									Type: elemTypeObject,
+									Schema: &schema{
+										Properties: map[string]*elem{
+											"name": {Type: elemTypeString},
+										},
+										Keys: []string{"name"},
+									},
+								},
+							},
+							Keys: []string{"driver", "os", "platform", "application"},
+						},
+					},
+					"compression": {
+						Type:  elemTypeArray,
+						Items: []*elem{{Type: elemTypeString}},
+					},
+					"loadBalanced": {Type: elemTypeBool},
+				},
+				Keys: []string{"ismaster", "client", "compression", "loadBalanced"},
+			},
+		},
+		j: `{"ismaster":true,` +
+			`"client":{"driver":{` +
+			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
+			`"application":{"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
 	handshake2 = testCase{
@@ -82,12 +138,84 @@ var (
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		))),
-		j: `{"$k":["ismaster","client","compression","loadBalanced"],"ismaster":true,` +
-			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
-			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{
+					"ismaster": {
+						Type: elemTypeBool,
+					},
+					"client": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{
+								"driver": {
+									Type: elemTypeObject,
+									Schema: &schema{
+										Properties: map[string]*elem{
+											"name": {
+												Type: elemTypeString,
+											},
+											"version": {
+												Type: elemTypeString,
+											},
+										},
+										Keys: []string{"name", "version"},
+									},
+								},
+								"os": {
+									Type: elemTypeObject,
+									Schema: &schema{
+										Properties: map[string]*elem{
+											"type": {
+												Type: elemTypeString,
+											},
+											"name": {
+												Type: elemTypeString,
+											},
+											"architecture": {
+												Type: elemTypeString,
+											},
+											"version": {
+												Type: elemTypeString,
+											},
+										},
+										Keys: []string{"type", "name", "architecture", "version"},
+									},
+								},
+								"platform": {
+									Type: elemTypeString,
+								},
+								"application": {
+									Type: elemTypeObject,
+									Schema: &schema{
+										Properties: map[string]*elem{
+											"name": {
+												Type: elemTypeString,
+											},
+										},
+										Keys: []string{"name"},
+									},
+								},
+							},
+							Keys: []string{"driver", "os", "platform", "application"},
+						},
+					},
+					"compression": {
+						Type:  elemTypeArray,
+						Items: []*elem{stringSchema},
+					},
+					"loadBalanced": boolSchema,
+				},
+				Keys: []string{"ismaster", "client", "compression", "loadBalanced"},
+			},
+		},
+		j: `{"ismaster":true,` +
+			`"client":{"driver":{` +
+			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
+			`"application":{"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
 	handshake3 = testCase{
@@ -105,8 +233,23 @@ var (
 			)),
 			"$db", "admin",
 		))),
-		j: `{"$k":["buildInfo","lsid","$db"],"buildInfo":1,` +
-			`"lsid":{"$k":["id"],"id":{"$b":"oxnytKF1QMe456OjLsJWvg==","s":4}},"$db":"admin"}`,
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{
+					"buildInfo": intSchema,
+					"lsid": {Type: elemTypeObject, Schema: &schema{
+						Properties: map[string]*elem{
+							"id": binDataSchema(types.BinaryUUID),
+						},
+						Keys: []string{"id"},
+					}},
+					"$db": stringSchema,
+				},
+				Keys: []string{"buildInfo", "lsid", "$db"},
+			},
+		},
+		j: `{"buildInfo":1,"lsid":{"id":"oxnytKF1QMe456OjLsJWvg=="},"$db":"admin"}`,
 	}
 
 	handshake4 = testCase{
@@ -152,14 +295,63 @@ var (
 			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 			"ok", float64(1),
 		))),
-		j: `{"$k":["version","gitVersion","modules","allocator","javascriptEngine","sysInfo","versionArray",` +
-			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","storageEngines","ok"],` +
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{
+					"version":          stringSchema,
+					"gitVersion":       stringSchema,
+					"modules":          {Type: elemTypeArray, Items: []*elem{}},
+					"allocator":        stringSchema,
+					"javascriptEngine": stringSchema,
+					"sysInfo":          stringSchema,
+					"versionArray":     {Type: elemTypeArray, Items: []*elem{intSchema, intSchema, intSchema, intSchema}},
+					"openssl": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{"running": stringSchema, "compiled": stringSchema},
+							Keys:       []string{"running", "compiled"},
+						},
+					},
+					"buildEnvironment": {
+						Type: elemTypeObject,
+						Schema: &schema{
+							Properties: map[string]*elem{
+								"distmod":     stringSchema,
+								"distarch":    stringSchema,
+								"cc":          stringSchema,
+								"ccflags":     stringSchema,
+								"cxx":         stringSchema,
+								"cxxflags":    stringSchema,
+								"linkflags":   stringSchema,
+								"target_arch": stringSchema,
+								"target_os":   stringSchema,
+								"cppdefines":  stringSchema,
+							},
+							Keys: []string{
+								"distmod", "distarch", "cc", "ccflags", "cxx", "cxxflags", "linkflags",
+								"target_arch", "target_os", "cppdefines",
+							},
+						},
+					},
+					"bits":              intSchema,
+					"debug":             boolSchema,
+					"maxBsonObjectSize": intSchema,
+					"storageEngines":    {Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema, stringSchema}},
+					"ok":                doubleSchema,
+				},
+				Keys: []string{
+					"version", "gitVersion", "modules", "allocator", "javascriptEngine", "sysInfo", "versionArray",
+					"openssl", "buildEnvironment", "bits", "debug", "maxBsonObjectSize", "storageEngines", "ok",
+				},
+			},
+		},
+		j: `{` +
 			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9","modules":[],` +
 			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated","versionArray":[5,0,0,0],` +
-			`"openssl":{"$k":["running","compiled"],"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
+			`"openssl":{"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
 			`"compiled":"OpenSSL 1.1.1f  31 Mar 2020"},` +
-			`"buildEnvironment":{"$k":["distmod","distarch","cc","ccflags","cxx","cxxflags","linkflags",` +
-			`"target_arch","target_os","cppdefines"],"distmod":"ubuntu2004","distarch":"x86_64",` +
+			`"buildEnvironment":{"distmod":"ubuntu2004","distarch":"x86_64",` +
 			`"cc":"/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",` +
 			`"ccflags":"-Werror -include mongo/platform/basic.h -fasynchronous-unwind-tables -ggdb -Wall ` +
 			`-Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -fno-omit-frame-pointer -fno-strict-aliasing ` +
@@ -178,7 +370,7 @@ var (
 			`BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER ` +
 			`BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ` +
 			`ABSL_FORCE_ALIGNED_ACCESS"},"bits":64,"debug":false,"maxBsonObjectSize":16777216,` +
-			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":{"$f":1}}`,
+			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":1}`,
 	}
 
 	all = testCase{
@@ -199,22 +391,72 @@ var (
 			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
+			"null", must.NotFail(types.NewArray(types.Null, types.Null)),
 		))),
-		j: `{"$k":["binary","bool","datetime","double","int32","int64","objectID","string","timestamp"],` +
-			`"binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
-			`"datetime":[{"$d":1627378542123},{"$d":-62135596800000}],"double":[{"$f":42.13},{"$f":0}],` +
-			`"int32":[42,0],"int64":[{"$l":"42"},{"$l":"0"}],` +
-			`"objectID":[{"$o":"420000000000000000000000"},{"$o":"000000000000000000000000"}],` +
-			`"string":["foo",""],"timestamp":[{"$t":"42"},{"$t":"0"}]}`,
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{
+					"binary": {Type: elemTypeArray, Items: []*elem{
+						binDataSchema(types.BinaryUser), binDataSchema(types.BinaryGeneric),
+					}},
+					"bool":      {Type: elemTypeArray, Items: []*elem{boolSchema, boolSchema}},
+					"datetime":  {Type: elemTypeArray, Items: []*elem{dateSchema, dateSchema}},
+					"double":    {Type: elemTypeArray, Items: []*elem{doubleSchema, doubleSchema}},
+					"int32":     {Type: elemTypeArray, Items: []*elem{intSchema, intSchema}},
+					"int64":     {Type: elemTypeArray, Items: []*elem{longSchema, longSchema}},
+					"objectID":  {Type: elemTypeArray, Items: []*elem{objectIDSchema, objectIDSchema}},
+					"string":    {Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema}},
+					"timestamp": {Type: elemTypeArray, Items: []*elem{timestampSchema, timestampSchema}},
+					"null":      {Type: elemTypeArray, Items: []*elem{nullSchema, nullSchema}},
+				},
+				Keys: []string{
+					"binary", "bool", "datetime", "double", "int32", "int64", "objectID", "string", "timestamp", "null",
+				},
+			},
+		},
+		j: `{` +
+			`"binary":["Qg==",""],"bool":[true,false],` +
+			`"datetime":[1627378542123,-62135596800000],"double":[42.13,0],` +
+			`"int32":[42,0],"int64":[42,0],` +
+			`"objectID":["420000000000000000000000","000000000000000000000000"],` +
+			`"string":["foo",""],"timestamp":[42,0],"null":[null,null]}`,
 	}
 
 	eof = testCase{
 		name: "EOF",
+		sch: &elem{
+			Type: elemTypeObject,
+			Schema: &schema{
+				Properties: map[string]*elem{},
+				Keys:       []string{},
+			},
+		},
 		j:    `[`,
 		jErr: `unexpected EOF`,
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof}
+	nilSchema = testCase{
+		name: "NilSchema",
+		sch: &elem{
+			Type:   elemTypeObject,
+			Schema: nil,
+		},
+		j:    `{"foo": "bar"}`,
+		jErr: `document schema is nil for non-empty document`,
+	}
+
+	emptySchema = testCase{
+		name: "NilSchema",
+		sch: &elem{
+			Type:   elemTypeObject,
+			Schema: new(schema),
+		},
+		j:    `{"foo": "bar"}`,
+		jErr: `pjson.documentType.UnmarshalJSON: 0 elements in $k in the schema, 1 in the document`,
+	}
+
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, nilSchema, emptySchema}
 )
 
 func TestDocument(t *testing.T) {

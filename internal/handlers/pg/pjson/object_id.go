@@ -29,12 +29,7 @@ type objectIDType types.ObjectID
 // pjsontype implements pjsontype interface.
 func (obj *objectIDType) pjsontype() {}
 
-// objectIDJSON is a JSON object representation of the objectIDType.
-type objectIDJSON struct {
-	O string `json:"$o"`
-}
-
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
@@ -44,7 +39,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o objectIDJSON
+	var o string
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -53,7 +48,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	b, err := hex.DecodeString(o.O)
+	b, err := hex.DecodeString(o)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -69,9 +64,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements pjsontype interface.
 func (obj *objectIDType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(objectIDJSON{
-		O: hex.EncodeToString(obj[:]),
-	})
+	res, err := json.Marshal(hex.EncodeToString(obj[:]))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
