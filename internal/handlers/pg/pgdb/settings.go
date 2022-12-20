@@ -16,8 +16,11 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/jackc/pgx/v4"
 
@@ -91,9 +94,19 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 	return tableName, nil
 }
 
-// getSettings returns PostgreSQL table name for the given database and collection.
-// If such settings don't exist, it returns an error.
+// getSettings returns PostgreSQL table name for the given FerretDB database and collection.
+//
+// If such settings don't exist, it returns a possibly wrapped ErrTableNotExist.
 func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+	settingsExist, err := tableExists(ctx, tx, db, settingsTableName)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	if !settingsExist {
+		return "", ErrTableNotExist
+	}
+
 	it, err := buildIterator(ctx, tx, iteratorParams{
 		schema: db,
 		table:  settingsTableName,
@@ -104,7 +117,14 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 	}
 
 	_, doc, err := it.Next()
-	if err != nil {
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, iterator.ErrIteratorDone):
+		// no settings found
+		return "", ErrTableNotExist
+	default:
 		return "", lazyerrors.Error(err)
 	}
 

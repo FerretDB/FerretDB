@@ -72,3 +72,19 @@ func tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
 
 	return tables, nil
 }
+
+func tableExists(ctx context.Context, tx pgx.Tx, schema, table string) (bool, error) {
+	sql := `SELECT EXISTS ( ` +
+		`SELECT 1 ` +
+		`FROM information_schema.columns ` +
+		`WHERE table_schema = $1 AND table_name = $2 ` +
+		`)`
+	var exists bool
+
+	err := tx.QueryRow(ctx, sql, schema, table).Scan(&exists)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return exists, nil
+}

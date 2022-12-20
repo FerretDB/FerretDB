@@ -39,6 +39,16 @@ var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,11
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
 func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
+	settingsExist, err := tableExists(ctx, tx, db, settingsTableName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// if settings table doesn't exist, there are no collections in the database
+	if !settingsExist {
+		return []string{}, nil
+	}
+
 	it, err := buildIterator(ctx, tx, iteratorParams{
 		schema: db,
 		table:  settingsTableName,
@@ -71,21 +81,21 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 			return nil, err
 		}
 
-		collections = append(collections, must.NotFail(doc.Get("collection")).(string))
+		collections = append(collections, must.NotFail(doc.Get("_id")).(string))
 	}
 }
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	collections, err := Collections(ctx, tx, db)
-	if err != nil {
-		if errors.Is(err, ErrSchemaNotExist) {
-			return false, nil
-		}
-		return false, err
+	_, err := getSettings(ctx, tx, db, collection)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, ErrTableNotExist):
+		return false, nil
+	default:
+		return false, lazyerrors.Error(err)
 	}
-
-	return slices.Contains(collections, collection), nil
 }
 
 // CreateCollection creates a new FerretDB collection in existing database.
@@ -124,23 +134,10 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // If needed, it creates both database and collection.
 //
 // True is returned if collection was created.
+//
+// TODO refactor when TransactionRetry is ready
 func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) (bool, error) {
-	var exists bool
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		exists, err = CollectionExists(ctx, tx, db, collection)
-		return err
-	})
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if exists {
-		return false, nil
-	}
-
-	// Collection (or even database) does not exist. Try to create them,
-	// but keep in mind that it can be created in concurrent connection.
+	var err error
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
@@ -153,11 +150,12 @@ func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collectio
 	}
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		err = CreateCollection(ctx, tx, db, collection)
+		table, err := upsertSettings(ctx, tx, db, collection)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
-		return nil
+
+		return createTableIfNotExists(ctx, tx, db, table)
 	})
 
 	if err != nil && !errors.Is(err, ErrAlreadyExist) {
