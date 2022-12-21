@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -59,8 +60,11 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			t.Parallel()
 
-			// Use per-test setup because updates modify data set.
-			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+				Providers:                shareddata.AllProviders(),
+				AddNonExistentCollection: true,
+			})
+			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 			update, replace := tc.update, tc.replace
 			if update != nil {

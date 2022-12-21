@@ -14,24 +14,4 @@
 
 package integration
 
-import (
-	"testing"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-)
-
 // This file is for all remaining update tests.
-
-func TestUpdateNonExistingCollection(t *testing.T) {
-	t.Parallel()
-
-	ctx, collection := setup.Setup(t)
-
-	res, err := collection.Database().Collection("doesnotexist").UpdateOne(ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}})
-	require.NoError(t, err)
-
-	assert.Equal(t, int64(0), res.MatchedCount)
-}
