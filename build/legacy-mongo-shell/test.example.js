@@ -3,9 +3,9 @@
 (function () {
   'use strict';
 
-  const col = db.test;
+  const coll = db.test;
 
-  col.drop();
+  coll.drop();
 
   const init = [
     { _id: 'double', v: 42.13 },
@@ -13,7 +13,7 @@
     { _id: 'double-zero', v: 0.0 },
   ];
 
-  col.insertMany(init);
+  coll.insertMany(init);
 
   const query = { v: { $gt: 42.0 } };
 
@@ -21,7 +21,7 @@
     { _id: 'double', v: 42.13 },
   ];
 
-  const actual = col.find(query).toArray();
+  const actual = coll.find(query).toArray();
   assert.eq(expected, actual);
 
   print('test.js passed!');
