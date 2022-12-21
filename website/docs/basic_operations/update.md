@@ -157,7 +157,7 @@ db.employees.insertMany([
 ])
 ```
 
-The folllowing command will query and update the `catalog` array in the `employee` collection using dot notation.
+The following command will query and update the `catalog` array in the `employee` collection using dot notation.
 The command will query the second field of the array in every document for `"pencil"`, and when there is a match, updates the first element of the array.
 
 ```js
