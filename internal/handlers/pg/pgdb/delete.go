@@ -45,7 +45,7 @@ type deleteParams struct {
 	comment string // comment to add to the query
 }
 
-// insert marshals and inserts a document into the given pg table in the given schema.
+// deleteByIds deletes documents by given IDs.
 func deleteByIds(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))

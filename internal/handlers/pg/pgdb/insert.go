@@ -36,7 +36,7 @@ func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, do
 
 	var err error
 
-	_, err = CreateCollectionIfNotExist(ctx, pgPool, db, collection)
+	err = CreateCollectionIfNotExist(ctx, pgPool, db, collection)
 	if err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return err
 	}

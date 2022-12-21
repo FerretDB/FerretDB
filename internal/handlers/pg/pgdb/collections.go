@@ -98,12 +98,12 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 	}
 }
 
-// CreateCollection creates a new FerretDB collection in existing database.
+// CreateCollection creates a new FerretDB collection in the given database.
 //
 // It returns a possibly wrapped error:
+//   - ErrSchemaNotExist - is the given FerretDB database does not exist.
 //   - ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
 //   - ErrAlreadyExist - if a FerretDB collection with the given names already exists.
-//   - ErrTableNotExist - is the required FerretDB database does not exist.
 //
 // Please use errors.Is to check the error.
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
@@ -121,6 +121,17 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrSchemaNotExist
 	}
 
+	_, err = getSettings(ctx, tx, db, collection)
+
+	switch {
+	case err == nil:
+		return ErrAlreadyExist
+	case errors.Is(err, ErrTableNotExist):
+		// collection doesn't exist, do nothing
+	default:
+		return lazyerrors.Error(err)
+	}
+
 	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -136,7 +147,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // True is returned if collection was created.
 //
 // TODO refactor when TransactionRetry is ready
-func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) (bool, error) {
+func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) error {
 	var err error
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -146,7 +157,7 @@ func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collectio
 		return nil
 	})
 	if err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return false, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
 	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -155,14 +166,19 @@ func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collectio
 			return lazyerrors.Error(err)
 		}
 
-		return createTableIfNotExists(ctx, tx, db, table)
+		err = createTableIfNotExists(ctx, tx, db, table)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
 
 	if err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return false, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 // DropCollection drops FerretDB collection.
