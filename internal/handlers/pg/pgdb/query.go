@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -53,6 +54,88 @@ type SQLParam struct {
 	Filter     *types.Document
 }
 
+// Explain returns SQL EXPLAIN results for given query parameters.
+func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
+	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return nil, lazyerrors.Error(ErrTableNotExist)
+	}
+
+	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var query string
+
+	if sp.Explain {
+		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	}
+
+	query += `SELECT _jsonb `
+
+	if c := sp.Comment; c != "" {
+		// prevent SQL injections
+		c = strings.ReplaceAll(c, "/*", "/ *")
+		c = strings.ReplaceAll(c, "*/", "* /")
+
+		query += `/* ` + c + ` */ `
+	}
+
+	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+
+	var args []any
+
+	if sp.Filter != nil {
+		var where string
+
+		where, args = prepareWhereClause(sp.Filter)
+		query += where
+	}
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var res *types.Document
+
+	if !rows.Next() {
+		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+	}
+
+	var b []byte
+	if err = rows.Scan(&b); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var plans []map[string]any
+	if err = json.Unmarshal(b, &plans); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if len(plans) == 0 {
+		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
+	}
+
+	res = convertJSON(plans[0]).(*types.Document)
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
@@ -82,43 +165,6 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 	}
 
 	return it, nil
-}
-
-// Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if !exists {
-		return nil, lazyerrors.Error(ErrTableNotExist)
-	}
-
-	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	it, err := buildIterator(ctx, tx, iteratorParams{
-		schema:  sp.DB,
-		table:   table,
-		explain: sp.Explain,
-		comment: sp.Comment,
-		filter:  sp.Filter,
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	defer it.Close()
-
-	_, doc, err := it.Next()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
 }
 
 type iteratorParams struct {
@@ -162,14 +208,6 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p iteratorParams) (iterator.I
 		query += where
 	}
 
-	/*if err != nil {
-		if errors.Is(err, ErrTableNotExist) {
-			return newIterator(ctx, nil), nil
-		}
-
-		return nil, lazyerrors.Error(err)
-	}*/
-
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -189,6 +227,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		case "_id":
 			switch v := v.(type) {
 			case types.ObjectID:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			case string:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))

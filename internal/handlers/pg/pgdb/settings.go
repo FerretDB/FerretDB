@@ -124,10 +124,13 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 
 	it.Close()
 
-	table, err := doc.Get("table")
-	if err != nil {
-		return "", lazyerrors.Error(err)
+	// Check that the settings we got from the DB are for the given collection
+	storedCollection := must.NotFail(doc.Get("_id"))
+	if storedCollection != collection {
+		panic(fmt.Sprintf("got unexpected collection name from the database: %s, expected %s", storedCollection, collection))
 	}
+
+	table := must.NotFail(doc.Get("table"))
 
 	return table.(string), nil
 }

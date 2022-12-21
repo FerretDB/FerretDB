@@ -20,13 +20,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -244,7 +243,8 @@ func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// Reproducible by integration tests.
-		return newTransactionConflictError(err)
+		return ErrAlreadyExist
+		// TODO return newTransactionConflictError(err)
 	default:
 		return lazyerrors.Error(err)
 	}

@@ -56,7 +56,8 @@ func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error
 
 	switch pgErr.Code {
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		return newTransactionConflictError(err)
+		// TODO return newTransactionConflictError(err)
+		return ErrAlreadyExist
 	default:
 		return lazyerrors.Error(err)
 	}
