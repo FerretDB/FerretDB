@@ -59,17 +59,14 @@ type SQLParam struct {
 func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 	iterator.Interface[uint32, *types.Document], error,
 ) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if !exists {
-		return nil, lazyerrors.Error(ErrTableNotExist)
-	}
-
 	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
-	if err != nil {
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, ErrTableNotExist):
+		return newIterator(ctx, nil), nil
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -81,10 +78,6 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 		filter:  sp.Filter,
 	})
 	if err != nil {
-		if errors.Is(err, ErrTableNotExist) {
-			return newIterator(ctx, nil), nil
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
