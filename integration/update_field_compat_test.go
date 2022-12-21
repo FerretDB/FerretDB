@@ -635,3 +635,34 @@ func TestUpdateFieldCompatPop(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateFieldCompatMixed(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"SetSetOnInsert": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$setOnInsert", bson.D{{"v", nil}}},
+			},
+			resultType: emptyResult,
+		},
+		"SetIncSetOnInsert": {
+			filter: bson.D{{"_id", "test"}},
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(12)}}},
+				{"$inc", bson.D{{"foo", int32(1)}}},
+				{"$setOnInsert", bson.D{{"v", nil}}},
+			},
+			resultType: emptyResult,
+		},
+		"UnknownOperator": {
+			filter:     bson.D{{"_id", "test"}},
+			update:     bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}

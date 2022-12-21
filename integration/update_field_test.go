@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -367,78 +366,6 @@ func TestUpdateFieldSet(t *testing.T) {
 
 			var actual bson.D
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
-			require.NoError(t, err)
-			AssertEqualDocuments(t, tc.expected, actual)
-		})
-	}
-}
-
-func TestUpdateFieldMixed(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		filter   bson.D
-		update   bson.D
-		expected bson.D
-		err      *mongo.WriteError
-	}{
-		"SetSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{
-				{"$set", bson.D{{"foo", int32(12)}}},
-				{"$setOnInsert", bson.D{{"v", nil}}},
-			},
-			expected: bson.D{{"_id", "test"}, {"foo", int32(12)}, {"v", nil}},
-		},
-		"SetIncSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{
-				{"$set", bson.D{{"foo", int32(12)}}},
-				{"$inc", bson.D{{"foo", int32(1)}}},
-				{"$setOnInsert", bson.D{{"v", nil}}},
-			},
-			err: &mongo.WriteError{
-				Code:    40,
-				Message: "Updating the path 'foo' would create a conflict at 'foo'",
-			},
-		},
-		"UnknownOperator": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
-			err: &mongo.WriteError{
-				Code:    9,
-				Message: "Unknown modifier: $foo. Expected a valid update modifier or pipeline-style update specified as an array",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-			opts := options.Update().SetUpsert(true)
-			actualStat, err := collection.UpdateOne(ctx, tc.filter, tc.update, opts)
-
-			if tc.err != nil {
-				require.Nil(t, tc.expected)
-				AssertEqualWriteError(t, *tc.err, err)
-				return
-			}
-
-			require.NoError(t, err)
-			actualStat.UpsertedID = nil
-
-			expectedStat := &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 1,
-			}
-			assert.Equal(t, expectedStat, actualStat)
-
-			var actual bson.D
-			err = collection.FindOne(ctx, tc.filter).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.expected, actual)
 		})

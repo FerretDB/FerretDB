@@ -191,11 +191,13 @@ func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
 	aErr, ok := actual.(mongo.WriteException)
 	if !ok || len(aErr.WriteErrors) != 1 {
 		assert.Equal(t, expected, actual)
+		return
 	}
 
 	eErr, ok := actual.(mongo.WriteException)
 	if !ok || len(eErr.WriteErrors) != 1 {
 		assert.Equal(t, expected, actual)
+		return
 	}
 
 	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
