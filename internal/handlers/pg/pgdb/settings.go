@@ -57,18 +57,16 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 		return "", lazyerrors.Error(err)
 	}
 
-	err := createTableIfNotExists(ctx, tx, db, settingsTableName)
-	if err != nil {
+	if err := createTableIfNotExists(ctx, tx, db, settingsTableName); err != nil {
 		return "", err
 	}
 
 	// Index to ensure that collection name is unique
-	err = createIndexIfNotExists(ctx, tx, indexParams{
+	if err := createIndexIfNotExists(ctx, tx, indexParams{
 		schema:   db,
 		table:    settingsTableName,
 		isUnique: true,
-	})
-	if err != nil {
+	}); err != nil {
 		return "", err
 	}
 
@@ -85,10 +83,6 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 		upsert: true,
 	}); err != nil {
 		return "", lazyerrors.Error(err)
-	}
-
-	if err != nil {
-		return "", err
 	}
 
 	return tableName, nil
