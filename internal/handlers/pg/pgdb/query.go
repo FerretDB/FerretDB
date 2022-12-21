@@ -200,13 +200,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
-		case "collection":
-			switch v := v.(type) {
-			case string:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'collection')::jsonb = %s)`, p.Next()))
-
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-			}
 		default:
 			continue
 		}
