@@ -19,6 +19,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -97,7 +99,7 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 		case err == nil:
 			return nil
 		case errors.As(err, &tcErr):
-			time.Sleep(delay)
+			ctxutil.Sleep(ctx, delay)
 		default:
 			return err
 		}
