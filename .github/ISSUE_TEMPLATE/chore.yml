@@ -14,10 +14,20 @@ body:
     id: what
     attributes:
       label: What should be done?
-    validations:
-      required: true
+      description: Additional context you would like to provide.
   - type: textarea
     id: where
     attributes:
       label: Where?
       description: Include a permalink if possible.
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: What should be done to consider this issue done?
+      value: |
+        - [ ] compatibility tests added
+        - [ ] documentation updated
+        - [ ] anything else?
+    validations:
+      required: true
