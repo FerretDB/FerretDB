@@ -145,7 +145,7 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
-	query += ` SELECT _jsonb `
+	query += `SELECT _jsonb `
 
 	if c := sp.Comment; c != "" {
 		// prevent SQL injections
@@ -182,7 +182,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			case types.ObjectID:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 
-				args = append(args, string(must.NotFail(pjson.Marshal(v))))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
 		default:
 			continue

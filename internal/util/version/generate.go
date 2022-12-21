@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,14 +35,21 @@ func runGit(args ...string) []byte {
 
 	b, err := cmd.Output()
 	if err != nil {
-		err = fmt.Errorf("Failed to run %q: %s", strings.Join(cmd.Args, " "), err)
-		panic(err)
+		panic(fmt.Sprintf("Failed to run %q: %s", strings.Join(cmd.Args, " "), err))
 	}
 
 	return b
 }
 
+// saveFile stores the given bytes in the given file with logging.
+func saveFile(b []byte, filename string) {
+	log.Printf("%s: %s", filename, b)
+	must.NoError(os.WriteFile(filepath.Join("gen", filename), b, 0o666))
+}
+
 func main() {
+	log.SetFlags(0)
+
 	var wg sync.WaitGroup
 
 	// git describe --tags --dirty > gen/version.txt
@@ -49,8 +57,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		b := runGit("describe", "--tags", "--dirty")
-		must.NoError(os.WriteFile(filepath.Join("gen", "version.txt"), b, 0o666))
+		saveFile(runGit("describe", "--tags", "--dirty"), "version.txt")
 	}()
 
 	// git rev-parse HEAD > gen/commit.txt
@@ -58,8 +65,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		b := runGit("rev-parse", "HEAD")
-		must.NoError(os.WriteFile(filepath.Join("gen", "commit.txt"), b, 0o666))
+		saveFile(runGit("rev-parse", "HEAD"), "commit.txt")
 	}()
 
 	// git branch --show-current > gen/branch.txt
@@ -67,8 +73,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		b := runGit("branch", "--show-current")
-		must.NoError(os.WriteFile(filepath.Join("gen", "branch.txt"), b, 0o666))
+		saveFile(runGit("branch", "--show-current"), "branch.txt")
 	}()
 
 	wg.Wait()
