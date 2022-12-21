@@ -16,11 +16,19 @@ package pgdb
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+// maxRetries is the maximum number of times to retry a transaction.
+const maxRetries = 3
+
+// delay is the amount of time to wait before retrying a transaction.
+const delay = 10 * time.Millisecond
 
 // transactionConflictError is returned when one of the queries in the transaction returned an error because
 // of an unexpected conflict. The caller could retry such a transaction.
@@ -73,4 +81,27 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 	}
 
 	return
+}
+
+// InTransactionRetry wraps the given function f in a transaction.
+// If f returns a transactionConflictError, the transaction is retried.
+// If after maxRetries the transaction still fails, the last error unwrapped from transactionConflictError is returned.
+func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) (err error) {
+	var tcErr *transactionConflictError
+
+	for retry := 0; retry < maxRetries; retry++ {
+
+		err := pgPool.InTransaction(ctx, f)
+
+		switch {
+		case err == nil:
+			return nil
+		case errors.As(err, &tcErr):
+			time.Sleep(delay)
+		default:
+			return err
+		}
+	}
+
+	return tcErr.err
 }
