@@ -30,9 +30,9 @@ var (
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exist")
 
-	// ErrInvalidTableName indicates that a schema or table didn't passed name checks.
-	ErrInvalidTableName = fmt.Errorf("invalid collection/table name")
+	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
+	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 
-	// ErrInvalidDatabaseName indicates that a database name didn't passed checks.
-	ErrInvalidDatabaseName = fmt.Errorf("invalid database/schema name")
+	// ErrInvalidDatabaseName indicates that a database didn't pass name checks.
+	ErrInvalidDatabaseName = fmt.Errorf("invalid FerretDB database name")
 )

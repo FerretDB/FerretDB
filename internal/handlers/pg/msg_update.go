@@ -70,7 +70,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return pgdb.CreateCollectionIfNotExist(ctx, tx, sp.DB, sp.Collection)
 	})
 	if err != nil {
-		if errors.Is(pgdb.ErrInvalidTableName, err) ||
+		if errors.Is(pgdb.ErrInvalidCollectionName, err) ||
 			errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 			msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)

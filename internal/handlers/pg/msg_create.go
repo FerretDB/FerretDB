@@ -90,7 +90,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			case errors.Is(err, pgdb.ErrAlreadyExist):
 				msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
 				return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
-			case errors.Is(err, pgdb.ErrInvalidTableName):
+			case errors.Is(err, pgdb.ErrInvalidCollectionName):
 				msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
 				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 			default:

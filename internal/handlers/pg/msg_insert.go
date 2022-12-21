@@ -115,7 +115,7 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 		return nil
 	}
 
-	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+	if errors.Is(pgdb.ErrInvalidCollectionName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 		return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 	}

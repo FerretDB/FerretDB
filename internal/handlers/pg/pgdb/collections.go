@@ -102,14 +102,14 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 //
 // It returns a possibly wrapped error:
 //   - ErrSchemaNotExist - is the given FerretDB database does not exist.
-//   - ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
+//   - ErrInvalidCollectionName - if a FerretDB collection name doesn't conform to restrictions.
 //   - ErrAlreadyExist - if a FerretDB collection with the given names already exists.
 //
 // Please use errors.Is to check the error.
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
-		return ErrInvalidTableName
+		return ErrInvalidCollectionName
 	}
 
 	schemaExists, err := schemaExists(ctx, tx, db)
@@ -132,12 +132,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return lazyerrors.Error(err)
 	}
 
-	table, err := upsertSettings(ctx, tx, db, collection)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return createTableIfNotExists(ctx, tx, db, table)
+	return CreateCollectionIfNotExist(ctx, tx, db, collection)
 }
 
 // CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
@@ -147,10 +142,6 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // True is returned if collection was created.
 func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	var err error
-
-	if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-		return lazyerrors.Error(err)
-	}
 
 	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
