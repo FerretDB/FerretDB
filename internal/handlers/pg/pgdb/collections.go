@@ -144,6 +144,8 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // If needed, it creates both database and collection.
 //
 // True is returned if collection was created.
+//
+// TODO Use tx instead of pgPool https://github.com/FerretDB/FerretDB/issues/1672
 func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) (bool, error) {
 	var exists bool
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
