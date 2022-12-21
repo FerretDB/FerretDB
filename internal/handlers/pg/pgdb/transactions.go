@@ -19,10 +19,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -55,6 +54,7 @@ func (e *transactionConflictError) Error() string {
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
+
 	if tx, err = pgPool.Begin(ctx); err != nil {
 		err = lazyerrors.Error(err)
 		return
@@ -64,6 +64,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		if err == nil {
 			return
 		}
+
 		if rerr := tx.Rollback(ctx); rerr != nil {
 			pgPool.Config().ConnConfig.Logger.Log(
 				ctx, pgx.LogLevelError, "failed to perform rollback",
@@ -92,7 +93,6 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 	var tcErr *transactionConflictError
 
 	for retry := 0; retry < maxRetries; retry++ {
-
 		err := pgPool.InTransaction(ctx, f)
 
 		switch {

@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -106,10 +108,9 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 		)
 	}
 
-	err := pgdb.InsertDocument(ctx, h.PgPool, sp.DB, sp.Collection, d)
-	if err == nil {
-		return nil
-	}
+	err := h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+	})
 
 	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
