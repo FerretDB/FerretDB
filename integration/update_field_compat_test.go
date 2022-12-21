@@ -27,7 +27,7 @@ import (
 )
 
 func TestUpdateFieldCompatCurrentDate(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https: //github.com/FerretDB/FerretDB/issues/1669")
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1669")
 
 	t.Parallel()
 
@@ -108,7 +108,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 	testUpdateCurrentDateCompat(t, testCases)
 }
 
-func TestUpdateFieldCompatIncSimple(t *testing.T) {
+func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
@@ -145,6 +145,7 @@ func TestUpdateFieldCompatIncSimple(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+// TestUpdateFieldCompatIncComplex are test that do not work on tigris.
 func TestUpdateFieldCompatIncComplex(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "skip array and number type change")
 	// TODO "https://github.com/FerretDB/FerretDB/issues/1668"
@@ -515,12 +516,23 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update:     bson.D{{"$unset", bson.D{}}},
 			resultType: emptyResult,
 		},
-		"EmptyArray": {
-			update:     bson.D{{"$unset", bson.A{}}},
-			resultType: emptyResult,
-		},
 		"DocumentField": {
 			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatUnsetArray(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"EmptyArray": {
+			update:     bson.D{{"$unset", bson.A{}}},
 			resultType: emptyResult,
 		},
 	}
@@ -539,19 +551,12 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
 			resultType: emptyResult,
 		},
-		"Many": {
-			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
-		},
 		"NilOperand": {
 			update:     bson.D{{"$set", nil}},
 			resultType: emptyResult,
 		},
 		"String": {
 			update:     bson.D{{"$set", "string"}},
-			resultType: emptyResult,
-		},
-		"Array": {
-			update:     bson.D{{"$set", bson.A{}}},
 			resultType: emptyResult,
 		},
 		"EmptyDoc": {
@@ -561,18 +566,11 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"OkSetString": {
 			update: bson.D{{"$set", bson.D{{"v", "ok value"}}}},
 		},
-		"ArrayNil": {
-			update: bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
-		},
 		"FieldNotExist": {
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
 		},
 		"Double": {
 			update: bson.D{{"$set", bson.D{{"v", float64(1)}}}},
-		},
-		"EmptyArray": {
-			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
 		},
 		"Null": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
@@ -613,24 +611,41 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+func TestUpdateFieldCompatSetArray(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"Many": {
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+		},
+		"Array": {
+			update:     bson.D{{"$set", bson.A{}}},
+			resultType: emptyResult,
+		},
+		"ArrayNil": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
+		},
+		"EmptyArray": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"Array": {
-			update:     bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
-			resultType: emptyResult,
-		},
 		"Nil": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
 			resultType: emptyResult,
 		},
 		"EmptyDoc": {
 			update:     bson.D{{"$setOnInsert", bson.D{}}},
-			resultType: emptyResult,
-		},
-		"EmptyArray": {
-			update:     bson.D{{"$setOnInsert", bson.A{}}},
 			resultType: emptyResult,
 		},
 		"DoubleDouble": {
@@ -667,6 +682,25 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatSetOnInsertArray(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"Array": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
+			resultType: emptyResult,
+		},
+		"EmptyArray": {
+			update:     bson.D{{"$setOnInsert", bson.A{}}},
 			resultType: emptyResult,
 		},
 	}
