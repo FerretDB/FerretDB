@@ -22,7 +22,6 @@
     ];
 
     const actual = col.find(query).toArray();
-
     assert.eq(expected, actual);
 
     print("test.js passed!")
