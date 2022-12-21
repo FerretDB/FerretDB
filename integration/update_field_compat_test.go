@@ -21,12 +21,78 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]updateCompatTestCase{
+	testCases := map[string]updateCurrentDateCompatTestCase{
+		"DocumentEmpty": {
+			update:     bson.D{{"$currentDate", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"ArrayEmpty": {
+			update:     bson.D{{"$currentDate", bson.A{}}},
+			resultType: emptyResult,
+		},
+		"Int32Wrong": {
+			update:     bson.D{{"$currentDate", int32(1)}},
+			resultType: emptyResult,
+		},
+		"Nil": {
+			update:     bson.D{{"$currentDate", nil}},
+			resultType: emptyResult,
+		},
+		"BoolTrue": {
+			update: bson.D{{"$currentDate", bson.D{{"v", true}}}},
+			paths:  []types.Path{types.NewPathFromString("v")},
+		},
+		"BoolTwoTrue": {
+			update: bson.D{{"$currentDate", bson.D{{"v", true}, {"nonexistent", true}}}},
+			paths: []types.Path{
+				types.NewPathFromString("v"),
+				types.NewPathFromString("nonexistent"),
+			},
+		},
+		"BoolFalse": {
+			update: bson.D{{"$currentDate", bson.D{{"v", false}}}},
+			paths:  []types.Path{types.NewPathFromString("v")},
+		},
+		"Int32": {
+			update:     bson.D{{"$currentDate", bson.D{{"v", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"Timestamp": {
+			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "timestamp"}}}}}},
+			paths:  []types.Path{types.NewPathFromString("v")},
+		},
+		"TimestampCapitalised": {
+			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "Timestamp"}}}}}},
+			resultType: emptyResult,
+		},
+		"Date": {
+			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}}},
+			paths:  []types.Path{types.NewPathFromString("v")},
+		},
+		"WrongType": {
+			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
+			resultType: emptyResult,
+		},
+		"NoField": {
+			update: bson.D{{"$currentDate", bson.D{{"nonexistent", bson.D{{"$type", "date"}}}}}},
+			paths: []types.Path{
+				types.NewPathFromString("nonexistent"),
+			},
+		},
+		"UnrecognizedOption": {
+			update: bson.D{{
+				"$currentDate",
+				bson.D{{"v", bson.D{{"array", bson.D{{"unexsistent", bson.D{}}}}}}},
+			}},
+			resultType: emptyResult,
+		},
 		"DuplicateKeys": {
 			update: bson.D{{"$currentDate", bson.D{
 				{"v", bson.D{{"$type", "timestamp"}}},
@@ -36,7 +102,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 	}
 
-	testUpdateCompat(t, testCases)
+	testUpdateCurrentDateCompat(t, testCases)
 }
 
 func TestUpdateFieldCompatInc(t *testing.T) {
