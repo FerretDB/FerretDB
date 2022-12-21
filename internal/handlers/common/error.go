@@ -208,9 +208,9 @@ func CheckError(err error) error {
 
 	switch ve.Code() {
 	case types.ErrValidation, types.ErrIDNotFound:
-		return NewCommandErrorMsg(ErrBadValue, err.Error())
+		return NewCommandErrorMsg(ErrBadValue, ve.Error())
 	case types.ErrWrongIDType:
-		return NewWriteErrorMsg(ErrInvalidID, err.Error())
+		return NewWriteErrorMsg(ErrInvalidID, ve.Error())
 	default:
 		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 	}

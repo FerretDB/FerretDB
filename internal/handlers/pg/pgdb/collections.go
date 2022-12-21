@@ -133,7 +133,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// Reproducible by integration tests.
-		return ErrAlreadyExist
+		return newTransactionConflictError(err)
 	default:
 		return lazyerrors.Error(err)
 	}
@@ -144,6 +144,8 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // If needed, it creates both database and collection.
 //
 // True is returned if collection was created.
+//
+// TODO Use tx instead of pgPool https://github.com/FerretDB/FerretDB/issues/1672
 func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) (bool, error) {
 	var exists bool
 	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {

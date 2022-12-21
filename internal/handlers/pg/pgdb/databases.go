@@ -90,7 +90,7 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// The same thing for schemas. Reproducible by integration tests.
-		return ErrAlreadyExist
+		return newTransactionConflictError(err)
 	default:
 		return lazyerrors.Error(err)
 	}
