@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -32,7 +33,8 @@ import (
 type updateCompatTestCase struct {
 	update        bson.D                   // required if replace is nil
 	replace       bson.D                   // required if update is nil
-	filter        bson.D                   // defaults to  bson.D{{"_id", id}}
+	filter        bson.D                   // defaults to bson.D{{"_id", id}}
+	multi         bool                     // defaults to false, if true updates multiple documents
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
 	skip          string                   // skips test if non-empty
 	skipForTigris string                   // skips test for Tigris if non-empty
@@ -90,10 +92,14 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
 							var targetErr, compatErr error
 
-							if update != nil {
+							switch {
+							case update != nil && tc.multi:
+								targetUpdateRes, targetErr = targetCollection.UpdateMany(ctx, filter, update)
+								compatUpdateRes, compatErr = compatCollection.UpdateMany(ctx, filter, update)
+							case update != nil && !tc.multi:
 								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
 								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)
-							} else {
+							default:
 								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace)
 								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace)
 							}
@@ -126,6 +132,149 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
 							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
 							AssertEqualDocuments(t, compatFindRes, targetFindRes)
+						})
+					}
+				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
+			}
+		})
+	}
+}
+
+// updateCommandCompatTestCase describes update compatibility test case.
+type updateCommandCompatTestCase struct {
+	update        bson.D                   // required
+	filter        bson.D                   // defaults to bson.D{{"_id", id}}
+	multi         any                      // defaults to false, if true updates multiple documents
+	resultType    compatTestCaseResultType // defaults to nonEmptyResult
+	skip          string                   // skips test if non-empty
+	skipForTigris string                   // skips test for Tigris if non-empty
+}
+
+// testUpdateCommandCompat tests command compatibility test cases.
+func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCompatTestCase) {
+	t.Helper()
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
+
+			t.Parallel()
+
+			// Use per-test setup because updates modify data set.
+			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+			update := tc.update
+			require.NotNil(t, update, "`update` must be set")
+
+			multi := tc.multi
+
+			var nonEmptyResults bool
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+
+					allDocs := FindAll(t, ctx, targetCollection)
+
+					for _, doc := range allDocs {
+						id, ok := doc.Map()["_id"]
+						require.True(t, ok)
+
+						t.Run(fmt.Sprint(id), func(t *testing.T) {
+							t.Helper()
+
+							filter := tc.filter
+							if tc.filter == nil {
+								filter = bson.D{{"_id", id}}
+							}
+
+							targetCommand := bson.D{
+								{"update", targetCollection.Name()},
+								{"updates", bson.A{bson.D{
+									{"q", filter},
+									{"u", update},
+									{"multi", multi},
+								}}},
+							}
+
+							compatCommand := bson.D{
+								{"update", compatCollection.Name()},
+								{"updates", bson.A{bson.D{
+									{"q", filter},
+									{"u", update},
+									{"multi", multi},
+								}}}}
+
+							var targetUpdateRes, compatUpdateRes bson.D
+							var targetErr, compatErr error
+
+							targetErr = targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetUpdateRes)
+							compatErr = compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatUpdateRes)
+
+							if targetErr != nil {
+								t.Logf("Target error: %v", targetErr)
+								targetErr = UnsetRaw(t, targetErr)
+								compatErr = UnsetRaw(t, compatErr)
+
+								AssertMatchesCommandError(t, compatErr, targetErr)
+							} else {
+								require.NoError(t, compatErr, "compat error; target returned no error")
+							}
+
+							if targetUpdateRes != nil || compatUpdateRes != nil {
+								nonEmptyResults = true
+							}
+
+							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+
+							if isMulti, ok := multi.(bool); ok && isMulti {
+								// if multi == false, an item updated by compat and target are different.
+
+								opts := options.Find().SetSort(bson.D{{"_id", 1}})
+								targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
+								compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
+
+								if targetCursor != nil {
+									defer targetCursor.Close(ctx)
+								}
+								if compatCursor != nil {
+									defer compatCursor.Close(ctx)
+								}
+
+								if targetErr != nil {
+									t.Logf("Target error: %v", targetErr)
+									AssertMatchesCommandError(t, compatErr, targetErr)
+
+									return
+								}
+								require.NoError(t, compatErr, "compat error; target returned no error")
+
+								var targetRes, compatRes []bson.D
+								require.NoError(t, targetCursor.All(ctx, &targetRes))
+								require.NoError(t, compatCursor.All(ctx, &compatRes))
+
+								t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+								t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+								AssertEqualDocumentsSlice(t, compatRes, targetRes)
+							}
 						})
 					}
 				})
@@ -188,4 +337,54 @@ func TestUpdateCompatArray(t *testing.T) {
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateCompatMultiFlag(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"False": {
+			filter: bson.D{{"v", int32(42)}},
+			update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:  false,
+		},
+		"True": {
+			filter: bson.D{{"v", int32(42)}},
+			update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:  true,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateCompatMultiFlagCommand(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCommandCompatTestCase{
+		"False": {
+			filter: bson.D{{"v", int32(42)}},
+			update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:  false,
+		},
+		"True": {
+			filter: bson.D{{"v", int32(42)}},
+			update: bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:  true,
+		},
+		"String": {
+			filter:     bson.D{{"v", int32(42)}},
+			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:      "false",
+			resultType: emptyResult,
+		},
+		"Int": {
+			filter:     bson.D{{"v", int32(42)}},
+			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
+			multi:      int32(0),
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCommandCompat(t, testCases)
 }
