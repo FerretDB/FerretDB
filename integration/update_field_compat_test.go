@@ -27,6 +27,8 @@ import (
 )
 
 func TestUpdateFieldCompatCurrentDate(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https: //github.com/FerretDB/FerretDB/issues/1669")
+
 	t.Parallel()
 
 	testCases := map[string]updateCurrentDateCompatTestCase{

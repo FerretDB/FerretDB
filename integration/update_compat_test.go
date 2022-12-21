@@ -223,7 +223,8 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									{"q", filter},
 									{"u", update},
 									{"multi", multi},
-								}}}}
+								}}},
+							}
 
 							var targetUpdateRes, compatUpdateRes bson.D
 							var targetErr, compatErr error
