@@ -111,6 +111,9 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 	err := h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
 	})
+	if err == nil {
+		return nil
+	}
 
 	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
