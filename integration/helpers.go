@@ -188,13 +188,15 @@ func AssertMatchesCommandError(t *testing.T, expected, actual error) {
 func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
 	t.Helper()
 
+	//nolint: errorlint // using errors.As does not work for mongo.WriteException
 	aErr, ok := actual.(mongo.WriteException)
 	if !ok || len(aErr.WriteErrors) != 1 {
 		assert.Equal(t, expected, actual)
 		return
 	}
 
-	eErr, ok := actual.(mongo.WriteException)
+	//nolint: errorlint // using errors.As does not work for mongo.WriteException
+	eErr, ok := expected.(mongo.WriteException)
 	if !ok || len(eErr.WriteErrors) != 1 {
 		assert.Equal(t, expected, actual)
 		return
