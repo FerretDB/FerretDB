@@ -53,7 +53,7 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		defer tx.Rollback(ctx)
 
-		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDoc))
+		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDoc))
 
 		sp := &SQLParam{DB: databaseName, Collection: collection}
 		it, err := GetDocuments(ctx, tx, sp)
@@ -89,8 +89,8 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 		defer tx.Rollback(ctx)
 
-		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDocs[0]))
-		require.NoError(t, InsertDocument(ctx, pool, databaseName, collection, expectedDocs[1]))
+		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDocs[0]))
+		require.NoError(t, InsertDocument(ctx, tx, databaseName, collection, expectedDocs[1]))
 
 		ctxTest, cancel := context.WithCancel(ctx)
 		sp := &SQLParam{DB: databaseName, Collection: collection}

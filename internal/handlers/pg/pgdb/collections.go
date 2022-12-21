@@ -87,6 +87,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
 	_, err := getSettings(ctx, tx, db, collection)
+
 	switch {
 	case err == nil:
 		return true, nil
@@ -144,36 +145,20 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // If needed, it creates both database and collection.
 //
 // True is returned if collection was created.
-//
-// TODO refactor when TransactionRetry is ready
-func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) error {
+func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	var err error
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
+	if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err := upsertSettings(ctx, tx, db, collection)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
+	table, err := upsertSettings(ctx, tx, db, collection)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
-		err = createTableIfNotExists(ctx, tx, db, table)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
+	err = createTableIfNotExists(ctx, tx, db, table)
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -243,8 +228,7 @@ func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string
 	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// Reproducible by integration tests.
-		return ErrAlreadyExist
-		// TODO return newTransactionConflictError(err)
+		return newTransactionConflictError(err)
 	default:
 		return lazyerrors.Error(err)
 	}

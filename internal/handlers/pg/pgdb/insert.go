@@ -29,36 +29,31 @@ import (
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
 // If the document is not valid, it returns *types.ValidationError.
-func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, doc *types.Document) error {
+func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
 	if err := doc.ValidateData(); err != nil {
 		return err
 	}
 
 	var err error
 
-	err = CreateCollectionIfNotExist(ctx, pgPool, db, collection)
+	err = CreateCollectionIfNotExist(ctx, tx, db, collection)
 	if err != nil && !errors.Is(err, ErrAlreadyExist) {
 		return err
 	}
 
 	var table string
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err = getSettings(ctx, tx, db, collection)
-		return err
-	})
+	table, err = getSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		p := insertParams{
-			schema: db,
-			table:  table,
-			doc:    doc,
-			upsert: false,
-		}
-		return insert(ctx, tx, p)
-	})
+	p := insertParams{
+		schema: db,
+		table:  table,
+		doc:    doc,
+		upsert: false,
+	}
+	err = insert(ctx, tx, p)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
