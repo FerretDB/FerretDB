@@ -16,6 +16,10 @@ package pgdb
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 
 	"github.com/jackc/pgx/v4"
 
@@ -78,6 +82,19 @@ func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	}
 
 	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
+	if err == nil {
+		return nil
+	}
 
-	return err
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.DeadlockDetected:
+		return newTransactionConflictError(err)
+	default:
+		return lazyerrors.Error(err)
+	}
 }

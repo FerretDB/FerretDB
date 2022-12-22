@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 
@@ -45,12 +46,20 @@ const (
 // the corresponding PostgreSQL table name is stored in the table field.
 // For _id field it creates unique index.
 //
-// If a PostgreSQL conflict occurs, it returns a possible wrapped transactionConflictError error
-// which indicates that the caller could retry the transaction.
+// It returns possibly wrapped error:
+//   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
+//   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	var tableName string
 
-	if err := CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
+	err := CreateDatabaseIfNotExists(ctx, tx, db)
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, ErrInvalidDatabaseName):
+		return "", err
+	default:
 		return "", lazyerrors.Error(err)
 	}
 

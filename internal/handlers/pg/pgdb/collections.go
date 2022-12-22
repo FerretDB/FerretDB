@@ -17,7 +17,6 @@ package pgdb
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -99,58 +98,73 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 	}
 }
 
-// CreateCollection creates a new FerretDB collection in the given database.
+// CreateCollection creates a new FerretDB collection with the given name in the given database.
+// If the database does not exist, it will be created.
 //
-// It returns a possibly wrapped error:
-//   - ErrSchemaNotExist - is the given FerretDB database does not exist.
-//   - ErrInvalidCollectionName - if a FerretDB collection name doesn't conform to restrictions.
-//   - ErrAlreadyExist - if a FerretDB collection with the given names already exists.
-//
-// Please use errors.Is to check the error.
+// It returns possibly wrapped error:
+//   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
+//   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - ErrAlreadyExist - if a FerretDB collection with the given name already exists.
+//   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidCollectionName
 	}
 
-	schemaExists, err := schemaExists(ctx, tx, db)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !schemaExists {
-		return ErrSchemaNotExist
-	}
-
-	_, err = getSettings(ctx, tx, db, collection)
+	_, err := getSettings(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
 		return ErrAlreadyExist
 	case errors.Is(err, ErrTableNotExist):
-		// collection doesn't exist, do nothing
+		// collection doesn't exist, we will create it
 	default:
 		return lazyerrors.Error(err)
 	}
 
-	return CreateCollectionIfNotExist(ctx, tx, db, collection)
-}
-
-// CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
-// and FerretDB collection / PostgreSQL table exist.
-// If needed, it creates both database and collection.
-//
-// True is returned if collection was created.
-func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	var err error
-
-	// schema-level advisory lock to make collection creation atomic and prevent deadlocks
-	// xact lock is used as in case if transaction is aborted, unlock won't be called
-	lock := "create-collection-in-" + db
-	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(hashtext($1))"), lock)
+	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
+	err = createTableIfNotExists(ctx, tx, db, table)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// CreateCollectionIfNotExist ensures that given FerretDB database and collection exist.
+// If the database does not exist, it will be created.
+//
+// It returns possibly wrapped error:
+//   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
+//   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
+func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	if !validateCollectionNameRe.MatchString(collection) ||
+		strings.HasPrefix(collection, reservedPrefix) {
+		return ErrInvalidCollectionName
+	}
+
+	var err error
+
+	// If settings could be retrieved, the collection considered existing.
+	// No need to attempt to create it, so we have fewer locks in PostgreSQL.
+	_, err = getSettings(ctx, tx, db, collection)
+	if err == nil {
+		return nil
+	}
+
+	// schema-level advisory lock to make collection creation atomic and prevent deadlocks
+	// xact lock is used as in case if transaction is aborted, unlock won't be called
+	/*lock := "create-collection-in-" + db
+	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(hashtext($1))"), lock)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}*/
 
 	/*defer func() {
 		_, _ = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_unlock(hashtext($1))"), lock)

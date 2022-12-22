@@ -90,10 +90,10 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 // If f returns a transactionConflictError, the transaction is retried.
 // If after maxRetries the transaction still fails, the last error unwrapped from transactionConflictError is returned.
 func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) (err error) {
-	var tcErr *transactionConflictError
-
 	for retry := 0; retry < maxRetries; retry++ {
-		err := pgPool.InTransaction(ctx, f)
+		err = pgPool.InTransaction(ctx, f)
+
+		var tcErr *transactionConflictError
 
 		switch {
 		case err == nil:
@@ -105,5 +105,5 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 		}
 	}
 
-	return tcErr.err
+	return lazyerrors.Error(err)
 }

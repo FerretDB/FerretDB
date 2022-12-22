@@ -109,13 +109,10 @@ func TestCreateDrop(t *testing.T) {
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			return CreateCollection(ctx, tx, databaseName, collectionName)
 		})
-		require.ErrorIs(t, err, ErrSchemaNotExist)
+		require.NoError(t, err)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err = CreateDatabaseIfNotExists(ctx, tx, databaseName); err != nil && !errors.Is(err, ErrAlreadyExist) {
-				return err
-			}
-			return nil
+			return CreateDatabaseIfNotExists(ctx, tx, databaseName)
 		})
 		require.NoError(t, err)
 
@@ -125,7 +122,7 @@ func TestCreateDrop(t *testing.T) {
 			return err
 		})
 		require.NoError(t, err)
-		assert.False(t, exists)
+		assert.True(t, exists)
 
 		var collections []string
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -133,7 +130,7 @@ func TestCreateDrop(t *testing.T) {
 			return err
 		})
 		require.NoError(t, err)
-		assert.Empty(t, collections)
+		assert.Equal(t, []string{collectionName}, collections)
 	})
 
 	t.Run("NoCollection", func(t *testing.T) {
