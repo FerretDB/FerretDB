@@ -98,11 +98,14 @@ func TestQueryBadCountType(t *testing.T) {
 				Decode(&actual)
 			require.Error(t, err)
 
-			AssertEqualError(t, mongo.CommandError{
-				Code:    73,
-				Name:    "InvalidNamespace",
-				Message: "Failed to parse namespace element",
-			}, err)
+			AssertEqualError(t,
+				mongo.CommandError{
+					Code:    73,
+					Name:    "InvalidNamespace",
+					Message: "Failed to parse namespace element",
+				},
+				err,
+			)
 		})
 	}
 }
