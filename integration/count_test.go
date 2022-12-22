@@ -28,7 +28,7 @@ import (
 
 func TestQueryBadCountType(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+	s := setup.SetupWithOpts(t, nil)
 
 	ctx, collection := s.Ctx, s.Collection
 
