@@ -35,20 +35,20 @@ func TestSettings(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		created, err := upsertSettings(ctx, tx, databaseName, collectionName)
+		nameCreated, _, err := upsertSettings(ctx, tx, databaseName, collectionName)
 		if err != nil {
 			return err
 		}
 
-		var found string
+		var nameFound string
 
-		found, err = getSettings(ctx, tx, databaseName, collectionName)
+		nameFound, err = getSettings(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
-		assert.Equal(t, created, found)
+		assert.Equal(t, nameCreated, nameFound)
 
 		// adding settings that already exist should not fail
-		_, err = upsertSettings(ctx, tx, databaseName, collectionName)
+		_, _, err = upsertSettings(ctx, tx, databaseName, collectionName)
 		if err != nil {
 			return err
 		}

@@ -49,20 +49,17 @@ const (
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
-	var tableName string
-	var err error
-
+func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
 	tableName, err = getSettings(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
 		// settings already exist
-		return tableName, nil
+		return
 	case errors.Is(err, ErrTableNotExist):
 		// settings don't exist, do nothing
 	default:
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 
 	err = CreateDatabaseIfNotExists(ctx, tx, db)
@@ -71,13 +68,13 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrInvalidDatabaseName):
-		return "", err
+		return
 	default:
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 
 	if err := createTableIfNotExists(ctx, tx, db, settingsTableName); err != nil {
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 
 	// Index to ensure that collection name is unique
@@ -86,7 +83,7 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 		table:    settingsTableName,
 		isUnique: true,
 	}); err != nil {
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 
 	tableName = formatCollectionName(collection)
@@ -100,10 +97,10 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 		table:  settingsTableName,
 		doc:    settings,
 	}); err != nil {
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 
-	return tableName, nil
+	return tableName, true, nil
 }
 
 // getSettings returns PostgreSQL table name for the given FerretDB database and collection.

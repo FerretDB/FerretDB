@@ -112,9 +112,13 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, err := upsertSettings(ctx, tx, db, collection)
+	table, created, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if !created {
+		return ErrAlreadyExist
 	}
 
 	err = createTableIfNotExists(ctx, tx, db, table)
@@ -140,9 +144,14 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 
 	var err error
 
-	table, err := upsertSettings(ctx, tx, db, collection)
+	table, created, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if !created {
+		// table already exists.
+		return nil
 	}
 
 	err = createTableIfNotExists(ctx, tx, db, table)
