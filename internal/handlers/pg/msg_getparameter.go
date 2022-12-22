@@ -16,9 +16,11 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -92,17 +94,19 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 func selectUnit(document, resDB *types.Document, showDetails, allParameters bool) (doc *types.Document, err error) {
 	doc = must.NotFail(types.NewDocument())
 
-	keys := resDB.Keys()
+	iterOver := resDB
 	if !allParameters {
-		keys = document.Keys()
+		iterOver = document
 	}
 
-	for _, k := range keys {
-		if k == "getParameter" || k == "comment" || k == "$db" {
-			continue
+	for {
+		k, item, err := iterOver.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			// no more documents
+			break
 		}
-		item, err := resDB.Get(k)
-		if err != nil {
+
+		if k == "getParameter" || k == "comment" || k == "$db" {
 			continue
 		}
 

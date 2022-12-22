@@ -435,11 +435,11 @@ func (d *Document) moveIDToTheFirstIndex() {
 func (d *Document) Next() (string, any, error) {
 	n := d.currentIter.Add(1)
 
-	if int(n) >= len(d.fields) {
+	if int(n) >= len(d.fields)+1 {
 		return "", nil, iterator.ErrIteratorDone
 	}
 
-	return d.fields[n].key, d.fields[n].value, nil
+	return d.fields[n-1].key, d.fields[n-1].value, nil
 }
 
 // Close implements iterator.Interface.
