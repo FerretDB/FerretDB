@@ -61,7 +61,7 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 }
 
 // WriteTo implements bsontype interface.
-func (a arrayType) WriteTo(w *bufio.Writer) error {
+func (a *arrayType) WriteTo(w *bufio.Writer) error {
 	v, err := a.MarshalBinary()
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -75,8 +75,8 @@ func (a arrayType) WriteTo(w *bufio.Writer) error {
 }
 
 // MarshalBinary implements bsontype interface.
-func (a arrayType) MarshalBinary() ([]byte, error) {
-	ta := types.Array(a)
+func (a *arrayType) MarshalBinary() ([]byte, error) {
+	ta := types.Array(*a)
 	l := ta.Len()
 
 	fields := make([]field, l)

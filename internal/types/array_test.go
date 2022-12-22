@@ -360,5 +360,4 @@ func TestArrayNext(t *testing.T) {
 			require.Equal(t, iterator.ErrIteratorDone, err)
 		})
 	}
-
 }
