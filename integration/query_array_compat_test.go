@@ -244,7 +244,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Zero": {
-			filter: bson.D{{"v", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{0}}}}},
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{42.13}}}}},

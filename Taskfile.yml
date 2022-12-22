@@ -338,6 +338,15 @@ tasks:
           --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
         ignore_error: true
 
+
+  mongo-test:
+    desc: "Run legacy MongoDB shell (`mongo`) with test script"
+    cmds:
+      - >
+        docker compose run --rm legacy-mongo-shell
+        'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
+        /legacy-mongo-shell/test.js
+
   docker-init:
     cmds:
       - docker buildx create --driver=docker-container --name=ferretdb --use=false
