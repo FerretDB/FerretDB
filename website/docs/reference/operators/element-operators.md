@@ -248,7 +248,7 @@ The output:
 ]
 ```
 
-## `$type`
+## $type
 
 *Syntax*: `{ <field>: { $type: <datatype> } }`
 
@@ -278,7 +278,7 @@ The following table lists the available BSON type codes and their corresponding 
 |-128|Number|number|
 
 :::caution
-`Decimal`, `Min Key`, and `Max Key` are not currently implemented.
+`Decimal128`, `Min Key`, and `Max Key` are not currently implemented.
 FerretDB supports the alias `number` which matches the following BSON types: `Double`, `32-bit integer`, and `64-bit integer` type values.
 :::
 
