@@ -57,7 +57,7 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 	}
 
 	if err := createTableIfNotExists(ctx, tx, db, settingsTableName); err != nil {
-		return "", err
+		return "", lazyerrors.Error(err)
 	}
 
 	// Index to ensure that collection name is unique
@@ -66,7 +66,7 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 		table:    settingsTableName,
 		isUnique: true,
 	}); err != nil {
-		return "", err
+		return "", lazyerrors.Error(err)
 	}
 
 	tableName = formatCollectionName(collection)
