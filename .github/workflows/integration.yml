@@ -47,12 +47,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # small ad-hoc optimization
-      - name: Start pulling Docker images in the background
-        run: docker compose build --pull --progress=quiet --quiet &
-        env:
-          TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
-
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
