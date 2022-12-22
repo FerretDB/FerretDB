@@ -30,7 +30,7 @@ func TestQueryBadCountType(t *testing.T) {
 	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1674")
 
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+	s := setup.SetupWithOpts(t, nil)
 
 	ctx, collection := s.Ctx, s.Collection
 
