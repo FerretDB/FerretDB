@@ -36,7 +36,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
 	var sp pgdb.SQLParam
 
@@ -59,6 +59,11 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var docs *types.Array
 	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
+		return nil, err
+	}
+
+	ordered := true
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
 		return nil, err
 	}
 
