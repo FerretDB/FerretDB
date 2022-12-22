@@ -322,7 +322,15 @@ tasks:
       - >
         docker compose exec mongodb mongosh
         'mongodb://host.docker.internal:27018/test?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-        --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
+        --verbose --eval 'disableTelemetry()' --shell
+
+  mongo-test:
+    desc: "Run legacy MongoDB shell (`mongo`) with test script"
+    cmds:
+      - >
+        docker compose run --rm legacy-mongo-shell
+        'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
+        /legacy-mongo-shell/test.js
 
   docker-init:
     cmds:

@@ -48,11 +48,11 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 		return lazyerrors.Errorf("wire.OpQuery.ReadFrom (binary.Read): %w", err)
 	}
 
-	var col bson.CString
-	if err := col.ReadFrom(bufr); err != nil {
+	var coll bson.CString
+	if err := coll.ReadFrom(bufr); err != nil {
 		return err
 	}
-	query.FullCollectionName = string(col)
+	query.FullCollectionName = string(coll)
 
 	if err := binary.Read(bufr, binary.LittleEndian, &query.NumberToSkip); err != nil {
 		return err
