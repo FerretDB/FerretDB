@@ -28,8 +28,6 @@ import (
 )
 
 func TestQueryBadCountType(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},

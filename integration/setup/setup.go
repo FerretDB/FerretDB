@@ -64,6 +64,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 	return u.Host == ""
 }
 
+// IsAuthEnabled returns true if authentication is enabled.
 func (s *SetupResult) IsAuthEnabled(tb testing.TB) bool {
 	uri, err := url.PathUnescape(s.MongoDBURI)
 	require.NoError(tb, err)
