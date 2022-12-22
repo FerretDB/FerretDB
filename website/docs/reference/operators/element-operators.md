@@ -3,16 +3,16 @@ sidebar_position: 4
 ---
  
 # Element query operators
- 
+
 Element query operators return data based on the existence of a specified field or the data type of a particular value.
- 
+
 |Operator|Description|
 |-------|-----------|
 |[`$exists`](#exists)|returns documents where a field exists or does not exist|
 |[`$type`](#type)|returns documents where the value of a field is of the specified type|
- 
+
 For the examples in this section, insert the following documents into the `electronics` collection:
- 
+
 ```js
 db.electronics.insertMany([
   {
@@ -102,20 +102,20 @@ db.electronics.insertMany([
   }
 ])
 ```
- 
+
 ## $exists
- 
+
 *Syntax*: `{ <field>: { $exists: <boolean> } }`
- 
+
 The `$exists` operator returns documents where a field exists or does not exist.
- 
+
 :::tip
 If the `<boolean>` value is `true`, the query returns documents where the specified field exists, even if the value is `null` or an empty array.
 If the `<boolean>` value is `false`, the query returns documents where the specified field does not exist.
 :::
- 
+
 To find documents in the `electronics` collection where the `specifications` field exists, use the `$exists` operator in the following query statement:
- 
+
 ```js
 db.electronics.find({
   specifications: {
@@ -123,9 +123,9 @@ db.electronics.find({
   }
 })
 ```
- 
+
 The output:
- 
+
 ```js
 [
  {
@@ -178,12 +178,12 @@ The output:
  }
 ]
 ```
- 
+
 In the above output, the query returns all documents where the `specifications` field exists, even when the `field` has an empty value.
- 
+
 If you want to find documents where the `specifications` field exists and has a specific value, use the `$exists` operator in conjunction with other operators.
 For example, the following query returns all documents where the `specifications` field exists and its value is an array:
- 
+
 ```js
 db.electronics.find({
   specifications: {
@@ -192,9 +192,9 @@ db.electronics.find({
   }
 })
 ```
- 
+
 The output:
- 
+
 ```js
 [
  {
@@ -247,16 +247,16 @@ The output:
  }
 ]
 ```
- 
+
 ## `$type`
- 
+
 *Syntax*: `{ <field>: { $type: <datatype> } }`
- 
+
 The `$type` operator returns documents where the value of a field is of the specified BSON type.
 The `<datatype>` parameter can be the type code or alias of the particular data type.
- 
+
 The following table lists the available BSON type codes and their corresponding aliases:
- 
+
 |Type code|Type|Alias|
 |-------|------|------|
 |1|Double|double|
@@ -276,18 +276,18 @@ The following table lists the available BSON type codes and their corresponding 
 |-1|Min key|minKey|
 |127|Max key|maxKey|
 |-128|Number|number|
- 
+
 :::caution
 `Decimal`, `Min Key`, and `Max Key` are not currently implemented.
 FerretDB supports the alias `number` which matches the following BSON types: `Double`, `32-bit integer`, and `64-bit integer` type values.
 :::
- 
+
 :::info
-FerretDB supports the alias `number` which matches the following BSON types: `Double`, `32-bit integer`, `64-bit integer`, and type values.
+FerretDB supports the alias `number` which matches the following BSON types: `Double`, `32-bit integer`, and `64-bit integer` type values.
 :::
- 
+
 The following operation query returns all documents in the `electronics` collection where the `discount` field has a boolean data type, which can be represented with the data code `8`:
- 
+
 ```js
 db.electronics.find({
   discount: {
@@ -295,9 +295,9 @@ db.electronics.find({
   }
 })
 ```
- 
+
 This query can also be written using the alias of the specified data type.
- 
+
 ```js
 db.electronics.find({
   discount: {
@@ -305,9 +305,9 @@ db.electronics.find({
   }
 })
 ```
- 
+
 The output:
- 
+
 ```js
 [
  {
