@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 0
 
       # small ad-hoc optimization
-      - name: Pull Docker images in the background
+      - name: Start pulling Docker images in the background
         run: docker compose pull --ignore-pull-failures --quiet &
         env:
           TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
