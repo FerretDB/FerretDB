@@ -27,8 +27,6 @@ import (
 )
 
 func TestQueryBadCountType(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1674")
-
 	t.Parallel()
 	s := setup.SetupWithOpts(t, nil)
 
@@ -48,8 +46,7 @@ func TestQueryBadCountType(t *testing.T) {
 		},
 		"Double": {
 			value: 3.14,
-
-			err: "double",
+			err:   "double",
 		},
 		"Binary": {
 			value: primitive.Binary{},
@@ -57,8 +54,7 @@ func TestQueryBadCountType(t *testing.T) {
 		},
 		"ObjectID": {
 			value: primitive.ObjectID{},
-
-			err: "objectId",
+			err:   "objectId",
 		},
 		"Bool": {
 			value: true,
@@ -66,18 +62,15 @@ func TestQueryBadCountType(t *testing.T) {
 		},
 		"Date": {
 			value: time.Now(),
-
-			err: "date",
+			err:   "date",
 		},
 		"Null": {
 			value: nil,
-
-			err: "null",
+			err:   "null",
 		},
 		"Regex": {
 			value: primitive.Regex{Pattern: "/foo/"},
-
-			err: "regex",
+			err:   "regex",
 		},
 		"Int": {
 			value: int32(42),
@@ -105,22 +98,11 @@ func TestQueryBadCountType(t *testing.T) {
 				Decode(&actual)
 			require.Error(t, err)
 
-			var expectedErr mongo.CommandError
-			if s.IsAuthEnabled(t) {
-				expectedErr = mongo.CommandError{
-					Code:    73,
-					Name:    "InvalidNamespace",
-					Message: "Failed to parse namespace element",
-				}
-			} else {
-				expectedErr = mongo.CommandError{
-					Code:    2,
-					Name:    "BadValue",
-					Message: "collection name has invalid type: " + tc.err,
-				}
-			}
-
-			AssertEqualError(t, expectedErr, err)
+			AssertEqualError(t, mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
+			}, err)
 		})
 	}
 }

@@ -64,17 +64,6 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 	return u.Host == ""
 }
 
-// IsAuthEnabled returns true if authentication is enabled.
-func (s *SetupResult) IsAuthEnabled(tb testing.TB) bool {
-	uri, err := url.PathUnescape(s.MongoDBURI)
-	require.NoError(tb, err)
-
-	u, err := url.Parse(uri)
-	require.NoError(tb, err)
-
-	return u.User != nil
-}
-
 // SetupWithOpts setups the test according to given options.
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()

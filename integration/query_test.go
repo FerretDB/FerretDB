@@ -265,8 +265,6 @@ func TestQuerySortValue(t *testing.T) {
 }
 
 func TestQueryBadFindType(t *testing.T) {
-	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1674")
-
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
@@ -345,22 +343,11 @@ func TestQueryBadFindType(t *testing.T) {
 				Decode(&actual)
 			require.Error(t, err)
 
-			var expectedErr mongo.CommandError
-			if s.IsAuthEnabled(t) {
-				expectedErr = mongo.CommandError{
-					Code:    73,
-					Name:    "InvalidNamespace",
-					Message: "Failed to parse namespace element",
-				}
-			} else {
-				expectedErr = mongo.CommandError{
-					Code:    2,
-					Name:    "BadValue",
-					Message: "collection name has invalid type: " + tc.err,
-				}
-			}
-
-			AssertEqualError(t, expectedErr, err)
+			AssertEqualError(t, mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
+			}, err)
 		})
 	}
 }
