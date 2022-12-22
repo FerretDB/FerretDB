@@ -49,7 +49,7 @@ jobs:
 
       # small ad-hoc optimization
       - name: Start pulling Docker images in the background
-        run: docker compose pull --ignore-pull-failures --quiet &
+        run: docker compose build --pull --progress=quiet --quiet &
         env:
           TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
 
