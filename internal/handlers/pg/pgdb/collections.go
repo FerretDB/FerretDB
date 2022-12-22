@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -160,11 +161,11 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 
 	// schema-level advisory lock to make collection creation atomic and prevent deadlocks
 	// xact lock is used as in case if transaction is aborted, unlock won't be called
-	/*lock := "create-collection-in-" + db
+	lock := "create-collection-in-" + db
 	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(hashtext($1))"), lock)
 	if err != nil {
 		return lazyerrors.Error(err)
-	}*/
+	}
 
 	/*defer func() {
 		_, _ = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_unlock(hashtext($1))"), lock)

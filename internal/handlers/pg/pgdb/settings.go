@@ -83,10 +83,9 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 	))
 
 	if err := insert(ctx, tx, insertParams{
-		schema:         db,
-		table:          settingsTableName,
-		doc:            settings,
-		ignoreConflict: true,
+		schema: db,
+		table:  settingsTableName,
+		doc:    settings,
 	}); err != nil {
 		return "", lazyerrors.Error(err)
 	}

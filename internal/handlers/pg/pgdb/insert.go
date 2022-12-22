@@ -51,10 +51,9 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	}
 
 	p := insertParams{
-		schema:         db,
-		table:          table,
-		doc:            doc,
-		ignoreConflict: false,
+		schema: db,
+		table:  table,
+		doc:    doc,
 	}
 	err = insert(ctx, tx, p)
 	if err != nil {
@@ -66,20 +65,15 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 
 // insertParams describes the parameters for inserting a document into a table.
 type insertParams struct {
-	schema         string          // pg schema name
-	table          string          // pg table name
-	doc            *types.Document // document to insert
-	ignoreConflict bool            // on conflict do nothing
+	schema string          // pg schema name
+	table  string          // pg table name
+	doc    *types.Document // document to insert
 }
 
 // insert marshals and inserts a document with the given params.
 func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
-
-	if p.ignoreConflict {
-		sql += ` ON CONFLICT DO NOTHING`
-	}
 
 	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
 	if err == nil {
@@ -92,8 +86,13 @@ func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	}
 
 	switch pgErr.Code {
-	case pgerrcode.DeadlockDetected:
+	case pgerrcode.UniqueViolation:
+		// insert failed because such entry already exists.
+		// in this case the transaction should be retried.
 		return newTransactionConflictError(err)
+	case pgerrcode.DeadlockDetected:
+		// return newTransactionConflictError(err)
+		return lazyerrors.Error(err)
 	default:
 		return lazyerrors.Error(err)
 	}
