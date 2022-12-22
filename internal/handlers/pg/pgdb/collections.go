@@ -105,7 +105,7 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
 //   - ErrAlreadyExist - if a FerretDB collection with the given name already exists.
-//   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
@@ -135,7 +135,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
-//   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
