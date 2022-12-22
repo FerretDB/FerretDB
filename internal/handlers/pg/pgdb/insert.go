@@ -91,8 +91,8 @@ func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 		// in this case the transaction should be retried.
 		return newTransactionConflictError(err)
 	case pgerrcode.DeadlockDetected:
-		// return newTransactionConflictError(err)
-		return lazyerrors.Error(err)
+		return newTransactionConflictError(err)
+		// return lazyerrors.Error(err)
 	default:
 		return lazyerrors.Error(err)
 	}

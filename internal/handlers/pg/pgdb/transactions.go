@@ -26,10 +26,10 @@ import (
 )
 
 // maxRetries is the maximum number of times to retry a transaction.
-const maxRetries = 3
+const maxRetries = 20
 
 // delay is the amount of time to wait before retrying a transaction.
-const delay = 10 * time.Millisecond
+const delay = 3 * time.Millisecond
 
 // transactionConflictError is returned when one of the queries in the transaction returned an error because
 // of an unexpected conflict. The caller could retry such a transaction.
