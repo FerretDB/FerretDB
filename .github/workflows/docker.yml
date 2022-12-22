@@ -33,7 +33,7 @@ name: Docker
 on:
   pull_request_target:
     types:
-      - labeled
+      - labeled # for `trusted` label
       - unlabeled
       - opened
       - reopened
@@ -59,7 +59,7 @@ env:
 jobs:
   build:
     name: Build image
-    runs-on: [ubuntu-22.04, trusted]
+    runs-on: [ubuntu-22.04, faster, trusted]
 
     if: >
       github.event_name != 'pull_request_target' ||
