@@ -75,7 +75,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		err := pgdb.CreateCollection(ctx, tx, db, collection)
+		err = pgdb.CreateCollection(ctx, tx, db, collection)
 
 		switch {
 		case err == nil:

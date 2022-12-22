@@ -196,11 +196,11 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 }
 
 type iteratorParams struct {
+	filter  *types.Document
 	schema  string
 	table   string
-	explain bool
 	comment string
-	filter  *types.Document
+	explain bool
 }
 
 // buildIterator builds SELECT or EXPLAIN SELECT query.
@@ -254,13 +254,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		switch k {
 		case "_id":
 			switch v := v.(type) {
-			case types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			case string:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
+			case types.ObjectID:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
 		default:

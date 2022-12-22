@@ -17,9 +17,9 @@ package pgdb
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // indexParams describes the parameters for creating an index.

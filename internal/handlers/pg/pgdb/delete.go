@@ -35,7 +35,8 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 		schema:  sp.DB,
 		table:   table,
 		comment: sp.Comment,
-	}, ids)
+	}, ids,
+	)
 }
 
 // deleteParams describes the parameters for deleting a document from a table.

@@ -20,7 +20,6 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
@@ -46,6 +45,7 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 
 	var table string
 	table, err = getSettings(ctx, tx, db, collection)
+
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -65,9 +65,9 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 
 // insertParams describes the parameters for inserting a document into a table.
 type insertParams struct {
+	doc    *types.Document // document to insert
 	schema string          // pg schema name
 	table  string          // pg table name
-	doc    *types.Document // document to insert
 }
 
 // insert marshals and inserts a document with the given params.

@@ -137,7 +137,8 @@ func removeSettings(ctx context.Context, tx pgx.Tx, db, collection string) error
 	_, err := deleteByIDs(ctx, tx, deleteParams{
 		schema: db,
 		table:  settingsTableName,
-	}, []any{collection})
+	}, []any{collection},
+	)
 
 	if err == nil {
 		return nil
