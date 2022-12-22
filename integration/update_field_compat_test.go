@@ -197,7 +197,8 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
 		},
 		"FieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
+			update:        bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
 		"DotDocumentFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
@@ -570,16 +571,19 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}}}},
 		},
 		"Double": {
-			update: bson.D{{"$set", bson.D{{"v", float64(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v", float64(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
 		},
 		"Null": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
 		},
 		"Int32": {
-			update: bson.D{{"$set", bson.D{{"v", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
 		},
 		"SetTwoFields": {
-			update: bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
+			update:        bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
 		"SetSameValueInt": {
 			update: bson.D{{"$set", bson.D{{"v", int32(42)}}}},
@@ -597,14 +601,16 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
 		"DotNotationArrayFieldNotExist": {
-			update: bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"DocumentDotNotationArrayFieldNotExist": {
+		"DocumentArrayFieldNotExist": {
 			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
 		"DocumentField": {
-			update: bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
+			update:        bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
 	}
 
@@ -717,10 +723,12 @@ func TestUpdateFieldCompatPop(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Pop": {
-			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
+			update:        bson.D{{"$pop", bson.D{{"v", 1}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1677",
 		},
 		"PopFirst": {
-			update: bson.D{{"$pop", bson.D{{"v", -1}}}},
+			update:        bson.D{{"$pop", bson.D{{"v", -1}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1677",
 		},
 		"PopDotNotation": {
 			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
@@ -756,37 +764,6 @@ func TestUpdateFieldCompatPop(t *testing.T) {
 }
 
 func TestUpdateFieldCompatMixed(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]updateCompatTestCase{
-		"SetSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{
-				{"$set", bson.D{{"foo", int32(12)}}},
-				{"$setOnInsert", bson.D{{"v", nil}}},
-			},
-			resultType: emptyResult,
-		},
-		"SetIncSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
-			update: bson.D{
-				{"$set", bson.D{{"foo", int32(12)}}},
-				{"$inc", bson.D{{"foo", int32(1)}}},
-				{"$setOnInsert", bson.D{{"v", nil}}},
-			},
-			resultType: emptyResult,
-		},
-		"UnknownOperator": {
-			filter:     bson.D{{"_id", "test"}},
-			update:     bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
-			resultType: emptyResult,
-		},
-	}
-
-	testUpdateCompat(t, testCases)
-}
-
-func TestUpdateFieldCompatDocumentFieldsOrder(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
