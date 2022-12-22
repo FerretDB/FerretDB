@@ -27,7 +27,7 @@ import (
 // Zero value is a valid empty array.
 type Array struct {
 	s           []any
-	currentIter atomic.Uint32
+	currentIter *atomic.Uint32
 }
 
 // MakeArray creates an empty array with set capacity.
@@ -35,7 +35,7 @@ func MakeArray(capacity int) *Array {
 	if capacity == 0 {
 		return new(Array)
 	}
-	return &Array{s: make([]any, 0, capacity)}
+	return &Array{s: make([]any, 0, capacity), currentIter: new(atomic.Uint32)}
 }
 
 // NewArray creates an array with the given values.

@@ -37,7 +37,7 @@ type document interface {
 // Document represents BSON document.
 type Document struct {
 	fields      []field
-	currentIter atomic.Uint32
+	currentIter *atomic.Uint32
 }
 
 // field represents a field in the document.
@@ -87,7 +87,8 @@ func MakeDocument(capacity int) *Document {
 	}
 
 	return &Document{
-		fields: make([]field, 0, capacity),
+		fields:      make([]field, 0, capacity),
+		currentIter: new(atomic.Uint32),
 	}
 }
 
