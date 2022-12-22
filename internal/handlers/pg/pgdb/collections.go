@@ -144,9 +144,10 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	var err error
 
-	// db-level advisory lock to make collection creation atomic and prevent deadlocks
-	lock := "create-collection-" + db
-	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_lock(hashtext($1))"), lock)
+	// schema-level advisory lock to make collection creation atomic and prevent deadlocks
+	// xact lock is used as in case if transaction is aborted, unlock won't be called
+	lock := "create-collection-in-" + db
+	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(hashtext($1))"), lock)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
