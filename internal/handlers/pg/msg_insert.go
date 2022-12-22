@@ -80,8 +80,12 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			return h.insert(ctx, tx, &sp, doc)
 		})
+
 		if err != nil {
-			return nil, err
+			if ordered {
+				return nil, err
+			}
+			// TODO: append errors PTAL pg/msg_delete:114
 		}
 
 		inserted++
