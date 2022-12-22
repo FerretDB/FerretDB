@@ -26,7 +26,10 @@ body:
       label: Definition of Done
       description: What should be done to consider this issue done?
       value: |
+        - [ ] unit tests added
+        - [ ] integration tests added
         - [ ] compatibility tests added
+        - [ ] spot refactoring done
         - [ ] documentation updated
         - [ ] anything else?
     validations:
