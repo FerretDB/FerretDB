@@ -16,7 +16,9 @@ package types
 
 import (
 	"fmt"
+	"sync/atomic"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -24,7 +26,8 @@ import (
 //
 // Zero value is a valid empty array.
 type Array struct {
-	s []any
+	s           []any
+	currentIter atomic.Uint32
 }
 
 // MakeArray creates an empty array with set capacity.
@@ -208,3 +211,17 @@ func (a *Array) Remove(index int) {
 
 	a.s = append(a.s[:index], a.s[index+1:]...)
 }
+
+// Next implements iterator.Interface.
+func (a *Array) Next() (uint32, any, error) {
+	n := a.currentIter.Add(1)
+
+	if int(n) >= a.Len() {
+		return 0, nil, iterator.ErrIteratorDone
+	}
+
+	return n, a.s[n], nil
+}
+
+// Close implements iterator.Interface.
+func (a *Array) Close() {}

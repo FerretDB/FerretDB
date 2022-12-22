@@ -18,9 +18,11 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync/atomic"
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -34,7 +36,8 @@ type document interface {
 
 // Document represents BSON document.
 type Document struct {
-	fields []field
+	fields      []field
+	currentIter atomic.Uint32
 }
 
 // field represents a field in the document.
@@ -74,7 +77,7 @@ func ConvertDocument(d document) (*Document, error) {
 		}
 	}
 
-	return &Document{fields}, nil
+	return &Document{fields: fields}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -427,6 +430,20 @@ func (d *Document) moveIDToTheFirstIndex() {
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }
+
+// Next implements iterator.Interface.
+func (d *Document) Next() (string, any, error) {
+	n := d.currentIter.Add(1)
+
+	if int(n) >= len(d.fields) {
+		return "", nil, iterator.ErrIteratorDone
+	}
+
+	return d.fields[n].key, d.fields[n].value, nil
+}
+
+// Close implements iterator.Interface.
+func (d *Document) Close() {}
 
 // check interfaces
 var (
