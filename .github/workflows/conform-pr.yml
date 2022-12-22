@@ -54,9 +54,7 @@ jobs:
         run: cat /etc/hosts
 
       - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: conform-pr
+        run: cat /etc/hosts
 
       - name: Conform PR
         uses: FerretDB/github-actions/conform-pr@main
