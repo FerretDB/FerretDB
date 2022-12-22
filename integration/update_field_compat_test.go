@@ -186,27 +186,26 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DoubleIncOnNullValue": {
 			update: bson.D{{"$inc", bson.D{{"v", float64(1)}}}},
 		},
-		"DotNotationArrayFieldExist": {
+		"ArrayFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
 		},
-		"DotNotationDocFieldNotExist": {
+		"DocFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
 		},
-		"ArrayDotNotationFieldNotExist": {
+		"ArrayFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
 		},
 		"FieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"DotDocumentFieldExist": {
+		"DocFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
 		},
-		"DotArrayFieldNotExist": {
+		"DocArrayFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"foo.0.baz", int32(1)}}}},
 		},
-		"DotArrayFieldValueNotExist": {
+		"ArrayFieldValueNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
 		},
@@ -590,7 +589,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update: bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
 		},
-		"DotNotationDocumentFieldExist": {
+		"DocFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
@@ -598,15 +597,15 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"DotNotationArrayFieldExist": {
+		"ArrayFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
-		"DotNotationArrayFieldNotExist": {
+		"ArrayFieldNotExist": {
 			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"DocumentArrayFieldNotExist": {
+		"DocArrFieldNotExist": {
 			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
