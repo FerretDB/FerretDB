@@ -35,7 +35,7 @@ func TestSettings(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		nameCreated, _, err := upsertSettings(ctx, tx, databaseName, collectionName)
+		nameCreated, _, err := ensureSettings(ctx, tx, databaseName, collectionName)
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func TestSettings(t *testing.T) {
 		assert.Equal(t, nameCreated, nameFound)
 
 		// adding settings that already exist should not fail
-		_, _, err = upsertSettings(ctx, tx, databaseName, collectionName)
+		_, _, err = ensureSettings(ctx, tx, databaseName, collectionName)
 		if err != nil {
 			return err
 		}

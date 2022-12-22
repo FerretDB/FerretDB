@@ -67,7 +67,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.CreateCollectionIfNotExist(ctx, tx, sp.DB, sp.Collection)
+		return pgdb.CreateCollectionIfNotExists(ctx, tx, sp.DB, sp.Collection)
 	})
 	if err != nil {
 		if errors.Is(pgdb.ErrInvalidCollectionName, err) ||

@@ -258,7 +258,7 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
 		})
 		require.NoError(t, err)
 	})
@@ -275,7 +275,7 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 				return err
 			}
 
-			return CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
 		})
 		require.NoError(t, err)
 	})
@@ -296,7 +296,7 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 				return err
 			}
 
-			return CreateCollectionIfNotExist(ctx, tx, databaseName, collectionName)
+			return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
 		})
 		require.NoError(t, err)
 	})

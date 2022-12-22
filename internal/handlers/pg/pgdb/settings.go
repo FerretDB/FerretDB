@@ -38,8 +38,9 @@ const (
 	maxTableNameLength = 63
 )
 
-// upsertSettings returns PostgreSQL table name for the given FerretDB database and collection names.
+// ensureSettings returns PostgreSQL table name for the given FerretDB database and collection names.
 // If such settings don't exist, it creates them, including the creation of the PostgreSQL schema if needed.
+// If settings were created, it returns true as the second return value. If settings already existed, it returns false.
 //
 // It makes a document with _id and table fields and stores it in the settingsTableName table.
 // The given FerretDB collection name is stored in the _id field,
@@ -49,13 +50,14 @@ const (
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
+func ensureSettings(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
 	tableName, err = getSettings(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
 		// settings already exist
 		return
+
 	case errors.Is(err, ErrTableNotExist):
 		// settings don't exist, do nothing
 	default:
@@ -132,6 +134,7 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 }
 
 // removeSettings removes settings for the given database and collection.
+//
 // If such settings don't exist, it doesn't return an error.
 func removeSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	_, err := deleteByIDs(ctx, tx, deleteParams{

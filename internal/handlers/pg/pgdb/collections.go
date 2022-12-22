@@ -112,7 +112,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, created, err := upsertSettings(ctx, tx, db, collection)
+	table, created, err := ensureSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -129,14 +129,14 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	return nil
 }
 
-// CreateCollectionIfNotExist ensures that given FerretDB database and collection exist.
+// CreateCollectionIfNotExists ensures that given FerretDB database and collection exist.
 // If the database does not exist, it will be created.
 //
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
 //   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
+func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
 		return ErrInvalidCollectionName
@@ -144,7 +144,7 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 
 	var err error
 
-	table, created, err := upsertSettings(ctx, tx, db, collection)
+	table, created, err := ensureSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -166,6 +166,8 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 // Please use errors.Is to check the error.
+//
+// TODO Test correctness for concurrent cases https://github.com/FerretDB/FerretDB/issues/1684
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
@@ -186,11 +188,8 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	}
 
 	err = removeSettings(ctx, tx, db, collection)
-	if err != nil && !errors.Is(err, ErrTableNotExist) {
+	if err != nil {
 		return lazyerrors.Error(err)
-	}
-	if errors.Is(err, ErrTableNotExist) {
-		return ErrTableNotExist
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
@@ -205,7 +204,8 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 
 // createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
 // If the table already exists, it does nothing.
-// If PostgreSQL can't create a table due to a concurrent connection (conflict), it returns errTransactionConflict.
+//
+// If a PostgreSQL conflict occurs it returns errTransactionConflict, and the caller could retry the transaction.
 func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
 	var err error
 

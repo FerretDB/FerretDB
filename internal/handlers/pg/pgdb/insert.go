@@ -38,7 +38,7 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 
 	var err error
 
-	err = CreateCollectionIfNotExist(ctx, tx, db, collection)
+	err = CreateCollectionIfNotExists(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
