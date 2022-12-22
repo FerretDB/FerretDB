@@ -48,10 +48,10 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	}
 
 	p := insertParams{
-		schema: db,
-		table:  table,
-		doc:    doc,
-		upsert: false,
+		schema:         db,
+		table:          table,
+		doc:            doc,
+		ignoreConflict: false,
 	}
 	err = insert(ctx, tx, p)
 	if err != nil {
@@ -63,10 +63,10 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 
 // insertParams describes the parameters for inserting a document into a table.
 type insertParams struct {
-	schema string          // pg schema name
-	table  string          // pg table name
-	doc    *types.Document // document to insert
-	upsert bool            // on conflict do update
+	schema         string          // pg schema name
+	table          string          // pg table name
+	doc            *types.Document // document to insert
+	ignoreConflict bool            // on conflict do nothing
 }
 
 // insert marshals and inserts a document with the given params.
@@ -74,10 +74,11 @@ func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	if p.upsert {
-		sql += ` ON CONFLICT ((_jsonb->>'_id')) DO UPDATE SET _jsonb = $1`
+	if p.ignoreConflict {
+		sql += ` ON CONFLICT DO NOTHING`
 	}
 
 	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
+
 	return err
 }

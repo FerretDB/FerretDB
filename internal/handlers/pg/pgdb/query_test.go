@@ -18,13 +18,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -115,7 +116,6 @@ func TestGetDocuments(t *testing.T) {
 			assert.Nil(t, doc)
 
 			it.Close()
-
 			return nil
 		})
 		require.NoError(t, err)

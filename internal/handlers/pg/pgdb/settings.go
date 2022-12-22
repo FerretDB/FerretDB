@@ -40,7 +40,7 @@ const (
 )
 
 // upsertSettings returns PostgreSQL table name for the given FerretDB database and collection names.
-// If such settings don't exist, it creates them.
+// If such settings don't exist, it creates them, including the creation of the PostgreSQL schema if needed.
 //
 // It makes a document with _id and table fields and stores it in the settingsTableName table.
 // The given FerretDB collection name is stored in the _id field,
@@ -76,10 +76,10 @@ func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (stri
 	))
 
 	if err := insert(ctx, tx, insertParams{
-		schema: db,
-		table:  settingsTableName,
-		doc:    settings,
-		upsert: true,
+		schema:         db,
+		table:          settingsTableName,
+		doc:            settings,
+		ignoreConflict: true,
 	}); err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -109,6 +109,8 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 		return "", lazyerrors.Error(err)
 	}
 
+	defer it.Close()
+
 	_, doc, err := it.Next()
 
 	switch {
@@ -120,8 +122,6 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 	default:
 		return "", lazyerrors.Error(err)
 	}
-
-	it.Close()
 
 	// Check that the settings we got from the DB are for the given collection
 	storedCollection := must.NotFail(doc.Get("_id"))
