@@ -265,7 +265,7 @@ func TestQuerySortValue(t *testing.T) {
 }
 
 func TestQueryBadFindType(t *testing.T) {
-	setup.SkipForTigris(t)
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1674")
 
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
