@@ -266,9 +266,7 @@ func TestQuerySortValue(t *testing.T) {
 
 func TestQueryBadFindType(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
-	})
+	s := setup.SetupWithOpts(t, nil)
 
 	ctx, collection := s.Ctx, s.Collection
 
