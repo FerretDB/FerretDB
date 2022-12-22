@@ -50,6 +50,9 @@ jobs:
     steps:
       # Warning! Be careful about changing the steps here as it might cause some security problems
       # (see the Attention block on the top of this file).
+      - name: Test
+        run: cat /etc/hosts
+
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
