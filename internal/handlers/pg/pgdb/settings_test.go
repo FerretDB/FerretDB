@@ -34,9 +34,11 @@ func TestSettings(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		created, err := upsertSettings(ctx, tx, databaseName, collectionName)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 
 		var found string
 
@@ -47,7 +49,9 @@ func TestSettings(t *testing.T) {
 
 		// adding settings that already exist should not fail
 		_, err = upsertSettings(ctx, tx, databaseName, collectionName)
-		require.NoError(t, err)
+		if err != nil {
+			return err
+		}
 
 		err = removeSettings(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)

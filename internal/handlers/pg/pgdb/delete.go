@@ -31,7 +31,7 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 		return 0, err
 	}
 
-	return deleteByIds(ctx, tx, deleteParams{
+	return deleteByIDs(ctx, tx, deleteParams{
 		schema:  sp.DB,
 		table:   table,
 		comment: sp.Comment,
@@ -45,8 +45,8 @@ type deleteParams struct {
 	comment string // comment to add to the query
 }
 
-// deleteByIds deletes documents by given IDs.
-func deleteByIds(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
+// deleteByIDs deletes documents by given IDs.
+func deleteByIDs(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))

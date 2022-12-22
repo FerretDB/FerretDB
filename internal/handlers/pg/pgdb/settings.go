@@ -46,13 +46,26 @@ const (
 // the corresponding PostgreSQL table name is stored in the table field.
 // For _id field it creates unique index.
 //
-// It returns possibly wrapped error:
+// It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
-//   - transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func upsertSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
 	var tableName string
+	var err error
 
-	err := CreateDatabaseIfNotExists(ctx, tx, db)
+	tableName, err = getSettings(ctx, tx, db, collection)
+
+	switch {
+	case err == nil:
+		// settings already exist
+		return tableName, nil
+	case errors.Is(err, ErrTableNotExist):
+		// settings don't exist, do nothing
+	default:
+		return "", lazyerrors.Error(err)
+	}
+
+	err = CreateDatabaseIfNotExists(ctx, tx, db)
 
 	switch {
 	case err == nil:
@@ -124,15 +137,20 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 // removeSettings removes settings for the given database and collection.
 // If such settings don't exist, it doesn't return an error.
 func removeSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	_, err := deleteByIds(ctx, tx, deleteParams{
+	_, err := deleteByIDs(ctx, tx, deleteParams{
 		schema: db,
 		table:  settingsTableName,
 	}, []any{collection})
 
-	return err
+	if err == nil {
+		return nil
+	}
+
+	return lazyerrors.Error(err)
 }
 
 // formatCollectionName returns collection name in form <shortened_name>_<name_hash>.
+// Changing this logic will break compatibility with existing databases.
 func formatCollectionName(name string) string {
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))

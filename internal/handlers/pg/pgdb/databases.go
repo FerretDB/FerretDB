@@ -124,7 +124,7 @@ func DatabaseSize(ctx context.Context, tx pgx.Tx) (int64, error) {
 
 // TablesSize returns the sum of sizes of all tables in the given database in bytes.
 func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
-	tables, err := Tables(ctx, tx, db)
+	tables, err := tablesFiltered(ctx, tx, db)
 	if err != nil {
 		return 0, err
 	}

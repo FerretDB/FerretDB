@@ -112,17 +112,6 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	_, err := getSettings(ctx, tx, db, collection)
-
-	switch {
-	case err == nil:
-		return ErrAlreadyExist
-	case errors.Is(err, ErrTableNotExist):
-		// collection doesn't exist, we will create it
-	default:
-		return lazyerrors.Error(err)
-	}
-
 	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -150,13 +139,6 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 	}
 
 	var err error
-
-	// If settings could be retrieved, the collection considered existing.
-	// No need to attempt to create it, so we have fewer locks in PostgreSQL.
-	_, err = getSettings(ctx, tx, db, collection)
-	if err == nil {
-		return nil
-	}
 
 	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {

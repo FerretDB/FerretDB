@@ -71,6 +71,9 @@ type insertParams struct {
 }
 
 // insert marshals and inserts a document with the given params.
+//
+// If a PostgreSQL conflict occurs (the caller could retry the transaction) it returns
+// possibly wrapped *transactionConflictError.
 func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
@@ -86,13 +89,9 @@ func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	}
 
 	switch pgErr.Code {
-	case pgerrcode.UniqueViolation:
-		// insert failed because such entry already exists.
-		// in this case the transaction should be retried.
+	case pgerrcode.UniqueViolation, pgerrcode.DeadlockDetected:
+		// insert failed because such entry already exists or is being created.
 		return newTransactionConflictError(err)
-	case pgerrcode.DeadlockDetected:
-		return newTransactionConflictError(err)
-		// return lazyerrors.Error(err)
 	default:
 		return lazyerrors.Error(err)
 	}
