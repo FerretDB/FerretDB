@@ -37,7 +37,7 @@ type transactionConflictError struct {
 	err error // underlying error
 }
 
-// newTransactionConflictError creates a new transactionConflictError with the given underlying error.
+// newTransactionConflictError creates a new *transactionConflictError with the given underlying error.
 func newTransactionConflictError(err error) error {
 	return &transactionConflictError{err: err}
 }
@@ -87,7 +87,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 }
 
 // InTransactionRetry wraps the given function f in a transaction.
-// If f returns a transactionConflictError, the transaction is retried.
+// If f returns a *transactionConflictError, the transaction is retried.
 // If after maxRetries the transaction still fails, the last error unwrapped from transactionConflictError is returned.
 func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	for retry := 0; retry < maxRetries; retry++ {

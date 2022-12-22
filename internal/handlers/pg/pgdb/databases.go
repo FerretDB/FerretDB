@@ -61,7 +61,7 @@ func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 //
-// If a PostgreSQL conflict occurs it returns transactionConflictError, and the caller could retry the transaction.
+// If a PostgreSQL conflict occurs it returns *transactionConflictError, and the caller could retry the transaction.
 func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {
