@@ -16,14 +16,12 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -100,33 +98,14 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 		return "", ErrTableNotExist
 	}
 
-	it, err := buildIterator(ctx, tx, iteratorParams{
-		schema: db,
-		table:  settingsTableName,
-		filter: must.NotFail(types.NewDocument("_id", collection)),
-	})
+	doc, err := queryById(ctx, tx, db, settingsTableName, collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
-	defer it.Close()
-
-	_, doc, err := it.Next()
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, iterator.ErrIteratorDone):
-		// no settings found
+	if doc == nil {
+		// no settings found for the given collection name
 		return "", ErrTableNotExist
-	default:
-		return "", lazyerrors.Error(err)
-	}
-
-	// Check that the settings we got from the DB are for the given collection
-	storedCollection := must.NotFail(doc.Get("_id"))
-	if storedCollection != collection {
-		panic(fmt.Sprintf("got unexpected collection name from the database: %s, expected %s", storedCollection, collection))
 	}
 
 	table := must.NotFail(doc.Get("table"))

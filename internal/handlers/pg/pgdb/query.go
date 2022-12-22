@@ -167,6 +167,34 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 	return it, nil
 }
 
+// queryById returns the first found document by its ID from the given PostgreSQL schema and table.
+// If the document is not found, it returns nil and no error.
+func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
+	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
+
+	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	query += where
+
+	var b []byte
+	err := tx.QueryRow(ctx, query, args...).Scan(&b)
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgx.ErrNoRows):
+		return nil, nil
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	doc, err := pjson.Unmarshal(b)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return doc, nil
+}
+
 type iteratorParams struct {
 	schema  string
 	table   string
