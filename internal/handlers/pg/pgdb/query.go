@@ -195,6 +195,7 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 	return doc, nil
 }
 
+// iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
 	filter  *types.Document
 	schema  string
@@ -203,11 +204,7 @@ type iteratorParams struct {
 	explain bool
 }
 
-// buildIterator builds SELECT or EXPLAIN SELECT query.
-//
-// It returns the query string and the arguments.
-// If schema/database or table/collection does not exist,
-// it returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist.
+// buildIterator returns an iterator to fetch documents for given iteratorParams.
 func buildIterator(ctx context.Context, tx pgx.Tx, p iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
 	var query string
 

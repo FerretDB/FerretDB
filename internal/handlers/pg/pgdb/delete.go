@@ -39,7 +39,7 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any
 	)
 }
 
-// deleteParams describes the parameters for deleting a document from a table.
+// deleteParams describes the parameters for deleting from a table.
 type deleteParams struct {
 	schema  string // pg schema name
 	table   string // pg table name
