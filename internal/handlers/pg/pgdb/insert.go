@@ -16,8 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
@@ -37,8 +35,8 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	var err error
 
 	err = CreateCollectionIfNotExist(ctx, tx, db, collection)
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return err
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	var table string
