@@ -216,11 +216,11 @@ func (a *Array) Remove(index int) {
 func (a *Array) Next() (uint32, any, error) {
 	n := a.currentIter.Add(1)
 
-	if int(n) >= a.Len() {
+	if int(n) >= len(a.s)+1 {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	return n, a.s[n], nil
+	return n - 1, a.s[n-1], nil
 }
 
 // Close implements iterator.Interface.
