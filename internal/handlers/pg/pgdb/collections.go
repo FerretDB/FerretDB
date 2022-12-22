@@ -58,7 +58,6 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 	}
 
 	var collections []string
-	defer slices.Sort(collections) // sort the result before returning
 
 	defer it.Close()
 
@@ -76,6 +75,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
 			// no more documents
+			slices.Sort(collections)
 			return collections, nil
 		default:
 			return nil, err
@@ -152,9 +152,9 @@ func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection s
 		return lazyerrors.Error(err)
 	}
 
-	defer func() {
+	/*defer func() {
 		_, _ = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_unlock(hashtext($1))"), lock)
-	}()
+	}()*/
 
 	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
