@@ -101,7 +101,7 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 		case errors.As(err, &tcErr):
 			ctxutil.Sleep(ctx, delay)
 		default:
-			return err
+			return lazyerrors.Error(err)
 		}
 	}
 
