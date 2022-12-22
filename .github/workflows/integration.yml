@@ -27,7 +27,7 @@ env:
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: ubuntu-22.04
+    runs-on: [ubuntu-22.04, faster]
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
