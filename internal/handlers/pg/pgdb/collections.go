@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -142,6 +143,17 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // True is returned if collection was created.
 func CreateCollectionIfNotExist(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	var err error
+
+	// db-level advisory lock to make collection creation atomic and prevent deadlocks
+	lock := "create-collection-" + db
+	_, err = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_lock(hashtext($1))"), lock)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	defer func() {
+		_, _ = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_unlock(hashtext($1))"), lock)
+	}()
 
 	table, err := upsertSettings(ctx, tx, db, collection)
 	if err != nil {
