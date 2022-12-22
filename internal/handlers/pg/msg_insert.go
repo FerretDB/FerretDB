@@ -77,16 +77,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
-		err = h.insert(ctx, &sp, doc)
+		err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+			return h.insert(ctx, tx, &sp, doc)
+		})
 		if err != nil {
 			return nil, err
 		}
 
 		inserted++
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	var reply wire.OpMsg
@@ -104,7 +102,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
+func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewCommandErrorMsg(
@@ -113,9 +111,7 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 		)
 	}
 
-	err := h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
-	})
+	err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
 	if err == nil {
 		return nil
 	}
