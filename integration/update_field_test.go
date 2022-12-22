@@ -86,8 +86,7 @@ func TestUpdateFieldCurrentDate(t *testing.T) {
 
 	t.Run("currentDate", func(t *testing.T) {
 		// maxDifference is a maximum amount of seconds can differ the value in placeholder from actual value
-		// TODO Make duration lower https://github.com/FerretDB/FerretDB/issues/1347
-		maxDifference := time.Duration(4 * time.Minute)
+		maxDifference := 2 * time.Minute
 
 		now := primitive.NewDateTimeFromTime(time.Now().UTC())
 		nowTimestamp := primitive.Timestamp{T: uint32(time.Now().UTC().Unix()), I: uint32(0)}
