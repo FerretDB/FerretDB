@@ -105,7 +105,7 @@ func TestEmbedded(t *testing.T) {
 			var names []string
 			names, err = client.ListDatabaseNames(ctx, filter)
 			require.NoError(t, err)
-			assert.Equal(t, []string{"public"}, names)
+			assert.Equal(t, []string{"admin", "public"}, names)
 
 			require.NoError(t, client.Disconnect(ctx))
 
