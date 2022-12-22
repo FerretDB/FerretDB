@@ -112,18 +112,6 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	// schema-level advisory lock to make collection creation atomic and prevent deadlocks
-	// xact lock is used as in case if transaction is aborted, unlock won't be called
-	/*lock := "create-collection-in-" + db
-	_, err := tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_xact_lock(hashtext($1))"), lock)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}*/
-
-	/*defer func() {
-		_, _ = tx.Exec(ctx, fmt.Sprintf("SELECT pg_advisory_unlock(hashtext($1))"), lock)
-	}()*/
-
 	_, err := getSettings(ctx, tx, db, collection)
 
 	switch {
@@ -225,10 +213,8 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 }
 
 // createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
-// If the table doesn't exist, it creates it.
 // If the table already exists, it does nothing.
 // If PostgreSQL can't create a table due to a concurrent connection (conflict), it returns errTransactionConflict.
-// Otherwise, it returns some other possibly wrapped error.
 func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
 	var err error
 

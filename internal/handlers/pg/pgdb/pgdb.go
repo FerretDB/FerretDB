@@ -28,7 +28,7 @@ var (
 	ErrSchemaNotExist = fmt.Errorf("database/schema does not exist")
 
 	// ErrAlreadyExist indicates that a schema or table already exists.
-	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exist")
+	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exists")
 
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")

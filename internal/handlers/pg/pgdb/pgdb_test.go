@@ -244,7 +244,7 @@ func TestCreateDrop(t *testing.T) {
 	})
 }
 
-func TestCreateCollectionIfNotExist(t *testing.T) {
+func TestCreateCollectionIfNotExists(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)

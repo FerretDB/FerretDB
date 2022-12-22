@@ -16,13 +16,10 @@ package pgdb
 
 import (
 	"context"
-	"errors"
-
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+
+	"github.com/jackc/pgx/v4"
 )
 
 // indexParams describes the parameters for creating an index.
@@ -49,17 +46,5 @@ func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error
 		return nil
 	}
 
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
-		return newTransactionConflictError(err)
-	case pgerrcode.DeadlockDetected:
-		return newTransactionConflictError(err)
-	default:
-		return lazyerrors.Error(err)
-	}
+	return lazyerrors.Error(err)
 }
