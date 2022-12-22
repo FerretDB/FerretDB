@@ -42,6 +42,9 @@ jobs:
           - {name: "MongoDB", task: "mongodb"}
 
     steps:
+      - name: Test
+        run: cat /etc/hosts
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
