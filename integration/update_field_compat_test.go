@@ -210,12 +210,16 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
 		},
 		"IncOnString": {
-			update: bson.D{{"$inc", "string"}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1660",
+			update:     bson.D{{"$inc", "string"}},
+			resultType: emptyResult,
 		},
 		"IncWithStringValue": {
-			update: bson.D{{"$inc", bson.D{{"v", "bad value"}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1660",
+			update:     bson.D{{"$inc", bson.D{{"v", "bad value"}}}},
+			resultType: emptyResult,
+		},
+		"NotExistStringValue": {
+			update:     bson.D{{"$inc", bson.D{{"foo.bar", "bad value"}}}},
+			resultType: emptyResult,
 		},
 	}
 
