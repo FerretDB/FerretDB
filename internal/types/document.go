@@ -76,7 +76,7 @@ func ConvertDocument(d document) (*Document, error) {
 		}
 	}
 
-	return &Document{fields: fields}, nil
+	return &Document{fields}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -85,7 +85,9 @@ func MakeDocument(capacity int) *Document {
 		return new(Document)
 	}
 
-	return &Document{fields: make([]field, 0, capacity)}
+	return &Document{
+		fields: make([]field, 0, capacity),
+	}
 }
 
 // NewDocument creates a document with the given key/value pairs.
