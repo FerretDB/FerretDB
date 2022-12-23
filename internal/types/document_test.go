@@ -187,6 +187,10 @@ func TestDocument(t *testing.T) {
 				document: must.NotFail(NewDocument("foo", "bar", "baz", "qux")),
 				expected: []fields{{k: "foo", v: "bar"}, {k: "baz", v: "qux"}},
 			},
+			"three": {
+				document: must.NotFail(NewDocument("foo", "bar", "baz", "qux", "quux", "quuz")),
+				expected: []fields{{k: "foo", v: "bar"}, {k: "baz", v: "qux"}, {k: "quux", v: "quuz"}},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {

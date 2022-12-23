@@ -337,6 +337,10 @@ func TestArrayNext(t *testing.T) {
 			arr:            must.NotFail(NewArray(1, 2)),
 			expectedValues: []any{1, 2},
 		},
+		"three": {
+			arr:            must.NotFail(NewArray(1, 2, 3)),
+			expectedValues: []any{1, 2, 3},
+		},
 	} {
 		name, tc := name, tc
 
