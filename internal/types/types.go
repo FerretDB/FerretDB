@@ -59,7 +59,7 @@ import (
 )
 
 // MaxDocumentLen is the maximum BSON object size.
-const MaxDocumentLen = 16777216
+const MaxDocumentLen = 16 * 1024 * 1024 // 16 MiB = 16777216 bytes
 
 // ScalarType represents scalar type.
 type ScalarType interface {
