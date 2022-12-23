@@ -35,6 +35,7 @@ func MakeArray(capacity int) *Array {
 	if capacity == 0 {
 		return new(Array)
 	}
+
 	return &Array{s: make([]any, 0, capacity), currentIter: new(atomic.Uint32)}
 }
 

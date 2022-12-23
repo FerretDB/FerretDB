@@ -167,8 +167,8 @@ func TestDocument(t *testing.T) {
 		t.Parallel()
 
 		type fields struct {
-			k string
 			v any
+			k string
 		}
 
 		for name, tc := range map[string]struct {
