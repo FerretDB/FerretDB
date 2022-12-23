@@ -69,26 +69,44 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var inserted int32
 
-	for i := 0; i < docs.Len(); i++ {
-		var doc any
-
-		doc, err = docs.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
+	if ordered {
 		err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			return h.insert(ctx, tx, &sp, doc)
-		})
+			for i := 0; i < docs.Len(); i++ {
+				var doc any
 
-		if err != nil {
-			if ordered {
+				doc, err = docs.Get(i)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				err = h.insert(ctx, tx, &sp, doc)
+				if err != nil {
+					// TODO: append errors PTAL pg/msg_delete:114
+				}
+
+				inserted++
+			}
+			return nil
+		})
+	} else {
+		for i := 0; i < docs.Len(); i++ {
+			var doc any
+
+			doc, err = docs.Get(i)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+				return h.insert(ctx, tx, &sp, doc)
+			})
+
+			if err != nil {
 				return nil, err
 			}
-			// TODO: append errors PTAL pg/msg_delete:114
-		}
 
-		inserted++
+			inserted++
+		}
 	}
 
 	var reply wire.OpMsg
