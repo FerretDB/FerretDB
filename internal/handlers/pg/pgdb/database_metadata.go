@@ -158,6 +158,7 @@ func formatCollectionName(name string) string {
 
 	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
 	truncateTo := len(name)
+
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
