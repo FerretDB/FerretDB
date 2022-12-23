@@ -220,6 +220,13 @@ func insertByPath(doc *Document, path Path) error {
 						FormatAnyValue(v),
 					)
 				}
+			default:
+				return fmt.Errorf(
+					"Cannot create field '%s' in element {%s: %s}",
+					pathElem,
+					path.Prefix(),
+					FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+				)
 			}
 
 			next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
