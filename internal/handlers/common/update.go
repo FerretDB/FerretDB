@@ -250,6 +250,17 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		path := types.NewPathFromString(incKey)
 
 		if !doc.HasByPath(path) {
+			// ensure incValue is a valid number type.
+			switch incValue.(type) {
+			case float64, int32, int64:
+			default:
+				return false, NewWriteErrorMsg(
+					ErrTypeMismatch,
+					fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
+				)
+			}
+
+			// $inc sets the field if it does not exist.
 			err := doc.SetByPath(path, incValue)
 			if err != nil {
 				return false, NewWriteErrorMsg(
