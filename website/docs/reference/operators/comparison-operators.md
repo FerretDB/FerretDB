@@ -106,7 +106,7 @@ The following operation queries the `employees` collection for documents that ma
 ```js
 db.employees.find({
    "name.first":{
-      $eq:"Earl"
+      $eq: "Earl"
    }
 })
 ```
