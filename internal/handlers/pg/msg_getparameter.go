@@ -107,6 +107,10 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 			continue
 		}
 
+		if !allParameters && !document.Has(k) {
+			continue
+		}
+
 		if !showDetails {
 			if itm, ok := item.(*types.Document); ok {
 				val, err := itm.Get("value")
