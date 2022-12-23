@@ -196,19 +196,21 @@ func TestDocument(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
+				iter := tc.document.Iterator()
+
 				for i := 0; i < len(tc.expected); i++ {
-					key, value, err := tc.document.Next()
+					key, value, err := iter.Next()
 					require.NoError(t, err)
 
 					require.Equal(t, tc.expected[i].k, key)
 					require.Equal(t, tc.expected[i].v, value)
 				}
 
-				_, _, err := tc.document.Next()
+				_, _, err := iter.Next()
 				assert.Equal(t, iterator.ErrIteratorDone, err)
 
 				// check that Next() can be called again
-				_, _, err = tc.document.Next()
+				_, _, err = iter.Next()
 				assert.Equal(t, iterator.ErrIteratorDone, err)
 			})
 		}

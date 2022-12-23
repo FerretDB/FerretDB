@@ -347,20 +347,22 @@ func TestArrayNext(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			iter := tc.arr.Iterator()
+
 			var i uint32
 			for i = 0; int(i) < len(tc.expectedValues); i++ {
-				ii, v, err := tc.arr.Next()
+				ii, v, err := iter.Next()
 				require.NoError(t, err)
 
 				assert.Equal(t, i, ii)
 				assert.Equal(t, tc.expectedValues[i], v)
 			}
 
-			_, _, err := tc.arr.Next()
+			_, _, err := iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err)
 
 			// check that Next() can be called again
-			_, _, err = tc.arr.Next()
+			_, _, err = iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err)
 		})
 	}

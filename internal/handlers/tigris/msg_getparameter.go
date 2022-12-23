@@ -74,8 +74,10 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 func selectParam(_, resDB *types.Document) (doc *types.Document, err error) {
 	doc = must.NotFail(types.NewDocument())
 
+	iter := resDB.Iterator()
+
 	for {
-		k, item, err := resDB.Next()
+		k, item, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}

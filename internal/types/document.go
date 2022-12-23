@@ -36,8 +36,7 @@ type document interface {
 
 // Document represents BSON document.
 type Document struct {
-	fields      []field
-	currentIter *atomic.Uint32
+	fields []field
 }
 
 // field represents a field in the document.
@@ -86,10 +85,7 @@ func MakeDocument(capacity int) *Document {
 		return new(Document)
 	}
 
-	return &Document{
-		fields:      make([]field, 0, capacity),
-		currentIter: new(atomic.Uint32),
-	}
+	return &Document{fields: make([]field, 0, capacity)}
 }
 
 // NewDocument creates a document with the given key/value pairs.
@@ -432,19 +428,37 @@ func (d *Document) moveIDToTheFirstIndex() {
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }
 
+// Iterator returns an iterator over the document fields.
+func (d *Document) Iterator() iterator.Interface[string, any] {
+	return newDocumentIterator(d)
+}
+
+// documentIterator represents an iterator over the document fields.
+type documentIterator struct {
+	doc         *Document
+	currentIter atomic.Uint32
+}
+
+// newDocumentIterator creates a new document iterator.
+func newDocumentIterator(document *Document) *documentIterator {
+	return &documentIterator{
+		doc: document,
+	}
+}
+
 // Next implements iterator.Interface.
-func (d *Document) Next() (string, any, error) {
+func (d *documentIterator) Next() (string, any, error) {
 	n := d.currentIter.Add(1)
 
-	if int(n) >= len(d.fields)+1 {
+	if int(n) >= len(d.doc.fields)+1 {
 		return "", nil, iterator.ErrIteratorDone
 	}
 
-	return d.fields[n-1].key, d.fields[n-1].value, nil
+	return d.doc.fields[n-1].key, d.doc.fields[n-1].value, nil
 }
 
 // Close implements iterator.Interface.
-func (d *Document) Close() {}
+func (d *documentIterator) Close() {}
 
 // check interfaces
 var (

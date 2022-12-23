@@ -26,8 +26,7 @@ import (
 //
 // Zero value is a valid empty array.
 type Array struct {
-	s           []any
-	currentIter *atomic.Uint32
+	s []any
 }
 
 // MakeArray creates an empty array with set capacity.
@@ -36,7 +35,7 @@ func MakeArray(capacity int) *Array {
 		return new(Array)
 	}
 
-	return &Array{s: make([]any, 0, capacity), currentIter: new(atomic.Uint32)}
+	return &Array{s: make([]any, 0, capacity)}
 }
 
 // NewArray creates an array with the given values.
@@ -213,16 +212,32 @@ func (a *Array) Remove(index int) {
 	a.s = append(a.s[:index], a.s[index+1:]...)
 }
 
+// Iterator returns an iterator for the array.
+func (a *Array) Iterator() iterator.Interface[int, any] {
+	return newArrayIterator(a)
+}
+
+// arrayIterator represents an iterator for an Array.
+type arrayIterator struct {
+	array       *Array
+	currentIter atomic.Uint32
+}
+
+// newArrayIterator returns a new arrayIterator.
+func newArrayIterator(array *Array) *arrayIterator {
+	return &arrayIterator{array: array}
+}
+
 // Next implements iterator.Interface.
-func (a *Array) Next() (uint32, any, error) {
+func (a *arrayIterator) Next() (int, any, error) {
 	n := a.currentIter.Add(1)
 
-	if int(n) >= len(a.s)+1 {
+	if int(n) >= len(a.array.s)+1 {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	return n - 1, a.s[n-1], nil
+	return int(n - 1), a.array.s[n-1], nil
 }
 
 // Close implements iterator.Interface.
-func (a *Array) Close() {}
+func (a *arrayIterator) Close() {}

@@ -94,8 +94,10 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 func selectUnit(document, resDB *types.Document, showDetails, allParameters bool) (doc *types.Document, err error) {
 	doc = must.NotFail(types.NewDocument())
 
+	iter := resDB.Iterator()
+
 	for {
-		k, item, err := resDB.Next()
+		k, item, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			// no more documents
 			break
