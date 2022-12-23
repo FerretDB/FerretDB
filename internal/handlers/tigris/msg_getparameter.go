@@ -41,7 +41,6 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	resDB := must.NotFail(types.NewDocument(
-		"acceptApiVersion2", false,
 		"authSchemaVersion", int32(5),
 		"quiet", false,
 		"ok", float64(1),
