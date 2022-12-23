@@ -55,10 +55,26 @@ services:
     environment:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
+      - MONGO_INITDB_ROOT_USERNAME=username
+      - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./build/certs:/etc/certs
       - ./build/mongod.conf:/etc/mongod.conf
-      - ./build/mongosh:/mongosh
+
+  # for test scripts
+  legacy-mongo-shell:
+    build:
+      context: ./build/deps
+      dockerfile: legacy-mongo-shell.Dockerfile
+    container_name: ferretdb_legacy-mongo-shell
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Always UTC+05:45. Set to catch timezone problems.
+      - TZ=Asia/Kathmandu
+    volumes:
+      - ./build/certs:/etc/certs
+      - ./build/legacy-mongo-shell/test.js:/legacy-mongo-shell/test.js
 
   trivy:
     build:

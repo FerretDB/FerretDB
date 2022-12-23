@@ -210,7 +210,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -219,7 +218,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk2": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -228,7 +226,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk3": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -237,7 +234,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk4": {
 			command: bson.D{{"getParameter", "*"}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -354,7 +350,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"ShowDetailsFalse_AllParametersTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", true}}}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
