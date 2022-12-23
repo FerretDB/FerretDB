@@ -143,6 +143,17 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
+		if setOnInsert {
+			// $setOnInsert do not set null and empty array value.
+			if _, ok := setValue.(types.NullType); ok {
+				continue
+			}
+
+			if arr, ok := setValue.(*types.Array); ok && arr.Len() == 0 {
+				continue
+			}
+		}
+
 		path := types.NewPathFromString(setKey)
 
 		if doc.HasByPath(path) {
