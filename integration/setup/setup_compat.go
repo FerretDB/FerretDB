@@ -100,7 +100,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *targetPortF == 0 {
 		targetURI = setupListener(tb, ctx, logger)
 	} else {
-		targetURI = buildMongoDBURI(tb, &buildMongoDBURIOpts{
+		targetURI = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
 			tls:      *targetTLSF,
 		})
@@ -109,7 +109,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
+	compatURI := buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
 		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
 		tls:      *compatTLSF,
 	})
