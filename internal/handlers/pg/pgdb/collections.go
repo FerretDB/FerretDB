@@ -77,7 +77,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 			slices.Sort(collections)
 			return collections, nil
 		default:
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		collections = append(collections, must.NotFail(doc.Get("_id")).(string))

@@ -42,9 +42,9 @@ func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error
 		` ON ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` ((_jsonb->>'_id'))`
 
-	if _, err = tx.Exec(ctx, sql); err == nil {
-		return nil
+	if _, err = tx.Exec(ctx, sql); err != nil {
+		lazyerrors.Error(err)
 	}
 
-	return lazyerrors.Error(err)
+	return nil
 }
