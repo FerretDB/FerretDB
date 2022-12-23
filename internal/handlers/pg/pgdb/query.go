@@ -65,7 +65,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -142,7 +142,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 	iterator.Interface[uint32, *types.Document], error,
 ) {
-	table, err := getSettings(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 
 	switch {
 	case err == nil:

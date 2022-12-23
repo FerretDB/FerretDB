@@ -38,19 +38,19 @@ var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,11
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
 func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
-	settingsExist, err := tableExists(ctx, tx, db, settingsTableName)
+	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// if settings table doesn't exist, there are no collections in the database
-	if !settingsExist {
+	// if metadata table doesn't exist, there are no collections in the database
+	if !metadataExist {
 		return []string{}, nil
 	}
 
 	it, err := buildIterator(ctx, tx, iteratorParams{
 		schema: db,
-		table:  settingsTableName,
+		table:  dbMetadataTableName,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -86,7 +86,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	_, err := getSettings(ctx, tx, db, collection)
+	_, err := getMetadata(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
@@ -112,7 +112,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, created, err := ensureSettings(ctx, tx, db, collection)
+	table, created, err := ensureMetadata(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -144,7 +144,7 @@ func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection 
 
 	var err error
 
-	table, created, err := ensureSettings(ctx, tx, db, collection)
+	table, created, err := ensureMetadata(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -187,7 +187,7 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrTableNotExist
 	}
 
-	err = removeSettings(ctx, tx, db, collection)
+	err = removeMetadata(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

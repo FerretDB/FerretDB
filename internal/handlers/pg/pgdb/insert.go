@@ -44,7 +44,7 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	}
 
 	var table string
-	table, err = getSettings(ctx, tx, db, collection)
+	table, err = getMetadata(ctx, tx, db, collection)
 
 	if err != nil {
 		return lazyerrors.Error(err)

@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestSettings(t *testing.T) {
+func TestDatabaseMetadata(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
@@ -35,25 +35,26 @@ func TestSettings(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		nameCreated, _, err := ensureSettings(ctx, tx, databaseName, collectionName)
+		nameCreated, _, err := ensureMetadata(ctx, tx, databaseName, collectionName)
+		// In this case error is possible: if this test is run in parallel with other tests,
+		// ensureMetadata may fail to create the index or insert data due to concurrent requests to PostgreSQL.
+		// In such case, we expect InTransactionRetry to handle the error and retry the transaction if neede.
 		if err != nil {
 			return err
 		}
 
 		var nameFound string
 
-		nameFound, err = getSettings(ctx, tx, databaseName, collectionName)
+		nameFound, err = getMetadata(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
 		assert.Equal(t, nameCreated, nameFound)
 
-		// adding settings that already exist should not fail
-		_, _, err = ensureSettings(ctx, tx, databaseName, collectionName)
-		if err != nil {
-			return err
-		}
+		// adding metadata that already exist should not fail
+		_, _, err = ensureMetadata(ctx, tx, databaseName, collectionName)
+		require.NoError(t, err)
 
-		err = removeSettings(ctx, tx, databaseName, collectionName)
+		err = removeMetadata(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
 		return nil

@@ -31,18 +31,18 @@ const (
 	// Reserved prefix for database and collection names.
 	reservedPrefix = "_ferretdb_"
 
-	// Settings table name.
-	settingsTableName = reservedPrefix + "settings"
+	// Database metadata table name.
+	dbMetadataTableName = reservedPrefix + "database_metadata"
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
 )
 
-// ensureSettings returns PostgreSQL table name for the given FerretDB database and collection names.
-// If such settings don't exist, it creates them, including the creation of the PostgreSQL schema if needed.
-// If settings were created, it returns true as the second return value. If settings already existed, it returns false.
+// ensureMetadata returns PostgreSQL table name for the given FerretDB database and collection names.
+// If such metadata don't exist, it creates them, including the creation of the PostgreSQL schema if needed.
+// If metadata were created, it returns true as the second return value. If metadata already existed, it returns false.
 //
-// It makes a document with _id and table fields and stores it in the settingsTableName table.
+// It makes a document with _id and table fields and stores it in the dbMetadataTableName table.
 // The given FerretDB collection name is stored in the _id field,
 // the corresponding PostgreSQL table name is stored in the table field.
 // For _id field it creates unique index.
@@ -50,16 +50,16 @@ const (
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func ensureSettings(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
-	tableName, err = getSettings(ctx, tx, db, collection)
+func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
+	tableName, err = getMetadata(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
-		// settings already exist
+		// metadata already exist
 		return
 
 	case errors.Is(err, ErrTableNotExist):
-		// settings don't exist, do nothing
+		// metadata don't exist, do nothing
 	default:
 		return "", false, lazyerrors.Error(err)
 	}
@@ -75,29 +75,29 @@ func ensureSettings(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 		return "", false, lazyerrors.Error(err)
 	}
 
-	if err := createTableIfNotExists(ctx, tx, db, settingsTableName); err != nil {
+	if err := createTableIfNotExists(ctx, tx, db, dbMetadataTableName); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
 	// Index to ensure that collection name is unique
 	if err := createIndexIfNotExists(ctx, tx, indexParams{
 		schema:   db,
-		table:    settingsTableName,
+		table:    dbMetadataTableName,
 		isUnique: true,
 	}); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
 	tableName = formatCollectionName(collection)
-	settings := must.NotFail(types.NewDocument(
+	metadata := must.NotFail(types.NewDocument(
 		"_id", collection,
 		"table", tableName,
 	))
 
 	if err := insert(ctx, tx, insertParams{
 		schema: db,
-		table:  settingsTableName,
-		doc:    settings,
+		table:  dbMetadataTableName,
+		doc:    metadata,
 	}); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
@@ -105,26 +105,26 @@ func ensureSettings(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	return tableName, true, nil
 }
 
-// getSettings returns PostgreSQL table name for the given FerretDB database and collection.
+// getMetadata returns PostgreSQL table name for the given FerretDB database and collection.
 //
-// If such settings don't exist, it returns a possibly wrapped ErrTableNotExist.
-func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
-	settingsExist, err := tableExists(ctx, tx, db, settingsTableName)
+// If such metadata don't exist, it returns ErrTableNotExist.
+func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
-	if !settingsExist {
+	if !metadataExist {
 		return "", ErrTableNotExist
 	}
 
-	doc, err := queryById(ctx, tx, db, settingsTableName, collection)
+	doc, err := queryById(ctx, tx, db, dbMetadataTableName, collection)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
 
 	if doc == nil {
-		// no settings found for the given collection name
+		// no metadata found for the given collection name
 		return "", ErrTableNotExist
 	}
 
@@ -133,13 +133,13 @@ func getSettings(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 	return table.(string), nil
 }
 
-// removeSettings removes settings for the given database and collection.
+// removeMetadata removes metadata for the given database and collection.
 //
-// If such settings don't exist, it doesn't return an error.
-func removeSettings(ctx context.Context, tx pgx.Tx, db, collection string) error {
+// If such metadata don't exist, it doesn't return an error.
+func removeMetadata(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	_, err := deleteByIDs(ctx, tx, deleteParams{
 		schema: db,
-		table:  settingsTableName,
+		table:  dbMetadataTableName,
 	}, []any{collection},
 	)
 
