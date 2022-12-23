@@ -327,7 +327,7 @@ tasks:
       - cmd: >
           docker compose exec mongodb mongosh
           'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-          --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
+          --verbose --eval 'disableTelemetry()' --shell
         ignore_error: true
 
   mongosh-scram:
@@ -335,9 +335,8 @@ tasks:
       - cmd: >
           docker compose exec mongodb mongosh
           'mongodb://username:password@host.docker.internal:27018/?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-          --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
+          --verbose --eval 'disableTelemetry()' --shell
         ignore_error: true
-
 
   mongo-test:
     desc: "Run legacy MongoDB shell (`mongo`) with test script"
