@@ -265,157 +265,67 @@ func TestQuerySortValue(t *testing.T) {
 }
 
 func TestQueryBadFindType(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	s := setup.SetupWithOpts(t, nil)
+
+	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
+		value any
+		err   string
 	}{
 		"Document": {
-			command: bson.D{
-				{"find", bson.D{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type object",
-			},
+			value: bson.D{},
+			err:   "object",
 		},
 		"Array": {
-			command: bson.D{
-				{"find", primitive.A{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type array",
-			},
+			value: primitive.A{},
+			err:   "array",
 		},
 		"Double": {
-			command: bson.D{
-				{"find", 3.14},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
-			},
-		},
-		"DoubleWhole": {
-			command: bson.D{
-				{"find", 42.0},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
-			},
+			value: 3.14,
+
+			err: "double",
 		},
 		"Binary": {
-			command: bson.D{
-				{"find", primitive.Binary{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type binData",
-			},
+			value: primitive.Binary{},
+			err:   "binData",
 		},
 		"ObjectID": {
-			command: bson.D{
-				{"find", primitive.ObjectID{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type objectId",
-			},
+			value: primitive.ObjectID{},
+
+			err: "objectId",
 		},
 		"Bool": {
-			command: bson.D{
-				{"find", true},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type bool",
-			},
+			value: true,
+			err:   "bool",
 		},
 		"Date": {
-			command: bson.D{
-				{"find", time.Now()},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type date",
-			},
+			value: time.Now(),
+
+			err: "date",
 		},
 		"Null": {
-			command: bson.D{
-				{"find", nil},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type null",
-			},
+			value: nil,
+
+			err: "null",
 		},
 		"Regex": {
-			command: bson.D{
-				{"find", primitive.Regex{Pattern: "/foo/"}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type regex",
-			},
+			value: primitive.Regex{Pattern: "/foo/"},
+
+			err: "regex",
 		},
 		"Int": {
-			command: bson.D{
-				{"find", int32(42)},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type int",
-			},
+			value: int32(42),
+			err:   "int",
 		},
 		"Timestamp": {
-			command: bson.D{
-				{"find", primitive.Timestamp{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type timestamp",
-			},
+			value: primitive.Timestamp{},
+			err:   "timestamp",
 		},
 		"Long": {
-			command: bson.D{
-				{"find", int64(42)},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type long",
-			},
+			value: int64(42),
+			err:   "long",
 		},
 	} {
 		name, tc := name, tc
@@ -423,9 +333,22 @@ func TestQueryBadFindType(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			err := collection.Database().
+				RunCommand(ctx, bson.D{
+					{"find", tc.value},
+					{"projection", bson.D{{"v", "some"}}},
+				}).
+				Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, err)
+
+			AssertEqualError(t,
+				mongo.CommandError{
+					Code:    73,
+					Name:    "InvalidNamespace",
+					Message: "Failed to parse namespace element",
+				},
+				err,
+			)
 		})
 	}
 }
