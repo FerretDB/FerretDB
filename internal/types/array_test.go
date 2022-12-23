@@ -349,8 +349,7 @@ func TestArrayNext(t *testing.T) {
 
 			iter := tc.arr.Iterator()
 
-			var i uint32
-			for i = 0; int(i) < len(tc.expectedValues); i++ {
+			for i := 0; i < len(tc.expectedValues); i++ {
 				ii, v, err := iter.Next()
 				require.NoError(t, err)
 
