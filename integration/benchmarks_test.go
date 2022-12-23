@@ -21,10 +21,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func BenchmarkPushdowns(b *testing.B) {
-	ctx, coll := setup.Setup(b)
+	ctx, coll := setup.Setup(b, shareddata.AllProviders()...)
 
 	res, err := coll.InsertOne(ctx, bson.D{{}})
 	require.NoError(b, err)
@@ -33,25 +34,25 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	// run benchmark with query pushdown
 	b.Run("ObjectID", func(b *testing.B) {
-		cur, err := coll.Find(ctx, bson.D{{"_id", id}})
-		require.NoError(b, err)
+		for i := 0; i < b.N; i++ {
+			cur, err := coll.Find(ctx, bson.D{{"_id", id}})
+			require.NoError(b, err)
 
-		var res []bson.D
-		err = cur.All(ctx, &res)
-		require.NoError(b, err)
-
-		b.Log(res)
+			var res []bson.D
+			err = cur.All(ctx, &res)
+			require.NoError(b, err)
+		}
 	})
 
 	// run benchmark without query pushdown
 	b.Run("NoPushdown", func(b *testing.B) {
-		cur, err := coll.Find(ctx, bson.D{{"_id", "test"}})
-		require.NoError(b, err)
+		for i := 0; i < b.N; i++ {
+			cur, err := coll.Find(ctx, bson.D{{"_id", "string"}})
+			require.NoError(b, err)
 
-		var res []bson.D
-		err = cur.All(ctx, &res)
-		require.NoError(b, err)
-
-		b.Log(res)
+			var res []bson.D
+			err = cur.All(ctx, &res)
+			require.NoError(b, err)
+		}
 	})
 }
