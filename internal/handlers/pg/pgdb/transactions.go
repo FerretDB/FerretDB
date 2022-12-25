@@ -26,10 +26,10 @@ import (
 )
 
 // maxRetries is the maximum number of times to retry a transaction.
-const maxRetries = 3
+const maxRetries = 20
 
 // delay is the amount of time to wait before retrying a transaction.
-const delay = 10 * time.Millisecond
+const delay = 3 * time.Millisecond
 
 // transactionConflictError is returned when one of the queries in the transaction returned an error because
 // of an unexpected conflict. The caller could retry such a transaction.
@@ -37,7 +37,7 @@ type transactionConflictError struct {
 	err error // underlying error
 }
 
-// newTransactionConflictError creates a new transactionConflictError with the given underlying error.
+// newTransactionConflictError creates a new *transactionConflictError with the given underlying error.
 func newTransactionConflictError(err error) error {
 	return &transactionConflictError{err: err}
 }
@@ -87,13 +87,13 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 }
 
 // InTransactionRetry wraps the given function f in a transaction.
-// If f returns a transactionConflictError, the transaction is retried.
+// If f returns a *transactionConflictError, the transaction is retried.
 // If after maxRetries the transaction still fails, the last error unwrapped from transactionConflictError is returned.
 func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) (err error) {
-	var tcErr *transactionConflictError
-
 	for retry := 0; retry < maxRetries; retry++ {
-		err := pgPool.InTransaction(ctx, f)
+		err = pgPool.InTransaction(ctx, f)
+
+		var tcErr *transactionConflictError
 
 		switch {
 		case err == nil:
@@ -101,9 +101,9 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 		case errors.As(err, &tcErr):
 			ctxutil.Sleep(ctx, delay)
 		default:
-			return err
+			return lazyerrors.Error(err)
 		}
 	}
 
-	return tcErr.err
+	return lazyerrors.Error(err)
 }
