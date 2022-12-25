@@ -23,10 +23,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// Tables returns a sorted list of PostgreSQL table names.
-// Returns empty slice if schema does not exist.
-// Tables with prefix "_ferretdb_" are filtered out.
-func Tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
+// tablesFiltered returns a sorted list of PostgreSQL table names, tables with prefix "_ferretdb_" are filtered out.
+// Returns an empty slice if the given schema does not exist.
+func tablesFiltered(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
 	tables, err := tables(ctx, tx, schema)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -45,6 +44,7 @@ func Tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
 }
 
 // tables returns a list of PostgreSQL table names.
+// Returns an empty slice if the given schema does not exist.
 func tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
 	sql := `SELECT table_name ` +
 		`FROM information_schema.columns ` +
@@ -71,4 +71,21 @@ func tables(ctx context.Context, tx pgx.Tx, schema string) ([]string, error) {
 	}
 
 	return tables, nil
+}
+
+// tableExists returns true if the given PostgreSQL table exists in the given schema.
+func tableExists(ctx context.Context, tx pgx.Tx, schema, table string) (bool, error) {
+	sql := `SELECT EXISTS ( ` +
+		`SELECT 1 ` +
+		`FROM information_schema.columns ` +
+		`WHERE table_schema = $1 AND table_name = $2 ` +
+		`)`
+	var exists bool
+
+	err := tx.QueryRow(ctx, sql, schema, table).Scan(&exists)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return exists, nil
 }
