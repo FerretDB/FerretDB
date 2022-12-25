@@ -75,29 +75,27 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-			switch {
-			case errors.Is(pgdb.ErrInvalidDatabaseName, err):
-				msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
-				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-			default:
-				return lazyerrors.Error(err)
-			}
-		}
+		err = pgdb.CreateCollection(ctx, tx, db, collection)
 
-		if err := pgdb.CreateCollection(ctx, tx, db, collection); err != nil {
-			switch {
-			case errors.Is(err, pgdb.ErrAlreadyExist):
-				msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-				return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
-			case errors.Is(err, pgdb.ErrInvalidTableName):
-				msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
-				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-			default:
-				return lazyerrors.Error(err)
-			}
+		switch {
+		case err == nil:
+			return nil
+
+		case errors.Is(err, pgdb.ErrAlreadyExist):
+			msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
+			return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
+
+		case errors.Is(err, pgdb.ErrInvalidDatabaseName):
+			msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
+			return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+
+		case errors.Is(err, pgdb.ErrInvalidCollectionName):
+			msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
+			return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+
+		default:
+			return lazyerrors.Error(err)
 		}
-		return nil
 	})
 	if err != nil {
 		return nil, err

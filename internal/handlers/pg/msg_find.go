@@ -116,7 +116,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 
 	var it iterator.Interface[uint32, *types.Document]
 
-	it, err := h.PgPool.GetDocuments(ctx, tx, sqlParam)
+	it, err := pgdb.GetDocuments(ctx, tx, sqlParam)
 	if err != nil {
 		return nil, err
 	}
