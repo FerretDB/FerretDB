@@ -183,7 +183,7 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 	err := h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var it iterator.Interface[uint32, *types.Document]
 		var err error
-		it, err = h.PgPool.GetDocuments(ctx, tx, sp)
+		it, err = pgdb.GetDocuments(ctx, tx, sp)
 		if err != nil {
 			return err
 		}

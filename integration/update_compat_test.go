@@ -306,7 +306,7 @@ type updateCurrentDateCompatTestCase struct {
 func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurrentDateCompatTestCase) {
 	t.Helper()
 
-	maxDifference := 4 * time.Minute
+	maxDifference := 2 * time.Minute
 
 	for name, tc := range testCases {
 		name, tc := name, tc

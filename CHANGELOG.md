@@ -4,14 +4,22 @@
 
 ### What's Changed
 
-In this release, we made a big change in the way FerretDB stores data in PostgreSQL.
+In this release, we made two big changes in the way FerretDB stores data in PostgreSQL.
+
+The first change is about the format we use to store documents.
 
 Previously, we were storing information about data types in the fields themselves.
 Starting from this release, we store information about data types (document's schema) in a special field.
 
 This will allow us to implement more query push downs in the future.
 
-There are no changes in the API, but since the data is stored in a different way, this change is not backward compatible.
+The second change is about the way FerretDB stores metadata about the collections.
+
+Starting from this release, we store metadata about collections in separate rows of the settings table.
+
+This will allow us to have fewer locks on the settings table and improve performance.
+
+There are no changes in the API, but since the data is stored in a different way, **this change is not backward compatible**.
 Please make a dump of your database before upgrading, delete the databases, upgrade FerretDB, and restore the dump afterwards.
 
 
