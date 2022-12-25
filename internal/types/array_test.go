@@ -20,7 +20,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -312,6 +314,55 @@ func TestFilterArrayByType(t *testing.T) {
 			res := tc.arr.FilterArrayByType(tc.refValue)
 
 			assert.Equal(t, tc.expectedArray, res)
+		})
+	}
+}
+
+func TestArrayNext(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		arr            *Array
+		expectedValues []any
+	}{
+		"empty": {
+			arr:            emptyArray,
+			expectedValues: []any{},
+		},
+		"one": {
+			arr:            must.NotFail(NewArray(1)),
+			expectedValues: []any{1},
+		},
+		"two": {
+			arr:            must.NotFail(NewArray(1, 2)),
+			expectedValues: []any{1, 2},
+		},
+		"three": {
+			arr:            must.NotFail(NewArray(1, 2, 3)),
+			expectedValues: []any{1, 2, 3},
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			iter := tc.arr.Iterator()
+
+			for i := 0; i < len(tc.expectedValues); i++ {
+				ii, v, err := iter.Next()
+				require.NoError(t, err)
+
+				assert.Equal(t, i, ii)
+				assert.Equal(t, tc.expectedValues[i], v)
+			}
+
+			_, _, err := iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+
+			// check that Next() can be called again
+			_, _, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
 		})
 	}
 }

@@ -16,16 +16,18 @@ package tigris
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetParameter implements HandlerInterface.
-func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -68,17 +70,18 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 }
 
 // selectParam is makes a selection of requested parameters.
-func selectParam(document, resDB *types.Document) (doc *types.Document, err error) {
+func selectParam(_, resDB *types.Document) (doc *types.Document, err error) {
 	doc = must.NotFail(types.NewDocument())
-	keys := document.Keys()
 
-	for _, k := range keys {
-		if k == "getParameter" || k == "comment" || k == "$db" {
-			continue
+	iter := resDB.Iterator()
+
+	for {
+		k, item, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
 		}
 
-		item, err := resDB.Get(k)
-		if err != nil {
+		if k == "getParameter" || k == "comment" || k == "$db" {
 			continue
 		}
 
