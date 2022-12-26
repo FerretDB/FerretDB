@@ -73,7 +73,7 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 
 	res := must.NotFail(types.NewDocument(
 		"host", host,
-		"version", version.MongoDBVersion,
+		"version", version.Get().MongoDBVersion,
 		"process", filepath.Base(exec),
 		"pid", int64(os.Getpid()),
 		"uptime", uptime.Seconds(),

@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -44,7 +43,7 @@ func runGit(args ...string) []byte {
 // saveFile stores the given bytes in the given file with logging.
 func saveFile(b []byte, filename string) {
 	log.Printf("%s: %s", filename, b)
-	must.NoError(os.WriteFile(filepath.Join("gen", filename), b, 0o666))
+	must.NoError(os.WriteFile(filename, b, 0o666))
 }
 
 func main() {
@@ -52,7 +51,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	// git describe --tags --dirty > gen/version.txt
+	// git describe --tags --dirty > version.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -60,7 +59,7 @@ func main() {
 		saveFile(runGit("describe", "--tags", "--dirty"), "version.txt")
 	}()
 
-	// git rev-parse HEAD > gen/commit.txt
+	// git rev-parse HEAD > commit.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -68,7 +67,7 @@ func main() {
 		saveFile(runGit("rev-parse", "HEAD"), "commit.txt")
 	}()
 
-	// git branch --show-current > gen/branch.txt
+	// git branch --show-current > branch.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

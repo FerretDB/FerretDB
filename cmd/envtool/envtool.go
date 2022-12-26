@@ -209,11 +209,11 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 		"GOOS":   runtime.GOOS,
 		"GOARCH": runtime.GOARCH,
 
-		"Version": info.Version,
-		"Commit":  info.Commit,
-		"Branch":  info.Branch,
-		"Dirty":   info.Dirty,
-		"Debug":   info.Debug,
+		"Version":    info.Version,
+		"Commit":     info.Commit,
+		"Branch":     info.Branch,
+		"Dirty":      info.Dirty,
+		"DebugBuild": info.DebugBuild,
 
 		"GoVersion":      runtime.Version(),
 		"GitVersion":     strings.TrimSpace(gitVersion),

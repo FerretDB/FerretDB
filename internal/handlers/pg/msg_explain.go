@@ -92,7 +92,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
 		"port", port,
-		"version", version.MongoDBVersion,
+		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
 	))

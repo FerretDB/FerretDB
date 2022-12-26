@@ -22,19 +22,17 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Each pattern in a //go:embed line must match at least one file or non-empty directory,
-// but most files in gen/ are generated and are not present when FerretDB is used as library package.
-// As a workaround, gen/mongodb.txt is always present.
+// but most files are generated and are not present when FerretDB is used as library package.
+// As a workaround, mongodb.txt is always present.
 
 //go:generate go run ./generate.go
 
-//go:embed gen
+//go:embed *.txt
 var gen embed.FS
 
 // Info provides details about the current build.
@@ -43,19 +41,18 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
-	Debug            bool // -tags=ferretdb_testcover or -race
+	DebugBuild       bool
 	BuildEnvironment *types.Document
-}
 
-var (
-	// MongoDBVersion is a fake MongoDB version for clients that check major.minor to adjust their behavior.
+	// MongoDBVersion is fake MongoDB version for clients that check major.minor to adjust their behavior.
 	MongoDBVersion string
 
 	// MongoDBVersionArray is MongoDBVersion, but as an array.
 	MongoDBVersionArray *types.Array
+}
 
-	info *Info
-)
+// info singleton instance set by init().
+var info *Info
 
 // unknown is a placeholder for unknown version, commit, and branch values.
 const unknown = "unknown"
@@ -66,36 +63,27 @@ func Get() *Info {
 }
 
 func init() {
-	b := must.NotFail(gen.ReadFile("gen/mongodb.txt"))
+	// this file is always present
+	b := must.NotFail(gen.ReadFile("mongodb.txt"))
 	parts := regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`).FindStringSubmatch(strings.TrimSpace(string(b)))
 	if len(parts) != 4 {
-		panic("invalid gen/mongodb.txt")
+		panic("invalid mongodb.txt")
 	}
 	major := must.NotFail(strconv.Atoi(parts[1]))
 	minor := must.NotFail(strconv.Atoi(parts[2]))
 	patch := must.NotFail(strconv.Atoi(parts[3]))
-	MongoDBVersion = fmt.Sprintf("%d.%d.%d", major, minor, patch)
-	MongoDBVersionArray = must.NotFail(types.NewArray(int32(major), int32(minor), int32(patch), int32(0)))
-
-	// those files are not present when FerretDB is used as library package
-	version := unknown
-	if b, _ := gen.ReadFile("gen/version.txt"); len(b) > 0 {
-		version = strings.TrimSpace(string(b))
-	}
-	commit := unknown
-	if b, _ := gen.ReadFile("gen/commit.txt"); len(b) > 0 {
-		commit = strings.TrimSpace(string(b))
-	}
-	branch := unknown
-	if b, _ := gen.ReadFile("gen/branch.txt"); len(b) > 0 {
-		branch = strings.TrimSpace(string(b))
-	}
+	mongoDBVersion := fmt.Sprintf("%d.%d.%d", major, minor, patch)
+	mongoDBVersionArray := must.NotFail(types.NewArray(int32(major), int32(minor), int32(patch), int32(0)))
 
 	info = &Info{
-		Version:          version,
-		Commit:           commit,
-		Branch:           branch,
-		BuildEnvironment: must.NotFail(types.NewDocument()),
+		Version:             unknown,
+		Commit:              unknown,
+		Branch:              unknown,
+		Dirty:               false,
+		DebugBuild:          false,
+		BuildEnvironment:    must.NotFail(types.NewDocument()),
+		MongoDBVersion:      mongoDBVersion,
+		MongoDBVersionArray: mongoDBVersionArray,
 	}
 
 	// do not expose extra information when FerretDB is used as library package
@@ -107,10 +95,37 @@ func init() {
 		return
 	}
 
+	info.DebugBuild = debugBuild
+
+	// this file must always be present, even in non-official builds
+	if b, _ := gen.ReadFile("version.txt"); len(b) > 0 {
+		info.Version = strings.TrimSpace(string(b))
+	}
+	if !strings.HasPrefix(info.Version, "v") {
+		msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
+		msg += "Alternatively, create this file manually with a content similar to\n"
+		msg += "the output of `git describe --tags --dirty`: `v<major>.<minor>.<patch>`."
+		panic(msg)
+	}
+
+	// those files may be absent in non-official builds
+	if b, _ := gen.ReadFile("commit.txt"); len(b) > 0 {
+		info.Commit = strings.TrimSpace(string(b))
+	}
+	if b, _ := gen.ReadFile("branch.txt"); len(b) > 0 {
+		info.Branch = strings.TrimSpace(string(b))
+	}
+
 	for _, s := range buildInfo.Settings {
 		switch s.Key {
 		case "vcs.revision":
 			if s.Value != info.Commit {
+				// for non-official builds
+				if info.Commit == unknown {
+					info.Commit = s.Value
+					continue
+				}
+
 				panic(fmt.Sprintf("commit.txt value %q != vcs.revision value %q\n"+
 					"Please run `bin/task gen-version`", info.Commit, s.Value,
 				))
@@ -125,16 +140,8 @@ func init() {
 		case "-race":
 			info.BuildEnvironment.Set("race", s.Value)
 
-			if must.NotFail(strconv.ParseBool(s.Value)) {
-				info.Debug = true
-			}
-
 		case "-tags":
 			info.BuildEnvironment.Set("buildtags", s.Value)
-
-			if slices.Contains(strings.Split(s.Value, ","), "ferretdb_testcover") {
-				info.Debug = true
-			}
 
 		case "-trimpath":
 			info.BuildEnvironment.Set("trimpath", s.Value)

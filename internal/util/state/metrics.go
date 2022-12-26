@@ -52,11 +52,11 @@ func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	v := version.Get()
 	constLabels := prometheus.Labels{
-		"version": v.Version,
-		"commit":  v.Commit,
-		"branch":  v.Branch,
-		"dirty":   strconv.FormatBool(v.Dirty),
-		"debug":   strconv.FormatBool(v.Debug),
+		"version":     v.Version,
+		"commit":      v.Commit,
+		"branch":      v.Branch,
+		"dirty":       strconv.FormatBool(v.Dirty),
+		"debug_build": strconv.FormatBool(v.DebugBuild),
 	}
 
 	s := mc.p.Get()

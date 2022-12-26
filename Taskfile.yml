@@ -365,9 +365,9 @@ tasks:
         --load .
     vars:
       VERSION:
-        sh: cat build/version/gen/version.txt
+        sh: cat build/version/version.txt
       COMMIT:
-        sh: cat build/version/gen/commit.txt
+        sh: cat build/version/commit.txt
 
   docker-push:
     deps: [gen-version]
@@ -382,9 +382,9 @@ tasks:
         --push .
     vars:
       VERSION:
-        sh: cat build/version/gen/version.txt
+        sh: cat build/version/version.txt
       COMMIT:
-        sh: cat build/version/gen/commit.txt
+        sh: cat build/version/commit.txt
 
   docker-push-release:
     cmds:
@@ -397,7 +397,7 @@ tasks:
               ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
     vars:
       VERSION:
-        sh: cat build/version/gen/version.txt
+        sh: cat build/version/version.txt
 
   packages:
     cmds:
@@ -414,7 +414,7 @@ tasks:
         'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../build/version/gen/version.txt
+        sh: cat ../build/version/version.txt
       GOARCH:
         sh: go env GOARCH
 
@@ -428,7 +428,7 @@ tasks:
         'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../build/version/gen/version.txt
+        sh: cat ../build/version/version.txt
       GOARCH:
         sh: go env GOARCH
 

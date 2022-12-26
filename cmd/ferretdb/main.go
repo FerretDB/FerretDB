@@ -175,7 +175,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("commit", info.Commit),
 		zap.String("branch", info.Branch),
 		zap.Bool("dirty", info.Dirty),
-		zap.Bool("debug", info.Debug),
+		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
 	}
 	logUUID := stateProvider.Get().UUID
@@ -218,6 +218,7 @@ func run() {
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
 		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
+		fmt.Fprintln(os.Stdout, "debugBuild:", info.DebugBuild)
 
 		return
 	}
