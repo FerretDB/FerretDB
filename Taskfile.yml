@@ -30,7 +30,7 @@ tasks:
   gen-version:
     run: once
     cmds:
-      - go generate -x ./internal/util/version
+      - go generate -x ./build/version
 
   init-tools:
     dir: tools
@@ -283,7 +283,7 @@ tasks:
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
       - bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration integration-lint
@@ -365,9 +365,9 @@ tasks:
         --load .
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/gen/version.txt
       COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
+        sh: cat build/version/gen/commit.txt
 
   docker-push:
     deps: [gen-version]
@@ -382,9 +382,9 @@ tasks:
         --push .
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/gen/version.txt
       COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
+        sh: cat build/version/gen/commit.txt
 
   docker-push-release:
     cmds:
@@ -397,7 +397,7 @@ tasks:
               ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/gen/version.txt
 
   packages:
     cmds:
@@ -414,7 +414,7 @@ tasks:
         'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../internal/util/version/gen/version.txt
+        sh: cat ../build/version/gen/version.txt
       GOARCH:
         sh: go env GOARCH
 
@@ -428,7 +428,7 @@ tasks:
         'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../internal/util/version/gen/version.txt
+        sh: cat ../build/version/gen/version.txt
       GOARCH:
         sh: go env GOARCH
 
