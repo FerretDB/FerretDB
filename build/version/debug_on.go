@@ -16,4 +16,5 @@
 
 package version
 
+// debugBuild is true if that's a debug build.
 const debugBuild = true
