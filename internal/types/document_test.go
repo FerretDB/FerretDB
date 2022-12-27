@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -158,6 +159,59 @@ func TestDocument(t *testing.T) {
 				require.NoError(t, err)
 
 				assert.Equal(t, tc.expected, tc.document)
+			})
+		}
+	})
+
+	t.Run("Next", func(t *testing.T) {
+		t.Parallel()
+
+		type fields struct {
+			v any
+			k string
+		}
+
+		for name, tc := range map[string]struct {
+			document *Document
+			expected []fields
+		}{
+			"empty": {
+				document: must.NotFail(NewDocument()),
+				expected: []fields{},
+			},
+			"one": {
+				document: must.NotFail(NewDocument("foo", "bar")),
+				expected: []fields{{k: "foo", v: "bar"}},
+			},
+			"two": {
+				document: must.NotFail(NewDocument("foo", "bar", "baz", "qux")),
+				expected: []fields{{k: "foo", v: "bar"}, {k: "baz", v: "qux"}},
+			},
+			"duplicates": {
+				document: must.NotFail(NewDocument("foo", "bar", "baz", "qux", "foo", "quuz")),
+				expected: []fields{{k: "foo", v: "bar"}, {k: "baz", v: "qux"}, {k: "foo", v: "quuz"}},
+			},
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+
+				iter := tc.document.Iterator()
+
+				for i := 0; i < len(tc.expected); i++ {
+					key, value, err := iter.Next()
+					require.NoError(t, err)
+
+					require.Equal(t, tc.expected[i].k, key)
+					require.Equal(t, tc.expected[i].v, value)
+				}
+
+				_, _, err := iter.Next()
+				assert.Equal(t, iterator.ErrIteratorDone, err)
+
+				// check that Next() can be called again
+				_, _, err = iter.Next()
+				assert.Equal(t, iterator.ErrIteratorDone, err)
 			})
 		}
 	})

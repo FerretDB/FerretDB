@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -67,17 +66,16 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := pgdb.CreateCollectionIfNotExist(ctx, h.PgPool, sp.DB, sp.Collection)
+	err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		return pgdb.CreateCollectionIfNotExists(ctx, tx, sp.DB, sp.Collection)
+	})
 	if err != nil {
-		if errors.Is(pgdb.ErrInvalidTableName, err) ||
-			errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
+			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
 			msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 		}
 		return nil, err
-	}
-	if created {
-		h.L.Info("Created table.", zap.String("schema", sp.DB), zap.String("table", sp.Collection))
 	}
 
 	var matched, modified int32
