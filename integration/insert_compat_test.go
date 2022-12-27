@@ -60,7 +60,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					opts := options.InsertManyOptions{Ordered: &tc.ordered}
 					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, &opts)
 					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, &opts)
-					require.Equal(t, compatInsertRes, targetInsertRes)
 
 					// If the result contains inserted ids, we consider the result non-empty.
 					if compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0 {
@@ -73,17 +72,18 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						compatErr = UnsetRaw(t, compatErr)
 
 						// Skip inserts that could not be performed due to Tigris schema validation.
-						var e mongo.CommandError
-						if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
-								setup.SkipForTigrisWithReason(t, targetErr.Error())
-							}
+						var e mongo.BulkWriteException
+						if errors.As(targetErr, &e) &&
+							e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+							setup.SkipForTigrisWithReason(t, targetErr.Error())
 						}
 
 						assert.Equal(t, compatErr.Error(), targetErr.Error())
 					} else {
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
+
+					require.Equal(t, compatInsertRes, targetInsertRes)
 
 					var targetFindRes, compatFindRes bson.D
 					targetCursor, err := targetCollection.Find(ctx, bson.D{{}})
@@ -116,9 +116,9 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCompatTestCase{
-		"InsertEmptyDocument": {
+		/*"InsertEmptyDocument": {
 			insert: []any{bson.D{}},
-		},
+		},*/
 		"InsertIDArray": {
 			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
 			resultType: emptyResult,
