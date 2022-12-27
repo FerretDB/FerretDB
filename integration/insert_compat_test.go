@@ -140,31 +140,31 @@ func TestInsertCompat(t *testing.T) {
 			ordered:    true,
 			resultType: emptyResult,
 		},
-		//"InsertUnorderedAllErrors": {
-		//	insert: []any{
-		//		bson.D{{"_id", bson.A{"foo", "bar"}}},
-		//		bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
-		//	},
-		//	ordered:    false,
-		//	resultType: emptyResult,
-		//},
-		//
-		//"InsertOrderedOneError": {
-		//	insert: []any{
-		//		bson.D{{"_id", 1}},
-		//		bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
-		//		bson.D{{"_id", 2}},
-		//	},
-		//	ordered: true,
-		//},
-		///*	"InsertUnorderedOneError": {
-		//	insert: []any{
-		//		bson.D{{"_id", 1}},
-		//		bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
-		//		bson.D{{"_id", 2}},
-		//	},
-		//	ordered: false,
-		//},*/
+		"InsertUnorderedAllErrors": {
+			insert: []any{
+				bson.D{{"_id", bson.A{"foo", "bar"}}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			},
+			ordered:    false,
+			resultType: emptyResult,
+		},
+
+		"InsertOrderedOneError": {
+			insert: []any{
+				bson.D{{"_id", 1}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", 2}},
+			},
+			ordered: true,
+		},
+		"InsertUnorderedOneError": {
+			insert: []any{
+				bson.D{{"_id", 1}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", 2}},
+			},
+			ordered: false,
+		},
 	}
 
 	testInsertCompat(t, testCases)
