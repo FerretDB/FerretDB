@@ -6,78 +6,78 @@ sidebar_position: 1
 
 ## Query commands
 
-| Command           | Argument                | Status | Comments                                                   |
-|-------------------|-------------------------|--------|------------------------------------------------------------|
-| `delete`          |                         | ✅     | Basic command is fully supported                           |
-|                   | `deletes`               | ✅     |                                                            |
-|                   | `comment`               | ⚠️     | Ignored in Tigris                                          |
-|                   | `let`                   | ⚠️     | Unimplemented                                              |
-|                   | `ordered`               | ✅     |                                                            |
-|                   | `writeConcern`          | ⚠️     | Ignored                                                    |
-|                   | `q`                     | ✅     |                                                            |
-|                   | `limit`                 | ✅     |                                                            |
-|                   | `collation`             | ⚠️     | Unimplemented                                              |
-|                   | `hint`                  | ❌     | Unimplemented                                              |
-| `find`            |                         | ✅     | Basic command is fully supported                           |
-|                   | `filter`                | ✅     |                                                            |
-|                   | `sort`                  | ✅     |                                                            |
-|                   | `projection`            | ✅     |                                                            |
-|                   | `hint`                  | ❌     | Ignored                                                    |
-|                   | `skip`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1445)  |
-|                   | `limit`                 | ✅     |                                                            |
-|                   | `batchSize`             | ⚠️     | Unimplemented                                              |
-|                   | `singleBatch`           | ⚠️     | Unimplemented                                              |
-|                   | `comment`               | ⚠️     | Not implemented in Tigris                                  |
-|                   | `maxTimeMS`             | ✅     |                                                            |
-|                   | `readConcern`           | ⚠️     | Ignored                                                    |
-|                   | `max`                   | ⚠️     | Ignored                                                    |
-|                   | `min`                   | ⚠️     | Ignored                                                    |
-|                   | `returnKey`             | ⚠️     | Unimplemented                                              |
-|                   | `showRecordId`          | ⚠️     | Unimplemented                                              |
-|                   | `tailable`              | ❌     | Unimplemented                                              |
-|                   | `awaitData`             | ⚠️     | Unimplemented                                              |
-|                   | `oplogReplay`           |        | Deprecated since version 4.4.                              |
-|                   | `noCursorTimeout`       | ⚠️     | Unimplemented                                              |
-|                   | `allowPartialResults`   | ⚠️     | Unimplemented                                              |
-|                   | `collation`             | ⚠️     | Unimplemented                                              |
-|                   | `allowDiskUse`          | ⚠️     | Unimplemented                                              |
-|                   | `let`                   | ⚠️     | Unimplemented                                              |
-| `findAndModify`   |                         | ✅     | Basic command is fully supported                           |
-|                   | `query`                 | ✅     |                                                            |
-|                   | `sort`                  | ✅     |                                                            |
-|                   | `remove`                | ✅     |                                                            |
-|                   | `update`                | ✅     |                                                            |
-|                   | `new`                   | ✅     |                                                            |
-|                   | `upsert`                | ✅     |                                                            |
-|                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                    |
-|                   | `writeConcern`             | ⚠️  | Ignored                                                    |
-|                   | `maxTimeMS`                | ✅  |                                                            |
-|                   | `collation`                | ⚠️  | Ignored                                                    |
-|                   | `arrayFilters`             | ❌  | Unimplemented                                              |
-|                   | `hint`                     | ❌  | Ignored                                                    |
-|                   | `comment`                  | ⚠️  | Not implemented in Tigris                                  |
-|                   | `let`                      | ⚠️  | Unimplemented                                              |
-| `getMore`         |                            | ❌  | Unimplemented                                              |
-| `insert`          |                            | ✅  | Basic command is fully supported                           |
-|                   | `documents`                | ✅  |                                                            |
-|                   | `ordered`                  | ✅  |                                                            |
-|                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                    |
-|                   | `comment`                  | ⚠️  | Ignored                                                    |
-| `update`          |                            | ✅  | Basic command is fully supported                           |
-|                   | `updates`                  | ✅  |                                                            |
-|                   | `ordered`                  | ⚠️  | Ignored                                                    |
-|                   | `writeConcern`             | ⚠️  | Ignored                                                    |
-|                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                    |
-|                   | `comment`                  | ⚠️  | Ignored in Tigris                                          |
-|                   | `let`                      | ⚠️  | Unimplemented                                              |
-|                   | `q`                        | ✅  |                                                            |
+| Command           | Argument                | Status | Comments                                                  |
+|-------------------|-------------------------|--------|-----------------------------------------------------------|
+| `delete`          |                         | ✅     | Basic command is fully supported                          |
+|                   | `deletes`               | ✅     |                                                           |
+|                   | `comment`               | ⚠️     | Ignored in Tigris                                         |
+|                   | `let`                   | ⚠️     | Unimplemented                                             |
+|                   | `ordered`               | ✅     |                                                           |
+|                   | `writeConcern`          | ⚠️     | Ignored                                                   |
+|                   | `q`                     | ✅     |                                                           |
+|                   | `limit`                 | ✅     |                                                           |
+|                   | `collation`             | ⚠️     | Unimplemented                                             |
+|                   | `hint`                  | ❌     | Unimplemented                                             |
+| `find`            |                         | ✅     | Basic command is fully supported                          |
+|                   | `filter`                | ✅     |                                                           |
+|                   | `sort`                  | ✅     |                                                           |
+|                   | `projection`            | ✅     |                                                           |
+|                   | `hint`                  | ❌     | Ignored                                                   |
+|                   | `skip`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1445) |
+|                   | `limit`                 | ✅     |                                                           |
+|                   | `batchSize`             | ⚠️     | Unimplemented                                             |
+|                   | `singleBatch`           | ⚠️     | Unimplemented                                             |
+|                   | `comment`               | ⚠️     | Not implemented in Tigris                                 |
+|                   | `maxTimeMS`             | ✅     |                                                           |
+|                   | `readConcern`           | ⚠️     | Ignored                                                   |
+|                   | `max`                   | ⚠️     | Ignored                                                   |
+|                   | `min`                   | ⚠️     | Ignored                                                   |
+|                   | `returnKey`             | ⚠️     | Unimplemented                                             |
+|                   | `showRecordId`          | ⚠️     | Unimplemented                                             |
+|                   | `tailable`              | ❌     | Unimplemented                                             |
+|                   | `awaitData`             | ⚠️     | Unimplemented                                             |
+|                   | `oplogReplay`           |        | Deprecated since version 4.4.                             |
+|                   | `noCursorTimeout`       | ⚠️     | Unimplemented                                             |
+|                   | `allowPartialResults`   | ⚠️     | Unimplemented                                             |
+|                   | `collation`             | ⚠️     | Unimplemented                                             |
+|                   | `allowDiskUse`          | ⚠️     | Unimplemented                                             |
+|                   | `let`                   | ⚠️     | Unimplemented                                             |
+| `findAndModify`   |                         | ✅     | Basic command is fully supported                          |
+|                   | `query`                 | ✅     |                                                           |
+|                   | `sort`                  | ✅     |                                                           |
+|                   | `remove`                | ✅     |                                                           |
+|                   | `update`                | ✅     |                                                           |
+|                   | `new`                   | ✅     |                                                           |
+|                   | `upsert`                | ✅     |                                                           |
+|                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                   |
+|                   | `writeConcern`             | ⚠️  | Ignored                                                   |
+|                   | `maxTimeMS`                | ✅  |                                                           |
+|                   | `collation`                | ⚠️  | Ignored                                                   |
+|                   | `arrayFilters`             | ❌  | Unimplemented                                             |
+|                   | `hint`                     | ❌  | Ignored                                                   |
+|                   | `comment`                  | ⚠️  | Not implemented in Tigris                                 |
+|                   | `let`                      | ⚠️  | Unimplemented                                             |
+| `getMore`         |                            | ❌  | Unimplemented                                             |
+| `insert`          |                            | ✅  | Basic command is fully supported                          |
+|                   | `documents`                | ✅  |                                                           |
+|                   | `ordered`                  | ✅  |                                                           |
+|                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                   |
+|                   | `comment`                  | ⚠️  | Ignored                                                   |
+| `update`          |                            | ✅  | Basic command is fully supported                          |
+|                   | `updates`                  | ✅  |                                                           |
+|                   | `ordered`                  | ⚠️  | Ignored                                                   |
+|                   | `writeConcern`             | ⚠️  | Ignored                                                   |
+|                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                   |
+|                   | `comment`                  | ⚠️  | Ignored in Tigris                                         |
+|                   | `let`                      | ⚠️  | Unimplemented                                             |
+|                   | `q`                        | ✅  |                                                           |
 |                   | `u`                        | ✅  | TODO check if u is an array of aggregation pipeline stages |
-|                   | `c`                        | ⚠️  | Unimplemented                                              |
-|                   | `upsert`                   | ✅  |                                                            |
-|                   | `multi`                    | ✅  |                                                            |
-|                   | `collation`                | ⚠️  | Unimplemented                                              |
-|                   | `arrayFilters`             | ⚠️  | Unimplemented                                              |
-|                   | `hint`                     | ⚠️  | Unimplemented                                              |
+|                   | `c`                        | ⚠️  | Unimplemented                                             |
+|                   | `upsert`                   | ✅  |                                                           |
+|                   | `multi`                    | ✅  |                                                           |
+|                   | `collation`                | ⚠️  | Unimplemented                                             |
+|                   | `arrayFilters`             | ⚠️  | Unimplemented                                             |
+|                   | `hint`                     | ⚠️  | Unimplemented                                             |
 
 ### Update Operators
 
