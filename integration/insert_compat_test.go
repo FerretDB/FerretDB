@@ -18,13 +18,13 @@ import (
 	"errors"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -131,6 +131,40 @@ func TestInsertCompat(t *testing.T) {
 			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
 			resultType: emptyResult,
 		},
+
+		"InsertOrderedAllErrors": {
+			insert: []any{
+				bson.D{{"_id", bson.A{"foo", "bar"}}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			},
+			ordered:    true,
+			resultType: emptyResult,
+		},
+		//"InsertUnorderedAllErrors": {
+		//	insert: []any{
+		//		bson.D{{"_id", bson.A{"foo", "bar"}}},
+		//		bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+		//	},
+		//	ordered:    false,
+		//	resultType: emptyResult,
+		//},
+		//
+		//"InsertOrderedOneError": {
+		//	insert: []any{
+		//		bson.D{{"_id", 1}},
+		//		bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+		//		bson.D{{"_id", 2}},
+		//	},
+		//	ordered: true,
+		//},
+		///*	"InsertUnorderedOneError": {
+		//	insert: []any{
+		//		bson.D{{"_id", 1}},
+		//		bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+		//		bson.D{{"_id", 2}},
+		//	},
+		//	ordered: false,
+		//},*/
 	}
 
 	testInsertCompat(t, testCases)

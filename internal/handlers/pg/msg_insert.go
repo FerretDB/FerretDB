@@ -67,54 +67,22 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var inserted int32
+	inserted, insErrors := h.insertMany(ctx, &sp, docs, ordered)
 
-	if ordered {
-		err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			for i := 0; i < docs.Len(); i++ {
-				var doc any
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
 
-				doc, err = docs.Get(i)
-				if err != nil {
-					return lazyerrors.Error(err)
-				}
-
-				err = h.insert(ctx, tx, &sp, doc)
-				if err != nil {
-					// TODO: append errors PTAL pg/msg_delete:114
-				}
-
-				inserted++
-			}
-			return nil
-		})
-	} else {
-		for i := 0; i < docs.Len(); i++ {
-			var doc any
-
-			doc, err = docs.Get(i)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-				return h.insert(ctx, tx, &sp, doc)
-			})
-
-			if err != nil {
-				return nil, err
-			}
-
-			inserted++
-		}
+	if insErrors.Len() > 0 {
+		replyDoc = insErrors.Document()
 	}
 
+	replyDoc.Set("nInserted", inserted)
+
 	var reply wire.OpMsg
+
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{replyDoc},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -123,8 +91,37 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// insertMany inserts many documents into the collection one by one.
+//
+// If insert is ordered, and a document fails to insert, handling of the remaining documents will be stopped.
+// If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
+//
+// It always returns the number of successfully inserted documents and a document with errors.
+func (h *Handler) insertMany(ctx context.Context, sp *pgdb.SQLParam, docs *types.Array, ordered bool,
+) (int32, *common.WriteErrors) {
+	var inserted int32
+	var insErrors common.WriteErrors
+
+	for i := 0; i < docs.Len(); i++ {
+		doc := must.NotFail(docs.Get(i))
+
+		err := h.insert(ctx, sp, doc)
+		if err != nil {
+			insErrors.Append(err, int32(i))
+
+			if ordered {
+				return inserted, &insErrors
+			}
+		}
+
+		inserted++
+	}
+
+	return inserted, &insErrors
+}
+
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc any) error {
+func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewCommandErrorMsg(
@@ -133,7 +130,9 @@ func (h *Handler) insert(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc 
 		)
 	}
 
-	err := pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+	err := h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+	})
 	if err == nil {
 		return nil
 	}

@@ -159,9 +159,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				))))
 
-				err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-					return h.insert(ctx, tx, &sp, doc)
-				})
+				err = h.insert(ctx, &sp, doc)
 				if err != nil {
 					return err
 				}

@@ -242,9 +242,7 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 			}
 		}
 
-		err := h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			return h.insert(ctx, tx, params.sqlParam, upsert)
-		})
+		err := h.insert(ctx, params.sqlParam, upsert)
 		if err != nil {
 			return nil, false, err
 		}
