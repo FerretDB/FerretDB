@@ -69,12 +69,12 @@ db.team.insertMany([
 
 The `$all` operator matches documents where the field value is an array that contains all the specified elements.
 
-For example, find all documents in the `team` collection where the `skills` field contains a `communication` element using the following query operation:
+For example, find all documents in the `team` collection where the `skills` field contains both `communication` and `content creation` as elements using the following query operation:
 
 ```js
 db.team.find({
    "skills": {
-      $all: ["communication"]
+      $all: ["communication", "content creation"]
    }
 })
 ```
@@ -83,15 +83,6 @@ The output:
 
 ```js
 [
-  {
-    _id: ObjectId("63a5bb4acf72d6203bb45bb2"),
-    id: 1,
-    name: 'Jack Smith',
-    position: 'Manager',
-    skills: [ 'leadership', 'communication', 'project management' ],
-    contact: { email: 'john@example.com', phone: '123-456-7890' },
-    active: true
-  },
   {
     _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
     id: 4,
