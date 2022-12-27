@@ -147,17 +147,17 @@ func TestInsertCompat(t *testing.T) {
 
 		"InsertOrderedOneError": {
 			insert: []any{
-				bson.D{{"_id", 1}},
+				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
-				bson.D{{"_id", 2}},
+				bson.D{{"_id", "2"}},
 			},
 			ordered: true,
 		},
 		"InsertUnorderedOneError": {
 			insert: []any{
-				bson.D{{"_id", 1}},
+				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
-				bson.D{{"_id", 2}},
+				bson.D{{"_id", "2"}},
 			},
 			ordered: false,
 		},
