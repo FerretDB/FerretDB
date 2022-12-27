@@ -32,7 +32,9 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	id := res.InsertedID
 
-	// run benchmark with query pushdown
+	_, err = coll.InsertOne(ctx, bson.D{{"v", "foo"}})
+	require.NoError(b, err)
+
 	b.Run("ObjectID", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			cur, err := coll.Find(ctx, bson.D{{"_id", id}})
@@ -41,11 +43,12 @@ func BenchmarkPushdowns(b *testing.B) {
 			var res []bson.D
 			err = cur.All(ctx, &res)
 			require.NoError(b, err)
+
+			require.NotEmpty(b, res)
 		}
 	})
 
-	// run benchmark without query pushdown
-	b.Run("NoPushdown", func(b *testing.B) {
+	b.Run("StringID", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			cur, err := coll.Find(ctx, bson.D{{"_id", "string"}})
 			require.NoError(b, err)
@@ -53,6 +56,21 @@ func BenchmarkPushdowns(b *testing.B) {
 			var res []bson.D
 			err = cur.All(ctx, &res)
 			require.NoError(b, err)
+
+			require.NotEmpty(b, res)
+		}
+	})
+
+	b.Run("NoPushdown", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			cur, err := coll.Find(ctx, bson.D{{"v", 42.0}})
+			require.NoError(b, err)
+
+			var res []bson.D
+			err = cur.All(ctx, &res)
+			require.NoError(b, err)
+
+			require.NotEmpty(b, res)
 		}
 	})
 }
