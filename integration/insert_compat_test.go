@@ -18,6 +18,8 @@ import (
 	"errors"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/mongo/options"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,7 +30,8 @@ import (
 )
 
 type insertCompatTestCase struct {
-	insert     bson.D                   // required
+	insert     []any                    // required, slice of bson.D to be insert
+	ordered    bool                     // defaults to false
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -55,10 +58,16 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					targetInsertRes, targetErr := targetCollection.InsertOne(ctx, insert)
-					compatInsertRes, compatErr := compatCollection.InsertOne(ctx, insert)
+					opts := options.InsertManyOptions{Ordered: &tc.ordered}
+					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, &opts)
+					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, &opts)
 
-					if targetInsertRes != nil || compatInsertRes != nil {
+					// If at least one of the results returned inserted ids, we consider the result non-empty.
+					if targetInsertRes != nil && len(targetInsertRes.InsertedIDs) > 0 {
+						nonEmptyResults = true
+					}
+
+					if compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0 {
 						nonEmptyResults = true
 					}
 
@@ -75,7 +84,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							}
 						}
 
-						assert.Equal(t, compatErr, targetErr)
+						assert.Equal(t, compatErr.Error(), targetErr.Error())
 					} else {
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
@@ -112,14 +121,14 @@ func TestInsertCompat(t *testing.T) {
 
 	testCases := map[string]insertCompatTestCase{
 		"InsertEmptyDocument": {
-			insert: bson.D{},
+			insert: []any{bson.D{}},
 		},
 		"InsertIDArray": {
-			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},
+			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
 			resultType: emptyResult,
 		},
 		"InsertIDRegex": {
-			insert:     bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
 			resultType: emptyResult,
 		},
 	}
