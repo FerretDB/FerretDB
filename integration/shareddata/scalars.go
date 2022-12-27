@@ -41,10 +41,11 @@ var Scalars = &Values[string]{
 		"double-smallest": math.SmallestNonzeroFloat64,
 		"double-big":      doubleBig,
 
-		"string":        "foo",
-		"string-double": "42.13",
-		"string-whole":  "42",
-		"string-empty":  "",
+		"string":           "foo",
+		"string-double":    "42.13",
+		"string-whole":     "42",
+		"string-empty":     "",
+		"string-multiline": "bar\nfoo",
 
 		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
 		"binary-empty": primitive.Binary{Data: []byte{}},
@@ -125,11 +126,12 @@ var Strings = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"string":        "foo",
-		"string-double": "42.13",
-		"string-whole":  "42",
-		"string-empty":  "",
-		"string-null":   nil,
+		"string":           "foo",
+		"string-double":    "42.13",
+		"string-whole":     "42",
+		"string-empty":     "",
+		"string-null":      nil,
+		"string-multiline": "bar\nfoo",
 	},
 }
 

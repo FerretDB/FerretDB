@@ -34,6 +34,7 @@ var Composites = &Values[string]{
 		"document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
 		"document-null":              bson.D{{"foo", nil}},
 		"document-empty":             bson.D{},
+		"document-string-nested":     bson.D{{"foo", bson.D{{"bar", "quz"}}}},
 
 		"array":               bson.A{int32(42)},
 		"array-two":           bson.A{42.13, "foo"},
