@@ -32,9 +32,6 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	id := res.InsertedID
 
-	_, err = coll.InsertOne(ctx, bson.D{{"v", "foo"}})
-	require.NoError(b, err)
-
 	b.Run("ObjectID", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			cur, err := coll.Find(ctx, bson.D{{"_id", id}})
