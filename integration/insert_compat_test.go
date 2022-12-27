@@ -60,13 +60,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					opts := options.InsertManyOptions{Ordered: &tc.ordered}
 					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, &opts)
 					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, &opts)
+					require.Equal(t, targetInsertRes, compatInsertRes)
 
-					// If at least one of the results returned inserted ids, we consider the result non-empty.
+					// If the result contains inserted ids, we consider the result non-empty.
 					if targetInsertRes != nil && len(targetInsertRes.InsertedIDs) > 0 {
-						nonEmptyResults = true
-					}
-
-					if compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0 {
 						nonEmptyResults = true
 					}
 
