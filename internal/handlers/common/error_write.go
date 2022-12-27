@@ -40,6 +40,7 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 // Error implements error interface.
 func (we *WriteErrors) Error() string {
 	var err string
+
 	for i, e := range we.errs {
 		if i != 0 {
 			err += ", "
