@@ -54,7 +54,8 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					// RunCommand must be used to give ability set various invalid parameters.
+					// RunCommand must be used to give ability set various invalid parameters
+					// and prevent the driver from doing any validation.
 					var targetRes, compatRes bson.D
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"insert", targetCollection.Name()},
