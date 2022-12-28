@@ -16,6 +16,8 @@ services:
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
