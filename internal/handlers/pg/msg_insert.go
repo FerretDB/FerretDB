@@ -77,7 +77,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		replyDoc = insErrors.Document()
 	}
 
-	replyDoc.Set("nInserted", inserted)
+	replyDoc.Set("n", inserted)
 
 	var reply wire.OpMsg
 
