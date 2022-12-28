@@ -32,6 +32,20 @@ tasks:
     cmds:
       - go generate -x ./build/version
 
+  # do not change that target much; see "Building and packaging" in README.md
+  build-release:
+    desc: "Build bin/ferretdb{{exeExt}} (release build)"
+    deps: [gen-version]
+    cmds:
+      - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
+
+  build-testcover:
+    desc: "Build bin/ferretdb-testcover{{exeExt}}"
+    run: once
+    deps: [gen-version]
+    cmds:
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+
   init-tools:
     dir: tools
     cmds:
@@ -51,10 +65,6 @@ tasks:
     cmds:
       - go mod tidy
       - go mod verify
-
-  # deprecated alias
-  init-clean:
-    deps: [env-reset]
 
   env-reset:
     desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
@@ -233,13 +243,6 @@ tasks:
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus seed {{.FUZZCORPUS}}
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus {{.FUZZCORPUS}} generated
 
-  build-testcover:
-    desc: "Build bin/ferretdb-testcover"
-    run: once
-    deps: [gen-version]
-    cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
-
   run:
     desc: "Run FerretDB"
     deps: [build-testcover]
@@ -405,7 +408,6 @@ tasks:
       - task: packages-rpm
 
   packages-deb:
-    deps: [build-testcover]
     dir: build
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
@@ -419,7 +421,6 @@ tasks:
         sh: go env GOARCH
 
   packages-rpm:
-    deps: [build-testcover]
     dir: build
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
