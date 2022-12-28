@@ -12,22 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build ferretdb_debug || ferretdb_testcover || race
+
 package version
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-)
-
-func TestGet(t *testing.T) {
-	v := Get()
-	assert.NotEqual(t, "", v.Version)
-	assert.NotEqual(t, unknown, v.Version)
-	assert.Equal(t, "6.0.42", MongoDBVersion)
-	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(6), int32(0), int32(42), int32(0))), MongoDBVersionArray)
-}
+// debugBuild is true if that's a debug build.
+//
+// See package documentation for more details.
+const debugBuild = true

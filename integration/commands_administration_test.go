@@ -559,8 +559,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -586,7 +584,6 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
 
 	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
-	assert.False(t, must.NotFail(doc.Get("debug")).(bool))
 
 	assert.Equal(t, int32(16777216), must.NotFail(doc.Get("maxBsonObjectSize")))
 	_, ok = must.NotFail(doc.Get("buildEnvironment")).(*types.Document)
