@@ -15,7 +15,6 @@
 package version
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,8 +28,6 @@ func TestGet(t *testing.T) {
 	v := Get()
 
 	assert.NotEmpty(t, v.Version)
-	assert.NotEqual(t, unknown, v.Version)
-	assert.True(t, strings.HasPrefix(v.Version, "v"))
 
 	assert.Equal(t, "6.0.42", v.MongoDBVersion)
 	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(6), int32(0), int32(42), int32(0))), v.MongoDBVersionArray)

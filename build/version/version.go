@@ -60,6 +60,8 @@ import (
 var gen embed.FS
 
 // Info provides details about the current build.
+//
+//nolint:vet // for readability
 type Info struct {
 	Version          string
 	Commit           string
@@ -87,8 +89,9 @@ func Get() *Info {
 }
 
 func init() {
-	b := must.NotFail(gen.ReadFile("mongodb.txt"))
-	parts := regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`).FindStringSubmatch(strings.TrimSpace(string(b)))
+	versionRe := regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`)
+
+	parts := versionRe.FindStringSubmatch(strings.TrimSpace(string(must.NotFail(gen.ReadFile("mongodb.txt")))))
 	if len(parts) != 4 {
 		panic("invalid mongodb.txt")
 	}
@@ -111,10 +114,12 @@ func init() {
 
 	// do not expose extra information when embeddable FerretDB package is used
 	// (and some of it is most likely absent anyway)
+
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return
 	}
+
 	if buildInfo.Main.Path != "github.com/FerretDB/FerretDB" {
 		return
 	}
