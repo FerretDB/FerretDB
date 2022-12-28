@@ -13,6 +13,10 @@
 // limitations under the License.
 
 // Package ferretdb provides embeddable FerretDB implementation.
+//
+// See [build/version package documentation] for information about Go build tags that affect this package.
+//
+// [build/version package documentation]: https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version
 package ferretdb
 
 import (
@@ -23,6 +27,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -192,6 +197,11 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zap.ErrorLevel, "")
+	l := zap.ErrorLevel
+	if version.Get().DebugBuild {
+		l = zap.DebugLevel
+	}
+
+	logging.Setup(l, "")
 	logger = zap.L()
 }

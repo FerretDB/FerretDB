@@ -19,7 +19,7 @@ Please take a look at this post on [how to contribute to open source software](h
 ## Get Started
 
 You don’t have to be a developer to contribute to FerretDB projects, you can even get started by helping us improve this documentation.
-If you have any questions or suggestions on how we can improve, kindly join our [Slack chat](https://docs.ferretdb.io/intro/#community) or [GitHub discussions](https://github.com/FerretDB/FerretDB/discussions).
+If you have any questions or suggestions on how we can improve, kindly join our [Slack chat](/intro/#community) or [GitHub discussions](https://github.com/FerretDB/FerretDB/discussions).
 We appreciate your feedback.
 
 ## Contributing to this documentation
