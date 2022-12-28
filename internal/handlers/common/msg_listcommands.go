@@ -78,6 +78,10 @@ var Commands = map[string]command{
 		Help:    "Creates indexes on a collection.",
 		Handler: handlers.Interface.MsgCreateIndexes,
 	},
+	"currentOp": {
+		Help:    "Returns information about operations currently in progress.",
+		Handler: handlers.Interface.MsgCurrentOp,
+	},
 	"dataSize": {
 		Help:    "Returns the size of the collection in bytes.",
 		Handler: handlers.Interface.MsgDataSize,
