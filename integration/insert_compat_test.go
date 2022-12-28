@@ -116,9 +116,13 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCompatTestCase{
-		/*"InsertEmptyDocument": {
+		"InsertEmptyDocument": {
 			insert: []any{bson.D{}},
-		},*/
+			// TODO: this test fails with last byte being different as the value is always unique,
+			// see https://github.com/mongodb/mongo-go-driver/blob/e1bf8858dd9ba111e880f8e5a8b7e7b7da64cb54/bson/primitive/objectid.go#L51
+			// Target: &mongo.InsertManyResult{InsertedIDs:[]interface {}{primitive.ObjectID{0x63, 0xac, 0x15, 0x9e, 0xe6, 0x49, 0x0, 0x8, 0x7, 0x15, 0x28, 0x9a}}}
+			// Compat: &mongo.InsertManyResult{InsertedIDs:[]interface {}{primitive.ObjectID{0x63, 0xac, 0x15, 0x9e, 0xe6, 0x49, 0x0, 0x8, 0x7, 0x15, 0x28, 0x9b}}}
+		},
 		"InsertIDArray": {
 			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
 			resultType: emptyResult,
