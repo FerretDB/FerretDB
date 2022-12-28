@@ -34,7 +34,8 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		switch v := v.(type) {
 		case *types.Document:
 			for _, projectionType := range v.Keys() {
-				err = lazyerrors.Errorf("projection of %s is not supported", projectionType)
+				err = NewCommandError(ErrNotImplemented,
+					fmt.Errorf("projection of %s is not supported", projectionType))
 				return
 			}
 
@@ -127,7 +128,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 		switch projectionVal := projectionVal.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			if err := applyComplexProjection(k1, doc, projectionVal); err != nil {
+			if err := applyComplexProjection(projectionVal); err != nil {
 				return err
 			}
 
@@ -149,13 +150,17 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 	return nil
 }
 
-func applyComplexProjection(k1 string, doc, projectionVal *types.Document) (err error) {
+func applyComplexProjection(projectionVal *types.Document) error {
 	for _, projectionType := range projectionVal.Keys() {
 		switch projectionType {
+		case "$elemMatch", "$slice":
+			return NewCommandError(ErrNotImplemented,
+				fmt.Errorf("projection of %s is not supported", projectionType))
 		default:
-			return lazyerrors.Errorf("projection of %s is not supported", projectionType)
+			return NewCommandError(ErrCommandNotFound,
+				fmt.Errorf("projection of %s is not supported", projectionType))
 		}
 	}
 
-	return
+	return nil
 }
