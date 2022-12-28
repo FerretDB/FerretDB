@@ -18,7 +18,6 @@ services:
       - TZ=America/St_Johns
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
-      - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
   tigris:
@@ -40,7 +39,8 @@ services:
     ports:
       - 26257:26257
     environment:
-      - COCKROACH_USER=cockroach
+      - COCKROACH_USER=username
+      - COCKROACH_PASSWORD=password
       - COCKROACH_DATABASE=ferretdb
 
   # for proxy mode and mongosh

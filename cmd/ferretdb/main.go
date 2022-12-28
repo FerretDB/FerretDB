@@ -109,7 +109,7 @@ var (
 		kong.Vars{
 			"default_log_level":      defaultLogLevel().String(),
 			"default_mode":           clientconn.AllModes[0],
-			"default_postgresql_url": "postgres://postgres@127.0.0.1:5432/ferretdb",
+			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
 
 			"help_debug_addr": "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
 			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
