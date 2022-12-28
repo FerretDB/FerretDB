@@ -106,15 +106,22 @@ func (h *Handler) insertMany(ctx context.Context, sp *pgdb.SQLParam, docs *types
 		doc := must.NotFail(docs.Get(i))
 
 		err := h.insert(ctx, sp, doc)
-		if err != nil {
-			insErrors.Append(err, int32(i))
 
-			if ordered {
-				return inserted, &insErrors
-			}
+		var we *common.WriteErrors
+
+		switch {
+		case err == nil:
+			inserted++
+			continue
+		case errors.As(err, &we):
+			insErrors.Merge(we, int32(i))
+		default:
+			insErrors.Append(err, int32(i))
 		}
 
-		inserted++
+		if ordered {
+			return inserted, &insErrors
+		}
 	}
 
 	return inserted, &insErrors

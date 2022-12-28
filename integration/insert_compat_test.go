@@ -62,7 +62,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, &opts)
 
 					// If the result contains inserted ids, we consider the result non-empty.
-					if compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0 {
+					if (compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0) ||
+						(targetInsertRes != nil && len(targetInsertRes.InsertedIDs) > 0) {
 						nonEmptyResults = true
 					}
 
@@ -78,7 +79,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							setup.SkipForTigrisWithReason(t, targetErr.Error())
 						}
 
-						assert.Equal(t, compatErr.Error(), targetErr.Error())
+						assert.Equal(t, compatErr, targetErr)
 					} else {
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}

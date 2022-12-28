@@ -129,6 +129,14 @@ func (we *WriteErrors) Len() int {
 	return len(we.errs)
 }
 
+// Merge merges the given WriteErrors with the current one and sets the given index.
+func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
+	for _, e := range we2.errs {
+		e.index = &index
+		we.errs = append(we.errs, e)
+	}
+}
+
 // writeError represents protocol write error.
 // It required to build the correct write error result.
 // The index field is optional and won't be used if it's nil.
