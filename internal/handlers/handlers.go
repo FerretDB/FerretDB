@@ -66,6 +66,9 @@ type Interface interface {
 	// MsgCreateIndexes creates indexes on a collection.
 	MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgCurrentOp returns information about operations currently in progress.
+	MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgDataSize returns the size of the collection in bytes.
 	MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 

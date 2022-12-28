@@ -21,7 +21,7 @@ sidebar_position: 1
 | `find`            |                         | ✅     | Basic command is fully supported                          |
 |                   | `filter`                | ✅     |                                                           |
 |                   | `sort`                  | ✅     |                                                           |
-|                   | `projection`            | ✅     |                                                           |
+|                   | `projection`            | ✅     | Basic projections with fields is supported                  |
 |                   | `hint`                  | ❌     | Ignored                                                   |
 |                   | `skip`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1445) |
 |                   | `limit`                 | ✅     |                                                           |
@@ -107,6 +107,17 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$slice`    | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830)  |
 |                   | `$sort`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831)  |
 |                   | `$bit`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821)  |
+
+### Projection Operators
+
+The following operators are available in the `find` command `projection` argument.
+
+| Operator     | Status | Comments                                                  |
+|--------------|--------|-----------------------------------------------------------|
+| `$`          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1709) |
+| `$elemMatch` | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1710) |
+| `$meta`      | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1712) |
+| `$slice`     | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1711) |
 
 ## Query Plan Cache Commands
 
