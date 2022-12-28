@@ -34,8 +34,10 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		switch v := v.(type) {
 		case *types.Document:
 			for _, projectionType := range v.Keys() {
-				err = NewCommandError(ErrNotImplemented,
+				err = NewCommandError(
+					ErrNotImplemented,
 					fmt.Errorf("projection of %s is not supported", projectionType))
+
 				return
 			}
 
@@ -154,10 +156,12 @@ func applyComplexProjection(projectionVal *types.Document) error {
 	for _, projectionType := range projectionVal.Keys() {
 		switch projectionType {
 		case "$elemMatch", "$slice":
-			return NewCommandError(ErrNotImplemented,
+			return NewCommandError(
+				ErrNotImplemented,
 				fmt.Errorf("projection of %s is not supported", projectionType))
 		default:
-			return NewCommandError(ErrCommandNotFound,
+			return NewCommandError(
+				ErrCommandNotFound,
 				fmt.Errorf("projection of %s is not supported", projectionType))
 		}
 	}
