@@ -999,3 +999,22 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestCommandsAdministrationCurrentOp(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	var res bson.D
+	err := s.Collection.Database().RunCommand(s.Ctx,
+		bson.D{{"currentOp", int32(1)}},
+	).Decode(&res)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, res)
+
+	_, ok := must.NotFail(doc.Get("inprog")).(*types.Array)
+	assert.True(t, ok)
+}
