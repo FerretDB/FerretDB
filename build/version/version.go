@@ -12,6 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package version provides information about FerretDB version and build configuration.
+//
+// # Go build tags
+//
+// The following Go build tags (also known as build constraints) affect all builds of FerretDB,
+// including embedded usage:
+//
+//	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
+//	ferretdb_testcover - enables test coverage instrumentation
+//	ferretdb_tigris    - enables Tigris backend
+//
+// # Debug builds
+//
+// Debug builds of FerretDB behave differently in a few aspects:
+//   - The default logging level is set to debug.
+//   - Some internal errors cause crashes instead of being handled more gracefully.
 package version
 
 import (
@@ -97,10 +113,12 @@ func init() {
 
 	info.DebugBuild = debugBuild
 
-	// this file must always be present, even in non-official builds
+	// version.txt must always be present, even in non-official builds
+
 	if b, _ := gen.ReadFile("version.txt"); len(b) > 0 {
 		info.Version = strings.TrimSpace(string(b))
 	}
+
 	if !strings.HasPrefix(info.Version, "v") {
 		msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
 		msg += "Alternatively, create this file manually with a content similar to\n"
@@ -108,10 +126,12 @@ func init() {
 		panic(msg)
 	}
 
-	// those files may be absent in non-official builds
+	// commit.txt and branch.txt may be absent in non-official builds
+
 	if b, _ := gen.ReadFile("commit.txt"); len(b) > 0 {
 		info.Commit = strings.TrimSpace(string(b))
 	}
+
 	if b, _ := gen.ReadFile("branch.txt"); len(b) > 0 {
 		info.Branch = strings.TrimSpace(string(b))
 	}

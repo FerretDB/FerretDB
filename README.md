@@ -81,6 +81,11 @@ They are not suitable for most production use-cases because they keep all data i
 You can also install with FerretDB with the `.deb` and `.rpm` packages
 provided for each [release](https://github.com/FerretDB/FerretDB/releases).
 
+## Documentation
+
+* [Documentation for users](https://docs.ferretdb.io/).
+* [Documentation for Go developers about embeddable FerretDB](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb).
+
 ## Community
 
 * Website and blog: [https://ferretdb.io](https://ferretdb.io/).

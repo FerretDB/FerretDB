@@ -17,4 +17,6 @@
 package version
 
 // debugBuild is false if that's not a debug build.
+//
+// See package documentation for more details.
 const debugBuild = false
