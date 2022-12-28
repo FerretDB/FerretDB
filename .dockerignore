@@ -1,4 +1,5 @@
 **
+!build/version
 !cmd
 !internal
 !go.mod
