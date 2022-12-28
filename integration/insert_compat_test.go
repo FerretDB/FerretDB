@@ -30,10 +30,9 @@ import (
 )
 
 type insertCompatTestCase struct {
-	insert      []any                    // required, slice of bson.D to be insert
-	ordered     bool                     // defaults to false
-	skipIDcheck bool                     // defaults to false, if true, skips checking the inserted ids
-	resultType  compatTestCaseResultType // defaults to nonEmptyResult
+	insert     []any                    // required, slice of bson.D to be insert
+	ordered    bool                     // defaults to false
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -85,9 +84,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
 
-					if !tc.skipIDcheck {
-						require.Equal(t, compatInsertRes, targetInsertRes)
-					}
+					require.Equal(t, compatInsertRes, targetInsertRes)
 
 					findOpts := options.Find().SetSort(bson.D{{"_id", 1}})
 
@@ -106,10 +103,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 
 					require.Equal(t, len(compatFindRes), len(targetFindRes))
 
-					if !tc.skipIDcheck {
-						for i := range compatFindRes {
-							AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
-						}
+					for i := range compatFindRes {
+						AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
 					}
 				})
 			}
@@ -130,13 +125,6 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCompatTestCase{
-		"InsertEmptyDocument": {
-			insert: []any{bson.D{}},
-
-			// the driver creates globally unique _id for the inserted documents,
-			// so they are not the same for target and compat collections.
-			skipIDcheck: true,
-		},
 		"InsertIDArray": {
 			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
 			resultType: emptyResult,

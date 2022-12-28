@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -67,9 +68,7 @@ func testInsertInvalidCompat(t *testing.T, testCases map[string]insertInvalidCom
 						{"ordered", tc.ordered},
 					}).Decode(&compatRes)
 
-					require.NotNil(t, targetErr)
 					require.Equal(t, compatErr, targetErr)
-
 					assert.Equal(t, compatRes, targetRes)
 				})
 			}
@@ -91,6 +90,14 @@ func TestInsertInvalidCompat(t *testing.T) {
 			// Compat error: "BSON field 'insert.ordered' is the wrong type 'string'
 			// Target error: "BSON field 'ordered' is the wrong type 'string'
 			skip: "https://github.com/FerretDB/FerretDB/issues/940",
+		},
+
+		"InsertEmpty": {
+			documents: []any{
+				bson.D{{}},
+			},
+			ordered: true,
+			skip:    "https://github.com/FerretDB/FerretDB/issues/1714",
 		},
 	}
 
