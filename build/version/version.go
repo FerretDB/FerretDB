@@ -14,6 +14,14 @@
 
 // Package version provides information about FerretDB version and build configuration.
 //
+// # Required files
+//
+// The following generated text files may be present in this (build/version) directory during building:
+//   - version.txt (required) contains information about the FerretDB version in a format
+//     similar to `git describe` output: `v<major>.<minor>.<patch>`.
+//   - commit.txt (optional) contains information about the source git commit.
+//   - branch.txt (optional) contains information about the source git branch.
+//
 // # Go build tags
 //
 // The following Go build tags (also known as build constraints) affect all builds of FerretDB,
@@ -43,7 +51,7 @@ import (
 )
 
 // Each pattern in a //go:embed line must match at least one file or non-empty directory,
-// but most files are generated and are not present when FerretDB is used as library package.
+// but most files are generated and are not present when embeddable FerretDB package is used.
 // As a workaround, mongodb.txt is always present.
 
 //go:generate go run ./generate.go
@@ -79,7 +87,6 @@ func Get() *Info {
 }
 
 func init() {
-	// this file is always present
 	b := must.NotFail(gen.ReadFile("mongodb.txt"))
 	parts := regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`).FindStringSubmatch(strings.TrimSpace(string(b)))
 	if len(parts) != 4 {
@@ -96,13 +103,14 @@ func init() {
 		Commit:              unknown,
 		Branch:              unknown,
 		Dirty:               false,
-		DebugBuild:          false,
+		DebugBuild:          debugBuild,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
 		MongoDBVersionArray: mongoDBVersionArray,
 	}
 
-	// do not expose extra information when FerretDB is used as library package
+	// do not expose extra information when embeddable FerretDB package is used
+	// (and some of it is most likely absent anyway)
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return
@@ -111,10 +119,6 @@ func init() {
 		return
 	}
 
-	info.DebugBuild = debugBuild
-
-	// version.txt must always be present, even in non-official builds
-
 	if b, _ := gen.ReadFile("version.txt"); len(b) > 0 {
 		info.Version = strings.TrimSpace(string(b))
 	}
@@ -122,11 +126,10 @@ func init() {
 	if !strings.HasPrefix(info.Version, "v") {
 		msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
 		msg += "Alternatively, create this file manually with a content similar to\n"
-		msg += "the output of `git describe --tags --dirty`: `v<major>.<minor>.<patch>`."
+		msg += "the output of `git describe`: `v<major>.<minor>.<patch>`.\n"
+		msg += "See https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version"
 		panic(msg)
 	}
-
-	// commit.txt and branch.txt may be absent in non-official builds
 
 	if b, _ := gen.ReadFile("commit.txt"); len(b) > 0 {
 		info.Commit = strings.TrimSpace(string(b))

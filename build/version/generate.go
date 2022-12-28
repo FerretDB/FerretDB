@@ -51,12 +51,12 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	// git describe --tags --dirty > version.txt
+	// git describe --dirty > version.txt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		saveFile(runGit("describe", "--tags", "--dirty"), "version.txt")
+		saveFile(runGit("describe", "--dirty"), "version.txt")
 	}()
 
 	// git rev-parse HEAD > commit.txt

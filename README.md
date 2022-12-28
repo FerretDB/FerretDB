@@ -81,6 +81,13 @@ They are not suitable for most production use-cases because they keep all data i
 You can also install with FerretDB with the `.deb` and `.rpm` packages
 provided for each [release](https://github.com/FerretDB/FerretDB/releases).
 
+## Building and packaging
+
+The best way to build FerretDB is not to do it but use Docker images and `.deb` and `.rpm` packages provided by us.
+The second best way is to use our [instructions for contributors](CONTRIBUTING.md).
+Finally, FerretDB could be built as any other Go program, but a few generated files and build tags could affect it.
+See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for more details.
+
 ## Documentation
 
 * [Documentation for users](https://docs.ferretdb.io/).
