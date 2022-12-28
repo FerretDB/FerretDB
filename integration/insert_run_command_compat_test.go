@@ -25,15 +25,15 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-type insertInvalidCompatTestCase struct {
+type insertRunCommandCompatTestCase struct {
 	skip      string // optional, reason to skip the test
 	ordered   any    // required, ordered parameter
 	documents []any  // required, slice of bson.D to be insert
 }
 
-// testInsertInvalidCompat tests insert compatibility test cases with invalid parameters.
+// testInsertRunCommandCompat tests insert compatibility test cases with invalid parameters.
 // It uses runCommand instead of insertOne or insertMany to let more invalid parameters being used.
-func testInsertInvalidCompat(t *testing.T, testCases map[string]insertInvalidCompatTestCase) {
+func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunCommandCompatTestCase) {
 	t.Helper()
 
 	for name, tc := range testCases {
@@ -76,10 +76,10 @@ func testInsertInvalidCompat(t *testing.T, testCases map[string]insertInvalidCom
 	}
 }
 
-func TestInsertInvalidCompat(t *testing.T) {
+func TestInsertRunCommandCompat(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]insertInvalidCompatTestCase{
+	testCases := map[string]insertRunCommandCompatTestCase{
 		"InsertOrderedInvalid": {
 			documents: []any{
 				bson.D{{"_id", "foo"}},
@@ -101,5 +101,5 @@ func TestInsertInvalidCompat(t *testing.T) {
 		},
 	}
 
-	testInsertInvalidCompat(t, testCases)
+	testInsertRunCommandCompat(t, testCases)
 }
