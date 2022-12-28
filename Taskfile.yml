@@ -38,6 +38,8 @@ tasks:
     deps: [gen-version]
     cmds:
       - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
+    env:
+      CGO_ENABLED: 0
 
   build-testcover:
     desc: "Build bin/ferretdb-testcover{{exeExt}}"

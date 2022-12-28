@@ -83,9 +83,13 @@ provided for each [release](https://github.com/FerretDB/FerretDB/releases).
 
 ## Building and packaging
 
-The best way to build FerretDB is not to do it but use Docker images and `.deb` and `.rpm` packages provided by us.
-The second best way is to use our [instructions for contributors](CONTRIBUTING.md).
-Finally, FerretDB could be built as any other Go program, but a few generated files and build tags could affect it.
+We strongly advise users not to build FerretDB themselves.
+Instead, use Docker images or .deb and .rpm packages provided by us.
+If you want to package FerretDB for your operating system or distribution,
+the recommended way is to use the `build-release` task;
+see our [instructions for contributors](CONTRIBUTING.md) for more details.
+FerretDB could also be built as any other Go program,
+but a few generated files and build tags could affect it.
 See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for more details.
 
 ## Documentation
