@@ -21,7 +21,7 @@ sidebar_position: 1
 | `find`            |                         | ✅     | Basic command is fully supported                          |
 |                   | `filter`                | ✅     |                                                           |
 |                   | `sort`                  | ✅     |                                                           |
-|                   | `projection`            | ✅     | Basic projection with field is supported                  |
+|                   | `projection`            | ✅     | Basic projections with fields is supported                  |
 |                   | `hint`                  | ❌     | Ignored                                                   |
 |                   | `skip`                  | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1445) |
 |                   | `limit`                 | ✅     |                                                           |
