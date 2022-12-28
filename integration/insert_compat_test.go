@@ -18,6 +18,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,7 +32,7 @@ import (
 
 type insertCompatTestCase struct {
 	insert     []any                    // required, slice of bson.D to be insert
-	ordered    bool                     // defaults to false
+	ordered    *bool                    // defaults to true
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -57,7 +59,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					opts := options.InsertManyOptions{Ordered: &tc.ordered}
+					opts := options.InsertManyOptions{Ordered: tc.ordered}
 					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, &opts)
 					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, &opts)
 
@@ -139,7 +141,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    true,
+			ordered:    pointer.To(true),
 			resultType: emptyResult,
 		},
 		"InsertUnorderedAllErrors": {
@@ -147,7 +149,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    false,
+			ordered:    pointer.To(false),
 			resultType: emptyResult,
 		},
 
@@ -157,7 +159,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: true,
+			ordered: pointer.To(true),
 		},
 		"InsertUnorderedOneError": {
 			insert: []any{
@@ -165,7 +167,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: false,
+			ordered: pointer.To(false),
 		},
 	}
 
