@@ -99,7 +99,7 @@ The output:
 
 *Syntax*: `{ <field>: { $elemMatch: { <query1>, <query2>, ... } } }`
 
-The `$elemMatch` operator matches documents where the field value is an array of documents that match the given condition.
+The `$elemMatch` operator matches documents where the field value is an array that contains at least one element that matches the given condition.
 
 For example, to find documents in the `team` collection where the `skills` field is an array that contains the element "Java", use the following query with the `$elemMatch` operator:
 
@@ -107,7 +107,8 @@ For example, to find documents in the `team` collection where the `skills` field
 db.team.find({
    skills: {
       $elemMatch: {
-         $eq: "Java"
+         $eq: "Java",
+         $nin: [ "communication" ]
       }
    }
 })
