@@ -31,7 +31,7 @@ type insertInvalidCompatTestCase struct {
 }
 
 // testInsertInvalidCompat tests insert compatibility test cases with invalid parameters.
-// It uses runCommand instead of insertOne or insertMany to set more invalid parameters.
+// It uses runCommand instead of insertOne or insertMany to let more invalid parameters being used.
 func testInsertInvalidCompat(t *testing.T, testCases map[string]insertInvalidCompatTestCase) {
 	t.Helper()
 
