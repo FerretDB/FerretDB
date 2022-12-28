@@ -18,10 +18,11 @@ import (
 	"errors"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -29,9 +30,10 @@ import (
 )
 
 type insertCompatTestCase struct {
-	insert     []any                    // required, slice of bson.D to be insert
-	ordered    bool                     // defaults to false
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	insert      []any                    // required, slice of bson.D to be insert
+	ordered     bool                     // defaults to false
+	skipIDcheck bool                     // defaults to false, if true, skips checking the inserted ids
+	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -83,20 +85,32 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
 
-					require.Equal(t, compatInsertRes, targetInsertRes)
+					if !tc.skipIDcheck {
+						require.Equal(t, compatInsertRes, targetInsertRes)
+					}
 
-					var targetFindRes, compatFindRes bson.D
-					targetCursor, err := targetCollection.Find(ctx, bson.D{{}})
+					findOpts := options.Find().SetSort(bson.D{{"_id", 1}})
+
+					var targetFindRes, compatFindRes []bson.D
+					targetCursor, err := targetCollection.Find(ctx, bson.D{{}}, findOpts)
 					require.NoError(t, err)
 					defer targetCursor.Close(ctx)
-					targetCursor.Decode(&targetFindRes)
+					err = targetCursor.All(ctx, &targetFindRes)
+					require.NoError(t, err)
 
-					compatCursor, err := compatCollection.Find(ctx, bson.D{{}})
+					compatCursor, err := compatCollection.Find(ctx, bson.D{{}}, findOpts)
 					require.NoError(t, err)
 					defer compatCursor.Close(ctx)
-					compatCursor.Decode(&targetFindRes)
+					err = compatCursor.All(ctx, &compatFindRes)
+					require.NoError(t, err)
 
-					AssertEqualDocuments(t, compatFindRes, targetFindRes)
+					require.Equal(t, len(compatFindRes), len(targetFindRes))
+
+					if !tc.skipIDcheck {
+						for i := range compatFindRes {
+							AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
+						}
+					}
 				})
 			}
 
@@ -118,10 +132,10 @@ func TestInsertCompat(t *testing.T) {
 	testCases := map[string]insertCompatTestCase{
 		"InsertEmptyDocument": {
 			insert: []any{bson.D{}},
-			// TODO: this test fails with last byte being different as the value is always unique,
-			// see https://github.com/mongodb/mongo-go-driver/blob/e1bf8858dd9ba111e880f8e5a8b7e7b7da64cb54/bson/primitive/objectid.go#L51
-			// Target: &mongo.InsertManyResult{InsertedIDs:[]interface {}{primitive.ObjectID{0x63, 0xac, 0x15, 0x9e, 0xe6, 0x49, 0x0, 0x8, 0x7, 0x15, 0x28, 0x9a}}}
-			// Compat: &mongo.InsertManyResult{InsertedIDs:[]interface {}{primitive.ObjectID{0x63, 0xac, 0x15, 0x9e, 0xe6, 0x49, 0x0, 0x8, 0x7, 0x15, 0x28, 0x9b}}}
+
+			// the driver creates globally unique _id for the inserted documents,
+			// so they are not the same for target and compat collections.
+			skipIDcheck: true,
 		},
 		"InsertIDArray": {
 			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},

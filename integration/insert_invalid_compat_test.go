@@ -25,9 +25,9 @@ import (
 )
 
 type insertInvalidCompatTestCase struct {
-	documents []any  // required, slice of bson.D to be insert
-	ordered   any    // required, ordered parameter
 	skip      string // optional, reason to skip the test
+	ordered   any    // required, ordered parameter
+	documents []any  // required, slice of bson.D to be insert
 }
 
 // testInsertInvalidCompat tests insert compatibility test cases with invalid parameters.
