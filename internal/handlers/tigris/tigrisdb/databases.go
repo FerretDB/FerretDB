@@ -22,6 +22,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -57,7 +58,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 			}
 
 			if isOtherCreationInFlight(err) {
-				time.Sleep(20 * time.Millisecond)
+				ctxutil.Sleep(ctx, 100*time.Millisecond)
 				continue
 			}
 

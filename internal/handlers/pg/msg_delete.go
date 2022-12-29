@@ -181,44 +181,27 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *types.Document, limit bool) (int32, error) {
 	var deleted int32
 	err := h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var it iterator.Interface[uint32, *types.Document]
-		var err error
-		it, err = pgdb.GetDocuments(ctx, tx, sp)
+		iter, err := pgdb.GetDocuments(ctx, tx, sp)
 		if err != nil {
 			return err
 		}
 
-		defer it.Close()
+		defer iter.Close()
 
 		resDocs := make([]*types.Document, 0, 16)
 
 		for {
 			var doc *types.Document
-			_, doc, err = it.Next()
+			if _, doc, err = iter.Next(); err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
 
-			// if the context is canceled, we don't need to continue processing documents
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-
-			var iteratorDone bool
-			switch {
-			case err == nil:
-				// do nothing
-			case errors.Is(err, iterator.ErrIteratorDone):
-				// no more documents
-				iteratorDone = true
-			default:
 				return err
 			}
 
-			if iteratorDone {
-				break
-			}
-
 			var matches bool
-			matches, err = common.FilterDocument(doc, filter)
-			if err != nil {
+			if matches, err = common.FilterDocument(doc, filter); err != nil {
 				return err
 			}
 
@@ -239,8 +222,7 @@ func (h *Handler) execDelete(ctx context.Context, sp *pgdb.SQLParam, filter *typ
 			return nil
 		}
 
-		var rowsDeleted int64
-		rowsDeleted, err = h.delete(ctx, sp, resDocs)
+		rowsDeleted, err := h.delete(ctx, sp, resDocs)
 		if err != nil {
 			return err
 		}

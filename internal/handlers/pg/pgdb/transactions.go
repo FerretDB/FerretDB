@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -24,12 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
-
-// maxRetries is the maximum number of times to retry a transaction.
-const maxRetries = 20
-
-// delay is the amount of time to wait before retrying a transaction.
-const delay = 3 * time.Millisecond
 
 // transactionConflictError is returned when one of the queries in the transaction returned an error because
 // of an unexpected conflict. The caller could retry such a transaction.
@@ -87,19 +82,29 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 }
 
 // InTransactionRetry wraps the given function f in a transaction.
-// If f returns a *transactionConflictError, the transaction is retried.
-// If after maxRetries the transaction still fails, the last error unwrapped from transactionConflictError is returned.
-func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) (err error) {
-	for retry := 0; retry < maxRetries; retry++ {
-		err = pgPool.InTransaction(ctx, f)
+// If f returns (possibly wrapped) *transactionConflictError, the transaction is retried multiple times with delays.
+// If the transaction still fails after that, the last error is returned.
+func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) error {
+	// TODO use exponential backoff instead
+	// https://aws.amazon.com/ru/blogs/architecture/exponential-backoff-and-jitter/
+	const (
+		retriesMax    = 20
+		retryDelayMin = 100 * time.Millisecond
+		retryDelayMax = 200 * time.Millisecond
+	)
 
-		var tcErr *transactionConflictError
+	var err error
+	var tcErr *transactionConflictError
+
+	for retry := 0; retry < retriesMax; retry++ {
+		err = pgPool.InTransaction(ctx, f)
 
 		switch {
 		case err == nil:
 			return nil
 		case errors.As(err, &tcErr):
-			ctxutil.Sleep(ctx, delay)
+			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
+			ctxutil.Sleep(ctx, retryDelayMin+time.Duration(deltaMS)*time.Millisecond)
 		default:
 			return lazyerrors.Error(err)
 		}
