@@ -30,7 +30,9 @@
 
 ## Release
 
-1. Upload .deb and .rpm packages [from the CI build for the tag](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush) to the draft release.
+1. Upload the binary and .deb and .rpm packages
+   [from the CI build for the tag](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
+   to the draft release.
 2. Close milestone in issues.
 3. Publish release on GitHub.
 4. Announce it on Slack.
