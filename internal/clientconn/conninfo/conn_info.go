@@ -37,6 +37,7 @@ type ConnInfo struct {
 	password string
 }
 
+// Auth returns stored username and password.
 func (connInfo *ConnInfo) Auth() (username, password string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
@@ -44,6 +45,7 @@ func (connInfo *ConnInfo) Auth() (username, password string) {
 	return connInfo.username, connInfo.password
 }
 
+// SetAuth stores username and password.
 func (connInfo *ConnInfo) SetAuth(username, password string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()

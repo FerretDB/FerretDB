@@ -48,7 +48,7 @@ func TestConnInfo(t *testing.T) {
 			}
 			ctx = WithConnInfo(ctx, connInfo)
 			actual := Get(ctx)
-			assert.Equal(t, *connInfo, *actual)
+			assert.Equal(t, connInfo, actual)
 		})
 	}
 

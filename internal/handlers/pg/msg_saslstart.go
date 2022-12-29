@@ -37,6 +37,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	if mechanism != "PLAIN" {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrTypeMismatch,
@@ -51,7 +52,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	parts := bytes.Split(payload.B, []byte{0})
-	if len(parts) != 3 || len(parts[0]) != 0 {
+	if len(parts) != 3 || len(parts[0]) > 0 {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrTypeMismatch,
 			"Invalid payload",
