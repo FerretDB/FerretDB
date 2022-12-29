@@ -94,8 +94,8 @@ func fromTJSON(v tjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
 		return pointer.To(types.Document(*v))
-	// case *arrayType:
-	// 	return pointer.To(types.Array(*v))
+	case *arrayType:
+		return pointer.To(types.Array(*v))
 	case *doubleType:
 		return float64(*v)
 	case *stringType:
@@ -128,8 +128,8 @@ func toTJSON(v any) tjsontype {
 	switch v := v.(type) {
 	case *types.Document:
 		return pointer.To(documentType(*v))
-	// case *types.Array:
-	// 	return pointer.To(arrayType(*v))
+	case *types.Array:
+		return pointer.To(arrayType(*v))
 	case float64:
 		return pointer.To(doubleType(v))
 	case string:
@@ -224,7 +224,10 @@ func Unmarshal(data []byte, schema *Schema) (any, error) {
 		err = o.UnmarshalJSON(data)
 		res = &o
 	case Array:
-		err = lazyerrors.Errorf("tjson.Unmarshal: unhandled type %q", t)
+		var a arrayType
+		err = a.UnmarshalJSONWithSchema(data, schema)
+		res = &a
+
 	case Object:
 		var v map[string]json.RawMessage
 		r := bytes.NewReader(data)
