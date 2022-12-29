@@ -150,9 +150,9 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                             | Status | Comments                                                                      |
 |----------------------------|--------------------------------------|--------|-------------------------------------------------------------------------------|
-| `setFreeMonitoring`        |                                      | ✅     | [Telemetry reporting](https://docs.ferretdb.io/telemetry/)                    |
-|                            | `action: "enable"`                   | ✅     | [`--telemetry=enable`](https://docs.ferretdb.io/telemetry/#enable-telemetry)  |
-|                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](https://docs.ferretdb.io/telemetry/#disable-telemetry)|
+| `setFreeMonitoring`        |                                      | ✅     | [Telemetry reporting](/telemetry/)                    |
+|                            | `action: "enable"`                   | ✅     | [`--telemetry=enable`](/telemetry/#enable-telemetry)  |
+|                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](/telemetry/#disable-telemetry)|
 | `getFreeMonitoringStatus`  |                                      | ✅     |                                                                               |
 
 ## Database Operations

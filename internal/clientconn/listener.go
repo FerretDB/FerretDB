@@ -202,7 +202,12 @@ func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	config := tls.Config{Certificates: []tls.Certificate{cer}}
+	config := tls.Config{
+		// TODO ClientAuth, ClientCAs, maybe something else
+		// https://github.com/FerretDB/FerretDB/issues/1707
+
+		Certificates: []tls.Certificate{cer},
+	}
 
 	listener, err := tls.Listen("tcp", addr, &config)
 	if err != nil {

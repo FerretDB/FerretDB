@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -38,7 +39,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 // The cli struct represents all command-line commands, fields and flags.
@@ -107,17 +107,14 @@ var (
 
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level":      zap.DebugLevel.String(),
+			"default_log_level":      defaultLogLevel().String(),
 			"default_mode":           clientconn.AllModes[0],
 			"default_postgresql_url": "postgres://postgres@127.0.0.1:5432/ferretdb",
 
 			"help_debug_addr": "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
-			"help_log_level": fmt.Sprintf(
-				"Log level: '%s'. Debug level also enables development mode.",
-				strings.Join(logLevels, "', '"),
-			),
-			"help_mode":    fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler": fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_handler":    fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
@@ -129,6 +126,15 @@ func main() {
 	kong.Parse(&cli, kongOptions...)
 
 	run()
+}
+
+// defaultLogLevel returns the default log level.
+func defaultLogLevel() zapcore.Level {
+	if version.Get().DebugBuild {
+		return zap.DebugLevel
+	}
+
+	return zap.InfoLevel
 }
 
 // setupState setups state provider.
@@ -175,7 +181,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("commit", info.Commit),
 		zap.String("branch", info.Branch),
 		zap.Bool("dirty", info.Dirty),
-		zap.Bool("debug", info.Debug),
+		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
 	}
 	logUUID := stateProvider.Get().UUID
@@ -218,6 +224,7 @@ func run() {
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
 		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
+		fmt.Fprintln(os.Stdout, "debugBuild:", info.DebugBuild)
 
 		return
 	}
