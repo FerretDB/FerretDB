@@ -31,6 +31,11 @@ import (
 
 // MsgInsert implements HandlerInterface.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,7 +72,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	inserted, insErrors := h.insertMany(ctx, &sp, docs, ordered)
+	inserted, insErrors := h.insertMany(ctx, dbPool, &sp, docs, ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
 		"ok", float64(1),
@@ -97,15 +102,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
 //
 // It always returns the number of successfully inserted documents and a document with errors.
-func (h *Handler) insertMany(ctx context.Context, sp *pgdb.SQLParam, docs *types.Array, ordered bool,
-) (int32, *common.WriteErrors) {
+func (h *Handler) insertMany(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
 	var insErrors common.WriteErrors
 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
-		err := h.insert(ctx, sp, doc)
+		err := h.insert(ctx, dbPool, sp, doc)
 
 		var we *common.WriteErrors
 
@@ -128,7 +132,7 @@ func (h *Handler) insertMany(ctx context.Context, sp *pgdb.SQLParam, docs *types
 }
 
 // insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
+func (h *Handler) insert(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewCommandErrorMsg(
@@ -137,7 +141,7 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 		)
 	}
 
-	err := h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
 	})
 	if err == nil {

@@ -16,22 +16,29 @@
 package pg
 
 import (
+	"context"
+	"sync"
+
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
+
+	rw    sync.RWMutex
+	pools map[string]*pgdb.Pool
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool        *pgdb.Pool
+	PostgreSQLURL string
 	L             *zap.Logger
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
@@ -41,13 +48,45 @@ type NewOpts struct {
 func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
 		NewOpts: opts,
+		pools:   make(map[string]*pgdb.Pool, 1),
 	}
 	return h, nil
 }
 
 // Close implements HandlerInterface.
 func (h *Handler) Close() {
-	h.PgPool.Close()
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	for k, pgPool := range h.pools {
+		pgPool.Close()
+		delete(h.pools, k)
+	}
+}
+
+// DBPool returns database connection pool for the given client connection.
+func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
+	// TODO make real implementation; the current one is a stub
+
+	h.rw.RLock()
+	p, ok := h.pools[h.PostgreSQLURL]
+	h.rw.RUnlock()
+
+	if ok {
+		return p, nil
+	}
+
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	p, err := pgdb.NewPool(ctx, h.PostgreSQLURL, h.L, true, h.StateProvider)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	h.pools[h.PostgreSQLURL] = p
+
+	return p, nil
 }
 
 // check interfaces
