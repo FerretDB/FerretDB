@@ -56,8 +56,8 @@ type DBStats struct {
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
-func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
-	config, err := pgxpool.ParseConfig(connString)
+func NewPool(ctx context.Context, url string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
+	config, err := pgxpool.ParseConfig(url)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}

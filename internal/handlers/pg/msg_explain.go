@@ -33,6 +33,11 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,7 +72,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var queryPlanner *types.Document
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
 		return err

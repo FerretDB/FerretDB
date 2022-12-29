@@ -250,38 +250,54 @@ tasks:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --postgresql-url="postgres://username:password@127.0.0.1:5432/ferretdb"
+        --test-records-dir=records
 
   run-tigris:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --handler=tigris
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --handler=tigris
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --test-records-dir=records
 
   run-cockroach:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
+        --test-records-dir=records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-proxy --listen-addr=:27017
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-proxy
+        --postgresql-url="postgres://username:password@127.0.0.1:5432/ferretdb"
+        --test-records-dir=records
 
   lint:
     desc: "Run linters"
@@ -350,7 +366,10 @@ tasks:
     cmds:
       - >
         docker compose run --rm legacy-mongo-shell
-        'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
+        --tlsCertificateKeyFile /etc/certs/server.pem
+        --tlsCAFile /etc/certs/rootCA.pem
+        --tls
+        'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
         /legacy-mongo-shell/test.js
 
   docker-init:
