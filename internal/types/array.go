@@ -16,7 +16,6 @@ package types
 
 import (
 	"fmt"
-	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -61,6 +60,11 @@ func (a *Array) Len() int {
 		return 0
 	}
 	return len(a.s)
+}
+
+// Iterator returns an iterator for the array.
+func (a *Array) Iterator() iterator.Interface[int, any] {
+	return newArrayIterator(a)
 }
 
 // Get returns a value at the given index.
@@ -211,33 +215,3 @@ func (a *Array) Remove(index int) {
 
 	a.s = append(a.s[:index], a.s[index+1:]...)
 }
-
-// Iterator returns an iterator for the array.
-func (a *Array) Iterator() iterator.Interface[int, any] {
-	return newArrayIterator(a)
-}
-
-// arrayIterator represents an iterator for an Array.
-type arrayIterator struct {
-	array       *Array
-	currentIter atomic.Uint32
-}
-
-// newArrayIterator returns a new arrayIterator.
-func newArrayIterator(array *Array) *arrayIterator {
-	return &arrayIterator{array: array}
-}
-
-// Next implements iterator.Interface.
-func (a *arrayIterator) Next() (int, any, error) {
-	n := a.currentIter.Add(1)
-
-	if int(n) >= len(a.array.s)+1 {
-		return 0, nil, iterator.ErrIteratorDone
-	}
-
-	return int(n - 1), a.array.s[n-1], nil
-}
-
-// Close implements iterator.Interface.
-func (a *arrayIterator) Close() {}
