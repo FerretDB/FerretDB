@@ -15,19 +15,22 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 type insertRunCommandCompatTestCase struct {
-	skip      string // optional, reason to skip the test
-	ordered   any    // required, ordered parameter
-	documents []any  // required, slice of bson.D to be insert
+	skip        string // optional, reason to skip the test
+	altErrorMsg string // optional, alternative error message in case of error
+	ordered     any    // required, ordered parameter
+	documents   []any  // required, slice of bson.D to be insert
 }
 
 // testInsertRunCommandCompat tests insert compatibility test cases with invalid parameters.
@@ -68,7 +71,16 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 						{"ordered", tc.ordered},
 					}).Decode(&compatRes)
 
-					require.Equal(t, compatErr, targetErr)
+					if tc.altErrorMsg != "" {
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						var actualErr mongo.CommandError
+						require.True(t, errors.As(targetErr, &actualErr))
+						assert.Equal(t, tc.altErrorMsg, actualErr.Message)
+					} else {
+						require.Equal(t, compatErr, targetErr)
+					}
+
 					assert.Equal(t, compatRes, targetRes)
 				})
 			}
@@ -84,7 +96,8 @@ func TestInsertRunCommandCompat(t *testing.T) {
 			documents: []any{
 				bson.D{{"_id", "foo"}},
 			},
-			ordered: "foo",
+			ordered:     "foo",
+			altErrorMsg: "BSON field 'ordered' is the wrong type 'string', expected type 'bool'",
 		},
 
 		"InsertEmpty": {
