@@ -22,25 +22,25 @@ import (
 
 // arrayIterator represents an iterator for an Array.
 type arrayIterator struct {
-	array       *Array
-	currentIter atomic.Uint32
+	arr *Array
+	n   atomic.Uint32
 }
 
 // newArrayIterator returns a new arrayIterator.
 func newArrayIterator(array *Array) iterator.Interface[int, any] {
-	return &arrayIterator{array: array}
+	return &arrayIterator{arr: array}
 }
 
 // Next implements iterator.Interface.
-func (a *arrayIterator) Next() (int, any, error) {
-	n := int(a.currentIter.Add(1)) - 1
+func (iter *arrayIterator) Next() (int, any, error) {
+	n := int(iter.n.Add(1)) - 1
 
-	if n >= a.array.Len() {
+	if n >= iter.arr.Len() {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	return n, a.array.s[n], nil
+	return n, iter.arr.s[n], nil
 }
 
 // Close implements iterator.Interface.
-func (a *arrayIterator) Close() {}
+func (iter *arrayIterator) Close() {}

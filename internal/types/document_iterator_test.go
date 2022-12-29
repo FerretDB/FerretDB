@@ -24,52 +24,51 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestArrayIterator(t *testing.T) {
+func TestDocumentIterator(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		arr      *Array
-		expected []any
+		doc      *Document
+		expected []field
 	}{
 		"empty": {
-			arr:      must.NotFail(NewArray()),
-			expected: []any{},
+			doc:      must.NotFail(NewDocument()),
+			expected: []field{},
 		},
 		"one": {
-			arr:      must.NotFail(NewArray(1)),
-			expected: []any{1},
+			doc:      must.NotFail(NewDocument("foo", "bar")),
+			expected: []field{{key: "foo", value: "bar"}},
 		},
 		"two": {
-			arr:      must.NotFail(NewArray(1, 2)),
-			expected: []any{1, 2},
+			doc:      must.NotFail(NewDocument("foo", "bar", "baz", "qux")),
+			expected: []field{{key: "foo", value: "bar"}, {key: "baz", value: "qux"}},
 		},
-		"three": {
-			arr:      must.NotFail(NewArray(1, 2, 3)),
-			expected: []any{1, 2, 3},
+		"duplicates": {
+			doc:      must.NotFail(NewDocument("foo", "bar", "baz", "qux", "foo", "quuz")),
+			expected: []field{{key: "foo", value: "bar"}, {key: "baz", value: "qux"}, {key: "foo", value: "quuz"}},
 		},
 	} {
 		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			iter := tc.arr.Iterator()
+			iter := tc.doc.Iterator()
 			defer iter.Close()
 
 			for i := 0; i < len(tc.expected); i++ {
-				n, v, err := iter.Next()
+				key, value, err := iter.Next()
 				require.NoError(t, err)
 
-				assert.Equal(t, i, n)
-				assert.Equal(t, tc.expected[i], v)
+				require.Equal(t, tc.expected[i].key, key)
+				require.Equal(t, tc.expected[i].value, value)
 			}
 
 			_, _, err := iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Equal(t, iterator.ErrIteratorDone, err)
 
 			// check that Next() can be called again
 			_, _, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Equal(t, iterator.ErrIteratorDone, err)
 		})
 	}
 }
