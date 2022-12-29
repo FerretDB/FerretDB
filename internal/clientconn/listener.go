@@ -249,8 +249,8 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			}()
 
 			remoteAddr := netConn.RemoteAddr().String()
-			if remoteAddr == "" {
-				// use random string for Unix socket connections
+			if netConn.RemoteAddr().Network() == "unix" {
+				// otherwise, all of them would be "" or "@"
 				remoteAddr = fmt.Sprintf("unix:%d", rand.Int())
 			}
 
