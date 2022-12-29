@@ -71,11 +71,11 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          // {
-          //   to: '/blog',
-          //   label: 'Blog',
-          //   position: 'left'
-          // },
+          {
+            to: '/blog',
+            label: 'Blog',
+            position: 'left'
+          },
           {
             href: 'https://github.com/FerretDB/',
             label: 'GitHub',
@@ -119,10 +119,10 @@ const config = {
           {
             title: 'More',
             items: [
-              // {
-              //   label: 'Blog',
-              //   to: 'https://www.ferretdb.io/blog/',
-              // },
+              {
+                label: 'Blog',
+                to: 'https://www.ferretdb.io/blog/',
+              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',
