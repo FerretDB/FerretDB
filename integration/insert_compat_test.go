@@ -18,7 +18,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,7 +30,7 @@ import (
 
 type insertCompatTestCase struct {
 	insert     []any                    // required, slice of bson.D to be insert
-	ordered    *bool                    // defaults to true
+	ordered    bool                     // defaults to false
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -58,9 +57,9 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					opts := options.InsertManyOptions{Ordered: tc.ordered}
-					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, &opts)
-					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, &opts)
+					opts := options.InsertMany().SetOrdered(tc.ordered)
+					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, opts)
+					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, opts)
 
 					// If the result contains inserted ids, we consider the result non-empty.
 					if (compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0) ||
@@ -87,20 +86,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 
 					require.Equal(t, compatInsertRes, targetInsertRes)
 
-					findOpts := options.Find().SetSort(bson.D{{"_id", 1}})
-
-					var targetFindRes, compatFindRes []bson.D
-					targetCursor, err := targetCollection.Find(ctx, bson.D{{}}, findOpts)
-					require.NoError(t, err)
-					defer targetCursor.Close(ctx)
-					err = targetCursor.All(ctx, &targetFindRes)
-					require.NoError(t, err)
-
-					compatCursor, err := compatCollection.Find(ctx, bson.D{{}}, findOpts)
-					require.NoError(t, err)
-					defer compatCursor.Close(ctx)
-					err = compatCursor.All(ctx, &compatFindRes)
-					require.NoError(t, err)
+					targetFindRes := FindAll(t, ctx, targetCollection)
+					compatFindRes := FindAll(t, ctx, compatCollection)
 
 					require.Equal(t, len(compatFindRes), len(targetFindRes))
 
@@ -140,7 +127,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    pointer.To(true),
+			ordered:    true,
 			resultType: emptyResult,
 		},
 		"InsertUnorderedAllErrors": {
@@ -148,7 +135,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    pointer.To(false),
+			ordered:    false,
 			resultType: emptyResult,
 		},
 
@@ -158,7 +145,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: pointer.To(true),
+			ordered: true,
 		},
 		"InsertUnorderedOneError": {
 			insert: []any{
@@ -166,7 +153,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: pointer.To(false),
+			ordered: false,
 		},
 	}
 
