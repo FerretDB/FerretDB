@@ -18,7 +18,6 @@ package conninfo
 
 import (
 	"context"
-	"net"
 	"sync"
 )
 
@@ -30,7 +29,7 @@ var connInfoKey = contextKey{}
 
 // ConnInfo represents connection info.
 type ConnInfo struct {
-	PeerAddr net.Addr
+	PeerAddr string
 
 	rw       sync.RWMutex
 	username string

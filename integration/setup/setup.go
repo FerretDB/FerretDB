@@ -17,7 +17,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -55,11 +54,12 @@ type SetupResult struct {
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
 func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
-	u, err := url.Parse(s.MongoDBURI)
-	require.NoError(tb, err)
+	tb.Helper()
+
+	tb.Logf("%+v", options.Client().ApplyURI(s.MongoDBURI))
 
 	// FIXME
-	panic(u.Host)
+	return false
 }
 
 // SetupWithOpts setups the test according to given options.

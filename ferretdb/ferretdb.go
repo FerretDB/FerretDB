@@ -179,6 +179,7 @@ func (f *FerretDB) MongoDBURI() string {
 			Path:   "/",
 		}
 	case f.config.Listener.Unix != "":
+		// MongoDB really wants Unix socket path in the host part of the URI
 		u = &url.URL{
 			Scheme: "mongodb",
 			Host:   f.l.Unix().String(),
