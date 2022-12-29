@@ -60,7 +60,7 @@ sidebar_position: 1
 | `getMore`         |                            | ❌  | Unimplemented                                             |
 | `insert`          |                            | ✅  | Basic command is fully supported                          |
 |                   | `documents`                | ✅  |                                                           |
-|                   | `ordered`                  | ❌  | [Issue](https://github.com/FerretDB/FerretDB/issues/940)  |
+|                   | `ordered`                  | ✅  |                                                           |
 |                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                   |
 |                   | `comment`                  | ⚠️  | Ignored                                                   |
 | `update`          |                            | ✅  | Basic command is fully supported                          |
@@ -71,7 +71,7 @@ sidebar_position: 1
 |                   | `comment`                  | ⚠️  | Ignored in Tigris                                         |
 |                   | `let`                      | ⚠️  | Unimplemented                                             |
 |                   | `q`                        | ✅  |                                                           |
-|                   | `u`                        | ✅  | TODO check if u is an array of aggregation pipeline stages|
+|                   | `u`                        | ✅  | TODO check if u is an array of aggregation pipeline stages |
 |                   | `c`                        | ⚠️  | Unimplemented                                             |
 |                   | `upsert`                   | ✅  |                                                           |
 |                   | `multi`                    | ✅  |                                                           |
