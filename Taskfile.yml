@@ -251,7 +251,8 @@ tasks:
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017
+        --mode=normal --listen-addr=:27017
+        --postgresql-url="postgres://username:password@127.0.0.1:5432/ferretdb"
         --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
 
@@ -350,7 +351,10 @@ tasks:
     cmds:
       - >
         docker compose run --rm legacy-mongo-shell
-        'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
+        --tlsCertificateKeyFile /etc/certs/server.pem
+        --tlsCAFile /etc/certs/rootCA.pem
+        --tls
+        'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN'
         /legacy-mongo-shell/test.js
 
   docker-init:

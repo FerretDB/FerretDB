@@ -3,26 +3,13 @@
 (function() {
   'use strict';
 
-  const coll = db.test;
+  // version.txt: v0.7.1-29-gaf17fa7-dirty
+  // tests that we can query an array of documents with dot notation.
+  const t = db.dot_notation;
+  t.drop();
 
-  coll.drop();
-
-  const init = [
-    {_id: 'double', v: 42.13},
-    {_id: 'double-whole', v: 42.0},
-    {_id: 'double-zero', v: 0.0},
-  ];
-
-  coll.insertMany(init);
-
-  const query = {v: {$gt: 42.0}};
-
-  const expected = [
-    {_id: 'double', v: 42.13},
-  ];
-
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  t.save({a: [{}, {b: 1}]});
+  assert.eq(1, t.find({'a.b': 1}).itcount());
 
   print('test.js passed!');
 })();
