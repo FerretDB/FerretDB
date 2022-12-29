@@ -13,7 +13,8 @@ image:
 tags: [tag1, tag2]
 ---
 
-Leave a space before starting article. Please write a short summary of the article here.
+Leave a space before starting article.
+Please write a short summary of the article here.
 This can be the same as the `description` above.
 
 <!--truncate-->
@@ -33,4 +34,4 @@ Regular blog authors and engineers can be added to `authors.yml`.
 When the author information is present in `authors.yml`, fill the unique author name  in the frontmatter as (`author: name`)
 Otherwise, please enter all author information in the frontmatter.
 
-### Heading 2
+### SubHeading
