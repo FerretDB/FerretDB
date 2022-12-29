@@ -192,7 +192,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-cockroach.txt . -records-dir=../records
-        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
+        -handler=pg -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -269,7 +269,7 @@ tasks:
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
+        --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
         --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
 
@@ -319,7 +319,7 @@ tasks:
   psql:
     desc: "Run psql"
     cmds:
-      - docker compose exec postgres psql -U postgres -d ferretdb
+      - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
   # mongosh runs both tasks and ignores errors.
   # mongosh-plain works with FerretDB and PLAIN authentication, while mongosh-scram works with MongoDB.
