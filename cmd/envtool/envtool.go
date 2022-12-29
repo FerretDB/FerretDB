@@ -64,7 +64,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	connString := "postgres://postgres@127.0.0.1:5432/ferretdb"
+	connString := "postgres://username:password@127.0.0.1:5432/ferretdb"
 	pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger.Info("Tweaking settings...")
 
 	for _, q := range []string{
-		`CREATE ROLE readonly NOINHERIT LOGIN`,
+		`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
 
 		// TODO Grant permissions to readonly role.
 		// https://github.com/FerretDB/FerretDB/issues/1025

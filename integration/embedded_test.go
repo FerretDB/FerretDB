@@ -64,7 +64,7 @@ func TestEmbedded(t *testing.T) {
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 			},
-			tlsConfig: must.NotFail(options.BuildTLSConfig(map[string]interface{}{
+			tlsConfig: must.NotFail(options.BuildTLSConfig(map[string]any{
 				"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
 			})),
 		},

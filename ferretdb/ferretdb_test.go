@@ -27,7 +27,7 @@ func Example_tcp() {
 			Addr: "127.0.0.1:17027",
 		},
 		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -65,7 +65,7 @@ func Example_unix() {
 			Unix: "/tmp/ferretdb-27017.sock",
 		},
 		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -102,7 +102,7 @@ func Example_tls() {
 			TLSKeyFile:  keyPath,
 		},
 		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
 		log.Fatal(err)
