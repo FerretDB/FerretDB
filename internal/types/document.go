@@ -21,6 +21,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -134,6 +135,11 @@ func (d *Document) Len() int {
 	}
 
 	return len(d.fields)
+}
+
+// Iterator returns an iterator over the document fields.
+func (d *Document) Iterator() iterator.Interface[string, any] {
+	return newDocumentIterator(d)
 }
 
 // Map returns this document as a map. Do not modify it.
