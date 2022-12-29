@@ -42,71 +42,118 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
 			t.Parallel()
 
-			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+			t.Run("InsertOne", func(t *testing.T) {
+				t.Helper()
+				t.Parallel()
 
-			insert := tc.insert
-			require.NotNil(t, insert, "insert should be set")
+				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			var nonEmptyResults bool
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				insert := tc.insert
+				require.NotNil(t, insert, "insert should be set")
 
-					opts := options.InsertMany().SetOrdered(tc.ordered)
-					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, opts)
-					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, opts)
+				for i := range targetCollections {
+					targetCollection := targetCollections[i]
+					compatCollection := compatCollections[i]
+					t.Run(targetCollection.Name(), func(t *testing.T) {
+						t.Helper()
 
-					// If the result contains inserted ids, we consider the result non-empty.
-					if (compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0) ||
-						(targetInsertRes != nil && len(targetInsertRes.InsertedIDs) > 0) {
-						nonEmptyResults = true
-					}
+						for _, doc := range insert {
+							targetInsertRes, targetErr := targetCollection.InsertOne(ctx, doc)
+							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-
-						// Skip inserts that could not be performed due to Tigris schema validation.
-						var e mongo.BulkWriteException
-						if errors.As(targetErr, &e) &&
-							e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
-							setup.SkipForTigrisWithReason(t, targetErr.Error())
+							assertInsertErrors(t, compatErr, targetErr)
+							require.Equal(t, compatInsertRes, targetInsertRes)
 						}
 
-						assert.Equal(t, compatErr, targetErr)
-					} else {
-						require.NoError(t, compatErr, "compat error; target returned no error")
-					}
+						targetFindRes := FindAll(t, ctx, targetCollection)
+						compatFindRes := FindAll(t, ctx, compatCollection)
 
-					require.Equal(t, compatInsertRes, targetInsertRes)
+						require.Equal(t, len(compatFindRes), len(targetFindRes))
 
-					targetFindRes := FindAll(t, ctx, targetCollection)
-					compatFindRes := FindAll(t, ctx, compatCollection)
+						for i := range compatFindRes {
+							AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
+						}
+					})
+				}
+			})
 
-					require.Equal(t, len(compatFindRes), len(targetFindRes))
+			// InsertOne and InsertMany might have different response formats,
+			// so both need to be tested.
+			t.Run("InsertMany", func(t *testing.T) {
+				t.Helper()
+				t.Parallel()
 
-					for i := range compatFindRes {
-						AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
-					}
-				})
-			}
+				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			switch tc.resultType {
-			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
-			}
+				insert := tc.insert
+				require.NotNil(t, insert, "insert should be set")
+
+				var nonEmptyResults bool
+				for i := range targetCollections {
+					targetCollection := targetCollections[i]
+					compatCollection := compatCollections[i]
+					t.Run(targetCollection.Name(), func(t *testing.T) {
+						t.Helper()
+
+						opts := options.InsertMany().SetOrdered(tc.ordered)
+						targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, opts)
+						compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, opts)
+
+						// If the result contains inserted ids, we consider the result non-empty.
+						if (compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0) ||
+							(targetInsertRes != nil && len(targetInsertRes.InsertedIDs) > 0) {
+							nonEmptyResults = true
+						}
+
+						assertInsertErrors(t, compatErr, targetErr)
+						require.Equal(t, compatInsertRes, targetInsertRes)
+
+						targetFindRes := FindAll(t, ctx, targetCollection)
+						compatFindRes := FindAll(t, ctx, compatCollection)
+
+						require.Equal(t, len(compatFindRes), len(targetFindRes))
+
+						for i := range compatFindRes {
+							AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
+						}
+					})
+				}
+
+				switch tc.resultType {
+				case nonEmptyResult:
+					assert.True(t, nonEmptyResults, "expected non-empty results")
+				case emptyResult:
+					assert.False(t, nonEmptyResults, "expected empty results")
+				default:
+					t.Fatalf("unknown result type %v", tc.resultType)
+				}
+			})
 		})
 	}
+}
+
+// assertInsertErrors asserts that the actual error (targetErr) matches the expected error (compatErr).
+// In case of Tigris, it ignores errors related to json schema validation.
+func assertInsertErrors(t *testing.T, compatErr, targetErr error) {
+	if targetErr == nil {
+		require.NoError(t, compatErr, "compat error; target returned no error")
+	}
+
+	t.Logf("Target error: %v", targetErr)
+	require.IsType(t, compatErr, targetErr)
+	targetErr = UnsetRaw(t, targetErr)
+	compatErr = UnsetRaw(t, compatErr)
+
+	// Skip inserts that could not be performed due to Tigris schema validation.
+	var e mongo.BulkWriteException
+	if errors.As(targetErr, &e) &&
+		e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+		setup.SkipForTigrisWithReason(t, targetErr.Error())
+	}
+
+	assert.Equal(t, compatErr, targetErr)
 }
 
 func TestInsertCompat(t *testing.T) {
