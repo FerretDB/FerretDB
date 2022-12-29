@@ -54,7 +54,7 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 		return err
 	}
 
-	connString := fmt.Sprintf("postgres://username:password@127.0.0.1:%d/ferretdb", port)
+	url := fmt.Sprintf("postgres://username:password@127.0.0.1:%d/ferretdb", port)
 
 	for ctx.Err() == nil {
 		p, err := state.NewProvider("")
@@ -62,17 +62,17 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 			return err
 		}
 
-		pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
+		pgPool, err := pgdb.NewPool(ctx, url, logger.Desugar(), false, p)
 		if err == nil {
 			pgPool.Close()
 			return nil
 		}
 
-		logger.Infof("%s: %s", connString, err)
+		logger.Infof("%s: %s", url, err)
 		ctxutil.Sleep(ctx, time.Second)
 	}
 
-	return fmt.Errorf("failed to connect to %s", connString)
+	return fmt.Errorf("failed to connect to %s", url)
 }
 
 // waitForTigrisPort waits for the given Tigris port to be available until ctx is done.

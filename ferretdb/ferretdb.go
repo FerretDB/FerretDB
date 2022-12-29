@@ -43,7 +43,7 @@ type Config struct {
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
-	PostgreSQLURL string // For example: `postgres://username:password@hostname:5432/ferretdb`.
+	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
 	// Tigris parameters for `tigris` handler.
 	// See https://docs.tigrisdata.com/overview/authentication
