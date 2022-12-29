@@ -63,7 +63,24 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							targetInsertRes, targetErr := targetCollection.InsertOne(ctx, doc)
 							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
-							assertInsertErrors(t, compatErr, targetErr)
+							if targetErr != nil {
+								// Skip inserts that could not be performed due to Tigris schema validation.
+								var e mongo.WriteException
+								if errors.As(targetErr, &e) &&
+									e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
+								}
+
+								t.Logf("Target error: %v", targetErr)
+								require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
+								targetErr = UnsetRaw(t, targetErr)
+								compatErr = UnsetRaw(t, compatErr)
+
+								assert.Equal(t, compatErr, targetErr)
+								continue
+							}
+
+							require.NoError(t, compatErr, "compat error; target returned no error")
 							require.Equal(t, compatInsertRes, targetInsertRes)
 						}
 
@@ -107,7 +124,24 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							nonEmptyResults = true
 						}
 
-						assertInsertErrors(t, compatErr, targetErr)
+						if targetErr != nil {
+							// Skip inserts that could not be performed due to Tigris schema validation.
+							var e mongo.BulkWriteException
+							if errors.As(targetErr, &e) &&
+								e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+								setup.SkipForTigrisWithReason(t, targetErr.Error())
+							}
+
+							t.Logf("Target error: %v", targetErr)
+							require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
+							targetErr = UnsetRaw(t, targetErr)
+							compatErr = UnsetRaw(t, compatErr)
+
+							assert.Equal(t, compatErr, targetErr)
+							return
+						}
+
+						require.NoError(t, compatErr, "compat error; target returned no error")
 						require.Equal(t, compatInsertRes, targetInsertRes)
 
 						targetFindRes := FindAll(t, ctx, targetCollection)
@@ -132,28 +166,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 			})
 		})
 	}
-}
-
-// assertInsertErrors asserts that the actual error (targetErr) matches the expected error (compatErr).
-// In case of Tigris, it ignores errors related to json schema validation.
-func assertInsertErrors(t *testing.T, compatErr, targetErr error) {
-	if targetErr == nil {
-		require.NoError(t, compatErr, "compat error; target returned no error")
-	}
-
-	t.Logf("Target error: %v", targetErr)
-	require.IsType(t, compatErr, targetErr)
-	targetErr = UnsetRaw(t, targetErr)
-	compatErr = UnsetRaw(t, compatErr)
-
-	// Skip inserts that could not be performed due to Tigris schema validation.
-	var e mongo.BulkWriteException
-	if errors.As(targetErr, &e) &&
-		e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
-		setup.SkipForTigrisWithReason(t, targetErr.Error())
-	}
-
-	assert.Equal(t, compatErr, targetErr)
 }
 
 func TestInsertCompat(t *testing.T) {
