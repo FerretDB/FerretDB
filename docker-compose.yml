@@ -16,7 +16,8 @@ services:
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
   tigris:
@@ -38,7 +39,8 @@ services:
     ports:
       - 26257:26257
     environment:
-      - COCKROACH_USER=cockroach
+      - COCKROACH_USER=username
+      - COCKROACH_PASSWORD=password
       - COCKROACH_DATABASE=ferretdb
 
   # for proxy mode and mongosh
