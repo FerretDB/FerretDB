@@ -55,7 +55,7 @@ var (
 	postgreSQLURLF = flag.String("postgresql-url", "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
-	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
+	debugSetupF = flag.Bool("debug-setup", true, "enable debug logs for tests setup") // FIXME
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
@@ -283,9 +283,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
-	opts := options.Client().ApplyURI(uri)
+	tb.Logf("setupClient: %s", uri)
 
-	client, err := mongo.Connect(ctx, opts)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {

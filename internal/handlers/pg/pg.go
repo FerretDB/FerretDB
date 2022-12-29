@@ -79,29 +79,34 @@ func (h *Handler) Close() {
 func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	connInfo := conninfo.Get(ctx)
 	username, password := connInfo.Auth()
+
+	// replace authentication info only if it is present in the connection
 	u := h.url
-	u.User = url.UserPassword(username, password)
-	k := u.String()
+	if username != "" {
+		u.User = url.UserPassword(username, password)
+	}
+	url := u.String()
 
 	h.rw.RLock()
-	p, ok := h.pools[k]
+	p, ok := h.pools[url]
 	h.rw.RUnlock()
 
 	if ok {
+		h.L.Debug("DBPool: found existing pool", zap.String("username", username))
 		return p, nil
 	}
 
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	p, err := pgdb.NewPool(ctx, k, h.L, false, h.StateProvider)
+	p, err := pgdb.NewPool(ctx, url, h.L, false, h.StateProvider)
 	if err != nil {
-		h.L.Warn("Authentication failed", zap.String("username", username), zap.Error(err))
+		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.L.Info("Authentication succeed", zap.String("username", username))
-	h.pools[k] = p
+	h.L.Info("DBPool: authentication succeed", zap.String("username", username))
+	h.pools[url] = p
 
 	return p, nil
 }

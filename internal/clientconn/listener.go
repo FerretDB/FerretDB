@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"runtime/pprof"
@@ -247,7 +248,13 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				wg.Done()
 			}()
 
-			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
+			remoteAddr := netConn.RemoteAddr().String()
+			if remoteAddr == "" {
+				// use random string for Unix socket connections
+				remoteAddr = fmt.Sprintf("unix:%d", rand.Int())
+			}
+
+			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
 
 			// give clients a few seconds to disconnect after ctx is canceled
 			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)

@@ -55,13 +55,11 @@ type SetupResult struct {
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
 func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
-	uri, err := url.PathUnescape(s.MongoDBURI)
+	u, err := url.Parse(s.MongoDBURI)
 	require.NoError(tb, err)
 
-	u, err := url.Parse(uri)
-	require.NoError(tb, err)
-
-	return u.Host == ""
+	// FIXME
+	panic(u.Host)
 }
 
 // SetupWithOpts setups the test according to given options.

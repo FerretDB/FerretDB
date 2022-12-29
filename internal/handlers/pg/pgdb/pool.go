@@ -102,10 +102,13 @@ func NewPool(ctx context.Context, url string, logger *zap.Logger, lazy bool, p *
 	}
 
 	if !lazy {
-		err = res.checkConnection(ctx)
+		if err = res.checkConnection(ctx); err != nil {
+			res.Close()
+			return nil, err
+		}
 	}
 
-	return res, err
+	return res, nil
 }
 
 // isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
