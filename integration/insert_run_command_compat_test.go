@@ -85,11 +85,6 @@ func TestInsertRunCommandCompat(t *testing.T) {
 				bson.D{{"_id", "foo"}},
 			},
 			ordered: "foo",
-
-			// TODO: to be enabled in a separate PR of the same issue as some refactoring is needed.
-			// Compat error: "BSON field 'insert.ordered' is the wrong type 'string'
-			// Target error: "BSON field 'ordered' is the wrong type 'string'
-			skip: "https://github.com/FerretDB/FerretDB/issues/940",
 		},
 
 		"InsertEmpty": {
