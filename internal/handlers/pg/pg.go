@@ -17,10 +17,12 @@ package pg
 
 import (
 	"context"
+	"net/url"
 	"sync"
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -31,6 +33,7 @@ import (
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
+	url url.URL
 
 	rw    sync.RWMutex
 	pools map[string]*pgdb.Pool
@@ -46,10 +49,17 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
+	u, err := url.Parse(opts.PostgreSQLURL)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	h := &Handler{
 		NewOpts: opts,
+		url:     *u,
 		pools:   make(map[string]*pgdb.Pool, 1),
 	}
+
 	return h, nil
 }
 
@@ -64,12 +74,16 @@ func (h *Handler) Close() {
 	}
 }
 
-// DBPool returns database connection pool for the given client connection.
+// DBPool returns non-lazy database connection pool for the given client connection.
 func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
-	// TODO make real implementation; the current one is a stub
+	connInfo := conninfo.Get(ctx)
+	username, password := connInfo.Auth()
+	u := h.url
+	u.User = url.UserPassword(username, password)
+	k := u.String()
 
 	h.rw.RLock()
-	p, ok := h.pools[h.PostgreSQLURL]
+	p, ok := h.pools[k]
 	h.rw.RUnlock()
 
 	if ok {
@@ -79,12 +93,14 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	p, err := pgdb.NewPool(ctx, h.PostgreSQLURL, h.L, true, h.StateProvider)
+	p, err := pgdb.NewPool(ctx, k, h.L, false, h.StateProvider)
 	if err != nil {
+		h.L.Warn("Authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.pools[h.PostgreSQLURL] = p
+	h.L.Info("Authentication succeed", zap.String("username", username))
+	h.pools[k] = p
 
 	return p, nil
 }

@@ -18,8 +18,7 @@ import (
 	"bytes"
 	"context"
 
-	"go.uber.org/zap"
-
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -60,8 +59,11 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	username, password := string(parts[1]), string(parts[2])
-	h.L.Info("saslStart", zap.String("username", username), zap.String("password", password))
+	conninfo.Get(ctx).SetAuth(string(parts[1]), string(parts[2]))
+
+	if _, err = h.DBPool(ctx); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

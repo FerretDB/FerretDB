@@ -19,6 +19,7 @@ package conninfo
 import (
 	"context"
 	"net"
+	"sync"
 )
 
 // contextKey is a special type to represent context.WithValue keys a bit more safely.
@@ -30,6 +31,25 @@ var connInfoKey = contextKey{}
 // ConnInfo represents connection info.
 type ConnInfo struct {
 	PeerAddr net.Addr
+
+	rw       sync.RWMutex
+	username string
+	password string
+}
+
+func (connInfo *ConnInfo) Auth() (username, password string) {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.username, connInfo.password
+}
+
+func (connInfo *ConnInfo) SetAuth(username, password string) {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.username = username
+	connInfo.password = password
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.
