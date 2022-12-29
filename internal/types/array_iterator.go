@@ -20,29 +20,27 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-// documentIterator represents an iterator over the document fields.
-type documentIterator struct {
-	doc         *Document
+// arrayIterator represents an iterator for an Array.
+type arrayIterator struct {
+	array       *Array
 	currentIter atomic.Uint32
 }
 
-// newDocumentIterator creates a new document iterator.
-func newDocumentIterator(document *Document) iterator.Interface[string, any] {
-	return &documentIterator{
-		doc: document,
-	}
+// newArrayIterator returns a new arrayIterator.
+func newArrayIterator(array *Array) iterator.Interface[int, any] {
+	return &arrayIterator{array: array}
 }
 
 // Next implements iterator.Interface.
-func (d *documentIterator) Next() (string, any, error) {
-	n := int(d.currentIter.Add(1)) - 1
+func (a *arrayIterator) Next() (int, any, error) {
+	n := int(a.currentIter.Add(1)) - 1
 
-	if n >= d.doc.Len() {
-		return "", nil, iterator.ErrIteratorDone
+	if n >= a.array.Len() {
+		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	return d.doc.fields[n].key, d.doc.fields[n].value, nil
+	return n, a.array.s[n], nil
 }
 
 // Close implements iterator.Interface.
-func (d *documentIterator) Close() {}
+func (a *arrayIterator) Close() {}
