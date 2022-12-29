@@ -52,7 +52,7 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 	password := "password"
 	if opts.ReadOnly {
 		username = "readonly"
-		password = "TODO"
+		password = "readonly_password"
 	}
 
 	q := url.Values{

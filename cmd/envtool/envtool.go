@@ -85,7 +85,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger.Info("Tweaking settings...")
 
 	for _, q := range []string{
-		`CREATE ROLE readonly NOINHERIT LOGIN`,
+		`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
 
 		// TODO Grant permissions to readonly role.
 		// https://github.com/FerretDB/FerretDB/issues/1025
