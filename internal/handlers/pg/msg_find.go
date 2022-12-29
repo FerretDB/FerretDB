@@ -112,33 +112,22 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
 func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
-	resDocs := make([]*types.Document, 0, 16)
-
-	var it iterator.Interface[uint32, *types.Document]
-
-	it, err := pgdb.GetDocuments(ctx, tx, sqlParam)
+	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
 	if err != nil {
 		return nil, err
 	}
 
-	defer it.Close()
+	defer iter.Close()
+
+	resDocs := make([]*types.Document, 0, 16)
 
 	for {
-		var doc *types.Document
-		_, doc, err = it.Next()
+		_, doc, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return resDocs, nil
+			}
 
-		// if the context is canceled, we don't need to continue processing documents
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-
-		switch {
-		case err == nil:
-			// do nothing
-		case errors.Is(err, iterator.ErrIteratorDone):
-			// no more documents
-			return resDocs, nil
-		default:
 			return nil, err
 		}
 

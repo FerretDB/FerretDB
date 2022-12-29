@@ -20,37 +20,23 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
-	int32Array   = must.NotFail(NewArray(int32(42), int32(50), int32(2), int32(30)))
-	int64Array   = must.NotFail(NewArray(int64(42), int64(50), int64(2), int64(30)))
-	intArray     = must.NotFail(NewArray(int64(42), int64(50), int32(50), int64(2), int32(2), int64(30)))
-	floatArray   = must.NotFail(NewArray(42.0, 50.1, 2.2, 30.3))
-	numericArray = must.NotFail(NewArray(int64(2), int32(2), 2.0))
-	zeroArray    = must.NotFail(NewArray(int64(0), int32(0), math.Copysign(0, +1), math.Copysign(0, -1)))
-	emptyArray   = must.NotFail(NewArray())
-
-	stingArray = must.NotFail(NewArray("foo", "zoo", "", "bar"))
-
-	scalarTypesArray = must.NotFail(NewArray(
-		int32(42),
-		int64(42),
-		float64(42),
-		"foo",
-		Binary{},
-		ObjectID{},
-		true,
-		time.Time{},
-		NullType{},
-		Regex{},
-		Timestamp(42),
-	))
-)
+var scalarTypesArray = must.NotFail(NewArray(
+	int32(42),
+	int64(42),
+	float64(42),
+	"foo",
+	Binary{},
+	ObjectID{},
+	true,
+	time.Time{},
+	NullType{},
+	Regex{},
+	Timestamp(42),
+))
 
 func TestArray(t *testing.T) {
 	t.Parallel()
@@ -95,6 +81,14 @@ func TestArray(t *testing.T) {
 }
 
 func TestArrayMinMax(t *testing.T) {
+	int32Array := must.NotFail(NewArray(int32(42), int32(50), int32(2), int32(30)))
+	int64Array := must.NotFail(NewArray(int64(42), int64(50), int64(2), int64(30)))
+	intArray := must.NotFail(NewArray(int64(42), int64(50), int32(50), int64(2), int32(2), int64(30)))
+	floatArray := must.NotFail(NewArray(42.0, 50.1, 2.2, 30.3))
+	numericArray := must.NotFail(NewArray(int64(2), int32(2), 2.0))
+	zeroArray := must.NotFail(NewArray(int64(0), int32(0), math.Copysign(0, +1), math.Copysign(0, -1)))
+	stingArray := must.NotFail(NewArray("foo", "zoo", "", "bar"))
+
 	const (
 		min = "min"
 		max = "max"
@@ -299,14 +293,14 @@ func TestFilterArrayByType(t *testing.T) {
 			)),
 		},
 		"EmptyArray": {
-			arr:           emptyArray,
+			arr:           must.NotFail(NewArray()),
 			refValue:      Timestamp(42),
-			expectedArray: emptyArray,
+			expectedArray: must.NotFail(NewArray()),
 		},
 		"Nil": {
 			arr:           nil,
 			refValue:      Timestamp(42),
-			expectedArray: emptyArray,
+			expectedArray: must.NotFail(NewArray()),
 		},
 	} {
 		name, tc := name, tc
@@ -314,55 +308,6 @@ func TestFilterArrayByType(t *testing.T) {
 			res := tc.arr.FilterArrayByType(tc.refValue)
 
 			assert.Equal(t, tc.expectedArray, res)
-		})
-	}
-}
-
-func TestArrayNext(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		arr            *Array
-		expectedValues []any
-	}{
-		"empty": {
-			arr:            emptyArray,
-			expectedValues: []any{},
-		},
-		"one": {
-			arr:            must.NotFail(NewArray(1)),
-			expectedValues: []any{1},
-		},
-		"two": {
-			arr:            must.NotFail(NewArray(1, 2)),
-			expectedValues: []any{1, 2},
-		},
-		"three": {
-			arr:            must.NotFail(NewArray(1, 2, 3)),
-			expectedValues: []any{1, 2, 3},
-		},
-	} {
-		name, tc := name, tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			iter := tc.arr.Iterator()
-
-			for i := 0; i < len(tc.expectedValues); i++ {
-				ii, v, err := iter.Next()
-				require.NoError(t, err)
-
-				assert.Equal(t, i, ii)
-				assert.Equal(t, tc.expectedValues[i], v)
-			}
-
-			_, _, err := iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
-
-			// check that Next() can be called again
-			_, _, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
 		})
 	}
 }

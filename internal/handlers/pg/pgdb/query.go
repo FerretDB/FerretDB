@@ -139,9 +139,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
-	iterator.Interface[uint32, *types.Document], error,
-) {
+func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 
 	switch {
@@ -153,7 +151,7 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	it, err := buildIterator(ctx, tx, iteratorParams{
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
 		schema:  sp.DB,
 		table:   table,
 		explain: sp.Explain,
@@ -164,7 +162,7 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return it, nil
+	return iter, nil
 }
 
 // queryById returns the first found document by its ID from the given PostgreSQL schema and table.
@@ -205,7 +203,7 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
 	var query string
 
 	if p.explain {
