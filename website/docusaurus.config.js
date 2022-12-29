@@ -119,10 +119,10 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: 'https://www.ferretdb.io/blog/',
-              },
+              // {
+              //   label: 'Blog',
+              //   to: 'https://www.ferretdb.io/blog/',
+              // },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',
