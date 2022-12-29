@@ -31,6 +31,11 @@ import (
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -74,7 +79,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	err = h.PgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		err = pgdb.CreateCollection(ctx, tx, db, collection)
 
 		switch {
