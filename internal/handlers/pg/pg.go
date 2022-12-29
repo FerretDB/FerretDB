@@ -35,6 +35,7 @@ type Handler struct {
 	*NewOpts
 	url url.URL
 
+	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
 	pools map[string]*pgdb.Pool
 }

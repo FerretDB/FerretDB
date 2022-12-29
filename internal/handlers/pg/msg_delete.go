@@ -110,7 +110,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			limited = true
 		}
 
-		del, err := h.execDelete(ctx, dbPool, &sp, limited)
+		del, err := execDelete(ctx, dbPool, &sp, limited)
 		if err == nil {
 			deleted += del
 			continue
@@ -183,7 +183,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, limit bool) (int32, error) {
+func execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, limit bool) (int32, error) {
 	var deleted int32
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		iter, err := pgdb.GetDocuments(ctx, tx, sp)
@@ -227,7 +227,7 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQ
 			return nil
 		}
 
-		rowsDeleted, err := h.delete(ctx, dbPool, sp, resDocs)
+		rowsDeleted, err := deleteDocuments(ctx, dbPool, sp, resDocs)
 		if err != nil {
 			return err
 		}
@@ -243,8 +243,8 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQ
 	return deleted, nil
 }
 
-// delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs []*types.Document) (int64, error) {
+// deleteDocuments deletes documents by _id.
+func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
