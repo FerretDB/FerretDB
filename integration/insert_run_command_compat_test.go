@@ -15,19 +15,22 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 type insertRunCommandCompatTestCase struct {
-	skip      string // optional, reason to skip the test
-	ordered   any    // required, ordered parameter
-	documents []any  // required, slice of bson.D to be insert
+	skip        string // optional, reason to skip the test
+	altErrorMsg string // optional, alternative error message in case of error
+	ordered     any    // required, ordered parameter
+	documents   []any  // required, slice of bson.D to be insert
 }
 
 // testInsertRunCommandCompat tests insert compatibility test cases with invalid parameters.
@@ -68,7 +71,27 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 						{"ordered", tc.ordered},
 					}).Decode(&compatRes)
 
-					require.Equal(t, compatErr, targetErr)
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						targetErr = UnsetRaw(t, targetErr)
+						compatErr = UnsetRaw(t, compatErr)
+
+						if tc.altErrorMsg != "" {
+							AssertMatchesCommandError(t, compatErr, targetErr)
+
+							var expectedErr mongo.CommandError
+							require.True(t, errors.As(compatErr, &expectedErr))
+							AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
+						} else {
+							require.Equal(t, compatErr, targetErr)
+						}
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
+					t.Logf("Compat (expected) result: %v", compatRes)
+					t.Logf("Target (actual)   result: %v", targetRes)
 					assert.Equal(t, compatRes, targetRes)
 				})
 			}
@@ -84,12 +107,8 @@ func TestInsertRunCommandCompat(t *testing.T) {
 			documents: []any{
 				bson.D{{"_id", "foo"}},
 			},
-			ordered: "foo",
-
-			// TODO: to be enabled in a separate PR of the same issue as some refactoring is needed.
-			// Compat error: "BSON field 'insert.ordered' is the wrong type 'string'
-			// Target error: "BSON field 'ordered' is the wrong type 'string'
-			skip: "https://github.com/FerretDB/FerretDB/issues/940",
+			ordered:     "foo",
+			altErrorMsg: "BSON field 'ordered' is the wrong type 'string', expected type 'bool'",
 		},
 
 		"InsertEmpty": {
