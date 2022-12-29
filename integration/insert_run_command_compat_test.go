@@ -88,7 +88,10 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 
 						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
+					t.Logf("Compat (expected) result: %v", compatRes)
+					t.Logf("Target (actual)   result: %v", targetRes)
 					assert.Equal(t, compatRes, targetRes)
 				})
 			}
