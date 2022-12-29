@@ -54,7 +54,7 @@ func waitForPostgresPort(ctx context.Context, logger *zap.SugaredLogger, port ui
 		return err
 	}
 
-	connString := fmt.Sprintf("postgres://postgres@127.0.0.1:%d/ferretdb", port)
+	connString := fmt.Sprintf("postgres://username:password@127.0.0.1:%d/ferretdb", port)
 
 	for ctx.Err() == nil {
 		p, err := state.NewProvider("")

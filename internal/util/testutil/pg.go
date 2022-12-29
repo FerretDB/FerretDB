@@ -48,9 +48,11 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 		databaseName = "ferretdb"
 	}
 
-	username := "postgres"
+	username := "username"
+	password := "password"
 	if opts.ReadOnly {
 		username = "readonly"
+		password = "readonly_password"
 	}
 
 	q := url.Values{
@@ -62,7 +64,7 @@ func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 
 	u := &url.URL{
 		Scheme:   "postgres",
-		User:     url.UserPassword(username, ""),
+		User:     url.UserPassword(username, password),
 		Host:     "127.0.0.1:5432",
 		Path:     databaseName,
 		RawQuery: q.Encode(),

@@ -28,6 +28,7 @@ func MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, err
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"authInfo", must.NotFail(types.NewDocument(
+				// TODO https://github.com/FerretDB/FerretDB/issues/1694
 				"authenticatedUsers", must.NotFail(types.NewArray()),
 				"authenticatedUserRoles", must.NotFail(types.NewArray()),
 				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
