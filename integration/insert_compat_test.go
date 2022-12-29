@@ -23,12 +23,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 type insertCompatTestCase struct {
-	insert     bson.D                   // required
+	insert     []any                    // required, slice of bson.D to be insert
+	ordered    bool                     // defaults to false
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -55,10 +57,13 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					targetInsertRes, targetErr := targetCollection.InsertOne(ctx, insert)
-					compatInsertRes, compatErr := compatCollection.InsertOne(ctx, insert)
+					opts := options.InsertMany().SetOrdered(tc.ordered)
+					targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, opts)
+					compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, opts)
 
-					if targetInsertRes != nil || compatInsertRes != nil {
+					// If the result contains inserted ids, we consider the result non-empty.
+					if (compatInsertRes != nil && len(compatInsertRes.InsertedIDs) > 0) ||
+						(targetInsertRes != nil && len(targetInsertRes.InsertedIDs) > 0) {
 						nonEmptyResults = true
 					}
 
@@ -68,11 +73,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						compatErr = UnsetRaw(t, compatErr)
 
 						// Skip inserts that could not be performed due to Tigris schema validation.
-						var e mongo.CommandError
-						if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-							if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
-								setup.SkipForTigrisWithReason(t, targetErr.Error())
-							}
+						var e mongo.BulkWriteException
+						if errors.As(targetErr, &e) &&
+							e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+							setup.SkipForTigrisWithReason(t, targetErr.Error())
 						}
 
 						assert.Equal(t, compatErr, targetErr)
@@ -80,18 +84,16 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
 
-					var targetFindRes, compatFindRes bson.D
-					targetCursor, err := targetCollection.Find(ctx, bson.D{{}})
-					require.NoError(t, err)
-					defer targetCursor.Close(ctx)
-					targetCursor.Decode(&targetFindRes)
+					require.Equal(t, compatInsertRes, targetInsertRes)
 
-					compatCursor, err := compatCollection.Find(ctx, bson.D{{}})
-					require.NoError(t, err)
-					defer compatCursor.Close(ctx)
-					compatCursor.Decode(&targetFindRes)
+					targetFindRes := FindAll(t, ctx, targetCollection)
+					compatFindRes := FindAll(t, ctx, compatCollection)
 
-					AssertEqualDocuments(t, compatFindRes, targetFindRes)
+					require.Equal(t, len(compatFindRes), len(targetFindRes))
+
+					for i := range compatFindRes {
+						AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
+					}
 				})
 			}
 
@@ -111,16 +113,47 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCompatTestCase{
-		"InsertEmptyDocument": {
-			insert: bson.D{},
-		},
 		"InsertIDArray": {
-			insert:     bson.D{{"_id", bson.A{"foo", "bar"}}},
+			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
 			resultType: emptyResult,
 		},
 		"InsertIDRegex": {
-			insert:     bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
 			resultType: emptyResult,
+		},
+
+		"InsertOrderedAllErrors": {
+			insert: []any{
+				bson.D{{"_id", bson.A{"foo", "bar"}}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			},
+			ordered:    true,
+			resultType: emptyResult,
+		},
+		"InsertUnorderedAllErrors": {
+			insert: []any{
+				bson.D{{"_id", bson.A{"foo", "bar"}}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+			},
+			ordered:    false,
+			resultType: emptyResult,
+		},
+
+		"InsertOrderedOneError": {
+			insert: []any{
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", "2"}},
+			},
+			ordered: true,
+		},
+		"InsertUnorderedOneError": {
+			insert: []any{
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", "2"}},
+			},
+			ordered: false,
 		},
 	}
 
