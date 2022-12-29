@@ -47,7 +47,7 @@ func TestConnInfo(t *testing.T) {
 				PeerAddr: tc.peerAddr,
 			}
 			ctx = WithConnInfo(ctx, connInfo)
-			actual := GetConnInfo(ctx)
+			actual := Get(ctx)
 			assert.Equal(t, *connInfo, *actual)
 		})
 	}
@@ -71,7 +71,7 @@ func TestConnInfo(t *testing.T) {
 			t.Parallel()
 
 			assert.Panics(t, func() {
-				GetConnInfo(tc.ctx)
+				Get(tc.ctx)
 			})
 		})
 	}

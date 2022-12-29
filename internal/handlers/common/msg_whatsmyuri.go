@@ -25,7 +25,7 @@ import (
 
 // MsgWhatsMyURI is a common implementation of the whatsMyURI command.
 func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	connInfo := conninfo.GetConnInfo(ctx)
+	connInfo := conninfo.Get(ctx)
 	var peerAddr string
 	if connInfo.PeerAddr != nil {
 		peerAddr = connInfo.PeerAddr.String()

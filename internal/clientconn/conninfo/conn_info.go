@@ -37,8 +37,8 @@ func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 
-// GetConnInfo returns the ConnInfo value stored in ctx, or panics if connInfo is not presented there.
-func GetConnInfo(ctx context.Context) *ConnInfo {
+// Get returns the ConnInfo value stored in ctx.
+func Get(ctx context.Context) *ConnInfo {
 	value := ctx.Value(connInfoKey)
 	if value == nil {
 		panic("connInfo is not set in context")
