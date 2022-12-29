@@ -71,14 +71,22 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 						{"ordered", tc.ordered},
 					}).Decode(&compatRes)
 
-					if tc.altErrorMsg != "" {
-						AssertMatchesCommandError(t, compatErr, targetErr)
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						targetErr = UnsetRaw(t, targetErr)
+						compatErr = UnsetRaw(t, compatErr)
 
-						var actualErr mongo.CommandError
-						require.True(t, errors.As(targetErr, &actualErr))
-						assert.Equal(t, tc.altErrorMsg, actualErr.Message)
-					} else {
-						require.Equal(t, compatErr, targetErr)
+						if tc.altErrorMsg != "" {
+							AssertMatchesCommandError(t, compatErr, targetErr)
+
+							var expectedErr mongo.CommandError
+							require.True(t, errors.As(compatErr, &expectedErr))
+							AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
+						} else {
+							require.Equal(t, compatErr, targetErr)
+						}
+
+						return
 					}
 
 					assert.Equal(t, compatRes, targetRes)
