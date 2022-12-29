@@ -9,16 +9,16 @@ description: This is a decription of a FerretDB blog post.
 keywords:
   - keyword1
   - keyword2
-image: https://i.imgur.com/ejygHXM.png
+image: 
 tags: [tag1, tag2]
 ---
 
-Leave a space before starting article...Please write a short summary of the article here.
+Leave a space before starting article. Please write a short summary of the article here.
 This can be the same as the `description` above.
 
 <!--truncate-->
 
-![Image description](path) <!---Please add the image banner (like the example here) for the article.-->
+![Image alt description](path) <!---Please add the image banner path for the article (i.e. /img/blog/2022-12-29/banner.png).-->
 
 Start body of the article from here.
 
@@ -27,7 +27,10 @@ Start body of the article from here.
 Please add Markdown files (or folders containing Markdown files) to the `blog` directory.
 Files should be in this format `YYYY-MM-DD-shortened-article-name.md` or `YYYY-MM-DD-folder-name/article-name.md`.
 
+All images for this blog post - including the banner image - should be stored in a folder with the blogpost date under this directory `(../../static/img/blog)`, for example, `/img/blog/2022-12-29/banner.png`.
+
 Regular blog authors and engineers can be added to `authors.yml`.
+When the author information is present in `authors.yml`, fill the unique author name  in the frontmatter as (`author: name`)
 Otherwise, please enter all author information in the frontmatter.
 
 ### Heading 2
