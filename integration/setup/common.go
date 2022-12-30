@@ -187,6 +187,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
+	// that's already checked by handlers constructors,
+	// but here we could produce a better error message
+	switch *handlerF {
+	case "pg":
+		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
+	}
+
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 

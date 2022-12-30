@@ -174,8 +174,8 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
-        -compat-tls
         -handler=pg
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
 
@@ -186,7 +186,6 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
-        -compat-tls
         -handler=tigris
         -records-dir=../records
         -target-tls
@@ -198,7 +197,6 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-cockroach.txt .
-        -compat-tls
         -handler=pg
         -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1
         -records-dir=../records
@@ -213,7 +211,6 @@ tasks:
         -compat-port=0
         -records-dir=../records
         -target-port=37017
-        -target-tls
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -268,7 +265,7 @@ tasks:
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls=:27018
         --mode=diff-normal
-        --postgresql-url="postgres://127.0.0.1:5432/ferretdb"
+        --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
         --test-records-dir=records
 
   run-tigris:
@@ -308,7 +305,7 @@ tasks:
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls=:27018
         --mode=diff-proxy
-        --postgresql-url="postgres://127.0.0.1:5432/ferretdb"
+        --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
         --test-records-dir=records
 
   lint:
