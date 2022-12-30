@@ -295,7 +295,7 @@ tasks:
 
   security:
     desc: "Run security scanners"
-    deps: [security-trivy]
+    deps: [security-trivy security-govulncheck]
 
   security-trivy:
     cmds:
@@ -305,6 +305,10 @@ tasks:
         --ignorefile=./build/.trivyignore
         --cache-dir=./.cache/trivy
         --exit-code=1
+
+  security-govulncheck:
+    cmds:
+      - bin/govulncheck -v -test ./...
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
