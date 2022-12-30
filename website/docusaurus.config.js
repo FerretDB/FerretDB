@@ -42,7 +42,12 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
         },
-        blog: false,
+        blog: {
+          blogTitle: 'FerretDB Blog',
+          showReadingTime: true,
+          authorsMapPath: 'authors.yml',
+          postsPerPage: 8,
+        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -66,7 +71,11 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          // {to: '/blog', label: 'Blog', position: 'left'},
+          {
+            to: '/blog',
+            label: 'Blog',
+            position: 'left'
+          },
           {
             href: 'https://github.com/FerretDB/',
             label: 'GitHub',
