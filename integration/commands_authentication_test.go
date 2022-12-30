@@ -19,7 +19,5 @@ import (
 )
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
-	t.Parallel()
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/1568
 }

@@ -21,11 +21,11 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
-  postgres_auth:
+  postgres_secure:
     build:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
-    container_name: ferretdb_postgres_auth
+    container_name: ferretdb_postgres_secure
     command: postgres -c 'max_connections=200'
     ports:
       - 5433:5432
@@ -80,11 +80,11 @@ services:
       - ./build/certs:/etc/certs
       - ./build/mongod.conf:/etc/mongod.conf
 
-  mongodb_auth:
+  mongodb_secure:
     build:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
-    container_name: ferretdb_mongodb_auth
+    container_name: ferretdb_mongodb_secure
     command: --config /etc/mongod.conf
     ports:
       - 37018:27017
@@ -97,7 +97,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod_auth.conf:/etc/mongod.conf
+      - ./build/mongod_secure.conf:/etc/mongod.conf
 
   # for test scripts
   legacy-mongo-shell:
