@@ -114,6 +114,10 @@ var Commands = map[string]command{
 		Help:    "Returns documents matched by the query.",
 		Handler: handlers.Interface.MsgFind,
 	},
+	"findandmodify": { // // both `findandmodify` and `findAndModify` are valid
+		Help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
+		Handler: handlers.Interface.MsgFindAndModify,
+	},
 	"findAndModify": {
 		Help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
 		Handler: handlers.Interface.MsgFindAndModify,
