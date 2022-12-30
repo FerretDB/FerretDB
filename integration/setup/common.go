@@ -129,6 +129,8 @@ type buildMongoDBURIOpts struct {
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
+//
+// TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
 func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) string {
 	tb.Helper()
 
