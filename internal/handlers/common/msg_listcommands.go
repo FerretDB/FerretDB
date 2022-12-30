@@ -206,6 +206,8 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	names := maps.Keys(Commands)
 	sort.Strings(names)
 	for _, name := range names {
+		// TODO remove "duplicates" like `isMaster` and `ismaster`
+		// https://github.com/FerretDB/FerretDB/issues/1727
 		cmdList.Set(name, must.NotFail(types.NewDocument(
 			"help", Commands[name].Help,
 		)))

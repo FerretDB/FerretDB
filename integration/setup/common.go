@@ -55,7 +55,7 @@ var (
 	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
-	debugSetupF = flag.Bool("debug-setup", true, "enable debug logs for tests setup") // FIXME
+	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")

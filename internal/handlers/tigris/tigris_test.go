@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package tigris
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestCommandsAuthenticationSASLStart(t *testing.T) {
-	t.Parallel()
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
 }
