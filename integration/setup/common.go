@@ -27,6 +27,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -52,7 +53,7 @@ var (
 	compatPortF = flag.Int("compat-port", 37017, "compat system's port for compatibility tests; if 0, they are skipped")
 	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
 
-	postgreSQLURLF = flag.String("postgresql-url", "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
+	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -106,7 +107,7 @@ func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	if err == nil {
 		defer client.Disconnect(ctx)
 
-		err = client.Ping(ctx, nil)
+		_, err = client.ListDatabases(ctx, bson.D{})
 	}
 
 	if err != nil {
@@ -128,6 +129,8 @@ type buildMongoDBURIOpts struct {
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
+//
+// TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
 func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) string {
 	tb.Helper()
 
@@ -154,30 +157,46 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 		q.Set("tlsCAFile", p)
 	}
 
-	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
-	q.Set("authMechanism", "PLAIN")
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
-		Scheme:   "mongodb",
-		Host:     host,
-		User:     url.UserPassword("username", "password"),
-		Path:     "/",
-		RawQuery: q.Encode(),
+		Scheme: "mongodb",
+		Host:   host,
+		Path:   "/",
 	}
 
-	res := u.String()
+	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
+	for _, c := range []struct {
+		user          *url.Userinfo
+		authMechanism string
+	}{{
+		user:          nil,
+		authMechanism: "",
+	}, {
+		user:          url.UserPassword("username", "password"),
+		authMechanism: "PLAIN",
+	}, {
+		user:          url.UserPassword("username", "password"),
+		authMechanism: "", // defaults to SCRAM when username is set
+	}} {
+		u.User = c.user
 
-	// if authMechanism=PLAIN doesn't work, remove it and try again
-	if !checkMongoDBURI(tb, ctx, u.String()) {
 		q.Del("authMechanism")
-		u.RawQuery = q.Encode()
-		res = u.String()
 
-		require.True(tb, checkMongoDBURI(tb, ctx, res), "Can't connect to %q", res)
+		if c.authMechanism != "" {
+			q.Set("authMechanism", c.authMechanism)
+		}
+
+		u.RawQuery = q.Encode()
+		res := u.String()
+
+		if checkMongoDBURI(tb, ctx, res) {
+			return res
+		}
 	}
 
-	return res
+	tb.Fatalf("buildMongoDBURI: failed for %+v", opts)
+
+	panic("not reached")
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
@@ -187,24 +206,29 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
-	p, err := state.NewProvider("")
-	require.NoError(tb, err)
+	// that's already checked by handlers constructors,
+	// but here we could produce a better error message
+	switch *handlerF {
+	case "pg":
+		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
+	}
 
-	u, err := url.Parse(*postgreSQLURLF)
+	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
+	handlerOpts := &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: u.String(),
+		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: testutil.TigrisURL(tb),
-	})
+		TigrisURL: testutil.TigrisURL(tb), // TODO use flag https://github.com/FerretDB/FerretDB/issues/1568
+	}
+	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
 
 	proxyAddr := *proxyAddrF
@@ -283,9 +307,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
-	opts := options.Client().ApplyURI(uri)
+	tb.Logf("setupClient: %s", uri)
 
-	client, err := mongo.Connect(ctx, opts)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
@@ -293,7 +317,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 		require.NoError(tb, err)
 	})
 
-	err = client.Ping(ctx, nil)
+	_, err = client.ListDatabases(ctx, bson.D{})
 	require.NoError(tb, err)
 
 	return client

@@ -32,6 +32,8 @@ type PostgreSQLURLOpts struct {
 }
 
 // PostgreSQLURL returns PostgreSQL URL for testing.
+//
+// TODO remove this function https://github.com/FerretDB/FerretDB/issues/1568
 func PostgreSQLURL(tb testing.TB, opts *PostgreSQLURLOpts) string {
 	tb.Helper()
 

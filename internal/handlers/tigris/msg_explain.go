@@ -16,11 +16,9 @@ package tigris
 
 import (
 	"context"
-	"net"
 	"os"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -64,18 +62,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var port int32
-
-	connInfo := conninfo.GetConnInfo(ctx)
-	if connInfo.PeerAddr != nil {
-		if tcpAddr, ok := connInfo.PeerAddr.(*net.TCPAddr); ok {
-			port = int32(tcpAddr.Port)
-		}
-	}
-
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
-		"port", port,
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,

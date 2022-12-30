@@ -15,6 +15,8 @@
 package common
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -50,9 +52,10 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	var ok bool
 	if res.Collection, ok = collection.(string); !ok {
-		return nil, NewCommandErrorMsg(
-			ErrInvalidNamespace,
-			"Failed to parse namespace element",
+		return nil, NewCommandErrorMsgWithArgument(
+			ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collection)),
+			doc.Command(),
 		)
 	}
 

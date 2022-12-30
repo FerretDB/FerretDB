@@ -56,8 +56,12 @@ type DBStats struct {
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
-func NewPool(ctx context.Context, url string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
-	config, err := pgxpool.ParseConfig(url)
+//
+// If lazy is true, then connectivity is not checked.
+// Lazy connections are used by FerretDB when it starts earlier than backend.
+// Non-lazy connections are used by tests.
+func NewPool(ctx context.Context, uri string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
+	config, err := pgxpool.ParseConfig(uri)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
@@ -102,10 +106,13 @@ func NewPool(ctx context.Context, url string, logger *zap.Logger, lazy bool, p *
 	}
 
 	if !lazy {
-		err = res.checkConnection(ctx)
+		if err = res.checkConnection(ctx); err != nil {
+			res.Close()
+			return nil, err
+		}
 	}
 
-	return res, err
+	return res, nil
 }
 
 // isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html

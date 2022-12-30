@@ -52,8 +52,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	isUnix := s.IsUnixSocket(t)
-
 	for name, tc := range map[string]struct {
 		query   bson.D
 		command bson.D
@@ -94,7 +92,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			values := serverInfo.Values()
 
 			var host string
-			var port int32
 			var gitVersion string
 			var version string
 
@@ -102,8 +99,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				switch k {
 				case "host":
 					host = values[i].(string)
-				case "port":
-					port = values[i].(int32)
 				case "gitVersion":
 					gitVersion = values[i].(string)
 				case "version":
@@ -112,11 +107,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			}
 
 			assert.NotEmpty(t, host)
-
-			// only check port number on TCP, not on Unix socket
-			if !isUnix {
-				assert.NotEmpty(t, port)
-			}
 
 			assert.NotEmpty(t, gitVersion)
 			assert.Regexp(t, `^6\.0\.`, version)

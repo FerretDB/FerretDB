@@ -131,9 +131,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						return err
 					}
 
-					_, err = h.update(ctx, tx, &sqlParam, upsert)
-
-					if err != nil {
+					if _, err = updateDocument(ctx, tx, &sqlParam, upsert); err != nil {
 						return err
 					}
 				} else {
@@ -143,9 +141,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 					}
 
-					_, err = h.update(ctx, tx, &sqlParam, upsert)
-
-					if err != nil {
+					if _, err = updateDocument(ctx, tx, &sqlParam, upsert); err != nil {
 						return err
 					}
 				}
@@ -190,8 +186,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil
 			}
 
-			_, err = h.delete(ctx, dbPool, &sqlParam, resDocs)
-			if err != nil {
+			if _, err = deleteDocuments(ctx, dbPool, &sqlParam, resDocs); err != nil {
 				return err
 			}
 
@@ -247,8 +242,7 @@ func (h *Handler) upsert(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs
 			}
 		}
 
-		err := h.insert(ctx, dbPool, params.sqlParam, upsert)
-		if err != nil {
+		if err := insertDocument(ctx, dbPool, params.sqlParam, upsert); err != nil {
 			return nil, false, err
 		}
 
@@ -268,7 +262,7 @@ func (h *Handler) upsert(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs
 		}
 	}
 
-	_, err := h.update(ctx, tx, params.sqlParam, upsert)
+	_, err := updateDocument(ctx, tx, params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}

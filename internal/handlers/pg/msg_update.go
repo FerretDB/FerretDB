@@ -60,9 +60,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
@@ -164,7 +165,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				))))
 
-				if err = h.insert(ctx, dbPool, &sp, doc); err != nil {
+				if err = insertDocument(ctx, dbPool, &sp, doc); err != nil {
 					return err
 				}
 
@@ -188,7 +189,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				rowsChanged, err := h.update(ctx, tx, &sp, doc)
+				rowsChanged, err := updateDocument(ctx, tx, &sp, doc)
 				if err != nil {
 					return err
 				}
@@ -225,8 +226,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update updates documents by _id.
-func (h *Handler) update(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
+// updateDocument updates documents by _id.
+func updateDocument(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
 	res, err := pgdb.SetDocumentByID(ctx, tx, sp, id, doc)

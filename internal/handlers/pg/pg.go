@@ -17,10 +17,12 @@ package pg
 
 import (
 	"context"
+	"net/url"
 	"sync"
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -31,7 +33,9 @@ import (
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
+	url url.URL
 
+	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
 	pools map[string]*pgdb.Pool
 }
@@ -46,10 +50,21 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
+	if opts.PostgreSQLURL == "" {
+		return nil, lazyerrors.New("PostgreSQL URL is not provided")
+	}
+
+	u, err := url.Parse(opts.PostgreSQLURL)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	h := &Handler{
 		NewOpts: opts,
+		url:     *u,
 		pools:   make(map[string]*pgdb.Pool, 1),
 	}
+
 	return h, nil
 }
 
@@ -64,27 +79,40 @@ func (h *Handler) Close() {
 	}
 }
 
-// DBPool returns database connection pool for the given client connection.
+// DBPool returns non-lazy database connection pool for the given client connection.
 func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
-	// TODO make real implementation; the current one is a stub
+	connInfo := conninfo.Get(ctx)
+	username, password := connInfo.Auth()
+
+	// do not log password or full URL
+
+	// replace authentication info only if it is present in the connection
+	u := h.url
+	if username != "" && password != "" {
+		u.User = url.UserPassword(username, password)
+	}
+	url := u.String()
 
 	h.rw.RLock()
-	p, ok := h.pools[h.PostgreSQLURL]
+	p, ok := h.pools[url]
 	h.rw.RUnlock()
 
 	if ok {
+		h.L.Debug("DBPool: found existing pool", zap.String("username", username))
 		return p, nil
 	}
 
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	p, err := pgdb.NewPool(ctx, h.PostgreSQLURL, h.L, true, h.StateProvider)
+	p, err := pgdb.NewPool(ctx, url, h.L, false, h.StateProvider)
 	if err != nil {
+		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.pools[h.PostgreSQLURL] = p
+	h.L.Info("DBPool: authentication succeed", zap.String("username", username))
+	h.pools[url] = p
 
 	return p, nil
 }

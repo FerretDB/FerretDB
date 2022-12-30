@@ -12,26 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package must provides helper functions that panic on error.
-package must
+package dummy
 
-// NotFail panics if the error is not nil, returns res otherwise.
-//
-// Use that function only for static initialization, test code, or code that "can't" fail.
-// When in doubt, don't.
-func NotFail[T any](res T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return res
-}
+import "testing"
 
-// NoError panics if the error is not nil.
-//
-// Use that function only for static initialization, test code, or code that "can't" fail.
-// When in doubt, don't.
-func NoError(err error) {
-	if err != nil {
-		panic(err)
-	}
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
 }

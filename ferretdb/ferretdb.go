@@ -43,7 +43,7 @@ type Config struct {
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
-	PostgreSQLURL string // For example: `postgres://username:password@hostname:5432/ferretdb`.
+	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
 	// Tigris parameters for `tigris` handler.
 	// See https://docs.tigrisdata.com/overview/authentication
@@ -179,6 +179,7 @@ func (f *FerretDB) MongoDBURI() string {
 			Path:   "/",
 		}
 	case f.config.Listener.Unix != "":
+		// MongoDB really wants Unix socket path in the host part of the URI
 		u = &url.URL{
 			Scheme: "mongodb",
 			Host:   f.l.Unix().String(),
