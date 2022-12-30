@@ -27,6 +27,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -106,7 +107,7 @@ func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	if err == nil {
 		defer client.Disconnect(ctx)
 
-		err = client.Ping(ctx, nil)
+		_, err = client.ListDatabases(ctx, bson.D{})
 	}
 
 	if err != nil {
@@ -154,30 +155,44 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 		q.Set("tlsCAFile", p)
 	}
 
-	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
-	q.Set("authMechanism", "PLAIN")
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
-		Scheme:   "mongodb",
-		Host:     host,
-		User:     url.UserPassword("username", "password"),
-		Path:     "/",
-		RawQuery: q.Encode(),
+		Scheme: "mongodb",
+		Host:   host,
+		Path:   "/",
 	}
 
-	res := u.String()
-
-	// if authMechanism=PLAIN doesn't work, remove it and try again
-	if !checkMongoDBURI(tb, ctx, u.String()) {
+	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
+	for _, c := range []struct {
+		authMechanism string
+		user          *url.Userinfo
+	}{{
+		authMechanism: "",
+		user:          nil,
+	}, {
+		authMechanism: "PLAIN",
+		user:          url.UserPassword("username", "password"),
+	}, {
+		authMechanism: "", // defaults to SCRAM when username is set
+		user:          url.UserPassword("username", "password"),
+	}} {
 		q.Del("authMechanism")
-		u.RawQuery = q.Encode()
-		res = u.String()
+		if c.authMechanism != "" {
+			q.Set("authMechanism", c.authMechanism)
+		}
 
-		require.True(tb, checkMongoDBURI(tb, ctx, res), "Can't connect to %q", res)
+		u.User = c.user
+		u.RawQuery = q.Encode()
+		res := u.String()
+
+		if checkMongoDBURI(tb, ctx, res) {
+			return res
+		}
 	}
 
-	return res
+	tb.Fatalf("buildMongoDBURI: failed for %+v", opts)
+
+	panic("not reached")
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
@@ -298,7 +313,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 		require.NoError(tb, err)
 	})
 
-	err = client.Ping(ctx, nil)
+	_, err = client.ListDatabases(ctx, bson.D{})
 	require.NoError(tb, err)
 
 	return client

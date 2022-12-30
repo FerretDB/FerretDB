@@ -206,7 +206,7 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                         | Status | Comments                                                  |
 |----------------------------|----------------------------------|--------|-----------------------------------------------------------|
-| `authenticate`             |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/40) TODO  |
+| `authenticate`             |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/40)   |
 | `getnonce`                 |                                  | ⚠️      | Deprecated since version 4.0.                             |
 | `logout`                   |                                  | ⚠️      | Deprecated since version 5.0.                             |
 
