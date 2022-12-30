@@ -95,6 +95,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 	}
 
 	var pgPool *pgdb.Pool
+
 	for ctx.Err() == nil {
 		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), false, p); err == nil {
 			break
@@ -150,7 +151,8 @@ func setupPostgresAuth(ctx context.Context, logger *zap.SugaredLogger) error {
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
-	if err := waitForPort(ctx, logger, 8081); err != nil {
+	err := waitForPort(ctx, logger, 8081)
+	if err != nil {
 		return err
 	}
 
@@ -159,7 +161,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	var db *tigrisdb.TigrisDB
-	var err error
+
 	for ctx.Err() == nil {
 		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar(), false); err == nil {
 			break
@@ -172,6 +174,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	defer db.Driver.Close()
 
 	logger.Info("Creating databases...")
+
 	for _, name := range []string{"admin", "test"} {
 		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
 			return err

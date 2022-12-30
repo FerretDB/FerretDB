@@ -57,13 +57,16 @@ type SetupResult struct {
 func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 	tb.Helper()
 
+	// we can't use a regular url.Parse because
+	// MongoDB really wants Unix socket path in the host part of the URI
 	opts := options.Client().ApplyURI(s.MongoDBURI)
-	tb.Logf("IsUnixSocket: %+v", opts)
-
-	// FIXME
-	return slices.ContainsFunc(opts.Hosts, func(host string) bool {
+	res := slices.ContainsFunc(opts.Hosts, func(host string) bool {
 		return strings.Contains(host, "/")
 	})
+
+	tb.Logf("IsUnixSocket: %q - %v", s.MongoDBURI, res)
+
+	return res
 }
 
 // SetupWithOpts setups the test according to given options.
