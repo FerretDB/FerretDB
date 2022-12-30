@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -56,10 +57,13 @@ type SetupResult struct {
 func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 	tb.Helper()
 
-	tb.Logf("%+v", options.Client().ApplyURI(s.MongoDBURI))
+	opts := options.Client().ApplyURI(s.MongoDBURI)
+	tb.Logf("IsUnixSocket: %+v", opts)
 
 	// FIXME
-	return false
+	return slices.ContainsFunc(opts.Hosts, func(host string) bool {
+		return strings.Contains(host, "/")
+	})
 }
 
 // SetupWithOpts setups the test according to given options.
