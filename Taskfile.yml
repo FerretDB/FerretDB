@@ -10,7 +10,7 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris
-  SERVICES: postgres postgres_secure tigris mongodb mongodb_secure
+  SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
 
 tasks:
   # invoked when `task` is run without arguments
@@ -261,15 +261,13 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls=:27018
         --mode=diff-normal
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
+        --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
 
-  run-secure:
-    desc: "Run FerretDB with TLS-only and authentication"
+  run-secured:
+    desc: "Run secured FerretDB with TLS and authentication"
     deps: [build-testcover]
     cmds:
       - >
@@ -293,6 +291,7 @@ tasks:
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls=:27018
         --mode=diff-normal
+        --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
 
   run-cockroach:
@@ -306,6 +305,7 @@ tasks:
         --listen-tls=:27018
         --mode=diff-normal
         --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
+        --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
 
   run-proxy:
@@ -320,6 +320,7 @@ tasks:
         --listen-tls=:27018
         --mode=diff-proxy
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
+        --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
 
   lint:
@@ -360,28 +361,21 @@ tasks:
     cmds:
       - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
-  # mongosh runs both tasks and ignores errors.
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
-      - task: mongosh-ferretdb-plain
-      - task: mongosh-mongodb-scram
+      - >
+        docker compose exec mongodb mongosh
+        'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell
 
-  mongosh-ferretdb-plain:
+  mongosh-secured:
+    desc: "Run MongoDB shell (`mongosh`) for secured FerretDB"
     cmds:
-      - cmd: >
-          docker compose exec mongodb mongosh
-          'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-          --verbose --eval 'disableTelemetry()' --shell
-        ignore_error: true
-
-  mongosh-mongodb-scram:
-    cmds:
-      - cmd: >
-          docker compose exec mongodb mongosh
-          'mongodb://username:password@host.docker.internal:27018/?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-          --verbose --eval 'disableTelemetry()' --shell
-        ignore_error: true
+      - >
+        docker compose exec mongodb mongosh
+        'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell
 
   mongo-test:
     desc: "Run legacy MongoDB shell (`mongo`) with test script"

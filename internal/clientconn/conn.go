@@ -104,7 +104,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.mode != NormalMode {
 		var err error
 		if p, err = proxy.New(opts.proxyAddr); err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 	}
 

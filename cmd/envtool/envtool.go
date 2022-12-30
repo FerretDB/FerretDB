@@ -142,9 +142,9 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	return setupAnyPostgres(ctx, logger.Named("postgres"), "postgres://username@127.0.0.1:5432/ferretdb")
 }
 
-// setupPostgresSecure configures `postgres_secure` container.
-func setupPostgresSecure(ctx context.Context, logger *zap.SugaredLogger) error {
-	return setupAnyPostgres(ctx, logger.Named("postgres_secure"), "postgres://username:password@127.0.0.1:5433/ferretdb")
+// setupPostgresSecured configures `postgres_secured` container.
+func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error {
+	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
 // setupTigris configures Tigris.
@@ -192,7 +192,7 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	if err := setupPostgresSecure(ctx, logger); err != nil {
+	if err := setupPostgresSecured(ctx, logger); err != nil {
 		return err
 	}
 
