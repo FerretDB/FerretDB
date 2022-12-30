@@ -50,6 +50,10 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
+	if opts.PostgreSQLURL == "" {
+		return nil, lazyerrors.New("PostgreSQL URL is not provided")
+	}
+
 	u, err := url.Parse(opts.PostgreSQLURL)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -82,7 +86,7 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 
 	// replace authentication info only if it is present in the connection
 	u := h.url
-	if username != "" {
+	if username != "" && password != "" {
 		u.User = url.UserPassword(username, password)
 	}
 	url := u.String()

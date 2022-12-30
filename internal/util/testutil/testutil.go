@@ -31,6 +31,9 @@ func Ctx(tb testing.TB) context.Context {
 
 	go func() {
 		<-ctx.Done()
+
+		panic("FIXME")
+
 		tb.Log("Stopping...")
 		stop()
 	}()

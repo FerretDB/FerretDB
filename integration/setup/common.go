@@ -52,7 +52,7 @@ var (
 	compatPortF = flag.Int("compat-port", 37017, "compat system's port for compatibility tests; if 0, they are skipped")
 	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
 
-	postgreSQLURLF = flag.String("postgresql-url", "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1", "PostgreSQL URL for 'pg' handler.")
+	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", true, "enable debug logs for tests setup") // FIXME
@@ -190,21 +190,19 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	u, err := url.Parse(*postgreSQLURLF)
-	require.NoError(tb, err)
-
 	metrics := connmetrics.NewListenerMetrics()
 
-	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
+	handlerOpts := &registry.NewHandlerOpts{
 		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: u.String(),
+		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: testutil.TigrisURL(tb),
-	})
+		TigrisURL: testutil.TigrisURL(tb), // TODO use flag https://github.com/FerretDB/FerretDB/issues/1568
+	}
+	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
 
 	proxyAddr := *proxyAddrF

@@ -32,10 +32,20 @@ type TigrisDB struct {
 }
 
 // New returns a new TigrisDB.
-func New(cfg *config.Driver, logger *zap.Logger) (*TigrisDB, error) {
-	d, err := driver.NewDriver(context.TODO(), cfg)
+//
+// Passed context is used only by the first checking connection.
+// Canceling it after that function returns does nothing.
+func New(ctx context.Context, cfg *config.Driver, logger *zap.Logger, lazy bool) (*TigrisDB, error) {
+	d, err := driver.NewDriver(ctx, cfg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if !lazy {
+		if _, err = d.Health(ctx); err != nil {
+			_ = d.Close()
+			return nil, err
+		}
 	}
 
 	return &TigrisDB{
