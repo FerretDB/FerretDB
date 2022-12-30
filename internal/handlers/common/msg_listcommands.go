@@ -216,7 +216,7 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	}
 
 	for _, name := range names {
-		if _, ok := ignoreLowercaseCmds[name]; ok {
+		if ignoreLowercaseCmds[name] {
 			continue
 		}
 
