@@ -166,24 +166,26 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 
 	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
 	for _, c := range []struct {
-		authMechanism string
 		user          *url.Userinfo
+		authMechanism string
 	}{{
-		authMechanism: "",
 		user:          nil,
+		authMechanism: "",
 	}, {
+		user:          url.UserPassword("username", "password"),
 		authMechanism: "PLAIN",
-		user:          url.UserPassword("username", "password"),
 	}, {
-		authMechanism: "", // defaults to SCRAM when username is set
 		user:          url.UserPassword("username", "password"),
+		authMechanism: "", // defaults to SCRAM when username is set
 	}} {
+		u.User = c.user
+
 		q.Del("authMechanism")
+
 		if c.authMechanism != "" {
 			q.Set("authMechanism", c.authMechanism)
 		}
 
-		u.User = c.user
 		u.RawQuery = q.Encode()
 		res := u.String()
 

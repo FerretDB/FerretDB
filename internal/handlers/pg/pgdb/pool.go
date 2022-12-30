@@ -56,6 +56,10 @@ type DBStats struct {
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
+//
+// If lazy is true, then connectivity is not checked.
+// Lazy connections are used by FerretDB when it starts earlier than backend.
+// Non-lazy connections are used by tests.
 func NewPool(ctx context.Context, uri string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
 	config, err := pgxpool.ParseConfig(uri)
 	if err != nil {
