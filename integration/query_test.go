@@ -333,22 +333,19 @@ func TestQueryBadFindType(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().
-				RunCommand(ctx, bson.D{
-					{"find", tc.value},
-					{"projection", bson.D{{"v", "some"}}},
-				}).
-				Decode(&actual)
+			cmd := bson.D{
+				{"find", tc.value},
+				{"projection", bson.D{{"v", "some"}}},
+			}
+			err := collection.Database().RunCommand(ctx, cmd).Decode(&actual)
 			require.Error(t, err)
 
-			AssertEqualError(t,
-				mongo.CommandError{
-					Code:    73,
-					Name:    "InvalidNamespace",
-					Message: "Failed to parse namespace element",
-				},
-				err,
-			)
+			expected := mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type " + tc.err,
+			}
+			AssertEqualError(t, expected, err)
 		})
 	}
 }
