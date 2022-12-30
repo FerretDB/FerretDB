@@ -114,7 +114,7 @@ var Commands = map[string]command{
 		Help:    "Returns documents matched by the query.",
 		Handler: handlers.Interface.MsgFind,
 	},
-	"findandmodify": { // // both `findandmodify` and `findAndModify` are valid
+	"findandmodify": {
 		Help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
 		Handler: handlers.Interface.MsgFindAndModify,
 	},
@@ -154,7 +154,7 @@ var Commands = map[string]command{
 		Help:    "Returns the role of the FerretDB instance.",
 		Handler: handlers.Interface.MsgIsMaster,
 	},
-	"isMaster": { // both `ismaster` and `isMaster` are valid
+	"isMaster": {
 		Help:    "Returns the role of the FerretDB instance.",
 		Handler: handlers.Interface.MsgIsMaster,
 	},
@@ -209,9 +209,17 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(Commands)
 	sort.Strings(names)
+
+	ignoreLowercaseCmds := map[string]bool{
+		"findandmodify": true,
+		"ismaster":      true,
+	}
+
 	for _, name := range names {
-		// TODO remove "duplicates" like `isMaster` and `ismaster`
-		// https://github.com/FerretDB/FerretDB/issues/1727
+		if _, ok := ignoreLowercaseCmds[name]; ok {
+			continue
+		}
+
 		cmdList.Set(name, must.NotFail(types.NewDocument(
 			"help", Commands[name].Help,
 		)))
