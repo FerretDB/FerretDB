@@ -56,3 +56,7 @@ tasks:
       - "**/*.go"
       - "../**/go.mod"
       - "../**/*.yml"
+
+  integration-security:
+    cmds:
+      - ../bin/govulncheck{{exeExt}} -v -test ./...
