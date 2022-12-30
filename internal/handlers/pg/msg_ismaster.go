@@ -27,17 +27,8 @@ import (
 
 // MsgIsMaster implements HandlerInterface.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = dbPool.Ping(ctx); err != nil {
-		return nil, err
-	}
-
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ismaster", true, // only lowercase
 			// topologyVersion

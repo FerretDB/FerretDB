@@ -14,26 +14,8 @@
 
 package pg
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgPing implements HandlerInterface.
-func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
 }

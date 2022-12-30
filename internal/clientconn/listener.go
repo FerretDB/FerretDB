@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"runtime/pprof"
@@ -90,7 +91,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		close(l.tcpListenerReady)
 
-		logger.Sugar().Infof("Listening on %s ...", l.Addr())
+		logger.Sugar().Infof("Listening on TCP %s ...", l.Addr())
 	}
 
 	if l.Listener.Unix != "" {
@@ -101,7 +102,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		close(l.unixListenerReady)
 
-		logger.Sugar().Infof("Listening on %s ...", l.Unix())
+		logger.Sugar().Infof("Listening on Unix %s ...", l.Unix())
 	}
 
 	if l.Listener.TLS != "" {
@@ -112,7 +113,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		close(l.tlsListenerReady)
 
-		logger.Sugar().Infof("Listening on %s ...", l.TLS())
+		logger.Sugar().Infof("Listening on TLS %s ...", l.TLS())
 	}
 
 	// close listeners on context cancellation to exit from listenLoop
@@ -247,7 +248,13 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				wg.Done()
 			}()
 
-			connID := fmt.Sprintf("%s -> %s", netConn.RemoteAddr(), netConn.LocalAddr())
+			remoteAddr := netConn.RemoteAddr().String()
+			if netConn.RemoteAddr().Network() == "unix" {
+				// otherwise, all of them would be "" or "@"
+				remoteAddr = fmt.Sprintf("unix:%d", rand.Int())
+			}
+
+			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
 
 			// give clients a few seconds to disconnect after ctx is canceled
 			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)

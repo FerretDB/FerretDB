@@ -73,8 +73,8 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
-	ErrFailedToParseInput = ErrorCode(40415) // Location40415
+	// ErrMechanismUnavailable indicates unsupported authentication mechanism.
+	ErrMechanismUnavailable = ErrorCode(334) // MechanismUnavailable
 
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
@@ -98,6 +98,9 @@ const (
 
 	// ErrMissingField indicates that the required field in document is missing.
 	ErrMissingField = ErrorCode(40414) // Location40414
+
+	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
+	ErrFailedToParseInput = ErrorCode(40415) // Location40415
 
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
