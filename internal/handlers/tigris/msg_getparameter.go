@@ -49,7 +49,7 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 	var reply wire.OpMsg
 	resDoc := resDB
 	if getParameter != "*" {
-		resDoc, err = selectParam(document, resDB)
+		resDoc, err = selectParam(resDB)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -70,22 +70,27 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 }
 
 // selectParam is makes a selection of requested parameters.
-func selectParam(_, resDB *types.Document) (doc *types.Document, err error) {
-	doc = must.NotFail(types.NewDocument())
+func selectParam(resDB *types.Document) (*types.Document, error) {
+	doc := must.NotFail(types.NewDocument())
 
 	iter := resDB.Iterator()
+	defer iter.Close()
 
 	for {
-		k, item, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, err
 		}
 
 		if k == "getParameter" || k == "comment" || k == "$db" {
 			continue
 		}
 
-		doc.Set(k, item)
+		doc.Set(k, v)
 	}
 
 	if doc.Len() < 1 {

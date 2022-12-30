@@ -12,37 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package version
 
 import (
-	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// MsgPing implements HandlerInterface.
-func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func TestGet(t *testing.T) {
+	v := Get()
 
-	if err = dbPool.Ping(ctx); err != nil {
-		return nil, err
-	}
+	assert.NotEmpty(t, v.Version)
 
-	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	assert.Equal(t, "6.0.42", v.MongoDBVersion)
+	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(6), int32(0), int32(42), int32(0))), v.MongoDBVersionArray)
 }

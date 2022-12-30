@@ -21,18 +21,23 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,7 +72,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var queryPlanner *types.Document
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
 		return err
@@ -92,7 +97,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
 		"port", port,
-		"version", version.MongoDBVersion,
+		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
 	))

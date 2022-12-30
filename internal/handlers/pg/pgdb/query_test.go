@@ -56,25 +56,25 @@ func TestGetDocuments(t *testing.T) {
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: collection}
-			it, err := GetDocuments(ctx, tx, sp)
+			iter, err := GetDocuments(ctx, tx, sp)
 			require.NoError(t, err)
-			require.NotNil(t, it)
+			require.NotNil(t, iter)
 
-			defer it.Close()
+			defer iter.Close()
 
-			iter, doc, err := it.Next()
+			n, doc, err := iter.Next()
 			assert.NoError(t, err)
-			assert.Equal(t, uint32(0), iter)
+			assert.Equal(t, uint32(0), n)
 			assert.Equal(t, expectedDoc, doc)
 
-			iter, doc, err = it.Next()
+			n, doc, err = iter.Next()
 			assert.Equal(t, iterator.ErrIteratorDone, err)
-			assert.Equal(t, uint32(0), iter)
+			assert.Equal(t, uint32(0), n)
 			assert.Nil(t, doc)
 
-			it.Close()
 			return nil
 		})
+
 		require.NoError(t, err)
 	})
 
@@ -97,26 +97,26 @@ func TestGetDocuments(t *testing.T) {
 
 			ctxTest, cancel := context.WithCancel(ctx)
 			sp := &SQLParam{DB: databaseName, Collection: collection}
-			it, err := GetDocuments(ctxTest, tx, sp)
+			iter, err := GetDocuments(ctxTest, tx, sp)
 			require.NoError(t, err)
-			require.NotNil(t, it)
+			require.NotNil(t, iter)
 
-			defer it.Close()
+			defer iter.Close()
 
-			iter, doc, err := it.Next()
+			n, doc, err := iter.Next()
 			assert.NoError(t, err)
-			assert.Equal(t, uint32(0), iter)
+			assert.Equal(t, uint32(0), n)
 			assert.Equal(t, expectedDocs[0], doc)
 
 			cancel()
-			iter, doc, err = it.Next()
+			n, doc, err = iter.Next()
 			assert.Equal(t, context.Canceled, err)
-			assert.Equal(t, uint32(0), iter)
+			assert.Equal(t, uint32(0), n)
 			assert.Nil(t, doc)
 
-			it.Close()
 			return nil
 		})
+
 		require.NoError(t, err)
 	})
 
@@ -132,20 +132,20 @@ func TestGetDocuments(t *testing.T) {
 			}
 
 			sp := &SQLParam{DB: databaseName, Collection: collection}
-			it, err := GetDocuments(ctx, tx, sp)
+			iter, err := GetDocuments(ctx, tx, sp)
 			require.NoError(t, err)
-			require.NotNil(t, it)
+			require.NotNil(t, iter)
 
-			defer it.Close()
+			defer iter.Close()
 
-			iter, doc, err := it.Next()
+			n, doc, err := iter.Next()
 			assert.Equal(t, iterator.ErrIteratorDone, err)
-			assert.Equal(t, uint32(0), iter)
+			assert.Equal(t, uint32(0), n)
 			assert.Nil(t, doc)
 
-			it.Close()
 			return nil
 		})
+
 		require.NoError(t, err)
 	})
 
@@ -157,16 +157,17 @@ func TestGetDocuments(t *testing.T) {
 		defer tx.Rollback(ctx)
 
 		sp := &SQLParam{DB: databaseName, Collection: collectionName + "-non-existent"}
-		it, err := GetDocuments(ctx, tx, sp)
+		iter, err := GetDocuments(ctx, tx, sp)
 		require.NoError(t, err)
-		require.NotNil(t, it)
+		require.NotNil(t, iter)
 
-		iter, doc, err := it.Next()
+		defer iter.Close()
+
+		n, doc, err := iter.Next()
 		assert.Equal(t, iterator.ErrIteratorDone, err)
-		assert.Equal(t, uint32(0), iter)
+		assert.Equal(t, uint32(0), n)
 		assert.Nil(t, doc)
 
-		it.Close()
 		require.NoError(t, tx.Commit(ctx))
 	})
 }

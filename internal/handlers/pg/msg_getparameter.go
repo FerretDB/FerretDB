@@ -90,12 +90,16 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 	doc = must.NotFail(types.NewDocument())
 
 	iter := resDB.Iterator()
+	defer iter.Close()
 
 	for {
-		k, item, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			// no more documents
-			break
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, err
 		}
 
 		if k == "getParameter" || k == "comment" || k == "$db" {
@@ -107,16 +111,16 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 		}
 
 		if !showDetails {
-			if itm, ok := item.(*types.Document); ok {
+			if itm, ok := v.(*types.Document); ok {
 				val, err := itm.Get("value")
 				if err != nil {
 					continue
 				}
-				item = val
+				v = val
 			}
 		}
 
-		doc.Set(k, item)
+		doc.Set(k, v)
 	}
 
 	if doc.Len() < 1 {

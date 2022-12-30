@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/build/version"
 )
 
 const (
@@ -56,7 +56,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"commit":  v.Commit,
 		"branch":  v.Branch,
 		"dirty":   strconv.FormatBool(v.Dirty),
-		"debug":   strconv.FormatBool(v.Debug),
+		"debug":   strconv.FormatBool(v.DebugBuild),
 	}
 
 	s := mc.p.Get()

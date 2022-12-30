@@ -21,12 +21,12 @@ import (
 
 	"github.com/AlekSi/pointer"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 // ServerStatus returns a common part of serverStatus command response.
@@ -73,7 +73,7 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 
 	res := must.NotFail(types.NewDocument(
 		"host", host,
-		"version", version.MongoDBVersion,
+		"version", version.Get().MongoDBVersion,
 		"process", filepath.Base(exec),
 		"pid", int64(os.Getpid()),
 		"uptime", uptime.Seconds(),

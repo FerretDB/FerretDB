@@ -66,6 +66,11 @@ you can reset the environment with `task env-reset`.
 
 You can see all available `task` tasks with `task -l`.
 
+### Building release binary
+
+To build a release binary, run `task build-release`.
+The result will be saved as `bin/ferretdb`.
+
 ## Contributing code
 
 ### Commands for contributing code

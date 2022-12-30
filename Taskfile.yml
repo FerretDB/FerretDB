@@ -9,7 +9,7 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
-  BUILDTAGS: ferretdb_tigris
+  BUILDTAGS: ferretdb_debug,ferretdb_tigris
   SERVICES: postgres tigris mongodb
 
 tasks:
@@ -30,7 +30,23 @@ tasks:
   gen-version:
     run: once
     cmds:
-      - go generate -x ./internal/util/version
+      - go generate -x ./build/version
+
+  # do not change that target much; see "Building and packaging" in README.md
+  build-release:
+    desc: "Build bin/ferretdb{{exeExt}} (release build)"
+    deps: [gen-version]
+    cmds:
+      - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
+    env:
+      CGO_ENABLED: 0
+
+  build-testcover:
+    desc: "Build bin/ferretdb-testcover{{exeExt}}"
+    run: once
+    deps: [gen-version]
+    cmds:
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
@@ -51,10 +67,6 @@ tasks:
     cmds:
       - go mod tidy
       - go mod verify
-
-  # deprecated alias
-  init-clean:
-    deps: [env-reset]
 
   env-reset:
     desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
@@ -180,7 +192,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-cockroach.txt . -records-dir=../records
-        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
+        -handler=pg -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -233,57 +245,66 @@ tasks:
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus seed {{.FUZZCORPUS}}
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus {{.FUZZCORPUS}} generated
 
-  build-testcover:
-    desc: "Build bin/ferretdb-testcover"
-    run: once
-    deps: [gen-version]
-    cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
-
   run:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --postgresql-url="postgres://username:password@127.0.0.1:5432/ferretdb"
+        --test-records-dir=records
 
   run-tigris:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --handler=tigris
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --handler=tigris
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --test-records-dir=records
 
   run-cockroach:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
+        --test-records-dir=records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-proxy --listen-addr=:27017
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-proxy
+        --postgresql-url="postgres://username:password@127.0.0.1:5432/ferretdb"
+        --test-records-dir=records
 
   lint:
     desc: "Run linters"
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
       - bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration integration-lint
@@ -319,7 +340,7 @@ tasks:
   psql:
     desc: "Run psql"
     cmds:
-      - docker compose exec postgres psql -U postgres -d ferretdb
+      - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
   # mongosh runs both tasks and ignores errors.
   # mongosh-plain works with FerretDB and PLAIN authentication, while mongosh-scram works with MongoDB.
@@ -350,7 +371,10 @@ tasks:
     cmds:
       - >
         docker compose run --rm legacy-mongo-shell
-        'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
+        --tlsCertificateKeyFile /etc/certs/server.pem
+        --tlsCAFile /etc/certs/rootCA.pem
+        --tls
+        'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
         /legacy-mongo-shell/test.js
 
   docker-init:
@@ -370,9 +394,9 @@ tasks:
         --load .
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/version.txt
       COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
+        sh: cat build/version/commit.txt
 
   docker-push:
     deps: [gen-version]
@@ -387,9 +411,9 @@ tasks:
         --push .
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/version.txt
       COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
+        sh: cat build/version/commit.txt
 
   docker-push-release:
     cmds:
@@ -402,7 +426,7 @@ tasks:
               ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/version.txt
 
   packages:
     cmds:
@@ -410,7 +434,6 @@ tasks:
       - task: packages-rpm
 
   packages-deb:
-    deps: [build-testcover]
     dir: build
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
@@ -419,12 +442,11 @@ tasks:
         'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../internal/util/version/gen/version.txt
+        sh: cat ../build/version/version.txt
       GOARCH:
         sh: go env GOARCH
 
   packages-rpm:
-    deps: [build-testcover]
     dir: build
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
@@ -433,7 +455,7 @@ tasks:
         'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../internal/util/version/gen/version.txt
+        sh: cat ../build/version/version.txt
       GOARCH:
         sh: go env GOARCH
 

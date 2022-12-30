@@ -60,7 +60,7 @@ sidebar_position: 1
 | `getMore`         |                            | ❌  | Unimplemented                                             |
 | `insert`          |                            | ✅  | Basic command is fully supported                          |
 |                   | `documents`                | ✅  |                                                           |
-|                   | `ordered`                  | ❌  | [Issue](https://github.com/FerretDB/FerretDB/issues/940)  |
+|                   | `ordered`                  | ✅  |                                                           |
 |                   | `bypassDocumentValidation` | ⚠️  | Ignored                                                   |
 |                   | `comment`                  | ⚠️  | Ignored                                                   |
 | `update`          |                            | ✅  | Basic command is fully supported                          |
@@ -71,7 +71,7 @@ sidebar_position: 1
 |                   | `comment`                  | ⚠️  | Ignored in Tigris                                         |
 |                   | `let`                      | ⚠️  | Unimplemented                                             |
 |                   | `q`                        | ✅  |                                                           |
-|                   | `u`                        | ✅  | TODO check if u is an array of aggregation pipeline stages|
+|                   | `u`                        | ✅  | TODO check if u is an array of aggregation pipeline stages |
 |                   | `c`                        | ⚠️  | Unimplemented                                             |
 |                   | `upsert`                   | ✅  |                                                           |
 |                   | `multi`                    | ✅  |                                                           |
@@ -150,9 +150,9 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                             | Status | Comments                                                                      |
 |----------------------------|--------------------------------------|--------|-------------------------------------------------------------------------------|
-| `setFreeMonitoring`        |                                      | ✅     | [Telemetry reporting](https://docs.ferretdb.io/telemetry/)                    |
-|                            | `action: "enable"`                   | ✅     | [`--telemetry=enable`](https://docs.ferretdb.io/telemetry/#enable-telemetry)  |
-|                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](https://docs.ferretdb.io/telemetry/#disable-telemetry)|
+| `setFreeMonitoring`        |                                      | ✅     | [Telemetry reporting](/telemetry/)                    |
+|                            | `action: "enable"`                   | ✅     | [`--telemetry=enable`](/telemetry/#enable-telemetry)  |
+|                            | `action: "disable"`                  | ✅     | [`--telemetry=disable`](/telemetry/#disable-telemetry)|
 | `getFreeMonitoringStatus`  |                                      | ✅     |                                                                               |
 
 ## Database Operations
