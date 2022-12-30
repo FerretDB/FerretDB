@@ -91,7 +91,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		close(l.tcpListenerReady)
 
-		logger.Sugar().Infof("Listening on %s ...", l.Addr())
+		logger.Sugar().Infof("Listening on TCP %s ...", l.Addr())
 	}
 
 	if l.Listener.Unix != "" {
@@ -102,7 +102,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		close(l.unixListenerReady)
 
-		logger.Sugar().Infof("Listening on %s ...", l.Unix())
+		logger.Sugar().Infof("Listening on Unix %s ...", l.Unix())
 	}
 
 	if l.Listener.TLS != "" {
@@ -113,7 +113,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		close(l.tlsListenerReady)
 
-		logger.Sugar().Infof("Listening on %s ...", l.TLS())
+		logger.Sugar().Infof("Listening on TLS %s ...", l.TLS())
 	}
 
 	// close listeners on context cancellation to exit from listenLoop

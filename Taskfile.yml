@@ -268,6 +268,20 @@ tasks:
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
         --test-records-dir=records
 
+  run-secure:
+    desc: "Run FerretDB with TLS-only and authentication"
+    deps: [build-testcover]
+    cmds:
+      - >
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=''
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=normal
+        --postgresql-url="postgres://127.0.0.1:5433/ferretdb"
+        --test-records-dir=records
+
   run-tigris:
     deps: [build-testcover]
     cmds:

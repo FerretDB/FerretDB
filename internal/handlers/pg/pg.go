@@ -84,6 +84,8 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	connInfo := conninfo.Get(ctx)
 	username, password := connInfo.Auth()
 
+	// do not log password or full URL
+
 	// replace authentication info only if it is present in the connection
 	u := h.url
 	if username != "" && password != "" {
