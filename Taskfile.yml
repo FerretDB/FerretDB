@@ -308,7 +308,8 @@ tasks:
 
   security-govulncheck:
     cmds:
-      - bin/govulncheck -v -test ./...
+      - bin/govulncheck{{exeExt}} -v -test ./...
+      - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
