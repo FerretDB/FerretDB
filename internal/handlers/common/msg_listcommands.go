@@ -49,7 +49,7 @@ var Commands = map[string]command{
 		Help:    "Returns a summary of the build information.",
 		Handler: handlers.Interface.MsgBuildInfo,
 	},
-	"buildInfo": { // both `buildinfo` and `buildInfo` are valid
+	"buildInfo": {
 		Help:    "Returns a summary of the build information.",
 		Handler: handlers.Interface.MsgBuildInfo,
 	},
@@ -211,6 +211,7 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	sort.Strings(names)
 
 	ignoreLowercaseCmds := map[string]bool{
+		"buildinfo":     true,
 		"findandmodify": true,
 		"ismaster":      true,
 	}
