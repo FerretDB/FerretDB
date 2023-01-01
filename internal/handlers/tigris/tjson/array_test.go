@@ -71,25 +71,24 @@ var arrayTestCases = []testCase{
 		}},
 		j: `[{"$k":["foo","bar"],"foo":[{"$r":"foo","o":"i"},{"$r":"bar","o":""}],"bar":"baz"},` +
 			`{"$k":["foo","bar"],"foo":[{"$r":"fizz","o":""},{"$r":"buzz","o":"i"}],"bar":"cat"}]`,
-	}, /*{
+	}, {
 		name:   "EOF",
-		v:      convertArray(must.NotFail(types.NewArray())),
-		schema: &Schema{},
+		schema: &Schema{Type: Array, Items: boolSchema},
 		j:      `[`,
 		jErr:   `unexpected EOF`,
 	}, {
 		name:   "SchemaIsNil",
-		v:      convertArray(must.NotFail(types.NewArray())),
-		schema: new(Schema),
-		j:      `["foo"]`,
+		v:      convertArray(must.NotFail(types.NewArray(true, false))),
+		schema: &Schema{Type: Array, Items: nil},
+		j:      `[true,false]`,
 		jErr:   `tjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array`,
 	}, {
 		name:   "VariousTypesInArray",
-		v:      convertArray(must.NotFail(types.NewArray())),
+		v:      convertArray(must.NotFail(types.NewArray("foo", true, int64(42)))),
 		schema: &Schema{Type: Array, Items: stringSchema},
-		j:      `["foo",1,"bar"]`,
-		jErr:   `tjson.arrayType.UnmarshalJSON: 1 elements in schema, 2 in total`,
-	},*/
+		j:      `["foo",true,42]`, // we don't validate marshaling of array items
+		jErr:   `json: cannot unmarshal bool into Go value of type string`,
+	},
 }
 
 func TestArray(t *testing.T) {
