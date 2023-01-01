@@ -303,6 +303,7 @@ func valueSchema(v any) (*Schema, error) {
 	case *types.Document:
 		return subdocumentSchema(v)
 	case *types.Array:
+		// TODO  https://github.com/FerretDB/FerretDB/issues/908
 		return nil, lazyerrors.Errorf("%T is not supported yet", v)
 	case float64:
 		return doubleSchema, nil

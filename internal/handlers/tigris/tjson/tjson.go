@@ -25,7 +25,7 @@
 //	Alias      types package    tjson package         JSON representation
 //
 //	object     *types.Document  *tjson.documentType   {"$k": ["<key 1>", "<key 2>", ...], "<key 1>": <value 1>, "<key 2>": <value 2>, ...}
-//	array      *types.Array     TODO                  TODO
+//	array      *types.Array     https://github.com/FerretDB/FerretDB/issues/908
 //
 // Scalar types
 //
