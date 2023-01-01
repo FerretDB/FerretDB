@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
@@ -29,6 +30,11 @@ import (
 
 // MsgCount implements HandlerInterface.
 func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -74,16 +80,17 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrInvalidNamespace,
-			"Failed to parse namespace element",
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
 	sp.Filter = filter
 
 	resDocs := make([]*types.Document, 0, 16)
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 		return err
 	})

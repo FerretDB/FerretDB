@@ -16,6 +16,8 @@
 package tigris
 
 import (
+	"context"
+
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
@@ -45,13 +47,17 @@ type Handler struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
+	if opts.URL == "" {
+		return nil, lazyerrors.New("Tigris URL is not provided")
+	}
+
 	cfg := &config.Driver{
 		ClientID:     opts.ClientID,
 		ClientSecret: opts.ClientSecret,
 		Token:        opts.Token,
 		URL:          opts.URL,
 	}
-	db, err := tigrisdb.New(cfg, opts.L)
+	db, err := tigrisdb.New(context.TODO(), cfg, opts.L, true)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

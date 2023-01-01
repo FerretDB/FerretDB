@@ -16,13 +16,11 @@ package pg
 
 import (
 	"context"
-	"net"
 	"os"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -33,6 +31,11 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,7 +70,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var queryPlanner *types.Document
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 		queryPlanner, err = pgdb.Explain(ctx, tx, sp)
 		return err
@@ -81,17 +84,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var port int32
-	connInfo := conninfo.GetConnInfo(ctx)
-	if connInfo.PeerAddr != nil {
-		if tcpAddr, ok := connInfo.PeerAddr.(*net.TCPAddr); ok {
-			port = int32(tcpAddr.Port)
-		}
-	}
-
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
-		"port", port,
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,

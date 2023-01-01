@@ -32,10 +32,24 @@ type TigrisDB struct {
 }
 
 // New returns a new TigrisDB.
-func New(cfg *config.Driver, logger *zap.Logger) (*TigrisDB, error) {
-	d, err := driver.NewDriver(context.TODO(), cfg)
+//
+// Passed context is used only by the first checking connection.
+// Canceling it after that function returns does nothing.
+//
+// If lazy is true, then connectivity is not checked.
+// Lazy connections are used by FerretDB when it starts earlier than backend.
+// Non-lazy connections are used by tests.
+func New(ctx context.Context, cfg *config.Driver, logger *zap.Logger, lazy bool) (*TigrisDB, error) {
+	d, err := driver.NewDriver(ctx, cfg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if !lazy {
+		if _, err = d.Health(ctx); err != nil {
+			_ = d.Close()
+			return nil, err
+		}
 	}
 
 	return &TigrisDB{

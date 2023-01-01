@@ -27,10 +27,6 @@ import (
 
 // MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.PgPool.Ping(ctx); err != nil {
-		return nil, err
-	}
-
 	var reply wire.OpMsg
 	err := reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

@@ -52,7 +52,7 @@ var cli struct {
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 	} `embed:"" prefix:"listen-"`
 
-	ProxyAddr string `default:"127.0.0.1:37017" help:"Proxy address."`
+	ProxyAddr string `default:""                help:"Proxy address."`
 	DebugAddr string `default:"127.0.0.1:8088"  help:"${help_debug_addr}"`
 	StateDir  string `default:"."               help:"Process state directory."`
 	Mode      string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`

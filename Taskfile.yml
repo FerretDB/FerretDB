@@ -10,7 +10,7 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris
-  SERVICES: postgres tigris mongodb
+  SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
 
 tasks:
   # invoked when `task` is run without arguments
@@ -173,8 +173,11 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt . -records-dir=../records
-        -handler=pg -target-unix-socket -compat-tls
+        -coverprofile=integration-pg.txt .
+        -handler=pg
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -records-dir=../records
+        -target-unix-socket
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -182,8 +185,10 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt . -records-dir=../records
-        -handler=tigris -target-tls -compat-tls
+        -coverprofile=integration-tigris.txt .
+        -handler=tigris
+        -records-dir=../records
+        -target-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -191,8 +196,10 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-cockroach.txt . -records-dir=../records
-        -handler=pg -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1 -compat-tls
+        -coverprofile=integration-cockroach.txt .
+        -handler=pg
+        -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1
+        -records-dir=../records
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -200,8 +207,10 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt . -records-dir=../records
-        -target-port=37017 -target-tls -compat-port=0
+        -coverprofile=integration-mongodb.txt .
+        -compat-port=0
+        -records-dir=../records
+        -target-port=37017
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -250,38 +259,69 @@ tasks:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --mode=diff-normal
+        --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
+
+  run-secured:
+    desc: "Run secured FerretDB with TLS and authentication"
+    deps: [build-testcover]
+    cmds:
+      - >
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=''
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=normal
+        --postgresql-url="postgres://127.0.0.1:5433/ferretdb"
+        --test-records-dir=records
 
   run-tigris:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --handler=tigris
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --handler=tigris
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
 
   run-cockroach:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-proxy --listen-addr=:27017
-        --listen-tls=:27018 --listen-tls-cert-file=./build/certs/server-cert.pem
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-proxy
+        --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
 
   lint:
     desc: "Run linters"
@@ -300,7 +340,7 @@ tasks:
 
   security:
     desc: "Run security scanners"
-    deps: [security-trivy]
+    deps: [security-trivy, security-govulncheck]
 
   security-trivy:
     cmds:
@@ -310,6 +350,11 @@ tasks:
         --ignorefile=./build/.trivyignore
         --cache-dir=./.cache/trivy
         --exit-code=1
+
+  security-govulncheck:
+    cmds:
+      - bin/govulncheck{{exeExt}} -v -test ./...
+      - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
@@ -321,36 +366,31 @@ tasks:
     cmds:
       - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
-  # mongosh runs both tasks and ignores errors.
-  # mongosh-plain works with FerretDB and PLAIN authentication, while mongosh-scram works with MongoDB.
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
-      - task: mongosh-plain
-      - task: mongosh-scram
+      - >
+        docker compose exec mongodb mongosh
+        'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell
 
-  mongosh-plain:
+  mongosh-secured:
+    desc: "Run MongoDB shell (`mongosh`) for secured FerretDB"
     cmds:
-      - cmd: >
-          docker compose exec mongodb mongosh
-          'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-          --verbose --eval 'disableTelemetry()' --shell
-        ignore_error: true
-
-  mongosh-scram:
-    cmds:
-      - cmd: >
-          docker compose exec mongodb mongosh
-          'mongodb://username:password@host.docker.internal:27018/?tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
-          --verbose --eval 'disableTelemetry()' --shell
-        ignore_error: true
+      - >
+        docker compose exec mongodb mongosh
+        'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCAFile=/etc/certs/rootCA.pem&heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell
 
   mongo-test:
     desc: "Run legacy MongoDB shell (`mongo`) with test script"
     cmds:
       - >
         docker compose run --rm legacy-mongo-shell
-        'mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000'
+        --tlsCertificateKeyFile /etc/certs/server.pem
+        --tlsCAFile /etc/certs/rootCA.pem
+        --tls
+        'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
         /legacy-mongo-shell/test.js
 
   docker-init:
