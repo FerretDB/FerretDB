@@ -15,6 +15,7 @@
 package tjson
 
 import (
+	"math"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -37,9 +38,9 @@ var arrayTestCases = []testCase{
 		v:      convertArray(must.NotFail(types.NewArray("foo", "bar"))),
 		schema: &Schema{Type: Array, Items: stringSchema},
 		j:      `["foo","bar"]`,
-	}, /* {
+	}, {
 		name:   "array_int64",
-		v:      convertArray(must.NotFail(types.NewArray(math.MinInt64, math.MaxInt64))),
+		v:      convertArray(must.NotFail(types.NewArray(int64(math.MinInt64), int64(math.MaxInt64)))),
 		schema: &Schema{Type: Array, Items: int64Schema},
 		j:      `[-9223372036854775808,9223372036854775807]`,
 	}, {
@@ -68,9 +69,9 @@ var arrayTestCases = []testCase{
 				"bar": stringSchema,
 			},
 		}},
-		j: `[{"foo":[{"pattern":"foo","options":"i"},{"pattern":"bar","options":""}],"bar":"baz"},` +
-			`{"bar":[{"pattern":"fizz","options":""},{"pattern":"buzz","options":"i"}],"foo":"cat"}]`,
-	}, */ /*{
+		j: `[{"$k":["foo","bar"],"foo":[{"$r":"foo","o":"i"},{"$r":"bar","o":""}],"bar":"baz"},` +
+			`{"$k":["foo","bar"],"foo":[{"$r":"fizz","o":""},{"$r":"buzz","o":"i"}],"bar":"cat"}]`,
+	}, /*{
 		name:   "EOF",
 		v:      convertArray(must.NotFail(types.NewArray())),
 		schema: &Schema{},
