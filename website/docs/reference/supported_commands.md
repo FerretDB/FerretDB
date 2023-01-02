@@ -56,7 +56,7 @@ sidebar_position: 1
 |                 | `hint`                     | ❌      | Ignored                                                    |
 |                 | `comment`                  | ⚠️      | Not implemented in Tigris                                  |
 |                 | `let`                      | ⚠️      | Unimplemented                                              |
-| `getMore`       |                            | ❌      | Unimplemented                                              |
+| `getMore`       |                            | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1733)  |
 | `insert`        |                            | ✅      | Basic command is fully supported                           |
 |                 | `documents`                | ✅      |                                                            |
 |                 | `ordered`                  | ✅      |                                                            |
