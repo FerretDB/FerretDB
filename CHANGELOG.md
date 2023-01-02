@@ -25,12 +25,12 @@ It is now possible to use the backend's authentication mechanisms in FerretDB.
 See [documentation](https://docs.ferretdb.io/security/).
 
 ### New Features 🎉
-* Support $min field update operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1652
+* Support `$min` field update operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1652
 * Support `ordered` argument for `insert` command by @noisersup in https://github.com/FerretDB/FerretDB/pull/1673
 * Implement authentication for PostgreSQL by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1725
 
 ### Fixed Bugs 🐛
-* Fix unset document being updated by invalid value of $inc by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1685
+* Fix unset document being updated by invalid value of `$inc` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1685
 
 ### Enhancements 🛠
 * Update building documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1713
