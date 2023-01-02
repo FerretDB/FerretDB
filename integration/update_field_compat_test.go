@@ -503,9 +503,8 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotArrayField": {
-			update:        bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
-			skip:          "https://github.com/FerretDB/FerretDB/issues/1242",
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/908",
+			update: bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
 		},
 		"DotArrayNonExisting": {
 			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
@@ -529,8 +528,6 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 }
 
 func TestUpdateFieldCompatUnsetArray(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
@@ -622,7 +619,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 }
 
 func TestUpdateFieldCompatSetArray(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
@@ -700,8 +697,6 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 }
 
 func TestUpdateFieldCompatSetOnInsertArray(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
