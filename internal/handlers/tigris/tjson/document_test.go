@@ -197,31 +197,37 @@ func prepareTestCases() []testCase {
 
 	allDoc := must.NotFail(types.NewDocument(
 		"_id", types.ObjectID(objectIDType{0x62, 0xea, 0x6a, 0x94, 0x3d, 0x44, 0xb1, 0x0e, 0x1b, 0x6b, 0x87, 0x97}),
-		"binary", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-		"bool", true,
-		"double", 42.13,
-		"int32", int32(42),
-		"int64", int64(42),
-		"timestamp", types.Timestamp(1562470521),
-		"string", "foo",
-		"object", must.NotFail(types.NewDocument("foo", "bar")),
-		"regex", types.Regex{Pattern: "^foobar$", Options: "i"},
-		"null", "foo",
+		"binary", must.NotFail(types.NewArray(
+			types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
+			types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
+		)),
+		"bool", must.NotFail(types.NewArray(true, false)),
+		/*	"datetime", must.NotFail(types.NewArray(
+			time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
+			time.Time{}.Local(),
+		)),*/
+		"double", must.NotFail(types.NewArray(42.13, 0.0)),
+		"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
+		"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
+		//	"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
+		"string", must.NotFail(types.NewArray("foo", "")),
+		"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
+		"regex", must.NotFail(types.NewArray(types.Regex{Pattern: "^foobar$", Options: "i"}, types.Regex{})),
+		"null", must.NotFail(types.NewArray("null")), // null values need a schema too
 	))
+
 	allSchema := must.NotFail(DocumentSchema(allDoc))
-	allDoc.Set("null", types.Null) // Check that `null` set in a valid document and can be handled correctly
+	allDoc.Set("null", must.NotFail(types.NewArray(types.Null, types.Null)))
 	all := testCase{
 		name:   "all",
 		v:      convertDocument(allDoc),
 		schema: allSchema,
-		j: `{"$k":["_id","binary","bool","double","int32","int64","timestamp","string","object","regex","null"],` +
-			`"_id":"YupqlD1EsQ4ba4eX","binary":{"$b":"Qg==","s":128},"bool":true,"double":42.13,"int32":42,` +
-			`"int64":42,"timestamp":{"$t":"1562470521"},"string":"foo","object":{"$k":["foo"],"foo":"bar"},` +
-			`"regex":{"$r":"^foobar$","o":"i"},"null":null}`,
+		j: `{"$k":["_id","binary","bool","double","int32","int64","string","timestamp","regex","null"],` +
+			`"_id":"YupqlD1EsQ4ba4eX","binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
+			`"double":[42.13,0],"int32":[42,0],"int64":[42,0],"string":["foo",""],` +
+			`"timestamp":[{"$t":"42"},{"$t":"0"}],` +
+			`"regex":[{"$r":"^foobar$","o":"i"},{"$r":"","o":""}],"null":[null,null]}`,
 	}
-
-	// TODO Add a test case that contains arrays of various types (like in the pjson package):
-	// https://github.com/FerretDB/FerretDB/issues/908
 
 	eofDoc := must.NotFail(types.NewDocument("_id", "foo"))
 	eof := testCase{
