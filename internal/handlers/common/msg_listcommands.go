@@ -210,14 +210,14 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	names := maps.Keys(Commands)
 	sort.Strings(names)
 
-	ignoreLowercaseCmds := map[string]bool{
-		"buildinfo":     true,
-		"findandmodify": true,
-		"ismaster":      true,
+	ignoreLowercaseCmds := map[string]struct{}{
+		"buildinfo":     struct{}{},
+		"findandmodify": struct{}{},
+		"ismaster":      struct{}{},
 	}
 
 	for _, name := range names {
-		if ignoreLowercaseCmds[name] {
+		if _, ok := ignoreLowercaseCmds[name]; ok {
 			continue
 		}
 
