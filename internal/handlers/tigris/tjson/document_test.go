@@ -123,8 +123,7 @@ func prepareTestCases() []testCase {
 		"_id", "handshake4",
 		"version", "5.0.0",
 		"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "modules", must.NotFail(types.NewArray()),
+		"modules", must.NotFail(types.NewArray()),
 		"allocator", "tcmalloc",
 		"javascriptEngine", "mozjs",
 		"sysInfo", "deprecated",
@@ -166,10 +165,10 @@ func prepareTestCases() []testCase {
 		name:   "handshake4",
 		v:      convertDocument(handshake4doc),
 		schema: must.NotFail(DocumentSchema((handshake4doc))),
-		j: `{"$k":["_id","version","gitVersion","allocator","javascriptEngine","sysInfo","versionArray",` +
+		j: `{"$k":["_id","version","gitVersion","modules","allocator","javascriptEngine","sysInfo","versionArray",` +
 			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","storageEngines","ok"],` +
 			`"_id":"handshake4",` +
-			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9",` +
+			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9","modules":[],` +
 			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated","versionArray":[5,0,0,0],` +
 			`"openssl":{"$k":["running","compiled"],"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
 			`"compiled":"OpenSSL 1.1.1f  31 Mar 2020"},` +

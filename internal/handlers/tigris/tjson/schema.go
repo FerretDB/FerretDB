@@ -310,10 +310,15 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 }
 
 // arraySchema returns a JSON Schema for the given array.
+//
 // Schema can be set successfully only if all the array is not empty and its elements have the same type.
+// If the array is empty, Schema's Type will be set to Array and Items will be nil.
 func arraySchema(a *types.Array) (*Schema, error) {
 	if a.Len() == 0 {
-		return nil, lazyerrors.Errorf("can't identify schema for an empty array")
+		return &Schema{
+			Type:  Array,
+			Items: nil,
+		}, nil
 	}
 
 	currentSchema, err := valueSchema(must.NotFail(a.Get(0)))
@@ -332,12 +337,10 @@ func arraySchema(a *types.Array) (*Schema, error) {
 		}
 	}
 
-	schema := Schema{
+	return &Schema{
 		Type:  Array,
 		Items: currentSchema,
-	}
-
-	return &schema, nil
+	}, nil
 }
 
 // valueSchema returns a schema for the given value.
