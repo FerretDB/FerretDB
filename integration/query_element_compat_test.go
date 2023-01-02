@@ -18,9 +18,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryElementCompatExists(t *testing.T) {

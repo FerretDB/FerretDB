@@ -213,9 +213,7 @@ func (s *Schema) Unmarshal(b []byte) error {
 	}
 
 	// Add $k properties that are necessary for documents.
-	if err := s.addDocumentProperties(); err != nil {
-		return lazyerrors.Error(err)
-	}
+	s.addDocumentProperties()
 
 	// If Type is not set, it's a high-level schema, so we set Type as Object to make it explicit.
 	if s.Type == "" {
@@ -226,20 +224,20 @@ func (s *Schema) Unmarshal(b []byte) error {
 }
 
 // addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
-func (s *Schema) addDocumentProperties() error {
+func (s *Schema) addDocumentProperties() {
 	if s.Type == Array {
 		switch {
 		case s.Items == nil:
-			return lazyerrors.Errorf("array schema with nil items")
+			return
 		case s.Items.Type == Object:
-			return s.Items.addDocumentProperties()
+			s.Items.addDocumentProperties()
 		}
 
-		return nil
+		return
 	}
 
 	if s.Type != Object && s.Type != "" {
-		return nil
+		return
 	}
 
 	for _, subschema := range s.Properties {
@@ -247,9 +245,7 @@ func (s *Schema) addDocumentProperties() error {
 			continue
 		}
 
-		if err := subschema.addDocumentProperties(); err != nil {
-			return lazyerrors.Error(err)
-		}
+		subschema.addDocumentProperties()
 	}
 
 	// If the current object is not a special object (binary, regex, timestamp, decimal),
@@ -257,7 +253,7 @@ func (s *Schema) addDocumentProperties() error {
 	specials := []string{"$k", "$b", "$r", "$t", "$n"}
 	for _, special := range specials {
 		if _, ok := s.Properties[special]; ok {
-			return nil
+			return
 		}
 	}
 
@@ -266,8 +262,6 @@ func (s *Schema) addDocumentProperties() error {
 	}
 
 	s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
-
-	return nil
 }
 
 // DocumentSchema returns a JSON Schema for the given top-level document.
@@ -311,7 +305,7 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 
 // arraySchema returns a JSON Schema for the given array.
 //
-// Schema can be set successfully only if all the array is not empty and its elements have the same type.
+// Schema can be set successfully only if all the array elements have the same type.
 // If the array is empty, Schema's Type will be set to Array and Items will be nil.
 func arraySchema(a *types.Array) (*Schema, error) {
 	if a.Len() == 0 {
