@@ -72,6 +72,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 					// Run `explain` on `targetCollection` only, check response's `pushdown` with tc.resultPushdown
 					// https://github.com/FerretDB/FerretDB/issues/1279
+					_ = tc.resultPushdown
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
