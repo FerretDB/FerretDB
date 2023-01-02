@@ -25,7 +25,7 @@ Example: `mongodb://ferretdb:27018/?tls=true&tlsCAFile=companyRootCA.pem`.
 FerretDB does not store authentication information (usernames and passwords) itself but uses the backend's authentication mechanisms.
 The default username and password can be specified in FerretDB's connection string,
 but the client could use a different user by providing a username and password in MongoDB URI.
-For example, if the server was started with `postgres://user1:pass1postgres:5432/ferretdb`,
+For example, if the server was started with `postgres://user1:pass1@postgres:5432/ferretdb`,
 anonymous clients will be authenticated as user1,
 but clients that use `mongodb://user2:pass2@ferretdb:27018/?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
 Since usernames and passwords are transferred in plain text,
