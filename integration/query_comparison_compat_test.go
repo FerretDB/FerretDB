@@ -28,7 +28,7 @@ import (
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 

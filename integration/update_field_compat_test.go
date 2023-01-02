@@ -147,9 +147,8 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 // TestUpdateFieldCompatIncComplex are test that do not work on tigris.
 func TestUpdateFieldCompatIncComplex(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "skip array and number type change")
-	// TODO "https://github.com/FerretDB/FerretDB/issues/1668"
-	// TODO "https://github.com/FerretDB/FerretDB/issues/908"
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1668")
+
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{

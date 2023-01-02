@@ -19,13 +19,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{

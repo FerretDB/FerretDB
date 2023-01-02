@@ -18,14 +18,12 @@ import (
 	"math"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/FerretDB/FerretDB/integration/setup"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestQueryElementCompatExists(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -51,7 +49,7 @@ func TestQueryElementCompatExists(t *testing.T) {
 }
 
 func TestQueryElementCompatElementType(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
