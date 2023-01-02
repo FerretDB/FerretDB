@@ -46,21 +46,20 @@ func prepareTestCases() []testCase {
 				"name", "mongosh 1.0.1",
 			)),
 		)),
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "compression", must.NotFail(types.NewArray("none")),
+		"compression", must.NotFail(types.NewArray("none")),
 		"loadBalanced", false,
 	))
 	handshake1 := testCase{
 		name:   "handshake1",
 		v:      convertDocument(handshake1doc),
 		schema: must.NotFail(DocumentSchema(handshake1doc)),
-		j: `{"$k":["_id","ismaster","client","loadBalanced"],` +
+		j: `{"$k":["_id","ismaster","client","compression","loadBalanced"],` +
 			`"_id":"handshake1","ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
+			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
 	handshake2doc := must.NotFail(types.NewDocument(

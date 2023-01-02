@@ -266,6 +266,7 @@ func (s *Schema) addDocumentProperties() error {
 	}
 
 	s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
+
 	return nil
 }
 
@@ -308,14 +309,44 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 	return &schema, nil
 }
 
+// arraySchema returns a JSON Schema for the given array.
+// Schema can be set successfully only if all the array is not empty and its elements have the same type.
+func arraySchema(a *types.Array) (*Schema, error) {
+	if a.Len() == 0 {
+		return nil, lazyerrors.Errorf("can't identify schema for an empty array")
+	}
+
+	currentSchema, err := valueSchema(must.NotFail(a.Get(0)))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for i := 1; i < a.Len(); i++ {
+		nextSchema, err := valueSchema(must.NotFail(a.Get(i)))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !currentSchema.Equal(nextSchema) {
+			return nil, lazyerrors.Errorf("can't identify schema for an array with different types")
+		}
+	}
+
+	schema := Schema{
+		Type:  Array,
+		Items: currentSchema,
+	}
+
+	return &schema, nil
+}
+
 // valueSchema returns a schema for the given value.
 func valueSchema(v any) (*Schema, error) {
 	switch v := v.(type) {
 	case *types.Document:
 		return subdocumentSchema(v)
 	case *types.Array:
-		// TODO  https://github.com/FerretDB/FerretDB/issues/908
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return arraySchema(v)
 	case float64:
 		return doubleSchema, nil
 	case string:
