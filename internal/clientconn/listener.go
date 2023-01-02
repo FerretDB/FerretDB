@@ -86,7 +86,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	if l.Listener.Addr != "" {
 		var err error
 		if l.tcpListener, err = net.Listen("tcp", l.Listener.Addr); err != nil {
-			return lazyerrors.Error(err)
+			return err
 		}
 
 		close(l.tcpListenerReady)
@@ -97,7 +97,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	if l.Listener.Unix != "" {
 		var err error
 		if l.unixListener, err = net.Listen("unix", l.Listener.Unix); err != nil {
-			return lazyerrors.Error(err)
+			return err
 		}
 
 		close(l.unixListenerReady)
@@ -108,7 +108,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	if l.Listener.TLS != "" {
 		var err error
 		if l.tlsListener, err = setupTLSListener(l.Listener.TLS, l.Listener.TLSCertFile, l.Listener.TLSKeyFile); err != nil {
-			return lazyerrors.Error(err)
+			return err
 		}
 
 		close(l.tlsListenerReady)
@@ -183,31 +183,23 @@ func (l *Listener) Run(ctx context.Context) error {
 // setupTLSListener returns a new TLS listener or and error.
 func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
 	if _, err := os.Stat(certFile); err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("certificate file %q does not exist", certFile)
-		}
-
-		return nil, lazyerrors.Error(err)
+		return nil, fmt.Errorf("TLS certificate file: %w", err)
 	}
 
 	if _, err := os.Stat(keyFile); err != nil {
-		if os.IsNotExist(err) {
-			return nil, lazyerrors.Errorf("TLS key file %q does not exist", keyFile)
-		}
-
-		return nil, lazyerrors.Error(err)
+		return nil, fmt.Errorf("TLS key file: %w", err)
 	}
 
-	cer, err := tls.LoadX509KeyPair(certFile, keyFile)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	config := tls.Config{
 		// TODO ClientAuth, ClientCAs, maybe something else
 		// https://github.com/FerretDB/FerretDB/issues/1707
 
-		Certificates: []tls.Certificate{cer},
+		Certificates: []tls.Certificate{cert},
 	}
 
 	listener, err := tls.Listen("tcp", addr, &config)

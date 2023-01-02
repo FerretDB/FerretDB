@@ -100,6 +100,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
+			"pushdown", false, // TODO https://github.com/FerretDB/FerretDB/issues/1279
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

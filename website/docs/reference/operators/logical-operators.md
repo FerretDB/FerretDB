@@ -6,12 +6,12 @@ sidebar_position: 2
 
 Logical query operators return data based on specified query expressions that are either true or false.
 
-|Operator|Description|
-|-------|-----------|
-|[`$and`](#and)| Joins all query expressions with a logical AND operator|
-|[`$or`](#or)| Joins all query expressions with a logical OR operator|
-|[`$not`](#not)| Returns all documents that do NOT match a query expression|
-|[`$nor`](#nor)| Returns all documents that do not match any of the query expressions|
+| Operator       | Description                                                          |
+| -------------- | -------------------------------------------------------------------- |
+| [`$and`](#and) | Joins all query expressions with a logical AND operator              |
+| [`$or`](#or)   | Joins all query expressions with a logical OR operator               |
+| [`$not`](#not) | Returns all documents that do NOT match a query expression           |
+| [`$nor`](#nor) | Returns all documents that do not match any of the query expressions |
 
 For the examples in this section, insert the following documents into the `catalog` collection:
 
@@ -103,7 +103,7 @@ db.catalog.insertMany([
          }
       ]
    },
-   
+
 ])
 ```
 
