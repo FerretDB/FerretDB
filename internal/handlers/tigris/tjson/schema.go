@@ -213,7 +213,9 @@ func (s *Schema) Unmarshal(b []byte) error {
 	}
 
 	// Add $k properties that are necessary for documents.
-	s.addDocumentProperties()
+	if err := s.addDocumentProperties(); err != nil {
+		return lazyerrors.Error(err)
+	}
 
 	// If Type is not set, it's a high-level schema, so we set Type as Object to make it explicit.
 	if s.Type == "" {
@@ -224,14 +226,20 @@ func (s *Schema) Unmarshal(b []byte) error {
 }
 
 // addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
-func (s *Schema) addDocumentProperties() {
-	if s.Type == Array && s.Items.Type == Object {
-		s.Items.addDocumentProperties()
-		return
+func (s *Schema) addDocumentProperties() error {
+	if s.Type == Array {
+		switch {
+		case s.Items == nil:
+			return lazyerrors.Errorf("array schema with nil items")
+		case s.Items.Type == Object:
+			return s.Items.addDocumentProperties()
+		}
+
+		return nil
 	}
 
 	if s.Type != Object && s.Type != "" {
-		return
+		return nil
 	}
 
 	for _, subschema := range s.Properties {
@@ -239,7 +247,9 @@ func (s *Schema) addDocumentProperties() {
 			continue
 		}
 
-		subschema.addDocumentProperties()
+		if err := subschema.addDocumentProperties(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	// If the current object is not a special object (binary, regex, timestamp, decimal),
@@ -247,7 +257,7 @@ func (s *Schema) addDocumentProperties() {
 	specials := []string{"$k", "$b", "$r", "$t", "$n"}
 	for _, special := range specials {
 		if _, ok := s.Properties[special]; ok {
-			return
+			return nil
 		}
 	}
 
@@ -256,6 +266,7 @@ func (s *Schema) addDocumentProperties() {
 	}
 
 	s.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
+	return nil
 }
 
 // DocumentSchema returns a JSON Schema for the given top-level document.
