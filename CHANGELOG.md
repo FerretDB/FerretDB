@@ -9,11 +9,12 @@ We are pleased to announce our first Beta release!
 #### Storage changes for PostgreSQL
 
 We made a few _backward-incompatible_ changes in the way we store data in PostgreSQL to improve FerretDB performance.
-In the future, those changes will allow us to better use indexes and query collections faster.
+In the future, those changes will allow us to use indexes and query collections faster.
 
 To keep your data:
 
-* backup databases using `mongodump` or `mongoexport`;
+* backup FerretDB databases using `mongodump` or `mongoexport`;
+* backup PostgreSQL database using `pg_dump` or other tool (just in case);
 * stop FerretDB;
 * drop PostgreSQL views for FerretDB databases;
 * start FerretDB 0.8;
