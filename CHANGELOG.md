@@ -57,7 +57,7 @@ See [documentation](https://docs.ferretdb.io/security/).
 * Improve the way of storing data about collections by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1650
 * Implement `iterator.Interface` for `types.Document` and `types.Array` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1683
 * Improve issue template by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1692
-* Remove $elemMatch and $slice projection operators by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1698
+* Remove `$elemMatch` and `$slice` projection operators by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1698
 * Add currentOp stub by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1708
 * Add basic benchmark for query pushdowns by @noisersup in https://github.com/FerretDB/FerretDB/pull/1689
 * Enable authentication in PostgreSQL by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1716
