@@ -34,8 +34,9 @@
 // # Debug builds
 //
 // Debug builds of FerretDB behave differently in a few aspects:
-//   - The default logging level is set to debug.
 //   - Some internal errors cause crashes instead of being handled more gracefully.
+//   - Metrics are written to stderr on exit.
+//   - The default logging level is set to debug.
 package version
 
 import (

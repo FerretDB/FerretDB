@@ -215,6 +215,20 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 	r.Run(ctx)
 }
 
+// dumpMetrics dumps all Prometheus metrics to stderr.
+func dumpMetrics() {
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, mf := range mfs {
+		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
 	if cli.Version {
@@ -318,15 +332,11 @@ func run() {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
 
+	stop()
+
 	wg.Wait()
 
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
-	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+	if version.Get().DebugBuild {
+		dumpMetrics()
 	}
 }
