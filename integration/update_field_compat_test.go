@@ -619,13 +619,12 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 }
 
 func TestUpdateFieldCompatSetArray(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
 		"Many": {
-			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			update:        bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1704",
 		},
 		"Array": {
 			update:     bson.D{{"$set", bson.A{}}},
@@ -636,7 +635,8 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
 		},
 		"EmptyArray": {
-			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
+			update:        bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
+			skipForTigris: `Internal error when set "v":[] https://github.com/FerretDB/FerretDB/issues/1704`,
 		},
 	}
 

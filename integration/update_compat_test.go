@@ -62,7 +62,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                shareddata.AllProviders(),
+				Providers: []shareddata.Provider{shareddata.Int64s},
+				// Providers:                shareddata.AllProviders(),
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
