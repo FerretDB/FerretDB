@@ -46,7 +46,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgAggregate,
 	},
 	"buildinfo": {
-		Help:    "",
+		Help:    "Returns a summary of the build information.",
 		Handler: handlers.Interface.MsgBuildInfo,
 	},
 	"buildInfo": {
