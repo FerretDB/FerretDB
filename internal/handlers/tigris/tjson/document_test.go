@@ -16,6 +16,7 @@ package tjson
 
 import (
 	"testing"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -202,14 +203,14 @@ func prepareTestCases() []testCase {
 			types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
 		)),
 		"bool", must.NotFail(types.NewArray(true, false)),
-		/*	"datetime", must.NotFail(types.NewArray(
-			time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-			time.Time{}.Local(),
-		)),*/
+		"datetime", must.NotFail(types.NewArray(
+			time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC),
+			time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC),
+		)),
 		"double", must.NotFail(types.NewArray(42.13, 0.0)),
 		"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
 		"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
-		//	"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
+		"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
 		"string", must.NotFail(types.NewArray("foo", "")),
 		"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
 		"regex", must.NotFail(types.NewArray(types.Regex{Pattern: "^foobar$", Options: "i"}, types.Regex{})),
@@ -222,9 +223,11 @@ func prepareTestCases() []testCase {
 		name:   "all",
 		v:      convertDocument(allDoc),
 		schema: allSchema,
-		j: `{"$k":["_id","binary","bool","double","int32","int64","string","timestamp","regex","null"],` +
+		j: `{"$k":["_id","binary","bool","datetime","double","int32","int64","objectID","string","timestamp","regex","null"],` +
 			`"_id":"YupqlD1EsQ4ba4eX","binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
-			`"double":[42.13,0],"int32":[42,0],"int64":[42,0],"string":["foo",""],` +
+			`"datetime":["2021-07-27T09:35:42.123Z","0000-01-01T00:00:00Z"],` +
+			`"double":[42.13,0],"int32":[42,0],"int64":[42,0],` +
+			`"objectID":["QgAAAAAAAAAAAAAA","AAAAAAAAAAAAAAAA"],"string":["foo",""],` +
 			`"timestamp":[{"$t":"42"},{"$t":"0"}],` +
 			`"regex":[{"$r":"^foobar$","o":"i"},{"$r":"","o":""}],"null":[null,null]}`,
 	}
