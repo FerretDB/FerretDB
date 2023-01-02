@@ -623,8 +623,9 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 
 	testCases := map[string]updateCompatTestCase{
 		"Many": {
-			update:        bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
-			skipForTigris: "Add Tigris-compatible array to shareddata.Composites - https://github.com/FerretDB/FerretDB/issues/1704",
+			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
+			// TODO Add Tigris-compatible array to shareddata.Composites
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1704",
 		},
 		"Array": {
 			update:     bson.D{{"$set", bson.A{}}},

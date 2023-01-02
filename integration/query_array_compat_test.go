@@ -72,6 +72,7 @@ func TestQueryArrayCompatSize(t *testing.T) {
 }
 
 func TestQueryArrayCompatDotNotation(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -117,6 +118,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -192,6 +194,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 }
 
 func TestQueryArrayCompatEquality(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
