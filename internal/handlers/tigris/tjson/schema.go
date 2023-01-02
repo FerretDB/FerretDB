@@ -315,25 +315,31 @@ func arraySchema(a *types.Array) (*Schema, error) {
 		}, nil
 	}
 
-	currentSchema, err := valueSchema(must.NotFail(a.Get(0)))
+	previousSchema, err := valueSchema(must.NotFail(a.Get(0)))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	for i := 1; i < a.Len(); i++ {
-		nextSchema, err := valueSchema(must.NotFail(a.Get(i)))
+		currentSchema, err := valueSchema(must.NotFail(a.Get(i)))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if !currentSchema.Equal(nextSchema) {
-			return nil, lazyerrors.Errorf("can't identify schema for an array with different types")
+		// if the previous element was nil, we ignore it for schema generation
+		if previousSchema == nil {
+			previousSchema = currentSchema
+			continue
+		}
+
+		if !previousSchema.Equal(currentSchema) {
+			return nil, lazyerrors.Errorf("can't set schema for an array with different types")
 		}
 	}
 
 	return &Schema{
 		Type:  Array,
-		Items: currentSchema,
+		Items: previousSchema,
 	}, nil
 }
 
