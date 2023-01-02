@@ -7,16 +7,16 @@ sidebar_position: 1
 Comparison query operators return data that matches specific query conditions.
 Go to the comparison query operators:
 
-|Operator|Description|
-|-------|-----------|
-|[`$eq`](#eq)| Matches documents equal to specified query|
-|[`$gt`](#gt)| Matches documents greater than specified query|
-|[`$gte`](#gte)| Matches documents greater than or equal to specified query|
-|[`$lt`](#lt)| Matches documents less than specified query|
-|[`$lte`](#lte)| Matches documents less than or equal to specified query|
-|[`$in`](#in)| Matches documents containing values in a specified array query|
-|[`$ne`](#ne)| Matches documents that are not equal to specified query|
-|[`$nin`](#nin)| Matches documents that do not contain values present in a specified array query|
+| Operator       | Description                                                                     |
+| -------------- | ------------------------------------------------------------------------------- |
+| [`$eq`](#eq)   | Matches documents equal to specified query                                      |
+| [`$gt`](#gt)   | Matches documents greater than specified query                                  |
+| [`$gte`](#gte) | Matches documents greater than or equal to specified query                      |
+| [`$lt`](#lt)   | Matches documents less than specified query                                     |
+| [`$lte`](#lte) | Matches documents less than or equal to specified query                         |
+| [`$in`](#in)   | Matches documents containing values in a specified array query                  |
+| [`$ne`](#ne)   | Matches documents that are not equal to specified query                         |
+| [`$nin`](#nin) | Matches documents that do not contain values present in a specified array query |
 
 For the examples in this section, insert the following documents into the `employees` collection:
 

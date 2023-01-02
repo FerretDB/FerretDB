@@ -1,15 +1,15 @@
 ---
 sidebar_position: 4
 ---
- 
+
 # Element query operators
 
 Element query operators return data based on the existence of a specified field or the data type of a particular value.
 
-|Operator|Description|
-|-------|-----------|
-|[`$exists`](#exists)|returns documents where a field exists or does not exist|
-|[`$type`](#type)|returns documents where the value of a field is of the specified type|
+| Operator             | Description                                                           |
+| -------------------- | --------------------------------------------------------------------- |
+| [`$exists`](#exists) | returns documents where a field exists or does not exist              |
+| [`$type`](#type)     | returns documents where the value of a field is of the specified type |
 
 For the examples in this section, insert the following documents into the `electronics` collection:
 
@@ -257,25 +257,25 @@ The `<datatype>` parameter can be the type code or alias of the particular data 
 
 The following table lists the available BSON type codes and their corresponding aliases:
 
-|Type code|Type|Alias|
-|-------|------|------|
-|1|Double|double|
-|2|String|string|
-|3|Object|object|
-|4|Array|array|
-|5|Binary data|binData|
-|7|ObjectId|objectId
-|8|Boolean|bool|
-|9|Date|date|
-|10|Null|null|
-|11|Regular expression|regex|
-|16|32-bit integer|int|
-|17|Timestamp|timestamp|
-|18|64-bit integer|long|
-|19|Decimal128|decimal|
-|-1|Min key|minKey|
-|127|Max key|maxKey|
-|-128|Number|number|
+| Type code | Type               | Alias     |
+| --------- | ------------------ | --------- |
+| 1         | Double             | double    |
+| 2         | String             | string    |
+| 3         | Object             | object    |
+| 4         | Array              | array     |
+| 5         | Binary data        | binData   |
+| 7         | ObjectId           | objectId  |
+| 8         | Boolean            | bool      |
+| 9         | Date               | date      |
+| 10        | Null               | null      |
+| 11        | Regular expression | regex     |
+| 16        | 32-bit integer     | int       |
+| 17        | Timestamp          | timestamp |
+| 18        | 64-bit integer     | long      |
+| 19        | Decimal128         | decimal   |
+| -1        | Min key            | minKey    |
+| 127       | Max key            | maxKey    |
+| -128      | Number             | number    |
 
 :::caution
 `Decimal128`, `Min Key`, and `Max Key` are not currently implemented.
