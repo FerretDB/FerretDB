@@ -46,7 +46,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgAggregate,
 	},
 	"buildinfo": {
-		Help:    "Returns a summary of the build information.",
+		Help:    "",
 		Handler: handlers.Interface.MsgBuildInfo,
 	},
 	"buildInfo": {
@@ -211,9 +211,9 @@ func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) 
 	sort.Strings(names)
 
 	ignoreLowercaseCmds := map[string]struct{}{
-		"buildinfo":     struct{}{},
-		"findandmodify": struct{}{},
-		"ismaster":      struct{}{},
+		"buildinfo":     {},
+		"findandmodify": {},
+		"ismaster":      {},
 	}
 
 	for _, name := range names {
