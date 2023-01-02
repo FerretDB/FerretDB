@@ -1,15 +1,15 @@
 ---
 title: FerretDB Blog post
-slug: 
-author: 
+slug:
+author:
 author_title:
-author_url: 
-author_image_url: 
+author_url:
+author_image_url:
 description: This is a decription of a FerretDB blog post.
 keywords:
   - keyword1
   - keyword2
-image: 
+image:
 tags: [tag1, tag2]
 ---
 
