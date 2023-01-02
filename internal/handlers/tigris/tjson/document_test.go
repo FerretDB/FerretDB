@@ -81,21 +81,20 @@ func prepareTestCases() []testCase {
 				"name", "mongosh 1.0.1",
 			)),
 		)),
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "compression", must.NotFail(types.NewArray("none")),
+		"compression", must.NotFail(types.NewArray("none")),
 		"loadBalanced", false,
 	))
 	handshake2 := testCase{
 		name:   "handshake2",
 		v:      convertDocument(handshake2doc),
 		schema: must.NotFail(DocumentSchema(handshake2doc)),
-		j: `{"$k":["_id","ismaster","client","loadBalanced"],` +
+		j: `{"$k":["_id","ismaster","client","compression","loadBalanced"],` +
 			`"_id":"handshake2","ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
+			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
 	handshake3doc := must.NotFail(types.NewDocument(
@@ -129,8 +128,7 @@ func prepareTestCases() []testCase {
 		"allocator", "tcmalloc",
 		"javascriptEngine", "mozjs",
 		"sysInfo", "deprecated",
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
+		"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
 		"openssl", must.NotFail(types.NewDocument(
 			"running", "OpenSSL 1.1.1f  31 Mar 2020",
 			"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
@@ -161,19 +159,18 @@ func prepareTestCases() []testCase {
 		"bits", int32(64),
 		"debug", false,
 		"maxBsonObjectSize", int32(16777216),
-		// TODO Support arrays:  https://github.com/FerretDB/FerretDB/issues/908
-		// "storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
+		"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 		"ok", float64(1),
 	))
 	handshake4 := testCase{
 		name:   "handshake4",
 		v:      convertDocument(handshake4doc),
 		schema: must.NotFail(DocumentSchema((handshake4doc))),
-		j: `{"$k":["_id","version","gitVersion","allocator","javascriptEngine","sysInfo",` +
-			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","ok"],` +
+		j: `{"$k":["_id","version","gitVersion","allocator","javascriptEngine","sysInfo","versionArray",` +
+			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","storageEngines","ok"],` +
 			`"_id":"handshake4",` +
 			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9",` +
-			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated",` +
+			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated","versionArray":[5,0,0,0],` +
 			`"openssl":{"$k":["running","compiled"],"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
 			`"compiled":"OpenSSL 1.1.1f  31 Mar 2020"},` +
 			`"buildEnvironment":{"$k":["distmod","distarch","cc","ccflags","cxx","cxxflags","linkflags",` +
@@ -196,7 +193,7 @@ func prepareTestCases() []testCase {
 			`BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER ` +
 			`BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ` +
 			`ABSL_FORCE_ALIGNED_ACCESS"},"bits":64,"debug":false,"maxBsonObjectSize":16777216,` +
-			`"ok":1}`,
+			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":1}`,
 	}
 
 	allDoc := must.NotFail(types.NewDocument(
