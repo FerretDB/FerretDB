@@ -207,18 +207,21 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 	}
 
 	var roots *x509.CertPool
-	setupClientCertCheck := opts.caFile != ""
-	if setupClientCertCheck {
-		if _, err := os.Stat(opts.caFile); err != nil {
+
+	if opts.caFile != "" {
+		if _, err = os.Stat(opts.caFile); err != nil {
 			return nil, fmt.Errorf("TLS CA file: %w", err)
 		}
 
-		caCertPEM, err := os.ReadFile(opts.caFile)
+		var caCertPEM []byte
+
+		caCertPEM, err = os.ReadFile(opts.caFile)
 		if err != nil {
 			return nil, err
 		}
 
 		roots = x509.NewCertPool()
+
 		ok := roots.AppendCertsFromPEM(caCertPEM)
 		if !ok {
 			return nil, fmt.Errorf("failed to parse root certificate")
