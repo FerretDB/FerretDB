@@ -115,9 +115,9 @@ func TestDistinctCompat(t *testing.T) {
 			field:  "_id",
 			filter: bson.D{{"_id", "count-id-not-exists"}},
 		},
-		//"FieldTypeArrays": {
+		//"VAny": {
 		//	field:  "v",
-		//	filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
+		//	filter: bson.D{},
 		//},
 		"NonExistentField": {
 			field:  "field-not-exists",

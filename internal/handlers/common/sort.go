@@ -51,16 +51,9 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 }
 
 // SortArray sorts the values of given array to use it in the response.
-func SortArray(arr *types.Array) error {
+func SortArray(arr *types.Array, sortType types.SortType) error {
 	sortFuncs := make([]arrSortFunc, 1)
-	for i := 0; i < arr.Len(); i++ {
-		sortType, err := getSortType("", must.NotFail(arr.Get(i)))
-		if err != nil {
-			return err
-		}
-
-		sortFuncs[i] = arrLessFunc("", sortType)
-	}
+	sortFuncs[0] = arrLessFunc("", sortType)
 
 	sorter := &arraySorter{arr: arr, sorts: sortFuncs}
 	sorter.Sort(arr)

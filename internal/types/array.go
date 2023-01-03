@@ -215,8 +215,3 @@ func (a *Array) Remove(index int) {
 
 	a.s = append(a.s[:index], a.s[index+1:]...)
 }
-
-// Sorter returns sort.Interface for the array.
-func (a *Array) Sorter() *arraySort {
-	return newArraySort(a)
-}

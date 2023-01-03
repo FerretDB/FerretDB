@@ -123,7 +123,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		must.NoError(distinct.Append(val))
 	}
 
-	if err = common.SortArray(distinct); err != nil {
+	if err = common.SortArray(distinct, types.Ascending); err != nil {
 		return nil, err
 	}
 
