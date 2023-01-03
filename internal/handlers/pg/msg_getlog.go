@@ -99,6 +99,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided; the first report will be sent soon. "+
 					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
+		} else {
+			if state.LatestVersion != "" {
+
+			}
 		}
 
 		var log types.Array
