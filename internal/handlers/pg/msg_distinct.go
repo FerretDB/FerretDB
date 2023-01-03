@@ -111,7 +111,8 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 		val, err = doc.Get(key)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			// if the key is not found in the current document, it should be skipped
+			continue
 		}
 
 		if _, ok := duplicateChecker[val]; ok {

@@ -107,22 +107,22 @@ func TestDistinctCompat(t *testing.T) {
 			field:  "_id",
 			filter: bson.D{},
 		},
-		//"IDString": {
-		//	field:  "_id",
-		//	filter: bson.D{{"_id", "string"}},
-		//},
-		//"IDNotExists": {
-		//	field:  "_id",
-		//	filter: bson.D{{"_id", "count-id-not-exists"}},
-		//},
+		"IDString": {
+			field:  "_id",
+			filter: bson.D{{"_id", "string"}},
+		},
+		"IDNotExists": {
+			field:  "_id",
+			filter: bson.D{{"_id", "count-id-not-exists"}},
+		},
 		//"FieldTypeArrays": {
 		//	field:  "v",
 		//	filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
 		//},
-		//"NonExistentField": {
-		//	field:  "field-not-exists",
-		//	filter: bson.D{},
-		//},
+		"NonExistentField": {
+			field:  "field-not-exists",
+			filter: bson.D{},
+		},
 	}
 
 	testDistinctCompat(t, testCases)
