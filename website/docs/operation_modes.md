@@ -32,26 +32,17 @@ Example diff output:
 --- res header
 +++ proxy header
 @@ -1 +1 @@
--length:   100, id:    4, response_to:   14, opcode: OP_MSG
-+length:   100, id:   16, response_to:   14, opcode: OP_MSG
+-length:    87, id:    3, response_to:   69, opcode: OP_MSG
++length:    87, id:  645, response_to:   69, opcode: OP_MSG
 
 Body diff:
 --- res body
 +++ proxy body
-@@ -12,7 +12,6 @@
-           "$k": [
--            "firstBatch",
-             "id",
--            "ns"
-+            "ns",
-+            "firstBatch"
-           ],
--          "firstBatch": [],
-           "id": {
-@@ -20,3 +19,4 @@
-           },
--          "ns": "test.values"
-+          "ns": "test.values",
-+          "firstBatch": []
-         },
+@@ -14,4 +14,4 @@
+         "estimate": false,
+-        "size": 0,
+-        "numObjects": 0,
++        "size": 93,
++        "numObjects": 3,
+         "millis": 0,
 ```
