@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +30,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -62,8 +63,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers: []shareddata.Provider{shareddata.Int64s},
-				// Providers:                shareddata.AllProviders(),
+				Providers:                shareddata.AllProviders(),
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
