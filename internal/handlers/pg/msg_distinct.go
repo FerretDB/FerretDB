@@ -17,15 +17,15 @@ package pg
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -44,7 +44,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	unimplementedFields := []string{
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -66,13 +66,14 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	var key string
+
 	if key, err = common.GetRequiredParam[string](document, "key"); err != nil {
 		return nil, err
 	}
 
 	if key == "" {
 		return nil, common.NewCommandErrorMsg(common.ErrEmptyFieldPath,
-			"FieldPath cannot be constructed from an empty string.",
+			"FieldPath cannot be constructed with empty string",
 		)
 	}
 
@@ -106,7 +107,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	duplicateChecker := make(map[any]struct{}, len(resDocs))
 
 	for _, doc := range resDocs {
-		val, err := doc.Get(key)
+		var val any
+
+		val, err = doc.Get(key)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -116,8 +119,13 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 
 		duplicateChecker[val] = struct{}{}
+
 		must.NoError(distinct.Append(val))
 	}
+
+	arr := distinct.Sorter()
+	sort.Sort(arr)
+	distinct = arr.Arr()
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
@@ -126,6 +134,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"ok", float64(1),
 		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

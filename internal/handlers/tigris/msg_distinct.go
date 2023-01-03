@@ -18,12 +18,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -37,7 +36,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	unimplementedFields := []string{
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -59,13 +58,14 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	var key string
+
 	if key, err = common.GetRequiredParam[string](document, "key"); err != nil {
 		return nil, err
 	}
 
 	if key == "" {
 		return nil, common.NewCommandErrorMsg(common.ErrEmptyFieldPath,
-			"FieldPath cannot be constructed from an empty string.",
+			"FieldPath cannot be constructed with empty string",
 		)
 	}
 
@@ -91,7 +91,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	duplicateChecker := make(map[any]struct{}, 16)
 
 	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, fp.Filter)
+		var matches bool
+		matches, err = common.FilterDocument(doc, fp.Filter)
+
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +102,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			continue
 		}
 
-		val, err := doc.Get(key)
+		var val any
+		val, err = doc.Get(key)
+
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -113,6 +117,8 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		distinct = append(distinct, val)
 	}
 
+	// sort.Sort(distinct.Sorter())
+
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
@@ -120,6 +126,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"ok", float64(1),
 		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
