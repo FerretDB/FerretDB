@@ -101,7 +101,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			)
 		} else {
 			if state.LatestVersion != "" {
-
+				startupWarnings = append(
+					startupWarnings,
+					fmt.Sprintf("New %s version available! Current version: %s", state.LatestVersion, state.HandlerVersion),
+				)
 			}
 		}
 
