@@ -23,7 +23,8 @@ import (
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	// TODO Add Tigris-compatible array to shareddata.Composites
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 

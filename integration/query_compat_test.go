@@ -33,6 +33,7 @@ type queryCompatTestCase struct {
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // TODO https://github.com/FerretDB/FerretDB/issues/1279
+	skipForTigris  string                   // skip test for Tigris
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -47,6 +48,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
 
 			t.Parallel()
 

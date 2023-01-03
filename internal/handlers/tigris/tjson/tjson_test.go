@@ -329,6 +329,9 @@ func unmarshalJSON(v tjsontype, j string) (bool, error) {
 	case *documentType:
 		// UnmarshalJSON is not supported for documents.
 		return false, nil
+	case *arrayType:
+		// UnmarshalJSON is not supported for arrays.
+		return false, nil
 	case *doubleType:
 		err = v.UnmarshalJSON([]byte(j))
 	case *stringType:
