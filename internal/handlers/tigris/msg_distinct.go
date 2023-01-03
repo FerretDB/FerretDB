@@ -16,6 +16,12 @@ package tigris
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -23,5 +29,100 @@ import (
 
 // MsgDistinct implements HandlerInterface.
 func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler for distinct")
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	unimplementedFields := []string{
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+
+	ignoredFields := []string{
+		"readConcern",
+		"comment", // TODO: implement
+	}
+	common.Ignored(document, h.L, ignoredFields...)
+
+	var fp tigrisdb.FetchParam
+
+	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	collectionParam, err := document.Get(document.Command())
+	if err != nil {
+		return nil, err
+	}
+
+	var key string
+	if key, err = common.GetRequiredParam[string](document, "key"); err != nil {
+		return nil, err
+	}
+
+	if key == "" {
+		return nil, common.NewCommandErrorMsg(common.ErrEmptyFieldPath,
+			"FieldPath cannot be constructed from an empty string.",
+		)
+	}
+
+	if fp.Filter, err = common.GetOptionalParam[*types.Document](document, "query", nil); err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	if fp.Collection, ok = collectionParam.(string); !ok {
+		return nil, common.NewCommandErrorMsgWithArgument(
+			common.ErrInvalidNamespace,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
+		)
+	}
+
+	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+	if err != nil {
+		return nil, err
+	}
+
+	distinct := make([]any, 0, 16)
+	duplicateChecker := make(map[any]struct{}, 16)
+
+	for _, doc := range fetchedDocs {
+		matches, err := common.FilterDocument(doc, fp.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		val, err := doc.Get(key)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if _, ok := duplicateChecker[val]; ok {
+			continue
+		}
+
+		duplicateChecker[val] = struct{}{}
+		distinct = append(distinct, val)
+	}
+
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"values", distinct,
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
