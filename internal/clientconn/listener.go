@@ -17,6 +17,7 @@ package clientconn
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -65,6 +66,7 @@ type ListenerOpts struct {
 	TLS         string
 	TLSCertFile string
 	TLSKeyFile  string
+	TLSCAFile   string
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -107,7 +109,12 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	if l.Listener.TLS != "" {
 		var err error
-		if l.tlsListener, err = setupTLSListener(l.Listener.TLS, l.Listener.TLSCertFile, l.Listener.TLSKeyFile); err != nil {
+		if l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
+			addr:     l.Listener.TLS,
+			certFile: l.Listener.TLSCertFile,
+			keyFile:  l.Listener.TLSKeyFile,
+			caFile:   l.Listener.TLSCAFile,
+		}); err != nil {
 			return err
 		}
 
@@ -180,19 +187,42 @@ func (l *Listener) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+type setupTLSListenerOpts struct {
+	addr, certFile, keyFile, caFile string
+}
+
 // setupTLSListener returns a new TLS listener or and error.
-func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
-	if _, err := os.Stat(certFile); err != nil {
+func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
+	if _, err := os.Stat(opts.certFile); err != nil {
 		return nil, fmt.Errorf("TLS certificate file: %w", err)
 	}
 
-	if _, err := os.Stat(keyFile); err != nil {
+	if _, err := os.Stat(opts.keyFile); err != nil {
 		return nil, fmt.Errorf("TLS key file: %w", err)
 	}
 
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	cert, err := tls.LoadX509KeyPair(opts.certFile, opts.keyFile)
 	if err != nil {
 		return nil, err
+	}
+
+	var roots *x509.CertPool
+	setupClientCertCheck := opts.caFile != ""
+	if setupClientCertCheck {
+		if _, err := os.Stat(opts.caFile); err != nil {
+			return nil, fmt.Errorf("TLS CA file: %w", err)
+		}
+
+		caCertPEM, err := os.ReadFile(opts.caFile)
+		if err != nil {
+			return nil, err
+		}
+
+		roots = x509.NewCertPool()
+		ok := roots.AppendCertsFromPEM(caCertPEM)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse root certificate")
+		}
 	}
 
 	config := tls.Config{
@@ -200,9 +230,10 @@ func setupTLSListener(addr, certFile, keyFile string) (net.Listener, error) {
 		// https://github.com/FerretDB/FerretDB/issues/1707
 
 		Certificates: []tls.Certificate{cert},
+		ClientCAs:    roots,
 	}
 
-	listener, err := tls.Listen("tcp", addr, &config)
+	listener, err := tls.Listen("tcp", opts.addr, &config)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
