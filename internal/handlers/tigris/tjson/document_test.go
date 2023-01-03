@@ -208,8 +208,8 @@ func prepareTestCases() []testCase {
 			time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC),
 		)),
 		"double", must.NotFail(types.NewArray(42.13, 0.0)),
-		"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
-		"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
+		"int32", must.NotFail(types.NewArray(int32(42), types.Null, int32(0))),
+		"int64", must.NotFail(types.NewArray(types.Null, int64(42), int64(0))),
 		"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
 		"string", must.NotFail(types.NewArray("foo", "")),
 		"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
@@ -226,7 +226,7 @@ func prepareTestCases() []testCase {
 		j: `{"$k":["_id","binary","bool","datetime","double","int32","int64","objectID","string","timestamp","regex","null"],` +
 			`"_id":"YupqlD1EsQ4ba4eX","binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
 			`"datetime":["2021-07-27T09:35:42.123Z","0000-01-01T00:00:00Z"],` +
-			`"double":[42.13,0],"int32":[42,0],"int64":[42,0],` +
+			`"double":[42.13,0],"int32":[42,null,0],"int64":[null,42,0],` +
 			`"objectID":["QgAAAAAAAAAAAAAA","AAAAAAAAAAAAAAAA"],"string":["foo",""],` +
 			`"timestamp":[{"$t":"42"},{"$t":"0"}],` +
 			`"regex":[{"$r":"^foobar$","o":"i"},{"$r":"","o":""}],"null":[null,null]}`,

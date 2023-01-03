@@ -326,7 +326,12 @@ func arraySchema(a *types.Array) (*Schema, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		// if the previous element was nil, we ignore it for schema generation
+		// ignore nil schemas as they don't define data type
+		if currentSchema == nil {
+			continue
+		}
+
+		// if the previous schema is nil, the current schema defines data type
 		if previousSchema == nil {
 			previousSchema = currentSchema
 			continue
