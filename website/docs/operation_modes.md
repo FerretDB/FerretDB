@@ -3,9 +3,9 @@
 
 # Operation modes
 
-To simplify the development and debugging of FerretDB, we support a few different operation modes.
+To simplify the development and debugging of FerretDB, we support different operation modes.
 Operation modes specify how FerretDB handles incoming requests.
-They might be mostly useful for testing, debugging, or bug reporting.
+They are useful for testing, debugging, or bug reporting.
 
 You can specify modes by using the `--mode` flag or `FERRETDB_MODE` variable,
 which accept following types of values: `normal`, `proxy`, `diff-normal`, `diff-proxy`.
