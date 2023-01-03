@@ -231,6 +231,7 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 
 		Certificates: []tls.Certificate{cert},
 		ClientCAs:    roots,
+		ClientAuth:   tls.VerifyClientCertIfGiven,
 	}
 
 	listener, err := tls.Listen("tcp", opts.addr, &config)
