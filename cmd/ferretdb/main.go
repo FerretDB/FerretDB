@@ -50,6 +50,7 @@ var cli struct {
 		TLS         string `default:""                help:"Listen TLS address."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
+		TLSCAFile   string `default:"" help:"TLS CA file path."`
 	} `embed:"" prefix:"listen-"`
 
 	ProxyAddr string `default:""                help:"Proxy address."`
