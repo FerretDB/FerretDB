@@ -9,8 +9,9 @@ It is possible to encrypt connections between FerretDB and clients by using TLS.
 All you need to do is to start the server with the following flags or environment variables:
 
 * `--listen-tls` / `FERRETDB_LISTEN_TLS` specifies the TCP hostname and port
-  that will be used for listening for incoming TLS connections;
-* `--listen-tls-cert-file` / `FERRETDB_LISTEN_TLS_CERT_FILE` specifies the TLS certificate file
+  that will be used for listening for incoming TLS connections.
+  If empty, TLS listener is disabled;
+* `--listen-tls-cert-file` / `FERRETDB_LISTEN_TLS_CERT_FILE` specifies the PEM encoded, TLS certificate file
   that will be presented to clients;
 * `--listen-tls-key-file` / `FERRETDB_LISTEN_TLS_KEY_FILE` specifies the TLS private key file
   that will be used to decrypt communications.
