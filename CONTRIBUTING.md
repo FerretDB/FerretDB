@@ -87,6 +87,19 @@ With `task` installed (see above), you may do the following:
    This allows you to run commands against FerretDB.
    For example, you can see what data was inserted by the previous command with `db.values.find()`.
 
+### Operation modes
+
+FerretDB can run in multiple operation modes.
+Operation mode specify how FerretDB handles incoming requests.
+FerretDB supports four operation modes: `normal`, `proxy`, `diff-normal`, `diff-proxy`,
+see [Operation modes documentation page](https://docs.ferretdb.io/operation_modes) for more details.
+
+By running `task run` FerretDB starts on `diff-normal` mode, which routes all of
+the sent requests both to the FerretDB and MongoDB.
+While running, it logs a difference between both returned responses,
+but sends the one from FerretDB to the client.
+If you want to get the MongoDB response, you can run `task run-proxy` to start FerretDB in `diff-proxy` mode.
+
 ### Code overview
 
 The directory `cmd` provides commands implementation.
