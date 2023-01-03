@@ -225,6 +225,7 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 }
 
 func TestQueryArrayCompatAll(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()

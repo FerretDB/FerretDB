@@ -28,6 +28,7 @@ import (
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -120,6 +121,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 }
 
 func TestQueryComparisonCompatEq(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -286,6 +288,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 }
 
 func TestQueryComparisonCompatGt(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -406,6 +409,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 }
 
 func TestQueryComparisonCompatGte(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -523,6 +527,7 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 }
 
 func TestQueryComparisonCompatLt(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
@@ -650,6 +655,7 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 }
 
 func TestQueryComparisonCompatLte(t *testing.T) {
+	// TODO Add Tigris-compatible array to shareddata.Composites
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
