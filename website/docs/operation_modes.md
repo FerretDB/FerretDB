@@ -3,7 +3,7 @@
 
 # Operation modes
 
-To stay compatible with MongoDB drivers, FerretDB introduces a couple of operation modes.
+To simplify the development and debugging of FerretDB, we support a few different operation modes.
 Operation modes specify how FerretDB handles incoming requests.
 They might be mostly useful for testing, debugging, or bug reporting.
 

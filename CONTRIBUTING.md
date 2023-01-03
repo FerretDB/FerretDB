@@ -94,8 +94,8 @@ Operation mode specify how FerretDB handles incoming requests.
 See [Operation modes documentation page](https://docs.ferretdb.io/operation_modes) for more details.
 By running `task run` FerretDB starts on `diff-normal` mode, which routes all of
 the sent requests both to the FerretDB and MongoDB.
-Afterwards it logs a difference between both returned responses,
-but sends only the FerretDB's one to the client.
+While running, it logs a difference between both returned responses,
+but sends the one from FerretDB to the client.
 If you want to get the MongoDB response, you can run `task run-proxy` to start FerretDB in `diff-proxy` mode.
 
 ### Code overview
