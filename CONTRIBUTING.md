@@ -48,7 +48,7 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
- To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
+To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
 That will install `task` into the `bin` directory (`bin/task` on Linux and macOS, `bin\task.exe` on Windows).
 You can then add `./bin` to `$PATH` either manually (`export PATH=./bin:$PATH` in `bash`)
@@ -92,12 +92,11 @@ With `task` installed (see above), you may do the following:
 FerretDB can run in multiple operation modes.
 Operation mode specify how FerretDB handles incoming requests.
 See [Operation modes documentation page](https://docs.ferretdb.io/operation_modes) for more details.
-By running `task run` FerretDB starts on `diff-normal` mode, which routes all of 
+By running `task run` FerretDB starts on `diff-normal` mode, which routes all of
 the sent requests both to the FerretDB and MongoDB.
 Afterwards it logs a difference between both returned responses,
 but sends only the FerretDB's one to the client.
 If you want to get the MongoDB response, you can run `task run-proxy` to start FerretDB in `diff-proxy` mode.
-
 
 ### Code overview
 
