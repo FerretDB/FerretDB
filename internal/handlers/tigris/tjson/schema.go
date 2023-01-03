@@ -225,8 +225,14 @@ func (s *Schema) Unmarshal(b []byte) error {
 
 // addDocumentProperties adds missing $k properties to all the schema's documents (top-level and nested).
 func (s *Schema) addDocumentProperties() {
-	if s.Type == Array && s.Items.Type == Object {
-		s.Items.addDocumentProperties()
+	if s.Type == Array {
+		switch {
+		case s.Items == nil:
+			return
+		case s.Items.Type == Object:
+			s.Items.addDocumentProperties()
+		}
+
 		return
 	}
 
@@ -297,13 +303,58 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 	return &schema, nil
 }
 
+// arraySchema returns a JSON Schema for the given array.
+//
+// Schema can be set successfully only if all the array elements have the same type.
+// If the array is empty, Schema's Type will be set to Array and Items will be nil.
+func arraySchema(a *types.Array) (*Schema, error) {
+	if a.Len() == 0 {
+		return &Schema{
+			Type:  Array,
+			Items: nil,
+		}, nil
+	}
+
+	previousSchema, err := valueSchema(must.NotFail(a.Get(0)))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for i := 1; i < a.Len(); i++ {
+		currentSchema, err := valueSchema(must.NotFail(a.Get(i)))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// ignore nil schemas as they don't define data type
+		if currentSchema == nil {
+			continue
+		}
+
+		// if the previous schema is nil, the current schema defines data type
+		if previousSchema == nil {
+			previousSchema = currentSchema
+			continue
+		}
+
+		if !previousSchema.Equal(currentSchema) {
+			return nil, lazyerrors.Errorf("can't set schema for an array with different types")
+		}
+	}
+
+	return &Schema{
+		Type:  Array,
+		Items: previousSchema,
+	}, nil
+}
+
 // valueSchema returns a schema for the given value.
 func valueSchema(v any) (*Schema, error) {
 	switch v := v.(type) {
 	case *types.Document:
 		return subdocumentSchema(v)
 	case *types.Array:
-		return nil, lazyerrors.Errorf("%T is not supported yet", v)
+		return arraySchema(v)
 	case float64:
 		return doubleSchema, nil
 	case string:
