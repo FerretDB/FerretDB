@@ -17,7 +17,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/jackc/pgx/v4"
 
@@ -124,9 +123,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		must.NoError(distinct.Append(val))
 	}
 
-	arr := distinct.Sorter()
-	sort.Sort(arr)
-	distinct = arr.Arr()
+	if err = common.SortArray(distinct); err != nil {
+		return nil, err
+	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
