@@ -79,9 +79,8 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 	buf.WriteByte('[')
 
 	ta := types.Array(*a)
-	l := ta.Len()
 
-	for i := 0; i < l; i++ {
+	for i := 0; i < ta.Len(); i++ {
 		if i != 0 {
 			buf.WriteByte(',')
 		}
