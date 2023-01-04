@@ -24,19 +24,13 @@ import (
 // SortArray sorts the values of given array.
 func SortArray(arr *types.Array, sortType types.SortType) {
 	sorter := &arraySorter{arr: arr, sortType: sortType}
-	sorter.Sort(arr)
+	sort.Sort(sorter)
 }
 
 // arraySorter implements sort.Interface to sort values of arrays.
 type arraySorter struct {
 	arr      *types.Array
 	sortType types.SortType
-}
-
-// Sort sorts the elements of the given array.
-func (as *arraySorter) Sort(arr *types.Array) {
-	as.arr = arr
-	sort.Sort(as)
 }
 
 // Len implements sort.Interface.
