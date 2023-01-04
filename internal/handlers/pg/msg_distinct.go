@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
@@ -40,57 +39,17 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"collation",
-	}
-	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"readConcern",
-		"comment", // TODO: implement
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	var sp pgdb.SQLParam
-
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	dp, err := common.GetDistinctParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var key string
-
-	if key, err = common.GetRequiredParam[string](document, "key"); err != nil {
-		return nil, err
+	sp := pgdb.SQLParam{
+		DB:         dp.DB,
+		Collection: dp.Collection,
+		Filter:     dp.Filter,
+		Comment:    dp.Comment,
 	}
-
-	if key == "" {
-		return nil, common.NewCommandErrorMsg(common.ErrEmptyFieldPath,
-			"FieldPath cannot be constructed with empty string",
-		)
-	}
-
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	sp.Filter = filter
 
 	resDocs := make([]*types.Document, 0, 16)
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -107,7 +66,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	for _, doc := range resDocs {
 		var val any
 
-		val, err = doc.Get(key)
+		val, err = doc.Get(dp.Key)
 		if err != nil {
 			// if the key is not found in the current document, it should be skipped
 			continue
