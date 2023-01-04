@@ -976,29 +976,6 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
 func filterFieldMod(fieldValue, exprValue any) (bool, error) {
-	var field, divisor, remainder int64
-
-	switch f := fieldValue.(type) {
-	case float64:
-		if math.IsNaN(f) || math.IsInf(f, 0) {
-			return false, nil
-		}
-		f = math.Trunc(f)
-		field = int64(f)
-		if f != float64(field) {
-			return false, nil
-		}
-
-	case int32:
-		field = int64(f)
-
-	case int64:
-		field = f
-
-	default:
-		return false, nil
-	}
-
 	arr := exprValue.(*types.Array)
 	if arr.Len() < 2 {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, not enough elements`, "$mod")
@@ -1007,6 +984,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, too many elements`, "$mod")
 	}
 
+	var field, divisor, remainder int64
 	switch d := must.NotFail(arr.Get(0)).(type) {
 	case float64:
 		if math.IsNaN(d) || math.IsInf(d, 0) {
@@ -1027,9 +1005,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		}
 
 		divisor = int64(d)
-		if d != float64(divisor) && field != 0 && d < 9.223372036854775296e+18 {
-			return false, nil
-		}
 
 	case int32:
 		divisor = int64(d)
@@ -1063,10 +1038,6 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 		remainder = int64(r)
 
-		if r != float64(remainder) {
-			return false, nil
-		}
-
 	case int32:
 		remainder = int64(r)
 
@@ -1079,6 +1050,28 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 	if divisor == 0 {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `divisor cannot be 0`, "$mod")
+	}
+
+	switch f := fieldValue.(type) {
+	case float64:
+		if math.IsNaN(f) || math.IsInf(f, 0) {
+			return false, nil
+		}
+		f = math.Trunc(f)
+		field = int64(f)
+
+		if f != float64(field) {
+			return false, nil
+		}
+
+	case int32:
+		field = int64(f)
+
+	case int64:
+		field = f
+
+	default:
+		return false, nil
 	}
 
 	f := field % divisor

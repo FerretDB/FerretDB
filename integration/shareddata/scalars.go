@@ -112,6 +112,13 @@ var Doubles = &Values[string]{
 		"double-smallest": math.SmallestNonzeroFloat64,
 		"double-big":      doubleBig,
 		"double-null":     nil,
+		"double-1":        float64(math.MinInt64 - 1),
+		"double-2":        float64(math.MinInt64),
+		"double-3":        float64(-123456789),
+		"double-4":        float64(123456789),
+		"double-5":        float64(math.MaxInt64),
+		"double-6":        float64(math.MaxInt64 + 1),
+		"double-7":        1.79769e+307,
 	},
 }
 
@@ -250,6 +257,9 @@ var Int32s = &Values[string]{
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
 		"int32-null": nil,
+		"int32-1":    int32(4080),
+		"int32-2":    int32(1048560),
+		"int32-3":    int32(268435440),
 	},
 }
 
@@ -279,12 +289,19 @@ var Int64s = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"int64":      int64(42),
-		"int64-zero": int64(0),
-		"int64-max":  int64(math.MaxInt64),
-		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64Big,
-		"int64-null": nil,
+		"int64":                    int64(42),
+		"int64-zero":               int64(0),
+		"int64-max":                int64(math.MaxInt64),
+		"int64-min":                int64(math.MinInt64),
+		"int64-big":                int64Big,
+		"int64-null":               nil,
+		"int64-1":                  int64(1099511628000),
+		"int64-2":                  int64(281474976700000),
+		"int64-3":                  int64(72057594040000000),
+		"int64-max-overflow":       9.223372036854776833e+18,
+		"int64-max-overflow-verge": 9.223372036854776832e+18,
+		"int64-min-overflow":       -9.223372036854776833e+18,
+		"int64-min-overflow-verge": -9.223372036854776832e+18,
 	},
 }
 
