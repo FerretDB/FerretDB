@@ -27,9 +27,10 @@ import (
 
 // distinctCompatTestCase describes count compatibility test case.
 type distinctCompatTestCase struct {
-	field      string                   // required
-	filter     bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	field         string                   // required
+	filter        bson.D                   // required
+	resultType    compatTestCaseResultType // defaults to nonEmptyResult
+	skipForTigris string                   // optional
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
@@ -47,6 +48,10 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
 
 			t.Parallel()
 
@@ -126,8 +131,9 @@ func TestDistinctCompat(t *testing.T) {
 			filter: bson.D{{"_id", "count-id-not-exists"}},
 		},
 		"VArray": {
-			field:  "v",
-			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
+			field:         "v",
+			filter:        bson.D{{"v", bson.D{{"$type", "array"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1704",
 		},
 		"VAny": {
 			field:  "v",
