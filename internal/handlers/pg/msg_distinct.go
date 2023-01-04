@@ -103,7 +103,6 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	distinct := types.MakeArray(len(resDocs))
-	duplicateChecker := make(map[any]struct{}, len(resDocs))
 
 	for _, doc := range resDocs {
 		var val any
@@ -115,18 +114,26 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 
 		switch v := val.(type) {
-		case types.Array:
+		case *types.Array:
 			for i := 0; i < v.Len(); i++ {
-				el := must.NotFail(v.Get(i))
-				if _, ok := duplicateChecker[el]; !ok {
-					duplicateChecker[el] = struct{}{}
-					distinct.Append(el)
+				el, err := v.Get(i)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if !distinct.Contains(el) {
+					err := distinct.Append(el)
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
 				}
 			}
 		default:
-			if _, ok := duplicateChecker[v]; !ok {
-				duplicateChecker[v] = struct{}{}
-				distinct.Append(v)
+			if !distinct.Contains(v) {
+				err := distinct.Append(v)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
 			}
 		}
 	}

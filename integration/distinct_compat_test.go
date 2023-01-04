@@ -74,7 +74,16 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
-					assert.Equal(t, compatRes, targetRes)
+
+					require.Equal(t, len(compatRes), len(targetRes))
+
+					// If targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],
+					// we consider them equal. If different documents use different types to store the same value
+					// in the same field, it's hard to predict what type will be returned by distinct.
+					// This is why we iterate through results and use assert.EqualValues instead of assert.Equal.
+					for i := range compatRes {
+						assert.EqualValues(t, compatRes[i], targetRes[i])
+					}
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true
@@ -114,6 +123,10 @@ func TestDistinctCompat(t *testing.T) {
 		"IDNotExists": {
 			field:  "_id",
 			filter: bson.D{{"_id", "count-id-not-exists"}},
+		},
+		"VArray": {
+			field:  "v",
+			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
 		},
 		"VAny": {
 			field:  "v",
