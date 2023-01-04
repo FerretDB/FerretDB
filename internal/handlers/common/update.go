@@ -103,6 +103,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$rename":
+			changed, err = processRenameFieldExpression(doc, updateV)
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewCommandError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
@@ -228,6 +234,53 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 		err = doc.SetByPath(path, array)
 		if err != nil {
 			return false, err
+		}
+
+		changed = true
+	}
+
+	return changed, nil
+}
+
+// processRenameFieldExpression changes document according to $rename operator.
+// If the document was changed it returns true.
+func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error) {
+	renameExpression := updateV.(*types.Document)
+	renameExpression = renameExpression.SortFieldsByKey() // TODO: test key order
+
+	var changed bool
+
+	for _, key := range renameExpression.Keys() {
+		renameRawValue, err := renameExpression.Get(key)
+		if err != nil {
+			// if $rename field does not exist, don't change anything
+			continue
+		}
+
+		renameValue, ok := renameRawValue.(string)
+		if !ok {
+			// TODO: test for invalid _id values
+			panic(1)
+		}
+
+		// TODO: test for non existing key
+		// TODO: check if key exists
+		// [{"foo":"aaa"},{"boo":"aaa"}]
+		// eg. { $rename: {"v","boo"}}
+		//TODO: test what if we removed correctly, but had Set error (probably transaction rollback, though let's be sure)
+		val := doc.Remove(key)
+		if val == nil {
+			return changed, nil
+			//return changed, fmt.Errorf("doesn't exist")
+		}
+
+		// TODO: test for updating field with a duplicate of the other field (and the same)
+		// [{"foo":"aaa"},{"boo":"aaa"}]
+		// eg. { $rename: {"foo","boo"}}
+		// eg. { $rename: {"foo","foo"}}
+		doc.Set(renameValue, val)
+		if err != nil {
+			return changed, err
 		}
 
 		changed = true
@@ -522,6 +575,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$rename", update)
+	if err != nil {
+		return err
+	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
@@ -552,8 +610,10 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$unset":
 			fallthrough
 		case "$pop":
+			fallthrough
+		case "$rename":
 			updateModifier = true
-		case "$mul", "$rename":
+		case "$mul":
 			return false, NewCommandErrorMsgWithArgument(
 				ErrNotImplemented,
 				fmt.Sprintf("update operator %s is not implemented", updateOp),
