@@ -17,9 +17,8 @@ package tigris
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"

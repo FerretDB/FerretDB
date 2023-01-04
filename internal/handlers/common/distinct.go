@@ -109,7 +109,6 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 		switch v := val.(type) {
 		case *types.Array:
 			for i := 0; i < v.Len(); i++ {
-
 				el, err := v.Get(i)
 				if err != nil {
 					return nil, lazyerrors.Error(err)

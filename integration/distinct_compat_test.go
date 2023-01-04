@@ -28,9 +28,9 @@ import (
 // distinctCompatTestCase describes count compatibility test case.
 type distinctCompatTestCase struct {
 	field         string                   // required
+	skipForTigris string                   // optional
 	filter        bson.D                   // required
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skipForTigris string                   // optional
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
@@ -145,6 +145,10 @@ func TestDistinctCompat(t *testing.T) {
 		},
 		"DotNotation": {
 			field:  "v.foo",
+			filter: bson.D{},
+		},
+		"DotNotationArray": {
+			field:  "v.array.0",
 			filter: bson.D{},
 		},
 	}
