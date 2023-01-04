@@ -77,7 +77,8 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 
 					require.Equal(t, len(compatRes), len(targetRes))
 
-					// If targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],
+					// We can't check the exact data types because they might be different.
+					// For example, if targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],
 					// we consider them equal. If different documents use different types to store the same value
 					// in the same field, it's hard to predict what type will be returned by distinct.
 					// This is why we iterate through results and use assert.EqualValues instead of assert.Equal.

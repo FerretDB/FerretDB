@@ -61,43 +61,8 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	distinct := types.MakeArray(len(resDocs))
-
-	for _, doc := range resDocs {
-		var val any
-
-		val, err = doc.Get(dp.Key)
-		if err != nil {
-			// if the key is not found in the current document, it should be skipped
-			continue
-		}
-
-		switch v := val.(type) {
-		case *types.Array:
-			for i := 0; i < v.Len(); i++ {
-				el, err := v.Get(i)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				if !distinct.Contains(el) {
-					err := distinct.Append(el)
-					if err != nil {
-						return nil, lazyerrors.Error(err)
-					}
-				}
-			}
-		default:
-			if !distinct.Contains(v) {
-				err := distinct.Append(v)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-			}
-		}
-	}
-
-	if err = common.SortArray(distinct, types.Ascending); err != nil {
+	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
+	if err != nil {
 		return nil, err
 	}
 

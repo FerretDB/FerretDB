@@ -146,6 +146,7 @@ type arraySorter struct {
 	sorts []arrSortFunc
 }
 
+// Sort todo.
 func (as *arraySorter) Sort(arr *types.Array) {
 	as.arr = arr
 	sort.Sort(as)
@@ -168,6 +169,7 @@ func (as *arraySorter) Less(i, j int) bool {
 	var k int
 	for k = 0; k < len(as.sorts)-1; k++ {
 		arrSortFunc := as.sorts[k]
+
 		switch {
 		case arrSortFunc(p, q):
 			// p < q, so we have a decision.

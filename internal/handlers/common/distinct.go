@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // DistinctParams contains `distinct` command parameters supported by at least one handler.
@@ -86,4 +87,54 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	}
 
 	return &dp, nil
+}
+
+// FilterDistinctValues returns distinct values from the given slice of documents with the given key.
+//
+// If the key is not found in the document, the document is ignored.
+//
+// If the key is found in the document, and the value is an array, each element of the array is added to the result.
+// Otherwise, the value itself is added to the result.
+func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, error) {
+	distinct := types.MakeArray(len(docs))
+
+	for _, doc := range docs {
+		var val any
+
+		val, err := doc.Get(key)
+		if err != nil {
+			continue
+		}
+
+		switch v := val.(type) {
+		case *types.Array:
+			for i := 0; i < v.Len(); i++ {
+				el, err := v.Get(i)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if !distinct.Contains(el) {
+					err := distinct.Append(el)
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+				}
+			}
+
+		default:
+			if !distinct.Contains(v) {
+				err := distinct.Append(v)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+			}
+		}
+	}
+
+	if err := SortArray(distinct, types.Ascending); err != nil {
+		return nil, err
+	}
+
+	return distinct, nil
 }
