@@ -50,17 +50,6 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	return nil
 }
 
-// SortArray sorts the values of given array to use it in the response.
-func SortArray(arr *types.Array, sortType types.SortType) error {
-	sortFuncs := make([]arrSortFunc, 1)
-	sortFuncs[0] = arrLessFunc("", sortType)
-
-	sorter := &arraySorter{arr: arr, sorts: sortFuncs}
-	sorter.Sort(arr)
-
-	return nil
-}
-
 // lessFunc takes sort key and type and returns sort.Interface's Less function which
 // compares selected key of 2 documents.
 func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document) bool {
@@ -78,21 +67,6 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 		}
 
 		result := types.CompareOrderForSort(aField, bField, sortType)
-
-		return result == types.Less
-	}
-}
-
-// arrLessFunc takes sort .
-func arrLessFunc(sortKey string, sortType types.SortType) func(a, b any) bool {
-	return func(a, b any) bool {
-		if a == nil {
-			// sort order treats null and non-existent field equivalent,
-			// hence use null for sorting.
-			a = types.Null
-		}
-
-		result := types.CompareOrderForSort(a, b, sortType)
 
 		return result == types.Less
 	}
@@ -137,52 +111,6 @@ func (ds *docsSorter) Less(i, j int) bool {
 	// All comparisons to here said "equal", so just return whatever
 	// the final comparison reports.
 	return ds.sorts[k](p, q)
-}
-
-type arrSortFunc func(a, b any) bool
-
-type arraySorter struct {
-	arr   *types.Array
-	sorts []arrSortFunc
-}
-
-// Sort todo.
-func (as *arraySorter) Sort(arr *types.Array) {
-	as.arr = arr
-	sort.Sort(as)
-}
-
-func (as *arraySorter) Len() int {
-	return as.arr.Len()
-}
-
-func (as *arraySorter) Swap(i, j int) {
-	p, q := must.NotFail(as.arr.Get(i)), must.NotFail(as.arr.Get(j))
-
-	must.NoError(as.arr.Set(i, q))
-	must.NoError(as.arr.Set(j, p))
-}
-
-func (as *arraySorter) Less(i, j int) bool {
-	p, q := must.NotFail(as.arr.Get(i)), must.NotFail(as.arr.Get(j))
-	// Try all but the last comparison.
-	var k int
-	for k = 0; k < len(as.sorts)-1; k++ {
-		arrSortFunc := as.sorts[k]
-
-		switch {
-		case arrSortFunc(p, q):
-			// p < q, so we have a decision.
-			return true
-		case arrSortFunc(q, p):
-			// p > q, so we have a decision.
-			return false
-		}
-		// p == q; try the next comparison.
-	}
-	// All comparisons to here said "equal", so just return whatever
-	// the final comparison reports.
-	return as.sorts[k](p, q)
 }
 
 // getSortType determines SortType from input sort value.

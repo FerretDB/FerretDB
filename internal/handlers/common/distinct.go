@@ -132,9 +132,7 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 		}
 	}
 
-	if err := SortArray(distinct, types.Ascending); err != nil {
-		return nil, err
-	}
+	SortArray(distinct, types.Ascending)
 
 	return distinct, nil
 }
