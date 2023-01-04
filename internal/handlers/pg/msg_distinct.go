@@ -114,13 +114,21 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			continue
 		}
 
-		if _, ok := duplicateChecker[val]; ok {
-			continue
+		switch v := val.(type) {
+		case types.Array:
+			for i := 0; i < v.Len(); i++ {
+				el := must.NotFail(v.Get(i))
+				if _, ok := duplicateChecker[el]; !ok {
+					duplicateChecker[el] = struct{}{}
+					distinct.Append(el)
+				}
+			}
+		default:
+			if _, ok := duplicateChecker[v]; !ok {
+				duplicateChecker[v] = struct{}{}
+				distinct.Append(v)
+			}
 		}
-
-		duplicateChecker[val] = struct{}{}
-
-		must.NoError(distinct.Append(val))
 	}
 
 	if err = common.SortArray(distinct, types.Ascending); err != nil {
