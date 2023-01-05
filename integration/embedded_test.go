@@ -34,8 +34,6 @@ import (
 )
 
 func TestEmbedded(t *testing.T) {
-	t.Skip("FIXME")
-
 	setup.SkipForTigris(t)
 
 	t.Parallel()
