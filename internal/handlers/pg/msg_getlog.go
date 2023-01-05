@@ -91,13 +91,19 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1443
 		state := h.StateProvider.Get()
-		if state.Telemetry == nil {
+
+		switch {
+		case state.Telemetry == nil:
 			startupWarnings = append(
 				startupWarnings,
 				"The telemetry state is undecided; the first report will be sent soon. "+
 					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			)
+		case state.LatestVersion != mv.Version:
+			startupWarnings = append(
+				startupWarnings,
+				fmt.Sprintf("New version available! Latest version: %s; Current version: %s", state.LatestVersion, mv.Version),
 			)
 		}
 
