@@ -958,11 +958,11 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	}
 }
 
-// isInvalidBitwiseValue returns true for invalid values of float64
+// isInvalidBitwiseValue returns true for an invalid value of float64
 // use for bitwise operation.
-// Non integer float64, Nan, Inf are unsupported.
-// The value must be less than math.MaxInt64 (exclusive),
-// and mst be greater than or equal to math.MinInt64 (inclusive).
+// Non-integer float64, Nan, Inf are unsupported.
+// The value less than math.MaxInt64,
+// and greater than or equal to math.MinInt64 are unsupported.
 func isInvalidBitwiseValue(value float64) bool {
 	return value != math.Trunc(value) ||
 		math.IsNaN(value) ||
