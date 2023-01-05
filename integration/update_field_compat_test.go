@@ -508,23 +508,39 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		//"Nested": {
 		//	update: bson.D{{"$rename", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		//},
-		"DotDocument": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "v.boo"}}}},
-		},
 		"DotDocumentMove": {
 			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
 		},
 		"DotDocumentDuplicate": {
 			update: bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
 		},
-		//"DotDocumentNonExisting": {
-		//	update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
-		//	resultType: emptyResult,
-		//},
-		//"DotArrayField": {
-		//	update: bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
-		//	skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
-		//},
+		"DotDocumentNonExisting": {
+			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
+			resultType: emptyResult,
+		},
+		"DotArrayField": {
+			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
+			resultType: emptyResult,
+			//skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
+		},
+
+		"Same": {
+			update: bson.D{{"$rename", bson.D{{"v", "v"}}}},
+		},
+
+		"MultipleDiff": {
+			update: bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+		},
+
+		"Multiple": {
+			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
+		},
+		"MultipleSame": {
+			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "v"}}}},
+		},
+		"MultipleSame2": {
+			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "boo"}}}},
+		},
 		//"DotArrayNonExisting": {
 		//	update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
 		//	resultType: emptyResult,
@@ -533,14 +549,37 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		//	update:     bson.D{{"$rename", bson.D{{"v", ""}, {"v", ""}}}},
 		//	resultType: emptyResult,
 		//},
-		//"Empty": {
-		//	update:     bson.D{{"$rename", bson.D{}}},
-		//	resultType: emptyResult,
-		//},
+		"Empty": {
+			update:     bson.D{{"$rename", bson.D{}}},
+			resultType: emptyResult,
+		},
 		//"DocumentField": {
 		//	update:     bson.D{{"$rename", bson.D{{"foo", ""}}}},
-		//	resultType: emptyResult,
+		//	resulttype: emptyresult,
 		//},
+
+		"FieldDoc": {
+			update: bson.D{{"$rename", bson.D{{"name", primitive.D{}}}}},
+		},
+
+		"FieldArray": {
+			update: bson.D{{"$rename", bson.D{{"name", primitive.A{}}}}},
+		},
+		"FieldNaN": {
+			update: bson.D{{"$rename", bson.D{{"name", math.NaN()}}}},
+		},
+		"FieldNil": {
+			update: bson.D{{"$rename", bson.D{{"name", nil}}}},
+		},
+		"RenameString": {
+			update: bson.D{{"$rename", "string"}},
+		},
+		"RenameNil": {
+			update: bson.D{{"$rename", nil}},
+		},
+		"RenameDoc": {
+			update: bson.D{{"$rename", primitive.D{}}},
+		},
 	}
 
 	testUpdateCompat(t, testCases)

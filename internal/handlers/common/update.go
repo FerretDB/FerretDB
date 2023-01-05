@@ -257,41 +257,18 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			continue
 		}
 
-		// TODO: test multiple keys, one invalid
 		if key == "" || renameRawValue == "" {
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
 
 		path := types.NewPathFromString(key)
-		//if !doc.HasByPath(keyPath) {
-		//	return changed,
-		//}
-
-		//if path.Len() > 1 && !doc.HasByPath(path) {
-		//	return changed, NewWriteErrorMsg(1, fmt.Sprintf(
-		//		"cannot use the part (%s of %s) to traverse the element (%v)",
-		//		path.Slice()[:1],
-		//		path.Slice(),
-		//	),
-		//	)
-		//}
 
 		renameValue, ok := renameRawValue.(string)
 		if !ok {
-			// TODO: test for invalid _id values
-			panic(1)
+			return changed, NewWriteErrorMsg(2, fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue))
 		}
 
 		renamePath := types.NewPathFromString(renameValue)
-
-		//if _, err := doc.Get(key); err != nil {
-		//	return changed, nil
-		//}
-
-		// TODO: test for non existing key
-		// TODO: check if key exists
-		// [{"foo":"aaa"},{"boo":"aaa"}]
-		// eg. { $rename: {"foo","boo"}}
 
 		var val any
 
@@ -299,7 +276,8 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			pathVal, err := doc.GetByPath(path)
 			if err != nil {
 				if strings.Contains(err.Error(), "key not found") {
-					return changed, nil
+					continue
+					//return changed, nil
 				}
 				//TODO: differentiate between key not found and can't access <type> by path
 				return changed, NewWriteErrorMsg(28, err.Error())
