@@ -274,28 +274,17 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 
 		renamePath := types.NewPathFromString(renameValue)
 
-		var val any
-
-		if path.Len() > 1 {
-			pathVal, err := doc.GetByPath(path)
-			if err != nil {
-				if strings.Contains(err.Error(), "key not found") {
-					continue
-				}
-
-				//TODO: differentiate between key not found and can't access <type> by path
-				return changed, NewWriteErrorMsg(28, err.Error())
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			if strings.Contains(err.Error(), "key not found") {
+				continue
 			}
 
-			doc.RemoveByPath(path)
-
-			val = pathVal
-		} else {
-			val = doc.Remove(key)
-			if val == nil {
-				return changed, nil
-			}
+			//TODO: differentiate between key not found and can't access <type> by path
+			return changed, NewWriteErrorMsg(28, err.Error())
 		}
+
+		doc.RemoveByPath(path)
 
 		err = doc.SetByPath(renamePath, val)
 		if err != nil {
