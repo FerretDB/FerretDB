@@ -487,8 +487,23 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update: bson.D{{"$rename", bson.D{{"v", "boo"}}}},
 		},
 		"NonExisting": {
-			update:     bson.D{{"$rename", bson.D{{"foo", "v"}}}},
+			update:     bson.D{{"$rename", bson.D{{"foo", "bar"}}}},
 			resultType: emptyResult,
+		},
+		"EmptyField": {
+			update:     bson.D{{"$rename", bson.D{{"", "v"}}}},
+			resultType: emptyResult,
+		},
+		"SpaceField": {
+			update:     bson.D{{"$rename", bson.D{{" ", "v"}}}},
+			resultType: emptyResult,
+		},
+		"EmptyDest": {
+			update:     bson.D{{"$rename", bson.D{{"v", ""}}}},
+			resultType: emptyResult,
+		},
+		"SpaceDest": {
+			update: bson.D{{"$rename", bson.D{{"v", " "}}}},
 		},
 		//"Nested": {
 		//	update: bson.D{{"$rename", bson.D{{"v", bson.D{{"array", ""}}}}}},

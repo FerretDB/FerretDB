@@ -257,21 +257,28 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			continue
 		}
 
+		// TODO: test multiple keys, one invalid
+		if key == "" || renameRawValue == "" {
+			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
+		}
+
 		renameValue, ok := renameRawValue.(string)
 		if !ok {
 			// TODO: test for invalid _id values
 			panic(1)
 		}
 
+		//if _, err := doc.Get(key); err != nil {
+		//	return changed, nil
+		//}
+
 		// TODO: test for non existing key
 		// TODO: check if key exists
 		// [{"foo":"aaa"},{"boo":"aaa"}]
-		// eg. { $rename: {"v","boo"}}
-		//TODO: test what if we removed correctly, but had Set error (probably transaction rollback, though let's be sure)
+		// eg. { $rename: {"foo","boo"}}
 		val := doc.Remove(key)
 		if val == nil {
 			return changed, nil
-			//return changed, fmt.Errorf("doesn't exist")
 		}
 
 		// TODO: test for updating field with a duplicate of the other field (and the same)
