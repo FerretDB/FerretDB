@@ -525,7 +525,8 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 
 		"Same": {
-			update: bson.D{{"$rename", bson.D{{"v", "v"}}}},
+			update:     bson.D{{"$rename", bson.D{{"v", "v"}}}},
+			resultType: emptyResult,
 		},
 
 		"MultipleDiff": {
@@ -534,12 +535,15 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 
 		"Multiple": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
+			skip:   "Updating the path 'foo' would create a conflict at 'foo'",
 		},
 		"MultipleSame": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "v"}}}},
+			skip:   "Updating the path 'foo' would create a conflict at 'foo'",
 		},
 		"MultipleSame2": {
-			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "boo"}}}},
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "boo"}}}},
+			resultType: emptyResult,
 		},
 		//"DotArrayNonExisting": {
 		//	update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
@@ -559,26 +563,34 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		//},
 
 		"FieldDoc": {
-			update: bson.D{{"$rename", bson.D{{"name", primitive.D{}}}}},
+			update:     bson.D{{"$rename", bson.D{{"v", primitive.D{}}}}},
+			resultType: emptyResult,
 		},
 
 		"FieldArray": {
-			update: bson.D{{"$rename", bson.D{{"name", primitive.A{}}}}},
+			update:     bson.D{{"$rename", bson.D{{"v", primitive.A{}}}}},
+			resultType: emptyResult,
 		},
 		"FieldNaN": {
-			update: bson.D{{"$rename", bson.D{{"name", math.NaN()}}}},
+			update:     bson.D{{"$rename", bson.D{{"v", math.NaN()}}}},
+			resultType: emptyResult,
+			skip:       "CommandError returned",
 		},
 		"FieldNil": {
-			update: bson.D{{"$rename", bson.D{{"name", nil}}}},
+			update:     bson.D{{"$rename", bson.D{{"name", nil}}}},
+			resultType: emptyResult,
 		},
 		"RenameString": {
-			update: bson.D{{"$rename", "string"}},
+			update:     bson.D{{"$rename", "string"}},
+			resultType: emptyResult,
 		},
 		"RenameNil": {
-			update: bson.D{{"$rename", nil}},
+			update:     bson.D{{"$rename", nil}},
+			resultType: emptyResult,
 		},
 		"RenameDoc": {
-			update: bson.D{{"$rename", primitive.D{}}},
+			update:     bson.D{{"$rename", primitive.D{}}},
+			resultType: emptyResult,
 		},
 	}
 

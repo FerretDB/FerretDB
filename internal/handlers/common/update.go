@@ -268,6 +268,10 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			return changed, NewWriteErrorMsg(2, fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue))
 		}
 
+		if key == renameRawValue {
+			return changed, NewWriteErrorMsg(2, fmt.Sprintf("The source and target field for $rename must differ: %s: %#v", key, renameValue))
+		}
+
 		renamePath := types.NewPathFromString(renameValue)
 
 		var val any
@@ -278,6 +282,7 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 				if strings.Contains(err.Error(), "key not found") {
 					continue
 				}
+
 				//TODO: differentiate between key not found and can't access <type> by path
 				return changed, NewWriteErrorMsg(28, err.Error())
 			}
