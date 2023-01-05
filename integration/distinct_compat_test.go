@@ -82,6 +82,12 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 
 					require.Equal(t, len(compatRes), len(targetRes))
 
+					// If compat result is an empty array, the target results must be empty array too
+					// (not nil or something else).
+					if len(compatRes) == 0 {
+						assert.Equal(t, compatRes, targetRes)
+					}
+
 					// We can't check the exact data types because they might be different.
 					// For example, if targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],
 					// we consider them equal. If different documents use different types to store the same value
@@ -149,6 +155,10 @@ func TestDistinctCompat(t *testing.T) {
 		},
 		"DotNotationArray": {
 			field:  "v.array.0",
+			filter: bson.D{},
+		},
+		"DotNotationArrayFirstLevel": {
+			field:  "v.0.foo",
 			filter: bson.D{},
 		},
 	}
