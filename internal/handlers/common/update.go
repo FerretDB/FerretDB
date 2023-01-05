@@ -282,6 +282,8 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			panic(1)
 		}
 
+		renamePath := types.NewPathFromString(renameValue)
+
 		//if _, err := doc.Get(key); err != nil {
 		//	return changed, nil
 		//}
@@ -321,7 +323,9 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 		// [{"foo":"aaa"},{"boo":"aaa"}]
 		// eg. { $rename: {"foo","boo"}}
 		// eg. { $rename: {"foo","foo"}}
-		doc.Set(renameValue, val)
+		//doc.Set(renameValue, val)
+
+		err = doc.SetByPath(renamePath, val)
 		if err != nil {
 			return changed, err
 		}

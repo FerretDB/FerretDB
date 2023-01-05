@@ -509,7 +509,13 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		//	update: bson.D{{"$rename", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		//},
 		"DotDocument": {
+			update: bson.D{{"$rename", bson.D{{"v.foo", "v.boo"}}}},
+		},
+		"DotDocumentMove": {
 			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+		},
+		"DotDocumentDuplicate": {
+			update: bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
 		},
 		//"DotDocumentNonExisting": {
 		//	update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
