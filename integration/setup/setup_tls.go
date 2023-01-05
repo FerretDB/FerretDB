@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// GetTLSFilesPaths returns paths to TLS files.
-func GetTLSFilesPaths(t testing.TB) (string, string) {
+// GetTLSFilesPaths returns paths to TLS files - cert, key, ca.
+func GetTLSFilesPaths(t testing.TB) (string, string, string) {
 	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
 
 	_, err := os.Stat(certPath)
@@ -34,5 +34,10 @@ func GetTLSFilesPaths(t testing.TB) (string, string) {
 	_, err = os.Stat(keyPath)
 	require.NoError(t, err)
 
-	return certPath, keyPath
+	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
+
+	_, err = os.Stat(keyPath)
+	require.NoError(t, err)
+
+	return certPath, keyPath, caPath
 }

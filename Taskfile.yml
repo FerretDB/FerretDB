@@ -275,6 +275,7 @@ tasks:
         --listen-addr=''
         --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
+        --tls-ca-file=./build/certs/rootCA.pem
         --listen-tls=:27018
         --mode=normal
         --postgresql-url="postgres://127.0.0.1:5433/ferretdb"

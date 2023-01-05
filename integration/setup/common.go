@@ -251,7 +251,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	tls := *targetTLSF
 	if tls {
 		listenerOpts.TLS = hostPort
-		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile = GetTLSFilesPaths(tb)
+		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = GetTLSFilesPaths(tb)
 	} else {
 		listenerOpts.Addr = hostPort
 	}
