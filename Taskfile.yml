@@ -492,3 +492,8 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+
+  blog-dev:
+      desc: "Start blog development server"
+      cmds:
+        - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0
