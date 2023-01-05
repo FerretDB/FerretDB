@@ -508,9 +508,9 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		//"Nested": {
 		//	update: bson.D{{"$rename", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		//},
-		//"DotDocument": {
-		//	update: bson.D{{"$rename", bson.D{{"v.foo", ""}}}},
-		//},
+		"DotDocument": {
+			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+		},
 		//"DotDocumentNonExisting": {
 		//	update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
 		//	resultType: emptyResult,

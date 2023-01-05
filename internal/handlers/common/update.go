@@ -262,6 +262,16 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
 
+		keyPath := types.NewPathFromString(key)
+		//if path.Len() > 1 && !doc.HasByPath(path) {
+		//	return changed, NewWriteErrorMsg(1, fmt.Sprintf(
+		//		"cannot use the part (%s of %s) to traverse the element (%v)",
+		//		path.Slice()[:1],
+		//		path.Slice(),
+		//	),
+		//	)
+		//}
+
 		renameValue, ok := renameRawValue.(string)
 		if !ok {
 			// TODO: test for invalid _id values
@@ -276,7 +286,7 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 		// TODO: check if key exists
 		// [{"foo":"aaa"},{"boo":"aaa"}]
 		// eg. { $rename: {"foo","boo"}}
-		val := doc.Remove(key)
+		val := doc.RemoveByPath(keyPath)
 		if val == nil {
 			return changed, nil
 		}
