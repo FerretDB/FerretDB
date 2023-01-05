@@ -277,16 +277,11 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			if err != nil {
 				if strings.Contains(err.Error(), "key not found") {
 					continue
-					//return changed, nil
 				}
 				//TODO: differentiate between key not found and can't access <type> by path
 				return changed, NewWriteErrorMsg(28, err.Error())
-				//return changed, NewCommandErrorMsg(1, fmt.Sprintf(
-				//	"cannot use the part (%s of %s) to traverse the element (%v)",
-				//	path.TrimPrefix().String(),
-				//	path.String(),
-				//))
 			}
+
 			doc.RemoveByPath(path)
 
 			val = pathVal
@@ -296,12 +291,6 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 				return changed, nil
 			}
 		}
-
-		// TODO: test for updating field with a duplicate of the other field (and the same)
-		// [{"foo":"aaa"},{"boo":"aaa"}]
-		// eg. { $rename: {"foo","boo"}}
-		// eg. { $rename: {"foo","foo"}}
-		//doc.Set(renameValue, val)
 
 		err = doc.SetByPath(renamePath, val)
 		if err != nil {
