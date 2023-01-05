@@ -50,9 +50,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-3", "int64-big", "int64-min", "int64-zero",
 			},
@@ -85,9 +84,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
@@ -115,9 +113,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
@@ -126,8 +123,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-3", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
+				"double-1", "double-2", "double-3", "double-big",
 				"double-min-overflow-verge", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-min", "int64-zero",
@@ -145,8 +141,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
+				"double-1", "double-2", "double-4", "double-big",
 				"double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
@@ -166,8 +161,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-5", "double-6",
-				"double-max-overflow-verge", "double-min-overflow",
+				"double-1", "double-2",
 				"double-min-overflow-verge", "double-zero",
 				"int32-zero",
 				"int64-min",
@@ -351,9 +345,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -388,9 +381,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -419,9 +411,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -431,9 +422,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-3", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-whole", "double-zero",
+				"double-1", "double-2", "double-3",
+				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-min", "int64-zero",
 			},
@@ -442,9 +432,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -463,9 +452,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-3", "double-4", "double-5", "double-6",
-				"double-big", "double-max-overflow-verge", "double-min-overflow",
-				"double-min-overflow-verge", "double-whole", "double-zero",
+				"double-1", "double-2", "double-3", "double-4",
+				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-min", "int64-zero",
 			},

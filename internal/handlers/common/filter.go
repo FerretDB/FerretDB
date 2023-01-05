@@ -804,11 +804,7 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
 	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) ||
-			math.IsNaN(value) ||
-			math.IsInf(value, 0) ||
-			value > math.MaxInt64 {
+		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
@@ -848,11 +844,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
 	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) ||
-			math.IsNaN(value) ||
-			math.IsInf(value, 0) ||
-			value > math.MaxInt64 {
+		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
@@ -892,11 +884,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
 	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) ||
-			math.IsNaN(value) ||
-			math.IsInf(value, 0) ||
-			value > math.MaxInt64 {
+		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
@@ -936,11 +924,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	switch value := fieldValue.(type) {
 	case float64:
-		// TODO check float negative zero
-		if value != math.Trunc(value) ||
-			math.IsNaN(value) ||
-			math.IsInf(value, 0) ||
-			value > math.MaxInt64 {
+		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
@@ -972,6 +956,19 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 	default:
 		return false, nil
 	}
+}
+
+// isInvalidBitwiseValue returns true for invalid values of float64
+// use for bitwise operation.
+// Non integer float64, Nan, Inf are unsupported.
+// The value must be less than math.MaxInt64 (exclusive),
+// and mst be greater than or equal to math.MinInt64 (inclusive).
+func isInvalidBitwiseValue(value float64) bool {
+	return value != math.Trunc(value) ||
+		math.IsNaN(value) ||
+		math.IsInf(value, 0) ||
+		value >= math.MaxInt64 ||
+		value < math.MinInt64
 }
 
 // filterFieldMod handles {field: {$mod: [divisor, remainder]}} filter.
