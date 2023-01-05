@@ -262,7 +262,11 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
 
-		keyPath := types.NewPathFromString(key)
+		path := types.NewPathFromString(key)
+		//if !doc.HasByPath(keyPath) {
+		//	return changed,
+		//}
+
 		//if path.Len() > 1 && !doc.HasByPath(path) {
 		//	return changed, NewWriteErrorMsg(1, fmt.Sprintf(
 		//		"cannot use the part (%s of %s) to traverse the element (%v)",
@@ -286,9 +290,31 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 		// TODO: check if key exists
 		// [{"foo":"aaa"},{"boo":"aaa"}]
 		// eg. { $rename: {"foo","boo"}}
-		val := doc.RemoveByPath(keyPath)
-		if val == nil {
-			return changed, nil
+
+		var val any
+
+		if path.Len() > 1 {
+			pathVal, err := doc.GetByPath(path)
+			if err != nil {
+				if strings.Contains(err.Error(), "key not found") {
+					return changed, nil
+				}
+				//TODO: differentiate between key not found and can't access <type> by path
+				return changed, NewWriteErrorMsg(28, err.Error())
+				//return changed, NewCommandErrorMsg(1, fmt.Sprintf(
+				//	"cannot use the part (%s of %s) to traverse the element (%v)",
+				//	path.TrimPrefix().String(),
+				//	path.String(),
+				//))
+			}
+			doc.RemoveByPath(path)
+
+			val = pathVal
+		} else {
+			val = doc.Remove(key)
+			if val == nil {
+				return changed, nil
+			}
 		}
 
 		// TODO: test for updating field with a duplicate of the other field (and the same)
