@@ -94,12 +94,14 @@ func Example_unix() {
 func Example_tls() {
 	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
 	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
+	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
 
 	f, err := New(&Config{
 		Listener: ListenerConfig{
 			TLS:         "127.0.0.1:17028",
 			TLSCertFile: certPath,
 			TLSKeyFile:  keyPath,
+			TLSCAFile:   caPath,
 		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",

@@ -73,6 +73,9 @@ type ListenerConfig struct {
 
 	// TLSKeyFile path.
 	TLSKeyFile string
+
+	// TLSCAFile path.
+	TLSCAFile string
 }
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
@@ -121,6 +124,7 @@ func New(config *Config) (*FerretDB, error) {
 			TLS:         config.Listener.TLS,
 			TLSCertFile: config.Listener.TLSCertFile,
 			TLSKeyFile:  config.Listener.TLSKeyFile,
+			TLSCAFile:   config.Listener.TLSCAFile,
 		},
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,

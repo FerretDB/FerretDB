@@ -187,6 +187,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// setupTLSListenerOpts represents TLS listener setup options.
 type setupTLSListenerOpts struct {
 	addr, certFile, keyFile, caFile string
 }
@@ -204,6 +205,11 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 	cert, err := tls.LoadX509KeyPair(opts.certFile, opts.keyFile)
 	if err != nil {
 		return nil, err
+	}
+
+	config := tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.VerifyClientCertIfGiven,
 	}
 
 	var roots *x509.CertPool
@@ -226,15 +232,9 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 		if !ok {
 			return nil, fmt.Errorf("failed to parse root certificate")
 		}
-	}
 
-	config := tls.Config{
-		// TODO ClientAuth, ClientCAs, maybe something else
-		// https://github.com/FerretDB/FerretDB/issues/1707
-
-		Certificates: []tls.Certificate{cert},
-		ClientCAs:    roots,
-		ClientAuth:   tls.VerifyClientCertIfGiven,
+		config.ClientAuth = tls.RequireAndVerifyClientCert
+		config.ClientCAs = roots
 	}
 
 	listener, err := tls.Listen("tcp", opts.addr, &config)
