@@ -98,6 +98,10 @@ var Commands = map[string]command{
 		Help:    "Deletes documents matched by the query.",
 		Handler: handlers.Interface.MsgDelete,
 	},
+	"distinct": {
+		Help:    "Returns an array of distinct values for the given field.",
+		Handler: handlers.Interface.MsgDistinct,
+	},
 	"drop": {
 		Help:    "Drops the collection.",
 		Handler: handlers.Interface.MsgDrop,
