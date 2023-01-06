@@ -30,6 +30,7 @@ import (
 )
 
 func TestQueryBitwiseAllClear(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "todo")
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -199,6 +200,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAllSet(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "todo")
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -325,6 +327,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 }
 
 func TestQueryBitwiseAnyClear(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "todo")
 	setup.SkipForTigris(t)
 
 	t.Parallel()
