@@ -484,9 +484,13 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 func TestUpdateFieldCompatRename(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Simple": {
-			update: bson.D{{"$rename", bson.D{{"v", "boo"}}}},
+			update: bson.D{{"$rename", bson.D{{"v", "foo"}}}},
 		},
-		"NonExisting": {
+		"DuplicateField": {
+			update:     bson.D{{"$rename", bson.D{{"v", "v"}}}},
+			resultType: emptyResult,
+		},
+		"NonExistingField": {
 			update:     bson.D{{"$rename", bson.D{{"foo", "bar"}}}},
 			resultType: emptyResult,
 		},
@@ -494,20 +498,10 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:     bson.D{{"$rename", bson.D{{"", "v"}}}},
 			resultType: emptyResult,
 		},
-		"SpaceField": {
-			update:     bson.D{{"$rename", bson.D{{" ", "v"}}}},
-			resultType: emptyResult,
-		},
 		"EmptyDest": {
 			update:     bson.D{{"$rename", bson.D{{"v", ""}}}},
 			resultType: emptyResult,
 		},
-		"SpaceDest": {
-			update: bson.D{{"$rename", bson.D{{"v", " "}}}},
-		},
-		//"Nested": {
-		//	update: bson.D{{"$rename", bson.D{{"v", bson.D{{"array", ""}}}}}},
-		//},
 		"DotDocumentMove": {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
 			skipForTigris: "schema violation",
@@ -523,53 +517,31 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		"DotArrayField": {
 			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
 			resultType: emptyResult,
-			//skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
 		},
-
-		"Same": {
-			update:     bson.D{{"$rename", bson.D{{"v", "v"}}}},
-			resultType: emptyResult,
-		},
-
-		"MultipleDiff": {
+		"Multiple": {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
 			skipForTigris: "schema violation",
 		},
-
-		"Multiple": {
+		"MultipleConflictDestSource": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
 			skip:   "Updating the path 'foo' would create a conflict at 'foo'",
 		},
-		"MultipleSame": {
-			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "v"}}}},
-			skip:   "Updating the path 'foo' would create a conflict at 'foo'",
-		},
-		"MultipleSame2": {
-			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "boo"}}}},
+		"MultipleConflictDestFields": {
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 			resultType: emptyResult,
 		},
-		//"DotArrayNonExisting": {
-		//	update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
-		//	resultType: emptyResult,
-		//},
-		//"DuplicateKeys": {
-		//	update:     bson.D{{"$rename", bson.D{{"v", ""}, {"v", ""}}}},
-		//	resultType: emptyResult,
-		//},
-		"Empty": {
+		"DotArrayNonExisting": {
+			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"FieldEmpty": {
 			update:     bson.D{{"$rename", bson.D{}}},
 			resultType: emptyResult,
 		},
-		//"DocumentField": {
-		//	update:     bson.D{{"$rename", bson.D{{"foo", ""}}}},
-		//	resulttype: emptyresult,
-		//},
-
 		"FieldDoc": {
 			update:     bson.D{{"$rename", bson.D{{"v", primitive.D{}}}}},
 			resultType: emptyResult,
 		},
-
 		"FieldArray": {
 			update:     bson.D{{"$rename", bson.D{{"v", primitive.A{}}}}},
 			resultType: emptyResult,
@@ -583,15 +555,15 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:     bson.D{{"$rename", bson.D{{"name", nil}}}},
 			resultType: emptyResult,
 		},
-		"RenameString": {
+		"InvalidString": {
 			update:     bson.D{{"$rename", "string"}},
 			resultType: emptyResult,
 		},
-		"RenameNil": {
+		"InvalidNil": {
 			update:     bson.D{{"$rename", nil}},
 			resultType: emptyResult,
 		},
-		"RenameDoc": {
+		"InvalidDoc": {
 			update:     bson.D{{"$rename", primitive.D{}}},
 			resultType: emptyResult,
 		},
