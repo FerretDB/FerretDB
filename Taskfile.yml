@@ -189,6 +189,8 @@ tasks:
         -handler=tigris
         -records-dir=../records
         -target-tls
+        -compat-port=37018
+        -compat-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"

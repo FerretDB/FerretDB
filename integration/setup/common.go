@@ -20,8 +20,6 @@ import (
 	"errors"
 	"flag"
 	"net/url"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 
@@ -103,7 +101,14 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	tb.Helper()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	clientOpts := options.Client().ApplyURI(uri)
+
+	if *targetTLSF {
+		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
+	}
+
+	client, err := mongo.Connect(ctx, clientOpts)
+
 	if err == nil {
 		defer client.Disconnect(ctx)
 
@@ -149,12 +154,12 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
 
-		q.Set("tls", "true")
-
-		p := filepath.Join("..", "build", "certs", "rootCA.pem")
-		_, err := os.Stat(p)
-		require.NoError(tb, err)
-		q.Set("tlsCAFile", p)
+		//q.Set("tls", "true")
+		//
+		//p := filepath.Join("..", "build", "certs", "rootCA.pem")
+		//_, err := os.Stat(p)
+		//require.NoError(tb, err)
+		//q.Set("tlsCAFile", p)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
@@ -310,7 +315,13 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 
 	tb.Logf("setupClient: %s", uri)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	clientOpts := options.Client().ApplyURI(uri)
+
+	if *targetTLSF {
+		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
+	}
+
+	client, err := mongo.Connect(ctx, clientOpts)
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
