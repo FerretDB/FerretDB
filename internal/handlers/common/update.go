@@ -17,6 +17,7 @@ package common
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -104,7 +105,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$rename":
-			changed, err = processRenameFieldExpression(doc, updateV)
+			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -244,9 +245,8 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 
 // processRenameFieldExpression changes document according to $rename operator.
 // If the document was changed it returns true.
-func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error) {
-	renameExpression := updateV.(*types.Document)
-	renameExpression = renameExpression.SortFieldsByKey() // TODO: test key order
+func processRenameFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
+	renameExpression := update.SortFieldsByKey()
 
 	var changed bool
 
@@ -261,32 +261,36 @@ func processRenameFieldExpression(doc *types.Document, updateV any) (bool, error
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
 
-		path := types.NewPathFromString(key)
+		sourcePath := types.NewPathFromString(key)
 
 		renameValue, ok := renameRawValue.(string)
 		if !ok {
-			return changed, NewWriteErrorMsg(2, fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue))
+			return changed, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue))
 		}
 
 		if key == renameRawValue {
-			return changed, NewWriteErrorMsg(2, fmt.Sprintf("The source and target field for $rename must differ: %s: %#v", key, renameValue))
+			return changed, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("The source and target field for $rename must differ: %s: %#v", key, renameValue))
 		}
 
-		renamePath := types.NewPathFromString(renameValue)
+		targetPath := types.NewPathFromString(renameValue)
 
-		val, err := doc.GetByPath(path)
+		// Get value to move
+		val, err := doc.GetByPath(sourcePath)
 		if err != nil {
-			if strings.Contains(err.Error(), "key not found") {
+			// TODO refactor `getByPath` to make this check more elegant
+			skipErr := must.NotFail(regexp.MatchString(`^types\.getByPath: types\.Document\.Get: key not found:.+`, err.Error()))
+			if skipErr {
 				continue
 			}
 
-			//TODO: differentiate between key not found and can't access <type> by path
-			return changed, NewWriteErrorMsg(28, err.Error())
+			return changed, NewWriteErrorMsg(ErrUnsuitableValueType, err.Error())
 		}
 
-		doc.RemoveByPath(path)
+		// Remove old document
+		doc.RemoveByPath(sourcePath)
 
-		err = doc.SetByPath(renamePath, val)
+		// Set new path with old value
+		err = doc.SetByPath(targetPath, val)
 		if err != nil {
 			return changed, err
 		}
