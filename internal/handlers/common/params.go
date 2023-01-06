@@ -317,6 +317,72 @@ func addNumbers(v1, v2 any) (any, error) {
 	}
 }
 
+// multiplyNumbers returns the result of v1 and v2 multiplication and error if multiplication failed.
+// The v1 and v2 parameters could be float64, int32, int64.
+// The result would be the broader type possible, i.e. int32 + int64 produces int64.
+func multiplyNumbers(v1, v2 any) (any, error) {
+	switch v1 := v1.(type) {
+	case float64:
+		switch v2 := v2.(type) {
+		case float64:
+			return v1 * v2, nil
+		case int32:
+			return v1 * float64(v2), nil
+		case int64:
+			return v1 * float64(v2), nil
+		default:
+			return nil, errUnexpectedRightOpType
+		}
+	case int32:
+		switch v2 := v2.(type) {
+		case float64:
+			return float64(v1) * v2, nil
+		case int32:
+			result := v1 * v2
+			if int64(result) != int64(v1)*int64(v2) {
+				return int64(v1) * int64(v2), nil
+			}
+
+			return result, nil
+		case int64:
+			result := int64(v1) * v2
+
+			resFloat := float64(v1) * float64(v2)
+			if resFloat > float64(math.MaxInt64) || resFloat < float64(math.MinInt64) {
+				return nil, errLongExceeded
+			}
+
+			return result, nil
+		default:
+			return nil, errUnexpectedRightOpType
+		}
+	case int64:
+		switch v2 := v2.(type) {
+		case float64:
+			return float64(v1) * v2, nil
+		case int32:
+			result := v1 * int64(v2)
+
+			if float64(result) != float64(v1)*float64(v2) {
+				return nil, errIntExceeded
+			}
+
+			return result, nil
+		case int64:
+			result := v1 * v2
+			if float64(result) != float64(v1)*float64(v2) {
+				return nil, errLongExceeded
+			}
+
+			return v1 * v2, nil
+		default:
+			return nil, errUnexpectedRightOpType
+		}
+	default:
+		return nil, errUnexpectedLeftOpType
+	}
+}
+
 // GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
 func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
 	v, err := document.Get(key)

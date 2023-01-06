@@ -793,3 +793,24 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateFieldCompatMul(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"Int32": {
+			update: bson.D{{"$mul", bson.D{{"v", int32(1)}}}},
+		},
+		"Int32Negative": {
+			update: bson.D{{"$mul", bson.D{{"v", int32(-1)}}}},
+		},
+		"Int64Max": {
+			update: bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+		},
+		"Int64Min": {
+			update: bson.D{{"$mul", bson.D{{"v", math.MinInt64}}}},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
