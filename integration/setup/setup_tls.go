@@ -27,6 +27,7 @@ import (
 // TLSFileSide defines a "side" of TLS file (client or server).
 type TLSFileSide string
 
+// Possible values for TLSFileSide.
 const (
 	ClientSide TLSFileSide = "client"
 	ServerSide TLSFileSide = "server"
@@ -63,6 +64,7 @@ func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
 	}
 }
 
+// GetClientTLSConfig returns a test TLS config for a client.
 func GetClientTLSConfig(t testing.TB) *tls.Config {
 	tlsFiles := GetTLSFilesPaths(t, ClientSide)
 
@@ -81,7 +83,6 @@ func GetClientTLSConfig(t testing.TB) *tls.Config {
 	tlsConfig := &tls.Config{
 		RootCAs:      roots,
 		Certificates: []tls.Certificate{cert},
-		// InsecureSkipVerify: true,
 	}
 
 	return tlsConfig

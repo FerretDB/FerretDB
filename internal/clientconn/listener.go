@@ -209,28 +209,25 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 
 	config := tls.Config{
 		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.VerifyClientCertIfGiven,
 	}
-
-	var roots *x509.CertPool
 
 	if opts.caFile != "" {
 		if _, err = os.Stat(opts.caFile); err != nil {
 			return nil, fmt.Errorf("TLS CA file: %w", err)
 		}
 
-		var caCertPEM []byte
+		var rootCA []byte
 
-		caCertPEM, err = os.ReadFile(opts.caFile)
+		rootCA, err = os.ReadFile(opts.caFile)
 		if err != nil {
 			return nil, err
 		}
 
-		roots = x509.NewCertPool()
+		roots := x509.NewCertPool()
 
-		ok := roots.AppendCertsFromPEM(caCertPEM)
+		ok := roots.AppendCertsFromPEM(rootCA)
 		if !ok {
-			return nil, fmt.Errorf("failed to parse root certificate")
+			return nil, fmt.Errorf("Failed to parse root certificate")
 		}
 
 		config.ClientAuth = tls.RequireAndVerifyClientCert

@@ -68,13 +68,13 @@ type ListenerConfig struct {
 	// If empty, TLS listener is disabled.
 	TLS string
 
-	// TLSCertFile path.
+	// Server certificate path.
 	TLSCertFile string
 
-	// TLSKeyFile path.
+	// Server key path.
 	TLSKeyFile string
 
-	// TLSCAFile path.
+	// Root CA certificate path.
 	TLSCAFile string
 }
 
