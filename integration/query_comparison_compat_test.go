@@ -643,8 +643,7 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lt", int64(42)}}}},
 		},
 		"Int64Min": {
-			filter:     bson.D{{"v", bson.D{{"$lt", int64(math.MinInt64)}}}},
-			resultType: emptyResult,
+			filter: bson.D{{"v", bson.D{{"$lt", int64(math.MinInt64)}}}},
 		},
 		"Int64Big": {
 			filter: bson.D{{"v", bson.D{{"$lt", int64(2<<60 + 1)}}}},
