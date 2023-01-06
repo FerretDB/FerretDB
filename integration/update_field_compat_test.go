@@ -509,10 +509,12 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		//	update: bson.D{{"$rename", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		//},
 		"DotDocumentMove": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			skipForTigris: "schema violation",
 		},
 		"DotDocumentDuplicate": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			skipForTigris: "schema violation",
 		},
 		"DotDocumentNonExisting": {
 			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
@@ -530,7 +532,8 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 
 		"MultipleDiff": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+			skipForTigris: "schema violation",
 		},
 
 		"Multiple": {
