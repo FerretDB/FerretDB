@@ -250,6 +250,8 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 	var changed bool
 
+	skipErrReg := regexp.MustCompile(`^types\.getByPath: types\.Document\.Get: key not found:.+`)
+
 	for _, key := range renameExpression.Keys() {
 		renameRawValue, err := renameExpression.Get(key)
 		if err != nil {
@@ -265,11 +267,17 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 		renameValue, ok := renameRawValue.(string)
 		if !ok {
-			return changed, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue))
+			return changed, NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue),
+			)
 		}
 
 		if key == renameRawValue {
-			return changed, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("The source and target field for $rename must differ: %s: %#v", key, renameValue))
+			return changed, NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("The source and target field for $rename must differ: %s: %#v", key, renameValue),
+			)
 		}
 
 		targetPath := types.NewPathFromString(renameValue)
@@ -278,8 +286,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		val, err := doc.GetByPath(sourcePath)
 		if err != nil {
 			// TODO refactor `getByPath` to make this check more elegant
-			skipErr := must.NotFail(regexp.MatchString(`^types\.getByPath: types\.Document\.Get: key not found:.+`, err.Error()))
-			if skipErr {
+			if skipErrReg.MatchString(err.Error()) {
 				continue
 			}
 
