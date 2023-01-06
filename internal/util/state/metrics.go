@@ -66,6 +66,9 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		constLabels["telemetry"] = "undecided"
 	case *s.Telemetry:
 		constLabels["telemetry"] = "enabled"
+		if s.LatestVersion != v.Version {
+			constLabels["latest_version_available"] = s.LatestVersion
+		}
 	default:
 		constLabels["telemetry"] = "disabled"
 	}
@@ -73,8 +76,6 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	if mc.addUUIDToMetric {
 		constLabels["uuid"] = s.UUID
 	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/1443
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),
