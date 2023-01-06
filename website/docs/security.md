@@ -14,7 +14,9 @@ All you need to do is to start the server with the following flags or environmen
 * `--listen-tls-cert-file` / `FERRETDB_LISTEN_TLS_CERT_FILE` specifies the PEM encoded, TLS certificate file
   that will be presented to clients;
 * `--listen-tls-key-file` / `FERRETDB_LISTEN_TLS_KEY_FILE` specifies the TLS private key file
-  that will be used to decrypt communications.
+  that will be used to decrypt communications;
+* `--listen-tls-ca-file` / `FERRETDB_LISTEN_TLS_CA_FILE` specifies the root CA certificate file
+  that will be used to verify client certificates.
 
 Then use `tls` query parameters in MongoDB URI for the client.
 You may also need to set `tlsCAFile` parameter if the system-wide certificate authority did not issue the server's certificate.
