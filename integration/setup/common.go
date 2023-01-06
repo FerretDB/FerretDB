@@ -153,13 +153,6 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
-
-		//q.Set("tls", "true")
-		//
-		//p := filepath.Join("..", "build", "certs", "rootCA.pem")
-		//_, err := os.Stat(p)
-		//require.NoError(tb, err)
-		//q.Set("tlsCAFile", p)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
