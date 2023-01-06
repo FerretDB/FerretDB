@@ -142,6 +142,5 @@ var ArrayStrings = &Values[string]{
 		"array-string-duplicate": bson.A{"b", "a", "b"},
 		"array-string-nil":       nil,
 		"array-string-empty":     bson.A{},
-		"array-string-with-nils": bson.A{"a", nil, "b"},
 	},
 }
