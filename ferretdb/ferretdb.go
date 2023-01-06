@@ -68,11 +68,14 @@ type ListenerConfig struct {
 	// If empty, TLS listener is disabled.
 	TLS string
 
-	// TLSCertFile path.
+	// Server certificate path.
 	TLSCertFile string
 
-	// TLSKeyFile path.
+	// Server key path.
 	TLSKeyFile string
+
+	// Root CA certificate path.
+	TLSCAFile string
 }
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
@@ -121,6 +124,7 @@ func New(config *Config) (*FerretDB, error) {
 			TLS:         config.Listener.TLS,
 			TLSCertFile: config.Listener.TLSCertFile,
 			TLSKeyFile:  config.Listener.TLSKeyFile,
+			TLSCAFile:   config.Listener.TLSCAFile,
 		},
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
