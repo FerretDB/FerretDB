@@ -281,10 +281,10 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
 
 | Command     | Argument | Status | Comments                                                  |
-| ----------- | -------- | ------ | --------------------------------------------------------- |
+|-------------|----------|--------|-----------------------------------------------------------|
 | `aggregate` |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
 | `count`     |          | ✅      |                                                           |
-| `distinct`  |          | ❌      |  [Issue](https://github.com/FerretDB/FerretDB/issues/945) |
+| `distinct`  |          | ✅      |                                                           |
 
 <!-- markdownlint-disable MD001 MD033 -->
 <!-- That's the simplest way to remove those sections from the right menu. -->
