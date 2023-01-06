@@ -127,3 +127,21 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"bar", bson.D{}}},
 	},
 }
+
+// ArrayStrings contains an array with string values for tests.
+var ArrayStrings = &Values[string]{
+	name:     "ArrayStrings",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "array", "items": {"type": "string"}`),
+		},
+	},
+	data: map[string]any{
+		"array-string-desc":      bson.A{"c", "b", "a"},
+		"array-string-duplicate": bson.A{"b", "a", "b"},
+		"array-string-nil":       nil,
+		"array-string-empty":     bson.A{},
+		"array-string-with-nils": bson.A{"a", nil, "b"},
+	},
+}

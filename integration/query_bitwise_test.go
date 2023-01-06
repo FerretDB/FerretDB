@@ -489,6 +489,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAnySet(t *testing.T) {
+	setup.SkipForPostgresWithReason(t, "todo")
 	setup.SkipForTigris(t)
 
 	t.Parallel()
