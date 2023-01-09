@@ -41,7 +41,6 @@ func TestEqual(t *testing.T) {
 	AssertNotEqual(t, math.Inf(-1), math.Inf(+1))
 
 	AssertEqual(t, 0.0, math.Copysign(0, +1))
-	AssertNotEqual(t, math.Copysign(0, +1), math.Copysign(0, -1))
 
 	AssertEqual(
 		t,

@@ -804,30 +804,109 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32": {
-			update: bson.D{{"$mul", bson.D{{"v", int32(1)}}}},
-		},
-		"Int32Negative": {
-			update: bson.D{{"$mul", bson.D{{"v", int32(-1)}}}},
-		},
-		"Int64Max": {
-			update:    bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
-			providers: providers,
-		},
-		"Int64Min": {
-			update:    bson.D{{"$mul", bson.D{{"v", math.MinInt64}}}},
+			update:    bson.D{{"$mul", bson.D{{"v", int32(42)}}}},
 			providers: providers,
 		},
 		"Int32Zero": {
 			update:    bson.D{{"$mul", bson.D{{"v", int32(0)}}}},
 			providers: providers,
 		},
+		"Int32Negative": {
+			update:    bson.D{{"$mul", bson.D{{"v", int32(-42)}}}},
+			providers: providers,
+		},
+		"Int32Min": {
+			update:    bson.D{{"$mul", bson.D{{"v", math.MinInt32}}}},
+			providers: providers,
+		},
+		"Int32Max": {
+			update:    bson.D{{"$mul", bson.D{{"v", math.MaxInt32}}}},
+			providers: providers,
+		},
+		"Int64": {
+			update:    bson.D{{"$mul", bson.D{{"v", int64(42)}}}},
+			providers: providers,
+		},
 		"Int64Zero": {
 			update:    bson.D{{"$mul", bson.D{{"v", int64(0)}}}},
 			providers: providers,
 		},
-		"Float64Zero": {
+		"Int64Negative": {
+			update:    bson.D{{"$mul", bson.D{{"v", int32(-42)}}}},
+			providers: providers,
+		},
+		"Int64Min": {
+			update:    bson.D{{"$mul", bson.D{{"v", math.MinInt64}}}},
+			providers: providers,
+		},
+		"Int64Max": {
+			update:    bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			providers: providers,
+		},
+		"Double": {
+			update:    bson.D{{"$mul", bson.D{{"v", 42.13}}}},
+			providers: providers,
+		},
+		"DoubleZero": {
 			update:    bson.D{{"$mul", bson.D{{"v", float64(0)}}}},
 			providers: providers,
+		},
+		"DoubleNegative": {
+			update:    bson.D{{"$mul", bson.D{{"v", int32(-42)}}}},
+			providers: providers,
+		},
+		"DoubleSmallestNonZero": {
+			update:    bson.D{{"$mul", bson.D{{"v", math.SmallestNonzeroFloat64}}}},
+			providers: providers,
+		},
+		"DoubleBig": {
+			update:    bson.D{{"$mul", bson.D{{"v", float64(2 << 60)}}}},
+			providers: providers,
+		},
+		"Empty": {
+			update:     bson.D{{"$mul", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"Null": {
+			update:     bson.D{{"$mul", bson.D{{"v", nil}}}},
+			resultType: emptyResult,
+		},
+		"String": {
+			update:     bson.D{{"$mul", bson.D{{"v", "string"}}}},
+			resultType: emptyResult,
+		},
+		"StringFieldNotExist": {
+			update:     bson.D{{"$mul", bson.D{{"foo.bar", "bad value"}}}},
+			resultType: emptyResult,
+		},
+		"FieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"foo", int32(45)}}}},
+		},
+		"DocFieldExist": {
+			update: bson.D{{"$mul", bson.D{{"v.foo", int32(45)}}}},
+		},
+		"DocFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"foo.bar", int32(45)}}}},
+		},
+		"ArrayFieldExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.0", int32(45)}}}},
+		},
+		"ArrayFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.foo", int32(45)}}}},
+		},
+		"DocArrayFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"foo.0.baz", int32(45)}}}},
+		},
+		"TwoFields": {
+			update: bson.D{{"$mul", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
+		},
+		"DuplicateKeys": {
+			update:     bson.D{{"$mul", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
+			resultType: emptyResult,
+		},
+		"InvalidLastField": {
+			update:     bson.D{{"$mul", bson.D{{"foo", int32(12)}, {"v", "string"}}}},
+			resultType: emptyResult,
 		},
 	}
 
