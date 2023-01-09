@@ -62,7 +62,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.Strings}, // shareddata.AllProviders(),
+				Providers:                shareddata.AllProviders(),
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -412,11 +412,10 @@ func TestUpdateCompat(t *testing.T) {
 		},
 		"ReplaceEmpty": {
 			replace:       bson.D{{"v", ""}},
-			skipForTigris: "TODO", // ??
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"ReplaceNull": {
-			replace:       bson.D{{"v", nil}},
-			skipForTigris: "TODO", // ?
+			replace: bson.D{{"v", nil}},
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
