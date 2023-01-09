@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -490,14 +491,19 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
+		var err error
+
 		docValue, err := doc.GetByPath(types.NewPathFromString(mulKey))
 		if err != nil {
 			return false, err
 		}
 
-		multiplied, err := multiplyNumbers(mulValue, docValue)
-		if err == nil {
-			err := doc.SetByPath(path, multiplied)
+		var multiplied any
+		multiplied, err = multiplyNumbers(mulValue, docValue)
+
+		switch {
+		case err == nil:
+			err = doc.SetByPath(path, multiplied)
 			if err != nil {
 				return false, NewWriteErrorMsg(
 					ErrUnsuitableValueType,
@@ -505,17 +511,19 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				)
 			}
 
-			if result := types.Compare(docValue, multiplied); result == types.Equal {
+			// Must capture any difference in number type for example
+			// a change from int32(0) to int64(0) for updating.
+			// Hence, do not use types.Compare(docValue, multiplied) because
+			// it will equate int32(0) == int64(0).
+			if docValue == multiplied {
 				continue
 			}
 
 			changed = true
 
 			continue
-		}
 
-		switch err {
-		case errUnexpectedLeftOpType:
+		case errors.Is(err, errUnexpectedLeftOpType):
 			return false, NewWriteErrorMsg(
 				ErrTypeMismatch,
 				fmt.Sprintf(
@@ -524,11 +532,12 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					mulValue,
 				),
 			)
-		case errUnexpectedRightOpType:
+		case errors.Is(err, errUnexpectedRightOpType):
 			k := mulKey
 			if path.Len() > 1 {
 				k = path.Suffix()
 			}
+
 			return false, NewWriteErrorMsg(
 				ErrTypeMismatch,
 				fmt.Sprintf(
@@ -539,7 +548,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errLongExceeded:
+		case errors.Is(err, errLongExceeded):
 			return false, NewWriteErrorMsg(
 				ErrBadValue,
 				fmt.Sprintf(
@@ -548,7 +557,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errIntExceeded:
+		case errors.Is(err, errIntExceeded):
 			return false, NewWriteErrorMsg(
 				ErrBadValue,
 				fmt.Sprintf(

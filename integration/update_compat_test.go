@@ -41,6 +41,7 @@ type updateCompatTestCase struct {
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
 	skip          string                   // skips test if non-empty
 	skipForTigris string                   // skips test for Tigris if non-empty
+	providers     []shareddata.Provider    // defaults to shareddata.AllProviders()
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -61,8 +62,13 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			t.Parallel()
 
+			providers := shareddata.AllProviders()
+			if tc.providers != nil {
+				providers = tc.providers
+			}
+
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                shareddata.AllProviders(),
+				Providers:                providers,
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections

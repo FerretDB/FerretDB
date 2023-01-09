@@ -44,11 +44,12 @@ type Provider interface {
 }
 
 // AllProviders returns all providers in random order.
-func AllProviders() []Provider {
+func AllProviders() Providers {
 	providers := []Provider{
 		Scalars,
 
 		Doubles,
+		BigDoubles,
 		Strings,
 		Binaries,
 		ObjectIDs,
@@ -78,6 +79,32 @@ func AllProviders() []Provider {
 		}
 
 		res[n] = p
+	}
+
+	return maps.Values(res)
+}
+
+// Providers are array of providers.
+type Providers []Provider
+
+// Remove returns an array of providers without the specified provider.
+func (ps Providers) Remove(provider string) Providers {
+	var found bool
+	res := make(map[string]Provider, len(ps)-1)
+
+	for _, p := range ps {
+		n := p.Name()
+
+		if n == provider {
+			found = true
+			continue
+		}
+
+		res[n] = p
+	}
+
+	if !found {
+		panic("provider was not found: " + provider)
 	}
 
 	return maps.Values(res)

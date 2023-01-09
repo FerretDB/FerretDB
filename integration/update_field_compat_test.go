@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -797,6 +798,10 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 func TestUpdateFieldCompatMul(t *testing.T) {
 	t.Parallel()
 
+	providers := shareddata.AllProviders().
+		Remove("BigDoubles").
+		Remove("Scalars")
+
 	testCases := map[string]updateCompatTestCase{
 		"Int32": {
 			update: bson.D{{"$mul", bson.D{{"v", int32(1)}}}},
@@ -805,10 +810,24 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update: bson.D{{"$mul", bson.D{{"v", int32(-1)}}}},
 		},
 		"Int64Max": {
-			update: bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			update:    bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			providers: providers,
 		},
 		"Int64Min": {
-			update: bson.D{{"$mul", bson.D{{"v", math.MinInt64}}}},
+			update:    bson.D{{"$mul", bson.D{{"v", math.MinInt64}}}},
+			providers: providers,
+		},
+		"Int32Zero": {
+			update:    bson.D{{"$mul", bson.D{{"v", int32(0)}}}},
+			providers: providers,
+		},
+		"Int64Zero": {
+			update:    bson.D{{"$mul", bson.D{{"v", int64(0)}}}},
+			providers: providers,
+		},
+		"Float64Zero": {
+			update:    bson.D{{"$mul", bson.D{{"v", float64(0)}}}},
+			providers: providers,
 		},
 	}
 

@@ -348,7 +348,9 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 			result := int64(v1) * v2
 
 			resFloat := float64(v1) * float64(v2)
-			if resFloat > float64(math.MaxInt64) || resFloat < float64(math.MinInt64) {
+			if float64(result) != resFloat ||
+				resFloat > float64(math.MaxInt64) ||
+				resFloat < float64(math.MinInt64) {
 				return nil, errLongExceeded
 			}
 
