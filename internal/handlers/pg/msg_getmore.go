@@ -31,6 +31,10 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err := common.Unimplemented(document, "comment", "batchSize", "maxTimeMS"); err != nil {
+		return nil, err
+	}
+
 	cursorID, err := common.GetRequiredParam[int64](document, "getMore")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
