@@ -62,12 +62,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	fp := &tigrisdb.FetchParam{
+	fp := tigrisdb.FetchParam{
 		DB:         params.DB,
 		Collection: params.Collection,
+		Filter:     params.Query,
 	}
 
-	resDocs, err := h.fetchAndFilterDocs(ctx, fp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				hasUpdateOperators: params.HasUpdateOperators,
 				query:              params.Query,
 				update:             params.Update,
-				fetchParam:         fp,
+				fetchParam:         &fp,
 			}
 
 			upsert, upserted, err = h.upsert(ctx, resDocs, p)
@@ -119,7 +120,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				_, err = h.update(ctx, fp, upsert)
+				_, err = h.update(ctx, &fp, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -130,7 +131,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 				}
 
-				_, err = h.update(ctx, fp, upsert)
+				_, err = h.update(ctx, &fp, upsert)
 				if err != nil {
 					return nil, err
 				}
@@ -178,7 +179,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, fp, resDocs)
+		_, err = h.delete(ctx, &fp, resDocs)
 		if err != nil {
 			return nil, err
 		}

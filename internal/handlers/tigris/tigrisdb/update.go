@@ -16,6 +16,7 @@ package tigrisdb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -36,7 +37,9 @@ func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string,
 		return lazyerrors.Error(err)
 	}
 
-	_, err = tdb.Driver.UseDatabase(db).Replace(ctx, collection, []driver.Document{u})
+	res, err := tdb.Driver.UseDatabase(db).Replace(ctx, collection, []driver.Document{u})
+
+	fmt.Println(res)
 
 	return err
 }

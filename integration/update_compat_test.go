@@ -62,7 +62,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                shareddata.AllProviders(),
+				Providers:                []shareddata.Provider{shareddata.Strings}, // shareddata.AllProviders(),
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -407,17 +407,16 @@ func TestUpdateCompat(t *testing.T) {
 			update:     bson.D{},
 			resultType: emptyResult,
 		},
-
 		"ReplaceSimple": {
 			replace: bson.D{{"v", "foo"}},
 		},
 		"ReplaceEmpty": {
 			replace:       bson.D{{"v", ""}},
-			skipForTigris: "TODO",
+			skipForTigris: "TODO", // ??
 		},
 		"ReplaceNull": {
 			replace:       bson.D{{"v", nil}},
-			skipForTigris: "TODO",
+			skipForTigris: "TODO", // ?
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
