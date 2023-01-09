@@ -140,9 +140,9 @@ var ArrayStrings = &Values[string]{
 				"primary_key": ["_id"],
 				"properties": {
 					"foo": {"type": "integer", "format": "int32"}, 
-					"bar": {"type": "array", "items": {"type": "string"}}
-					"v": {"type": "array", "items": {"type": "string"}
-					"_id": {"type": "string", "format": "byte"}
+					"bar": {"type": "array", "items": {"type": "string"}},
+					"v": {"type": "array", "items": {"type": "string"}},
+					"_id": {"type": "string"}
 				}
 			}`,
 		},

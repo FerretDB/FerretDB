@@ -148,8 +148,17 @@ var Strings = &Values[string]{
 	name:     "Strings",
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "string"`),
+		"tigris": { // tigris schema with extra fields to cover more update test cases
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"foo": {"type": "integer", "format": "int32"}, 
+					"bar": {"type": "array", "items": {"type": "string"}},
+					"v": {"type": "string"},
+					"_id": {"type": "string"}
+				}
+			}`,
 		},
 	},
 	data: map[string]any{
