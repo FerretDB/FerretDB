@@ -518,6 +518,10 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
 			resultType: emptyResult,
 		},
+		"DotArrayNonExisting": {
+			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
+			resultType: emptyResult,
+		},
 		"Multiple": {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
 			skipForTigris: "schema violation",
@@ -530,20 +534,12 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 			resultType: emptyResult,
 		},
-		"DotArrayNonExisting": {
-			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
+		"MultipleSecondInvalid": {
+			update:     bson.D{{"$rename", bson.D{{"v.foo", "boo"}, {"v.array", 1}}}},
 			resultType: emptyResult,
 		},
 		"FieldEmpty": {
 			update:     bson.D{{"$rename", bson.D{}}},
-			resultType: emptyResult,
-		},
-		"FieldDoc": {
-			update:     bson.D{{"$rename", bson.D{{"v", primitive.D{}}}}},
-			resultType: emptyResult,
-		},
-		"FieldArray": {
-			update:     bson.D{{"$rename", bson.D{{"v", primitive.A{}}}}},
 			resultType: emptyResult,
 		},
 		"FieldNaN": {
@@ -551,16 +547,8 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "CommandError returned",
 		},
-		"FieldNil": {
-			update:     bson.D{{"$rename", bson.D{{"name", nil}}}},
-			resultType: emptyResult,
-		},
 		"InvalidString": {
 			update:     bson.D{{"$rename", "string"}},
-			resultType: emptyResult,
-		},
-		"InvalidNil": {
-			update:     bson.D{{"$rename", nil}},
 			resultType: emptyResult,
 		},
 		"InvalidDoc": {

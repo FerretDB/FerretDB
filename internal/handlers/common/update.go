@@ -269,7 +269,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		if !ok {
 			return changed, NewWriteErrorMsg(
 				ErrBadValue,
-				fmt.Sprintf("the 'to' field for $rename must be a string: %s: %v", key, renameRawValue),
+				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", key, renameRawValue),
 			)
 		}
 
