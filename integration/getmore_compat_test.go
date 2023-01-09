@@ -77,8 +77,14 @@ func testGetMoreCompat(t *testing.T, testCases map[string]getMoreCompatTestCase)
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					targetRes := targetCollection.Database().RunCommand(ctx, bson.D{{"getMore", int64(1)}})
-					compatRes := compatCollection.Database().RunCommand(ctx, bson.D{{"getMore", compatCursor.ID()}})
+					targetRes := targetCollection.Database().RunCommand(ctx, bson.D{
+						{"getMore", int64(1)},
+						{"collection", targetCollection.Name()},
+					})
+					compatRes := compatCollection.Database().RunCommand(ctx, bson.D{
+						{"getMore", compatCursor.ID()},
+						{"collection", compatCollection.Name()},
+					})
 
 					if targetRes.Err() != nil {
 						t.Logf("Target error: %v", targetRes.Err())
@@ -86,7 +92,6 @@ func testGetMoreCompat(t *testing.T, testCases map[string]getMoreCompatTestCase)
 
 						return
 					}
-
 				})
 			}
 		})

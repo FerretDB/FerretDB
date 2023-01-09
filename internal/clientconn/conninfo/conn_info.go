@@ -19,6 +19,9 @@ package conninfo
 import (
 	"context"
 	"sync"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // contextKey is a special type to represent context.WithValue keys a bit more safely.
@@ -34,6 +37,9 @@ type ConnInfo struct {
 	rw       sync.RWMutex
 	username string
 	password string
+
+	curRW  sync.RWMutex
+	cursor map[string]iterator.Interface[uint32, *types.Document]
 }
 
 // Auth returns stored username and password.
@@ -51,6 +57,19 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 
 	connInfo.username = username
 	connInfo.password = password
+}
+
+// Cursor returns the cursor value stored
+func (connInfo *ConnInfo) Cursor(collection string) iterator.Interface[uint32, *types.Document] {
+	return connInfo.cursor[collection]
+}
+
+// SetCursor stores the cursor value.
+func (connInfo *ConnInfo) SetCursor(collection string, cursor iterator.Interface[uint32, *types.Document]) {
+	connInfo.curRW.Lock()
+	defer connInfo.curRW.Unlock()
+
+	connInfo.cursor[collection] = cursor
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.
