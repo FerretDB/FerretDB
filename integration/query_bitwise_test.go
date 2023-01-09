@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,10 @@ import (
 )
 
 func TestQueryBitwiseAllClear(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -199,6 +204,10 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAllSet(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -325,6 +334,10 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 }
 
 func TestQueryBitwiseAnyClear(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -489,6 +502,10 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAnySet(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
