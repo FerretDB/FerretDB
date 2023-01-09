@@ -94,7 +94,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 func (h *Handler) fetchAndFilterDocs(ctx context.Context, fp *tigrisdb.FetchParam) ([]*types.Document, error) {
 	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
