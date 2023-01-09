@@ -148,7 +148,7 @@ var Strings = &Values[string]{
 	name:     "Strings",
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
-		"tigris": { // tigris schema with extra fields to cover more update test cases
+		"tigris": { // tigris schema has extra fields to cover more update test cases
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],

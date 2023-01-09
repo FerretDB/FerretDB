@@ -496,13 +496,3 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
-
-  test-integration-pampam:
-    desc: "Run integration tests for PostgreSQL handler"
-    dir: integration
-    cmds:
-      - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on 
-        -run=TestDistinctCompat .
-        -handler=tigris
-        -target-unix-socket
