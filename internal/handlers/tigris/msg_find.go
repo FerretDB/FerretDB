@@ -51,24 +51,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Filter:     params.Filter,
 	}
 
-	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
 	if err != nil {
 		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		var matches bool
-
-		if matches, err = common.FilterDocument(doc, params.Filter); err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
@@ -103,4 +88,30 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided FetchParam.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, fp *tigrisdb.FetchParam) ([]*types.Document, error) {
+	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	if err != nil {
+		return nil, err
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	for _, doc := range fetchedDocs {
+		var matches bool
+
+		if matches, err = common.FilterDocument(doc, fp.Filter); err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	return resDocs, nil
 }

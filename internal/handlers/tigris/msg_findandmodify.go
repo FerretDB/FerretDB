@@ -67,33 +67,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		Collection: params.Collection,
 	}
 
-	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
-	// We might consider rewriting it later.
-	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, fp)
 	if err != nil {
 		return nil, err
 	}
 
-	err = common.SortDocuments(fetchedDocs, params.Sort)
-	if err != nil {
-		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, params.Query)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
-	}
-
+	err = common.SortDocuments(resDocs, params.Sort)
 	if err != nil {
 		return nil, err
 	}

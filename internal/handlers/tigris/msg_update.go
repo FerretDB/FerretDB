@@ -109,23 +109,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+		resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
 		if err != nil {
 			return nil, err
-		}
-
-		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, q)
-			if err != nil {
-				return nil, err
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
 		}
 
 		if len(resDocs) == 0 {

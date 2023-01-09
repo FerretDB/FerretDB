@@ -128,33 +128,6 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 }
 
-// DocumentsComposites contains documents with various data types for tests.
-/*var DocumentsComposites = &Values[primitive.ObjectID]{
-	name:     "DocumentsComposites",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {
-						"type": "object",
-						"properties": {
-							"foo": {"type": "integer", "format": "int32"},
-							"bar": {"type": "array", "items": {"type": "string"}}
-						}
-					},
-					"_id": {"type": "string", "format": "byte"}
-				}
-			}`,
-		},
-	},
-	data: map[primitive.ObjectID]any{
-		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}, {"bar", bson.A{}}},
-	},
-}*/
-
 // ArrayStrings contains an array with string values for tests.
 // Tigris JSON schema for this document contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
