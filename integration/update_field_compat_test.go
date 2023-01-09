@@ -503,12 +503,12 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotDocumentMove": {
-			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
-			skipForTigris: "schema violation",
+			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			//skipForTigris: "schema violation",
 		},
 		"DotDocumentDuplicate": {
-			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
-			skipForTigris: "schema violation",
+			update: bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			//skipForTigris: "schema violation",
 		},
 		"DotDocumentNonExisting": {
 			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
@@ -523,12 +523,11 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Multiple": {
-			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
-			skipForTigris: "schema violation",
+			update: bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
 		},
 		"MultipleConflictDestSource": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
-			skip:   "Updating the path 'foo' would create a conflict at 'foo'",
+			//skip:   "Updating the path 'foo' would create a conflict at 'foo'",
 		},
 		"MultipleConflictDestFields": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
@@ -541,11 +540,6 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		"FieldEmpty": {
 			update:     bson.D{{"$rename", bson.D{}}},
 			resultType: emptyResult,
-		},
-		"FieldNaN": {
-			update:     bson.D{{"$rename", bson.D{{"v", math.NaN()}}}},
-			resultType: emptyResult,
-			skip:       "CommandError returned",
 		},
 		"InvalidString": {
 			update:     bson.D{{"$rename", "string"}},

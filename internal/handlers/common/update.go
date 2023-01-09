@@ -252,6 +252,9 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 	skipErrReg := regexp.MustCompile(`^types\.getByPath: types\.Document\.Get: key not found:.+`)
 
+	// set
+	// {"v":"foo"},{"}
+
 	for _, key := range renameExpression.Keys() {
 		renameRawValue, err := renameExpression.Get(key)
 		if err != nil {
@@ -262,8 +265,6 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		if key == "" || renameRawValue == "" {
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
-
-		sourcePath := types.NewPathFromString(key)
 
 		renameValue, ok := renameRawValue.(string)
 		if !ok {
@@ -280,6 +281,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 			)
 		}
 
+		sourcePath := types.NewPathFromString(key)
 		targetPath := types.NewPathFromString(renameValue)
 
 		// Get value to move
@@ -699,6 +701,17 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+	}
+
+	if op == "$rename" {
+		iter := doc.Iterator()
+
+		for {
+			k, v, err := iter.Next()
+			switch err {
+			//TODO
+			}
+		}
 	}
 
 	duplicate, ok := doc.FindDuplicateKey()

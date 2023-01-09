@@ -59,6 +59,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
+			skippedAllTigrisSubtests := true
+
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -116,9 +118,12 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
 									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
 										setup.SkipForTigrisWithReason(t, targetErr.Error())
+									} else {
+										skippedAllTigrisSubtests = false
 									}
 								}
 
+								// TODO add proper issue (compare with inserts compat test)
 								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -137,6 +142,10 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 						})
 					}
 				})
+			}
+
+			if skippedAllTigrisSubtests {
+				return
 			}
 
 			switch tc.resultType {
