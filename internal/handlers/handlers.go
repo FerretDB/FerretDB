@@ -155,4 +155,7 @@ type Interface interface {
 
 	// MsgWhatsMyURI returns peer information.
 	MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgGetMore returns the next batch of documents from a cursor.
+	MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 }
