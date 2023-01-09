@@ -129,12 +129,12 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 }
 
 // ArrayStrings contains an array with string values for tests.
-// Tigris JSON schema for this document contains extra properties to make it suitable for more tests.
+// Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
 	name:     "ArrayStrings",
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
-		"tigris": { // tigris schema has extra fields to cover more update test cases
+		"tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],

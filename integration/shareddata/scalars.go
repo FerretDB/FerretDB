@@ -144,11 +144,12 @@ var Doubles = &Values[string]{
 }
 
 // Strings contains string values for tests.
+// Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var Strings = &Values[string]{
 	name:     "Strings",
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
-		"tigris": { // tigris schema has extra fields to cover more update test cases
+		"tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
