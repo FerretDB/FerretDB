@@ -20,6 +20,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-func (h *Handler) MsgGetMore(ctx context.Context, op *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	panic("not implemented")
 }
