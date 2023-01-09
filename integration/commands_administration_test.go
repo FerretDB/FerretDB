@@ -605,6 +605,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 36_000)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 36_000)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 36_000)
