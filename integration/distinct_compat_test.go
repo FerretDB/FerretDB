@@ -119,47 +119,47 @@ func TestDistinctCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]distinctCompatTestCase{
-		//"EmptyField": {
-		//	field:      "",
-		//	filter:     bson.D{},
-		//	resultType: emptyResult,
-		//},
-		//"IDAny": {
-		//	field:  "_id",
-		//	filter: bson.D{},
-		//},
-		//"IDString": {
-		//	field:  "_id",
-		//	filter: bson.D{{"_id", "string"}},
-		//},
-		//"IDNotExists": {
-		//	field:  "_id",
-		//	filter: bson.D{{"_id", "count-id-not-exists"}},
-		//},
+		"EmptyField": {
+			field:      "",
+			filter:     bson.D{},
+			resultType: emptyResult,
+		},
+		"IDAny": {
+			field:  "_id",
+			filter: bson.D{},
+		},
+		"IDString": {
+			field:  "_id",
+			filter: bson.D{{"_id", "string"}},
+		},
+		"IDNotExists": {
+			field:  "_id",
+			filter: bson.D{{"_id", "count-id-not-exists"}},
+		},
 		"VArray": {
 			field:  "v",
 			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
 		},
-		//"VAny": {
-		//	field:  "v",
-		//	filter: bson.D{},
-		//},
-		//"NonExistentField": {
-		//	field:  "field-not-exists",
-		//	filter: bson.D{},
-		//},
-		//"DotNotation": {
-		//	field:  "v.foo",
-		//	filter: bson.D{},
-		//},
-		//"DotNotationArray": {
-		//	field:  "v.array.0",
-		//	filter: bson.D{},
-		//},
-		//"DotNotationArrayFirstLevel": {
-		//	field:  "v.0.foo",
-		//	filter: bson.D{},
-		//},
+		"VAny": {
+			field:  "v",
+			filter: bson.D{},
+		},
+		"NonExistentField": {
+			field:  "field-not-exists",
+			filter: bson.D{},
+		},
+		"DotNotation": {
+			field:  "v.foo",
+			filter: bson.D{},
+		},
+		"DotNotationArray": {
+			field:  "v.array.0",
+			filter: bson.D{},
+		},
+		"DotNotationArrayFirstLevel": {
+			field:  "v.0.foo",
+			filter: bson.D{},
+		},
 	}
 
 	testDistinctCompat(t, testCases)

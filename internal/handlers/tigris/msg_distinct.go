@@ -48,7 +48,22 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	distinct, err := common.FilterDistinctValues(fetchedDocs, dp.Key)
+	resDocs := make([]*types.Document, 0, 16)
+	for _, doc := range fetchedDocs {
+		var matches bool
+
+		if matches, err = common.FilterDocument(doc, dp.Filter); err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
 	if err != nil {
 		return nil, err
 	}

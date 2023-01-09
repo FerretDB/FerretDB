@@ -44,6 +44,16 @@ var arrayTestCases = []testCase{
 		schema: &Schema{Type: Array, Items: int64Schema},
 		j:      `[-9223372036854775808,9223372036854775807]`,
 	}, {
+		name:   "array_null",
+		v:      new(nullType),
+		schema: &Schema{Type: Array, Items: stringSchema},
+		j:      `null`,
+	}, {
+		name:   "array_empty",
+		v:      convertArray(must.NotFail(types.NewArray())),
+		schema: &Schema{Type: Array, Items: stringSchema},
+		j:      `[]`,
+	}, {
 		name: "array_object",
 		v: convertArray(must.NotFail(types.NewArray(
 			must.NotFail(types.NewDocument(
