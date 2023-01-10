@@ -87,27 +87,25 @@ func AllProviders() Providers {
 // Providers are array of providers.
 type Providers []Provider
 
-// Remove returns an array of providers without the specified provider.
-func (ps Providers) Remove(provider string) Providers {
-	var found bool
-	res := make(map[string]Provider, len(ps)-1)
-
+// Remove specified providers and return remaining providers.
+func (ps Providers) Remove(removeProviderNames ...string) Providers {
+	res := make([]Provider, 0)
 	for _, p := range ps {
-		n := p.Name()
+		keep := true
 
-		if n == provider {
-			found = true
-			continue
+		for _, name := range removeProviderNames {
+			if p.Name() == name {
+				keep = false
+				break
+			}
 		}
 
-		res[n] = p
+		if keep {
+			res = append(res, p)
+		}
 	}
 
-	if !found {
-		panic("provider was not found: " + provider)
-	}
-
-	return maps.Values(res)
+	return res
 }
 
 // Docs returns all documents from given providers.

@@ -441,7 +441,7 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	return changed, nil
 }
 
-// processMulFieldExpression changes document according to $mul operator.
+// processMulFieldExpression updates document according to $mul operator.
 // If the document was changed it returns true.
 func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	mulDoc, ok := updateV.(*types.Document)
@@ -474,7 +474,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			default:
 				return false, NewWriteErrorMsg(
 					ErrTypeMismatch,
-					fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
+					fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
 				)
 			}
 
@@ -527,7 +527,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, NewWriteErrorMsg(
 				ErrTypeMismatch,
 				fmt.Sprintf(
-					`Cannot increment with non-numeric argument: {%s: %#v}`,
+					`Cannot multiply with non-numeric argument: {%s: %#v}`,
 					mulKey,
 					mulValue,
 				),
