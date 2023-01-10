@@ -34,6 +34,7 @@ const (
 	ErrDocumentPathCantAccess
 	ErrDocumentPathArrayInvalidIndex
 	ErrDocumentPathIndexOutOfBound
+	ErrDocumentPathCannotCreateField
 )
 
 // DocumentPathError describes an error that could occur on document related operations.
@@ -244,19 +245,25 @@ func insertByPath(doc *Document, path Path) error {
 			case *Array:
 				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
-					return fmt.Errorf(
-						"Cannot create field '%s' in element {%s: %s}",
-						pathElem,
-						insertedPath.Slice()[suffix-1],
-						FormatAnyValue(v),
+					return newDocumentPathError(
+						ErrDocumentPathCannotCreateField,
+						fmt.Errorf(
+							"Cannot create field '%s' in element {%s: %s}",
+							pathElem,
+							insertedPath.Slice()[suffix-1],
+							FormatAnyValue(v),
+						),
 					)
 				}
 			default:
-				return fmt.Errorf(
-					"Cannot create field '%s' in element {%s: %s}",
-					pathElem,
-					path.Prefix(),
-					FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+				return newDocumentPathError(
+					ErrDocumentPathCannotCreateField,
+					fmt.Errorf(
+						"Cannot create field '%s' in element {%s: %s}",
+						pathElem,
+						path.Prefix(),
+						FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+					),
 				)
 			}
 
