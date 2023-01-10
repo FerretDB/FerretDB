@@ -1,5 +1,5 @@
 ---
-slug: mangodb-new-name-ferretdb
+slug: mangodb-has-a-new-name-and-the-momentum-is-stronger-than-ever-meet-ferretdb
 title: "MangoDB has a new name, and the momentum is stronger than ever. Meet FerretDB!"
 author: Peter Farkas
 tags: [Ferretdb]

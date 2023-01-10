@@ -1,5 +1,5 @@
 ---
-slug: mmangodb-compatibility
+slug: mongodb-compatibility-whats-really-important
 title: "MongoDB Compatibility - What’s Really Important ?"
 author: Peter Farkas
 tags: [Ferretdb]

@@ -1,5 +1,5 @@
 ---
-slug: mongodb-open-source-replacement
+slug: mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement
 title: "Overwhelming enthusiasm for Truly Open Source MongoDB Replacement"
 author: Peter Farkas
 tags: [Ferretdb]
