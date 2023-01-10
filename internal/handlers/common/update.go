@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -25,6 +26,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -266,13 +268,8 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
 
-		renameValue, ok := renameRawValue.(string)
-		if !ok {
-			return changed, NewWriteErrorMsg(
-				ErrBadValue,
-				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", key, renameRawValue),
-			)
-		}
+		// this is covered in extractValueFromUpdateOperator
+		renameValue := renameRawValue.(string)
 
 		if key == renameRawValue {
 			return changed, NewWriteErrorMsg(
@@ -705,12 +702,40 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 
 	if op == "$rename" {
 		iter := doc.Iterator()
+		keys := map[string]struct{}{}
 
 		for {
 			k, v, err := iter.Next()
-			switch err {
-			//TODO
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+				return nil, err
 			}
+
+			vStr, ok := v.(string)
+			if !ok {
+				return nil, NewWriteErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
+				)
+			}
+
+			if k == vStr {
+				return nil, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr))
+			}
+
+			if _, ok := keys[k]; ok {
+				return nil, NewWriteErrorMsg(ErrConflictingUpdateOperators, fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k))
+			}
+
+			keys[k] = struct{}{}
+
+			if _, ok := keys[vStr]; ok {
+				return nil, NewWriteErrorMsg(ErrConflictingUpdateOperators, fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr))
+			}
+
+			keys[vStr] = struct{}{}
 		}
 	}
 
