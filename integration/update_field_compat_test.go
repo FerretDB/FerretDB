@@ -504,11 +504,9 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 		"DotDocumentMove": {
 			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
-			//skipForTigris: "schema violation",
 		},
 		"DotDocumentDuplicate": {
 			update: bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
-			//skipForTigris: "schema violation",
 		},
 		"DotDocumentNonExisting": {
 			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
@@ -527,7 +525,6 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 		"MultipleConflictDestSource": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
-			//skip:   "Updating the path 'foo' would create a conflict at 'foo'",
 		},
 		"MultipleConflictDestFields": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},

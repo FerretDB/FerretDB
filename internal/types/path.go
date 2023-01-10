@@ -30,17 +30,22 @@ import (
 type DocumentPathErrorCode int
 
 const (
+	// ErrDocumentPathKeyNotFound indicates that key was not found in document.
 	ErrDocumentPathKeyNotFound = iota + 1
+	// ErrDocumentPathCantAccess indicates that path couldn't be accessed.
 	ErrDocumentPathCantAccess
+	// ErrDocumentPathArrayInvalidIndex indicates that provided array index is invalid.
 	ErrDocumentPathArrayInvalidIndex
+	// ErrDocumentPathIndexOutOfBound indicates that provided array index is out of bound.
 	ErrDocumentPathIndexOutOfBound
+	// ErrDocumentPathCannotCreateField indicates that it's impossible to create a specific field.
 	ErrDocumentPathCannotCreateField
 )
 
 // DocumentPathError describes an error that could occur on document related operations.
 type DocumentPathError struct {
-	code   DocumentPathErrorCode
 	reason error
+	code   DocumentPathErrorCode
 }
 
 // Error implements the error interface.
@@ -172,7 +177,10 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			}
 
 		default:
-			return nil, newDocumentPathError(ErrDocumentPathCantAccess, fmt.Errorf("types.getByPath: can't access %T by path %q", next, p))
+			return nil, newDocumentPathError(
+				ErrDocumentPathCantAccess,
+				fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
+			)
 		}
 	}
 

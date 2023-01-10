@@ -251,9 +251,6 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 	var changed bool
 
-	// set
-	// {"v":"foo"},{"}
-
 	for _, key := range renameExpression.Keys() {
 		renameRawValue, err := renameExpression.Get(key)
 		if err != nil {
@@ -281,7 +278,6 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		// Get value to move
 		val, err := doc.GetByPath(sourcePath)
 		if err != nil {
-
 			var dpe *types.DocumentPathError
 			if !errors.As(err, &dpe) {
 				panic("getByPath returned error with invalid type")
@@ -712,10 +708,13 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}
+
 				return nil, err
 			}
 
-			vStr, ok := v.(string)
+			var vStr string
+
+			vStr, ok = v.(string)
 			if !ok {
 				return nil, NewWriteErrorMsg(
 					ErrBadValue,
@@ -724,17 +723,26 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 			}
 
 			if k == vStr {
-				return nil, NewWriteErrorMsg(ErrBadValue, fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr))
+				return nil, NewWriteErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
+				)
 			}
 
-			if _, ok := keys[k]; ok {
-				return nil, NewWriteErrorMsg(ErrConflictingUpdateOperators, fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k))
+			if _, ok = keys[k]; ok {
+				return nil, NewWriteErrorMsg(
+					ErrConflictingUpdateOperators,
+					fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
+				)
 			}
 
 			keys[k] = struct{}{}
 
-			if _, ok := keys[vStr]; ok {
-				return nil, NewWriteErrorMsg(ErrConflictingUpdateOperators, fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr))
+			if _, ok = keys[vStr]; ok {
+				return nil, NewWriteErrorMsg(
+					ErrConflictingUpdateOperators,
+					fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
+				)
 			}
 
 			keys[vStr] = struct{}{}
