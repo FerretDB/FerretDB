@@ -48,8 +48,9 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 	common.Ignored(document, h.L, ignoredFields...)
 
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
+	var fp tigrisdb.FetchParam
+
+	if fp.Filter, err = common.GetOptionalParam(document, "query", fp.Filter); err != nil {
 		return nil, err
 	}
 
@@ -59,8 +60,6 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			return nil, err
 		}
 	}
-
-	var fp tigrisdb.FetchParam
 
 	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -80,23 +79,9 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
 	if err != nil {
 		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		matches, err := common.FilterDocument(doc, filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
