@@ -163,7 +163,6 @@ services:
       # But we need them in the repo for Vercel.
       # TODO https://github.com/FerretDB/FerretDB/issues/1133
       - ./website/docs:/workdir/docusaurus-docs/docs:ro
-      - ./website/blog:/workdir/docusaurus-docs/blog:ro
       - ./website/src:/workdir/docusaurus-docs/src:ro
       - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
@@ -181,7 +180,6 @@ services:
         # package.json and package-lock.json are not bound; container image already contains them.
         # But we need them in the repo for Vercel.
         # TODO https://github.com/FerretDB/FerretDB/issues/1133
-        - ./website/docs:/workdir/docusaurus-docs/docs:ro
         - ./website/blog:/workdir/docusaurus-docs/blog:ro
         - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
         - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
