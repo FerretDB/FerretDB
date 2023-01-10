@@ -30,7 +30,10 @@ import (
 type DocumentPathErrorCode int
 
 const (
-	ErrKeyNotFound = iota + 1
+	ErrDocumentPathKeyNotFound = iota + 1
+	ErrDocumentPathCantAccess
+	ErrDocumentPathArrayInvalidIndex
+	ErrDocumentPathIndexOutOfBound
 )
 
 // DocumentPathError describes an error that could occur on document related operations.
@@ -154,21 +157,21 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			var err error
 			next, err = s.Get(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
 			next, err = s.Get(index)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		default:
-			return nil, fmt.Errorf("types.getByPath: can't access %T by path %q", next, p)
+			return nil, newDocumentPathError(ErrDocumentPathCantAccess, fmt.Errorf("types.getByPath: can't access %T by path %q", next, p))
 		}
 	}
 

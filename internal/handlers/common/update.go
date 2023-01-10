@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -252,8 +251,6 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 	var changed bool
 
-	skipErrReg := regexp.MustCompile(`^types\.getByPath: types\.Document\.Get: key not found:.+`)
-
 	// set
 	// {"v":"foo"},{"}
 
@@ -284,12 +281,17 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		// Get value to move
 		val, err := doc.GetByPath(sourcePath)
 		if err != nil {
-			// TODO refactor `getByPath` to make this check more elegant
-			if skipErrReg.MatchString(err.Error()) {
+
+			var dpe *types.DocumentPathError
+			if !errors.As(err, &dpe) {
+				panic("getByPath returned error with invalid type")
+			}
+
+			if dpe.Code() == types.ErrDocumentPathKeyNotFound {
 				continue
 			}
 
-			return changed, NewWriteErrorMsg(ErrUnsuitableValueType, err.Error())
+			return changed, NewWriteErrorMsg(ErrUnsuitableValueType, dpe.Error())
 		}
 
 		// Remove old document
