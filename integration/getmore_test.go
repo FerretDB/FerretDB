@@ -42,19 +42,11 @@ func TestGetMore(t *testing.T) {
 	require.NoError(t, err)
 
 	resDoc := bson.D{}
+
 	for cursor.Next(ctx) {
 		t.Log(cursor.RemainingBatchLength())
 
 		err = cursor.Decode(&resDoc)
 		require.NoError(t, err)
 	}
-
-	//
-	//more := coll.Database().RunCommand(ctx, bson.D{{"getMore", cursor.ID()}, {"collection", coll.Name()}})
-	//require.NoError(t, more.Err())
-	//
-	//resDoc = bson.D{}
-	//more.Decode(&resDoc)
-	//
-	//t.Log(resDoc)
 }

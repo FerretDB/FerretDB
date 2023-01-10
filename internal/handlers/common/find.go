@@ -22,6 +22,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// defaultBatchSize is the default batch size for find operation.
+const defaultBatchSize = 101
+
 // FindParams contains `find` command parameters supported by at least one handler.
 //
 //nolint:vet // for readability
@@ -34,6 +37,7 @@ type FindParams struct {
 	Limit      int64
 	Comment    string
 	MaxTimeMS  int32
+	BatchSize  int32
 }
 
 // GetFindParams returns `find` command parameters.
@@ -90,7 +94,11 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		}
 	}
 
-	Ignored(doc, l, "batchSize", "singleBatch")
+	Ignored(doc, l, "singleBatch")
+
+	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(defaultBatchSize)); err != nil {
+		return nil, err
+	}
 
 	if res.Comment, err = GetOptionalParam(doc, "comment", res.Comment); err != nil {
 		return nil, err

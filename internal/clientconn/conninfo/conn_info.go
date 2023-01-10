@@ -59,7 +59,7 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 	connInfo.password = password
 }
 
-// Cursor returns the cursor value stored
+// Cursor returns the cursor value stored.
 func (connInfo *ConnInfo) Cursor(collection string) iterator.Interface[uint32, *types.Document] {
 	return connInfo.cursor[collection]
 }

@@ -31,7 +31,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "comment"); err != nil {
+	if err = common.Unimplemented(document, "comment"); err != nil {
 		return nil, err
 	}
 
