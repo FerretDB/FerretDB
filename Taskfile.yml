@@ -481,6 +481,12 @@ tasks:
     cmds:
       - docker compose run --rm docusaurus-docs build
 
+  blog:
+    desc: "Format, lint and build blog"
+    deps: [ docs-fmt ]
+    cmds:
+      - docker compose run --rm docusaurus-blog build
+
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"

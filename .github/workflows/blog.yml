@@ -1,0 +1,104 @@
+---
+name: Blog
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "12 4 * * *" # after Docs workflow
+
+# Do not run this workflow in parallel for any PR change
+# to prevent triggering Vercel's rate limits.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  build:
+    name: Build blog
+    runs-on: ubuntu-22.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+      - name: Check LFS status
+        if: false # TODO https://github.com/ActionsDesk/lfs-warning/issues/147
+        uses: actionsdesk/lfs-warning@v3.2
+        with:
+          filesizelimit: 1MB
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: build
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Build tools
+        run: bin/task env-pull
+
+      - name: Build blog
+        run: bin/task blog
+
+      - name: Archive blog
+        run: |
+          tar --directory website/build \
+            --file blog.tar \
+            --create \
+            --verbose \
+            .
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: blog
+          path: blog.tar
+          if-no-files-found: error
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
+  pages:
+    name: Deploy to Pages
+    runs-on: ubuntu-22.04
+
+    # deploy only on push to main; exclude pull_request and schedule
+    needs: build
+    if: github.event_name == 'push'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v1
+        with:
+          artifact_name: blog
+          timeout: 300000 # 5*60*1000 milliseconds
