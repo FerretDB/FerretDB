@@ -50,6 +50,7 @@ var cli struct {
 		TLS         string `default:""                help:"Listen TLS address."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
+		TLSCAFile   string `default:""                help:"TLS CA file path." name:"tls-ca-file"`
 	} `embed:"" prefix:"listen-"`
 
 	ProxyAddr string `default:""                help:"Proxy address."`
@@ -314,6 +315,7 @@ func run() {
 			TLS:         cli.Listen.TLS,
 			TLSCertFile: cli.Listen.TLSCertFile,
 			TLSKeyFile:  cli.Listen.TLSKeyFile,
+			TLSCAFile:   cli.Listen.TLSCAFile,
 		},
 		ProxyAddr:      cli.ProxyAddr,
 		Mode:           clientconn.Mode(cli.Mode),

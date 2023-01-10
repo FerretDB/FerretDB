@@ -17,7 +17,6 @@ package integration
 import (
 	"context"
 	"crypto/tls"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,18 +28,15 @@ import (
 
 	"github.com/FerretDB/FerretDB/ferretdb"
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestEmbedded(t *testing.T) {
-	t.Skip("FIXME")
-
 	setup.SkipForTigris(t)
 
 	t.Parallel()
 
-	cert, key := setup.GetTLSFilesPaths(t)
+	serverTLSFiles := setup.GetTLSFilesPaths(t, setup.ServerSide)
 
 	for name, tc := range map[string]struct {
 		config    *ferretdb.Config
@@ -60,15 +56,14 @@ func TestEmbedded(t *testing.T) {
 			config: &ferretdb.Config{
 				Listener: ferretdb.ListenerConfig{
 					TLS:         "127.0.0.1:65433",
-					TLSCertFile: cert,
-					TLSKeyFile:  key,
+					TLSCertFile: serverTLSFiles.Cert,
+					TLSKeyFile:  serverTLSFiles.Key,
+					TLSCAFile:   serverTLSFiles.CA,
 				},
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 			},
-			tlsConfig: must.NotFail(options.BuildTLSConfig(map[string]any{
-				"tlsCAFile": filepath.Join("..", "build", "certs", "rootCA.pem"),
-			})),
+			tlsConfig: setup.GetClientTLSConfig(t),
 		},
 	} {
 		name, tc := name, tc
