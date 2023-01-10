@@ -624,7 +624,7 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$currentDate", update)
+	currentDate, err := extractValueFromUpdateOperator("$currentDate", update)
 	if err != nil {
 		return err
 	}
@@ -634,17 +634,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$max", update)
+	max, err := extractValueFromUpdateOperator("$max", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$min", update)
+	min, err := extractValueFromUpdateOperator("$min", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$mul", update)
+	mul, err := extractValueFromUpdateOperator("$mul", update)
 	if err != nil {
 		return err
 	}
@@ -654,17 +654,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$unset", update)
+	unset, err := extractValueFromUpdateOperator("$unset", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$setOnInsert", update)
+	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$pop", update)
+	pop, err := extractValueFromUpdateOperator("$pop", update)
 	if err != nil {
 		return err
 	}
@@ -673,7 +673,9 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
-	// TODO: check conflicting change for mul
+	if err = checkConflictingOperators(mul, currentDate, inc, min, max, pop, set, setOnInsert, unset); err != nil {
+		return err
+	}
 
 	if err = validateCurrentDateExpression(update); err != nil {
 		return err
@@ -726,6 +728,27 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 	}
 
 	return updateModifier, nil
+}
+
+// checkConflictingOperators checks if there are the same keys in these documents and returns an error, if any.
+func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
+	if a == nil {
+		return nil
+	}
+
+	for _, key := range a.Keys() {
+		for _, b := range bs {
+			if b != nil && b.Has(key) {
+				return NewWriteErrorMsg(
+					ErrConflictingUpdateOperators,
+					fmt.Sprintf(
+						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+					),
+				)
+			}
+		}
+	}
+	return nil
 }
 
 // checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.

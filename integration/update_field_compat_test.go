@@ -910,6 +910,77 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:     bson.D{{"$mul", bson.D{{"foo", int32(12)}, {"v", "string"}}}},
 			resultType: emptyResult,
 		},
+		"MultipleOperator": {
+			update: bson.D{
+				{"$set", bson.D{{"foo", int32(43)}}},
+				{"$mul", bson.D{{"v", int32(42)}}},
+			},
+			providers: providers,
+		},
+		"ConflictPop": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$pop", bson.D{{"v", -1}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictSet": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$set", bson.D{{"v", int32(43)}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictInc": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$inc", bson.D{{"v", int32(43)}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictMin": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$min", bson.D{{"v", int32(30)}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictMax": {
+			update: bson.D{
+				{"$max", bson.D{{"v", int32(30)}}},
+				{"$mul", bson.D{{"v", int32(42)}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictSetOnInsert": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$setOnInsert", 43.13},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictUnset": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$unset", bson.D{{"v", ""}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
+		"ConflictCurrentDate": {
+			update: bson.D{
+				{"$mul", bson.D{{"v", int32(42)}}},
+				{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}},
+			},
+			providers:  providers,
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
