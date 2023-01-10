@@ -174,7 +174,7 @@ services:
       build:
         context: ./build/deps
         dockerfile: docusaurus-docs.Dockerfile
-      container_name: ferretdb_docusaurus-docs
+      container_name: ferretdb_docusaurus-blog
       ports:
         - 3001:3000
       volumes:

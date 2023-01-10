@@ -27,7 +27,8 @@ const config = {
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
-        indexBlog: false,
+        indexDocs: false,
+        indexBlog: true,
       },
     ],
   ],
