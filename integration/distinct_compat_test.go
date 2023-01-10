@@ -137,9 +137,8 @@ func TestDistinctCompat(t *testing.T) {
 			filter: bson.D{{"_id", "count-id-not-exists"}},
 		},
 		"VArray": {
-			field:         "v",
-			filter:        bson.D{{"v", bson.D{{"$type", "array"}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1704",
+			field:  "v",
+			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
 		},
 		"VAny": {
 			field:  "v",
