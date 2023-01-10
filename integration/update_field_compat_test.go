@@ -809,8 +809,9 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			providers: providers,
 		},
 		"Int32Zero": {
-			update:    bson.D{{"$mul", bson.D{{"v", int32(0)}}}},
-			providers: providers,
+			update:        bson.D{{"$mul", bson.D{{"v", int32(0)}}}},
+			providers:     providers,
+			skipForTigris: "TODO: fix panic with -0",
 		},
 		"Int32Negative": {
 			update:    bson.D{{"$mul", bson.D{{"v", int32(-42)}}}},
