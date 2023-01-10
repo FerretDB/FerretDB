@@ -123,7 +123,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									}
 								}
 
-								// TODO add proper issue (compare with inserts compat test)
 								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
