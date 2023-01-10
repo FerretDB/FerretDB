@@ -63,14 +63,14 @@ const config = {
         },
         items: [
           {
-            href: 'https://docs.ferredb.io/',
-            position: 'left',
-            label: 'Documentation',
-          },
-          {
             to: '/',
             label: 'Blog',
             position: 'left'
+          },
+          {
+            href: 'https://docs.ferredb.io/',
+            position: 'left',
+            label: 'Documentation',
           },
           {
             href: 'https://github.com/FerretDB/',
@@ -86,8 +86,8 @@ const config = {
             title: 'FerretDB Docs',
             items: [
               {
+                href: 'https://docs.ferredb.io/',
                 label: 'Documentation',
-                to: '/intro/',
               },
             ],
           },
