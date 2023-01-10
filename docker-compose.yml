@@ -183,7 +183,11 @@ services:
         # TODO https://github.com/FerretDB/FerretDB/issues/1133
         - ./website/docs:/workdir/docusaurus-docs/docs:ro
         - ./website/blog:/workdir/docusaurus-docs/blog:ro
-        - ./website/src:/workdir/docusaurus-docs/src:ro
+        - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
+        - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
+        # TODO: find a better way to not copy index.js for blog
+        - ./website/src/pages/index.module.css:/workdir/docusaurus-docs/src/pages/index.module.css:ro
+        - ./website/src/pages/markdown-page.md:/workdir/docusaurus-docs/src/pages/markdown-page.md:ro
         - ./website/static:/workdir/docusaurus-docs/static:ro
         - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
         - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro

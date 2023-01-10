@@ -37,12 +37,9 @@ const config = {
       'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
-        docs: {
-          routeBasePath: '/',
-          sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
-        },
+        docs: false,
         blog: {
+          routeBasePath: '/',
           blogTitle: 'FerretDB Blog',
           showReadingTime: true,
           authorsMapPath: 'authors.yml',
@@ -66,13 +63,12 @@ const config = {
         },
         items: [
           {
-            type: 'doc',
-            docId: 'intro',
+            href: 'https://docs.ferredb.io/',
             position: 'left',
             label: 'Documentation',
           },
           {
-            to: '/blog',
+            to: '/',
             label: 'Blog',
             position: 'left'
           },
