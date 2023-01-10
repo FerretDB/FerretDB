@@ -99,10 +99,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$mul":
-			changed, err = processMulFieldExpression(doc, updateV)
+			mulChanged, err := processMulFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
 			}
+
+			changed = changed || mulChanged
 
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
