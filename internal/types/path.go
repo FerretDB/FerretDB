@@ -26,6 +26,34 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// DocumentPathErrorCode represents DocumentPathError error code.
+type DocumentPathErrorCode int
+
+const (
+	ErrKeyNotFound = iota + 1
+)
+
+// DocumentPathError describes an error that could occur on document related operations.
+type DocumentPathError struct {
+	code   DocumentPathErrorCode
+	reason error
+}
+
+// Error implements the error interface.
+func (e *DocumentPathError) Error() string {
+	return e.reason.Error()
+}
+
+// Code returns the DocumentPathError code.
+func (e *DocumentPathError) Code() DocumentPathErrorCode {
+	return e.code
+}
+
+// newDocumentPathError creates a new DocumentPathError.
+func newDocumentPathError(code DocumentPathErrorCode, reason error) error {
+	return &DocumentPathError{reason: reason, code: code}
+}
+
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
 // Path should be stored and passed as a value. Its methods return new values, not modifying the receiver's state.
 type Path struct {
@@ -126,7 +154,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			var err error
 			next, err = s.Get(p)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return nil, newDocumentPathError(ErrKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		case *Array:
