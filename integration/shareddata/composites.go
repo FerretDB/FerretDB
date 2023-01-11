@@ -150,6 +150,7 @@ var ArrayStrings = &Values[string]{
 	data: map[string]any{
 		"array-string-desc":      bson.A{"c", "b", "a"},
 		"array-string-duplicate": bson.A{"b", "a", "b"},
+		"array-string-numbers":   bson.A{"42", "0", "42.13"},
 		"array-string-nil":       nil,
 		"array-string-empty":     bson.A{},
 	},

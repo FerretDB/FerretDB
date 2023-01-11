@@ -139,6 +139,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 			},
 		},
 		"GtZeroWithTypeString": {
+			// A document like {"v":[42, "foo"]} matches this filter (there is an elem >0 and an elem of type string)
 			filter: bson.D{
 				{"v", bson.D{
 					{"$elemMatch", bson.D{
@@ -147,7 +148,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 					{"$type", "string"},
 				}},
 			},
-			skipForTigris: "comparison of strings as numbers is not applicable for Tigris",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"GtLt": {
 			filter: bson.D{
