@@ -427,14 +427,14 @@ func TestUpdateCompat(t *testing.T) {
 
 func TestUpdateCompatArray(t *testing.T) {
 	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
+	// setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
 		"ReplaceDocumentFilter": {
 			filter:  bson.D{{"v", bson.D{{"$eq", true}}}},
-			replace: bson.D{{"replacement-value", int32(1)}},
+			replace: bson.D{{"foo", int32(1)}},
 		},
 		"ReplaceDotNotationFilter": {
 			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},

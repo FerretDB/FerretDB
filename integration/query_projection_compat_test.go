@@ -17,9 +17,9 @@ package integration
 import (
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/FerretDB/FerretDB/integration/setup"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
