@@ -33,7 +33,7 @@ const (
 	// ErrDocumentPathKeyNotFound indicates that key was not found in document.
 	ErrDocumentPathKeyNotFound = iota + 1
 	// ErrDocumentPathCantAccess indicates that path couldn't be accessed.
-	ErrDocumentPathCantAccess
+	ErrDocumentPathCannotAccess
 	// ErrDocumentPathArrayInvalidIndex indicates that provided array index is invalid.
 	ErrDocumentPathArrayInvalidIndex
 	// ErrDocumentPathIndexOutOfBound indicates that provided array index is out of bound.
