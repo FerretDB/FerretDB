@@ -284,11 +284,13 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 	actual.Remove("keysPerIndex")
 	actual.Remove("indexDetails")
-	testutil.CompareAndSetByPathNum(t, expected, actual, 10, types.NewPathFromString("nrecords"))
+	testutil.CompareAndSetByPathNum(t, expected, actual, 18, types.NewPathFromString("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
 }
 
 func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/1759")
+
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)

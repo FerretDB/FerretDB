@@ -96,6 +96,9 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrEmptyFieldPath indicates that the field path is empty.
+	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
+
 	// ErrMissingField indicates that the required field in document is missing.
 	ErrMissingField = ErrorCode(40414) // Location40414
 

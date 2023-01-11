@@ -15,6 +15,8 @@
 package setup
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,17 +24,66 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// GetTLSFilesPaths returns paths to TLS files.
-func GetTLSFilesPaths(t testing.TB) (string, string) {
-	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
+// TLSFileSide defines a "side" of TLS file (client or server).
+type TLSFileSide string
+
+// Possible values for TLSFileSide.
+const (
+	ClientSide TLSFileSide = "client"
+	ServerSide TLSFileSide = "server"
+)
+
+// TLSFilesPaths returns paths to TLS files - cert, key, ca.
+type TLSFilesPaths struct {
+	Cert string
+	Key  string
+	CA   string
+}
+
+// GetTLSFilesPaths returns paths to TLS files - cert, key, ca.
+func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
+	certPath := filepath.Join("..", "build", "certs", string(side)+"-cert.pem")
 
 	_, err := os.Stat(certPath)
 	require.NoError(t, err)
 
-	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
+	keyPath := filepath.Join("..", "build", "certs", string(side)+"-key.pem")
 
 	_, err = os.Stat(keyPath)
 	require.NoError(t, err)
 
-	return certPath, keyPath
+	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
+
+	_, err = os.Stat(keyPath)
+	require.NoError(t, err)
+
+	return &TLSFilesPaths{
+		Cert: certPath,
+		Key:  keyPath,
+		CA:   caPath,
+	}
+}
+
+// GetClientTLSConfig returns a test TLS config for a client.
+func GetClientTLSConfig(t testing.TB) *tls.Config {
+	tlsFiles := GetTLSFilesPaths(t, ClientSide)
+
+	// Load the root CA certificate
+	rootCA, err := os.ReadFile(tlsFiles.CA)
+	require.NoError(t, err)
+
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM(rootCA)
+	require.True(t, ok, "failed to parse root certificate")
+
+	cert, err := tls.LoadX509KeyPair(tlsFiles.Cert, tlsFiles.Key)
+	require.NoError(t, err)
+
+	// Create the TLS config
+	tlsConfig := &tls.Config{
+		RootCAs:      roots,
+		Certificates: []tls.Certificate{cert},
+	}
+
+	return tlsConfig
 }

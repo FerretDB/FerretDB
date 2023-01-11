@@ -16,7 +16,6 @@ package tigris
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -26,57 +25,22 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCount implements HandlerInterface.
-func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgDistinct implements HandlerInterface.
+func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"skip",
-		"collation",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"hint",
-		"readConcern",
-		"comment",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	var fp tigrisdb.FetchParam
-
-	if fp.Filter, err = common.GetOptionalParam(document, "query", fp.Filter); err != nil {
-		return nil, err
-	}
-
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
-			return nil, err
-		}
-	}
-
-	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	dp, err := common.GetDistinctParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	fp := tigrisdb.FetchParam{
+		DB:         dp.DB,
+		Collection: dp.Collection,
+		Filter:     dp.Filter,
 	}
 
 	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
@@ -84,17 +48,19 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
+	if err != nil {
 		return nil, err
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", int32(len(resDocs)),
+			"values", distinct,
 			"ok", float64(1),
 		))},
 	})
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
