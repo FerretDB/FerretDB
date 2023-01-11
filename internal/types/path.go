@@ -178,7 +178,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 
 		default:
 			return nil, newDocumentPathError(
-				ErrDocumentPathCantAccess,
+				ErrDocumentPathCannotAccess,
 				fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
 			)
 		}
