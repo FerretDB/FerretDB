@@ -496,7 +496,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		var err error
 
-		docValue, err := doc.GetByPath(types.NewPathFromString(mulKey))
+		docValue, err := doc.GetByPath(path)
 		if err != nil {
 			return false, err
 		}

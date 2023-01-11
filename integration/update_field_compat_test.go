@@ -876,6 +876,10 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:     bson.D{{"$mul", bson.D{{"v", "string"}}}},
 			resultType: emptyResult,
 		},
+		"MissingField": {
+			update:     bson.D{{"$mul", "invalid"}},
+			resultType: emptyResult,
+		},
 		"StringFieldNotExist": {
 			update:     bson.D{{"$mul", bson.D{{"foo.bar", "bad value"}}}},
 			resultType: emptyResult,
