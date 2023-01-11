@@ -688,7 +688,7 @@ func checkConflictingChanges(a, b *types.Document) error {
 //
 //	bson.D{{"v", nil}}.
 //
-// It also checks for path collisions
+// It also checks for path collisions and returns the error if there's any.
 func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil

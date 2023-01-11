@@ -486,12 +486,6 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		"Simple": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}}}},
 		},
-		"Mixed": {
-			update: bson.D{
-				{"$set", bson.D{{"v", "foo"}}},
-				{"$set", bson.D{{"v", "boo"}}},
-			},
-		},
 		"DuplicateField": {
 			update:     bson.D{{"$rename", bson.D{{"v", "v"}}}},
 			resultType: emptyResult,
