@@ -413,17 +413,15 @@ func TestUpdateCompat(t *testing.T) {
 			update:     bson.D{},
 			resultType: emptyResult,
 		},
-
 		"ReplaceSimple": {
 			replace: bson.D{{"v", "foo"}},
 		},
 		"ReplaceEmpty": {
 			replace:       bson.D{{"v", ""}},
-			skipForTigris: "TODO",
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
 		"ReplaceNull": {
-			replace:       bson.D{{"v", nil}},
-			skipForTigris: "TODO",
+			replace: bson.D{{"v", nil}},
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},

@@ -55,8 +55,6 @@ func TestQueryElementCompatElementType(t *testing.T) {
 		},
 		"Array": {
 			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
-			// TODO Add Tigris-compatible array to shareddata.Composites
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1704",
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$type", "double"}}}},
