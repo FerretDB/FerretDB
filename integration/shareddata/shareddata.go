@@ -68,6 +68,8 @@ func AllProviders() Providers {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+
+		ArrayStrings,
 	}
 
 	// check that names are unique and randomize order

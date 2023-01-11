@@ -43,12 +43,12 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		Filter:     dp.Filter,
 	}
 
-	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
 	if err != nil {
 		return nil, err
 	}
 
-	distinct, err := common.FilterDistinctValues(fetchedDocs, dp.Key)
+	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
 	if err != nil {
 		return nil, err
 	}
