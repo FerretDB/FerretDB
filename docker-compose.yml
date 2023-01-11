@@ -183,9 +183,11 @@ services:
         - ./website/blog:/workdir/docusaurus-docs/blog:ro
         - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
         - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
-        # TODO: find a better way to not copy index.js for blog
+
+        # We don't copy src/pages/index.js for blog, https://docusaurus.io/docs/blog#blog-only-mode
         - ./website/src/pages/index.module.css:/workdir/docusaurus-docs/src/pages/index.module.css:ro
         - ./website/src/pages/markdown-page.md:/workdir/docusaurus-docs/src/pages/markdown-page.md:ro
+
         - ./website/static:/workdir/docusaurus-docs/static:ro
         - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
         - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
