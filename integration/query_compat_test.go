@@ -31,6 +31,7 @@ type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	projection     bson.D                   // nil for leaving projection unset
+	batchSize      int32                    // defaults to 0
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // TODO https://github.com/FerretDB/FerretDB/issues/1279
 	skipForTigris  string                   // skip test for Tigris
@@ -66,6 +67,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 			if tc.projection != nil {
 				opts = opts.SetProjection(tc.projection)
+			}
+
+			if tc.batchSize != 0 {
+				opts = opts.SetBatchSize(tc.batchSize)
 			}
 
 			var nonEmptyResults bool
@@ -171,6 +176,27 @@ func TestQueryCompatSort(t *testing.T) {
 		"Desc": {
 			filter: bson.D{},
 			sort:   bson.D{{"v", -1}, {"_id", 1}},
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryCompatBatchSize(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"BatchSize1": {
+			filter:    bson.D{},
+			batchSize: 1,
+		},
+		"BatchSize100": {
+			filter:    bson.D{},
+			batchSize: 100,
+		},
+		"BatchSize102": {
+			filter:    bson.D{},
+			batchSize: 102,
 		},
 	}
 

@@ -503,3 +503,66 @@ func TestQueryNonExistingCollection(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, actual, 0)
 }
+
+func TestQueryBatchSize(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct {
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"batchSize", int32(-1)},
+			},
+		},
+		"BatchSizeZero": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"batchSize", int32(0)},
+			},
+		},
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"batchSize", bson.D{}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+			},
+		},
+		"BatchSizeInt64": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"batchSize", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'batchSize' is the wrong type 'long', expected type 'int'",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
+			if tc.err != nil {
+				require.Error(t, err)
+				AssertEqualError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+			t.Log(actual)
+		})
+	}
+}
