@@ -91,15 +91,15 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		},
 		"Field": {
 			filter:        bson.D{{"v.array", int32(42)}},
-			skipForTigris: "language keyword 'array' is not allowed in Tigris",
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
 		"FieldPosition": {
 			filter:        bson.D{{"v.array.0", int32(42)}},
-			skipForTigris: "language keyword 'array' is not allowed in Tigris",
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
 		"FieldPositionQuery": {
 			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
-			skipForTigris: "language keyword 'array' is not allowed in Tigris",
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
 		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},

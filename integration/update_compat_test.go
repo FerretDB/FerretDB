@@ -434,8 +434,9 @@ func TestUpdateCompatArray(t *testing.T) {
 			replace: bson.D{{"foo", int32(1)}},
 		},
 		"ReplaceDotNotationFilter": {
-			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
-			replace: bson.D{{"replacement-value", int32(1)}},
+			filter:        bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
+			replace:       bson.D{{"replacement-value", int32(1)}},
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
 	}
 
