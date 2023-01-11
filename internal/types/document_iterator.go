@@ -46,3 +46,8 @@ func (iter *documentIterator) Next() (string, any, error) {
 
 // Close implements iterator.Interface.
 func (iter *documentIterator) Close() {}
+
+// check interfaces
+var (
+	_ iterator.Interface[string, any] = (*documentIterator)(nil)
+)
