@@ -59,6 +59,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Collection: params.Collection,
 		Comment:    params.Comment,
 		Filter:     params.Filter,
+		Limit:      params.BatchSize,
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})

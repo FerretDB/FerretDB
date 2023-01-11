@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -38,7 +39,9 @@ func TestGetMore(t *testing.T) {
 	_, err := coll.InsertMany(ctx, docs)
 	require.NoError(t, err)
 
-	cursor, err := coll.Find(ctx, bson.D{})
+	opts := options.Find().SetBatchSize(50)
+
+	cursor, err := coll.Find(ctx, bson.D{}, opts)
 	require.NoError(t, err)
 
 	var results []any
