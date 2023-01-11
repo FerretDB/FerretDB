@@ -32,7 +32,7 @@ type DocumentPathErrorCode int
 const (
 	// ErrDocumentPathKeyNotFound indicates that key was not found in document.
 	ErrDocumentPathKeyNotFound = iota + 1
-	// ErrDocumentPathCantAccess indicates that path couldn't be accessed.
+	// ErrDocumentPathCannotAccess indicates that path couldn't be accessed.
 	ErrDocumentPathCannotAccess
 	// ErrDocumentPathArrayInvalidIndex indicates that provided array index is invalid.
 	ErrDocumentPathArrayInvalidIndex
