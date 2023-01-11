@@ -426,9 +426,6 @@ func TestUpdateCompat(t *testing.T) {
 }
 
 func TestUpdateCompatArray(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	// setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
