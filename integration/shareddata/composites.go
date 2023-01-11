@@ -149,7 +149,7 @@ var ArrayStrings = &Values[string]{
 	},
 	data: map[string]any{
 		"array-string-desc":      bson.A{"c", "b", "a"},
-		"array-string-duplicate": bson.A{"b", "a", "b"},
+		"array-string-duplicate": bson.A{"b", "foo", "b"},
 		"array-string-numbers":   bson.A{"42", "0", "42.13"},
 		"array-string-nil":       nil,
 		"array-string-empty":     bson.A{},
@@ -230,6 +230,6 @@ var ArrayRegexes = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"array-regex": bson.A{primitive.Regex{Pattern: "foo"}, primitive.Regex{Pattern: "foo"}},
+		"array-regex": bson.A{primitive.Regex{Pattern: "foo", Options: "i"}, primitive.Regex{Pattern: "foo", Options: "i"}},
 	},
 }
