@@ -80,7 +80,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		},
 		"PositionTypeNull": {
 			filter:        bson.D{{"v.0", bson.D{{"$type", "null"}}}},
-			skipForTigris: "TODO nil check",
+			skipForTigris: "Tigris does not support nil values in arrays",
 		},
 		"PositionRegex": {
 			filter: bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
@@ -212,7 +212,7 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 		},
 		"Null": {
 			filter:        bson.D{{"v", bson.A{nil}}},
-			skipForTigris: "TODO nil check",
+			skipForTigris: "Tigris does not support nil values in arrays",
 		},
 	}
 
@@ -257,7 +257,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 		},
 		"MultiAllWithNil": {
 			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
-			skipForTigris: "TODO nil check",
+			skipForTigris: "Tigris does not support nil values in arrays",
 		},
 		"Empty": {
 			filter:     bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
@@ -283,7 +283,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 		},
 		"Nil": {
 			filter:        bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
-			skipForTigris: "TODO nil check",
+			skipForTigris: "Tigris does not support nil values in arrays",
 		},
 		"NilRepeated": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
