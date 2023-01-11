@@ -41,12 +41,16 @@ func TestGetMore(t *testing.T) {
 	cursor, err := coll.Find(ctx, bson.D{})
 	require.NoError(t, err)
 
-	resDoc := bson.D{}
+	var results []any
 
 	for cursor.Next(ctx) {
-		t.Log(cursor.RemainingBatchLength())
+		var resDoc bson.D
 
 		err = cursor.Decode(&resDoc)
 		require.NoError(t, err)
+
+		results = append(results, resDoc)
 	}
+
+	require.Equal(t, len(docs), len(results))
 }

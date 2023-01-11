@@ -510,8 +510,8 @@ func TestQueryBatchSize(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
-		command bson.D
 		err     *mongo.CommandError
+		command bson.D
 	}{
 		"BatchSizeNegative": {
 			command: bson.D{
@@ -547,6 +547,12 @@ func TestQueryBatchSize(t *testing.T) {
 				Message: "BSON field 'batchSize' is the wrong type 'long', expected type 'int'",
 			},
 		},
+		"BatchSizeMaxInt32": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"batchSize", math.MaxInt32},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -562,7 +568,6 @@ func TestQueryBatchSize(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			t.Log(actual)
 		})
 	}
 }
