@@ -687,6 +687,8 @@ func checkConflictingChanges(a, b *types.Document) error {
 // The result returned for "$setOnInsert" operator is
 //
 //	bson.D{{"v", nil}}.
+//
+// It also checks for path collisions
 func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
