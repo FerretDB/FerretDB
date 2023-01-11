@@ -45,6 +45,8 @@ const config = {
           showReadingTime: true,
           authorsMapPath: 'authors.yml',
           postsPerPage: 8,
+          blogSidebarTitle: 'All posts',
+          blogSidebarCount: 'ALL',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
