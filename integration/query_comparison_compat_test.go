@@ -32,11 +32,11 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter:        bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentReverse": {
 			filter:        bson.D{{"v", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentNull": {
 			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
@@ -129,7 +129,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 					{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}},
 				}},
 			}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentShuffledKeys": {
 			filter: bson.D{{"v", bson.D{
@@ -148,7 +148,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
 				}},
 			}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentNull": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
@@ -159,7 +159,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 		"Array": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"ArrayShuffledValues": {
 			filter:     bson.D{{"v", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
@@ -167,7 +167,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 		"ArrayReverse": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil, "foo", int32(42)}}}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"ArrayNull": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
@@ -356,7 +356,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 		},
 		"ArrayShuffledValues": {
 			filter:        bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gt", 41.13}}}},

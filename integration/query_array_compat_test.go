@@ -201,11 +201,11 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 		},
 		"Three": {
 			filter:        bson.D{{"v", bson.A{int32(42), "foo", nil}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"Three-reverse": {
 			filter:        bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"Empty": {
 			filter: bson.D{{"v", bson.A{}}},
@@ -253,7 +253,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 		},
 		"MultiAll": {
 			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
-			skipForTigris: "Tigris does not support arrays with mixed types",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"MultiAllWithNil": {
 			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
