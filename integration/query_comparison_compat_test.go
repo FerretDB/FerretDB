@@ -40,7 +40,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"DocumentNull": {
 			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
-			skipForTigris: "TODO check",
+			skipForTigris: "Tigris does not support null values in objects",
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{}}},
@@ -151,8 +151,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentNull": {
-			filter:        bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
-			skipForTigris: "TODO check",
+			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.D{}}}}},
@@ -171,7 +170,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 		"ArrayNull": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
-			skipForTigris: "TODO check",
+			skipForTigris: "Tigris does not support null values in arrays",
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{}}}}},
