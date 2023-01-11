@@ -22,26 +22,25 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter: bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			filter:        bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}},
+			filter:        bson.D{{"v", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"DocumentNull": {
-			filter: bson.D{{"v", bson.D{{"foo", nil}}}},
+			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
+			skipForTigris: "TODO check",
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{}}},
@@ -121,43 +120,58 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 }
 
 func TestQueryComparisonCompatEq(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			filter: bson.D{{"v", bson.D{
+				{"$eq", bson.D{
+					{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}},
+				}},
+			}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"DocumentShuffledKeys": {
-			filter:     bson.D{{"v", bson.D{{"$eq", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{
+				{"$eq", bson.D{
+					{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)},
+				}},
+			}}},
 			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
 			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{
+				{"$eq", bson.D{
+					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
+				}},
+			}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"DocumentNull": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
+			filter:        bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
+			skipForTigris: "TODO check",
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.D{}}}}},
 		},
 		"Array": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
+			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"ArrayShuffledValues": {
 			filter:     bson.D{{"v", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
 			resultType: emptyResult,
 		},
 		"ArrayReverse": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.A{nil, "foo", int32(42)}}}}},
+			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil, "foo", int32(42)}}}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"ArrayNull": {
-			filter: bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
+			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
+			skipForTigris: "TODO check",
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{}}}}},
@@ -288,23 +302,32 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 }
 
 func TestQueryComparisonCompatGt(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			filter: bson.D{{"v", bson.D{
+				{"$gt", bson.D{
+					{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}},
+				}},
+			}}},
 		},
 		"DocumentShuffledKeys": {
-			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{
+				{"$gt", bson.D{
+					{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)},
+				}},
+			}}},
 		},
 		"DocumentDotNotation": {
 			filter: bson.D{{"v.foo", bson.D{{"$gt", int32(41)}}}},
 		},
 		"DocumentReverse": {
-			filter:     bson.D{{"v", bson.D{{"$gt", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			filter: bson.D{{"v", bson.D{
+				{"$gt", bson.D{
+					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
+				}},
+			}}},
 			resultType: emptyResult,
 		},
 		"DocumentNull": {
@@ -332,7 +355,8 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.A{int32(42), "foo"}}}}},
 		},
 		"ArrayShuffledValues": {
-			filter: bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
+			filter:        bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gt", 41.13}}}},
@@ -409,9 +433,6 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 }
 
 func TestQueryComparisonCompatGte(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -425,7 +446,8 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 			filter: bson.D{{"v.foo", bson.D{{"$gte", int32(42)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			filter:        bson.D{{"v", bson.D{{"$gte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", nil}}}}}},
@@ -452,7 +474,8 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.A{int32(42), "foo"}}}}},
 		},
 		"ArrayShuffledValues": {
-			filter: bson.D{{"v", bson.D{{"$gte", bson.A{"foo", nil, int32(42)}}}}},
+			filter:        bson.D{{"v", bson.D{{"$gte", bson.A{"foo", nil, int32(42)}}}}},
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gte", 41.13}}}},
@@ -527,9 +550,6 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 }
 
 func TestQueryComparisonCompatLt(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -654,9 +674,6 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 }
 
 func TestQueryComparisonCompatLte(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{

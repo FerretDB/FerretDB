@@ -20,13 +20,9 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryArrayCompatSize(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1572")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -72,9 +68,6 @@ func TestQueryArrayCompatSize(t *testing.T) {
 }
 
 func TestQueryArrayCompatDotNotation(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -86,7 +79,8 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			filter: bson.D{{"v.1", bson.D{{"$type", "string"}}}},
 		},
 		"PositionTypeNull": {
-			filter: bson.D{{"v.0", bson.D{{"$type", "null"}}}},
+			filter:        bson.D{{"v.0", bson.D{{"$type", "null"}}}},
+			skipForTigris: "TODO nil check",
 		},
 		"PositionRegex": {
 			filter: bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
@@ -96,13 +90,16 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Field": {
-			filter: bson.D{{"v.array", int32(42)}},
+			filter:        bson.D{{"v.array", int32(42)}},
+			skipForTigris: "language keyword 'array' is not allowed in Tigris",
 		},
 		"FieldPosition": {
-			filter: bson.D{{"v.array.0", int32(42)}},
+			filter:        bson.D{{"v.array.0", int32(42)}},
+			skipForTigris: "language keyword 'array' is not allowed in Tigris",
 		},
 		"FieldPositionQuery": {
-			filter: bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
+			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
+			skipForTigris: "language keyword 'array' is not allowed in Tigris",
 		},
 		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
@@ -215,7 +212,7 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 		},
 		"Null": {
 			filter:        bson.D{{"v", bson.A{nil}}},
-			skipForTigris: "TODO",
+			skipForTigris: "TODO nil check",
 		},
 	}
 
@@ -223,9 +220,6 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 }
 
 func TestQueryArrayCompatAll(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -258,10 +252,12 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
 		},
 		"MultiAll": {
-			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
+			skipForTigris: "Tigris doesn't support arrays with mixed types",
 		},
 		"MultiAllWithNil": {
-			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
+			skipForTigris: "TODO nil check",
 		},
 		"Empty": {
 			filter:     bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
@@ -286,7 +282,8 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(42), int32(43), int32(43), int32(42)}}}}},
 		},
 		"Nil": {
-			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
+			filter:        bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
+			skipForTigris: "TODO nil check",
 		},
 		"NilRepeated": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},

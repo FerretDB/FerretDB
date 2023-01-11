@@ -67,6 +67,7 @@ func AllProviders() []Provider {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+		DocumentsArray,
 
 		ArrayStrings,
 		ArrayDoubles,

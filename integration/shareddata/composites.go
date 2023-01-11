@@ -128,6 +128,32 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 }
 
+// not needed?
+var DocumentsArray = &Values[string]{
+	name:     "DocumentsArray",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {
+						"type": "object", 
+						"properties": {
+							"arr": {"type": "array", "items": {type": "integer", "format": "int32"}},
+						}
+					},
+					"_id": {"type": "string", "format": "byte"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"document-array-int32s": bson.D{{"arr", bson.A{int32(42), int32(44)}}},
+	},
+}
+
 // ArrayStrings contains an array with string values for tests.
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
@@ -198,6 +224,7 @@ var ArrayInt32s = &Values[string]{
 	data: map[string]any{
 		"array-int32-one":   bson.A{int32(42)},
 		"array-int32-two":   bson.A{int32(42), int32(42)},
+		"array-int32-three": bson.A{int32(42), int32(43), int32(42)},
 		"array-int32-nil":   nil,
 		"array-int32-empty": bson.A{},
 	},
