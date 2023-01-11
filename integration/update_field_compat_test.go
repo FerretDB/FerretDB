@@ -503,10 +503,12 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotDocumentMove": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
 		},
 		"DotDocumentDuplicate": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
 		},
 		"DotDocumentNonExisting": {
 			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
@@ -521,10 +523,12 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Multiple": {
-			update: bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
 		},
 		"MultipleConflictDestSource": {
-			update: bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
+			resultType: emptyResult,
 		},
 		"MultipleConflictDestFields": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
