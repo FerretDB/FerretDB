@@ -234,6 +234,14 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
 
+								// Skip updates that could not be performed due to Tigris schema validation.
+								var e mongo.CommandError
+								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
+									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+										setup.SkipForTigrisWithReason(t, targetErr.Error())
+									}
+								}
+
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
