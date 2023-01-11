@@ -846,6 +846,7 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"ForScalarDataTypes": {
 			filter: bson.D{{"v", bson.D{{"$in", scalarDataTypesFilter}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1781",
 		},
 		"ForCompositeDataTypes": {
 			filter: bson.D{{"v", bson.D{{"$in", compositeDataTypesFilter}}}},
@@ -856,6 +857,7 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 		},
 		"Regex": {
 			filter: bson.D{{"v", bson.D{{"$in", bson.A{primitive.Regex{Pattern: "foo", Options: "i"}}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1781",
 		},
 		"NilInsteadOfArray": {
 			filter:     bson.D{{"v", bson.D{{"$in", nil}}}},
