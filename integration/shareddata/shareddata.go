@@ -91,7 +91,8 @@ type Providers []Provider
 
 // Remove specified providers and return remaining providers.
 func (ps Providers) Remove(removeProviderNames ...string) Providers {
-	res := make([]Provider, 0)
+	res := make([]Provider, 0, len(ps))
+
 	for _, p := range ps {
 		keep := true
 

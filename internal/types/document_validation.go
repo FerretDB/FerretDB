@@ -142,6 +142,7 @@ func (d *Document) ValidateData() error {
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
 				)
 			}
+
 			if v == 0 && math.Signbit(v) {
 				return newValidationError(
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (-0 is not supported)", key, v),

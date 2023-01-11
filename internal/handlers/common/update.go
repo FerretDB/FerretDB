@@ -99,8 +99,9 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$mul":
-			mulChanged, err := processMulFieldExpression(doc, updateV)
-			if err != nil {
+			var mulChanged bool
+
+			if mulChanged, err = processMulFieldExpression(doc, updateV); err != nil {
 				return false, err
 			}
 
@@ -465,7 +466,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		path := types.NewPathFromString(mulKey)
 
 		if !doc.HasByPath(path) {
-			// $mul sets the field to zero if it does not exist.
+			// $mul sets the field to zero if the field does not exist.
 			switch mulValue.(type) {
 			case float64:
 				mulValue = float64(0)
@@ -513,8 +514,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				)
 			}
 
-			// Must capture any difference in number type for example
-			// a change from int32(0) to int64(0) for updating.
+			// A change from int32(0) to int64(0) is considered changed.
 			// Hence, do not use types.Compare(docValue, multiplied) because
 			// it will equate int32(0) == int64(0).
 			if docValue == multiplied {
@@ -748,6 +748,7 @@ func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
 			}
 		}
 	}
+
 	return nil
 }
 
