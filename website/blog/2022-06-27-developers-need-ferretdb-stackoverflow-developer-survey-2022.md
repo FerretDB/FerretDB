@@ -47,7 +47,7 @@ Those service providers or companies currently running PostgreSQL will be able t
 
 However, we are not going to stop at PostgreSQL: we are planning to support more databases, so developer experience can be standardized across many different platforms.
 
-Working with partners, like [Tigris Data](www.tigrisdata.io), we can even provide an alternative to MongoDB Atlas itself.
+Working with partners, like [Tigris Data](https://tigrisdata.io), we can even provide an alternative to MongoDB Atlas itself.
 On Monday, [we released FerretDB](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0)[0.0.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0), which comes with functionality supporting Tigris - a work in progress DBaaS, aspiring to become an alternative to MongoDB Atlas, and the people behind it are one of the finest experts in the world at providing database services at scale.
 
 We are also looking to partner with the PostgreSQL community and PostgreSQL DBaaS providers, who are interested in working with us providing an alternative to MongoDB.
