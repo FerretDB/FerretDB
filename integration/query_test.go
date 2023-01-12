@@ -511,8 +511,8 @@ func TestQueryBatchSize(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		err        *mongo.CommandError
-		command    bson.D
 		altMessage string
+		command    bson.D
 	}{
 		"BatchSizeNegative": {
 			command: bson.D{
