@@ -26,6 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -261,6 +262,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		// this is covered in validateRenameExpression
 		renameValue := renameRawValue.(string)
 
+		// disallow fields where key is equal to the target
 		if key == renameRawValue {
 			return changed, NewWriteErrorMsg(
 				ErrBadValue,
@@ -737,7 +739,7 @@ func validateRenameExpression(update *types.Document) error {
 				break
 			}
 
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		var vStr string

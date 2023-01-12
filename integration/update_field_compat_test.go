@@ -530,6 +530,10 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
 			resultType: emptyResult,
 		},
+		"MultipleConflictSourceDest": {
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"bar", "v"}}}},
+			resultType: emptyResult,
+		},
 		"MultipleConflictDestFields": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 			resultType: emptyResult,
