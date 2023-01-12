@@ -1,8 +1,9 @@
 ---
 name: Docs
 on:
-  pull_request:
+  pull_request_target:
     types:
+      - labeled # for `trusted` label
       - unlabeled
       - opened
       - reopened
@@ -10,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - cloudflare-pages # FIXME
   schedule:
     - cron: "42 3 * * *" # after Integration workflow
 
