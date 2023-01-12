@@ -171,7 +171,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 		"ArrayNull": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
-			skipForTigris: "Tigris does not support null values in arrays",
+			skipForTigris: "Tigris does not support nil values in arrays",
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{}}}}},
