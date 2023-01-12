@@ -87,7 +87,7 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 func TestGetMore(t *testing.T) {
 	t.Parallel()
 
-	var testCases = map[string]queryGetMoreCompatTestCase{
+	testCases := map[string]queryGetMoreCompatTestCase{
 		"getMore": {},
 	}
 
