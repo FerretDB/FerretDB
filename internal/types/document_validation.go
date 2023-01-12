@@ -62,6 +62,8 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // ValidateData checks if the document represents a valid "data document".
 // It places `_id` field into the fields slice 0 index.
 // If the document is not valid it returns *ValidationError.
+// isUpdate argument is set true when validation is applied on
+// a document updated by update operation.
 func (d *Document) ValidateData(isUpdate bool) error {
 	d.moveIDToTheFirstIndex()
 
@@ -153,7 +155,7 @@ func (d *Document) ValidateData(isUpdate bool) error {
 
 			if v == 0 && math.Signbit(v) {
 				return newValidationError(
-					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (-0 is not supported)", key, v),
+					ErrValidation, fmt.Errorf("update produces invalid value: { %q: -0 } (-0 is not supported)", key),
 				)
 			}
 		case Regex:

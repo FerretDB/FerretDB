@@ -109,6 +109,12 @@ func TestDocumentValidateData(t *testing.T) {
 			reason: errors.New(`update produces invalid value: { "v": +Inf } ` +
 				`(update operations that produce infinity values are not allowed)`),
 		},
+		"NegativeZeroFromUpdate": {
+			doc:      must.NotFail(NewDocument("v", math.Copysign(0, -1))),
+			isUpdate: true,
+			reason: errors.New(`update produces invalid value: { "v": -0 } ` +
+				`(-0 is not supported)`),
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
