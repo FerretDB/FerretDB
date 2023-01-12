@@ -603,6 +603,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err = validateCurrentDateExpression(update); err != nil {
 		return err
 	}
+
+	if err = validateRenameExpression(update); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -700,57 +705,6 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
 	}
 
-	if op == "$rename" {
-		iter := doc.Iterator()
-		keys := map[string]struct{}{}
-
-		for {
-			k, v, err := iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return nil, err
-			}
-
-			var vStr string
-
-			vStr, ok = v.(string)
-			if !ok {
-				return nil, NewWriteErrorMsg(
-					ErrBadValue,
-					fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
-				)
-			}
-
-			if k == vStr {
-				return nil, NewWriteErrorMsg(
-					ErrBadValue,
-					fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
-				)
-			}
-
-			if _, ok = keys[k]; ok {
-				return nil, NewWriteErrorMsg(
-					ErrConflictingUpdateOperators,
-					fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
-				)
-			}
-
-			keys[k] = struct{}{}
-
-			if _, ok = keys[vStr]; ok {
-				return nil, NewWriteErrorMsg(
-					ErrConflictingUpdateOperators,
-					fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
-				)
-			}
-
-			keys[vStr] = struct{}{}
-		}
-	}
-
 	duplicate, ok := doc.FindDuplicateKey()
 	if ok {
 		return nil, NewWriteErrorMsg(
@@ -762,6 +716,71 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	}
 
 	return doc, nil
+}
+
+// validateRenameExpression validates $rename input on correctness.
+func validateRenameExpression(update *types.Document) error {
+	if !update.Has("$rename") {
+		return nil
+	}
+
+	updateExpression := must.NotFail(update.Get("$rename"))
+
+	doc, ok := updateExpression.(*types.Document)
+	if !ok {
+		return NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+	}
+
+	iter := doc.Iterator()
+	keys := map[string]struct{}{}
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return err
+		}
+
+		var vStr string
+
+		vStr, ok = v.(string)
+		if !ok {
+			return NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
+			)
+		}
+
+		if k == vStr {
+			return NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
+			)
+		}
+
+		if _, ok = keys[k]; ok {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
+			)
+		}
+
+		keys[k] = struct{}{}
+
+		if _, ok = keys[vStr]; ok {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
+			)
+		}
+
+		keys[vStr] = struct{}{}
+	}
+
+	return nil
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
