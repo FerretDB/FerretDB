@@ -27,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -84,18 +83,13 @@ func Handlers() []string {
 
 // init registers handlers that are always enabled.
 func init() {
-	registry["dummy"] = func(*NewHandlerOpts) (handlers.Interface, error) {
-		return dummy.New()
+	registry["dummy"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		return dummy.New(opts.Logger)
 	}
 
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		pgPool, err := pgdb.NewPool(opts.Ctx, opts.PostgreSQLURL, opts.Logger, true, opts.StateProvider)
-		if err != nil {
-			return nil, err
-		}
-
 		handlerOpts := &pg.NewOpts{
-			PgPool:        pgPool,
+			PostgreSQLURL: opts.PostgreSQLURL,
 			L:             opts.Logger,
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,

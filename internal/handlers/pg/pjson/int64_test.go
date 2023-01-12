@@ -24,19 +24,19 @@ import (
 var int64TestCases = []testCase{{
 	name: "42",
 	v:    pointer.To(int64Type(42)),
-	j:    `{"$l":"42"}`,
+	j:    `42`,
 }, {
 	name: "zero",
 	v:    pointer.To(int64Type(0)),
-	j:    `{"$l":"0"}`,
+	j:    `0`,
 }, {
 	name: "max int64",
 	v:    pointer.To(int64Type(math.MaxInt64)),
-	j:    `{"$l":"9223372036854775807"}`,
+	j:    `9223372036854775807`,
 }, {
 	name: "min int64",
 	v:    pointer.To(int64Type(math.MinInt64)),
-	j:    `{"$l":"-9223372036854775808"}`,
+	j:    `-9223372036854775808`,
 }, {
 	name: "EOF",
 	j:    `{`,

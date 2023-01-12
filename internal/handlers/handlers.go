@@ -66,6 +66,9 @@ type Interface interface {
 	// MsgCreateIndexes creates indexes on a collection.
 	MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgCurrentOp returns information about operations currently in progress.
+	MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgDataSize returns the size of the collection in bytes.
 	MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
@@ -77,6 +80,9 @@ type Interface interface {
 
 	// MsgDelete deletes documents matched by the query.
 	MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgDistinct returns an array of distinct values for the given field.
+	MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgDrop drops the collection.
 	MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
@@ -132,6 +138,9 @@ type Interface interface {
 	// MsgPing returns a pong response.
 	MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgSASLStart starts the SASL authentication process.
+	MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgServerStatus returns an overview of the databases state.
 	MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
@@ -140,6 +149,9 @@ type Interface interface {
 
 	// MsgUpdate updates documents that are matched by the query.
 	MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgValidate validates collection.
+	MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgWhatsMyURI returns peer information.
 	MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)

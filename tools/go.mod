@@ -4,14 +4,14 @@ go 1.19
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
-	github.com/go-task/task/v3 v3.18.0
+	github.com/go-task/task/v3 v3.19.1
 	github.com/golangci/golangci-lint v1.50.1
-	github.com/goreleaser/nfpm/v2 v2.22.2
+	github.com/goreleaser/nfpm/v2 v2.23.0
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
-	golang.org/x/perf v0.0.0-20220920022801-e8d778a60d07
-	golang.org/x/tools v0.3.0
-	golang.org/x/vuln v0.0.0-20221122171214-05fb7250142c
+	golang.org/x/perf v0.0.0-20221222172245-91a04616dc65
+	golang.org/x/tools v0.5.0
+	golang.org/x/vuln v0.0.0-20230110180137-6ad3e3d07815
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -131,7 +131,7 @@ require (
 	github.com/kisielk/errcheck v1.6.2 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.3 // indirect
-	github.com/klauspost/compress v1.15.12 // indirect
+	github.com/klauspost/compress v1.15.13 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.6 // indirect
@@ -218,7 +218,7 @@ require (
 	github.com/timonwong/loggercheck v0.9.3 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.7.0 // indirect
 	github.com/tommy-muehle/go-mnd/v2 v2.5.1 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/ultraware/funlen v0.0.3 // indirect
 	github.com/ultraware/whitespace v0.0.5 // indirect
 	github.com/uudashr/gocognit v1.0.6 // indirect
@@ -239,12 +239,12 @@ require (
 	golang.org/x/exp v0.0.0-20220930202632-ec3f01382ef9 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/term v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/api v0.81.0 // indirect
@@ -259,6 +259,6 @@ require (
 	honnef.co/go/tools v0.3.3 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
-	mvdan.cc/sh/v3 v3.6.0-0.dev.0.20220704111049-a6e3029cd899 // indirect
+	mvdan.cc/sh/v3 v3.6.0 // indirect
 	mvdan.cc/unparam v0.0.0-20220706161116-678bad134442 // indirect
 )

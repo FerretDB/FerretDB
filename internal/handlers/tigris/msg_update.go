@@ -55,9 +55,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
@@ -90,6 +91,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
+
+		fp.Filter = q
+
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 			// TODO check if u is an array of aggregation pipeline stages
 			return nil, err
@@ -108,23 +112,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+		resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
 		if err != nil {
 			return nil, err
-		}
-
-		resDocs := make([]*types.Document, 0, 16)
-		for _, doc := range fetchedDocs {
-			matches, err := common.FilterDocument(doc, q)
-			if err != nil {
-				return nil, err
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
 		}
 
 		if len(resDocs) == 0 {

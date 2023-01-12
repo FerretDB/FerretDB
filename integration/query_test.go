@@ -30,390 +30,68 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestQuerySort(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/457")
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-
-	for name, tc := range map[string]struct {
-		sort        bson.D
-		expectedIDs []any
-	}{
-		"Asc": {
-			sort: bson.D{{"v", 1}, {"_id", 1}},
-			expectedIDs: []any{
-				"array-empty",
-				"array-null",
-				"array-three",
-				"array-three-reverse",
-				"null",
-
-				"int64-min",
-				"int32-min",
-				"double-zero",
-				"int32-zero",
-				"int64-zero",
-				"double-smallest",
-				"array",
-				"double-whole",
-				"int32",
-				"int64",
-				"double",
-				"int32-max",
-				"int64-max",
-				"double-max",
-				"string-empty",
-				"string-whole",
-				"string-double",
-				"string",
-				"document-empty",
-				"document-null",
-				"document",
-				"document-composite",
-				"document-composite-reverse",
-				"binary-empty",
-				"binary",
-				"objectid-empty",
-				"objectid",
-				"bool-false",
-				"bool-true",
-				"datetime-year-min",
-				"datetime-epoch",
-				"datetime",
-				"datetime-year-max",
-				"timestamp-i",
-				"timestamp",
-				"regex-empty",
-				"regex",
-			},
-		},
-		"Desc": {
-			sort: bson.D{{"v", -1}, {"_id", 1}},
-			expectedIDs: []any{
-				"regex",
-				"regex-empty",
-				"timestamp",
-				"timestamp-i",
-				"datetime-year-max",
-				"datetime",
-				"datetime-epoch",
-				"datetime-year-min",
-				"bool-true",
-				"bool-false",
-				"objectid",
-				"objectid-empty",
-				"binary",
-				"binary-empty",
-				"document-composite-reverse",
-				"document-composite",
-				"document",
-				"document-null",
-				"document-empty",
-				"array-three",
-				"array-three-reverse",
-				"string",
-				"string-double",
-				"string-whole",
-				"string-empty",
-				"double-max",
-				"int64-max",
-				"int32-max",
-				"double",
-				"array",
-				"double-whole",
-				"int32",
-				"int64",
-				"double-smallest",
-				"double-zero",
-				"int32-zero",
-				"int64-zero",
-				"int32-min",
-				"int64-min",
-
-				"array-null",
-				"null",
-				"array-empty",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(tc.sort))
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
-// TODO: https://github.com/FerretDB/FerretDB/issues/636
-func TestQuerySortValue(t *testing.T) {
-	setup.SkipForTigris(t)
-
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	for name, tc := range map[string]struct {
-		sort        bson.D
-		expectedIDs []any
-		err         *mongo.CommandError
-	}{
-		"AscValueScalar": {
-			sort: bson.D{{"v", 1}, {"_id", 1}},
-			expectedIDs: []any{
-				"null",
-				"int64-min",
-				"int32-min",
-				"double-zero",
-				"int32-zero",
-				"int64-zero",
-				"double-smallest",
-				"double-whole",
-				"int32",
-				"int64",
-				"double",
-				"int32-max",
-				"double-big",
-				"int64-big",
-				"int64-max",
-				"double-max",
-				"string-empty",
-				"string-whole",
-				"string-double",
-				"string",
-				"binary-empty",
-				"binary",
-				"objectid-empty",
-				"objectid",
-				"bool-false",
-				"bool-true",
-				"datetime-year-min",
-				"datetime-epoch",
-				"datetime",
-				"datetime-year-max",
-				"timestamp-i",
-				"timestamp",
-				"regex-empty",
-				"regex",
-			},
-		},
-		"DescValueScalar": {
-			sort: bson.D{{"v", -1}, {"_id", 1}},
-			expectedIDs: []any{
-				"regex",
-				"regex-empty",
-				"timestamp",
-				"timestamp-i",
-				"datetime-year-max",
-				"datetime",
-				"datetime-epoch",
-				"datetime-year-min",
-				"bool-true",
-				"bool-false",
-				"objectid",
-				"objectid-empty",
-				"binary",
-				"binary-empty",
-				"string",
-				"string-double",
-				"string-whole",
-				"string-empty",
-				"double-max",
-				"int64-max",
-				"int64-big",
-				"double-big",
-				"int32-max",
-				"double",
-				"double-whole",
-				"int32",
-				"int64",
-				"double-smallest",
-				"double-zero",
-				"int32-zero",
-				"int64-zero",
-				"int32-min",
-				"int64-min",
-				"null",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetSort(tc.sort))
-			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
-				return
-			}
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
-		})
-	}
-}
-
 func TestQueryBadFindType(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	s := setup.SetupWithOpts(t, nil)
+
+	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		command bson.D
-		err     *mongo.CommandError
+		value any
+		err   string
 	}{
 		"Document": {
-			command: bson.D{
-				{"find", bson.D{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type object",
-			},
+			value: bson.D{},
+			err:   "object",
 		},
 		"Array": {
-			command: bson.D{
-				{"find", primitive.A{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type array",
-			},
+			value: primitive.A{},
+			err:   "array",
 		},
 		"Double": {
-			command: bson.D{
-				{"find", 3.14},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
-			},
-		},
-		"DoubleWhole": {
-			command: bson.D{
-				{"find", 42.0},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
-			},
+			value: 3.14,
+
+			err: "double",
 		},
 		"Binary": {
-			command: bson.D{
-				{"find", primitive.Binary{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type binData",
-			},
+			value: primitive.Binary{},
+			err:   "binData",
 		},
 		"ObjectID": {
-			command: bson.D{
-				{"find", primitive.ObjectID{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type objectId",
-			},
+			value: primitive.ObjectID{},
+
+			err: "objectId",
 		},
 		"Bool": {
-			command: bson.D{
-				{"find", true},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type bool",
-			},
+			value: true,
+			err:   "bool",
 		},
 		"Date": {
-			command: bson.D{
-				{"find", time.Now()},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type date",
-			},
+			value: time.Now(),
+
+			err: "date",
 		},
 		"Null": {
-			command: bson.D{
-				{"find", nil},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type null",
-			},
+			value: nil,
+
+			err: "null",
 		},
 		"Regex": {
-			command: bson.D{
-				{"find", primitive.Regex{Pattern: "/foo/"}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type regex",
-			},
+			value: primitive.Regex{Pattern: "/foo/"},
+
+			err: "regex",
 		},
 		"Int": {
-			command: bson.D{
-				{"find", int32(42)},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type int",
-			},
+			value: int32(42),
+			err:   "int",
 		},
 		"Timestamp": {
-			command: bson.D{
-				{"find", primitive.Timestamp{}},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type timestamp",
-			},
+			value: primitive.Timestamp{},
+			err:   "timestamp",
 		},
 		"Long": {
-			command: bson.D{
-				{"find", int64(42)},
-				{"projection", bson.D{{"v", "some"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type long",
-			},
+			value: int64(42),
+			err:   "long",
 		},
 	} {
 		name, tc := name, tc
@@ -421,9 +99,19 @@ func TestQueryBadFindType(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			cmd := bson.D{
+				{"find", tc.value},
+				{"projection", bson.D{{"v", "some"}}},
+			}
+			err := collection.Database().RunCommand(ctx, cmd).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualError(t, *tc.err, err)
+
+			expected := mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type " + tc.err,
+			}
+			AssertEqualError(t, expected, err)
 		})
 	}
 }
@@ -673,8 +361,7 @@ func TestQueryExactMatches(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
-	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-	ctx, collection := setup.Setup(t, providers...)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	_, err := collection.InsertMany(ctx, []any{
 		bson.D{

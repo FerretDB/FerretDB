@@ -18,9 +18,9 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -29,13 +29,13 @@ func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"version", version.MongoDBVersion,
+			"version", version.Get().MongoDBVersion,
 			"gitVersion", version.Get().Commit,
 			"modules", must.NotFail(types.NewArray()),
 			"sysInfo", "deprecated",
-			"versionArray", version.MongoDBVersionArray,
+			"versionArray", version.Get().MongoDBVersionArray,
 			"bits", int32(strconv.IntSize),
-			"debug", version.Get().Debug,
+			"debug", version.Get().DebugBuild,
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
 			"buildEnvironment", version.Get().BuildEnvironment,
 

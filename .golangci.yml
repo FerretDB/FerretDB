@@ -155,27 +155,15 @@ issues:
       path: internal/handlers/pg
       text: pgdb
     - linters: [depguard]
-      path: cmd/envtool
-      text: pgdb
-    - linters: [depguard]
-      path: cmd/ferretdb
-      text: pgdb
-    - linters: [depguard]
-      path: internal/util/testutil
-      text: pgdb
-    - linters: [depguard]
       path: internal/handlers/registry
+      text: pgdb
+    - linters: [depguard]
+      path: cmd/envtool
       text: pgdb
 
     # only `pg` handler can import `pjson` package, no other handler can do that
     - linters: [depguard]
       path: internal/handlers/pg
-      text: pjson
-    - linters: [depguard]
-      path: internal/wire
-      text: pjson
-    - linters: [depguard]
-      path: internal/util/testutil
       text: pjson
 
     # only `tigris` handler can import `tigrisdb` package, no other handler can do that
@@ -184,6 +172,9 @@ issues:
       text: tigrisdb
     - linters: [depguard]
       path: internal/handlers/registry
+      text: tigrisdb
+    - linters: [depguard]
+      path: cmd/envtool
       text: tigrisdb
 
     # only `tigris` handler can import `tjson` package, no other handler can do that

@@ -16,7 +16,11 @@ Closes #{issue_number}.
     please follow CONTRIBUTING.md.
 -->
 
-* [ ] I added tests for new functionality or bugfixes.
+* [ ] I added unit tests for new functionality or bug fixes.
+* [ ] I added integration tests for new functionality or bug fixes.
+* [ ] I added compatibility tests for new functionality or bug fixes.
+* [ ] I made spot refactorings.
+* [ ] I updated user documentation.
 * [ ] I ran `task all`, and it passed.
 * [ ] I added/updated comments for both exported and unexported top-level declarations (functions, types, etc).
 * [ ] I checked comments rendering with `task godocs`.

@@ -23,42 +23,19 @@ import (
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	// TODO Add Tigris-compatible array to shareddata.Composites
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
 		"FindProjectionInclusions": {
-			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/537
+			filter:     bson.D{{"_id", "document-composite"}},
 			projection: bson.D{{"foo", int32(1)}, {"42", true}},
 		},
 		"FindProjectionExclusions": {
-			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/537
+			filter:     bson.D{{"_id", "document-composite"}},
 			projection: bson.D{{"foo", int32(0)}, {"array", false}},
-		},
-		"ProjectionSliceNonArrayField": {
-			filter:     bson.D{{"_id", "document"}},
-			projection: bson.D{{"_id", bson.D{{"$slice", 1}}}},
-		},
-	}
-
-	testQueryCompat(t, testCases)
-}
-
-func TestQueryProjectionCompatElemMatch(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
-		"ElemMatch": {
-			filter: bson.D{{"_id", "document-composite"}},
-			projection: bson.D{{
-				"v",
-				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
-			}},
 		},
 	}
 

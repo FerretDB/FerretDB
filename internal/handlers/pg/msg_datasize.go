@@ -32,6 +32,11 @@ import (
 
 // MsgDataSize implements HandlerInterface.
 func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -55,7 +60,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	stats, err := h.PgPool.SchemaStats(ctx, db, collection)
+	stats, err := dbPool.SchemaStats(ctx, db, collection)
 	elapses := time.Since(started)
 
 	addEstimate := true

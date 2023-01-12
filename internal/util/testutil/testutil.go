@@ -31,8 +31,17 @@ func Ctx(tb testing.TB) context.Context {
 
 	go func() {
 		<-ctx.Done()
+
 		tb.Log("Stopping...")
 		stop()
+
+		// There is a weird interaction between terminal's process group/session,
+		// Task's signal handling, and this attempt to handle signals gracefully fails miserably.
+		// It may cause tests to continue running in the background
+		// while terminal shows command-line prompt already.
+		//
+		// Panic to surely stop tests.
+		panic("Stopping everything")
 	}()
 
 	return ctx

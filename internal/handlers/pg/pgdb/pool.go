@@ -24,7 +24,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -57,8 +56,12 @@ type DBStats struct {
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
-func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
-	config, err := pgxpool.ParseConfig(connString)
+//
+// If lazy is true, then connectivity is not checked.
+// Lazy connections are used by FerretDB when it starts earlier than backend.
+// Non-lazy connections are used by tests.
+func NewPool(ctx context.Context, uri string, logger *zap.Logger, lazy bool, p *state.Provider) (*Pool, error) {
+	config, err := pgxpool.ParseConfig(uri)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
@@ -103,10 +106,13 @@ func NewPool(ctx context.Context, connString string, logger *zap.Logger, lazy bo
 	}
 
 	if !lazy {
-		err = res.checkConnection(ctx)
+		if err = res.checkConnection(ctx); err != nil {
+			res.Close()
+			return nil, err
+		}
 	}
 
-	return res, err
+	return res, nil
 }
 
 // isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
@@ -183,41 +189,4 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	return &DBStats{
 		Name: schema,
 	}, nil
-}
-
-// InTransaction wraps the given function f in a transaction.
-// If f returns an error, the transaction is rolled back.
-// Errors are wrapped with lazyerrors.Error,
-// so the caller needs to use errors.Is to check the error,
-// for example, errors.Is(err, ErrSchemaNotExist).
-func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
-	var tx pgx.Tx
-	if tx, err = pgPool.Begin(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	defer func() {
-		if err == nil {
-			return
-		}
-		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelError, "failed to perform rollback",
-				map[string]any{"error": rerr},
-			)
-		}
-	}()
-
-	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	if err = tx.Commit(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	return
 }

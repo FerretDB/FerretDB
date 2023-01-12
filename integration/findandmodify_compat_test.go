@@ -28,7 +28,6 @@ import (
 func TestFindAndModifyCompatSimple(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"EmptyQueryRemove": {
-			skipForTigris: "Arrays are not supported yet - https://github.com/FerretDB/FerretDB/issues/908",
 			command: bson.D{
 				{"query", bson.D{}},
 				{"remove", true},

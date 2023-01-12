@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -32,6 +31,11 @@ import (
 
 // MsgUpdate implements HandlerInterface.
 func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -56,9 +60,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
@@ -67,23 +72,22 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	created, err := pgdb.CreateCollectionIfNotExist(ctx, h.PgPool, sp.DB, sp.Collection)
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		return pgdb.CreateCollectionIfNotExists(ctx, tx, sp.DB, sp.Collection)
+	})
 	if err != nil {
-		if errors.Is(pgdb.ErrInvalidTableName, err) ||
-			errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
+			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
 			msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 		}
 		return nil, err
 	}
-	if created {
-		h.L.Info("Created table.", zap.String("schema", sp.DB), zap.String("table", sp.Collection))
-	}
 
 	var matched, modified int32
 	var upserted types.Array
 
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		for i := 0; i < updates.Len(); i++ {
 			update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 			if err != nil {
@@ -161,7 +165,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				))))
 
-				if err = h.insert(ctx, &sp, doc); err != nil {
+				if err = insertDocument(ctx, dbPool, &sp, doc); err != nil {
 					return err
 				}
 
@@ -185,7 +189,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				rowsChanged, err := h.update(ctx, tx, &sp, doc)
+				rowsChanged, err := updateDocument(ctx, tx, &sp, doc)
 				if err != nil {
 					return err
 				}
@@ -222,8 +226,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update updates documents by _id.
-func (h *Handler) update(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
+// updateDocument updates documents by _id.
+func updateDocument(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
 	res, err := pgdb.SetDocumentByID(ctx, tx, sp, id, doc)

@@ -30,6 +30,11 @@ import (
 
 // MsgListCollections implements HandlerInterface.
 func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -50,14 +55,14 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
-	var db string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 
 	var names []string
 
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
 
 		names, err = pgdb.Collections(ctx, tx, db)

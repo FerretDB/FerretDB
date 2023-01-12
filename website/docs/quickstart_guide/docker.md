@@ -19,9 +19,9 @@ They are not suitable for most production use-cases because they keep all data i
        ports:
          - 5432:5432
        environment:
-         - POSTGRES_USER=ferret
+         - POSTGRES_USER=username
+         - POSTGRES_PASSWORD=password
          - POSTGRES_DB=ferretdb
-         - POSTGRES_HOST_AUTH_METHOD=trust
 
      ferretdb:
        image: ghcr.io/ferretdb/ferretdb:latest
@@ -30,7 +30,7 @@ They are not suitable for most production use-cases because they keep all data i
        ports:
          - 27017:27017
        environment:
-         - FERRETDB_POSTGRESQL_URL=postgres://ferret@postgres:5432/ferretdb
+         - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
 
    networks:
      default:

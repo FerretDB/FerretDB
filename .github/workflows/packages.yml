@@ -47,8 +47,19 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Build release binary
+        run: bin/task build-release
+
       - name: Build packages
         run: bin/task packages
+
+      - name: Upload ferretdb
+        uses: actions/upload-artifact@v3
+        with:
+          name: ferretdb
+          path: bin/ferretdb
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Upload ferretdb.deb
         uses: actions/upload-artifact@v3

@@ -20,4 +20,20 @@ body:
     id: where
     attributes:
       label: Where?
-      description: Include a permalink if possible.
+      description: Include permalinks if possible.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: What should be done to consider this issue done? List everything that applies.
+      value: |
+        - unit tests added;
+        - integration tests added;
+        - compatibility tests added;
+        - spot refactorings done;
+        - user documentation updated;
+        - something else?
+    validations:
+      required: true

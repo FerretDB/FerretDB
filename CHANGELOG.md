@@ -1,5 +1,113 @@
 # Changelog
 
+## [v0.8.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.0) (2023-01-02)
+
+### What's Changed
+
+We are pleased to announce our first Beta release!
+
+#### Storage changes for PostgreSQL
+
+We made a few _backward-incompatible_ changes in the way we store data in PostgreSQL to improve FerretDB performance.
+In the future, those changes will allow us to use indexes and query collections faster.
+
+To keep your data:
+
+* backup FerretDB databases using `mongodump` or `mongoexport`;
+* backup PostgreSQL database using `pg_dump` or other tool (just in case);
+* stop FerretDB;
+* drop PostgreSQL views for FerretDB databases;
+* start FerretDB 0.8;
+* restore databases using `mongorestore` or `mongoimport`.
+
+#### Authentication
+
+It is now possible to use the backend's authentication mechanisms in FerretDB.
+See [documentation](https://docs.ferretdb.io/security/).
+
+### New Features 🎉
+* Support `$min` field update operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1652
+* Support `ordered` argument for `insert` command by @noisersup in https://github.com/FerretDB/FerretDB/pull/1673
+* Implement authentication for PostgreSQL by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1725
+
+### Fixed Bugs 🐛
+* Fix unset document being updated by invalid value of `$inc` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1685
+
+### Enhancements 🛠
+* Update building documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1713
+
+### Documentation 📄
+* Add section for comparison and logical query operators by @Fashander in https://github.com/FerretDB/FerretDB/pull/1647
+* Add documentation for element query operators by @Fashander in https://github.com/FerretDB/FerretDB/pull/1675
+* Add documentation for array query operator by @Fashander in https://github.com/FerretDB/FerretDB/pull/1695
+* Enable blog post section by @Fashander in https://github.com/FerretDB/FerretDB/pull/1700
+
+### Other Changes 🤖
+* Simplify release procedure by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1657
+* Modify `pjson` format by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1620
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1664
+* Remove leading space from `SELECT` queries by @noisersup in https://github.com/FerretDB/FerretDB/pull/1665
+* Add `InTransactionRetry` helper by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1670
+* Add `mongo` test script example by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1600
+* Use faster runner instances by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1678
+* Update issue templates by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1671
+* Bump Tigris version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1680
+* Move update tests to compat tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1659
+* Add TODO comments by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1687
+* Add `saslStart` stub by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1649
+* Improve the way of storing data about collections by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1650
+* Implement `iterator.Interface` for `types.Document` and `types.Array` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1683
+* Improve issue template by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1692
+* Remove `$elemMatch` and `$slice` projection operators by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1698
+* Add `currentOp` stub by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1708
+* Add basic benchmark for query pushdowns by @noisersup in https://github.com/FerretDB/FerretDB/pull/1689
+* Enable authentication in PostgreSQL by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1716
+* Fix Docker build by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1715
+* Minor refactorings of iterators by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1718
+* Test `ordered` argument validation by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1719
+* Add stub for getting client-specific connection by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1723
+* Add compat tests for `InsertOne` in addition to `InsertMany` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1726
+* Run `govulncheck` on CI by @noisersup in https://github.com/FerretDB/FerretDB/pull/1729
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/28?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.7.1...v0.8.0).
+
+
+## [v0.7.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.1) (2022-12-19)
+
+### New Features 🎉
+* Add basic TLS support by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1586
+* Add `validate` command stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1645
+
+### Fixed Bugs 🐛
+* Fix parsing of `OP_MSG` packets with multiple sections by @b1ron in https://github.com/FerretDB/FerretDB/pull/1611
+* Fix parsing of `OP_MSG` packets with multiple sections by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1633
+* Fix comparison with unset fields by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1634
+
+### Enhancements 🛠
+* Compare documents by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1597
+
+### Documentation 📄
+* Infinity values are not allowed in documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1622
+
+### Other Changes 🤖
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1609
+* Update release checklist by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1621
+* Compare unit tests for edge cases by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1624
+* Bump Go and other deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1629
+* Refactor integration tests setup functions by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1625
+* Fix `.deb`/`.rpm` package testing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1631
+* Bump `golang.org/x/net` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1640
+* Introduce schema for `pjson` format by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1635
+* Use TLS for MongoDB in integration tests by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1623
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1644
+* Bump Tigris deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1651
+* Remove Incomparable by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1646
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/27?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.7.0...v0.7.1).
+
+
 ## [v0.7.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.7.0) (2022-12-05)
 
 ### New Features 🎉
@@ -493,7 +601,8 @@ We are pleased to announce our first Alpha release!
 ## [v0.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.0) (2022-07-11)
 
 ### What's Changed
-This release enables the usage of FerretDB as a Go library. See [this blog post](https://www.ferretdb.io/0-5-0-release-is-out-embedding-ferretdb-into-go-programs/).
+This release enables the usage of FerretDB as a Go library.
+See [this blog post](https://www.ferretdb.io/0-5-0-release-is-out-embedding-ferretdb-into-go-programs/).
 
 ### New Features 🎉
 * Support embedded use-case by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/754
@@ -1006,7 +1115,7 @@ In short, we want FerretDB to be compatible with MongoDB first and fast second, 
 * Support basic `hostInfo` command by @ekalinin in https://github.com/FerretDB/FerretDB/pull/188
 * Support `collStats` command by @ekalinin in https://github.com/FerretDB/FerretDB/pull/206
 ### Fixed Bugs 🐛
-* Accept $ and . in object field names by @AlekSi in https://github.com/FerretDB/FerretDB/pull/127
+* Accept $ and `.` in object field names by @AlekSi in https://github.com/FerretDB/FerretDB/pull/127
 * Make `checkConnection` less strict for common UTF8 localizations by @klokar in https://github.com/FerretDB/FerretDB/pull/135
 * Wait for PostgreSQL on `make env-up` by @agneum in https://github.com/FerretDB/FerretDB/pull/149
 * Fix build info parsing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/205
@@ -1024,7 +1133,7 @@ In short, we want FerretDB to be compatible with MongoDB first and fast second, 
 * Build multi-arch Docker images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/107
 * Verify modules on `make init` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/123
 * Enable go-consistent linter by @AlekSi in https://github.com/FerretDB/FerretDB/pull/124
-* Use composite GitHub Action for Go setup. (#122) by @klokar in https://github.com/FerretDB/FerretDB/pull/126
+* Use composite GitHub Action for Go setup in https://github.com/FerretDB/FerretDB/pull/126
 * Use shared setup-go action by @AlekSi in https://github.com/FerretDB/FerretDB/pull/131
 * Add an option to use read-only user in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/132
 * Refactor handler tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/136
@@ -1062,7 +1171,7 @@ In short, we want FerretDB to be compatible with MongoDB first and fast second, 
 
 ## [v0.0.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.4) (2021-12-01)
 
-* A new name! ([see here](https://github.com/FerretDB/FerretDB/discussions/100))
+* A new name in https://github.com/FerretDB/FerretDB/discussions/100
 * Added support for databases sizes in `listDatabases` command ([#61](https://github.com/FerretDB/FerretDB/issues/61), thanks to [Leigh](https://github.com/OpenSauce)).
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/3?closed=1).
@@ -1071,8 +1180,8 @@ In short, we want FerretDB to be compatible with MongoDB first and fast second, 
 
 ## [v0.0.3](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.3) (2021-11-19)
 
-* Added support for `$regex` evaluation query operator. ([#28](https://github.com/FerretDB/FerretDB/issues/28))
-* Fixed handling of Infinity, -Infinity, NaN BSON Double values. ([#29](https://github.com/FerretDB/FerretDB/issues/29))
+* Added support for `$regex` evaluation query operator in https://github.com/FerretDB/FerretDB/issues/28
+* Fixed handling of Infinity, -Infinity, NaN BSON Double values in https://github.com/FerretDB/FerretDB/issues/29
 * Improved documentation for contributors (thanks to [Leigh](https://github.com/OpenSauce)).
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/2?closed=1).
@@ -1081,8 +1190,8 @@ In short, we want FerretDB to be compatible with MongoDB first and fast second, 
 
 ## [v0.0.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.0.2) (2021-11-13)
 
-* Added support for comparison query operators: `$eq`,`$gt`,`$gte`,`$in`,`$lt`,`$lte`,`$ne`,`$nin`. ([#26](https://github.com/FerretDB/FerretDB/issues/26))
-* Added support for logical query operators: `$and`, `$not`, `$nor`, `$or`. ([#27](https://github.com/FerretDB/FerretDB/issues/27))
+* Added support for comparison query operators: `$eq`,`$gt`,`$gte`,`$in`,`$lt`,`$lte`,`$ne`,`$nin` in https://github.com/FerretDB/FerretDB/issues/26
+* Added support for logical query operators: `$and`, `$not`, `$nor`, `$or` in https://github.com/FerretDB/FerretDB/issues/27
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/1?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v0.0.1...v0.0.2).

@@ -1,4 +1,6 @@
 ---
+# https://nfpm.goreleaser.com/configuration/
+
 name: ferretdb
 arch: ${GOARCH}
 platform: linux
@@ -12,5 +14,5 @@ description: >
 homepage: https://ferretdb.io
 license: Apache License 2.0
 contents:
-  - src: ../bin/ferretdb-testcover
+  - src: ../bin/ferretdb
     dst: /usr/bin/ferretdb

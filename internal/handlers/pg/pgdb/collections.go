@@ -26,6 +26,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -37,160 +38,136 @@ var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,11
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
 func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
-	schemaExists, err := schemaExists(ctx, tx, db)
+	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if !schemaExists {
-		return nil, ErrSchemaNotExist
+	// if metadata table doesn't exist, there are no collections in the database
+	if !metadataExist {
+		return []string{}, nil
 	}
 
-	settings, err := getSettingsTable(ctx, tx, db, false)
+	it, err := buildIterator(ctx, tx, &iteratorParams{
+		schema: db,
+		table:  dbMetadataTableName,
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	collectionsDoc := must.NotFail(settings.Get("collections"))
+	var collections []string
 
-	collections, ok := collectionsDoc.(*types.Document)
-	if !ok {
-		return nil, lazyerrors.Errorf("invalid settings document: %v", collectionsDoc)
+	defer it.Close()
+
+	for {
+		var doc *types.Document
+		_, doc, err = it.Next()
+
+		// if the context is canceled, we don't need to continue processing documents
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more documents
+			slices.Sort(collections)
+			return collections, nil
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+
+		collections = append(collections, must.NotFail(doc.Get("_id")).(string))
 	}
-
-	// TODO sort collections on update
-	names := collections.Keys()
-	slices.Sort(names)
-
-	return names, nil
 }
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	collections, err := Collections(ctx, tx, db)
-	if err != nil {
-		if errors.Is(err, ErrSchemaNotExist) {
-			return false, nil
-		}
-		return false, err
-	}
+	_, err := getMetadata(ctx, tx, db, collection)
 
-	return slices.Contains(collections, collection), nil
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, ErrTableNotExist):
+		return false, nil
+	default:
+		return false, lazyerrors.Error(err)
+	}
 }
 
-// CreateCollection creates a new FerretDB collection in existing database.
+// CreateCollection creates a new FerretDB collection with the given name in the given database.
+// If the database does not exist, it will be created.
 //
-// It returns a possibly wrapped error:
-//   - ErrInvalidTableName - if a FerretDB collection name doesn't conform to restrictions.
-//   - ErrAlreadyExist - if a FerretDB collection with the given names already exists.
-//   - ErrTableNotExist - is the required FerretDB database does not exist.
-//
-// Please use errors.Is to check the error.
+// It returns possibly wrapped error:
+//   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
+//   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - ErrAlreadyExist - if a FerretDB collection with the given name already exists.
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) {
-		return ErrInvalidTableName
+		return ErrInvalidCollectionName
 	}
 
-	schemaExists, err := schemaExists(ctx, tx, db)
+	table, created, err := ensureMetadata(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if !schemaExists {
-		return ErrSchemaNotExist
-	}
-
-	table := formatCollectionName(collection)
-	tables, err := tables(ctx, tx, db)
-	if err != nil {
-		return err
-	}
-	if slices.Contains(tables, table) {
+	if !created {
 		return ErrAlreadyExist
 	}
 
-	err = setTableInSettings(ctx, tx, db, collection, table)
-	if errors.Is(err, ErrAlreadyExist) {
-		return ErrAlreadyExist
-	}
-
+	err = createTableIfNotExists(ctx, tx, db, table)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` (_jsonb jsonb)`
-	if _, err = tx.Exec(ctx, sql); err == nil {
-		return nil
-	}
-
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
-		return lazyerrors.Error(err)
-	}
-
-	switch pgErr.Code {
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
-		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
-		// Reproducible by integration tests.
-		return ErrAlreadyExist
-	default:
-		return lazyerrors.Error(err)
-	}
+	return nil
 }
 
-// CreateCollectionIfNotExist ensures that given FerretDB database / PostgreSQL schema
-// and FerretDB collection / PostgreSQL table exist.
-// If needed, it creates both database and collection.
+// CreateCollectionIfNotExists ensures that given FerretDB database and collection exist.
+// If the database does not exist, it will be created.
 //
-// True is returned if collection was created.
-func CreateCollectionIfNotExist(ctx context.Context, pgPool *Pool, db, collection string) (bool, error) {
-	var exists bool
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		exists, err = CollectionExists(ctx, tx, db, collection)
-		return err
-	})
+// It returns possibly wrapped error:
+//   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
+//   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
+func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	if !validateCollectionNameRe.MatchString(collection) ||
+		strings.HasPrefix(collection, reservedPrefix) {
+		return ErrInvalidCollectionName
+	}
+
+	var err error
+
+	table, created, err := ensureMetadata(ctx, tx, db, collection)
 	if err != nil {
-		return false, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
-	if exists {
-		return false, nil
-	}
-
-	// Collection (or even database) does not exist. Try to create them,
-	// but keep in mind that it can be created in concurrent connection.
-
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-			return err
-		}
+	if !created {
+		// table already exists.
 		return nil
-	})
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return false, lazyerrors.Error(err)
 	}
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		err = CreateCollection(ctx, tx, db, collection)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if err != nil && !errors.Is(err, ErrAlreadyExist) {
-		return false, lazyerrors.Error(err)
+	err = createTableIfNotExists(ctx, tx, db, table)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 // DropCollection drops FerretDB collection.
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 // Please use errors.Is to check the error.
+//
+// TODO Test correctness for concurrent cases https://github.com/FerretDB/FerretDB/issues/1684
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	schemaExists, err := schemaExists(ctx, tx, db)
 	if err != nil {
@@ -210,12 +187,9 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrTableNotExist
 	}
 
-	err = removeTableFromSettings(ctx, tx, db, collection)
-	if err != nil && !errors.Is(err, ErrTableNotExist) {
+	err = removeMetadata(ctx, tx, db, collection)
+	if err != nil {
 		return lazyerrors.Error(err)
-	}
-	if errors.Is(err, ErrTableNotExist) {
-		return ErrTableNotExist
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
@@ -226,4 +200,31 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	}
 
 	return nil
+}
+
+// createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
+// If the table already exists, it does nothing.
+//
+// If a PostgreSQL conflict occurs it returns errTransactionConflict, and the caller could retry the transaction.
+func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
+	var err error
+
+	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
+	if _, err = tx.Exec(ctx, sql); err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject, pgerrcode.DuplicateTable:
+		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
+		// Reproducible by integration tests.
+		return newTransactionConflictError(err)
+	default:
+		return lazyerrors.Error(err)
+	}
 }

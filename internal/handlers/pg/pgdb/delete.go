@@ -26,30 +26,47 @@ import (
 
 // DeleteDocumentsByID deletes documents by given IDs.
 func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any) (int64, error) {
-	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return 0, err
 	}
 
+	return deleteByIDs(ctx, tx, deleteParams{
+		schema:  sp.DB,
+		table:   table,
+		comment: sp.Comment,
+	}, ids,
+	)
+}
+
+// deleteParams describes the parameters for deleting from a table.
+type deleteParams struct {
+	schema  string // pg schema name
+	table   string // pg table name
+	comment string // comment to add to the query
+}
+
+// deleteByIDs deletes documents by given IDs.
+func deleteByIDs(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))
 
 	for i, id := range ids {
 		placeholders[i] = p.Next()
-		idsMarshalled[i] = must.NotFail(pjson.Marshal(id))
+		idsMarshalled[i] = must.NotFail(pjson.MarshalSingleValue(id))
 	}
 
 	sql := `DELETE `
 
-	if sp.Comment != "" {
-		sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-		sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+	if d.comment != "" {
+		d.comment = strings.ReplaceAll(d.comment, "/*", "/ *")
+		d.comment = strings.ReplaceAll(d.comment, "*/", "* /")
 
-		sql += `/* ` + sp.Comment + ` */ `
+		sql += `/* ` + d.comment + ` */ `
 	}
 
-	sql += `FROM ` + pgx.Identifier{sp.DB, table}.Sanitize() +
+	sql += `FROM ` + pgx.Identifier{d.schema, d.table}.Sanitize() +
 		` WHERE _jsonb->'_id' IN (` + strings.Join(placeholders, ", ") + `)`
 
 	tag, err := tx.Exec(ctx, sql, idsMarshalled...)

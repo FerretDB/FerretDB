@@ -26,13 +26,18 @@ import (
 
 // MsgDBStats implements HandlerInterface.
 func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var db string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 
@@ -42,7 +47,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	stats, err := h.PgPool.SchemaStats(ctx, db, "")
+	stats, err := dbPool.SchemaStats(ctx, db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

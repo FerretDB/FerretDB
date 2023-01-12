@@ -18,7 +18,7 @@ package conninfo
 
 import (
 	"context"
-	"net"
+	"sync"
 )
 
 // contextKey is a special type to represent context.WithValue keys a bit more safely.
@@ -29,7 +29,28 @@ var connInfoKey = contextKey{}
 
 // ConnInfo represents connection info.
 type ConnInfo struct {
-	PeerAddr net.Addr
+	PeerAddr string
+
+	rw       sync.RWMutex
+	username string
+	password string
+}
+
+// Auth returns stored username and password.
+func (connInfo *ConnInfo) Auth() (username, password string) {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.username, connInfo.password
+}
+
+// SetAuth stores username and password.
+func (connInfo *ConnInfo) SetAuth(username, password string) {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.username = username
+	connInfo.password = password
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.
@@ -37,8 +58,8 @@ func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 
-// GetConnInfo returns the ConnInfo value stored in ctx, or panics if connInfo is not presented there.
-func GetConnInfo(ctx context.Context) *ConnInfo {
+// Get returns the ConnInfo value stored in ctx.
+func Get(ctx context.Context) *ConnInfo {
 	value := ctx.Value(connInfoKey)
 	if value == nil {
 		panic("connInfo is not set in context")

@@ -23,7 +23,7 @@ import (
 var objectIDTestCases = []testCase{{
 	name: "normal",
 	v:    pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
-	j:    `{"$o":"010101010101010101010101"}`,
+	j:    `"010101010101010101010101"`,
 }, {
 	name: "EOF",
 	j:    `{`,

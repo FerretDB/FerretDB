@@ -37,7 +37,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 	}
 
 	logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-	tdb, err := New(cfg, logger)
+	tdb, err := New(ctx, cfg, logger, false)
 	require.NoError(t, err)
 
 	t.Run("DBCollectionDoNotExist", func(t *testing.T) {
@@ -47,7 +47,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		collName := testutil.CollectionName(t)
 
 		t.Cleanup(func() {
-			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
+			_, e := tdb.Driver.DeleteProject(ctx, dbName)
+			require.NoError(t, e)
 		})
 
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
@@ -67,10 +68,12 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		dbName := testutil.DatabaseName(t)
 		collName := testutil.CollectionName(t)
 
-		require.NoError(t, tdb.Driver.CreateDatabase(ctx, dbName))
+		_, err := tdb.Driver.CreateProject(ctx, dbName)
+		require.NoError(t, err)
 
 		t.Cleanup(func() {
-			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
+			_, e := tdb.Driver.DeleteProject(ctx, dbName)
+			require.NoError(t, e)
 		})
 
 		created, err := tdb.createDatabaseIfNotExists(ctx, dbName)
@@ -92,7 +95,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		dbName := testutil.DatabaseName(t)
 		collName := testutil.CollectionName(t)
 
-		require.NoError(t, tdb.Driver.CreateDatabase(ctx, dbName))
+		_, err := tdb.Driver.CreateProject(ctx, dbName)
+		require.NoError(t, err)
+
 		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
 			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
 			collName,
@@ -100,7 +105,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, tdb.Driver.UseDatabase(dbName).CreateOrUpdateCollection(ctx, collName, schema))
 
 		t.Cleanup(func() {
-			require.NoError(t, tdb.Driver.DropDatabase(ctx, dbName))
+			_, e := tdb.Driver.DeleteProject(ctx, dbName)
+			require.NoError(t, e)
 		})
 
 		created, err := tdb.createDatabaseIfNotExists(ctx, dbName)

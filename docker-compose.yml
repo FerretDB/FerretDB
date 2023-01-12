@@ -17,7 +17,26 @@ services:
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
       - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=ferretdb
+
+  postgres_secured:
+    build:
+      context: ./build/deps
+      dockerfile: postgres.Dockerfile
+    container_name: ferretdb_postgres_secured
+    command: postgres -c 'max_connections=200'
+    ports:
+      - 5433:5432
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # UTC−03:30/−02:30. Set to catch timezone problems.
+      - TZ=America/St_Johns
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
   tigris:
@@ -39,15 +58,16 @@ services:
     ports:
       - 26257:26257
     environment:
-      - COCKROACH_USER=cockroach
+      - COCKROACH_USER=username
+      - COCKROACH_PASSWORD=password
       - COCKROACH_DATABASE=ferretdb
 
-  # for proxy mode and mongosh
   mongodb:
     build:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
+    command: --config /etc/mongod.conf
     ports:
       - 37017:27017
     extra_hosts:
@@ -56,7 +76,42 @@ services:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
     volumes:
-      - ./build/mongosh:/mongosh
+      - ./build/certs:/etc/certs
+      - ./build/mongod.conf:/etc/mongod.conf
+
+  mongodb_secured:
+    build:
+      context: ./build/deps
+      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
+    container_name: ferretdb_mongodb_secured
+    command: --config /etc/mongod.conf
+    ports:
+      - 37018:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Always UTC+05:45. Set to catch timezone problems.
+      - TZ=Asia/Kathmandu
+      - MONGO_INITDB_ROOT_USERNAME=username
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./build/certs:/etc/certs
+      - ./build/mongod_secured.conf:/etc/mongod.conf
+
+  # for test scripts
+  legacy-mongo-shell:
+    build:
+      context: ./build/deps
+      dockerfile: legacy-mongo-shell.Dockerfile
+    container_name: ferretdb_legacy-mongo-shell
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Always UTC+05:45. Set to catch timezone problems.
+      - TZ=Asia/Kathmandu
+    volumes:
+      - ./build/certs:/etc/certs
+      - ./build/legacy-mongo-shell/test.js:/legacy-mongo-shell/test.js
 
   trivy:
     build:
@@ -66,19 +121,19 @@ services:
     volumes:
       - .:/workdir
 
-  # for building .deb and .rpm packages
-  debian:
+  # for testing .deb and .rpm packages
+  ubuntu:
     build:
       context: ./build/deps
-      dockerfile: debian11.Dockerfile
-    container_name: ferretdb_debian
+      dockerfile: ubuntu2204.Dockerfile
+    container_name: ferretdb_ubuntu
     volumes:
       - ./build/deb:/deb
-  centos:
+  ubi:
     build:
       context: ./build/deps
-      dockerfile: centos7.Dockerfile
-    container_name: ferretdb_centos
+      dockerfile: ubi9.Dockerfile
+    container_name: ferretdb_ubi
     volumes:
       - ./build/rpm:/rpm
 
@@ -117,6 +172,7 @@ services:
       # container image already contains package.json and package-lock.json
       - ./website/build:/workdir/docusaurus-docs/build:rw
       - ./website/docs:/workdir/docusaurus-docs/docs:ro
+      - ./website/blog:/workdir/docusaurus-docs/blog:ro
       - ./website/src:/workdir/docusaurus-docs/src:ro
       - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro

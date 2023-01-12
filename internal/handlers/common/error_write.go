@@ -40,8 +40,13 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 // Error implements error interface.
 func (we *WriteErrors) Error() string {
 	var err string
-	for _, e := range we.errs {
-		err += e.err + ","
+
+	for i, e := range we.errs {
+		if i != 0 {
+			err += ", "
+		}
+
+		err += e.err
 	}
 
 	return err
@@ -122,6 +127,14 @@ func (we *WriteErrors) Append(err error, index int32) {
 // Len returns the number of errors.
 func (we *WriteErrors) Len() int {
 	return len(we.errs)
+}
+
+// Merge merges the given WriteErrors with the current one and sets the given index.
+func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
+	for _, e := range we2.errs {
+		e.index = &index
+		we.errs = append(we.errs, e)
+	}
 }
 
 // writeError represents protocol write error.

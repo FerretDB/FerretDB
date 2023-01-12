@@ -34,9 +34,8 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var db string
-
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 
@@ -57,10 +56,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 		// If DB doesn't exist just return empty stats.
-		stats = &driver.DescribeDatabaseResponse{
-			Db:   db,
-			Size: 0,
-		}
+		stats = new(driver.DescribeDatabaseResponse)
 
 	default:
 		return nil, lazyerrors.Error(err)

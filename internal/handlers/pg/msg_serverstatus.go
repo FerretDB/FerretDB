@@ -26,12 +26,17 @@ import (
 
 // MsgServerStatus implements HandlerInterface.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	res, err := common.ServerStatus(h.StateProvider.Get(), h.Metrics)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := h.PgPool.SchemaStats(ctx, "", "")
+	stats, err := dbPool.SchemaStats(ctx, "", "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

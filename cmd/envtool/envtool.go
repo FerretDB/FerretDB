@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -33,14 +35,15 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 var (
@@ -51,11 +54,38 @@ var (
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
-// setupPostgres configures PostgreSQL.
-func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
-	logger = logger.Named("postgres")
+// waitForPort waits for the given port to be available until ctx is done.
+func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	logger.Infof("Waiting for %s to be up...", addr)
 
-	if err := waitForPostgresPort(ctx, logger, 5432); err != nil {
+	for ctx.Err() == nil {
+		conn, err := net.Dial("tcp", addr)
+		if err == nil {
+			conn.Close()
+			return nil
+		}
+
+		logger.Infof("%s: %s", addr, err)
+		ctxutil.Sleep(ctx, time.Second)
+	}
+
+	return fmt.Errorf("failed to connect to %s", addr)
+}
+
+// setupAnyPostgres configures given PostgreSQL.
+func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	port, err := strconv.ParseUint(u.Port(), 10, 16)
+	if err != nil {
+		return err
+	}
+
+	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
 		return err
 	}
 
@@ -64,18 +94,24 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	connString := "postgres://postgres@127.0.0.1:5432/ferretdb"
-	pgPool, err := pgdb.NewPool(ctx, connString, logger.Desugar(), false, p)
-	if err != nil {
-		return err
+	var pgPool *pgdb.Pool
+
+	for ctx.Err() == nil {
+		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), false, p); err == nil {
+			break
+		}
+
+		logger.Infof("%s: %s", uri, err)
+		ctxutil.Sleep(ctx, time.Second)
 	}
+
 	defer pgPool.Close()
 
 	logger.Info("Creating databases...")
 
-	for _, db := range []string{"admin", "test"} {
+	for _, name := range []string{"admin", "test"} {
 		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return pgdb.CreateDatabaseIfNotExists(ctx, tx, db)
+			return pgdb.CreateDatabaseIfNotExists(ctx, tx, name)
 		})
 		if err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
 			return err
@@ -85,7 +121,7 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger.Info("Tweaking settings...")
 
 	for _, q := range []string{
-		`CREATE ROLE readonly NOINHERIT LOGIN`,
+		`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
 
 		// TODO Grant permissions to readonly role.
 		// https://github.com/FerretDB/FerretDB/issues/1025
@@ -100,26 +136,47 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	return nil
 }
 
+// setupPostgres configures `postgres` container.
+func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
+	// user `username` must exist, but password may be any, even empty
+	return setupAnyPostgres(ctx, logger.Named("postgres"), "postgres://username@127.0.0.1:5432/ferretdb")
+}
+
+// setupPostgresSecured configures `postgres_secured` container.
+func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error {
+	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
+}
+
 // setupTigris configures Tigris.
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
-	if err := waitForTigrisPort(ctx, logger, 8081); err != nil {
+	err := waitForPort(ctx, logger, 8081)
+	if err != nil {
 		return err
 	}
 
 	cfg := &config.Driver{
 		URL: "127.0.0.1:8081",
 	}
-	driver, err := driver.NewDriver(ctx, cfg)
-	if err != nil {
-		return err
+
+	var db *tigrisdb.TigrisDB
+
+	for ctx.Err() == nil {
+		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar(), false); err == nil {
+			break
+		}
+
+		logger.Infof("%s: %s", cfg.URL, err)
+		ctxutil.Sleep(ctx, time.Second)
 	}
-	defer driver.Close()
+
+	defer db.Driver.Close()
 
 	logger.Info("Creating databases...")
-	for _, db := range []string{"admin", "test"} {
-		if err = driver.CreateDatabase(ctx, db); err != nil {
+
+	for _, name := range []string{"admin", "test"} {
+		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
 			return err
 		}
 	}
@@ -135,11 +192,19 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
+	if err := setupPostgresSecured(ctx, logger); err != nil {
+		return err
+	}
+
 	if err := setupTigris(ctx, logger); err != nil {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger, 37017); err != nil {
+	if err := waitForPort(ctx, logger.Named("mongodb"), 37017); err != nil {
+		return err
+	}
+
+	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 37018); err != nil {
 		return err
 	}
 
@@ -168,9 +233,11 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
 func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
+	runCommand("docker", []string{"compose", "logs"}, os.Stdout, logger)
+
 	runCommand("docker", []string{"compose", "ps", "--all"}, os.Stdout, logger)
 
-	runCommand("docker", []string{"compose", "logs"}, os.Stdout, logger)
+	runCommand("docker", []string{"stats", "--all", "--no-stream"}, os.Stdout, logger)
 
 	var buf bytes.Buffer
 
@@ -207,11 +274,11 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 		"GOOS":   runtime.GOOS,
 		"GOARCH": runtime.GOARCH,
 
-		"Version": info.Version,
-		"Commit":  info.Commit,
-		"Branch":  info.Branch,
-		"Dirty":   info.Dirty,
-		"Debug":   info.Debug,
+		"Version":    info.Version,
+		"Commit":     info.Commit,
+		"Branch":     info.Branch,
+		"Dirty":      info.Dirty,
+		"DebugBuild": info.DebugBuild,
 
 		"GoVersion":      runtime.Version(),
 		"GitVersion":     strings.TrimSpace(gitVersion),

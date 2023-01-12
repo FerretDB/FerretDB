@@ -59,7 +59,7 @@ func AllProviders() []Provider {
 		Int32s,
 		Timestamps,
 		Int64s,
-		// Unsets, TODO https://github.com/FerretDB/FerretDB/issues/1023
+		Unsets,
 		ObjectIDKeys,
 
 		Composites,
@@ -67,6 +67,8 @@ func AllProviders() []Provider {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+
+		ArrayStrings,
 	}
 
 	// check that names are unique and randomize order

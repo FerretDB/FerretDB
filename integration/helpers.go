@@ -30,7 +30,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -49,24 +48,24 @@ const (
 	emptyResult
 )
 
-// Convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
+// convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
-func Convert(t testing.TB, v any) any {
+func convert(t testing.TB, v any) any {
 	t.Helper()
 
 	switch v := v.(type) {
 	// composite types
 	case primitive.D:
-		doc := must.NotFail(types.NewDocument())
+		doc := types.MakeDocument(len(v))
 		for _, e := range v {
-			doc.Set(e.Key, Convert(t, e.Value))
+			doc.Set(e.Key, convert(t, e.Value))
 		}
 		return doc
 	case primitive.A:
 		arr := types.MakeArray(len(v))
 		for _, e := range v {
-			arr.Append(Convert(t, e))
+			arr.Append(convert(t, e))
 		}
 		return arr
 
@@ -109,7 +108,7 @@ func Convert(t testing.TB, v any) any {
 func ConvertDocument(t testing.TB, doc bson.D) *types.Document {
 	t.Helper()
 
-	v := Convert(t, doc)
+	v := convert(t, doc)
 
 	var res *types.Document
 	require.IsType(t, res, v)
@@ -183,6 +182,25 @@ func AssertMatchesCommandError(t *testing.T, expected, actual error) {
 	assert.Equal(t, eErr.Name, aErr.Name)
 	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
 	assert.Equal(t, eErr.Code, aErr.Code)
+}
+
+// AssertMatchesWriteErrorCode asserts error codes are the same.
+func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
+	t.Helper()
+
+	var aErr, eErr mongo.WriteException
+
+	if ok := errors.As(actual, &aErr); !ok || len(aErr.WriteErrors) != 1 {
+		assert.Equal(t, expected, actual)
+		return
+	}
+
+	if ok := errors.As(expected, &eErr); !ok || len(eErr.WriteErrors) != 1 {
+		assert.Equal(t, expected, actual)
+		return
+	}
+
+	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
 }
 
 // AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);

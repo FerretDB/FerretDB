@@ -104,7 +104,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.mode != NormalMode {
 		var err error
 		if p, err = proxy.New(opts.proxyAddr); err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
@@ -126,6 +126,17 @@ func newConn(opts *newConnOpts) (*conn, error) {
 //
 // The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
+	var connInfo conninfo.ConnInfo
+
+	if c.netConn.RemoteAddr().Network() != "unix" {
+		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
+	}
+
+	// keep connInfo in context for the whole connection lifetime;
+	// we need it for authentication to work
+	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, &connInfo))
+	defer cancel()
+
 	done := make(chan struct{})
 
 	// handle ctx cancellation
@@ -365,12 +376,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	connInfo := &conninfo.ConnInfo{
-		PeerAddr: c.netConn.RemoteAddr(),
-	}
-	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
-	defer cancel()
-
 	var command, result, argument string
 	defer func() {
 		if result == "" {

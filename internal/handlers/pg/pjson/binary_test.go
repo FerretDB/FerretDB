@@ -26,35 +26,36 @@ var binaryTestCases = []testCase{{
 		Subtype: types.BinaryUser,
 		B:       []byte("foo"),
 	},
-	j: `{"$b":"Zm9v","s":128}`,
+	sch: binDataSchema(types.BinaryUser),
+	j:   `"Zm9v"`,
 }, {
 	name: "empty",
 	v: &binaryType{
 		Subtype: types.BinaryGeneric,
 		B:       []byte{},
 	},
-	j:      `{"$b":""}`,
-	canonJ: `{"$b":"","s":0}`,
+	sch: binDataSchema(types.BinaryGeneric),
+	j:   `""`,
 }, {
 	name: "invalid subtype",
 	v: &binaryType{
 		Subtype: 0xff,
 		B:       []byte{},
 	},
-	j: `{"$b":"","s":255}`,
-}, {
-	name: "extra JSON fields",
-	v: &binaryType{
-		Subtype: types.BinaryUser,
-		B:       []byte("foo"),
-	},
-	j:      `{"$b":"Zm9v","s":128,"foo":"bar"}`,
-	canonJ: `{"$b":"Zm9v","s":128}`,
-	jErr:   `json: unknown field "foo"`,
+	sch: binDataSchema(0xff),
+	j:   `""`,
 }, {
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
+}, {
+	name: "NilSubtype",
+	sch: &elem{
+		Type:    elemTypeBinData,
+		Subtype: nil,
+	},
+	j:    `"Zm9v"`,
+	jErr: `binary subtype in the schema is nil`,
 }}
 
 func TestBinary(t *testing.T) {

@@ -72,7 +72,8 @@ func TestQueryArrayCompatSize(t *testing.T) {
 }
 
 func TestQueryArrayCompatDotNotation(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	// TODO Add Tigris-compatible array to shareddata.Composites
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
@@ -117,7 +118,8 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	// TODO Add Tigris-compatible array to shareddata.Composites
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
@@ -192,7 +194,8 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 }
 
 func TestQueryArrayCompatEquality(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	// TODO Add Tigris-compatible array to shareddata.Composites
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
@@ -222,7 +225,8 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 }
 
 func TestQueryArrayCompatAll(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
+	// TODO Add Tigris-compatible array to shareddata.Composites
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
 
 	t.Parallel()
 
@@ -244,7 +248,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Zero": {
-			filter: bson.D{{"v", bson.D{{"$all", bson.A{math.Copysign(0, +1)}}}}},
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{0}}}}},
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{42.13}}}}},

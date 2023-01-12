@@ -23,15 +23,26 @@ import (
 var regexTestCases = []testCase{{
 	name: "normal",
 	v:    pointer.To(regexType{Pattern: "hoffman", Options: "i"}),
-	j:    `{"$r":"hoffman","o":"i"}`,
+	sch:  regexSchema("i"),
+	j:    `"hoffman"`,
 }, {
 	name: "empty",
 	v:    pointer.To(regexType{Pattern: "", Options: ""}),
-	j:    `{"$r":"","o":""}`,
+	sch:  regexSchema(""),
+	j:    `""`,
 }, {
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
+}, {
+	name: "NilOptions",
+	v:    pointer.To(regexType{Pattern: "hoffman", Options: ""}),
+	sch: &elem{
+		Type:    elemTypeRegex,
+		Options: nil,
+	},
+	j:    `"hoffman"`,
+	jErr: `regex options is nil`,
 }}
 
 func TestRegex(t *testing.T) {

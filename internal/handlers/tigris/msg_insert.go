@@ -36,7 +36,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
 	var fp tigrisdb.FetchParam
 
@@ -51,9 +51,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
@@ -62,30 +63,69 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var inserted int32
-	for i := 0; i < docs.Len(); i++ {
-		doc, err := docs.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		err = h.insert(ctx, &fp, doc.(*types.Document))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		inserted++
+	ordered := true
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
+		return nil, err
 	}
 
+	inserted, insErrors := h.insertMany(ctx, &fp, docs, ordered)
+
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
+
+	if insErrors.Len() > 0 {
+		replyDoc = insErrors.Document()
+	}
+
+	replyDoc.Set("n", inserted)
+
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
-			"ok", float64(1),
-		))},
-	}))
+
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{replyDoc},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return &reply, nil
+}
+
+// insertMany inserts many documents into the collection one by one.
+//
+// If insert is ordered, and a document fails to insert, handling of the remaining documents will be stopped.
+// If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
+//
+// It always returns the number of successfully inserted documents and a document with errors.
+func (h *Handler) insertMany(ctx context.Context, fp *tigrisdb.FetchParam, docs *types.Array, ordered bool,
+) (int32, *common.WriteErrors) {
+	var inserted int32
+	var insErrors common.WriteErrors
+
+	for i := 0; i < docs.Len(); i++ {
+		doc := must.NotFail(docs.Get(i))
+
+		err := h.insert(ctx, fp, doc.(*types.Document))
+
+		var we *common.WriteErrors
+
+		switch {
+		case err == nil:
+			inserted++
+			continue
+		case errors.As(err, &we):
+			insErrors.Merge(we, int32(i))
+		default:
+			insErrors.Append(err, int32(i))
+		}
+
+		if ordered {
+			return inserted, &insErrors
+		}
+	}
+
+	return inserted, &insErrors
 }
 
 // insert checks if database and collection exist, create them if needed and attempts to insert the given doc.

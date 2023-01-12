@@ -17,6 +17,7 @@ package types
 import (
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -32,6 +33,7 @@ func MakeArray(capacity int) *Array {
 	if capacity == 0 {
 		return new(Array)
 	}
+
 	return &Array{s: make([]any, 0, capacity)}
 }
 
@@ -58,6 +60,11 @@ func (a *Array) Len() int {
 		return 0
 	}
 	return len(a.s)
+}
+
+// Iterator returns an iterator for the array.
+func (a *Array) Iterator() iterator.Interface[int, any] {
+	return newArrayIterator(a)
 }
 
 // Get returns a value at the given index.

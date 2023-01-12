@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -29,12 +31,17 @@ import (
 
 // MsgInsert implements HandlerInterface.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
+	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
 	var sp pgdb.SQLParam
 
@@ -49,9 +56,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
@@ -60,34 +68,27 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var inserted int32
-
-	for i := 0; i < docs.Len(); i++ {
-		var doc any
-
-		doc, err = docs.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		err = h.insert(ctx, &sp, doc)
-		if err != nil {
-			return nil, err
-		}
-
-		inserted++
-	}
-
-	if err != nil {
+	ordered := true
+	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
 		return nil, err
 	}
 
+	inserted, insErrors := insertMany(ctx, dbPool, &sp, docs, ordered)
+
+	replyDoc := must.NotFail(types.NewDocument(
+		"ok", float64(1),
+	))
+
+	if insErrors.Len() > 0 {
+		replyDoc = insErrors.Document()
+	}
+
+	replyDoc.Set("n", inserted)
+
 	var reply wire.OpMsg
+
 	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{replyDoc},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -96,8 +97,43 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// insert prepares and executes actual INSERT request to Postgres.
-func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error {
+// insertMany inserts many documents into the collection one by one.
+//
+// If insert is ordered, and a document fails to insert, handling of the remaining documents will be stopped.
+// If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
+//
+// It always returns the number of successfully inserted documents and a document with errors.
+func insertMany(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+	var inserted int32
+	var insErrors common.WriteErrors
+
+	for i := 0; i < docs.Len(); i++ {
+		doc := must.NotFail(docs.Get(i))
+
+		err := insertDocument(ctx, dbPool, sp, doc)
+
+		var we *common.WriteErrors
+
+		switch {
+		case err == nil:
+			inserted++
+			continue
+		case errors.As(err, &we):
+			insErrors.Merge(we, int32(i))
+		default:
+			insErrors.Append(err, int32(i))
+		}
+
+		if ordered {
+			return inserted, &insErrors
+		}
+	}
+
+	return inserted, &insErrors
+}
+
+// insertDocument prepares and executes actual INSERT request to Postgres.
+func insertDocument(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewCommandErrorMsg(
@@ -106,12 +142,14 @@ func (h *Handler) insert(ctx context.Context, sp *pgdb.SQLParam, doc any) error 
 		)
 	}
 
-	err := pgdb.InsertDocument(ctx, h.PgPool, sp.DB, sp.Collection, d)
+	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+	})
 	if err == nil {
 		return nil
 	}
 
-	if errors.Is(pgdb.ErrInvalidTableName, err) || errors.Is(pgdb.ErrInvalidDatabaseName, err) {
+	if errors.Is(err, pgdb.ErrInvalidCollectionName) || errors.Is(err, pgdb.ErrInvalidDatabaseName) {
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
 		return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 	}

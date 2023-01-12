@@ -23,5 +23,5 @@ import (
 
 // MsgSetFreeMonitoring implements HandlerInterface.
 func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgSetFreeMonitoring(ctx, msg, h.StateProvider)
+	return common.SetFreeMonitoring(ctx, msg, h.StateProvider)
 }

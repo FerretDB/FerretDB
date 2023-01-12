@@ -11,10 +11,10 @@
 #   we require the `trust` label to be assigned to PRs by FerretDB maintainers after reviewing changes.
 #   Only a few trusted people have permission to do that.
 # * Thanks to the way `pull_request_target` trigger works,
-#   PR changes in the workflow itself are not run until they are merged.
-# * We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT) where possible.
+#   PR changes in the workflow itself are not run until the changes are merged.
+# * We use a short-lived automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT) where possible.
 # * Both `GITHUB_TOKEN`s and PATs have minimal permissions.
-# * We publish Docker images from PRs as a separate packages that should not be run by users.
+# * We publish Docker images from PRs as separate packages that should not be run by users.
 # * We limit what third-party actions can be used.
 #
 # Relevant GitHub documentation is a bit scattered. The first article gives a good overview:
@@ -56,6 +56,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # repo-scoped GITHUB_TOKEN is not enough to query org-level projects
 
 jobs:

@@ -30,7 +30,7 @@ import (
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
 var validateDatabaseNameRe = regexp.MustCompile("^[-_a-z][-_a-z0-9]{0,62}$")
 
-// Databases returns a sorted list of FerretDB database / PostgreSQL schema.
+// Databases returns a sorted list of FerretDB databases / PostgreSQL schemas.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"
 	rows, err := tx.Query(ctx, sql)
@@ -61,9 +61,7 @@ func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 //
-// Due to the PostgreSQL limitations - if the schema already exists, there's a chance
-// that the ErrAlreadyExist error could be returned and transaction would be aborted,
-// so it's recommended to use this function in a separate transaction.
+// If a PostgreSQL conflict occurs it returns *transactionConflictError, and the caller could retry the transaction.
 func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error {
 	if !validateDatabaseNameRe.MatchString(db) ||
 		strings.HasPrefix(db, reservedPrefix) {
@@ -72,10 +70,6 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 
 	_, err := tx.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS `+pgx.Identifier{db}.Sanitize())
 	if err == nil {
-		err = createSettingsTable(ctx, tx, db)
-	}
-
-	if err == nil || errors.Is(err, ErrAlreadyExist) {
 		return nil
 	}
 
@@ -85,12 +79,10 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 	}
 
 	switch pgErr.Code {
-	case pgerrcode.DuplicateSchema:
-		return ErrAlreadyExist
-	case pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
+	case pgerrcode.DuplicateSchema, pgerrcode.UniqueViolation, pgerrcode.DuplicateObject:
 		// https://www.postgresql.org/message-id/CA+TgmoZAdYVtwBfp1FL2sMZbiHCWT4UPrzRLNnX1Nb30Ku3-gg@mail.gmail.com
 		// The same thing for schemas. Reproducible by integration tests.
-		return ErrAlreadyExist
+		return newTransactionConflictError(err)
 	default:
 		return lazyerrors.Error(err)
 	}
@@ -132,7 +124,7 @@ func DatabaseSize(ctx context.Context, tx pgx.Tx) (int64, error) {
 
 // TablesSize returns the sum of sizes of all tables in the given database in bytes.
 func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64, error) {
-	tables, err := Tables(ctx, tx, db)
+	tables, err := tablesFiltered(ctx, tx, db)
 	if err != nil {
 		return 0, err
 	}

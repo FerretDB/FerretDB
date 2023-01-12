@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 
@@ -25,11 +26,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type testCase struct {
 	name   string
 	v      pjsontype
+	sch    *elem
 	j      string
 	canonJ string // canonical form without extra object fields, zero values, etc.
 	jErr   string // unwrapped
@@ -97,26 +100,11 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 				t.Parallel()
 
 				v := newFunc()
-				err := v.UnmarshalJSON([]byte(tc.j))
+				err := unmarshalJSON(v, &tc)
 
 				if tc.jErr == "" {
 					require.NoError(t, err)
 					assertEqual(t, tc.v, v)
-					return
-				}
-
-				require.Error(t, err)
-				require.Equal(t, tc.jErr, lastErr(err).Error())
-			})
-
-			t.Run("Unmarshal", func(t *testing.T) {
-				t.Parallel()
-
-				v, err := Unmarshal([]byte(tc.j))
-
-				if tc.jErr == "" {
-					require.NoError(t, err)
-					assertEqual(t, tc.v, toPJSON(v))
 					return
 				}
 
@@ -147,7 +135,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := Marshal(fromPJSON(tc.v))
+				actualJ, err := MarshalSingleValue(fromPJSON(tc.v))
 				require.NoError(t, err)
 
 				expectedJ := tc.j
@@ -163,18 +151,26 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 	for _, tc := range testCases {
-		f.Add(tc.j)
+		sch := must.NotFail(json.Marshal(tc.sch))
+		f.Add(tc.j, string(sch))
 
 		if tc.canonJ != "" {
-			f.Add(tc.canonJ)
+			f.Add(tc.canonJ, string(sch))
 		}
 	}
 
-	f.Fuzz(func(t *testing.T, j string) {
+	f.Fuzz(func(t *testing.T, j, jsch string) {
 		t.Parallel()
 
 		// raw "null" should never reach UnmarshalJSON due to the way encoding/json works
 		if j == "null" {
+			t.Skip()
+		}
+
+		// no reason to fuzz all the possible input for schemas,
+		// so if sch is not a valid schema, skip the test
+		var sch elem
+		if err := json.Unmarshal([]byte(jsch), &sch); err != nil {
 			t.Skip()
 		}
 
@@ -183,7 +179,11 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// Instead, we compare with round-trip result.
 
 		v := newFunc()
-		if err := v.UnmarshalJSON([]byte(j)); err != nil {
+		tc := testCase{
+			sch: &sch,
+			j:   j,
+		}
+		if err := unmarshalJSON(v, &tc); err != nil {
 			t.Skip()
 		}
 
@@ -209,7 +209,11 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// test UnmarshalJSON
 		{
 			actualV := newFunc()
-			err := actualV.UnmarshalJSON([]byte(j))
+			tc := testCase{
+				sch: &sch,
+				j:   j,
+			}
+			err := unmarshalJSON(v, &tc)
 			require.NoError(t, err)
 			assertEqual(t, v, actualV)
 		}
@@ -231,7 +235,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 
 				for i := 0; i < b.N; i++ {
 					v = newFunc()
-					err = v.UnmarshalJSON(data)
+					err = unmarshalJSON(v, &tc)
 				}
 
 				b.StopTimer()
@@ -247,4 +251,39 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 			})
 		})
 	}
+}
+
+// unmarshalJSON encapsulates type switch and calls UnmarshalJSON or UnmarshalJSONWithSchema on the given value.
+func unmarshalJSON(v pjsontype, tc *testCase) error {
+	var err error
+	switch v := v.(type) {
+	case *documentType:
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch.Schema)
+	case *arrayType:
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch.Items)
+	case *doubleType:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *stringType:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *binaryType:
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch)
+	case *objectIDType:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *boolType:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *dateTimeType:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *regexType:
+		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch)
+	case *int32Type:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *timestampType:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	case *int64Type:
+		err = v.UnmarshalJSON([]byte(tc.j))
+	default:
+		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
+	}
+
+	return err
 }

@@ -28,8 +28,8 @@ type arrayType types.Array
 // pjsontype implements pjsontype interface.
 func (a *arrayType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
-func (a *arrayType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
+func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -46,10 +46,20 @@ func (a *arrayType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
+	if len(rawMessages) > 0 && schemas == nil {
+		return lazyerrors.Errorf("pjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array")
+	}
+
+	if len(schemas) != len(rawMessages) {
+		return lazyerrors.Errorf("pjson.arrayType.UnmarshalJSON: %d elements in schema, %d in total",
+			len(schemas), len(rawMessages),
+		)
+	}
+
 	ta := types.MakeArray(len(rawMessages))
 
-	for _, el := range rawMessages {
-		v, err := Unmarshal(el)
+	for i, el := range rawMessages {
+		v, err := unmarshalSingleValue(el, schemas[i])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -82,7 +92,7 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		b, err := Marshal(el)
+		b, err := MarshalSingleValue(el)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

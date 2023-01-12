@@ -1,31 +1,27 @@
 ---
 # This workflow is dangerous and should be handled with great care to avoid security problems.
 # See the warning at conform-pr.yml.
-#
 # We also tried a different approach: build Docker image in one normal, secure `pull_request` workflow,
 # upload artifact, and then download and publish it in another workflow that has access to secrets, but treats
 # artifact as passive data. We use buildx for building multi-platform images, and there is a way to export
 # multi-platform OCI tarball: https://docs.docker.com/engine/reference/commandline/buildx_build/#output
 # Unfortunately, it seems that there is no way to import that tarball in another workflow and publish it
 # as a Docker image, as strange as it sounds: https://github.com/docker/buildx/issues/186
-#
-# See also:
-# * https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility
-# * https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-action
-# * https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 
 name: Docker
 on:
   pull_request_target:
     types:
-      - labeled
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - labeled # for `trusted` label
+      - unlabeled
       - opened
       - reopened
       - synchronize
   push:
     branches:
       - main
+    tags:
+      - "*"
   schedule:
     - cron: "42 2 * * *" # after Go workflow
 
@@ -44,7 +40,7 @@ env:
 jobs:
   build:
     name: Build image
-    runs-on: [ubuntu-22.04, trusted]
+    runs-on: [faster, trusted]
 
     if: >
       github.event_name != 'pull_request_target' ||
@@ -100,7 +96,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image ${{ steps.extract.outputs.ghcr }}
-        run: bin/task docker-push DOCKER_IMAGE=${{ steps.extract.outputs.ghcr }}
+        run: bin/task docker-push DOCKER_IMAGES=${{ steps.extract.outputs.ghcr }}
 
       - name: Check dirty
         run: |

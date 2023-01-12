@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,10 @@ import (
 )
 
 func TestQueryBitwiseAllClear(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -50,9 +55,10 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-big", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-3", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
@@ -83,8 +89,10 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-big", "double-zero",
-				"int32-min", "int32-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
 			},
 		},
@@ -110,17 +118,20 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-big", "double-zero",
-				"int32-min", "int32-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-big", "double-whole", "double-zero",
-				"int32", "int32-min", "int32-zero",
-				"int64", "int64-big", "int64-min", "int64-zero",
+				"double-1", "double-2", "double-3", "double-big",
+				"double-min-overflow-verge", "double-whole", "double-zero",
+				"int32", "int32-1", "int32-min", "int32-zero",
+				"int64", "int64-1", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"Binary9Bytes": {
@@ -128,16 +139,19 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			expectedIDs: []any{
 				"double-big", "double-whole", "double-zero",
 				"int32", "int32-zero",
-				"int64", "int64-big", "int64-zero",
+				"int64", "int64-1", "int64-big", "int64-zero",
 			},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-big", "double-zero",
+				"double-1", "double-2", "double-4", "double-big",
+				"double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-1", "int64-2", "int64-3", "int64-big",
+				"int64-min", "int64-zero",
 			},
 		},
 		"Int32NegativeValue": {
@@ -152,9 +166,11 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-zero",
+				"double-1", "double-2",
+				"double-min-overflow-verge", "double-zero",
 				"int32-zero",
-				"int64-min", "int64-zero",
+				"int64-min",
+				"int64-zero",
 			},
 		},
 		"Int64NegativeValue": {
@@ -188,6 +204,10 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAllSet(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -207,7 +227,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	}{
 		"Array": {
 			value:       primitive.A{1, 5},
-			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
@@ -236,7 +256,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"DoubleWhole": {
 			value:       2.0,
-			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
@@ -259,16 +279,16 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 		"Binary": {
 			value:       primitive.Binary{Data: []byte{2}},
-			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"BinaryWithZeroBytes": {
 			value:       primitive.Binary{Data: []byte{0, 0, 2}},
-			expectedIDs: []any{"int32-max", "int64-max"},
+			expectedIDs: []any{"double-4", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
 		"Int32": {
 			value:       int32(2),
-			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
@@ -314,6 +334,10 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 }
 
 func TestQueryBitwiseAnyClear(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -334,8 +358,11 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-big", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
 			},
 		},
@@ -367,8 +394,11 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-big", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
 			},
 		},
@@ -394,25 +424,32 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-big", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-big", "double-whole", "double-zero",
-				"int32", "int32-min", "int32-zero",
-				"int64", "int64-big", "int64-min", "int64-zero",
+				"double-1", "double-2", "double-3",
+				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
+				"int32", "int32-1", "int32-min", "int32-zero",
+				"int64", "int64-1", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-big", "double-zero",
+				"double-1", "double-2", "double-4",
+				"double-big", "double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-min", "int64-zero",
 			},
 		},
@@ -428,9 +465,10 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-big", "double-whole", "double-zero",
-				"int32", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-big", "int64-min", "int64-zero",
+				"double-1", "double-2", "double-3", "double-4",
+				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
+				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min", "int32-zero",
+				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-min", "int64-zero",
 			},
 		},
 		"Int64NegativeValue": {
@@ -464,6 +502,10 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAnySet(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -484,9 +526,9 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-whole",
-				"int32", "int32-max",
-				"int64", "int64-max",
+				"double-3", "double-whole",
+				"int32", "int32-1", "int32-2", "int32-3", "int32-max",
+				"int64", "int64-1", "int64-2", "int64-max",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
@@ -517,7 +559,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-whole",
+				"double-3", "double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
 			},
@@ -543,17 +585,17 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 
 		"Binary": {
 			value:       primitive.Binary{Data: []byte{2}},
-			expectedIDs: []any{"double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"BinaryWithZeroBytes": {
 			value:       primitive.Binary{Data: []byte{0, 0, 2}},
-			expectedIDs: []any{"int32-max", "int64-max"},
+			expectedIDs: []any{"double-4", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-whole",
+				"double-3", "double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
 			},
@@ -570,9 +612,10 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
+				"double-3", "double-4",
 				"double-big", "double-whole",
-				"int32", "int32-max", "int32-min",
-				"int64", "int64-big", "int64-max",
+				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min",
+				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-max",
 			},
 		},
 		"Int64NegativeValue": {

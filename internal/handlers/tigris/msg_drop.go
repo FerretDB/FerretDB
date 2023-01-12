@@ -38,11 +38,13 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	command := document.Command()
 
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
 		return nil, err
 	}
 

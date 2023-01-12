@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/build/version"
 )
 
 const (
@@ -56,7 +56,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"commit":  v.Commit,
 		"branch":  v.Branch,
 		"dirty":   strconv.FormatBool(v.Dirty),
-		"debug":   strconv.FormatBool(v.Debug),
+		"debug":   strconv.FormatBool(v.DebugBuild),
 	}
 
 	s := mc.p.Get()
@@ -66,6 +66,9 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		constLabels["telemetry"] = "undecided"
 	case *s.Telemetry:
 		constLabels["telemetry"] = "enabled"
+		if s.LatestVersion != v.Version {
+			constLabels["latest_version_available"] = s.LatestVersion
+		}
 	default:
 		constLabels["telemetry"] = "disabled"
 	}
@@ -73,8 +76,6 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	if mc.addUUIDToMetric {
 		constLabels["uuid"] = s.UUID
 	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/1443
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),

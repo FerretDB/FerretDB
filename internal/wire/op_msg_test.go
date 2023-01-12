@@ -49,6 +49,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
+	command: "buildInfo",
 }, {
 	name:    "handshake6",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake6_header.hex"),
@@ -105,6 +106,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
+	command: "version",
 }, {
 	name:      "import",
 	expectedB: testutil.MustParseDumpFile("testdata", "import.hex"),
@@ -144,6 +146,7 @@ var msgTestCases = []testCase{{
 			},
 		}},
 	},
+	command: "insert",
 }, {
 	name:      "msg_fuzz1",
 	expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
@@ -156,7 +159,7 @@ var msgTestCases = []testCase{{
 		0x00, 0x00, 0x00, 0x00, // ResponseTo
 		0xdd, 0x07, 0x00, 0x00, // OpCode
 		0x00, 0x00, 0x00, 0x00, // FlagBits
-		0x00,                   // section 0 kind
+		0x00,                   // section kind
 		0x64, 0x00, 0x00, 0x00, // document size
 		0x02, 0x69, 0x6e, 0x73, 0x65, 0x72, 0x74, 0x00, // string "insert"
 		0x07, 0x00, 0x00, 0x00, // "values" length
@@ -233,30 +236,162 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{
-			{
-				Documents: []*types.Document{
-					must.NotFail(types.NewDocument(
-						"insert", "TestInsertSimple",
-						"ordered", true,
-						"$db", "testinsertsimple",
-					)),
-				},
-			},
-			{
-				Kind:       1,
-				Identifier: "documents",
-				Documents: []*types.Document{
-					must.NotFail(types.NewDocument(
-						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
-						"v", math.Copysign(0, -1),
-					)),
-				},
-			},
-		},
+		sections: []OpMsgSection{{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"insert", "TestInsertSimple",
+				"ordered", true,
+				"$db", "testinsertsimple",
+			))},
+		}, {
+			Kind:       1,
+			Identifier: "documents",
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
+				"v", math.Copysign(0, -1),
+			))},
+		}},
 	},
-	err: `wire.OpMsg.Document: validation failed for { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 }` +
-		` with: -0 is not supported`,
+	err: `wire.OpMsg.Document: validation failed for ` +
+		`{ insert: "TestInsertSimple", ordered: true, $db: "testinsertsimple", ` +
+		`documents: [ { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 } ] } ` +
+		`with: -0 is not supported`,
+}, {
+	name: "MultiSectionInsert",
+	expectedB: []byte{
+		0x76, 0x00, 0x00, 0x00, // MessageLength
+		0x0f, 0x00, 0x00, 0x00, // RequestID
+		0x00, 0x00, 0x00, 0x00, // ResponseTo
+		0xdd, 0x07, 0x00, 0x00, // OpCode
+		0x01, 0x00, 0x00, 0x00, // FlagBits
+
+		0x01,                   // section kind
+		0x2f, 0x00, 0x00, 0x00, // section size
+		0x64, 0x6f, 0x63, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x00, // section identifier "documents"
+		0x21, 0x00, 0x00, 0x00, // document size
+		0x07, 0x5f, 0x69, 0x64, 0x00, // ObjectID "_id"
+		0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29, // ObjectID value
+		0x01, 0x61, 0x00, // double "a"
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x40, // 3.0
+		0x00, // end of document
+
+		0x00,                   // section kind
+		0x2d, 0x00, 0x00, 0x00, // document size
+		0x02, 0x69, 0x6e, 0x73, 0x65, 0x72, 0x74, 0x00, // string "insert"
+		0x04, 0x00, 0x00, 0x00, // "foo" length
+		0x66, 0x6f, 0x6f, 0x00, // "foo"
+		0x08, 0x6f, 0x72, 0x64, 0x65, 0x72, 0x65, 0x64, 0x00, 0x01, // "ordered" true
+		0x02, 0x24, 0x64, 0x62, 0x00, // string "$db"
+		0x05, 0x00, 0x00, 0x00, // "test" length
+		0x74, 0x65, 0x73, 0x74, 0x00, // "test"
+		0x00, // end of document
+
+		0xe2, 0xb7, 0x90, 0x67, // checksum
+	},
+	msgHeader: &MsgHeader{
+		MessageLength: 118,
+		RequestID:     15,
+		ResponseTo:    0,
+		OpCode:        OpCodeMsg,
+	},
+	msgBody: &OpMsg{
+		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+		checksum: 1737537506,
+		sections: []OpMsgSection{{
+			Kind:       1,
+			Identifier: "documents",
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
+				"a", float64(3),
+			))},
+		}, {
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"insert", "foo",
+				"ordered", true,
+				"$db", "test",
+			))},
+		}},
+	},
+	command: "insert",
+}, {
+	name: "MultiSectionUpdate",
+	expectedB: []byte{
+		0x9a, 0x00, 0x00, 0x00, // MessageLength
+		0x0b, 0x00, 0x00, 0x00, // RequestID
+		0x00, 0x00, 0x00, 0x00, // ResponseTo
+		0xdd, 0x07, 0x00, 0x00, // OpCode
+		0x01, 0x00, 0x00, 0x00, // FlagBits
+
+		0x01,                   // section kind
+		0x53, 0x00, 0x00, 0x00, // section size
+		0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x73, 0x00, // section identifier "updates"
+		0x47, 0x00, 0x00, 0x00, // document size
+
+		0x03, 0x71, 0x00, // document "q"
+		0x10, 0x00, 0x00, 0x00, // document size
+		0x01, 0x61, 0x00, // double "a"
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x40, // 20.0
+		0x00, // end of document
+
+		0x03, 0x75, 0x00, // document "u"
+		0x1b, 0x00, 0x00, 0x00, // document size
+		0x03, 0x24, 0x69, 0x6e, 0x63, 0x00, // document "$inc"
+		0x10, 0x00, 0x00, 0x00, // document size
+		0x01, 0x61, 0x00, // double "a"
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f, // 1.0
+		0x00, // end of document
+		0x00, // end of document
+
+		0x08, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x00, 0x00, // "multi" false
+		0x08, 0x75, 0x70, 0x73, 0x65, 0x72, 0x74, 0x00, 0x00, // "upsert" false
+
+		0x00, // end of document
+
+		0x00,                   // section kind
+		0x2d, 0x00, 0x00, 0x00, // document size
+		0x02, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x00, // string "update"
+		0x04, 0x00, 0x00, 0x00, // "foo" length
+		0x66, 0x6f, 0x6f, 0x00, // "foo"
+		0x08, 0x6f, 0x72, 0x64, 0x65, 0x72, 0x65, 0x64, 0x00, 0x01, // "ordered" true
+		0x02, 0x24, 0x64, 0x62, 0x00, // string "$db"
+		0x05, 0x00, 0x00, 0x00, // "test" length
+		0x74, 0x65, 0x73, 0x74, 0x00, // "test"
+		0x00, // end of document
+
+		0xf1, 0xfc, 0xd1, 0xae, // checksum
+	},
+	msgHeader: &MsgHeader{
+		MessageLength: 154,
+		RequestID:     11,
+		ResponseTo:    0,
+		OpCode:        OpCodeMsg,
+	},
+	msgBody: &OpMsg{
+		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+		checksum: 2932997361,
+		sections: []OpMsgSection{{
+			Kind:       1,
+			Identifier: "updates",
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"q", must.NotFail(types.NewDocument(
+					"a", float64(20),
+				)),
+				"u", must.NotFail(types.NewDocument(
+					"$inc", must.NotFail(types.NewDocument(
+						"a", float64(1),
+					)),
+				)),
+				"multi", false,
+				"upsert", false,
+			))},
+		}, {
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"update", "foo",
+				"ordered", true,
+				"$db", "test",
+			))},
+		}},
+	},
+	command: "update",
 }}
 
 func TestMsg(t *testing.T) {

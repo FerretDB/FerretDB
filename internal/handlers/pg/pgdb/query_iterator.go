@@ -30,28 +30,28 @@ import (
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx         context.Context
-	rows        pgx.Rows
-	closeOnce   sync.Once
-	currentIter atomic.Uint32
+	ctx       context.Context
+	rows      pgx.Rows
+	n         atomic.Uint32
+	closeOnce sync.Once
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
 // It sets finalizer to close the rows.
 func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
-	// queryIterator is defined as pointer to address it in the finalizer.
-	it := &queryIterator{
+	// queryIterator is defined as pointer to address iter in the finalizer.
+	iter := &queryIterator{
 		ctx:  ctx,
 		rows: rows,
 	}
 
-	runtime.SetFinalizer(it, func(it *queryIterator) {
+	runtime.SetFinalizer(iter, func(it *queryIterator) {
 		it.closeOnce.Do(func() {
 			panic("queryIterator.Close() has not been called")
 		})
 	})
 
-	return it
+	return iter
 }
 
 // Next implements iterator.Interface.
@@ -60,17 +60,17 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, 
 // Possible errors are: context.Canceled, context.DeadlineExceeded, and lazy error.
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
-func (it *queryIterator) Next() (uint32, *types.Document, error) {
-	if err := it.ctx.Err(); err != nil {
+func (iter *queryIterator) Next() (uint32, *types.Document, error) {
+	if err := iter.ctx.Err(); err != nil {
 		return 0, nil, err
 	}
 
-	if it.rows == nil || !it.rows.Next() {
+	if iter.rows == nil || !iter.rows.Next() {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
 	var b []byte
-	if err := it.rows.Scan(&b); err != nil {
+	if err := iter.rows.Scan(&b); err != nil {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
@@ -79,16 +79,16 @@ func (it *queryIterator) Next() (uint32, *types.Document, error) {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
-	n := it.currentIter.Add(1)
+	n := iter.n.Add(1) - 1
 
-	return n - 1, doc.(*types.Document), nil
+	return n, doc, nil
 }
 
 // Close implements iterator.Interface.
-func (it *queryIterator) Close() {
-	it.closeOnce.Do(func() {
-		if it.rows != nil {
-			it.rows.Close()
+func (iter *queryIterator) Close() {
+	iter.closeOnce.Do(func() {
+		if iter.rows != nil {
+			iter.rows.Close()
 		}
 	})
 }
