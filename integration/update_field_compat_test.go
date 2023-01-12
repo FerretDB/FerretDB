@@ -206,7 +206,6 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		},
 		"ArrayFieldValueNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1658",
 		},
 		"IncOnString": {
 			update:     bson.D{{"$inc", "string"}},

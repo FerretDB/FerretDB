@@ -211,6 +211,12 @@ func insertByPath(doc *Document, path Path) error {
 			case *Document:
 				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
 			case *Array:
+				if insertedPath.Slice()[suffix] == "0" {
+					if err := v.Append(must.NotFail(NewDocument())); err == nil {
+						break
+					}
+				}
+
 				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
 					return fmt.Errorf(
