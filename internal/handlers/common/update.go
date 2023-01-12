@@ -252,17 +252,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 	var changed bool
 
 	for _, key := range renameExpression.Keys() {
-		renameRawValue, err := renameExpression.Get(key)
-		if err != nil {
-			// if $rename field does not exist, don't change anything
-			continue
-		}
+		renameRawValue := must.NotFail(renameExpression.Get(key))
 
 		if key == "" || renameRawValue == "" {
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
 		}
 
-		// this is covered in extractValueFromUpdateOperator
+		// this is covered in validateRenameExpression
 		renameValue := renameRawValue.(string)
 
 		if key == renameRawValue {

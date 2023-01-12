@@ -42,7 +42,7 @@ const (
 	ErrDocumentPathCannotCreateField
 )
 
-// DocumentPathError describes an error that could occur on document related operations.
+// DocumentPathError describes an error that could occur on document path related operations.
 type DocumentPathError struct {
 	reason error
 	code   DocumentPathErrorCode
