@@ -4,7 +4,7 @@
 # Configuration flags and variables
 
 FerretDB provides numerous configuration flags that you can customize to suit your needs and environment.
-You can always access them by using `--help` flag.
+You can always access them by using the `--help` flag.
 To make user experience cloud native, every flag has its environment variable equivalent.
 
 | Flag                   | Description                                                               | Env Variable                    | Default Value                          |
