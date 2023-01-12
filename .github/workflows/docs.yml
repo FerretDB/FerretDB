@@ -3,7 +3,7 @@ name: Docs
 on:
   pull_request:
     types:
-      - unlabeled
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -30,14 +30,13 @@ jobs:
     name: Build docs
     runs-on: ubuntu-22.04
 
-    if: github.event_name != 'pull_request_target' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Check LFS status
         if: false # TODO https://github.com/ActionsDesk/lfs-warning/issues/147
@@ -84,7 +83,7 @@ jobs:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-22.04
 
-    # deploy only on push to main; exclude pull_request_target and schedule
+    # deploy only on push to main; exclude pull_request and schedule
     needs: build
     if: github.event_name == 'push'
 
