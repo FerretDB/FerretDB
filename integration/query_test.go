@@ -510,8 +510,9 @@ func TestQueryBatchSize(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
-		err     *mongo.CommandError
-		command bson.D
+		err        *mongo.CommandError
+		command    bson.D
+		altMessage string
 	}{
 		"BatchSizeNegative": {
 			command: bson.D{
@@ -538,8 +539,9 @@ func TestQueryBatchSize(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
 		},
 		"BatchSizeInt64": {
 			command: bson.D{
@@ -568,7 +570,7 @@ func TestQueryBatchSize(t *testing.T) {
 
 			if tc.err != nil {
 				require.Error(t, err)
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
