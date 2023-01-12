@@ -109,6 +109,9 @@ const (
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
 
+	// ErrBatchSizeNegative indicates that batch size is negative.
+	ErrBatchSizeNegative = ErrorCode(51024)
+
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075
 
@@ -117,6 +120,7 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
+
 )
 
 // ErrInfo represents additional optional error information.

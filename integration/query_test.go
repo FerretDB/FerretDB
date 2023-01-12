@@ -518,6 +518,11 @@ func TestQueryBatchSize(t *testing.T) {
 				{"find", collection.Name()},
 				{"batchSize", int32(-1)},
 			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
 		},
 		"BatchSizeZero": {
 			command: bson.D{
