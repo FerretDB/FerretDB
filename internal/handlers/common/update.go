@@ -262,14 +262,6 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		// this is covered in validateRenameExpression
 		renameValue := renameRawValue.(string)
 
-		// disallow fields where key is equal to the target
-		if key == renameRawValue {
-			return changed, NewWriteErrorMsg(
-				ErrBadValue,
-				fmt.Sprintf("The source and target field for $rename must differ: %s: %#v", key, renameValue),
-			)
-		}
-
 		sourcePath := types.NewPathFromString(key)
 		targetPath := types.NewPathFromString(renameValue)
 
@@ -752,6 +744,7 @@ func validateRenameExpression(update *types.Document) error {
 			)
 		}
 
+		// disallow fields where key is equal to the target
 		if k == vStr {
 			return NewWriteErrorMsg(
 				ErrBadValue,
