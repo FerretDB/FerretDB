@@ -120,7 +120,6 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
-
 )
 
 // ErrInfo represents additional optional error information.
