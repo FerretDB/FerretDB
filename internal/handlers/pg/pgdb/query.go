@@ -229,6 +229,10 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 		where, args = prepareWhereClause(p.filter)
 		query += where
+
+		if where != "" {
+			// pushdown = true
+		}
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
