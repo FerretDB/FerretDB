@@ -91,20 +91,33 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
-		if err = firstBatch.Append(doc); err != nil {
-			return nil, err
+	batchSize := len(resDocs)
+	if len(resDocs) > int(params.BatchSize) {
+		batchSize = int(params.BatchSize)
+	}
+
+	firstBatch := types.MakeArray(batchSize)
+	resultDocumentsArray := types.MakeArray(0)
+
+	for i := 0; i < len(resDocs); i++ {
+		if i < batchSize {
+			firstBatch.Append(resDocs[i])
+		} else {
+			resultDocumentsArray.Append(resDocs[i])
 		}
+	}
+
+	if resultDocumentsArray.Len() > 0 {
+		conninfo.Get(ctx).SetCursor(params.Collection, resultDocumentsArray.Iterator())
 	}
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
+				"ns", sp.DB+"."+sp.Collection,
 				"firstBatch", firstBatch,
 				"id", int64(0), // TODO
-				"ns", sp.DB+"."+sp.Collection,
 			)),
 			"ok", float64(1),
 		))},
@@ -123,21 +136,14 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		return nil, err
 	}
 
-	var done bool
-
-	defer func() {
-		if !done {
-			iter.Close()
-		}
-	}()
+	defer iter.Close()
 
 	resDocs := make([]*types.Document, 0, 16)
 
-	for i := int32(0); i > sqlParam.Limit; i++ {
+	for {
 		_, doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				done = true
 				break
 			}
 
@@ -154,15 +160,6 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		}
 
 		resDocs = append(resDocs, doc)
-	}
-
-	if !done {
-		cur := conninfo.Get(ctx).Cursor(sqlParam.Collection)
-		if cur != nil {
-			cur.Close()
-		}
-
-		conninfo.Get(ctx).SetCursor(sqlParam.Collection, iter)
 	}
 
 	return resDocs, nil

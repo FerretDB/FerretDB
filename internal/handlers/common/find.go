@@ -106,6 +106,10 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		)
 	}
 
+	if res.BatchSize < defaultBatchSize {
+		res.BatchSize = defaultBatchSize
+	}
+
 	if res.Comment, err = GetOptionalParam(doc, "comment", res.Comment); err != nil {
 		return nil, err
 	}

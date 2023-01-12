@@ -19,41 +19,72 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
+
+type queryGetMoreCompatTestCase struct {
+}
+
+func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTestCase) {
+	t.Helper()
+
+	res := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: []shareddata.Provider{
+			shareddata.Strings,
+		},
+	})
+
+	ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+	for name, tc := range testCases {
+		name, _ := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			t.Parallel()
+
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+
+					targetResult := targetCollection.Database().RunCommand(ctx,
+						bson.D{{"find", "test"}, {"filter", bson.D{}}},
+					)
+					compatResult := compatCollection.Database().RunCommand(ctx,
+						bson.D{{"find", "test"}, {"filter", bson.D{}}},
+					)
+
+					if targetResult.Err() != nil {
+						t.Logf("Target error: %v", targetResult.Err())
+						AssertMatchesCommandError(t, compatResult.Err(), targetResult.Err())
+
+						return
+					}
+					require.NoError(t, compatResult.Err(), "compat error; target returned no error")
+
+					var targetRes, compatRes bson.D
+					require.NoError(t, targetResult.Decode(&targetRes))
+					require.NoError(t, compatResult.Decode(&compatRes))
+
+					t.Logf("Compat (expected): %v", compatRes)
+					t.Logf("Target (actual)  : %v", targetRes)
+					AssertEqualDocuments(t, compatRes, targetRes)
+				})
+			}
+		})
+	}
+}
 
 func TestGetMore(t *testing.T) {
 	t.Parallel()
 
-	ctx, coll := setup.Setup(t)
-
-	insertDoc := bson.D{{"a", int32(1)}}
-
-	var docs []any
-	for i := 0; i < 200; i++ {
-		docs = append(docs, insertDoc)
+	var testCases = map[string]queryGetMoreCompatTestCase{
+		"getMore": {},
 	}
 
-	_, err := coll.InsertMany(ctx, docs)
-	require.NoError(t, err)
-
-	opts := options.Find().SetBatchSize(50)
-
-	cursor, err := coll.Find(ctx, bson.D{}, opts)
-	require.NoError(t, err)
-
-	var results []any
-
-	for cursor.Next(ctx) {
-		var resDoc bson.D
-
-		err = cursor.Decode(&resDoc)
-		require.NoError(t, err)
-
-		results = append(results, resDoc)
-	}
-
-	require.Equal(t, len(docs), len(results))
+	testGetMoreCompat(t, testCases)
 }

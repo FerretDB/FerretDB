@@ -52,7 +52,6 @@ type SQLParam struct {
 	Comment    string
 	Explain    bool
 	Filter     *types.Document
-	Limit      int32
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
