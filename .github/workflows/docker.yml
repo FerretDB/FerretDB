@@ -25,8 +25,8 @@ on:
   schedule:
     - cron: "42 2 * * *" # after Go workflow
 
-# Run at most one job per PR or branch
-# to prevent concurrent pushes to the same tag.
+# Do not run this workflow in parallel for any PR change or branch/tag push
+# to prevent concurrent pushes for the same Docker image tag.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 
