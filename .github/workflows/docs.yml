@@ -13,8 +13,8 @@ on:
   schedule:
     - cron: "42 3 * * *" # after Integration workflow
 
-# Do not run this workflow in parallel for any PR change or push to main
-# to prevent XXX FIXME
+# Do not run this workflow in parallel for any PR change or branch push
+# to prevent concurrent deployments to GitHub Pages.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 

@@ -1,5 +1,5 @@
 ---
-name: Docs
+name: Docs Preview
 on:
   pull_request_target:
     types:
@@ -10,10 +10,7 @@ on:
       - synchronize
   push:
     branches:
-      - main
-      - cloudflare-pages # FIXME
-  schedule:
-    - cron: "42 3 * * *" # after Integration workflow
+      - cloudflare-pages # FIXME remove
 
 # Do not run this workflow in parallel for any PR change or push to main
 # to prevent XXX FIXME
@@ -29,10 +26,18 @@ env:
 
 jobs:
   build:
-    name: Build docs
+    # We can't easily download build results from the Docs workflow:
+    # https://github.com/actions/download-artifact/issues/172
+    # Just build them again instead.
+
+    name: Build preview docs
     runs-on: ubuntu-22.04
 
-    if: github.event_name != 'pull_request_target' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    # FIXME enable
+    # if: >
+    #   contains(github.event.pull_request.labels.*.name, 'trust') &&
+    #   !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+    #   contains(github.event.pull_request.labels.*.name, 'documentation')
 
     steps:
       - name: Checkout code
@@ -82,26 +87,25 @@ jobs:
           git status
           git diff --exit-code
 
-  github:
-    name: Deploy to GitHub Pages
+  cloudflare:
+    name: Deploy to Cloudflare Pages
     runs-on: ubuntu-22.04
 
-    # deploy only on push to main; exclude pull_request_target and schedule
     needs: build
-    if: github.event_name == 'push'
 
-    permissions:
-      pages: write
-      id-token: write
+    # FIXME enable
+    # if: >
+    #   contains(github.event.pull_request.labels.*.name, 'trust') &&
+    #   !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+    #   contains(github.event.pull_request.labels.*.name, 'documentation')
 
     environment:
-      name: pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      name: cloudflare-dev
 
     steps:
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v1
+      - uses: actions/download-artifact@v3
         with:
-          artifact_name: docs
+          name: docs
           timeout: 300000 # 5*60*1000 milliseconds
+
+      - run: ls -lR
