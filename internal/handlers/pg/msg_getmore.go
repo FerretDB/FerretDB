@@ -26,6 +26,8 @@ import (
 
 // MsgGetMore implements handlers.Interface.
 func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	fmt.Println("get more called")
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
