@@ -548,11 +548,6 @@ func TestQueryBatchSize(t *testing.T) {
 				{"find", collection.Name()},
 				{"batchSize", math.MaxInt64},
 			},
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "BSON field 'batchSize' is the wrong type 'long', expected type 'int'",
-			},
 		},
 		"BatchSizeMaxInt32": {
 			command: bson.D{
