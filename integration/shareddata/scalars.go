@@ -144,7 +144,7 @@ var Doubles = &Values[string]{
 // BigDoubles contains double values which would overflow on
 // numeric update operation such as $mul. Upon such,
 // target returns error and compat returns +INF or -INF.
-// BigDoubles maybe excluded on such update tests and tested
+// BigDoubles may be excluded on such update tests and tested
 // in diff tests https://github.com/FerretDB/dance.
 var BigDoubles = &Values[string]{
 	name:     "BigDoubles",

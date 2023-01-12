@@ -62,7 +62,7 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // ValidateData checks if the document represents a valid "data document".
 // It places `_id` field into the fields slice 0 index.
 // If the document is not valid it returns *ValidationError.
-func (d *Document) ValidateData() error {
+func (d *Document) ValidateData(isUpdate bool) error {
 	d.moveIDToTheFirstIndex()
 
 	keys := d.Keys()
@@ -100,7 +100,7 @@ func (d *Document) ValidateData() error {
 
 		switch v := value.(type) {
 		case *Document:
-			err := v.ValidateData()
+			err := v.ValidateData(isUpdate)
 			if err != nil {
 				var vErr *ValidationError
 
@@ -120,7 +120,7 @@ func (d *Document) ValidateData() error {
 
 				switch item := item.(type) {
 				case *Document:
-					err := item.ValidateData()
+					err := item.ValidateData(isUpdate)
 					if err != nil {
 						var vErr *ValidationError
 
@@ -138,6 +138,13 @@ func (d *Document) ValidateData() error {
 			}
 		case float64:
 			if math.IsInf(v, 0) {
+				if isUpdate {
+					return newValidationError(
+						ErrValidation, fmt.Errorf("update produces invalid value: { %q: %f }"+
+							" (update operations that produce infinity values are not allowed)", key, v),
+					)
+				}
+
 				return newValidationError(
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
 				)
