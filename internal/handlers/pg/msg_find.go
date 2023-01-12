@@ -21,6 +21,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -59,7 +60,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Collection: params.Collection,
 		Comment:    params.Comment,
 		Filter:     params.Filter,
-		Limit:      params.BatchSize,
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
@@ -123,15 +123,22 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		return nil, err
 	}
 
-	defer iter.Close()
+	var done bool
+
+	defer func() {
+		if !done {
+			iter.Close()
+		}
+	}()
 
 	resDocs := make([]*types.Document, 0, 16)
 
-	for {
+	for i := int32(0); i > sqlParam.Limit; i++ {
 		_, doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				return resDocs, nil
+				done = true
+				break
 			}
 
 			return nil, err
@@ -148,4 +155,15 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 
 		resDocs = append(resDocs, doc)
 	}
+
+	if !done {
+		cur := conninfo.Get(ctx).Cursor(sqlParam.Collection)
+		if cur != nil {
+			cur.Close()
+		}
+
+		conninfo.Get(ctx).SetCursor(sqlParam.Collection, iter)
+	}
+
+	return resDocs, nil
 }

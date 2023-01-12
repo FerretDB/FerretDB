@@ -42,6 +42,13 @@ type ConnInfo struct {
 	cursor map[string]iterator.Interface[uint32, *types.Document]
 }
 
+// NewConnInfo returns a new ConnInfo.
+func NewConnInfo() *ConnInfo {
+	return &ConnInfo{
+		cursor: map[string]iterator.Interface[uint32, *types.Document]{},
+	}
+}
+
 // Auth returns stored username and password.
 func (connInfo *ConnInfo) Auth() (username, password string) {
 	connInfo.rw.RLock()

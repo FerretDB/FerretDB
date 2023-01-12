@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -159,7 +158,6 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 		explain: sp.Explain,
 		comment: sp.Comment,
 		filter:  sp.Filter,
-		limit:   sp.Limit,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -203,7 +201,6 @@ type iteratorParams struct {
 	table   string
 	comment string
 	explain bool
-	limit   int32
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -233,10 +230,6 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 		where, args = prepareWhereClause(p.filter)
 		query += where
-	}
-
-	if p.limit > 0 {
-		query += ` LIMIT ` + strconv.Itoa(int(p.limit))
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
