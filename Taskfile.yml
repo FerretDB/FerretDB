@@ -382,7 +382,7 @@ tasks:
     desc: "Run MongoDB shell (`mongosh`) for secured FerretDB"
     cmds:
       - >
-        docker compose exec mongodb mongosh 
+        docker compose exec mongodb mongosh
         --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA.pem
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell
