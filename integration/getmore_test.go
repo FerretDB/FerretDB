@@ -19,12 +19,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 type queryGetMoreCompatTestCase struct {
+	batchSize int
+	limit     int
 }
 
 func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTestCase) {
@@ -32,7 +35,7 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 
 	res := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: []shareddata.Provider{
-			shareddata.Strings,
+			shareddata.Int32BigAmounts,
 		},
 	})
 
@@ -51,28 +54,27 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					targetResult := targetCollection.Database().RunCommand(ctx,
-						bson.D{{"find", "test"}, {"filter", bson.D{}}},
-					)
-					compatResult := compatCollection.Database().RunCommand(ctx,
-						bson.D{{"find", "test"}, {"filter", bson.D{}}},
-					)
+					targetOpts := options.Find().SetSort(-1)
+					compatOpts := options.Find().SetSort(-1)
 
-					if targetResult.Err() != nil {
-						t.Logf("Target error: %v", targetResult.Err())
-						AssertMatchesCommandError(t, compatResult.Err(), targetResult.Err())
+					targetResult, targetErr := targetCollection.Find(ctx, bson.D{}, targetOpts)
+					compatResult, compatErr := compatCollection.Find(ctx, bson.D{}, compatOpts)
+
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
 					require.NoError(t, compatResult.Err(), "compat error; target returned no error")
 
-					var targetRes, compatRes bson.D
-					require.NoError(t, targetResult.Decode(&targetRes))
-					require.NoError(t, compatResult.Decode(&compatRes))
+					var targetRes, compatRes []bson.D
+					require.NoError(t, targetResult.All(ctx, &targetRes))
+					require.NoError(t, compatResult.All(ctx, &compatRes))
 
 					t.Logf("Compat (expected): %v", compatRes)
 					t.Logf("Target (actual)  : %v", targetRes)
-					AssertEqualDocuments(t, compatRes, targetRes)
+					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 				})
 			}
 		})

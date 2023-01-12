@@ -15,6 +15,7 @@
 package shareddata
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -361,4 +362,26 @@ func tigrisSchema(typeString string) string {
 				}
 			}`
 	return strings.ReplaceAll(common, "%%type%%", typeString)
+}
+
+func generateBigMap(count int) map[string]any {
+	res := make(map[string]any, count)
+
+	for i := 0; i < count; i++ {
+		res[fmt.Sprintf("key-%d", i)] = fmt.Sprintf("value-%d", i)
+	}
+
+	return res
+}
+
+// Int32BigAmounts contains int32 values for tests.
+var Int32BigAmounts = &Values[string]{
+	name:     "Int32BigAmounts",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int32"`),
+		},
+	},
+	data: generateBigMap(5000),
 }
