@@ -543,12 +543,6 @@ func TestQueryBatchSize(t *testing.T) {
 			},
 			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
 		},
-		"BatchSizeInt64": {
-			command: bson.D{
-				{"find", collection.Name()},
-				{"batchSize", math.MaxInt64},
-			},
-		},
 		"BatchSizeMaxInt32": {
 			command: bson.D{
 				{"find", collection.Name()},

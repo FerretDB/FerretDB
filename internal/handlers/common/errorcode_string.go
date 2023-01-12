@@ -40,7 +40,7 @@ func _() {
 	_ = x[ErrBadRegexOption-51108]
 }
 
-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundUnsuitableValueTypeConflictingUpdateOperatorsNamespaceExistsInvalidIDCommandNotFoundInvalidNamespaceOperationFailedDocumentValidationFailureNotImplementedMechanismUnavailableLocation15974Location15975Location28667Location28724Location31253Location31254Location40352Location40414Location40415Location50840ErrBatchSizeNegativeLocation51075Location51091Location51108"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundUnsuitableValueTypeConflictingUpdateOperatorsNamespaceExistsInvalidIDCommandNotFoundInvalidNamespaceOperationFailedDocumentValidationFailureNotImplementedMechanismUnavailableLocation15974Location15975Location28667Location28724Location31253Location31254Location40352Location40414Location40415Location50840Location51024Location51075Location51091Location51108"
 
 var _ErrorCode_map = map[ErrorCode]string{
 	0:     _ErrorCode_name[0:5],
@@ -69,10 +69,10 @@ var _ErrorCode_map = map[ErrorCode]string{
 	40414: _ErrorCode_name[333:346],
 	40415: _ErrorCode_name[346:359],
 	50840: _ErrorCode_name[359:372],
-	51024: _ErrorCode_name[372:392],
-	51075: _ErrorCode_name[392:405],
-	51091: _ErrorCode_name[405:418],
-	51108: _ErrorCode_name[418:431],
+	51024: _ErrorCode_name[372:385],
+	51075: _ErrorCode_name[385:398],
+	51091: _ErrorCode_name[398:411],
+	51108: _ErrorCode_name[411:424],
 }
 
 func (i ErrorCode) String() string {

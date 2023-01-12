@@ -110,7 +110,7 @@ const (
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
 
 	// ErrBatchSizeNegative indicates that batch size is negative.
-	ErrBatchSizeNegative = ErrorCode(51024)
+	ErrBatchSizeNegative = ErrorCode(51024) // Location51024
 
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075
