@@ -634,8 +634,7 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
 		},
 		"EmptyArray": {
-			update:        bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
-			skipForTigris: `https://github.com/FerretDB/FerretDB/issues/1779`,
+			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
 		},
 	}
 
