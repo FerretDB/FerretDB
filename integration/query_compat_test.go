@@ -32,7 +32,7 @@ type queryCompatTestCase struct {
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // TODO https://github.com/FerretDB/FerretDB/issues/1279
+	resultPushdown bool                     // deafault to false
 	skipForTigris  string                   // skip test for Tigris
 }
 

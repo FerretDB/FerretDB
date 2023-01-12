@@ -95,6 +95,9 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 
 		where, args = prepareWhereClause(sp.Filter)
 		query += where
+
+		if where != "" {
+		}
 	}
 
 	if err != nil {
@@ -139,19 +142,19 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
+func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], bool, error) {
 	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil), nil
+		return newIterator(ctx, nil), false, nil
 	default:
-		return nil, lazyerrors.Error(err)
+		return nil, false, lazyerrors.Error(err)
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
+	iter, pushdown, err := buildIterator(ctx, tx, &iteratorParams{
 		schema:  sp.DB,
 		table:   table,
 		explain: sp.Explain,
@@ -159,10 +162,10 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 		filter:  sp.Filter,
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, pushdown, lazyerrors.Error(err)
 	}
 
-	return iter, nil
+	return iter, pushdown, nil
 }
 
 // queryById returns the first found document by its ID from the given PostgreSQL schema and table.
@@ -203,7 +206,8 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
+// If the filters provided in params resulted in pushdown, it returns true.
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], bool, error) {
 	var query string
 
 	if p.explain {
@@ -224,6 +228,8 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	var args []any
 
+	var pushdown bool
+
 	if p.filter != nil {
 		var where string
 
@@ -231,16 +237,16 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 		query += where
 
 		if where != "" {
-			// pushdown = true
+			pushdown = true
 		}
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, pushdown, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows), nil
+	return newIterator(ctx, rows), pushdown, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
