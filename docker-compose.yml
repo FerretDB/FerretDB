@@ -170,11 +170,11 @@ services:
       - 3000:3000
     volumes:
       # container image already contains package.json and package-lock.json
-      - ./website/build:/workdir/docusaurus-docs/build:rw
-      - ./website/docs:/workdir/docusaurus-docs/docs:ro
       - ./website/blog:/workdir/docusaurus-docs/blog:ro
+      - ./website/docs:/workdir/docusaurus-docs/docs:ro
       - ./website/src:/workdir/docusaurus-docs/src:ro
       - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
       - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
+      - ./website/build:/workdir/docusaurus-docs/build:rw
