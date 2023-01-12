@@ -106,8 +106,8 @@ func TestDocumentValidateData(t *testing.T) {
 		"InfFromUpdate": {
 			doc:      must.NotFail(NewDocument("v", math.Inf(1))),
 			isUpdate: true,
-			reason: errors.New(`update produces invalid value: { "v": +Inf }` +
-				` (update operations that produce infinity values are not allowed)`),
+			reason: errors.New(`update produces invalid value: { "v": +Inf } ` +
+				`(update operations that produce infinity values are not allowed)`),
 		},
 	} {
 		name, tc := name, tc
