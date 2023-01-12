@@ -21,6 +21,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "*"
   schedule:
     - cron: "42 2 * * *" # after Go workflow
 
