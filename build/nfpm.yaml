@@ -1,4 +1,6 @@
 ---
+# https://nfpm.goreleaser.com/configuration/
+
 name: ferretdb
 arch: ${GOARCH}
 platform: linux
