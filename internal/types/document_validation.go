@@ -62,8 +62,8 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // ValidateData checks if the document represents a valid "data document".
 // It places `_id` field into the fields slice 0 index.
 // If the document is not valid it returns *ValidationError.
-// isUpdate argument is set true when validation is applied on
-// a document updated by update operation.
+// The argument isUpdate is set true when validation is applied
+// upon update operation.
 func (d *Document) ValidateData(isUpdate bool) error {
 	d.moveIDToTheFirstIndex()
 
