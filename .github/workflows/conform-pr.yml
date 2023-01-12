@@ -1,7 +1,27 @@
 ---
-# Attention! This workflow uses `pull_request_target` event that has access to secrets.
-# If you modify this workflow, make sure that you don't introduce dangerous steps.
-# See also: https://securitylab.github.com/research/github-actions-preventing-pwn-requests/.
+# This and other workflows that use `pull_request_target` event are dangerous
+# and should be handled with a lot of care to avoid security problems.
+# We use this event to give pull requests access to secrets with permissions to query projects,
+# login into Docker registry, etc.
+# But rogue PR authors could try to steal our secrets.
+# We prevent that with the following:
+#
+# * We require approval for PRs from first-time contributors. That's a built-in feature for all actions.
+# * For workflows that checkout source code,
+#   we require the `trust` label to be assigned to PRs by FerretDB maintainers after reviewing changes.
+#   Only a few trusted people have permission to do that.
+# * Thanks to the way `pull_request_target` trigger works,
+#   PR changes in the workflow itself are not run until the changes are merged.
+# * We use a short-lived automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT) where possible.
+# * Both `GITHUB_TOKEN`s and PATs have minimal permissions.
+# * We publish Docker images from PRs as separate packages that should not be run by users.
+# * We limit what third-party actions can be used.
+#
+# Relevant GitHub documentation is a bit scattered. The first article gives a good overview:
+# * https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
+# * https://docs.github.com/en/actions/security-guides/automatic-token-authentication
+# * https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions
+
 name: Conform PR
 on:
   pull_request_target:
@@ -36,7 +56,8 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # GITHUB_TOKEN is not enough to query projects, so we use a special one
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CONFORM_TOKEN: ${{ secrets.CONFORM_TOKEN }} # repo-scoped GITHUB_TOKEN is not enough to query org-level projects
 
 jobs:
   conform-pr:
@@ -48,8 +69,9 @@ jobs:
     if: github.event_name == 'pull_request_target'
 
     steps:
-      # Warning! Be careful about changing the steps here as it might cause some security problems
-      # (see the Attention block on the top of this file).
+      # Do not add a source code checkout step because we don't check the `trust` label.
+      # See the warning at the top of the file.
+
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
