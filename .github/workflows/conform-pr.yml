@@ -11,7 +11,7 @@
 #   we require the `trust` label to be assigned to PRs by FerretDB maintainers after reviewing changes.
 #   Only a few trusted people have permission to do that.
 # * Thanks to the way `pull_request_target` trigger works,
-#   PR changes in the workflow itself are not run until they are merged.
+#   PR changes in the workflow itself are not run until the changes are merged.
 # * We use a short-lived automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT) where possible.
 # * Both `GITHUB_TOKEN`s and PATs have minimal permissions.
 # * We publish Docker images from PRs as separate packages that should not be run by users.
