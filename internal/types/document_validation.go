@@ -140,8 +140,9 @@ func (d *Document) ValidateData(isUpdate bool) error {
 			if math.IsInf(v, 0) {
 				if isUpdate {
 					return newValidationError(
-						ErrValidation, fmt.Errorf(`update produces invalid value: { %q: %f } `+
-							`(update operations that produce infinity values are not allowed)`, key, v),
+						ErrValidation, fmt.Errorf("update produces invalid value: { %q: %f }"+
+							"(update operations that produce infinity values are not allowed)", key, v,
+						),
 					)
 				}
 
