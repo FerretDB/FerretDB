@@ -23,21 +23,45 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestGetMore(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
+	ctx, collection := setup.Setup(t, shareddata.Int32BigAmounts)
 
 	for name, tc := range map[string]struct {
 		err        *mongo.CommandError
 		altMessage string
 		command    bson.D
+		id         any
 	}{
+		"InvalidCursorID": {
+			id: int64(1),
+			command: bson.D{
+				{"collection", collection.Name()},
+			},
+			err: &mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: "cursor id 1 not found",
+			},
+		},
+		"CursorIdInt32": {
+			id: int32(1),
+			command: bson.D{
+				{"collection", collection.Name()},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.getMore' is the wrong type 'int', expected type 'long'",
+			},
+		},
 		"BatchSizeNegative": {
 			command: bson.D{
-				{"getMore", collection.Name()},
 				{"batchSize", int32(-1)},
 			},
 			err: &mongo.CommandError{
@@ -48,38 +72,49 @@ func TestGetMore(t *testing.T) {
 		},
 		"BatchSizeZero": {
 			command: bson.D{
-				{"getMore", int64(0)},
 				{"batchSize", int32(0)},
 				{"collection", collection.Name()},
-			},
-			err: &mongo.CommandError{
-				Code:    51024,
-				Name:    "Location51024",
-				Message: "BSON field 'batchSize' value must be >= 0, actual value '0'",
 			},
 		},
 		"BatchSizeDocument": {
 			command: bson.D{
-				{"getMore", collection.Name()},
 				{"batchSize", bson.D{}},
 			},
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'object', expected types '[long, int, decimal, double']",
+				Message: "BSON field 'getMore.batchSize' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
 			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
 		},
 		"BatchSizeMaxInt32": {
 			command: bson.D{
-				{"getMore", collection.Name()},
 				{"batchSize", math.MaxInt32},
+				{"collection", collection.Name()},
 			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
+			id := tc.id
+			if tc.id == nil {
+				res := collection.Database().RunCommand(ctx, bson.D{{"find", collection.Name()}, {"filter", bson.D{}}})
+				require.NoError(t, res.Err())
+
+				var result bson.D
+				err := res.Decode(&result)
+				require.NoError(t, err)
+
+				responseDoc := ConvertDocument(t, result)
+				cursor, err := responseDoc.Get("cursor")
+				require.NoError(t, err)
+
+				id, err = cursor.(*types.Document).Get("id")
+				require.NoError(t, err)
+			}
+			tc.command = append(bson.D{{"getMore", id}}, tc.command...)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
