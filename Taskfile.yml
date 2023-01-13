@@ -185,6 +185,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -timeout=15m
         -coverprofile=integration-tigris.txt .
         -handler=tigris
         -records-dir=../records
@@ -381,7 +382,7 @@ tasks:
     desc: "Run MongoDB shell (`mongosh`) for secured FerretDB"
     cmds:
       - >
-        docker compose exec mongodb mongosh 
+        docker compose exec mongodb mongosh
         --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA.pem
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell
@@ -440,10 +441,10 @@ tasks:
       - task: docker-push
         vars:
           DOCKER_IMAGES: >
-              ferretdb/ferretdb:latest,
-              ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
-              ghcr.io/ferretdb/ferretdb:latest,
-              ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
+            ferretdb/ferretdb:latest,
+            ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
+            ghcr.io/ferretdb/ferretdb:latest,
+            ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
     vars:
       VERSION:
         sh: cat build/version/version.txt
@@ -485,6 +486,12 @@ tasks:
     cmds:
       - docker compose run --rm docusaurus-docs build
 
+  blog:
+    desc: "Format, lint and build blog"
+    deps: [docs-fmt]
+    cmds:
+      - docker compose run --rm docusaurus-blog build
+
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"
@@ -496,3 +503,12 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+
+  docs-cloudflare-preview:
+    cmds:
+      - docker compose run --rm wrangler pages deployment create --project-name=docs website/build
+
+  blog-dev:
+    desc: "Start blog development server"
+    cmds:
+      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0

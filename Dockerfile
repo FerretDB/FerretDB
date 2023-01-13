@@ -2,7 +2,7 @@ ARG VERSION
 ARG COMMIT
 ARG RACEFLAG
 
-FROM ghcr.io/ferretdb/golang:1.19.4-1 AS build
+FROM ghcr.io/ferretdb/golang:1.19.5-1 AS build
 
 WORKDIR /src
 ADD . .
@@ -14,7 +14,7 @@ RUN go mod download
 RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG}                 ./cmd/ferretdb
 RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG} -coverpkg=./... ./cmd/ferretdb
 
-FROM ghcr.io/ferretdb/golang:1.19.4-1
+FROM ghcr.io/ferretdb/golang:1.19.5-1
 
 COPY --from=build /src/bin/ferretdb /ferretdb
 

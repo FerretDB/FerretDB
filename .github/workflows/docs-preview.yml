@@ -1,0 +1,79 @@
+---
+name: Docs Preview
+on:
+  pull_request_target:
+    types:
+      - labeled # for `trusted` label
+      - unlabeled
+      - opened
+      - reopened
+      - synchronize
+
+# Do not run this workflow in parallel for any PR change
+# to prevent concurrent pushes for the same Cloudflare domain alias.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  preview:
+    name: Preview docs
+    runs-on: ubuntu-22.04
+
+    if: >
+      contains(github.event.pull_request.labels.*.name, 'trust') &&
+      !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+      contains(github.event.pull_request.labels.*.name, 'documentation')
+
+    environment:
+      name: cloudflare-dev
+
+    steps:
+      # We can't easily download build results from the Docs workflow:
+      # https://github.com/actions/download-artifact/issues/172
+      # Just build them again instead.
+      # That also allows us to pass branch name, commit hash, etc from git to wrangler.
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check LFS status
+        if: false # TODO https://github.com/ActionsDesk/lfs-warning/issues/147
+        uses: actionsdesk/lfs-warning@v3.2
+        with:
+          filesizelimit: 1MB
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: build
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Build tools
+        run: bin/task env-pull
+
+      - name: Build docs
+        run: bin/task docs
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
+      - name: Deploy to Cloudflare Pages
+        run: bin/task docs-cloudflare-preview
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
