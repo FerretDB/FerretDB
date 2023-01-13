@@ -234,6 +234,14 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
 
+								// Skip updates that could not be performed due to Tigris schema validation.
+								var e mongo.CommandError
+								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
+									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+										setup.SkipForTigrisWithReason(t, targetErr.Error())
+									}
+								}
+
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -426,19 +434,17 @@ func TestUpdateCompat(t *testing.T) {
 }
 
 func TestUpdateCompatArray(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
 		"ReplaceDocumentFilter": {
 			filter:  bson.D{{"v", bson.D{{"$eq", true}}}},
-			replace: bson.D{{"replacement-value", int32(1)}},
+			replace: bson.D{{"foo", int32(1)}},
 		},
 		"ReplaceDotNotationFilter": {
-			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
-			replace: bson.D{{"replacement-value", int32(1)}},
+			filter:        bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
+			replace:       bson.D{{"replacement-value", int32(1)}},
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
 	}
 
