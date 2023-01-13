@@ -2,11 +2,11 @@
 slug: mangodb-has-a-new-name-and-the-momentum-is-stronger-than-ever-meet-ferretdb
 title: "MangoDB has a new name, and the momentum is stronger than ever. Meet FerretDB!"
 author: Peter Farkas
-image: https://www.ferretdb.io/wp-content/uploads/2022/02/home-img.jpg
+image: ../static/img/blog/blog-img-v02.jpg
 tags: [Ferretdb]
 ---
 
-![MangoDB has a new name-FerretDB](https://www.ferretdb.io/wp-content/uploads/2021/12/blog-img-v02.jpg)
+![MangoDB has a new name-FerretDB](../static/img/blog/blog-img-v02.jpg)
 
 <!--truncate-->
 

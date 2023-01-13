@@ -2,10 +2,11 @@
 slug: new-release-ferretdb-0-4-0
 title: "New release: FerretDB 0.4.0!"
 author: Peter Farkas
+image: ../static/img/blog/4ferrets.webp
 date: 2022-06-28
 ---
 
-![New FerretDB release 0.4.0](https://www.ferretdb.io/wp-content/uploads/2022/06/4ferrets.webp)
+![New FerretDB release 0.4.0](../static/img/blog/4ferrets.webp)
 
 <!--truncate-->
 
@@ -37,7 +38,7 @@ This is a feature which exists since MongoDB 4.0, and provides support for getti
 While our primary focus is still PostgreSQL, our newest release marks the first time where we include functionality related to [Tigris](http://www.tigrisdata.com).
 Tigris is one of the database backends we are going to support next to PostgreSQL and potential others in the future.
 
-![support for tigris](https://www.ferretdb.io/wp-content/uploads/2022/06/cf73bb31-fa1b-4465-8277-e73da46127de-1650484034538-1-300x120.png)Tigris is a work in progress, fully open source database as a service platform, which aims to add MongoDB compatibility by using FerretDB as an interface.
+![support for tigris](../static/img/blog/cf73bb31-fa1b-4465-8277-e73da46127de-1650484034538-1-300x120.png)Tigris is a work in progress, fully open source database as a service platform, which aims to add MongoDB compatibility by using FerretDB as an interface.
 [Check them out on GitHub](https://github.com/tigrisdata).
 
 We see enormous potential in our partnership in terms of value: together, FerretDB and Tigris will be able to provide an alternative to MongoDB Atlas.

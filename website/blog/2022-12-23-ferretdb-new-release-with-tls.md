@@ -2,10 +2,11 @@
 slug: ferretdb-new-release-with-tls
 title: "FerretDB v0.7.1 - Now offering basic TLS support"
 author: Alexander Fashakin
+image: ../static//img/blog/TLS.webp
 date: 2022-12-23
 ---
 
-![FerretDB 0.7.1 release](https://i0.wp.com/www.swhosting.com/blog/wp-content/uploads/2014/10/TLS.png)
+![FerretDB 0.7.1 release](../static//img/blog/TLS.webp)
 
 <!--truncate-->
 
@@ -37,5 +38,5 @@ Users can now view the list of available commands for diagnostics, authenticatio
 Among other improvements, starting from v.0.7.0, we now allow the use of dash `(-)` in database names for both PostgreSQL and Tigris.
 We've also simplified and improved the approach to fetch documents for `delete`, `count`, `find`, `findAndModify`, and `update`.
 
-You can find more details on all these improvements and more in the [FerretDB](https://github.com/FerretDB/FerretDB/blob/main/CHANGELOG.md "") changelog.
+You can find more details on all these improvements and more in the [FerretDB](https://github.com/FerretDB/FerretDB/blob/main/CHANGELOG.md) changelog.
 If you have any questions, feel free to [contact us](https://docs.ferretdb.io/intro/#community).

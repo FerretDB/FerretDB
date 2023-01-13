@@ -29,7 +29,7 @@ Yes, it may be early, but it's actually never too early!
 
 If you have a good suggestion on which application would benefit from a free choice of MongoDB-compatible databases, don't hold it to yourself - [send them our way](https://www.ferretdb.io/contact/)!
 
-![Percona Live](https://www.ferretdb.io/wp-content/uploads/2022/04/perconalive.png)
+![Percona Live](../static/img/blog/perconalive.png)
 
 Last but not least, [we will deliver a talk about FerretDB on Percona Live 2022 in Austin, TX!](https://sched.co/10Qf5) This is a big moment for FerretDB, as Percona Live is the largest open-source database conference in the world.
 A preview of our talk will be available before the event.

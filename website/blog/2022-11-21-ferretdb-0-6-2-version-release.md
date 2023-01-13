@@ -2,10 +2,11 @@
 slug: ferretdb-0-6-2-version-release
 title: "New FerretDB release – 0.6.2: Now runs on Raspberry Pi!"
 author: Alexander Fashakin
+image: ../static/img/blog/ferret_rpi-1-1024x390.png
 date: 2022-11-21
 ---
 
-![FerretDB 0.6.2 release](https://www.ferretdb.io/wp-content/uploads/2022/11/ferret_rpi-1-1024x390.png)
+![FerretDB 0.6.2 release](../static/img/blog/ferret_rpi-1-1024x390.png)
 
 <!--truncate-->
 
@@ -20,11 +21,11 @@ For Raspberry Pi users, FerretDB now provides builds for `linux/arm/v7`.
 This new feature further expands the range of environments that FerretDB supports.
 We have also added a way for you to enable or disable telemetry at runtime.
 Besides that, we’ve implemented a new feature for setting and getting telemetry status at runtime, enabling you to use the same as MongoDB for free monitoring.
-Please [check our documentation for more information](https://docs.ferretdb.io/telemetry/#enable-telemetry "").
+Please [check our documentation for more information](https://docs.ferretdb.io/telemetry/#enable-telemetry).
 
 ## Documentation
 
-[Our documentation](https://docs.ferretdb.io "") has also been updated.
+[Our documentation](https://docs.ferretdb.io) has also been updated.
 In the latest release, we have published our commands parity guide with MongoDB, where you can see the current list of features that we support.
 
 ## Bug Fixes
@@ -37,7 +38,7 @@ In other changes, we've made it easier to configure FerretDB in container and cl
 For identified errors, we’ve improved the accuracy of telemetry data in some cases where arguments or operators are present but not implemented, or return errors.
 Furthermore, we have enabled the use of  `-` in collection names in line with real-life app usages.
 
-Please find more details on the latest FerretDB version release [here on GitHub](https://github.com/FerretDB/FerretDB/releases "").
-And if you have any questions, feel free to [contact us](https://docs.ferretdb.io/intro/#community "").
+Please find more details on the latest FerretDB version release [here on GitHub](https://github.com/FerretDB/FerretDB/releases).
+And if you have any questions, feel free to [contact us](https://docs.ferretdb.io/intro/#community).
 
 Raspberry Pi is a trademark of Raspberry Pi Ltd.

@@ -2,10 +2,11 @@
 slug: new-release-ferretdb-0_6_1
 title: "New release: FerretDB 0.6.1!"
 author: Alexander Fashakin
+image: ../static/img/blog/six_ferrets-1024x917.jpg
 date: 2022-11-11
 ---
 
-![Six ferrets](https://www.ferretdb.io/wp-content/uploads/2022/11/six_ferrets-1024x917.jpg)
+![Six ferrets](../static/img/blog/six_ferrets-1024x917.jpg)
 
 <!--truncate-->
 
@@ -13,11 +14,11 @@ We are happy to inform you that FerretDB is currently in Alpha, and we have a ne
 
 With the Alpha version, FerretDB has many notable and exciting features, bug fixes, and enhancements.
 This couldn't have been possible without the support, feedback, and help of many contributors from the community.
-Special thanks go to [@ronaudinho](https://github.com/ronaudinho ""), [@codingmickey](https://github.com/codingmickey ""), [@ndkhangvl](https://github.com/ndkhangvl ""), and [@zhiburt](https://github.com/zhiburt "")  for their remarkable contributions.
+Special thanks go to [@ronaudinho](https://github.com/ronaudinho), [@codingmickey](https://github.com/codingmickey), [@ndkhangvl](https://github.com/ndkhangvl), and [@zhiburt](https://github.com/zhiburt)  for their remarkable contributions.
 
 Starting from 0.6.0, we have added a basic telemetry service that collects anonymous usage data on FerretDB instances.
 This will help us quickly identify failed queries, prioritize issues, and achieve greater parity with MongoDB.
-And for users that do not want telemetry, we have provided several options to disable in [our documentation](https://docs.ferretdb.io/ "").
+And for users that do not want telemetry, we have provided several options to disable in [our documentation](https://docs.ferretdb.io/).
 
 ## New features
 
@@ -31,9 +32,9 @@ The new version of FerretDB now supports empty document field names, while we've
 
 ## Documentation
 
-Our [documentation page](https://docs.ferretdb.io/ "") is up and running!
+Our [documentation page](https://docs.ferretdb.io/) is up and running!
 We've also added a local search plugin, set up pages on installation procedures, basic CRUD operations, and much more!
 
-Please see our [Changelog](https://github.com/FerretDB/FerretDB/releases/ "") for more details on the new releases.
+Please see our [Changelog](https://github.com/FerretDB/FerretDB/releases/) for more details on the new releases.
 
-(image credit: FetzlePetzit / [furaffinity.net](https://www.furaffinity.net/view/1920045/ ""))
+(image credit: FetzlePetzit / [furaffinity.net](https://www.furaffinity.net/view/1920045/))

@@ -2,16 +2,17 @@
 slug: mongodb-crud-operations-with-ferretdb
 title: "How to Pass Basic MongoDB CRUD Operations With FerretDB"
 author: Alexander Fashakin
+image: ../static/img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg
 date: 2022-11-14
 ---
 
-![Pass Basic CRUD Operations in FerretDB](https://www.ferretdb.io/wp-content/uploads/2022/11/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg)
+![Pass Basic CRUD Operations in FerretDB](../static/img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg)
 
 <!--truncate-->
 
 As MongoDB moves away from its open-source roots with SSPL, developers and tech enthusiasts are on the lookout for a truly open-source alternative to help manage and execute NoSQL operations.
 
-[FerretDB](https://www.ferretdb.io/ "") is an open-source proxy that converts MongoDB NoSQL commands and queries to SQL.
+[FerretDB](https://www.ferretdb.io/) is an open-source proxy that converts MongoDB NoSQL commands and queries to SQL.
 You won't have to learn a new syntax or query method.
 With FerretDB, you can easily execute and pass MongoDB operations.
 
@@ -26,8 +27,8 @@ For users looking for an open-source MongoDB alternative, FerretDB offers you a 
 
 ### How to set up FerretDB database
 
-To set up FerretDB locally, you can install it using [Docker](https://www.docker.com/ "") or the .deb and .rpm packages available for each [release](https://github.com/FerretDB/FerretDB/releases "").
-Follow the [quickstart instructions on Github](https://github.com/FerretDB/FerretDB#quickstart "") to quickly get started.
+To set up FerretDB locally, you can install it using [Docker](https://www.docker.com/) or the .deb and .rpm packages available for each [release](https://github.com/FerretDB/FerretDB/releases).
+Follow the [quickstart instructions on Github](https://github.com/FerretDB/FerretDB#quickstart) to quickly get started.
 
 In the same way as MongoDB, you can show the list of databases with FerretDB using the following command:
 
@@ -396,6 +397,6 @@ Beyond the basic CRUD operations in this post, you can pass even more complex Mo
 [FerretDB](https://www.ferretdb.io/) serves as a truly open-source replacement for MongoDB.
 That means you don’t have to sacrifice the integrity and benefits of open-source software while still enjoying the benefits of a non-relational NoSQL database.
 
-To know more about the importance of an open-source alternative to MongoDB, read [this article](https://www.ferretdb.io/open-source-is-in-danger/).
+To know more about the importance of an open-source alternative to MongoDB, read [this article](https://blog.ferretdb.io/open-source-is-in-danger/).
 
 Photo by [Uriel SC](https://unsplash.com/@urielsc26?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText) on [Unsplash](https://unsplash.com/?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)

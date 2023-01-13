@@ -2,10 +2,11 @@
 slug: contribute_to_ferretdb_on_windows
 title: "How to start contributing to FerretDB on Windows"
 author: Dmitry Eremenko
+image: ../static/img/blog/image4-1024x683.jpg
 date: 2022-10-12
 ---
 
-![Contribute to FerretDB on Windows](https://www.ferretdb.io/wp-content/uploads/2022/10/image4-1024x683.jpg)
+![Contribute to FerretDB on Windows](../static/img/blog/image4-1024x683.jpg)
 
 <!--truncate-->
 
@@ -18,9 +19,9 @@ For all Windows users fascinated and interested in contributing to FerretDB, thi
 
 To start contributing to FerretDB on Windows, this is a list of software we'll be using:
 
-* Git (for example, [GitHub for Windows](https://desktop.github.com/ ""))
-* Go ([download here](https://go.dev/dl/ ""))
-* Docker for Windows ([download here](https://docs.docker.com/desktop/install/windows-install/ ""))
+* Git (for example, [GitHub for Windows](https://desktop.github.com/))
+* Go ([download here](https://go.dev/dl/))
+* Docker for Windows ([download here](https://docs.docker.com/desktop/install/windows-install/))
 * Text editor (there are plenty of them, you have to pick one! 😃)
 
 ## Git options that are extremely useful for Windows systems
@@ -50,12 +51,12 @@ We should have installed git, Golang, and Docker for Windows by now.
 To start contributing, we will need the FerretDB source code located [here](https://github.com/FerretDB/FerretDB.git).
 So we must fork the repository to make it possible to send PR.
 
-![fork the FerretDB repository](https://www.ferretdb.io/wp-content/uploads/2022/10/image6.png)
+![fork the FerretDB repository](../static/img/blog/image6.png)
 
 You need to set up old branch removal to keep your repository clean.
 You need to set up the “Automatically delete head branches” flag in the “General” section of your fork repository settings.
 
-![delete head branches](https://www.ferretdb.io/wp-content/uploads/2022/10/image5.png)
+![delete head branches](../static/img/blog/image5.png)
 
 In your local terminal, clone the forked repository with the following command:
 
@@ -116,11 +117,11 @@ bin\task env-up
 
 to run the local environment.
 
-![run the local environment](https://www.ferretdb.io/wp-content/uploads/2022/10/image7.png)
+![run the local environment](../static/img/blog/image7.png)
 
 After that, we will have a console with FerretDB containers logs output.
 
-![FerretDB containers](https://www.ferretdb.io/wp-content/uploads/2022/10/image2.png)
+![FerretDB containers](../static/img/blog/image2.png)
 
 In a separate console window, we need to run FerretDB with
 
@@ -128,11 +129,11 @@ In a separate console window, we need to run FerretDB with
 bin\task run
 ```
 
-![run FerretDB](https://www.ferretdb.io/wp-content/uploads/2022/10/image3.png)
+![run FerretDB](../static/img/blog/image3.png)
 
 We can open another terminal window and run tests (*bin\task test*) or “mongosh” (*bin\task mongosh*).
 
-![terminal window](https://www.ferretdb.io/wp-content/uploads/2022/10/image1-1.png)
+![terminal window](../static/img/blog/image1-1.png)
 
 ## Start contributing to FerretDB on Windows
 

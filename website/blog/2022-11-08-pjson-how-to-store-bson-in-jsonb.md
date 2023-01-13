@@ -2,10 +2,11 @@
 slug: pjson-how-to-store-bson-in-jsonb
 title: "How FerretDB stores BSON in JSONB"
 author: Chi Fujii
+image: ../static/img/blog/six_ferrets-1024x917.jpg
 date: 2022-11-08
 ---
 
-![How FerretDB stores BSON in JSONB](https://www.ferretdb.io/wp-content/uploads/2022/11/christian-wiediger-WkfDrhxDMC8-unsplash-1024x683.jpg)
+![How FerretDB stores BSON in JSONB](../static/img/blog/christian-wiediger-WkfDrhxDMC8-unsplash-1024x683.jpg)
 
 <!--truncate-->
 
@@ -18,7 +19,7 @@ In this article, we’ll show you how FerretDB converts and stores MongoDB data 
 
 ## What is BSON?
 
-[BSON](https://bsonspec.org/ "") holds a collection of field name/value pairs which is called a document.
+[BSON](https://bsonspec.org/) holds a collection of field name/value pairs which is called a document.
 It contains length information allowing serializer/deserializer to utilize it for the performance benefit.
 Additionally, it preserves the order of the fields.
 BSON also supports additional data types such as DateTime and binary.
@@ -33,7 +34,7 @@ In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`
 |          |          |
 |----------|----------|
 | \x12\x00\x00\x00 | Document length in little-endian int32 (18 bytes document) |
-| \x02 | string field type `\x02`, see the [BSON spec](https://bsonspec.org/spec.html "") |
+| \x02 | string field type `\x02`, see the [BSON spec](https://bsonspec.org/spec.html) |
 | foo\x00 | Cstring field name |
 | \x04\x00\x00\x00bar\x00 | String length in little-endian int32 `\x04\x00\x00\x00` (4 bytes string) followed by string value and trailing `\x00` |
 | \x00 | Document terminator |
@@ -41,7 +42,7 @@ In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`
 You notice that BSON is binary serialized so it is not human readable.
 It contains information about the length, and an explicitly defined field type.
 
-At FerretDB, we use PostgreSQL as a database engine and we store JSON data in [JSONB](https://www.postgresql.org/docs/15/datatype-json.html "") data type.
+At FerretDB, we use PostgreSQL as a database engine and we store JSON data in [JSONB](https://www.postgresql.org/docs/15/datatype-json.html) data type.
 In light of this, we need to store BSON equivalent information in JSON format without losing type information.
 
 ## Introducing PJSON
@@ -214,4 +215,4 @@ This process includes deserializing BSON and mapping it to PJSON, and finally st
 
 For our community contributors and users, understanding how we convert BSON data in MongoDB to JSONB of PostgreSQL helps them gain more insight into how FerretDB works.
 
-To start contributing to FerretDB, read our [contribution guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md "").
+To start contributing to FerretDB, read our [contribution guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md).
