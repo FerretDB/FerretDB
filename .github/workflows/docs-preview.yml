@@ -67,19 +67,11 @@ jobs:
       - name: Build docs
         run: bin/task docs
 
-      - name: Archive docs
-        run: |
-          tar --directory website/build \
-            --file docs.tar \
-            --create \
-            --verbose \
-            .
-
       - name: Upload archive artifact
         uses: actions/upload-artifact@v3
         with:
-          name: docs
-          path: docs.tar
+          name: website
+          path: website/build
           if-no-files-found: error
 
       - name: Check dirty
@@ -105,7 +97,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: docs
+          name: website
           timeout: 300000 # 5*60*1000 milliseconds
 
       - run: ls -lR
