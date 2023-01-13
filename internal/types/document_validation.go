@@ -142,12 +142,6 @@ func (d *Document) ValidateData() error {
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
 				)
 			}
-
-			if v == 0 && math.Signbit(v) {
-				return newValidationError(
-					ErrValidation, fmt.Errorf("update produces invalid value: { %q: -0 } (-0 is not supported)", key),
-				)
-			}
 		case Regex:
 			if key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))

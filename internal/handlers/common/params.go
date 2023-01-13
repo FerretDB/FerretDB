@@ -338,20 +338,11 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 			return nil, errUnexpectedRightOpType
 		}
 
-		if res == 0 {
-			res = math.Copysign(0, +1)
-		}
-
 		return res, nil
 	case int32:
 		switch v2 := v2.(type) {
 		case float64:
-			res := float64(v1) * v2
-			if res == 0 {
-				res = math.Copysign(0, +1)
-			}
-
-			return res, nil
+			return float64(v1) * v2, nil
 		case int32:
 			res := v1 * v2
 			if int64(res) != int64(v1)*int64(v2) {
@@ -376,12 +367,7 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 	case int64:
 		switch v2 := v2.(type) {
 		case float64:
-			res := float64(v1) * v2
-			if res == 0 {
-				res = math.Copysign(0, +1)
-			}
-
-			return res, nil
+			return float64(v1) * v2, nil
 		case int32:
 			res := v1 * int64(v2)
 

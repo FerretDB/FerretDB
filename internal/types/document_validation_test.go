@@ -102,11 +102,6 @@ func TestDocumentValidateData(t *testing.T) {
 			)),
 			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not supported)`),
 		},
-		"NegativeZeroFromUpdate": {
-			doc: must.NotFail(NewDocument("v", math.Copysign(0, -1))),
-			reason: errors.New(`update produces invalid value: { "v": -0 } ` +
-				`(-0 is not supported)`),
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
