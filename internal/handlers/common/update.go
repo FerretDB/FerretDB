@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -24,6 +25,8 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -99,6 +102,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		case "$pop":
 			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
+		case "$rename":
+			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -228,6 +237,56 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 		err = doc.SetByPath(path, array)
 		if err != nil {
 			return false, err
+		}
+
+		changed = true
+	}
+
+	return changed, nil
+}
+
+// processRenameFieldExpression changes document according to $rename operator.
+// If the document was changed it returns true.
+func processRenameFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
+	renameExpression := update.SortFieldsByKey()
+
+	var changed bool
+
+	for _, key := range renameExpression.Keys() {
+		renameRawValue := must.NotFail(renameExpression.Get(key))
+
+		if key == "" || renameRawValue == "" {
+			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
+		}
+
+		// this is covered in validateRenameExpression
+		renameValue := renameRawValue.(string)
+
+		sourcePath := types.NewPathFromString(key)
+		targetPath := types.NewPathFromString(renameValue)
+
+		// Get value to move
+		val, err := doc.GetByPath(sourcePath)
+		if err != nil {
+			var dpe *types.DocumentPathError
+			if !errors.As(err, &dpe) {
+				panic("getByPath returned error with invalid type")
+			}
+
+			if dpe.Code() == types.ErrDocumentPathKeyNotFound {
+				continue
+			}
+
+			return changed, NewWriteErrorMsg(ErrUnsuitableValueType, dpe.Error())
+		}
+
+		// Remove old document
+		doc.RemoveByPath(sourcePath)
+
+		// Set new path with old value
+		err = doc.SetByPath(targetPath, val)
+		if err != nil {
+			return changed, err
 		}
 
 		changed = true
@@ -522,6 +581,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$rename", update)
+	if err != nil {
+		return err
+	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
@@ -529,6 +593,11 @@ func ValidateUpdateOperators(update *types.Document) error {
 	if err = validateCurrentDateExpression(update); err != nil {
 		return err
 	}
+
+	if err = validateRenameExpression(update); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -552,8 +621,10 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$unset":
 			fallthrough
 		case "$pop":
+			fallthrough
+		case "$rename":
 			updateModifier = true
-		case "$mul", "$rename":
+		case "$mul":
 			return false, NewCommandErrorMsgWithArgument(
 				ErrNotImplemented,
 				fmt.Sprintf("update operator %s is not implemented", updateOp),
@@ -611,6 +682,8 @@ func checkConflictingChanges(a, b *types.Document) error {
 // The result returned for "$setOnInsert" operator is
 //
 //	bson.D{{"v", nil}}.
+//
+// It also checks for path collisions and returns the error if there's any.
 func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
@@ -633,6 +706,72 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 	}
 
 	return doc, nil
+}
+
+// validateRenameExpression validates $rename input on correctness.
+func validateRenameExpression(update *types.Document) error {
+	if !update.Has("$rename") {
+		return nil
+	}
+
+	updateExpression := must.NotFail(update.Get("$rename"))
+
+	doc, ok := updateExpression.(*types.Document)
+	if !ok {
+		return NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+	}
+
+	iter := doc.Iterator()
+	keys := map[string]struct{}{}
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return lazyerrors.Error(err)
+		}
+
+		var vStr string
+
+		vStr, ok = v.(string)
+		if !ok {
+			return NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
+			)
+		}
+
+		// disallow fields where key is equal to the target
+		if k == vStr {
+			return NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
+			)
+		}
+
+		if _, ok = keys[k]; ok {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
+			)
+		}
+
+		keys[k] = struct{}{}
+
+		if _, ok = keys[vStr]; ok {
+			return NewWriteErrorMsg(
+				ErrConflictingUpdateOperators,
+				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
+			)
+		}
+
+		keys[vStr] = struct{}{}
+	}
+
+	return nil
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
