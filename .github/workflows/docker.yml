@@ -41,7 +41,7 @@ env:
 jobs:
   build:
     name: Build image
-    runs-on: [faster, trusted]
+    runs-on: faster
 
     if: >
       github.event_name != 'pull_request_target' ||

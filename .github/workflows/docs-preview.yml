@@ -8,12 +8,9 @@ on:
       - opened
       - reopened
       - synchronize
-  push:
-    branches:
-      - cloudflare-pages # FIXME remove
 
-# Do not run this workflow in parallel for any PR change or push to main
-# to prevent XXX FIXME
+# Do not run this workflow in parallel for any PR change
+# to prevent concurrent pushes for the same Cloudflare domain alias.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 
@@ -29,11 +26,10 @@ jobs:
     name: Preview docs
     runs-on: ubuntu-22.04
 
-    # FIXME enable
-    # if: >
-    #   contains(github.event.pull_request.labels.*.name, 'trust') &&
-    #   !contains(github.event.pull_request.labels.*.name, 'no ci') &&
-    #   contains(github.event.pull_request.labels.*.name, 'documentation')
+    if: >
+      contains(github.event.pull_request.labels.*.name, 'trust') &&
+      !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+      contains(github.event.pull_request.labels.*.name, 'documentation')
 
     environment:
       name: cloudflare-dev
@@ -75,7 +71,8 @@ jobs:
           git status
           git diff --exit-code
 
-      - run: bin/task docs-cloudflare-preview
+      - name: Deploy to Cloudflare Pages
+        run: bin/task docs-cloudflare-preview
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
