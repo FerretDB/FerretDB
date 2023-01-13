@@ -79,6 +79,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
+	if _, err := queryPlanner.GetByPath("Plan.Filter"){
+		switch err {
+
+		}
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
