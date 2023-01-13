@@ -481,6 +481,84 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+func TestUpdateFieldCompatRename(t *testing.T) {
+	testCases := map[string]updateCompatTestCase{
+		"Simple": {
+			update: bson.D{{"$rename", bson.D{{"v", "foo"}}}},
+		},
+		"DuplicateField": {
+			update:     bson.D{{"$rename", bson.D{{"v", "v"}}}},
+			resultType: emptyResult,
+		},
+		"NonExistingField": {
+			update:     bson.D{{"$rename", bson.D{{"foo", "bar"}}}},
+			resultType: emptyResult,
+		},
+		"EmptyField": {
+			update:     bson.D{{"$rename", bson.D{{"", "v"}}}},
+			resultType: emptyResult,
+		},
+		"EmptyDest": {
+			update:     bson.D{{"$rename", bson.D{{"v", ""}}}},
+			resultType: emptyResult,
+		},
+		"DotDocumentMove": {
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
+		},
+		"DotDocumentDuplicate": {
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
+		},
+		"DotDocumentNonExisting": {
+			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
+			resultType: emptyResult,
+		},
+		"DotArrayField": {
+			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
+			resultType: emptyResult,
+		},
+		"DotArrayNonExisting": {
+			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"Multiple": {
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
+		},
+		"MultipleConflictDestSource": {
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
+			resultType: emptyResult,
+		},
+		"MultipleConflictSourceDest": {
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"bar", "v"}}}},
+			resultType: emptyResult,
+		},
+		"MultipleConflictDestFields": {
+			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
+			resultType: emptyResult,
+		},
+		"MultipleSecondInvalid": {
+			update:     bson.D{{"$rename", bson.D{{"v.foo", "boo"}, {"v.array", 1}}}},
+			resultType: emptyResult,
+		},
+		"FieldEmpty": {
+			update:     bson.D{{"$rename", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"InvalidString": {
+			update:     bson.D{{"$rename", "string"}},
+			resultType: emptyResult,
+		},
+		"InvalidDoc": {
+			update:     bson.D{{"$rename", primitive.D{}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatUnset(t *testing.T) {
 	t.Parallel()
 
