@@ -234,7 +234,6 @@ func removeByPath(v any, path Path) {
 }
 
 // insertByPath inserts missing parts of the path into Document.
-// It "reserves" a place in the given document by setting an empty document or Null value in case of array element.
 func insertByPath(doc *Document, path Path) error {
 	var next any = doc
 
