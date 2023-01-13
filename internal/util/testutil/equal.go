@@ -241,6 +241,9 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if math.IsNaN(s1) {
 			return math.IsNaN(s2)
 		}
+		if s1 == 0 && s2 == 0 {
+			return math.Signbit(s1) == math.Signbit(s2)
+		}
 		return s1 == s2
 
 	case string:

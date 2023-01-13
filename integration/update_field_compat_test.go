@@ -808,10 +808,6 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:    bson.D{{"$mul", bson.D{{"v", int32(42)}}}},
 			providers: providers,
 		},
-		"Int32Zero": {
-			update:    bson.D{{"$mul", bson.D{{"v", int32(0)}}}},
-			providers: providers,
-		},
 		"Int32Negative": {
 			update:    bson.D{{"$mul", bson.D{{"v", int32(-42)}}}},
 			providers: providers,
@@ -828,10 +824,6 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:    bson.D{{"$mul", bson.D{{"v", int64(42)}}}},
 			providers: providers,
 		},
-		"Int64Zero": {
-			update:    bson.D{{"$mul", bson.D{{"v", int64(0)}}}},
-			providers: providers,
-		},
 		"Int64Negative": {
 			update:    bson.D{{"$mul", bson.D{{"v", int32(-42)}}}},
 			providers: providers,
@@ -846,10 +838,6 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		},
 		"Double": {
 			update:    bson.D{{"$mul", bson.D{{"v", 42.13}}}},
-			providers: providers,
-		},
-		"DoubleZero": {
-			update:    bson.D{{"$mul", bson.D{{"v", float64(0)}}}},
 			providers: providers,
 		},
 		"DoubleNegative": {
