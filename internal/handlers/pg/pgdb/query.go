@@ -90,6 +90,8 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 
 	var args []any
 
+	var pushdown bool
+
 	if sp.Filter != nil {
 		var where string
 
@@ -97,6 +99,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		query += where
 
 		if where != "" {
+			pushdown = true
 		}
 	}
 
@@ -130,6 +133,8 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
 
+	plans[0]["pushdown"] = pushdown
+
 	res = convertJSON(plans[0]).(*types.Document)
 
 	if err = rows.Err(); err != nil {
@@ -142,19 +147,19 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], bool, error) {
+func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil), false, nil
+		return newIterator(ctx, nil), nil
 	default:
-		return nil, false, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	iter, pushdown, err := buildIterator(ctx, tx, &iteratorParams{
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
 		schema:  sp.DB,
 		table:   table,
 		explain: sp.Explain,
@@ -162,10 +167,10 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 		filter:  sp.Filter,
 	})
 	if err != nil {
-		return nil, pushdown, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	return iter, pushdown, nil
+	return iter, nil
 }
 
 // queryById returns the first found document by its ID from the given PostgreSQL schema and table.
@@ -207,7 +212,7 @@ type iteratorParams struct {
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
 // If the filters provided in params resulted in pushdown, it returns true.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], bool, error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
 	var query string
 
 	if p.explain {
@@ -228,25 +233,19 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	var args []any
 
-	var pushdown bool
-
 	if p.filter != nil {
 		var where string
 
 		where, args = prepareWhereClause(p.filter)
 		query += where
-
-		if where != "" {
-			pushdown = true
-		}
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
-		return nil, pushdown, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows), pushdown, nil
+	return newIterator(ctx, rows), nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
