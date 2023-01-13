@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -43,18 +44,18 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	collection, err := common.GetRequiredParam[string](document, "collection")
+	if err != nil {
+		return nil, common.NewCommandErrorMsg(common.ErrBadValue, `required parameter "collection" is missing`)
+	}
+
 	cursorID, err := common.GetRequiredParam[int64](document, "getMore")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if cursorID != 1 {
-		return nil, lazyerrors.Errorf("cursor not found")
-	}
-
-	collection, err := common.GetRequiredParam[string](document, "collection")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, common.NewCommandErrorMsg(common.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
 	batchSize, err := common.GetOptionalParam(document, "batchSize", int32(common.DefaultBatchSize))

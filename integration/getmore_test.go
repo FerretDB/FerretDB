@@ -79,6 +79,7 @@ func TestGetMore(t *testing.T) {
 		"BatchSizeDocument": {
 			command: bson.D{
 				{"batchSize", bson.D{}},
+				{"collection", collection.Name()},
 			},
 			err: &mongo.CommandError{
 				Code:    14,

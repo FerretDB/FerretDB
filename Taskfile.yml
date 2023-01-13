@@ -176,8 +176,8 @@ tasks:
         -coverprofile=integration-pg.txt .
         -handler=pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
-        -records-dir=../records
         -target-unix-socket
+        -records-dir=../records
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"

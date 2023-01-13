@@ -52,6 +52,9 @@ const (
 	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
 	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
 
+	// ErrCursorNotFound indicates that cursor is not found.
+	ErrCursorNotFound = ErrorCode(43) // CursorNotFound
+
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
