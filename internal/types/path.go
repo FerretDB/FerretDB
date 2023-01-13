@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/tools/checkswitch/testdata/types"
+
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -264,6 +266,9 @@ func insertByPath(doc *Document, path Path) error {
 						),
 					)
 				}
+
+				// if not last path elem
+				v.Append(types.Document{})
 			default:
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,
