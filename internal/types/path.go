@@ -21,8 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/tools/checkswitch/testdata/types"
-
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -254,7 +252,7 @@ func insertByPath(doc *Document, path Path) error {
 			case *Document:
 				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
 			case *Array:
-				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
+				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
 					return newDocumentPathError(
 						ErrDocumentPathCannotCreateField,
@@ -267,8 +265,19 @@ func insertByPath(doc *Document, path Path) error {
 					)
 				}
 
-				// if not last path elem
-				v.Append(types.Document{})
+				// if the current pathElem is not the last one, a document is expected to be set at the index,
+				// e.g. for v.0.foo we expect an object like  {"v": [{"foo": "bar"}]},
+				// for v.1.foo we expect an object like {"v": [null, {"foo": "bar"}]}
+				for j := v.Len(); j < ind; j++ {
+					v.Append(Null)
+					// v.Append(must.NotFail(NewDocument()))
+				}
+
+				//	if i < path.Len()-1 {
+				v.Append(must.NotFail(NewDocument()))
+			//	} else {
+			// v.Append(Null)
+			//	}
 			default:
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,
@@ -281,7 +290,12 @@ func insertByPath(doc *Document, path Path) error {
 				)
 			}
 
-			next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
+			v, err = doc.GetByPath(insertedPath)
+			if err != nil {
+				return err
+			}
+			next = v.(*Document)
+			// next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
 
 			continue
 		}
