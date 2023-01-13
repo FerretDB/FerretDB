@@ -90,17 +90,11 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 
 	var args []any
 
-	var pushdown bool
-
 	if sp.Filter != nil {
 		var where string
 
 		where, args = prepareWhereClause(sp.Filter)
 		query += where
-
-		if where != "" {
-			pushdown = true
-		}
 	}
 
 	if err != nil {
@@ -132,8 +126,6 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 	if len(plans) == 0 {
 		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
-
-	plans[0]["pushdown"] = pushdown
 
 	res = convertJSON(plans[0]).(*types.Document)
 
@@ -211,7 +203,6 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-// If the filters provided in params resulted in pushdown, it returns true.
 func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
 	var query string
 
