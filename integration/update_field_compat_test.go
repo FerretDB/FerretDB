@@ -669,7 +669,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"DocFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
 		"DocumentFieldNotExist": {
 			update:        bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
@@ -677,7 +676,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"ArrayFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1661",
 		},
 		"ArrayFieldNotExist": {
 			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},

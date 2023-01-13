@@ -179,7 +179,10 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		err := doc.SetByPath(path, setValue)
 		if err != nil {
-			return false, err
+			return false, NewWriteErrorMsg(
+				ErrUnsuitableValueType,
+				err.Error(),
+			)
 		}
 
 		changed = true
