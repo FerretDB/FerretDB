@@ -87,9 +87,9 @@ func TestGetMore(t *testing.T) {
 			},
 			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
 		},
-		"BatchSizeMaxInt32": {
+		"BatchSizeMaxInt64": {
 			command: bson.D{
-				{"batchSize", math.MaxInt32},
+				{"batchSize", math.MaxInt64},
 				{"collection", collection.Name()},
 			},
 		},
