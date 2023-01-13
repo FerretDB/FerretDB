@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -68,20 +69,33 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
-		if err = firstBatch.Append(doc); err != nil {
-			return nil, err
+	batchSize := len(resDocs)
+	if len(resDocs) > int(params.BatchSize) {
+		batchSize = int(params.BatchSize)
+	}
+
+	firstBatch := types.MakeArray(batchSize)
+	resultDocumentsArray := types.MakeArray(0)
+
+	for i := 0; i < len(resDocs); i++ {
+		if i < batchSize {
+			firstBatch.Append(resDocs[i])
+		} else {
+			resultDocumentsArray.Append(resDocs[i])
 		}
+	}
+
+	if resultDocumentsArray.Len() > 0 {
+		conninfo.Get(ctx).SetCursor(fp.DB+"."+fp.Collection, resultDocumentsArray.Iterator())
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
+				"id", int64(1),
 				"ns", fp.DB+"."+fp.Collection,
+				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
 		))},

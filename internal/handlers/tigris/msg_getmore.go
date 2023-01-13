@@ -16,11 +16,13 @@ package tigris
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -31,8 +33,13 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "comment"); err != nil {
+	if err = common.Unimplemented(document, "comment", "maxTimeMS"); err != nil {
 		return nil, err
+	}
+
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	cursorID, err := common.GetRequiredParam[int64](document, "getMore")
@@ -49,26 +56,54 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	batchSize, err := common.GetOptionalParam(document, "batchSize", int32(0))
+	batchSize, err := common.GetOptionalParam(document, "batchSize", int32(common.DefaultBatchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	maxTimeMS, err := common.GetOptionalPositiveNumber(document, "maxTimeMS")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	fmt.Println(collection, batchSize, maxTimeMS)
 
 	info := conninfo.Get(ctx)
 
-	cur := info.Cursor(collection)
+	cur := info.Cursor(db + "." + collection)
 	if cur == nil {
 		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
 	}
 
+	resDocs := types.MakeArray(0)
+
+	var done bool
+	for i := 0; i < int(batchSize); i++ {
+		_, doc, err := cur.Next()
+		if err != nil {
+			if err == iterator.ErrIteratorDone {
+				done = true
+				break
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		resDocs.Append(doc)
+	}
+
+	id := int64(1)
+	if done {
+		id = 0
+	}
+
 	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"id", id,
+				"ns", collection,
+				"nextBatch", resDocs,
+			)),
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return &reply, nil
 }
