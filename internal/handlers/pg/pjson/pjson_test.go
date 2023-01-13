@@ -194,7 +194,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 			if !ok {
 				t.Skip()
 			}
-			if err := d.ValidateData(false); err != nil {
+			if err := d.ValidateData(); err != nil {
 				t.Skip()
 			}
 		}

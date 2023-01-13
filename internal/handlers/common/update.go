@@ -506,6 +506,15 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		switch {
 		case err == nil:
+			if multiplied, ok := multiplied.(float64); ok && math.IsInf(multiplied, 0) {
+				return false, NewCommandErrorMsg(
+					ErrBadValue,
+					fmt.Sprintf("update produces invalid value: { %q: %f } "+
+						"(update operations that produce infinity values are not allowed)", path, multiplied,
+					),
+				)
+			}
+
 			err = doc.SetByPath(path, multiplied)
 			if err != nil {
 				return false, NewWriteErrorMsg(

@@ -32,9 +32,8 @@ func TestDocumentValidateData(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		doc      *Document
-		isUpdate bool
-		reason   error
+		doc    *Document
+		reason error
 	}{
 		"Valid": {
 			doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
@@ -103,15 +102,8 @@ func TestDocumentValidateData(t *testing.T) {
 			)),
 			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not supported)`),
 		},
-		"InfFromUpdate": {
-			doc:      must.NotFail(NewDocument("v", math.Inf(1))),
-			isUpdate: true,
-			reason: errors.New(`update produces invalid value: { "v": +Inf } ` +
-				`(update operations that produce infinity values are not allowed)`),
-		},
 		"NegativeZeroFromUpdate": {
-			doc:      must.NotFail(NewDocument("v", math.Copysign(0, -1))),
-			isUpdate: true,
+			doc: must.NotFail(NewDocument("v", math.Copysign(0, -1))),
 			reason: errors.New(`update produces invalid value: { "v": -0 } ` +
 				`(-0 is not supported)`),
 		},
@@ -120,7 +112,7 @@ func TestDocumentValidateData(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			err := tc.doc.ValidateData(tc.isUpdate)
+			err := tc.doc.ValidateData()
 			if tc.reason == nil {
 				assert.NoError(t, err)
 			} else {

@@ -29,7 +29,7 @@ import (
 // If database or collection does not exist, it will be created.
 // If the document is not valid, it returns *types.ValidationError.
 func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
-	if err := doc.ValidateData(false); err != nil {
+	if err := doc.ValidateData(); err != nil {
 		return err
 	}
 
