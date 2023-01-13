@@ -62,6 +62,12 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 					}
 					opts := options.Find().SetSort(sort)
 
+					var batchSize int32
+					if tc.batchSize != 0 {
+						batchSize = int32(tc.batchSize)
+					}
+					opts = options.Find().SetBatchSize(batchSize)
+
 					targetResult, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
 					compatResult, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
 
@@ -88,7 +94,17 @@ func TestGetMore(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryGetMoreCompatTestCase{
-		"getMore": {},
+		"getMore": {
+			batchSize: 200,
+		},
+		"getMoreWithLimitLessThanBatch": {
+			batchSize: 200,
+			limit:     100,
+		},
+		"getMoreWithLimitGreaterThanBatch": {
+			batchSize: 200,
+			limit:     300,
+		},
 	}
 
 	testGetMoreCompat(t, testCases)

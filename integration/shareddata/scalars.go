@@ -17,6 +17,7 @@ package shareddata
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -365,10 +366,12 @@ func tigrisSchema(typeString string) string {
 }
 
 func generateBigMap(count int) map[string]any {
+	rand.Seed(time.Now().UnixNano())
+
 	res := make(map[string]any, count)
 
 	for i := 0; i < count; i++ {
-		res[fmt.Sprintf("key-%d", i)] = fmt.Sprintf("value-%d", i)
+		res[fmt.Sprintf("key-%d", i)] = rand.Int31()
 	}
 
 	return res
@@ -380,8 +383,8 @@ var Int32BigAmounts = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int32"`),
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties":{"v": {"type": "number"}}`),
 		},
 	},
-	data: generateBigMap(5000),
+	data: generateBigMap(1000),
 }
