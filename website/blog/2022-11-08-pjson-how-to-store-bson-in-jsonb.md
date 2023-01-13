@@ -31,13 +31,13 @@ In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`
 
 {“foo”: “bar”}
 
-|          |          |
-|----------|----------|
-| \x12\x00\x00\x00 | Document length in little-endian int32 (18 bytes document) |
-| \x02 | string field type `\x02`, see the [BSON spec](https://bsonspec.org/spec.html) |
-| foo\x00 | Cstring field name |
+|                         |                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| \x12\x00\x00\x00        | Document length in little-endian int32 (18 bytes document)                                                            |
+| \x02                    | string field type `\x02`, see the [BSON spec](https://bsonspec.org/spec.html "")                                      |
+| foo\x00                 | Cstring field name                                                                                                    |
 | \x04\x00\x00\x00bar\x00 | String length in little-endian int32 `\x04\x00\x00\x00` (4 bytes string) followed by string value and trailing `\x00` |
-| \x00 | Document terminator |
+| \x00                    | Document terminator                                                                                                   |
 
 You notice that BSON is binary serialized so it is not human readable.
 It contains information about the length, and an explicitly defined field type.
@@ -77,20 +77,20 @@ The duplicate fields are not allowed in PJSON.
 The `$` prefixes apply to types that are not native to JSON.
 The current mappings to PJSON are defined below.
 
-|          |          |
-|----------|----------|
-| Document | `{“$k”: [“<key 1>”, “<key 2>”, …], “<key 1>”: <value 1>, “<key 2>”: <value 2>, …}` |
-| Array    | JSON array |
-| 64-bit binary floating point |  `{“$f”: JSON number}`|
-| UTF-8 string | JSON string |
-| Binary data | `{“$b”: “<base 64 string>”, “s”: <subtype number>}` // s is binary subtype, the detail is found in the BSON spec|
-| ObjectId       | `{“$o”: “<ObjectID as 24 character hex string”}` |
-| Boolean        | JSON true / false values |
-| UTC datetime   | `{“$d”: milliseconds since epoch as JSON number}` |
-| Null           | JSON null |
-| Regular expression | `{“$r”: “<string without terminating 0x0>”, “o”: “<string without terminating 0x0>”}` |
-| Timestamp      | `{“$t”: “<number as string>”}` |
-| 64-bit integer | `{“$l”: “<number as string>”}` |
+|                              |                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Document                     | `{“$k”: [“<key 1>”, “<key 2>”, …], “<key 1>”: <value 1>, “<key 2>”: <value 2>, …}`                               |
+| Array                        | JSON array                                                                                                       |
+| 64-bit binary floating point | `{“$f”: JSON number}`                                                                                            |
+| UTF-8 string                 | JSON string                                                                                                      |
+| Binary data                  | `{“$b”: “<base 64 string>”, “s”: <subtype number>}` // s is binary subtype, the detail is found in the BSON spec |
+| ObjectId                     | `{“$o”: “<ObjectID as 24 character hex string”}`                                                                 |
+| Boolean                      | JSON true / false values                                                                                         |
+| UTC datetime                 | `{“$d”: milliseconds since epoch as JSON number}`                                                                |
+| Null                         | JSON null                                                                                                        |
+| Regular expression           | `{“$r”: “<string without terminating 0x0>”, “o”: “<string without terminating 0x0>”}`                            |
+| Timestamp                    | `{“$t”: “<number as string>”}`                                                                                   |
+| 64-bit integer               | `{“$l”: “<number as string>”}`                                                                                   |
 
 In addition to `$` prefixes, binary data have an additional field `s`  to indicate the type of binary.
 Also, regular expressions have an additional field `o` to specify options such as case sensitivity.
@@ -181,26 +181,26 @@ This happened because it was the first document inserted into the `groceries` co
 And a new document was inserted to a new generated table `groceries_6a5f9564`.
 
 ```js
-ferretdb=# \d test._ferretdb_settings 
+ferretdb=# \d test._ferretdb_settings
           Table "test._ferretdb_settings"
-  Column  | Type  | Collation | Nullable | Default 
+  Column  | Type  | Collation | Nullable | Default
 ----------+-------+-----------+----------+---------
- settings | jsonb |           |          | 
+ settings | jsonb |           |          |
 ferretdb=# SELECT settings FROM test._ferretdb_settings;
-                                             settings                                             
+                                             settings
 --------------------------------------------------------------------------------------------------
  {"$k": ["collections"], "collections": {"$k": ["groceries"], "groceries": "groceries_6a5f9564"}}
 (1 row)
 ```
 
 ```js
-ferretdb=# \d test.groceries_6a5f9564 
+ferretdb=# \d test.groceries_6a5f9564
          Table "test.groceries_6a5f9564"
- Column | Type  | Collation | Nullable | Default 
+ Column | Type  | Collation | Nullable | Default
 --------+-------+-----------+----------+---------
- _jsonb | jsonb |           |          | 
+ _jsonb | jsonb |           |          |
 ferretdb=# SELECT _jsonb FROM test.groceries_6a5f9564;
-                                                    _jsonb                                                     
+                                                    _jsonb
 ---------------------------------------------------------------------------------------------------------------
  {"$k": ["_id", "name", "quantity"], "_id": {"$o": "635202c8f75e487c16adc141"}, "name": "milk", "quantity": 3}
 (1 row)
