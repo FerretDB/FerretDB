@@ -25,12 +25,8 @@ env:
   GOPROXY: https://proxy.golang.org
 
 jobs:
-  build:
-    # We can't easily download build results from the Docs workflow:
-    # https://github.com/actions/download-artifact/issues/172
-    # Just build them again instead.
-
-    name: Build preview docs
+  preview:
+    name: Preview docs
     runs-on: ubuntu-22.04
 
     # FIXME enable
@@ -39,7 +35,14 @@ jobs:
     #   !contains(github.event.pull_request.labels.*.name, 'no ci') &&
     #   contains(github.event.pull_request.labels.*.name, 'documentation')
 
+    environment:
+      name: cloudflare-dev
+
     steps:
+      # We can't easily download build results from the Docs workflow:
+      # https://github.com/actions/download-artifact/issues/172
+      # Just build them again instead.
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -67,37 +70,12 @@ jobs:
       - name: Build docs
         run: bin/task docs
 
-      - name: Upload archive artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: website
-          path: website/build
-          if-no-files-found: error
-
       - name: Check dirty
         run: |
           git status
           git diff --exit-code
 
-  cloudflare:
-    name: Deploy to Cloudflare Pages
-    runs-on: ubuntu-22.04
-
-    needs: build
-
-    # FIXME enable
-    # if: >
-    #   contains(github.event.pull_request.labels.*.name, 'trust') &&
-    #   !contains(github.event.pull_request.labels.*.name, 'no ci') &&
-    #   contains(github.event.pull_request.labels.*.name, 'documentation')
-
-    environment:
-      name: cloudflare-dev
-
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: website
-          timeout: 300000 # 5*60*1000 milliseconds
-
-      - run: ls -lR
+      - run: bin/task docs-cloudflare-preview
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

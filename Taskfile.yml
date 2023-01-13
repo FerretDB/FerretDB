@@ -440,10 +440,10 @@ tasks:
       - task: docker-push
         vars:
           DOCKER_IMAGES: >
-              ferretdb/ferretdb:latest,
-              ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
-              ghcr.io/ferretdb/ferretdb:latest,
-              ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
+            ferretdb/ferretdb:latest,
+            ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
+            ghcr.io/ferretdb/ferretdb:latest,
+            ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
     vars:
       VERSION:
         sh: cat build/version/version.txt
@@ -496,3 +496,7 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+
+  docs-cloudflare-preview:
+    cmds:
+      - docker compose run --rm wrangler pages deployment create --project-name=docs website/build

@@ -159,8 +159,12 @@ services:
     container_name: ferretdb_ferretdb-wrangler
     ports:
       - 8976:8976 # simplifies authentication for testing
+    environment:
+      - CLOUDFLARE_ACCOUNT_ID
+      - CLOUDFLARE_API_TOKEN
+      - WRANGLER_SEND_METRICS=false
     volumes:
-      - ./website/build:/workdir
+      - .:/workdir # mount everything for wrangler to pick up branch name, commit hash, etc from git
   docusaurus-docs:
     build:
       context: ./build/deps
