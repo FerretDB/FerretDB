@@ -42,12 +42,6 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
         },
-        blog: {
-          blogTitle: 'FerretDB Blog',
-          showReadingTime: true,
-          authorsMapPath: 'authors.yml',
-          postsPerPage: 8,
-        },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -71,11 +65,11 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          // {
-          //   to: '/blog',
-          //   label: 'Blog',
-          //   position: 'left'
-          // },
+          {
+            href: 'https://blog.ferertdb.io/',
+            label: 'Blog',
+            position: 'left'
+          },
           {
             href: 'https://github.com/FerretDB/',
             label: 'GitHub',
@@ -119,10 +113,10 @@ const config = {
           {
             title: 'More',
             items: [
-              // {
-              //   label: 'Blog',
-              //   to: 'https://www.ferretdb.io/blog/',
-              // },
+              {
+                label: 'Blog',
+                to: 'https://blog.ferretdb.io/',
+              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',
