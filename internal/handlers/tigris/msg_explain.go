@@ -53,8 +53,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	queryFilter := string(h.db.BuildFilter(filter))
+
 	queryPlanner := must.NotFail(types.NewDocument(
-		"Filter", string(h.db.BuildFilter(filter)),
+		"Filter", queryFilter,
 	))
 
 	hostname, err := os.Hostname()
@@ -79,7 +81,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", false, // TODO https://github.com/FerretDB/FerretDB/issues/1279
+			"pushdown", queryFilter != "{}", // TODO https://github.com/FerretDB/FerretDB/issues/1279
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
