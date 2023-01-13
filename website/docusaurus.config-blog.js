@@ -27,8 +27,7 @@ const config = {
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
-        indexDocs: false,
-        indexBlog: true,
+        indexBlog: true, // Index blog posts in search engine
       },
     ],
   ],
@@ -81,6 +80,11 @@ const config = {
             label: 'GitHub',
             position: 'right',
           },
+          {
+            href: 'https://ferretdb.io/',
+            label: 'Go to FerretDB.io',
+            position: 'right',
+          },
         ],
       },
       footer: {
@@ -119,10 +123,6 @@ const config = {
           {
             title: 'More',
             items: [
-              // {
-              //   label: 'Blog',
-              //   to: 'https://www.ferretdb.io/blog/',
-              // },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',
