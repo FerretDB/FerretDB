@@ -288,7 +288,6 @@ func insertByPath(doc *Document, path Path) error {
 			next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
 
 			continue
-
 		}
 
 		next = v
