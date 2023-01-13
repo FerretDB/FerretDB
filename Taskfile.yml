@@ -440,10 +440,10 @@ tasks:
       - task: docker-push
         vars:
           DOCKER_IMAGES: >
-              ferretdb/ferretdb:latest,
-              ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
-              ghcr.io/ferretdb/ferretdb:latest,
-              ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
+            ferretdb/ferretdb:latest,
+            ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
+            ghcr.io/ferretdb/ferretdb:latest,
+            ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
     vars:
       VERSION:
         sh: cat build/version/version.txt
@@ -487,7 +487,7 @@ tasks:
 
   blog:
     desc: "Format, lint and build blog"
-    deps: [ docs-fmt ]
+    deps: [docs-fmt]
     cmds:
       - docker compose run --rm docusaurus-blog build
 
@@ -504,6 +504,6 @@ tasks:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
 
   blog-dev:
-      desc: "Start blog development server"
-      cmds:
-        - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0
+    desc: "Start blog development server"
+    cmds:
+      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0
