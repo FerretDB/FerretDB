@@ -15,103 +15,81 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
-
-type queryGetMoreCompatTestCase struct {
-	sort      bson.D
-	batchSize int
-	limit     int
-}
-
-func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTestCase) {
-	t.Helper()
-
-	res := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers: []shareddata.Provider{
-			shareddata.Int32BigAmounts,
-		},
-	})
-
-	ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
-
-	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
-			t.Parallel()
-
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
-
-					sort := tc.sort
-					if sort == nil {
-						sort = bson.D{{"_id", 1}}
-					}
-					opts := options.Find().SetSort(sort)
-
-					var batchSize int32
-					if tc.batchSize != 0 {
-						batchSize = int32(tc.batchSize)
-					}
-					opts = opts.SetBatchSize(batchSize)
-
-					var limit int64
-					if tc.limit != 0 {
-						limit = int64(tc.limit)
-					}
-					opts = opts.SetLimit(limit)
-
-					targetResult, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
-					compatResult, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
-
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						return
-					}
-					require.NoError(t, compatResult.Err(), "compat error; target returned no error")
-
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetResult.All(ctx, &targetRes))
-					require.NoError(t, compatResult.All(ctx, &compatRes))
-
-					assert.Equal(t, len(compatRes), len(targetRes), "result length mismatch")
-				})
-			}
-		})
-	}
-}
 
 func TestGetMore(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]queryGetMoreCompatTestCase{
-		"getMore": {
-			batchSize: 200,
-		},
-		"getMoreWithLimitLessThanBatch": {
-			batchSize: 200,
-			limit:     100,
-		},
-		"getMoreWithLimitGreaterThanBatch": {
-			batchSize: 200,
-			limit:     300,
-		},
-	}
+	ctx, collection := setup.Setup(t)
 
-	testGetMoreCompat(t, testCases)
+	for name, tc := range map[string]struct {
+		err        *mongo.CommandError
+		altMessage string
+		command    bson.D
+	}{
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"getMore", collection.Name()},
+				{"batchSize", int32(-1)},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"BatchSizeZero": {
+			command: bson.D{
+				{"getMore", int64(0)},
+				{"batchSize", int32(0)},
+				{"collection", collection.Name()},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '0'",
+			},
+		},
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"getMore", collection.Name()},
+				{"batchSize", bson.D{}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+		},
+		"BatchSizeMaxInt32": {
+			command: bson.D{
+				{"getMore", collection.Name()},
+				{"batchSize", math.MaxInt32},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if tc.err != nil {
+				require.Error(t, err)
+				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
