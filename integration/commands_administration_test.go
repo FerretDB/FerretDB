@@ -797,21 +797,21 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			cmds: []bson.D{
 				{{"ping", int32(1)}},
 			},
-			metricsPath:     types.NewPath([]string{"metrics", "commands", "ping"}),
+			metricsPath:     types.NewPath("metrics", "commands", "ping"),
 			expectedNonZero: []string{"total"},
 		},
 		"UpdateCmd": {
 			cmds: []bson.D{
 				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
 			},
-			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			metricsPath:     types.NewPath("metrics", "commands", "update"),
 			expectedNonZero: []string{"total"},
 		},
 		"UpdateCmdFailed": {
 			cmds: []bson.D{
 				{{"update", int32(1)}},
 			},
-			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			metricsPath:     types.NewPath("metrics", "commands", "update"),
 			expectedNonZero: []string{"failed", "total"},
 		},
 	} {

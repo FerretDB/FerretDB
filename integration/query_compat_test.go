@@ -79,6 +79,19 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					// https://github.com/FerretDB/FerretDB/issues/1279
 					_ = tc.resultPushdown
 
+					var targetExplain bson.D
+
+					targetExplainQuery := bson.D{{"explain", bson.D{
+						{"find", targetCollection.Name()},
+						{"filter", filter},
+						{"sort", opts.Sort},
+						{"projection", opts.Projection},
+					}}}
+
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, targetExplainQuery).Decode(&targetExplain))
+
+					assert.Equal(t, tc.resultPushdown, targetExplain.Map()["pushdown"])
+
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
 
