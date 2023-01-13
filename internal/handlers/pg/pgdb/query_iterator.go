@@ -92,3 +92,8 @@ func (iter *queryIterator) Close() {
 		}
 	})
 }
+
+// check interfaces
+var (
+	_ iterator.Interface[uint32, *types.Document] = (*queryIterator)(nil)
+)

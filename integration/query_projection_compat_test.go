@@ -18,26 +18,23 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
-	// TODO Add Tigris-compatible array to shareddata.Composites
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1704")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
 		"FindProjectionInclusions": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"foo", int32(1)}, {"42", true}},
-			resultPushdown: true,
+			filter:        bson.D{{"_id", "document-composite"}},
+			projection:    bson.D{{"foo", int32(1)}, {"42", true}},
+			skipForTigris: "Tigris does not support field names started from numbers (`42`)",
+      resultPushdown: true,
 		},
 		"FindProjectionExclusions": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"foo", int32(0)}, {"array", false}},
-			resultPushdown: true,
+			filter:        bson.D{{"_id", "document-composite"}},
+			projection:    bson.D{{"foo", int32(0)}, {"array", false}},
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+      resultPushdown: true,
 		},
 	}
 

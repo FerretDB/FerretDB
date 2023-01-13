@@ -34,6 +34,7 @@ type queryCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // deafault to false
 	skipForTigris  string                   // skip test for Tigris
+	skip           string                   // skip test for all backends, myst have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -51,6 +52,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 			if tc.skipForTigris != "" {
 				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
 			}
 
 			t.Parallel()
