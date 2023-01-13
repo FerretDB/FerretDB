@@ -44,3 +44,8 @@ func (iter *arrayIterator) Next() (int, any, error) {
 
 // Close implements iterator.Interface.
 func (iter *arrayIterator) Close() {}
+
+// check interfaces
+var (
+	_ iterator.Interface[int, any] = (*arrayIterator)(nil)
+)

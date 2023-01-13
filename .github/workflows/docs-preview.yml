@@ -43,14 +43,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0 # for wrangler to work
           lfs: true
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Check LFS status
-        if: false # TODO https://github.com/ActionsDesk/lfs-warning/issues/147
         uses: actionsdesk/lfs-warning@v3.2
         with:
-          filesizelimit: 1MB
+          filesizelimit: 102400b
+          labelName: use-git-lfs
+          exclusionPatterns: |
+            **/*.js
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
