@@ -178,11 +178,8 @@ services:
       - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
       - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
 
-      # We don't copy src/pages/index.js for docs as we have an index page defined through slug
-      # However, we copy intro.js to redirect from /intro (old default docs page) to the root docs page.
+      # We copy intro.js to redirect from /intro (old default docs page) to the root docs page.
       - ./website/src/pages/intro.js:/workdir/docusaurus-docs/src/pages/intro.js
-      - ./website/src/pages/index.module.css:/workdir/docusaurus-docs/src/pages/index.module.css:ro
-      - ./website/src/pages/markdown-page.md:/workdir/docusaurus-docs/src/pages/markdown-page.md:ro
 
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
       - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
@@ -201,10 +198,6 @@ services:
       - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
       - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
-
-      # We don't copy src/pages/index.js for blog, https://docusaurus.io/docs/blog#blog-only-mode
-      - ./website/src/pages/index.module.css:/workdir/docusaurus-docs/src/pages/index.module.css:ro
-      - ./website/src/pages/markdown-page.md:/workdir/docusaurus-docs/src/pages/markdown-page.md:ro
 
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
       - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
