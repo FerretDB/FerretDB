@@ -38,6 +38,7 @@ jobs:
       # We can't easily download build results from the Docs workflow:
       # https://github.com/actions/download-artifact/issues/172
       # Just build them again instead.
+      # That also allows us to pass branch name, commit hash, etc from git to wrangler.
 
       - name: Checkout code
         uses: actions/checkout@v3
