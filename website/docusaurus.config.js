@@ -27,7 +27,8 @@ const config = {
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
-        indexDocs: true, // Index docs in search engine
+        indexBlog: true, // Index blog posts in search engine
+        indexDocs: true, // Blog plugin is disabled, blog search needs to be disabled too
       },
     ],
   ],
