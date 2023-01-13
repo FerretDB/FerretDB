@@ -3,6 +3,7 @@ slug: new-release-ferretdb-0-4-0
 title: "New release: FerretDB 0.4.0!"
 author: Peter Farkas
 image: ../static/img/blog/4ferrets.webp
+tags: [release]
 date: 2022-06-28
 ---
 

@@ -2,6 +2,7 @@
 slug: ferretdb-v-0-1-1-is-out-and-other-exciting-updates
 title: "FerretDB v.0.1.1 is out, and other exciting updates"
 author: Peter Farkas
+tags: [release]
 date: 2022-04-18
 ---
 

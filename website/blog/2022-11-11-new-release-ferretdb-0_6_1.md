@@ -3,6 +3,7 @@ slug: new-release-ferretdb-0_6_1
 title: "New release: FerretDB 0.6.1!"
 author: Alexander Fashakin
 image: ../static/img/blog/six_ferrets-1024x917.jpg
+tags: [release]
 date: 2022-11-11
 ---
 

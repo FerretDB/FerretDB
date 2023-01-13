@@ -3,6 +3,7 @@ slug: ferretdb-new-release-with-tls
 title: "FerretDB v0.7.1 - Now offering basic TLS support"
 author: Alexander Fashakin
 image: ../static//img/blog/TLS.webp
+tags: [release]
 date: 2022-12-23
 ---
 
