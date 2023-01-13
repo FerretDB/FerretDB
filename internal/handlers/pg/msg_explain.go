@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"os"
 
 	"github.com/jackc/pgx/v4"
@@ -80,21 +79,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	pushdown := true
-
-	if _, err = queryPlanner.GetByPath(types.NewPath("Plan", "Filter")); err != nil {
-		var dpe *types.DocumentPathError
-		if !errors.As(err, &dpe) {
-			panic("err is not DocumentPathError")
-		}
-
-		pushdown = false
-
-		if dpe.Code() != types.ErrDocumentPathKeyNotFound {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -116,7 +100,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", pushdown, // TODO https://github.com/FerretDB/FerretDB/issues/1279
+			"pushdown", queryPlanner.HasByPath(types.NewPath("Plan", "Filter")),
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
