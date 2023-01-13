@@ -681,13 +681,13 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"DocArrFieldNotExist_0": {
+		"DocArrFieldNotExists_0": {
 			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
 		},
-		"DocArrFieldNotExist_1": {
+		"DocArrFieldNotExists_1": {
 			update: bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
 		},
-		"DocArrFieldNotExist_2": {
+		"DocArrFieldNotExists_2": {
 			update: bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
 		},
 		"DocumentField": {
