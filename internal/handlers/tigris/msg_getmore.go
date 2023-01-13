@@ -16,6 +16,7 @@ package tigris
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -71,10 +72,13 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	resDocs := types.MakeArray(0)
 
 	var done bool
+
 	for i := 0; i < int(batchSize); i++ {
-		_, doc, err := cur.Next()
+		var doc any
+
+		_, doc, err = cur.Next()
 		if err != nil {
-			if err == iterator.ErrIteratorDone {
+			if errors.Is(err, iterator.ErrIteratorDone) {
 				done = true
 				break
 			}
@@ -91,6 +95,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var reply wire.OpMsg
+
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
