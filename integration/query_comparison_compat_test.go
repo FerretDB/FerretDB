@@ -138,7 +138,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 				}},
 			}}},
 			skipForTigris: "Tigris does not support mixed types in arrays",
-			resultType: emptyResult,
+			resultType:    emptyResult,
 		},
 		"DocumentDotNotation": {
 			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
