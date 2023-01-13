@@ -40,6 +40,7 @@ jobs:
 
       # This step will fail with "Error: Resource not accessible by integration"
       # while trying to add label and comment to PR, that is not possible for PRs from forks.
+      # See https://github.com/ActionsDesk/lfs-warning/issues/147.
       # But the real issue will be right above that message: a list of files that should be added using Git LFS.
       - name: Check LFS status
         uses: actionsdesk/lfs-warning@v3.2

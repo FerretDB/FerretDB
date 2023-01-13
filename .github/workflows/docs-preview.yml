@@ -31,10 +31,6 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'no ci') &&
       contains(github.event.pull_request.labels.*.name, 'documentation')
 
-    permissions:
-      contents: read
-      pull-requests: write # for lfs-warning to add label
-
     environment:
       name: cloudflare-dev
 
@@ -51,13 +47,7 @@ jobs:
           lfs: true
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Check LFS status
-        uses: actionsdesk/lfs-warning@v3.2
-        with:
-          filesizelimit: 102400b
-          labelName: use-git-lfs
-          exclusionPatterns: |
-            **/*.js
+      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
