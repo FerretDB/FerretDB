@@ -9,6 +9,7 @@ tags: [Ferretdb]
 ![MangoDB: Enthusiasm for Truly Open Source MongoDB Replacement](https://www.ferretdb.io/wp-content/uploads/2022/02/home-img.jpg)
 
 <!--truncate-->
+<!--wip-->
 
 Earlier this week, we unveiled our vision for MangoDB, the Truly Open Source MongoDB Replacement, which allows developers to use the powerful MongoDB interface while storing data in PostgreSQL.
 
