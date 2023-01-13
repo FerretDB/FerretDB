@@ -129,6 +129,7 @@ func (p Path) TrimSuffix() Path {
 	if p.Len() <= 1 {
 		panic("path should have more than 1 element")
 	}
+
 	return NewPath(p.s[:p.Len()-1]...)
 }
 
@@ -137,6 +138,7 @@ func (p Path) TrimPrefix() Path {
 	if p.Len() <= 1 {
 		panic("path should have more than 1 element")
 	}
+
 	return NewPath(p.s[1:]...)
 }
 
