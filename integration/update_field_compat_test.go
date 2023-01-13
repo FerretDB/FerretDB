@@ -675,20 +675,24 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
 		"ArrayFieldExist": {
-			update: bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
 		"ArrayFieldNotExist": {
 			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
 		"DocArrFieldNotExists_0": {
-			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1791",
 		},
 		"DocArrFieldNotExists_1": {
-			update: bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1791",
 		},
 		"DocArrFieldNotExists_2": {
-			update: bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1791",
 		},
 		"DocumentField": {
 			update:        bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
