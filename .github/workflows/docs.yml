@@ -13,10 +13,10 @@ on:
   schedule:
     - cron: "42 3 * * *" # after Integration workflow
 
-# Do not run this workflow in parallel for any PR change
-# to prevent triggering Vercel's rate limits.
+# Do not run this workflow in parallel for any PR change or branch push
+# to prevent concurrent deployments to GitHub Pages.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 
 env:
   GOPATH: /home/runner/go
@@ -79,8 +79,8 @@ jobs:
           git status
           git diff --exit-code
 
-  pages:
-    name: Deploy to Pages
+  github:
+    name: Deploy to GitHub Pages
     runs-on: ubuntu-22.04
 
     # deploy only on push to main; exclude pull_request and schedule
@@ -92,7 +92,7 @@ jobs:
       id-token: write
 
     environment:
-      name: pages
+      name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
