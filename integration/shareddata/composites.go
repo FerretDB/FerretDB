@@ -149,8 +149,87 @@ var ArrayStrings = &Values[string]{
 	},
 	data: map[string]any{
 		"array-string-desc":      bson.A{"c", "b", "a"},
-		"array-string-duplicate": bson.A{"b", "a", "b"},
+		"array-string-duplicate": bson.A{"b", "foo", "b"},
+		"array-string-numbers":   bson.A{"42", "0", "42.13"},
 		"array-string-nil":       nil,
 		"array-string-empty":     bson.A{},
+	},
+}
+
+// ArrayDoubles contains an array with float64 values for tests.
+var ArrayDoubles = &Values[string]{
+	name:     "ArrayDoubles",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "array", "items": {"type": "number"}},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-double-desc":      bson.A{float64(40), float64(15), float64(10)},
+		"array-double-duplicate": bson.A{float64(10), float64(10), float64(20)},
+		"array-double-nil":       nil,
+		"array-double-empty":     bson.A{},
+	},
+}
+
+// ArrayInt32s contains an array with int32 values for tests.
+var ArrayInt32s = &Values[string]{
+	name:     "ArrayInt32s",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "array", "items": {"type": "integer", "format": "int32"}},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-int32-one":   bson.A{int32(42)},
+		"array-int32-two":   bson.A{int32(42), int32(42)},
+		"array-int32-three": bson.A{int32(42), int32(43), int32(42)},
+		"array-int32-nil":   nil,
+		"array-int32-empty": bson.A{},
+	},
+}
+
+// ArrayRegexes contains an array with regex values for tests.
+var ArrayRegexes = &Values[string]{
+	name:     "ArrayRegexes",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "array", "items": 
+						{
+							"type": "object", 
+							"properties": {
+								"$r": {"type": "string"},
+								"o": {"type": "string"}
+							}
+						}
+					},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-regex": bson.A{primitive.Regex{Pattern: "foo", Options: "i"}, primitive.Regex{Pattern: "foo", Options: "i"}},
 	},
 }
