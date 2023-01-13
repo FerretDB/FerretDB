@@ -39,14 +39,14 @@ func TestGetMore(t *testing.T) {
 		id         any
 	}{
 		"InvalidCursorID": {
-			id: int64(1),
+			id: int64(2),
 			command: bson.D{
 				{"collection", collection.Name()},
 			},
 			err: &mongo.CommandError{
 				Code:    43,
 				Name:    "CursorNotFound",
-				Message: "cursor id 1 not found",
+				Message: "cursor id 2 not found",
 			},
 		},
 		"CursorIdInt32": {
