@@ -159,10 +159,12 @@ func TestQueryCompat(t *testing.T) {
 			filter: bson.D{},
 		},
 		"IDString": {
-			filter: bson.D{{"_id", "string"}},
+			filter:         bson.D{{"_id", "string"}},
+			resultPushdown: true,
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
+			filter:         bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown: true,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
