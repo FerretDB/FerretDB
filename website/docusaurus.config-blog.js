@@ -6,10 +6,10 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'FerretDB Documentation',
+  title: 'FerretDB Blog',
   tagline: 'A truly Open Source MongoDB alternative',
 
-  url: 'https://docs.ferretdb.io',
+  url: 'https://blog.ferretdb.io',
   baseUrl: '/',
 
   favicon: 'img/favicon.ico',
@@ -27,7 +27,8 @@ const config = {
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
-        indexBlog: false,
+        indexDocs: false,
+        indexBlog: true,
       },
     ],
   ],
@@ -37,16 +38,16 @@ const config = {
       'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
-        docs: {
-          routeBasePath: '/',
-          sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
-        },
+        docs: false,
         blog: {
+          routeBasePath: '/',
           blogTitle: 'FerretDB Blog',
           showReadingTime: true,
           authorsMapPath: 'authors.yml',
           postsPerPage: 8,
+
+          blogSidebarTitle: 'All posts',
+          blogSidebarCount: 'ALL',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -66,16 +67,15 @@ const config = {
         },
         items: [
           {
-            type: 'doc',
-            docId: 'intro',
+            to: '/',
+            label: 'Blog',
+            position: 'left'
+          },
+          {
+            href: 'https://docs.ferretdb.io/',
             position: 'left',
             label: 'Documentation',
           },
-          // {
-          //   to: '/blog',
-          //   label: 'Blog',
-          //   position: 'left'
-          // },
           {
             href: 'https://github.com/FerretDB/',
             label: 'GitHub',
@@ -90,8 +90,8 @@ const config = {
             title: 'FerretDB Docs',
             items: [
               {
+                href: 'https://docs.ferretdb.io/',
                 label: 'Documentation',
-                to: '/intro/',
               },
             ],
           },
