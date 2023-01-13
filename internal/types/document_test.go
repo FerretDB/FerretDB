@@ -145,21 +145,30 @@ func TestDocument(t *testing.T) {
 				)),
 			},
 			{
-				name:     "path does not exist in empty array - index 0",
+				name:     "extend empty array with document",
 				document: must.NotFail(NewDocument("v", must.NotFail(NewArray()))),
-				key:      "v.0.foo",
+				key:      "v.2.foo",
 				value:    "bar",
 				expected: must.NotFail(NewDocument(
-					"v", must.NotFail(NewArray(must.NotFail(NewDocument("foo", "bar")))),
+					"v", must.NotFail(NewArray(Null, Null, must.NotFail(NewDocument("foo", "bar")))),
 				)),
 			},
 			{
-				name:     "path does not exist in empty array - index 1",
-				document: must.NotFail(NewDocument("v", must.NotFail(NewArray()))),
-				key:      "v.1.foo",
+				name:     "extend non-empty array with document",
+				document: must.NotFail(NewDocument("v", must.NotFail(NewArray("a")))),
+				key:      "v.2.foo",
 				value:    "bar",
 				expected: must.NotFail(NewDocument(
-					"v", must.NotFail(NewArray(Null, must.NotFail(NewDocument("foo", "bar")))),
+					"v", must.NotFail(NewArray("a", Null, must.NotFail(NewDocument("foo", "bar")))),
+				)),
+			},
+			{
+				name:     "extend non-empty array with scalar",
+				document: must.NotFail(NewDocument("v", must.NotFail(NewArray("a")))),
+				key:      "v.2",
+				value:    "bar",
+				expected: must.NotFail(NewDocument(
+					"v", must.NotFail(NewArray("a", Null, "bar")),
 				)),
 			},
 		} {

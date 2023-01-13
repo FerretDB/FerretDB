@@ -234,6 +234,7 @@ func removeByPath(v any, path Path) {
 }
 
 // insertByPath inserts missing parts of the path into Document.
+// It "reserves" a place in the given document by setting an empty document or Null value in case of array element.
 func insertByPath(doc *Document, path Path) error {
 	var next any = doc
 
@@ -241,66 +242,66 @@ func insertByPath(doc *Document, path Path) error {
 	for _, pathElem := range path.TrimSuffix().Slice() {
 		insertedPath = insertedPath.Append(pathElem)
 
-		v, err := doc.GetByPath(insertedPath)
-		if err != nil {
-			suffix := len(insertedPath.Slice()) - 1
-			if suffix < 0 {
-				panic("invalid path")
-			}
+		current, err := doc.GetByPath(insertedPath)
+		if err == nil {
+			next = current
+			continue
+		}
 
-			switch v := next.(type) {
-			case *Document:
-				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
-			case *Array:
-				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
-				if err != nil {
-					return newDocumentPathError(
-						ErrDocumentPathCannotCreateField,
-						fmt.Errorf(
-							"Cannot create field '%s' in element {%s: %s}",
-							pathElem,
-							insertedPath.Slice()[suffix-1],
-							FormatAnyValue(v),
-						),
-					)
-				}
+		// If we didn't find the path element, we need to reserve a place.
+		suffix := len(insertedPath.Slice()) - 1
+		if suffix < 0 {
+			panic("invalid path")
+		}
 
-				// if the current pathElem is not the last one, a document is expected to be set at the index,
-				// e.g. for v.0.foo we expect an object like  {"v": [{"foo": "bar"}]},
-				// for v.1.foo we expect an object like {"v": [null, {"foo": "bar"}]}
-				for j := v.Len(); j < ind; j++ {
-					v.Append(Null)
-					// v.Append(must.NotFail(NewDocument()))
-				}
+		switch v := next.(type) {
+		case *Document:
+			v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
+		//	next = v
 
-				//	if i < path.Len()-1 {
-				v.Append(must.NotFail(NewDocument()))
-			//	} else {
-			// v.Append(Null)
-			//	}
-			default:
+		case *Array:
+			ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
+			if err != nil {
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,
 					fmt.Errorf(
 						"Cannot create field '%s' in element {%s: %s}",
 						pathElem,
-						path.Prefix(),
-						FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+						insertedPath.Slice()[suffix-1],
+						FormatAnyValue(v),
 					),
 				)
 			}
 
-			v, err = doc.GetByPath(insertedPath)
-			if err != nil {
-				return err
+			// Append null elements to the empty array spaces until the index is reached.
+			for j := v.Len(); j < ind; j++ {
+				v.Append(Null)
 			}
-			next = v.(*Document)
-			// next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
 
-			continue
+			v.Append(must.NotFail(NewDocument()))
+
+		//	next = v
+
+		default:
+			return newDocumentPathError(
+				ErrDocumentPathCannotCreateField,
+				fmt.Errorf(
+					"Cannot create field '%s' in element {%s: %s}",
+					pathElem,
+					path.Prefix(),
+					FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+				),
+			)
 		}
 
-		next = v
+		v, err := doc.GetByPath(insertedPath)
+		if err != nil {
+			panic("can't get reserved value")
+		}
+
+		next = v.(*Document)
+
+		//	continue
 	}
 
 	return nil
