@@ -79,6 +79,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
+	// if filter was set, it means that pushdown was done
+	pushdown := queryPlanner.HasByPath(types.NewPath("Plan", "Filter"))
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -100,7 +103,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", queryPlanner.HasByPath(types.NewPath("Plan", "Filter")),
+			"pushdown", pushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
