@@ -74,7 +74,7 @@ To do so, we need to set up remotes.
 To check if the local repository is linked with the upstream one, enter this command:
 
 ```js
-git remote -v 
+git remote -v
 ```
 
 If you don’t see your remote repository called origin, you can easily add it with the following command:
