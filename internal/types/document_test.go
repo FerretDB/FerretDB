@@ -144,6 +144,15 @@ func TestDocument(t *testing.T) {
 					)),
 				)),
 			},
+			{
+				name:     "path does not exist in empty array",
+				document: must.NotFail(NewDocument("v", must.NotFail(NewArray()))),
+				key:      "v.0.foo",
+				value:    "bar",
+				expected: must.NotFail(NewDocument(
+					"v", must.NotFail(NewArray("bar")),
+				)),
+			},
 		} {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {

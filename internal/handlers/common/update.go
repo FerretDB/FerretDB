@@ -239,7 +239,10 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 
 		err = doc.SetByPath(path, array)
 		if err != nil {
-			return false, err
+			return false, NewWriteErrorMsg(
+				ErrUnsuitableValueType,
+				err.Error(),
+			)
 		}
 
 		changed = true
@@ -289,7 +292,10 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		// Set new path with old value
 		err = doc.SetByPath(targetPath, val)
 		if err != nil {
-			return changed, err
+			return false, NewWriteErrorMsg(
+				ErrUnsuitableValueType,
+				err.Error(),
+			)
 		}
 
 		changed = true
@@ -347,7 +353,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			if err != nil {
 				return false, NewWriteErrorMsg(
 					ErrUnsuitableValueType,
-					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
+					err.Error(),
 				)
 			}
 

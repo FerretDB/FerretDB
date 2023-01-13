@@ -171,6 +171,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
+
 			next, err = s.Get(index)
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
