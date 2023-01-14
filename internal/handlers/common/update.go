@@ -179,10 +179,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		err := doc.SetByPath(path, setValue)
 		if err != nil {
-			return false, NewWriteErrorMsg(
-				ErrUnsuitableValueType,
-				err.Error(),
-			)
+			return false, err
 		}
 
 		changed = true
@@ -239,10 +236,7 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 
 		err = doc.SetByPath(path, array)
 		if err != nil {
-			return false, NewWriteErrorMsg(
-				ErrUnsuitableValueType,
-				err.Error(),
-			)
+			return false, err
 		}
 
 		changed = true
