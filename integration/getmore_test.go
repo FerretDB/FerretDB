@@ -33,10 +33,10 @@ func TestGetMore(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Int32BigAmounts)
 
 	for name, tc := range map[string]struct {
+		id         any
 		err        *mongo.CommandError
 		altMessage string
 		command    bson.D
-		id         any
 	}{
 		"InvalidCursorID": {
 			id: int64(2),
