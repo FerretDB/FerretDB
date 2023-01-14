@@ -85,7 +85,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
+	id := int64(0)
+
 	if resultDocumentsArray.Len() > 0 {
+		id = 1
+
 		conninfo.Get(ctx).SetCursor(fp.DB+"."+fp.Collection, resultDocumentsArray.Iterator())
 	}
 
@@ -93,7 +97,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				"id", int64(1),
+				"id", id,
 				"ns", fp.DB+"."+fp.Collection,
 				"firstBatch", firstBatch,
 			)),

@@ -56,6 +56,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var cursorID int64
 	var ok bool
+
 	if cursorID, ok = cursorIDValue.(int64); !ok {
 		return nil, common.NewCommandErrorMsg(
 			common.ErrTypeMismatch,

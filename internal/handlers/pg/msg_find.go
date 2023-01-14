@@ -108,8 +108,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	id := int64(0)
+
 	if resultDocumentsArray.Len() > 0 {
 		id = 1
+
 		conninfo.Get(ctx).SetCursor(sp.DB+"."+sp.Collection, resultDocumentsArray.Iterator())
 	}
 
