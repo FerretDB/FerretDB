@@ -287,10 +287,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 		// Set new path with old value
 		if err := doc.SetByPath(targetPath, val); err != nil {
-			return false, NewWriteErrorMsg(
-				ErrUnsuitableValueType,
-				err.Error(),
-			)
+			return false, lazyerrors.Error(err)
 		}
 
 		changed = true
@@ -344,10 +341,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
 			if err = doc.SetByPath(path, incremented); err != nil {
-				return false, NewWriteErrorMsg(
-					ErrUnsuitableValueType,
-					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
-				)
+				return false, lazyerrors.Error(err)
 			}
 
 			result := types.Compare(docValue, incremented)
