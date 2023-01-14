@@ -17,6 +17,7 @@ package tigris
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -43,23 +44,42 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	cursorID, err := common.GetRequiredParam[int64](document, "getMore")
+	collection, err := common.GetRequiredParam[string](document, "collection")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, common.NewCommandErrorMsg(common.ErrBadValue, `required parameter "collection" is missing`)
+	}
+
+	cursorIDValue, err := document.Get("getMore")
+	if err != nil {
+		return nil, common.NewCommandErrorMsg(common.ErrBadValue, `required parameter "getMore" is missing`)
+	}
+
+	var cursorID int64
+	var ok bool
+	if cursorID, ok = cursorIDValue.(int64); !ok {
+		return nil, common.NewCommandErrorMsg(
+			common.ErrTypeMismatch,
+			fmt.Sprintf(
+				`BSON field 'getMore.getMore' is the wrong type '%s', expected type 'long'`,
+				common.AliasFromType(cursorIDValue),
+			),
+		)
 	}
 
 	if cursorID != 1 {
-		return nil, lazyerrors.Errorf("cursor not found")
+		return nil, common.NewCommandErrorMsg(common.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
-	collection, err := common.GetRequiredParam[string](document, "collection")
+	batchSize, err := common.GetOptionalParam(document, "batchSize", int64(common.DefaultBatchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	batchSize, err := common.GetOptionalParam(document, "batchSize", int32(common.DefaultBatchSize))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if batchSize < 0 {
+		return nil, common.NewCommandErrorMsg(
+			common.ErrBatchSizeNegative,
+			"BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		)
 	}
 
 	info := conninfo.Get(ctx)
