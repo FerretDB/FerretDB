@@ -95,8 +95,6 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 }
 
 func TestGetMoreCompat(t *testing.T) {
-	t.Skip("TODO: fix")
-
 	testCases := map[string]queryGetMoreCompatTestCase{
 		"id": {
 			batchSize: 200,
