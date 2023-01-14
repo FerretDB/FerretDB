@@ -60,9 +60,21 @@ func TestGetMore(t *testing.T) {
 				Message: "BSON field 'getMore.getMore' is the wrong type 'int', expected type 'long'",
 			},
 		},
+		"CursorIDNegative": {
+			id: int64(-1),
+			command: bson.D{
+				{"collection", collection.Name()},
+			},
+			err: &mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: "cursor id -1 not found",
+			},
+		},
 		"BatchSizeNegative": {
 			command: bson.D{
-				{"batchSize", int32(-1)},
+				{"batchSize", int64(-1)},
+				{"collection", collection.Name()},
 			},
 			err: &mongo.CommandError{
 				Code:    51024,
@@ -72,7 +84,7 @@ func TestGetMore(t *testing.T) {
 		},
 		"BatchSizeZero": {
 			command: bson.D{
-				{"batchSize", int32(0)},
+				{"batchSize", int64(0)},
 				{"collection", collection.Name()},
 			},
 		},
@@ -86,7 +98,7 @@ func TestGetMore(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.batchSize' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
 		},
 		"BatchSizeMaxInt64": {
 			command: bson.D{
