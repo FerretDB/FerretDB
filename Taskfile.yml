@@ -140,8 +140,8 @@ tasks:
   fmt:
     desc: "Format code"
     cmds:
-      - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w ./cmd ./ferretdb ./integration ./internal ./tools
-      - bin/gofumpt{{exeExt}} -w ./cmd ./ferretdb ./integration ./internal ./tools
+      - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
+      - bin/gofumpt{{exeExt}} -w .
 
   test:
     desc: "Run all unit and integration tests in parallel"
@@ -176,8 +176,8 @@ tasks:
         -coverprofile=integration-pg.txt .
         -handler=pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
-        -target-unix-socket
         -records-dir=../records
+        -target-unix-socket
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
