@@ -353,7 +353,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			if err != nil {
 				return false, NewWriteErrorMsg(
 					ErrUnsuitableValueType,
-					err.Error(),
+					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
 				)
 			}
 
