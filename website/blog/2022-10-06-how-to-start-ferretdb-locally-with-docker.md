@@ -13,7 +13,7 @@ date: 2022-10-06
 
 Even though FerretDB is still in development, it's possible to check out its capabilities and run it in your local environment!
 
-The process of installing and running FerretDB is not complicated at all, and you can do it in just a few steps.  
+The process of installing and running FerretDB is not complicated at all, and you can do it in just a few steps.
 
 ## Prerequisites
 
