@@ -92,9 +92,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
-		if err = firstBatch.Append(doc); err != nil {
-			return nil, err
-		}
+		firstBatch.Append(doc)
 	}
 
 	var reply wire.OpMsg
