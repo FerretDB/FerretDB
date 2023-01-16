@@ -51,9 +51,7 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 
 		v := values[i]
 
-		if err := ta.Append(v); err != nil {
-			return lazyerrors.Error(err)
-		}
+		ta.Append(v)
 	}
 
 	*a = arrayType(*ta)

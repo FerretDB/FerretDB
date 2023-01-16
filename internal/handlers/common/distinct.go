@@ -115,19 +115,13 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 				}
 
 				if !distinct.Contains(el) {
-					err := distinct.Append(el)
-					if err != nil {
-						return nil, lazyerrors.Error(err)
-					}
+					distinct.Append(el)
 				}
 			}
 
 		default:
 			if !distinct.Contains(v) {
-				err := distinct.Append(v)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
+				distinct.Append(v)
 			}
 		}
 	}

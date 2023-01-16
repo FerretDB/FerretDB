@@ -124,9 +124,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-			if err = log.Append(string(b)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+
+			log.Append(string(b))
 		}
 		resDoc = must.NotFail(types.NewDocument(
 			"log", &log,
