@@ -32,7 +32,7 @@ type queryCompatTestCase struct {
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // deafault to false
+	resultPushdown bool                     // defaults to false
 	skipForTigris  string                   // skip test for Tigris
 	skip           string                   // skip test for all backends, myst have issue number mentioned
 }
