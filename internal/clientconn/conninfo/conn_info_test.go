@@ -78,9 +78,7 @@ func TestConnInfo(t *testing.T) {
 func TestConnInfoCursorParallelWork(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
 	connInfo := NewConnInfo()
-	ctx = WithConnInfo(ctx, connInfo)
 
 	wg := sync.WaitGroup{}
 	start := make(chan struct{})
