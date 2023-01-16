@@ -104,6 +104,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	id := int64(1)
+
 	if done {
 		connInfo.RemoveCursor(db + "." + collection)
 
