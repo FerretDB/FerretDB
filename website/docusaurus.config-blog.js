@@ -6,10 +6,10 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'FerretDB Documentation',
+  title: 'FerretDB Blog',
   tagline: 'A truly Open Source MongoDB alternative',
 
-  url: 'https://docs.ferretdb.io',
+  url: 'https://blog.ferretdb.io',
   baseUrl: '/',
 
   favicon: 'img/favicon.ico',
@@ -27,7 +27,8 @@ const config = {
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
-        indexBlog: false,
+        indexDocs: false,
+        indexBlog: true,
       },
     ],
   ],
@@ -37,10 +38,16 @@ const config = {
       'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
-        docs: {
+        docs: false,
+        blog: {
           routeBasePath: '/',
-          sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
+          blogTitle: 'FerretDB Blog',
+          showReadingTime: true,
+          authorsMapPath: 'authors.yml',
+          postsPerPage: 8,
+
+          blogSidebarTitle: 'All posts',
+          blogSidebarCount: 'ALL',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -60,15 +67,14 @@ const config = {
         },
         items: [
           {
-            type: 'doc',
-            docId: 'intro',
-            position: 'left',
-            label: 'Documentation',
-          },
-          {
-            href: 'https://blog.ferertdb.io/',
+            to: '/',
             label: 'Blog',
             position: 'left'
+          },
+          {
+            href: 'https://docs.ferretdb.io/',
+            position: 'left',
+            label: 'Documentation',
           },
           {
             href: 'https://github.com/FerretDB/',
@@ -84,8 +90,8 @@ const config = {
             title: 'FerretDB Docs',
             items: [
               {
+                href: 'https://docs.ferretdb.io/',
                 label: 'Documentation',
-                to: '/intro/',
               },
             ],
           },
@@ -113,10 +119,10 @@ const config = {
           {
             title: 'More',
             items: [
-              {
-                label: 'Blog',
-                to: 'https://blog.ferretdb.io/',
-              },
+              // {
+              //   label: 'Blog',
+              //   to: 'https://www.ferretdb.io/blog/',
+              // },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',

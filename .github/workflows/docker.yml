@@ -26,10 +26,10 @@ on:
   schedule:
     - cron: "42 2 * * *" # after Go workflow
 
-# Do not run this workflow in parallel for any PR change
+# Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 
 env:
   GOPATH: /home/runner/go
@@ -41,13 +41,14 @@ env:
 jobs:
   build:
     name: Build image
-    runs-on: [faster, trusted]
+    runs-on: faster
 
     if: >
       github.event_name != 'pull_request_target' ||
       (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
         !contains(github.event.pull_request.labels.*.name, 'no ci') &&
-        contains(github.event.pull_request.labels.*.name, 'trust')
+        contains(github.event.pull_request.labels.*.name, 'docker')
       )
 
     permissions:
@@ -58,13 +59,15 @@ jobs:
         if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          lfs: false
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup Go
