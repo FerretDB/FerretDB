@@ -71,16 +71,14 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, common.NewCommandErrorMsg(common.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
-	batchSize, err := common.GetOptionalParam(document, "batchSize", int64(common.DefaultBatchSize))
+	batchSizeRaw, err := document.Get("batchSize")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		batchSizeRaw = int64(0)
 	}
 
-	if batchSize < 0 {
-		return nil, common.NewCommandErrorMsg(
-			common.ErrBatchSizeNegative,
-			"BSON field 'batchSize' value must be >= 0, actual value '-1'",
-		)
+	batchSize, err := common.GetWholeNumberParam(batchSizeRaw)
+	if err != nil {
+		return nil, err
 	}
 
 	info := conninfo.Get(ctx)
