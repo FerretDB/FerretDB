@@ -131,10 +131,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				doc.Set("_id", types.NewObjectID())
 			}
 
-			must.NoError(upserted.Append(must.NotFail(types.NewDocument(
+			upserted.Append(must.NotFail(types.NewDocument(
 				"index", int32(0), // TODO
 				"_id", must.NotFail(doc.Get("_id")),
-			))))
+			)))
 
 			if err = h.insert(ctx, &fp, doc); err != nil {
 				return nil, err

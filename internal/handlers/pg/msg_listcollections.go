@@ -93,9 +93,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			continue
 		}
 
-		if err = collections.Append(d); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		collections.Append(d)
 	}
 
 	var reply wire.OpMsg

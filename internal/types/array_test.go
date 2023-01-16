@@ -59,8 +59,7 @@ func TestArray(t *testing.T) {
 		assert.Equal(t, 0, a.Len())
 		assert.Nil(t, a.s)
 
-		err := a.Append(Null)
-		assert.NoError(t, err)
+		a.Append(Null)
 		value, err := a.Get(0)
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
