@@ -79,7 +79,9 @@ func (h *Handler) Close() {
 	}
 }
 
-// DBPool returns non-lazy database connection pool for the given client connection.
+// DBPool returns database connection pool for the given client connection.
+//
+// Pool is not closed when ctx is canceled.
 func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	connInfo := conninfo.Get(ctx)
 	username, password := connInfo.Auth()
@@ -105,7 +107,7 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	p, err := pgdb.NewPool(ctx, url, h.L, false, h.StateProvider)
+	p, err := pgdb.NewPool(ctx, url, h.L, h.StateProvider)
 	if err != nil {
 		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)

@@ -27,6 +27,11 @@ import (
 
 // MsgCollStats implements HandlerInterface.
 func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -44,7 +49,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	querier := h.db.Driver.UseDatabase(db)
+	querier := dbPool.Driver.UseDatabase(db)
 
 	stats, err := tigrisdb.FetchStats(ctx, querier, collection)
 	if err != nil {
