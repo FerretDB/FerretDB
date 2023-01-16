@@ -207,6 +207,9 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"ArrayFieldValueNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
 		},
+		"ArrayFieldIndexNotExist": {
+			update: bson.D{{"$inc", bson.D{{"v.5.foo", int32(1)}}}},
+		},
 		"IncOnString": {
 			update:     bson.D{{"$inc", "string"}},
 			resultType: emptyResult,

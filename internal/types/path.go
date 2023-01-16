@@ -257,7 +257,7 @@ func insertByPath(doc *Document, path Path) error {
 					}
 				}
 
-				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
+				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
 					return newDocumentPathError(
 						ErrDocumentPathCannotCreateField,
@@ -269,6 +269,13 @@ func insertByPath(doc *Document, path Path) error {
 						),
 					)
 				}
+
+				// If path needs to be reserved in the middle of the array, we should fill the gap with Null
+				for j := v.Len(); j < ind; j++ {
+					v.Append(Null)
+				}
+
+				v.Append(must.NotFail(NewDocument()))
 			default:
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,
