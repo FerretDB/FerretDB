@@ -129,14 +129,14 @@ func TestDocumentValidateData(t *testing.T) {
 				"_id", "1",
 				"foo", math.Copysign(0, -1),
 			)),
-			expected: NewPath([]string{"foo"}),
+			expected: NewPath("foo"),
 		},
 		"ArrayNegativeZero": {
 			doc: must.NotFail(NewDocument(
 				"_id", "1",
 				"foo", must.NotFail(NewArray(math.Copysign(0, -1))),
 			)),
-			expected: NewPath([]string{"foo", "0"}),
+			expected: NewPath("foo", "0"),
 		},
 	}
 
