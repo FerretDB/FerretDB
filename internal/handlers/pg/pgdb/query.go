@@ -246,19 +246,18 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		switch k {
-		case "_id":
-			switch v := v.(type) {
-			case string:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+		switch v := v.(type) {
+		case string:
+			filters = append(filters, fmt.Sprintf(`((_jsonb->'%s')::jsonb = %s)`, k, p.Next()))
+			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			// TODO: handle arrays (array-composites)
 
-			case types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-			}
-		default:
-			continue
+		case types.ObjectID:
+			filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
+		case types.Document:
+			// TODO: filter all operators like $eq (probably not in the scope of this issue)
 		}
 	}
 
