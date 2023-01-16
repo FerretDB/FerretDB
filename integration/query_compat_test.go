@@ -32,7 +32,7 @@ type queryCompatTestCase struct {
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // TODO https://github.com/FerretDB/FerretDB/issues/1279
+	resultPushdown bool                     // defaults to false
 	skipForTigris  string                   // skip test for Tigris
 	skip           string                   // skip test for all backends, myst have issue number mentioned
 }
@@ -80,9 +80,17 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					// Run `explain` on `targetCollection` only, check response's `pushdown` with tc.resultPushdown
-					// https://github.com/FerretDB/FerretDB/issues/1279
-					_ = tc.resultPushdown
+					explainQuery := bson.D{{"explain", bson.D{
+						{"find", targetCollection.Name()},
+						{"filter", filter},
+						{"sort", opts.Sort},
+						{"projection", opts.Projection},
+					}}}
+
+					var explainRes bson.D
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
+
+					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -151,10 +159,12 @@ func TestQueryCompat(t *testing.T) {
 			filter: bson.D{},
 		},
 		"IDString": {
-			filter: bson.D{{"_id", "string"}},
+			filter:         bson.D{{"_id", "string"}},
+			resultPushdown: true,
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
+			filter:         bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown: true,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},

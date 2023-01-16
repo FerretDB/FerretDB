@@ -53,9 +53,14 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	queryFilter := string(h.db.BuildFilter(filter))
+
 	queryPlanner := must.NotFail(types.NewDocument(
-		"Filter", string(h.db.BuildFilter(filter)),
+		"Filter", queryFilter,
 	))
+
+	// if tigris query filter was set, it means, the pushdown was done
+	pushdown := queryFilter != "{}"
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -79,7 +84,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", false, // TODO https://github.com/FerretDB/FerretDB/issues/1279
+			"pushdown", pushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

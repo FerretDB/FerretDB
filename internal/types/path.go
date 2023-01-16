@@ -70,7 +70,7 @@ type Path struct {
 }
 
 // NewPath returns Path from a strings slice.
-func NewPath(path []string) Path {
+func NewPath(path ...string) Path {
 	if len(path) == 0 {
 		panic("empty path")
 	}
@@ -88,7 +88,7 @@ func NewPath(path []string) Path {
 func NewPathFromString(s string) Path {
 	path := strings.Split(s, ".")
 
-	return NewPath(path)
+	return NewPath(path...)
 }
 
 // String returns dot-separated path value.
@@ -129,7 +129,8 @@ func (p Path) TrimSuffix() Path {
 	if p.Len() <= 1 {
 		panic("path should have more than 1 element")
 	}
-	return NewPath(p.s[:p.Len()-1])
+
+	return NewPath(p.s[:p.Len()-1]...)
 }
 
 // TrimPrefix returns a copy of path without the first element.
@@ -137,7 +138,8 @@ func (p Path) TrimPrefix() Path {
 	if p.Len() <= 1 {
 		panic("path should have more than 1 element")
 	}
-	return NewPath(p.s[1:])
+
+	return NewPath(p.s[1:]...)
 }
 
 // Append returns new Path constructed from the current path and given element.
@@ -146,7 +148,7 @@ func (p Path) Append(elem string) Path {
 
 	elems = append(elems, elem)
 
-	return NewPath(elems)
+	return NewPath(elems...)
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
