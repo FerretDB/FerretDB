@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -29,8 +30,7 @@ func GetBatchSize(doc *types.Document) (int64, error) {
 
 	batchSize, err := GetWholeNumberParam(batchSizeValue)
 	if err != nil {
-		switch err {
-		case errUnexpectedType:
+		if errors.Is(err, errUnexpectedType) {
 			return 0, NewCommandErrorMsg(
 				ErrTypeMismatch,
 				fmt.Sprintf(
@@ -38,9 +38,9 @@ func GetBatchSize(doc *types.Document) (int64, error) {
 					AliasFromType(batchSizeValue),
 				),
 			)
-		default:
-			return 0, err
 		}
+
+		return 0, err
 	}
 
 	if batchSize < 0 {
