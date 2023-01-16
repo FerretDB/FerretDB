@@ -286,7 +286,7 @@ func convertJSON(value any) any {
 	case []any:
 		a := types.MakeArray(len(value))
 		for _, v := range value {
-			must.NoError(a.Append(convertJSON(v)))
+			a.Append(convertJSON(v))
 		}
 		return a
 

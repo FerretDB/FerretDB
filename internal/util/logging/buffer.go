@@ -94,9 +94,8 @@ func (l *circularBuffer) GetArray(minLevel zapcore.Level) (*types.Array, error) 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		if err = res.Append(string(b)); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+
+		res.Append(string(b))
 	}
 
 	return res, nil

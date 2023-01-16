@@ -63,9 +63,7 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schema *Schema) error {
 			return lazyerrors.Error(err)
 		}
 
-		if err = ta.Append(v); err != nil {
-			return lazyerrors.Error(err)
-		}
+		ta.Append(v)
 	}
 
 	*a = arrayType(*ta)
