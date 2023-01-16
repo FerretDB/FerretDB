@@ -42,6 +42,9 @@ type NewOpts struct {
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
+
+	// TODO replace with map
+	// https://github.com/FerretDB/FerretDB/issues/1789
 	db *tigrisdb.TigrisDB
 }
 
