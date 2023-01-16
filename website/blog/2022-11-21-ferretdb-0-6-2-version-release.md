@@ -40,6 +40,6 @@ For identified errors, we’ve improved the accuracy of telemetry data in some c
 Furthermore, we have enabled the use of  `-` in collection names in line with real-life app usages.
 
 Please find more details on the latest FerretDB version release [here on GitHub](https://github.com/FerretDB/FerretDB/releases).
-And if you have any questions, feel free to [contact us](https://docs.ferretdb.io/intro/#community).
+And if you have any questions, feel free to [contact us](https://docs.ferretdb.io/#community).
 
 Raspberry Pi is a trademark of Raspberry Pi Ltd.

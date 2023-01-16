@@ -70,7 +70,7 @@ type Path struct {
 }
 
 // NewPath returns Path from a strings slice.
-func NewPath(path []string) Path {
+func NewPath(path ...string) Path {
 	if len(path) == 0 {
 		panic("empty path")
 	}
@@ -88,7 +88,7 @@ func NewPath(path []string) Path {
 func NewPathFromString(s string) Path {
 	path := strings.Split(s, ".")
 
-	return NewPath(path)
+	return NewPath(path...)
 }
 
 // String returns dot-separated path value.
@@ -129,7 +129,8 @@ func (p Path) TrimSuffix() Path {
 	if p.Len() <= 1 {
 		panic("path should have more than 1 element")
 	}
-	return NewPath(p.s[:p.Len()-1])
+
+	return NewPath(p.s[:p.Len()-1]...)
 }
 
 // TrimPrefix returns a copy of path without the first element.
@@ -137,7 +138,8 @@ func (p Path) TrimPrefix() Path {
 	if p.Len() <= 1 {
 		panic("path should have more than 1 element")
 	}
-	return NewPath(p.s[1:])
+
+	return NewPath(p.s[1:]...)
 }
 
 // Append returns new Path constructed from the current path and given element.
@@ -146,7 +148,7 @@ func (p Path) Append(elem string) Path {
 
 	elems = append(elems, elem)
 
-	return NewPath(elems)
+	return NewPath(elems...)
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
@@ -171,6 +173,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
+
 			next, err = s.Get(index)
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
@@ -250,8 +253,9 @@ func insertByPath(doc *Document, path Path) error {
 			switch v := next.(type) {
 			case *Document:
 				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
+
 			case *Array:
-				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
+				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
 					return newDocumentPathError(
 						ErrDocumentPathCannotCreateField,
@@ -263,6 +267,14 @@ func insertByPath(doc *Document, path Path) error {
 						),
 					)
 				}
+
+				// If path needs to be reserved in the middle of the array, we should fill the gap with Null
+				for j := v.Len(); j < ind; j++ {
+					v.Append(Null)
+				}
+
+				v.Append(must.NotFail(NewDocument()))
+
 			default:
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,

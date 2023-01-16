@@ -506,6 +506,11 @@ tasks:
 
   docs-cloudflare-preview:
     cmds:
+      # for debugging
+      - >
+        docker compose run --rm
+        --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
+        wrangler
       - docker compose run --rm wrangler pages deployment create --project-name=docs website/build
 
   blog-dev:
