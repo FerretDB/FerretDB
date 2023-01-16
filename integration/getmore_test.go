@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,7 +26,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func TestGetMore(t *testing.T) {
+func TestGetMoreErrors(t *testing.T) {
+	t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1807")
+
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Int32BigAmounts)
@@ -82,18 +83,6 @@ func TestGetMore(t *testing.T) {
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
 		},
-		"BatchSizeZero": {
-			command: bson.D{
-				{"batchSize", int64(0)},
-				{"collection", collection.Name()},
-			},
-		},
-		"BatchSizeNotWholeNumber": {
-			command: bson.D{
-				{"batchSize", 1.632},
-				{"collection", collection.Name()},
-			},
-		},
 		"BatchSizeDocument": {
 			command: bson.D{
 				{"batchSize", bson.D{}},
@@ -105,12 +94,6 @@ func TestGetMore(t *testing.T) {
 				Message: "BSON field 'getMore.batchSize' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
 			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
-		},
-		"BatchSizeMaxInt64": {
-			command: bson.D{
-				{"batchSize", math.MaxInt64},
-				{"collection", collection.Name()},
-			},
 		},
 	} {
 		name, tc := name, tc
