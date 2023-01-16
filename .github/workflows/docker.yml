@@ -68,7 +68,7 @@ jobs:
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
