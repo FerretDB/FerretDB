@@ -92,14 +92,13 @@ func (a *Array) Set(index int, value any) error {
 }
 
 // Append appends given values to the array.
-func (a *Array) Append(values ...any) error {
+func (a *Array) Append(values ...any) {
 	if a.s == nil {
 		a.s = values
-		return nil
+		return
 	}
 
 	a.s = append(a.s, values...)
-	return nil
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
