@@ -144,6 +144,33 @@ func TestDocument(t *testing.T) {
 					)),
 				)),
 			},
+			{
+				name:     "extend empty array with document",
+				document: must.NotFail(NewDocument("v", must.NotFail(NewArray()))),
+				key:      "v.2.foo",
+				value:    "bar",
+				expected: must.NotFail(NewDocument(
+					"v", must.NotFail(NewArray(Null, Null, must.NotFail(NewDocument("foo", "bar")))),
+				)),
+			},
+			{
+				name:     "extend non-empty array with document",
+				document: must.NotFail(NewDocument("v", must.NotFail(NewArray("a")))),
+				key:      "v.2.foo",
+				value:    "bar",
+				expected: must.NotFail(NewDocument(
+					"v", must.NotFail(NewArray("a", Null, must.NotFail(NewDocument("foo", "bar")))),
+				)),
+			},
+			{
+				name:     "extend non-empty array with scalar",
+				document: must.NotFail(NewDocument("v", must.NotFail(NewArray("a")))),
+				key:      "v.2",
+				value:    "bar",
+				expected: must.NotFail(NewDocument(
+					"v", must.NotFail(NewArray("a", Null, "bar")),
+				)),
+			},
 		} {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
