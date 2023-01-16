@@ -1,5 +1,39 @@
 # Changelog
 
+## [v0.8.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.1) (2023-01-16)
+
+### New Features 🎉
+* Report availability of newer versions in mongosh by @noisersup in https://github.com/FerretDB/FerretDB/pull/1738
+* Implement `distinct` command by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1739
+* Validate client's TLS certificate when root CA certificate is provided by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1740
+* Support `$rename` field update operator by @noisersup in https://github.com/FerretDB/FerretDB/pull/1753
+* Enable support for arrays in Tigris by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1778
+
+### Fixed Bugs 🐛
+* Fix filterering in `distinct` for Tigris handler by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1766
+
+### Enhancements 🛠
+* Add `findandmodify` to the `common.Commands` map by @b1ron in https://github.com/FerretDB/FerretDB/pull/1730
+
+### Documentation 📄
+* Add documentation about CLI flags and environment variables by @noisersup in https://github.com/FerretDB/FerretDB/pull/1737
+* Prepare configuration and data for docusaurus-based blog by @Fashander in https://github.com/FerretDB/FerretDB/pull/1756
+* Fix links from docs to blog by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1794
+* Reformat documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1792
+* Add comments about Git LFS and `lfs-warning` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1798
+
+### Other Changes 🤖
+* Support arrays in `tjson` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1721
+* Move $mod to compat test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1748
+* Skip incompatible tests on `arm64` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1770
+* Minor cleanups by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1786
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1785
+* Build Docker images for tags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1788
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/29?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.8.0...v0.8.1).
+
+
 ## [v0.8.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.0) (2023-01-02)
 
 ### What's Changed
