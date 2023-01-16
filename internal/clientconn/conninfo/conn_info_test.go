@@ -16,6 +16,8 @@ package conninfo
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,4 +73,51 @@ func TestConnInfo(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestConnInfoCursorParallelWork(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	connInfo := NewConnInfo()
+	ctx = WithConnInfo(ctx, connInfo)
+
+	wg := sync.WaitGroup{}
+	start := make(chan struct{})
+
+	// Test parallel set of cursor.
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			<-start
+			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), nil)
+		}(i)
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	assert.Equal(t, 100, len(connInfo.cursor))
+
+	start = make(chan struct{})
+
+	// Test parallel read of cursor.
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			<-start
+			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
+		}(i)
+	}
+
+	close(start)
+
+	wg.Wait()
 }

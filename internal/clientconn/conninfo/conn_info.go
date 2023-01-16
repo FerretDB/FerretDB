@@ -66,24 +66,30 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 }
 
 // Cursor returns the cursor value stored.
-func (connInfo *ConnInfo) Cursor(collection string) iterator.Interface[int, any] {
-	return connInfo.cursor[collection]
+// We use "db.collection" as the key to get the cursor.
+func (connInfo *ConnInfo) Cursor(key string) iterator.Interface[int, any] {
+	connInfo.curRW.RLock()
+	defer connInfo.curRW.RUnlock()
+
+	return connInfo.cursor[key]
 }
 
 // SetCursor stores the cursor value.
-func (connInfo *ConnInfo) SetCursor(collection string, cursor iterator.Interface[int, any]) {
+// We use "db.collection" as the key to store the cursor.
+func (connInfo *ConnInfo) SetCursor(key string, cursor iterator.Interface[int, any]) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor[collection] = cursor
+	connInfo.cursor[key] = cursor
 }
 
 // RemoveCursor removes the cursor value stored.
-func (connInfo *ConnInfo) RemoveCursor(collection string) {
+// We use "db.collection" as the key to remove the cursor.
+func (connInfo *ConnInfo) RemoveCursor(key string) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	delete(connInfo.cursor, collection)
+	delete(connInfo.cursor, key)
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.
