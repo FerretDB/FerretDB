@@ -89,7 +89,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 
 		a := types.MakeArray(len(section.Documents))
 		for _, d := range section.Documents {
-			must.NoError(a.Append(d))
+			a.Append(d)
 		}
 
 		docs = append(docs, must.NotFail(types.NewDocument(section.Identifier, a)))
