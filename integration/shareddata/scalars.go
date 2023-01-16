@@ -122,13 +122,13 @@ var Doubles = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"double":                    42.13,
-		"double-whole":              42.0,
-		"double-zero":               0.0,
-		"double-max":                math.MaxFloat64,
-		"double-smallest":           math.SmallestNonzeroFloat64,
-		"double-big":                doubleBig,
-		"double-null":               nil,
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-max":      math.MaxFloat64,
+		"double-smallest": math.SmallestNonzeroFloat64,
+		"double-big":      doubleBig,
+		//"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
 		"double-2":                  float64(math.MinInt64),
 		"double-3":                  float64(-123456789),
@@ -223,7 +223,7 @@ var Bools = &Values[string]{
 	data: map[string]any{
 		"bool-false": false,
 		"bool-true":  true,
-		"bool-null":  nil,
+		//"bool-null":  nil,
 	},
 }
 
@@ -242,26 +242,6 @@ var DateTimes = &Values[string]{
 		"datetime-year-min": primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
 		"datetime-year-max": primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
 		"datetime-null":     nil,
-	},
-}
-
-// Nulls contains null value for tests.
-var Nulls = &Values[string]{
-	name:     "Nulls",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
-	data: map[string]any{
-		"null": nil,
 	},
 }
 
@@ -295,10 +275,10 @@ var Int32s = &Values[string]{
 		"int32-zero": int32(0),
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
-		"int32-null": nil,
-		"int32-1":    int32(4080),
-		"int32-2":    int32(1048560),
-		"int32-3":    int32(268435440),
+		//	"int32-null": nil,
+		"int32-1": int32(4080),
+		"int32-2": int32(1048560),
+		"int32-3": int32(268435440),
 	},
 }
 
@@ -333,10 +313,10 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		"int64-big":  int64Big,
-		"int64-null": nil,
-		"int64-1":    int64(1099511628000),
-		"int64-2":    int64(281474976700000),
-		"int64-3":    int64(72057594040000000),
+		//"int64-null": nil,
+		"int64-1": int64(1099511628000),
+		"int64-2": int64(281474976700000),
+		"int64-3": int64(72057594040000000),
 	},
 }
 

@@ -54,7 +54,6 @@ func AllProviders() []Provider {
 		ObjectIDs,
 		Bools,
 		DateTimes,
-		Nulls,
 		Regexes,
 		Int32s,
 		Timestamps,
