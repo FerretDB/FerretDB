@@ -54,8 +54,8 @@ sidebar_position: 1
 |                 | `collation`                | ⚠️      | Ignored                                                    |
 |                 | `arrayFilters`             | ❌      | Unimplemented                                              |
 |                 | `hint`                     | ❌      | Ignored                                                    |
-|                 | `comment`                  | ⚠️     | Not implemented in Tigris                                  |
-|                 | `let`                      | ⚠️     | Unimplemented                                              |
+|                 | `comment`                  | ⚠️      | Not implemented in Tigris                                   |
+|                 | `let`                      | ⚠️      | Unimplemented                                               |
 | `getMore`       |                            | ✅      | Basic command if fully supported                           |
 |                 | `batchSize`                | ✅      |                                                            |
 |                 | `maxTimeMS`                | ⚠️     | https://github.com/FerretDB/FerretDB/issues/1808           |
