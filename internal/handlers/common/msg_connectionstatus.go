@@ -28,9 +28,9 @@ func MsgConnectionStatus(ctx context.Context, _ *wire.OpMsg) (*wire.OpMsg, error
 	users := types.MakeArray(1)
 
 	if username, _ := conninfo.Get(ctx).Auth(); username != "" {
-		must.NoError(users.Append(must.NotFail(types.NewDocument(
+		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
-		))))
+		)))
 	}
 
 	var reply wire.OpMsg
