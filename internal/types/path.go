@@ -173,6 +173,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
+
 			next, err = s.Get(index)
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
@@ -252,8 +253,9 @@ func insertByPath(doc *Document, path Path) error {
 			switch v := next.(type) {
 			case *Document:
 				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
+
 			case *Array:
-				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
+				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
 					return newDocumentPathError(
 						ErrDocumentPathCannotCreateField,
@@ -265,6 +267,14 @@ func insertByPath(doc *Document, path Path) error {
 						),
 					)
 				}
+
+				// If path needs to be reserved in the middle of the array, we should fill the gap with Null
+				for j := v.Len(); j < ind; j++ {
+					v.Append(Null)
+				}
+
+				v.Append(must.NotFail(NewDocument()))
+
 			default:
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,
