@@ -222,6 +222,7 @@ var Bools = &Values[string]{
 	data: map[string]any{
 		"bool-false": false,
 		"bool-true":  true,
+		"bool-null":  nil,
 	},
 }
 
@@ -273,6 +274,7 @@ var Int32s = &Values[string]{
 		"int32-zero": int32(0),
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
+		"int32-null": nil,
 		"int32-1":    int32(4080),
 		"int32-2":    int32(1048560),
 		"int32-3":    int32(268435440),
@@ -310,6 +312,7 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		"int64-big":  int64Big,
+		"int64-null": nil,
 		"int64-1":    int64(1099511628000),
 		"int64-2":    int64(281474976700000),
 		"int64-3":    int64(72057594040000000),
