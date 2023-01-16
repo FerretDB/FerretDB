@@ -85,7 +85,7 @@ var DocumentsDoubles = &Values[string]{
 	data: map[string]any{
 		"document-double":          bson.D{{"v", 42.13}},
 		"document-double-whole":    bson.D{{"v", 42.0}},
-		"document-double-zero":     bson.D{{"v", 0.0}, {"foo", nil}},
+		"document-double-zero":     bson.D{{"v", 0.0}},
 		"document-double-unset":    bson.D{{"foo", nil}},
 		"document-double-max":      bson.D{{"v", math.MaxFloat64}},
 		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
@@ -163,9 +163,10 @@ var ArrayStrings = &Values[string]{
 	},
 	data: map[string]any{
 		"array-string-desc":      bson.A{"c", "b", "a"},
-		"array-string-duplicate": bson.A{"b", "foo", "b", nil, nil},
+		"array-string-duplicate": bson.A{nil, "foo", "b", "b", nil},
 		"array-string-numbers":   bson.A{"42", "0", "42.13"},
 		"array-string-empty":     bson.A{},
+		"array-string-nil":       bson.A{nil},
 	},
 }
 

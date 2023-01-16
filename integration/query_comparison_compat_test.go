@@ -170,8 +170,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"ArrayNull": {
-			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
-			skipForTigris: "Tigris does not support nil values in arrays",
+			filter: bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{}}}}},
