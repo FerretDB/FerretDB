@@ -332,6 +332,11 @@ func (d *Document) SetByPath(path Path, value any) error {
 			)
 		}
 
+		// In case if value is set in the middle of the array, we should fill the gap with Null
+		for i := inner.Len(); i <= index; i++ {
+			inner.Append(Null)
+		}
+
 		return inner.Set(index, value)
 	default:
 		return fmt.Errorf(

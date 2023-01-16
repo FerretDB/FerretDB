@@ -186,9 +186,11 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 			continue
 		}
 
-		err := doc.SetByPath(path, setValue)
-		if err != nil {
-			return false, err
+		if err := doc.SetByPath(path, setValue); err != nil {
+			return false, NewWriteErrorMsg(
+				ErrUnsuitableValueType,
+				err.Error(),
+			)
 		}
 
 		changed = true
@@ -245,7 +247,7 @@ func processPopFieldExpression(doc *types.Document, update *types.Document) (boo
 
 		err = doc.SetByPath(path, array)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 
 		changed = true
@@ -293,9 +295,8 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		doc.RemoveByPath(sourcePath)
 
 		// Set new path with old value
-		err = doc.SetByPath(targetPath, val)
-		if err != nil {
-			return changed, err
+		if err := doc.SetByPath(targetPath, val); err != nil {
+			return false, lazyerrors.Error(err)
 		}
 
 		changed = true
@@ -329,8 +330,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			}
 
 			// $inc sets the field if it does not exist.
-			err := doc.SetByPath(path, incValue)
-			if err != nil {
+			if err := doc.SetByPath(path, incValue); err != nil {
 				return false, NewWriteErrorMsg(
 					ErrUnsuitableValueType,
 					err.Error(),
@@ -349,12 +349,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
-			err := doc.SetByPath(path, incremented)
-			if err != nil {
-				return false, NewWriteErrorMsg(
-					ErrUnsuitableValueType,
-					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
-				)
+			if err = doc.SetByPath(path, incremented); err != nil {
+				return false, lazyerrors.Error(err)
 			}
 
 			result := types.Compare(docValue, incremented)
