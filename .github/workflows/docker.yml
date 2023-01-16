@@ -1,33 +1,13 @@
 ---
-# This workflow is dangerous and should be handled with a lot of care to avoid security problems.
-# We use `pull_request_target` event to give pull requests access to secrets with permissions to publish Docker images, etc.
-# But rogue PR authors could try to steal our secrets.
-# We prevent that with the following:
-#
-# * We require approval for PRs from first-time contributors. That's a built-in feature for all actions.
-# * After reviewing changes, we require the `trust` label to be assigned to PRs by FerretDB maintainers.
-#   Only a few trusted people have permission to do that.
-# * Thanks to the way `pull_request_target` trigger works, PR changes in the workflow itself are not run
-#   until they are merged.
-# * We use a short-living automatic `GITHUB_TOKEN` instead of a long-living personal access token (PAT).
-#   It also has minimal permissions.
-# * We publish Docker images from PRs as a separate package that should not be run by users.
-# * We limit what third-party actions can be used.
-#
+# This workflow is dangerous and should be handled with great care to avoid security problems.
+# See the warning at conform-pr.yml.
+
 # We also tried a different approach: build Docker image in one normal, secure `pull_request` workflow,
 # upload artifact, and then download and publish it in another workflow that has access to secrets, but treats
 # artifact as passive data. We use buildx for building multi-platform images, and there is a way to export
 # multi-platform OCI tarball: https://docs.docker.com/engine/reference/commandline/buildx_build/#output
 # Unfortunately, it seems that there is no way to import that tarball in another workflow and publish it
 # as a Docker image, as strange as it sounds: https://github.com/docker/buildx/issues/186
-#
-# Relevant GitHub documentation is scattered. The first article gives a good overview:
-# * https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
-# * https://docs.github.com/en/actions/security-guides/automatic-token-authentication
-# * https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions
-# * https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility
-# * https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-action
-# * https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 
 name: Docker
 on:
@@ -41,13 +21,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "*"
   schedule:
     - cron: "42 2 * * *" # after Go workflow
 
-# Do not run this workflow in parallel for any PR change
+# Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
 
 env:
   GOPATH: /home/runner/go
@@ -59,13 +41,14 @@ env:
 jobs:
   build:
     name: Build image
-    runs-on: [faster, trusted]
+    runs-on: faster
 
     if: >
       github.event_name != 'pull_request_target' ||
       (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
         !contains(github.event.pull_request.labels.*.name, 'no ci') &&
-        contains(github.event.pull_request.labels.*.name, 'trust')
+        contains(github.event.pull_request.labels.*.name, 'docker')
       )
 
     permissions:
@@ -76,14 +59,16 @@ jobs:
         if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          lfs: false
+          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

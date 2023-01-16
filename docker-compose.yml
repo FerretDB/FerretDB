@@ -1,5 +1,6 @@
-# This file is used for the development of FerretDB, not for actually running it.
 ---
+# This file is used for the development of FerretDB, not for actually running it.
+
 version: "3.8"
 
 services:
@@ -151,6 +152,19 @@ services:
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
+  wrangler:
+    build:
+      context: ./build/deps
+      dockerfile: ferretdb-wrangler.Dockerfile
+    container_name: ferretdb_ferretdb-wrangler
+    ports:
+      - 8976:8976 # simplifies authentication for testing
+    environment:
+      - CLOUDFLARE_ACCOUNT_ID
+      - CLOUDFLARE_API_TOKEN
+      - WRANGLER_SEND_METRICS=false
+    volumes:
+      - .:/workdir # mount everything for wrangler to pick up branch name, commit hash, etc from git
   docusaurus-docs:
     build:
       context: ./build/deps
@@ -159,14 +173,35 @@ services:
     ports:
       - 3000:3000
     volumes:
-      # package.json and package-lock.json are not bound; container image already contains them.
-      # But we need them in the repo for Vercel.
-      # TODO https://github.com/FerretDB/FerretDB/issues/1133
-      - ./website/docs:/workdir/docusaurus-docs/docs:ro
       - ./website/blog:/workdir/docusaurus-docs/blog:ro
+      - ./website/docs:/workdir/docusaurus-docs/docs:ro
       - ./website/src:/workdir/docusaurus-docs/src:ro
       - ./website/static:/workdir/docusaurus-docs/static:ro
+
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
       - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
+
+      - ./website/build:/workdir/docusaurus-docs/build:rw
+  docusaurus-blog:
+    build:
+      context: ./build/deps
+      dockerfile: docusaurus-docs.Dockerfile
+    container_name: ferretdb_docusaurus-blog
+    ports:
+      - 3001:3000
+    volumes:
+      - ./website/blog:/workdir/docusaurus-docs/blog:ro
+      - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
+      - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
+      - ./website/static:/workdir/docusaurus-docs/static:ro
+
+      # We don't copy src/pages/index.js for blog, https://docusaurus.io/docs/blog#blog-only-mode
+      - ./website/src/pages/index.module.css:/workdir/docusaurus-docs/src/pages/index.module.css:ro
+      - ./website/src/pages/markdown-page.md:/workdir/docusaurus-docs/src/pages/markdown-page.md:ro
+
+      - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
+      - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
+      - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
+
       - ./website/build:/workdir/docusaurus-docs/build:rw

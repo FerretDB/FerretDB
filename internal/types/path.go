@@ -26,6 +26,43 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// DocumentPathErrorCode represents DocumentPathError error code.
+type DocumentPathErrorCode int
+
+const (
+	// ErrDocumentPathKeyNotFound indicates that key was not found in document.
+	ErrDocumentPathKeyNotFound = iota + 1
+	// ErrDocumentPathCannotAccess indicates that path couldn't be accessed.
+	ErrDocumentPathCannotAccess
+	// ErrDocumentPathArrayInvalidIndex indicates that provided array index is invalid.
+	ErrDocumentPathArrayInvalidIndex
+	// ErrDocumentPathIndexOutOfBound indicates that provided array index is out of bound.
+	ErrDocumentPathIndexOutOfBound
+	// ErrDocumentPathCannotCreateField indicates that it's impossible to create a specific field.
+	ErrDocumentPathCannotCreateField
+)
+
+// DocumentPathError describes an error that could occur on document path related operations.
+type DocumentPathError struct {
+	reason error
+	code   DocumentPathErrorCode
+}
+
+// Error implements the error interface.
+func (e *DocumentPathError) Error() string {
+	return e.reason.Error()
+}
+
+// Code returns the DocumentPathError code.
+func (e *DocumentPathError) Code() DocumentPathErrorCode {
+	return e.code
+}
+
+// newDocumentPathError creates a new DocumentPathError.
+func newDocumentPathError(code DocumentPathErrorCode, reason error) error {
+	return &DocumentPathError{reason: reason, code: code}
+}
+
 // Path represents the field path type. It should be used wherever we work with paths or dot notation.
 // Path should be stored and passed as a value. Its methods return new values, not modifying the receiver's state.
 type Path struct {
@@ -126,21 +163,24 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			var err error
 			next, err = s.Get(p)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
 			next, err = s.Get(index)
 			if err != nil {
-				return nil, fmt.Errorf("types.getByPath: %w", err)
+				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		default:
-			return nil, fmt.Errorf("types.getByPath: can't access %T by path %q", next, p)
+			return nil, newDocumentPathError(
+				ErrDocumentPathCannotAccess,
+				fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
+			)
 		}
 	}
 
@@ -219,19 +259,25 @@ func insertByPath(doc *Document, path Path) error {
 
 				_, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
-					return fmt.Errorf(
-						"Cannot create field '%s' in element {%s: %s}",
-						pathElem,
-						insertedPath.Slice()[suffix-1],
-						FormatAnyValue(v),
+					return newDocumentPathError(
+						ErrDocumentPathCannotCreateField,
+						fmt.Errorf(
+							"Cannot create field '%s' in element {%s: %s}",
+							pathElem,
+							insertedPath.Slice()[suffix-1],
+							FormatAnyValue(v),
+						),
 					)
 				}
 			default:
-				return fmt.Errorf(
-					"Cannot create field '%s' in element {%s: %s}",
-					pathElem,
-					path.Prefix(),
-					FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+				return newDocumentPathError(
+					ErrDocumentPathCannotCreateField,
+					fmt.Errorf(
+						"Cannot create field '%s' in element {%s: %s}",
+						pathElem,
+						path.Prefix(),
+						FormatAnyValue(must.NotFail(doc.Get(path.Prefix()))),
+					),
 				)
 			}
 

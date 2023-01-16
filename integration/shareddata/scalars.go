@@ -209,7 +209,15 @@ var Bools = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "boolean"`),
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"foo": {"type": "integer", "format": "int32"}, 
+					"v": {"type": "boolean"},
+					"_id": {"type": "string"}
+				}
+			}`,
 		},
 	},
 	data: map[string]any{
@@ -357,6 +365,7 @@ func tigrisSchema(typeString string) string {
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {%%type%%},
+					"boo": {%%type%%},
 					"_id": {"type": "string"}
 				}
 			}`
