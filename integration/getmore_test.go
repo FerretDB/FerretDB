@@ -88,6 +88,12 @@ func TestGetMore(t *testing.T) {
 				{"collection", collection.Name()},
 			},
 		},
+		"BatchSizeNotWholeNumber": {
+			command: bson.D{
+				{"batchSize", 1.632},
+				{"collection", collection.Name()},
+			},
+		},
 		"BatchSizeDocument": {
 			command: bson.D{
 				{"batchSize", bson.D{}},
