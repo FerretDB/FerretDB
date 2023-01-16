@@ -128,6 +128,7 @@ var Doubles = &Values[string]{
 		"double-max":                math.MaxFloat64,
 		"double-smallest":           math.SmallestNonzeroFloat64,
 		"double-big":                doubleBig,
+		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
 		"double-2":                  float64(math.MinInt64),
 		"double-3":                  float64(-123456789),
