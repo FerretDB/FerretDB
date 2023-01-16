@@ -123,7 +123,8 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 				{"_id", "double"},
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"GtZero": {
 			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
