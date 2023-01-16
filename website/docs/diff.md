@@ -13,15 +13,15 @@ slug: /diff/
 1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
 2. FerretDB does not support NUL (`\0`) characters in strings.
 3. FerretDB does not support nested arrays.
-4. FerretDB does not support the `NaN` and -0 (negative zero) values.
-5. Document restrictions:
+4. FerretDB does not support `NaN` value.
+5. FerretDB converts `-0` (negative zero) to `0` (positive zero).
+6. Document restrictions:
    * document keys must not contain `$` or `.` signs;
    * document fields of double type must not contain `Infinity` or `-Infinity` values.
-6. When insert command is called, insert documents must not have duplicate keys.
-7. Update command restrictions:
+7. When insert command is called, insert documents must not have duplicate keys.
+8. Update command restrictions:
    * update operation producing `Infinity` or `-Infinity` is not supported.
-   * update operation producing -0 is converted to 0.
-8. Database and collection names restrictions:
+9. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
    * database name must not include non-latin letters, spaces, dots, dollars;
    * collection name must not include non-latin letters, spaces, dots or dollars;

@@ -117,4 +117,40 @@ func TestDocumentValidateData(t *testing.T) {
 			}
 		})
 	}
+
+	for name, tc := range map[string]struct {
+		doc      *Document
+		expected Path
+	}{
+		"NegativeZero": {
+			doc: must.NotFail(NewDocument(
+				"_id", "1",
+				"foo", math.Copysign(0, -1),
+			)),
+			expected: NewPath([]string{"foo"}),
+		},
+		"ArrayNegativeZero": {
+			doc: must.NotFail(NewDocument(
+				"_id", "1",
+				"foo", must.NotFail(NewArray(math.Copysign(0, -1))),
+			)),
+			expected: NewPath([]string{"foo", "0"}),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := tc.doc.ValidateData()
+			assert.NoError(t, err)
+
+			v, err := tc.doc.GetByPath(tc.expected)
+			assert.NoError(t, err)
+
+			actual, ok := v.(float64)
+			assert.True(t, ok, "should be float64")
+			assert.Equal(t, float64(0), actual)
+			assert.False(t, math.Signbit(actual), "should be positive zero 0 but it was -0")
+		})
+	}
 }

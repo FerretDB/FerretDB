@@ -147,8 +147,6 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		}
 	}
 
-	replaceNegativeZero(update)
-
 	return changed, nil
 }
 
@@ -1014,37 +1012,4 @@ func validateCurrentDateExpression(update *types.Document) error {
 	}
 
 	return nil
-}
-
-// replaceNegativeZero checks the document for float64 negative zero and
-// replaces it to a valid positive 0.
-func replaceNegativeZero(d *types.Document) {
-	keys := d.Keys()
-	values := d.Values()
-
-	for i, key := range keys {
-		value := values[i]
-
-		switch v := value.(type) {
-		case *types.Document:
-			replaceNegativeZero(v)
-		case *types.Array:
-			for j := 0; j < v.Len(); j++ {
-				item := must.NotFail(v.Get(j))
-
-				switch item := item.(type) {
-				case *types.Document:
-					replaceNegativeZero(item)
-				case float64:
-					if item == 0 && math.Signbit(item) {
-						d.Set(key, math.Copysign(0, +1))
-					}
-				}
-			}
-		case float64:
-			if v == 0 && math.Signbit(v) {
-				d.Set(key, math.Copysign(0, +1))
-			}
-		}
-	}
 }
