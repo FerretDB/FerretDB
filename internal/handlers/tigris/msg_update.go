@@ -31,6 +31,11 @@ import (
 
 // MsgUpdate implements HandlerInterface.
 func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -112,7 +117,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
+		resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +141,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
-			if err = h.insert(ctx, &fp, doc); err != nil {
+			if err = insertDocument(ctx, dbPool, &fp, doc); err != nil {
 				return nil, err
 			}
 
@@ -160,7 +165,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			res, err := h.update(ctx, &fp, doc)
+			res, err := updateDocument(ctx, dbPool, &fp, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -190,9 +195,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// update replaces given document.
-func (h *Handler) update(ctx context.Context, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
-	err := h.db.ReplaceDocument(ctx, fp.DB, fp.Collection, doc)
+// updateDocument replaces given document.
+func updateDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
+	err := dbPool.ReplaceDocument(ctx, fp.DB, fp.Collection, doc)
 
 	var valErr *types.ValidationError
 	var driverErr *driver.Error

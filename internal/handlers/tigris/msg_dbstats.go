@@ -29,6 +29,11 @@ import (
 
 // MsgDBStats implements HandlerInterface.
 func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -46,7 +51,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	stats, err := h.db.Driver.DescribeDatabase(ctx, db)
+	stats, err := dbPool.Driver.DescribeDatabase(ctx, db)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
@@ -66,7 +71,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var objects int32
 
 	for _, collection := range stats.Collections {
-		querier := h.db.Driver.UseDatabase(db)
+		querier := dbPool.Driver.UseDatabase(db)
 
 		stats, err := tigrisdb.FetchStats(ctx, querier, collection.Collection)
 		if err != nil {
