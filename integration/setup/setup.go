@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"fmt"
+	"runtime/trace"
 	"strings"
 	"testing"
 
@@ -75,11 +76,13 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	startup()
 
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+
+	defer trace.StartRegion(ctx, "SetupWithOpts").End()
+
 	if opts == nil {
 		opts = new(SetupOpts)
 	}
-
-	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if *debugSetupF {
@@ -124,6 +127,8 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 // setupCollection setups a single collection for all compatible providers, if they are present.
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
+
+	defer trace.StartRegion(ctx, "setupCollection").End()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName

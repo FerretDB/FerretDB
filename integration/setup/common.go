@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"net/url"
+	"runtime/trace"
 	"sync"
 	"testing"
 
@@ -100,6 +101,8 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 // checkMongoDBURI returns true if given MongoDB URI is working.
 func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	tb.Helper()
+
+	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
 
 	clientOpts := options.Client().ApplyURI(uri)
 
@@ -201,6 +204,8 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 // It returns MongoDB URI for that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
+
+	defer trace.StartRegion(ctx, "setupListener").End()
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
@@ -305,6 +310,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 // setupClient returns MongoDB client for database on given MongoDB URI.
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
+
+	defer trace.StartRegion(ctx, "setupClient").End()
 
 	tb.Logf("setupClient: %s", uri)
 

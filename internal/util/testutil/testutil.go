@@ -17,6 +17,7 @@ package testutil
 
 import (
 	"context"
+	"runtime/trace"
 	"testing"
 
 	"go.uber.org/zap"
@@ -27,7 +28,10 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	ctx, stop := notifyTestsTermination(context.Background())
+	ctx, task := trace.NewTask(context.Background(), tb.Name())
+	tb.Cleanup(task.End)
+
+	ctx, stop := notifyTestsTermination(ctx)
 
 	go func() {
 		<-ctx.Done()

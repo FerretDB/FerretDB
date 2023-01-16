@@ -16,16 +16,21 @@
 package debug
 
 import (
+	"bytes"
 	"context"
 	_ "expvar" // for metrics
 	"net"
 	"net/http"
-	_ "net/http/pprof" // debug pprof
+	_ "net/http/pprof" // for profiling
+	"text/template"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
+	_ "golang.org/x/net/trace" // for tracing (already used by Tigris' gRPC client)
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // RunHandler runs debug handler.
@@ -43,6 +48,35 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 			EnableOpenMetrics: true,
 		}),
 	))
+
+	handlers := []string{
+		"/debug/metrics",  // from http.Handle above
+		"/debug/vars",     // from expvar
+		"/debug/pprof",    // from net/http/pprof
+		"/debug/events",   // from golang.org/x/net/trace
+		"/debug/requests", // from golang.org/x/net/trace
+	}
+
+	var page bytes.Buffer
+	must.NoError(template.Must(template.New("debug").Parse(`
+	<html>
+	<body>
+	<ul>
+	{{range .}}
+		<li><a href="{{.}}">{{.}}</a></li>
+	{{end}}
+	</ul>
+	</body>
+	</html>
+	`)).Execute(&page, handlers))
+
+	http.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Write(page.Bytes())
+	})
+
+	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+	})
 
 	s := http.Server{
 		Addr:     addr,
