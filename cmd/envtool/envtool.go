@@ -278,6 +278,7 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 		"Commit":     info.Commit,
 		"Branch":     info.Branch,
 		"Dirty":      info.Dirty,
+		"Package":    info.Package,
 		"DebugBuild": info.DebugBuild,
 
 		"GoVersion":      runtime.Version(),
