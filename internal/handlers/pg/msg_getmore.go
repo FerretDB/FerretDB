@@ -71,12 +71,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, common.NewCommandErrorMsg(common.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
-	batchSizeRaw, err := document.Get("batchSize")
-	if err != nil {
-		batchSizeRaw = int64(0)
-	}
-
-	batchSize, err := common.GetWholeNumberParam(batchSizeRaw)
+	batchSize, err := common.GetBatchSize(document)
 	if err != nil {
 		return nil, err
 	}

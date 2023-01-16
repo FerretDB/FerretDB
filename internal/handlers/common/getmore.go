@@ -34,13 +34,11 @@ func GetBatchSize(doc *types.Document) (int64, error) {
 			return 0, NewCommandErrorMsg(
 				ErrTypeMismatch,
 				fmt.Sprintf(
-					"BSON field 'batchSize' is the wrong type %s, expected type 'long'",
+					"BSON field 'batchSize' is the wrong type '%s', expected type 'long'",
 					AliasFromType(batchSizeValue),
 				),
 			)
 		}
-
-		return 0, err
 	}
 
 	if batchSize < 0 {
