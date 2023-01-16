@@ -16,116 +16,12 @@ package pg
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetMore implements handlers.Interface.
 func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = common.Unimplemented(document, "comment", "maxTimeMS"); err != nil {
-		return nil, err
-	}
-
-	db, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	collection, err := common.GetRequiredParam[string](document, "collection")
-	if err != nil {
-		return nil, common.NewCommandErrorMsg(common.ErrBadValue, `required parameter "collection" is missing`)
-	}
-
-	cursorIDValue, err := document.Get("getMore")
-	if err != nil {
-		return nil, common.NewCommandErrorMsg(common.ErrBadValue, `required parameter "getMore" is missing`)
-	}
-
-	var cursorID int64
-	var ok bool
-
-	if cursorID, ok = cursorIDValue.(int64); !ok {
-		return nil, common.NewCommandErrorMsg(
-			common.ErrTypeMismatch,
-			fmt.Sprintf(
-				`BSON field 'getMore.getMore' is the wrong type '%s', expected type 'long'`,
-				common.AliasFromType(cursorIDValue),
-			),
-		)
-	}
-
-	if cursorID != 1 {
-		return nil, common.NewCommandErrorMsg(common.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
-	}
-
-	batchSize, err := common.GetBatchSize(document)
-	if err != nil {
-		return nil, err
-	}
-
-	connInfo := conninfo.Get(ctx)
-
-	cur := connInfo.Cursor(db + "." + collection)
-	if cur == nil {
-		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
-	}
-
-	resDocs := types.MakeArray(0)
-
-	var done bool
-
-	for i := 0; i < int(batchSize); i++ {
-		var doc any
-
-		_, doc, err = cur.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				done = true
-				break
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-
-		resDocs.Append(doc)
-	}
-
-	id := int64(1)
-
-	if done {
-		connInfo.RemoveCursor(db + "." + collection)
-
-		id = 0
-	}
-
-	var reply wire.OpMsg
-
-	err = reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"cursor", must.NotFail(types.NewDocument(
-				"id", id,
-				"ns", collection,
-				"nextBatch", resDocs,
-			)),
-			"ok", float64(1),
-		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &reply, nil
+	return common.MsgGetMore(ctx, msg)
 }
