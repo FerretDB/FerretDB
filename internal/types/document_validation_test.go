@@ -31,7 +31,7 @@ import (
 func TestDocumentValidateData(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	testcase := map[string]struct {
 		doc    *Document
 		reason error
 	}{
@@ -102,7 +102,9 @@ func TestDocumentValidateData(t *testing.T) {
 			)),
 			reason: errors.New(`invalid value: { "bar": [ "baz", [ "qaz" ] ] } (nested arrays are not supported)`),
 		},
-	} {
+	}
+
+	for name, tc := range testcase {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -118,7 +120,7 @@ func TestDocumentValidateData(t *testing.T) {
 		})
 	}
 
-	for name, tc := range map[string]struct {
+	testcases := map[string]struct {
 		doc      *Document
 		expected Path
 	}{
@@ -136,7 +138,9 @@ func TestDocumentValidateData(t *testing.T) {
 			)),
 			expected: NewPath([]string{"foo", "0"}),
 		},
-	} {
+	}
+
+	for name, tc := range testcases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
