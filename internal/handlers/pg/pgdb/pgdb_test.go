@@ -37,7 +37,7 @@ func getPool(ctx context.Context, tb testing.TB) *Pool {
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), logger, false, p)
+	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), logger, p)
 	require.NoError(tb, err)
 	tb.Cleanup(pool.Close)
 
