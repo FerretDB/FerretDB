@@ -30,4 +30,4 @@ slug: /diff/
    The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 
 If you encounter some other difference in behavior,
-please [join our community](/intro/#community) to report a problem.
+please [join our community](/#community) to report a problem.
