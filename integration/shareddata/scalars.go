@@ -374,6 +374,8 @@ func tigrisSchema(typeString string) string {
 	return strings.ReplaceAll(common, "%%type%%", typeString)
 }
 
+// generateBigMap generates `count` amount of key-value pairs for a map.
+// It can be used to generate a big map that is bigger than default batch size (101).
 func generateBigMap(count int) map[string]any {
 	rand.Seed(time.Now().UnixNano())
 
@@ -387,6 +389,9 @@ func generateBigMap(count int) map[string]any {
 }
 
 // Int32BigAmounts contains int32 values for tests.
+// That data provider is not included by default
+// to avoid big amount of data and long execution time for compatibility tests.
+// It can be used when there is a need to test amount of data bigger than default batch size (101).
 var Int32BigAmounts = &Values[string]{
 	name:     "Int32BigAmounts",
 	handlers: []string{"pg", "tigris"},

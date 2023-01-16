@@ -205,10 +205,12 @@ func TestQueryCompatBatchSize(t *testing.T) {
 			filter:    bson.D{},
 			batchSize: 1,
 		},
+		// Test batch size less than the default batch size of 101.
 		"BatchSize100": {
 			filter:    bson.D{},
 			batchSize: 100,
 		},
+		// Test batch size greater than the default batch size of 101.
 		"BatchSize102": {
 			filter:    bson.D{},
 			batchSize: 102,
