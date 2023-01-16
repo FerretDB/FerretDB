@@ -86,7 +86,7 @@ func (we *WriteErrors) Document() *types.Document {
 		doc.Set("code", int32(e.code))
 		doc.Set("errmsg", e.err)
 
-		must.NoError(errs.Append(doc))
+		errs.Append(doc)
 	}
 
 	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.

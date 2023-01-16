@@ -84,9 +84,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			))
 		}
 
-		if err = databases.Append(d); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		databases.Append(d)
 	}
 
 	if nameOnly {
