@@ -514,8 +514,6 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 }
 
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	c.l.Debug("FFFFFFFFFF ", cmd)
-
 	if cmd, ok := common.Commands[cmd]; ok {
 		if cmd.Handler != nil {
 			return cmd.Handler(c.h, ctx, msg)
