@@ -28,6 +28,11 @@ import (
 
 // MsgFind implements HandlerInterface.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -51,7 +56,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Filter:     params.Filter,
 	}
 
-	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +94,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided FetchParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, fp *tigrisdb.FetchParam) ([]*types.Document, error) {
-	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam) ([]*types.Document, error) {
+	fetchedDocs, err := dbPool.QueryDocuments(ctx, fp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

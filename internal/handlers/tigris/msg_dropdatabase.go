@@ -29,6 +29,11 @@ import (
 
 // MsgDropDatabase implements HandlerInterface.
 func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -42,7 +47,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	res := must.NotFail(types.NewDocument())
-	_, err = h.db.Driver.DeleteProject(ctx, db)
+	_, err = dbPool.Driver.DeleteProject(ctx, db)
 	switch err := err.(type) {
 	case nil:
 		res.Set("dropped", db)
