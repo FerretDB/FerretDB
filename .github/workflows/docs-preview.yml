@@ -45,15 +45,9 @@ jobs:
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
 
-      - name: Check LFS status
-        uses: actionsdesk/lfs-warning@v3.2
-        with:
-          filesizelimit: 102400b
-          labelName: use-git-lfs
-          exclusionPatterns: |
-            **/*.js
+      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
