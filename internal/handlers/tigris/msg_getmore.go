@@ -71,21 +71,14 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, common.NewCommandErrorMsg(common.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
-	batchSize, err := common.GetOptionalParam(document, "batchSize", int64(common.DefaultBatchSize))
+	batchSize, err := common.GetBatchSize(document)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	if batchSize < 0 {
-		return nil, common.NewCommandErrorMsg(
-			common.ErrBatchSizeNegative,
-			"BSON field 'batchSize' value must be >= 0, actual value '-1'",
-		)
-	}
+	connInfo := conninfo.Get(ctx)
 
-	info := conninfo.Get(ctx)
-
-	cur := info.Cursor(db + "." + collection)
+	cur := connInfo.Cursor(db + "." + collection)
 	if cur == nil {
 		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
 	}
@@ -112,6 +105,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	id := int64(1)
 	if done {
+		connInfo.RemoveCursor(db + "." + collection)
+
 		id = 0
 	}
 

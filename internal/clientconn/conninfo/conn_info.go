@@ -78,6 +78,14 @@ func (connInfo *ConnInfo) SetCursor(collection string, cursor iterator.Interface
 	connInfo.cursor[collection] = cursor
 }
 
+// RemoveCursor removes the cursor value stored.
+func (connInfo *ConnInfo) RemoveCursor(collection string) {
+	connInfo.curRW.Lock()
+	defer connInfo.curRW.Unlock()
+
+	delete(connInfo.cursor, collection)
+}
+
 // WithConnInfo returns a new context with the given ConnInfo.
 func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
