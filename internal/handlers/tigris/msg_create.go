@@ -31,6 +31,11 @@ import (
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -81,7 +86,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	b := must.NotFail(json.Marshal(schema))
 
-	created, err := h.db.CreateCollectionIfNotExist(ctx, db, collection, b)
+	created, err := dbPool.CreateCollectionIfNotExist(ctx, db, collection, b)
 	switch err := err.(type) {
 	case nil:
 		// do nothing

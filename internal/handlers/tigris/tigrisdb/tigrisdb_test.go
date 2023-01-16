@@ -37,7 +37,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 	}
 
 	logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-	tdb, err := New(ctx, cfg, logger, false)
+	tdb, err := New(ctx, cfg, logger)
 	require.NoError(t, err)
 
 	t.Run("DBCollectionDoNotExist", func(t *testing.T) {
