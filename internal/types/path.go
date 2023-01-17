@@ -274,6 +274,7 @@ func insertByPath(doc *Document, path Path) error {
 				}
 
 				v.Append(must.NotFail(NewDocument()))
+
 			default:
 				return newDocumentPathError(
 					ErrDocumentPathCannotCreateField,
