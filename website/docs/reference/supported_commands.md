@@ -7,7 +7,7 @@ sidebar_position: 1
 ## Query commands
 
 | Command         | Argument                   | Status | Comments                                                   |
-| --------------- | -------------------------- | ------ | ---------------------------------------------------------- |
+| --------------- | -------------------------- | ------ |------------------------------------------------------------|
 | `delete`        |                            | ✅      | Basic command is fully supported                           |
 |                 | `deletes`                  | ✅      |                                                            |
 |                 | `comment`                  | ⚠️      | Ignored in Tigris                                          |
@@ -58,7 +58,7 @@ sidebar_position: 1
 |                 | `let`                      | ⚠️      | Unimplemented                                              |
 | `getMore`       |                            | ✅      | Basic command if fully supported                           |
 |                 | `batchSize`                | ✅      |                                                            |
-|                 | `maxTimeMS`                | ⚠️     | https://github.com/FerretDB/FerretDB/issues/1808           |
+|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1808)  |
 |                 | `comment`                  | ⚠️     | Ignored                                                    |
 | `insert`        |                            | ✅      | Basic command is fully supported                           |
 |                 | `documents`                | ✅      |                                                            |
