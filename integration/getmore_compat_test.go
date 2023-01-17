@@ -17,6 +17,7 @@ package integration
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -119,8 +120,6 @@ func TestGetMoreCompat(t *testing.T) {
 }
 
 func TestGetMoreErrorsCompat(t *testing.T) {
-	// t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1807")
-
 	t.Parallel()
 
 	testCases := map[string]queryGetMoreErrorsCompatTestCase{
@@ -207,6 +206,10 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 					t.Fatalf("Expected error of type %T, got %T", compatCommandErr, compatErr)
 				}
 				compatCommandErr.Raw = nil
+
+				if strings.Contains(compatCommandErr.Message, "Cannot run getMore on cursor") {
+					t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1807")
+				}
 
 				AssertEqualAltError(t, compatCommandErr, tc.altMessage, targetErr)
 
