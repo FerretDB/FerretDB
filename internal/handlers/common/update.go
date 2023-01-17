@@ -121,6 +121,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$push":
+			changed, err = processPushArrayUpdateExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewCommandError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
@@ -778,6 +784,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		case "$unset":
 			fallthrough
 		case "$pop":
+			fallthrough
+		case "$push":
 			fallthrough
 		case "$rename":
 			updateModifier = true
