@@ -78,7 +78,7 @@ For more configuration options check [Configuration flags and variables](https:/
    If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 
    ```sh
-   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password
+   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password --authenticationMechanism=PLAIN
    ```
 
 You can also install with FerretDB with the `.deb` and `.rpm` packages

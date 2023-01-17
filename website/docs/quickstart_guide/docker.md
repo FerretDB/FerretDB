@@ -49,7 +49,7 @@ For more configuration options check [Configuration flags and variables](/flags.
    If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 
    ```sh
-   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password
+   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password --authenticationMechanism=PLAIN
    ```
 
    FerretDB will use credentials passed in `mongosh` flags or MongoDB URI to authenticate to the PostgreSQL database.
