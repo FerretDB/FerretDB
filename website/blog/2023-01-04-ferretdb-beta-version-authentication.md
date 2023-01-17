@@ -7,7 +7,7 @@ author: Alexander Fashakin
 author_title: FerretDB Team
 ---
 
-![FerretDB 0.7.1 release](../static/img/blog/FerretDB-is-now-Beta.-1-980x551.png)
+![FerretDB 0.8.0 release](../static/img/blog/FerretDB-is-now-Beta.-1-980x551.png)
 
 <!--truncate-->
 
