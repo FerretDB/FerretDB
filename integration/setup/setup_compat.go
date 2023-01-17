@@ -161,7 +161,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			continue
 		}
 
-		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s/%s", collectionName, provider.Name()))
+		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s", collectionName))
 
 		collection := database.Collection(collectionName)
 
