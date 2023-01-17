@@ -414,7 +414,7 @@ var Int32BigAmounts = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties":{"v": {"type": "number"}}`),
+			"$tigrisSchemaString": tigrisSchema(`{"type": "number"}`),
 		},
 	},
 	data: generateBigMap(1000),
