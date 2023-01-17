@@ -98,6 +98,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
 							var targetErr, compatErr error
 
+							// TODO replace with UpdateMany/ReplaceMany
 							if update != nil {
 								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
 								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)

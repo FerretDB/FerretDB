@@ -103,6 +103,7 @@ func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
+	trace.Log(ctx, "checkMongoDBURI", uri)
 
 	clientOpts := options.Client().ApplyURI(uri)
 
@@ -312,6 +313,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupClient").End()
+	trace.Log(ctx, "setupClient", uri)
 
 	tb.Logf("setupClient: %s", uri)
 

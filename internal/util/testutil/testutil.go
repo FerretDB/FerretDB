@@ -18,6 +18,7 @@ package testutil
 import (
 	"context"
 	"runtime/trace"
+	"strings"
 	"testing"
 
 	"go.uber.org/zap"
@@ -28,8 +29,19 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	ctx, task := trace.NewTask(context.Background(), tb.Name())
-	tb.Cleanup(task.End)
+	ctx := context.Background()
+
+	// given test name "TestX/Y/Z", create tasks "TestX", "TestX/Y", "TextX/Y/Z"
+	parts := strings.Split(tb.Name(), "/")
+	tasks := make([]*trace.Task, len(parts))
+	for i := 0; i < len(parts); i++ {
+		ctx, tasks[i] = trace.NewTask(ctx, strings.Join(parts[:i+1], "/"))
+	}
+	tb.Cleanup(func() {
+		for i := 0; i < len(tasks); i++ {
+			tasks[len(tasks)-i-1].End()
+		}
+	})
 
 	ctx, stop := notifyTestsTermination(ctx)
 
