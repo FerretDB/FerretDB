@@ -89,6 +89,8 @@ func (connInfo *ConnInfo) RemoveCursor(key string) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
+	connInfo.cursor[key].Close()
+
 	delete(connInfo.cursor, key)
 }
 
