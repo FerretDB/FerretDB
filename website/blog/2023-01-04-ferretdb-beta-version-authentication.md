@@ -65,7 +65,7 @@ See more details [in our documentation](https://docs.ferretdb.io/security/#authe
 But that's not all - in addition to the `$max` update operator, FerretDB beta now includes support for the `$min` update operator:
 
 ```js
-db.collection.update( {}, { $min: { &lt;field1>: &lt;value1>, ... } } )
+db.collection.update( {}, { $min: { <field1>: <value1>, ... } } )
 ```
 
 We've also added support for `ordered` inserts, which allows you to insert data in the exact order it comes in.
@@ -93,7 +93,7 @@ These changes help make our documentation more comprehensive and user-friendly, 
 
 ## Other changes
 
-In this latest release, we've made some changes to our supported features, which include discontinuing support for $elemMatch and $slice projection operators due to existing technical issues.
+In this latest release, we've made some changes to our supported features, which include discontinuing support for `$elemMatch` and `$slice` projection operators due to existing technical issues.
 However, this change is not a cause for concern, merely a signal that we will be focusing on other features and improvements that are of greater priority in [our roadmap](https://github.com/orgs/FerretDB/projects/2).
 This change will not affect the support for the `$elemMatch` query operator.
 For more information on the supported operators and commands, please check out our [updated documentation](https://docs.ferretdb.io/reference/supported_commands/).
@@ -107,7 +107,7 @@ Not to mention the growing number of partnerships, compatible applications, and 
 In 2022, we had:
 
 * 👨🏻‍💻Over 40 code contributors with more than 130 merged pull requests from our community of contributors
-* ⭐️5.1k Stars on GitHub(Have you given us a Star yet? Be sure to S[tar us on GitHub](https://github.com/FerretDB/FerretDB).)
+* ⭐️5.1k Stars on GitHub(Have you given us a Star yet? Be sure to [Star us on GitHub](https://github.com/FerretDB/FerretDB).)
 * ⏫More than 100 Docker image downloads
 * 🎤And, we actively participated in several events, including Percona Live,
 
