@@ -903,7 +903,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	t.Parallel()
 
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1791")
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
