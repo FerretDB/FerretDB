@@ -259,18 +259,25 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 			id:  int64(-1),
 			err: true,
 		},
-		"BatchSizeNegative": {
-			command: bson.D{
-				{"batchSize", int64(-1)},
-			},
-			err: true,
-		},
 		"BatchSizeDocument": {
 			command: bson.D{
 				{"batchSize", bson.D{}},
 			},
 			err:        true,
 			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
+		},
+		"BatchSizeArray": {
+			command: bson.D{
+				{"batchSize", bson.A{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'array', expected type 'long'",
+		},
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"batchSize", int64(-1)},
+			},
+			err: true,
 		},
 		"BatchSizeResponse": {
 			command: bson.D{
