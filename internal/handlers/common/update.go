@@ -762,33 +762,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 	return nil
 }
 
-// HasSupportedUpdateModifiers checks that update document contains only modifiers that are supported.
+// HasSupportedUpdateModifiers checks that update document contains supported update operators.
+// If no update operators are found it returns false.
+// If update document contains unsupported update operators it returns an error.
 func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
-	updateModifier := false
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
-		case "$currentDate":
-			fallthrough
-		case "$inc":
-			fallthrough
-		case "$max":
-			fallthrough
-		case "$min":
-			fallthrough
-		case "$mul":
-			fallthrough
-		case "$set":
-			fallthrough
-		case "$setOnInsert":
-			fallthrough
-		case "$unset":
-			fallthrough
-		case "$pop":
-			fallthrough
-		case "$push":
-			fallthrough
-		case "$rename":
-			updateModifier = true
+		case "$currentDate",
+			"$inc", "$max", "$min", "$mul", // arithmetical operators
+			"$set", "$setOnInsert", "$unset", "$pop", "$rename", // field update operators
+			"$push": // array update operators
+			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewWriteErrorMsg(
@@ -804,7 +788,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		}
 	}
 
-	return updateModifier, nil
+	return false, nil
 }
 
 // checkConflictingOperators checks if there are the same keys in these documents and returns an error, if any.

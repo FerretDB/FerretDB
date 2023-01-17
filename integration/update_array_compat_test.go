@@ -27,6 +27,20 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 		"Int32": {
 			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 		},
+		"StringMany": {
+			update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}, {"v", "baz"}}}},
+		},
+		//		"DotNotation": {
+
+		//		},
+		"NonExistentField": {
+			update:     bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
+			resultType: emptyResult,
+		},
+		"NonExistentPath": {
+			update:     bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
