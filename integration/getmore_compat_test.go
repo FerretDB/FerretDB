@@ -15,15 +15,19 @@
 package integration
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 type queryGetMoreCompatTestCase struct {
@@ -112,4 +116,123 @@ func TestGetMoreCompat(t *testing.T) {
 	}
 
 	testGetMoreCompat(t, testCases)
+}
+
+func TestGetMoreErrorsCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryGetMoreErrorsCompatTestCase{
+		"InvalidCursorID": {
+			id:  int64(2),
+			err: true,
+		},
+		"CursorIdInt32": {
+			id:  int32(1),
+			err: true,
+		},
+		"CursorIDNegative": {
+			id:  int64(-1),
+			err: true,
+		},
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"batchSize", int64(-1)},
+			},
+			err: true,
+		},
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"batchSize", bson.D{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
+		},
+	}
+
+	testGetMoreCompatErrors(t, testCases)
+}
+
+type queryGetMoreErrorsCompatTestCase struct {
+	id         any
+	altMessage string
+	command    bson.D
+	err        bool
+}
+
+func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErrorsCompatTestCase) {
+	t.Helper()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: []shareddata.Provider{shareddata.Int32BigAmounts},
+	})
+
+	// We expect to have only one collection as the result of setup.
+	require.Len(t, s.TargetCollections, 1)
+	require.Len(t, s.CompatCollections, 1)
+
+	targetCollection := s.TargetCollections[0]
+	compatCollection := s.CompatCollections[0]
+
+	ctx := s.Ctx
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			targetID := tc.id
+			compatID := tc.id
+			if tc.id == nil {
+				targetID = getCursorID(t, ctx, targetCollection)
+				compatID = getCursorID(t, ctx, compatCollection)
+			}
+			targetCommand := bson.D{{"getMore", targetID}, {"collection", targetCollection.Name()}}
+			targetCommand = append(targetCommand, tc.command...)
+			compatCommand := bson.D{{"getMore", compatID}, {"collection", compatCollection.Name()}}
+			compatCommand = append(compatCommand, tc.command...)
+
+			var targetResult, compatResult bson.D
+			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetResult)
+			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatResult)
+			if tc.err {
+				var compatCommandErr mongo.CommandError
+				if !errors.As(compatErr, compatCommandErr) {
+					t.Fatalf("Expected error of type %T, got %T", compatCommandErr, compatErr)
+				}
+				compatCommandErr.Raw = nil
+
+				AssertEqualAltError(t, compatCommandErr, tc.altMessage, targetErr)
+
+				return
+			}
+
+			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
+
+			require.Equal(t, targetResult, compatResult)
+		})
+	}
+}
+
+// getCursorID returns the cursor ID from a find command.
+func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) any {
+	t.Helper()
+
+	res := targetCollection.Database().RunCommand(
+		ctx, bson.D{{"find", targetCollection.Name()}, {"filter", bson.D{}}},
+	)
+	require.NoError(t, res.Err())
+
+	var result bson.D
+	err := res.Decode(&result)
+	require.NoError(t, err)
+
+	responseDoc := ConvertDocument(t, result)
+	cursor, err := responseDoc.Get("cursor")
+	require.NoError(t, err)
+
+	id, err := cursor.(*types.Document).Get("id")
+	require.NoError(t, err)
+
+	return id
 }
