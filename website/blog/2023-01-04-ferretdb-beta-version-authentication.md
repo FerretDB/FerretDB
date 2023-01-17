@@ -109,7 +109,6 @@ In 2022, we had:
 * 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community of contributors
 * ⭐️ 5.1k Stars on GitHub(Have you given us a Star yet? Be sure to [Star us on GitHub](https://github.com/FerretDB/FerretDB).)
 * ⏫ More than 100 Docker image downloads
-* 🎤 And, we actively participated in several events, including Percona Live,
 
 We appreciate your continued and invaluable support and feedback, as we strive to make FerretDB even better.
 Stay tuned for more exciting developments and updates from us!
