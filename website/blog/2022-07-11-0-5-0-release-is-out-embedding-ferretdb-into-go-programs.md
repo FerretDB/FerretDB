@@ -2,6 +2,7 @@
 slug: 0-5-0-release-is-out-embedding-ferretdb-into-go-programs
 title: "New release - embedding FerretDB 0.5.0 into Go programs"
 author: Alexey Palazhchenko
+image: ../static/img/blog/group-of-ferrets-on-white.jpg
 date: 2022-07-11
 ---
 
@@ -12,7 +13,7 @@ Even the program that embeds FerretDB could connect to it if there is a need to 
 
 <!--truncate-->
 
-![Image credit: allthingsnature.org](https://www.ferretdb.io/wp-content/uploads/2022/07/group-of-ferrets-on-white.jpg)
+![Image credit: allthingsnature.org](../static/img/blog/group-of-ferrets-on-white.jpg)
 
 Let's see how the [ferretdb package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb) could be used.
 First, we need to add a Go module to dependencies as usual:
