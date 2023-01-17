@@ -2,10 +2,12 @@
 slug: new-ferretdb-minor-release-0-5-1
 title: "New FerretDB minor release - 0.5.1"
 author: Peter Farkas
+image: ../static/img/blog/rescue-kitten-komari-ferret-brothers-47.jpg
+tags: [release]
 date: 2022-07-27
 ---
 
-![photo credit: boredpanda.com](https://www.ferretdb.io/wp-content/uploads/2022/07/rescue-kitten-komari-ferret-brothers-47.jpg)
+![photo credit: boredpanda.com](../static/img/blog/rescue-kitten-komari-ferret-brothers-47.jpg)
 
 <!--truncate-->
 

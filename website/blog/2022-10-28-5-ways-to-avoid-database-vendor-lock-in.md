@@ -2,10 +2,11 @@
 slug: 5-ways-to-avoid-database-vendor-lock-in
 title: "5 Tips to Help Mitigate the Risks of Vendor Lock-In In Your Database"
 author: Alexander Fashakin
+image: ../static/img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg
 date: 2022-10-28
 ---
 
-![How to avoid vendor lock-in](https://www.ferretdb.io/wp-content/uploads/2022/10/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg)
+![How to avoid vendor lock-in](../static/img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg)
 
 <!--truncate-->
 
@@ -44,13 +45,13 @@ If you’re looking to adopt new software, you should also make sure it matches 
 A viable way to prevent vendor lock-in is to adopt open-source software.
 With OSS, you get complete access and control to the source code, and the opportunity to host it anywhere you want.
 You won’t have to worry about tailoring the application to suit your specific business needs; you can make those changes yourself.
-Read more on [the dangers that MongoDB’s SSPL license poses to open source](https://www.ferretdb.io/open-source-is-in-danger/ "").
+Read more on [the dangers that MongoDB’s SSPL license poses to open source](https://blog.ferretdb.io/open-source-is-in-danger/).
 
 This is even more poignant for database platforms that host and manage your application’s data.
 Take MongoDB Atlas, for example.
 While the enterprise DBaaS platform offers you a chance to host the application on any of the supported cloud providers, you won’t actually have complete access or control over the source code, leading to a vendor lock situation.
 
-Instead, you should take advantage of open-source technologies like [FerretDB](https://www.ferretdb.io/ "") and [PostgreSQL](https://www.postgresql.org/ "") to build your backend architecture and save yourself from vendor lock-in.
+Instead, you should take advantage of open-source technologies like [FerretDB](https://www.ferretdb.io/) and [PostgreSQL](https://www.postgresql.org/) to build your backend architecture and save yourself from vendor lock-in.
 
 ### Ensure that you can easily migrate your data
 
@@ -60,7 +61,7 @@ Can you seamlessly move your data from one environment to another without facing
 Another interesting factor to consider is the data model of the platform and how they save data.
 Is it easily compatible with comparable alternative solutions?
 
-For instance, with FerretDB, you’ll be able to write your application queries and commands using all the MongoDB syntaxes you are familiar with and have them stored in [PostgreSQL](https://www.postgresql.org/ "") or [Tigris](https://www.tigrisdata.com/ ""); there’s no need to learn a new language or command.
+For instance, with FerretDB, you’ll be able to write your application queries and commands using all the MongoDB syntaxes you are familiar with and have them stored in [PostgreSQL](https://www.postgresql.org/) or [Tigris](https://www.tigrisdata.com/); there’s no need to learn a new language or command.
 
 ### Ensure stakeholders buy-in
 
@@ -81,13 +82,13 @@ You should also ensure to back up your data internally to prevent data loss when
 
 ## Prevent vendor lock-in in your database with FerretDB and PostgreSQL
 
-FerretDB is an [open-source proxy](https://www.ferretdb.io/mongodb-compatibility-whats-really-important/ "") that translates MongoDB drivers and protocols to SQL, stored in PostgreSQL.
+FerretDB is an [open-source proxy](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/) that translates MongoDB drivers and protocols to SQL, stored in PostgreSQL.
 This makes it ideal as a swap-in replacement for MongoDB where users won’t have to worry about vendor lock-in or accruing significant license costs when hosting the applications on the cloud.
 
 Having OSS solutions like FerretDB and PostgreSQL as the backend, users will have a vendor-independent database platform that reduces the possibilities of lock-in while granting complete control over their data.
 
 When paired with Tigris Data – a DBaaS platform for real-time applications – FerretDB will be able to provide users with a true MongoDB Atlas alternative, without all the risks that come with vendor lock-in.
 
-Read this article to learn more about the [importance of open-source software and how it helps mitigate the risks of vendor lock-in](https://www.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/ "").
+Read this article to learn more about the [importance of open-source software and how it helps mitigate the risks of vendor lock-in](https://blog.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/).
 
-(cover image: [Markus Spiske, unsplash.com](https://unsplash.com/photos/iar-afB0QQw ""))
+(cover image: [Markus Spiske, unsplash.com](https://unsplash.com/photos/iar-afB0QQw))
