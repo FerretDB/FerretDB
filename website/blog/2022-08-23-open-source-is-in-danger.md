@@ -57,6 +57,6 @@ New generations of users will have a very different understanding of what open s
 The reason why FerretDB supports the Open Source Initiative as a [Maintainer level sponsor](https://opensource.org/corporate-sponsors-support) is because we believe the integrity of Open Source should be preserved for future generations, and for all of us benefiting from FOSS software on a daily basis.
 This is one of the many ways we are planning to give back to the community.
 
-![" class=](https://www.ferretdb.io/wp-content/uploads/2022/07/Maintainer@5x-1-300x300.png)
+![Open source initiative](../static/img/blog/Maintainer@5x-1-300x300.png)
 
 FerretDB is working on a true [Open Source MongoDB-compatible database replacement](https://github.com/FerretDB/FerretDB), released under Apache 2.0, to make sure that the Open Source community, and anyone wanting to avoid a vendor lock-in situation, will have an alternative.
