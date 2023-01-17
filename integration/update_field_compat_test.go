@@ -663,9 +663,20 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"SetSameValueInt": {
+		"SameValueInt32Type": {
 			update: bson.D{{"$set", bson.D{{"v", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
+		},
+		"SameValueInt64Type": {
+			update: bson.D{{"$set", bson.D{{"v", int64(42)}}}},
+		},
+		"SameValueDoubleType": {
+			update: bson.D{{"$set", bson.D{{"v", 42.0}}}},
+		},
+		"DocSameNumberType": {
+			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}},
+		},
+		"DocDifferentNumberType": {
+			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int64(42)}}}}}},
 		},
 		"DocFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
@@ -716,10 +727,27 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		},
 		"ArrayNil": {
 			update: bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1662",
 		},
 		"EmptyArray": {
 			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
+		},
+		"ArrayNumbersAsc": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{int32(42), int64(43), 45.5}}}}},
+		},
+		"ArrayStringsDesc": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{"c", "b", "a"}}}}},
+		},
+		"ArrayDifferentNumberType": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{int64(42), int64(43), 45.5}}}}},
+		},
+		"ArraySameNumberType": {
+			update: bson.D{{"$set", bson.D{{"v", bson.A{int32(42), int64(43), 45.5}}}}},
+		},
+		"DocSameNumberType": {
+			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+		},
+		"DocDifferentNumberType": {
+			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int64(42), "foo", nil}}}}}}},
 		},
 	}
 

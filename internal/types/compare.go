@@ -42,7 +42,8 @@ const (
 //
 // It converts types as needed; that may result in different types being equal.
 // For that reason, it typically should not be used in tests.
-//
+// Example:
+// int64(1) and int32(1) are equal.
 // Compare and contrast with test helpers in testutil package.
 func Compare(docValue, filterValue any) CompareResult {
 	if docValue == nil {
@@ -52,17 +53,56 @@ func Compare(docValue, filterValue any) CompareResult {
 		panic("compare: filterValue is nil")
 	}
 
-	switch docValue := docValue.(type) {
+	c := &comparer{
+		compareTypeFunc: compareTypeOrder,
+	}
+
+	return c.compare(docValue, filterValue)
+}
+
+// CompareForUpdate compares any BSON values for updating the document.
+//
+// Unlike Compare, different types are not equal.
+// Example:
+// * int64(1) and int32(1) are not equal.
+func CompareForUpdate(a, b any) CompareResult {
+	if a == nil {
+		panic("compare: a is nil")
+	}
+
+	if b == nil {
+		panic("compare: b is nil")
+	}
+
+	c := &comparer{
+		compareTypeFunc: compareType,
+	}
+
+	if res := c.compareTypeFunc(a, b); res != Equal {
+		return res
+	}
+
+	return c.compare(a, b)
+}
+
+// comparer uses compareTypeFunc to perform comparison.
+type comparer struct {
+	compareTypeFunc func(a, b any) CompareResult
+}
+
+// compare result using comparer.
+func (c *comparer) compare(a, b any) CompareResult {
+	switch a := a.(type) {
 	case *Document:
-		if filterDoc, ok := filterValue.(*Document); ok {
-			return compareDocuments(docValue, filterDoc)
+		if filterDoc, ok := b.(*Document); ok {
+			return c.compareDocuments(a, filterDoc)
 		}
 
-		return compareTypeOrder(docValue, filterValue)
+		return c.compareTypeFunc(a, b)
 	case *Array:
-		return compareArray(docValue, filterValue)
+		return c.compareArray(a, b)
 	default:
-		return compareScalars(docValue, filterValue)
+		return compareScalars(a, b)
 	}
 }
 
@@ -253,7 +293,7 @@ func compareNumbers(a float64, b int64) CompareResult {
 // returns Equal when an array equals to filter array;
 // returns Less when an index of the document array is less than the index of the filter array;
 // returns Greater when an index of the document array is greater than the index of the filter array.
-func compareArrays(docArr, filterArr *Array) CompareResult {
+func (c *comparer) compareArrays(docArr, filterArr *Array) CompareResult {
 	if filterArr.Len() == 0 && docArr.Len() == 0 {
 		return Equal
 	}
@@ -278,14 +318,14 @@ func compareArrays(docArr, filterArr *Array) CompareResult {
 			continue
 		}
 
-		orderResult := CompareOrder(docValue, filterValue, Ascending)
-		if orderResult != Equal {
-			return orderResult
+		// compare element type
+		if res := c.compareTypeFunc(docValue, filterValue); res != Equal {
+			return res
 		}
 
-		iterationResult := Compare(docValue, filterValue)
-		if iterationResult != Equal {
-			return iterationResult
+		// compare element value
+		if res := c.compare(docValue, filterValue); res != Equal {
+			return res
 		}
 	}
 
@@ -298,7 +338,7 @@ func compareArrays(docArr, filterArr *Array) CompareResult {
 
 // compareDocuments compares documents recursively by
 // comparing them in the order of types, field names and field values.
-func compareDocuments(a, b *Document) CompareResult {
+func (c *comparer) compareDocuments(a, b *Document) CompareResult {
 	if a.Len() == 0 && b.Len() == 0 {
 		return Equal
 	}
@@ -322,7 +362,7 @@ func compareDocuments(a, b *Document) CompareResult {
 		}
 
 		// compare type
-		if result := compareTypeOrder(aValues[i], bValues[i]); result != Equal {
+		if result := c.compareTypeFunc(aValues[i], bValues[i]); result != Equal {
 			return result
 		}
 
@@ -332,7 +372,7 @@ func compareDocuments(a, b *Document) CompareResult {
 		}
 
 		// compare values
-		if result := Compare(aValues[i], bValues[i]); result != Equal {
+		if result := c.compare(aValues[i], bValues[i]); result != Equal {
 			return result
 		}
 	}
@@ -345,9 +385,14 @@ func compareDocuments(a, b *Document) CompareResult {
 }
 
 // compareArray compares array to any value.
-func compareArray(as *Array, b any) CompareResult {
+// If `as` and `b` are both array, each element of array is compared.
+// If `b` is not an array, compareArray returns Equal if `as` contains `b`.
+// If `as` does not contain any element that is the same type as `b`, it returns Less.
+// If `as` does not contain `b` but has elements same type as `b`,
+// it returns the result from the last element comparison.
+func (c *comparer) compareArray(as *Array, b any) CompareResult {
 	if bs, ok := b.(*Array); ok {
-		return compareArrays(as, bs)
+		return c.compareArrays(as, bs)
 	}
 
 	var result CompareResult

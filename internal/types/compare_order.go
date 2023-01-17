@@ -21,6 +21,7 @@ import (
 )
 
 //go:generate ../../bin/stringer -linecomment -type compareTypeOrderResult
+//go:generate ../../bin/stringer -linecomment -type numberOrderResult
 //go:generate ../../bin/stringer -linecomment -type SortType
 
 // compareTypeOrderResult represents the comparison order of data types.
@@ -90,6 +91,30 @@ const (
 	// Descending is used for sort in descending order.
 	Descending SortType = -1
 )
+
+// numberOrderResult represents the comparison order of numbers.
+type numberOrderResult uint8
+
+const (
+	_ numberOrderResult = iota
+	doubleDT
+	int32DT
+	int64DT
+)
+
+// detectNumberType returns a sequence for float64, int32 and int64 types.
+func detectNumberType(value any) numberOrderResult {
+	switch value := value.(type) {
+	case float64:
+		return doubleDT
+	case int32:
+		return int32DT
+	case int64:
+		return int64DT
+	default:
+		panic(fmt.Sprintf("detectNumberType: value cannot be defined, value is %[1]v, data type of value is %[1]T", value))
+	}
+}
 
 // CompareOrder detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
@@ -251,6 +276,31 @@ func compareTypeOrder(a, b any) CompareResult {
 	default:
 		return Equal
 	}
+}
+
+// compareType compares compareTypeOrder then compares
+// number types. The number types int32, int64 and float64
+// are considered different.
+func compareType(a, b any) CompareResult {
+	if res := compareTypeOrder(a, b); res != Equal {
+		return res
+	}
+
+	if detectDataType(a) == numbersDataType {
+		aType := detectNumberType(a)
+		bType := detectNumberType(b)
+
+		switch {
+		case aType < bType:
+			return Less
+		case aType > bType:
+			return Greater
+		default:
+			return Equal
+		}
+	}
+
+	return Equal
 }
 
 // getComparisonElementFromArray gets an element use for
