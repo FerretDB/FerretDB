@@ -34,7 +34,9 @@ and [contributing guidelines](CONTRIBUTING.md).
 ## Quickstart
 
 These steps describe a quick local setup.
-They are not suitable for most production use-cases because they keep all data inside containers.
+They are not suitable for most production use-cases because they keep all data
+inside containers and don't [encrypt incoming connections](https://docs.ferretdb.io/security/#securing-connections-with-tls/).
+For more configuration options check [Configuration flags and variables](https://docs.ferretdb.io/flags/) page.
 
 1. Store the following in the `docker-compose.yml` file:
 
@@ -75,7 +77,7 @@ They are not suitable for most production use-cases because they keep all data i
    If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
 
    ```sh
-   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/
+   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password
    ```
 
 You can also install with FerretDB with the `.deb` and `.rpm` packages
