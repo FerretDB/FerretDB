@@ -149,6 +149,11 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 			err:        true,
 			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
 		},
+		"BatchSizeResponse": {
+			command: bson.D{
+				{"batchSize", int64(200)},
+			},
+		},
 	}
 
 	testGetMoreCompatErrors(t, testCases)
@@ -198,7 +203,7 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatResult)
 			if tc.err {
 				var compatCommandErr mongo.CommandError
-				if !errors.As(compatErr, compatCommandErr) {
+				if !errors.As(compatErr, &compatCommandErr) {
 					t.Fatalf("Expected error of type %T, got %T", compatCommandErr, compatErr)
 				}
 				compatCommandErr.Raw = nil
@@ -211,7 +216,36 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			require.NoError(t, targetErr)
 			require.NoError(t, compatErr)
 
-			require.Equal(t, targetResult, compatResult)
+			targetDoc := ConvertDocument(t, targetResult)
+			compatDoc := ConvertDocument(t, compatResult)
+
+			targetCursorDoc, err := targetDoc.Get("cursor")
+			require.NoError(t, err)
+
+			compatCursorDoc, err := compatDoc.Get("cursor")
+			require.NoError(t, err)
+
+			targetCursor, ok := targetCursorDoc.(*types.Document)
+			require.True(t, ok, "expected target cursor to be a document")
+
+			compatCursor, ok := compatCursorDoc.(*types.Document)
+			require.True(t, ok, "expected compat cursor to be a document")
+
+			targetNextBatch, err := targetCursor.Get("nextBatch")
+			require.NoError(t, err)
+
+			compatNextBatch, err := compatCursor.Get("nextBatch")
+			require.NoError(t, err)
+
+			assert.Equal(t, targetNextBatch, compatNextBatch, "nextBatch mismatch")
+
+			targetNS, err := targetCursor.Get("ns")
+			require.NoError(t, err)
+
+			compatNS, err := compatCursor.Get("ns")
+			require.NoError(t, err)
+
+			assert.Equal(t, targetNS, compatNS, "ns mismatch")
 		})
 	}
 }
@@ -221,7 +255,11 @@ func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Coll
 	t.Helper()
 
 	res := targetCollection.Database().RunCommand(
-		ctx, bson.D{{"find", targetCollection.Name()}, {"filter", bson.D{}}},
+		ctx, bson.D{
+			{"find", targetCollection.Name()},
+			{"filter", bson.D{}},
+			{"sort", bson.D{{"_id", 1}}},
+		},
 	)
 	require.NoError(t, res.Err())
 

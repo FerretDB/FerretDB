@@ -116,9 +116,9 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				"id", id,
-				"ns", collection,
 				"nextBatch", resDocs,
+				"id", id,
+				"ns", db+"."+collection,
 			)),
 			"ok", float64(1),
 		))},
