@@ -2,10 +2,11 @@
 slug: how-to-keep-control-of-your-infra-using-ferretdb-and-tigris
 title: "How to Keep Control of Your Data and Infrastructure Using FerretDB and Tigris"
 author: Alexander Fashakin
+image: ../static/img/blog/masaaki-komori-_we0BQQewBo-unsplash-1024x684.jpg
 date: 2022-09-21
 ---
 
-![Keep control of your data](https://www.ferretdb.io/wp-content/uploads/2022/09/masaaki-komori-_we0BQQewBo-unsplash-1024x684.jpg)
+![Keep control of your data](../static/img/blog/masaaki-komori-_we0BQQewBo-unsplash-1024x684.jpg)
 
 <!--truncate-->
 
@@ -73,7 +74,7 @@ By building your application database on OSS, you can safely manage, build, main
 [FerretDB](https://www.ferretdb.io/) and [Tigris Data](https://www.tigrisdata.com/) offer a potential alternative to MongoDB Atlas, where users can safely take control of their own data without the needless stress of a lock-in.
 But how does it work?
 
-FerretDB is an [open-source proxy](https://www.ferretdb.io/mongodb-compatibility-whats-really-important/) that converts MongoDB  wire protocol queries to an underlying backend.
+FerretDB is an [open-source proxy](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/) that converts MongoDB  wire protocol queries to an underlying backend.
 When it comes to Tigris, FerretDB provides a MongoDB translation layer that converts MongoDB queries to Tigris requests.
 Adopting both solutions will ensure you have a developer-friendly, cloud-based, open-source database platform that can be deployed in any environment under your control – either on-prem or in the cloud under your account.
 
@@ -91,4 +92,4 @@ Essentially, the possibility of avoiding a vendor lock-in situation doesn’t me
 With FerretDB and Tigris, you’ll be able to build your application backend and have control of all your data without the fear of getting locked in.
 Click [here](https://www.tigrisdata.com/beta "") to sign up for the Tigris beta and get early access.
 
-Read this article to learn more on [why you need FerretDB as the ideal replacement for MongoDB](https://www.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/ "").
+Read this article to learn more on [why you need FerretDB as the ideal replacement for MongoDB](https://blog.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/ "").

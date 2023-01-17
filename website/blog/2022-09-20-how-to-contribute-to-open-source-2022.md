@@ -2,11 +2,11 @@
 slug: how-to-contribute-to-open-source-2022
 title: "Hacktoberfest: How to be a Successful Open Source Contributor In 2022"
 author: Elena Grahovac
-image: https://www.ferretdb.io/wp-content/uploads/2022/09/hacktoberfest.jpg)[](https://hacktoberfest.com
+image: ../static/img/blog/hacktoberfest.jpg
 date: 2022-09-20
 ---
 
-![Hacktoberfest at FerretDB](https://www.ferretdb.io/wp-content/uploads/2022/09/hacktoberfest.jpg)[](https://hacktoberfest.com/)
+![Hacktoberfest at FerretDB](../static/img/blog/hacktoberfest.jpg)
 
 <!--truncate-->
 
@@ -38,7 +38,7 @@ This year, Hacktoberfest organizers [offer some tips](https://hacktoberfest.com/
 
 At FerretDB, we love the idea of celebrating open source.
 As more and more companies switch to proprietary licenses disguised as open-source, celebrating open-source presents another opportunity to demonstrate its immense benefits.
-Read more on [the dangers that these licenses pose to open-source](https://www.ferretdb.io/open-source-is-in-danger/).
+Read more on [the dangers that these licenses pose to open-source](https://blog.ferretdb.io/open-source-is-in-danger/).
 
 Besides being an opportunity to take baby steps into the tech world, contributors can hone their skills as they contribute to the interesting open-source projects that appeal to them.
 

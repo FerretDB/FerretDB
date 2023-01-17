@@ -2,10 +2,11 @@
 slug: using-cla-assistant-with-ferretdb
 title: "Using CLA Assistant with FerretDB"
 author: Alexey Palazhchenko
+image: ../static/img/blog/cla3.jpg
 date: 2022-05-16
 ---
 
-![CLA Assistant](https://www.ferretdb.io/wp-content/uploads/2022/05/cla3.jpg)
+![CLA Assistant](../static/img/blog/cla3.jpg)
 
 <!--truncate-->
 
@@ -64,13 +65,13 @@ That will produce a Docker image with tag “*cla-assistant-local:latest*” tha
 
 Next, we will need to register an OAuth App [there](https://github.com/settings/developers) that will be used by CLA Assistant to receive webhooks from pull requests:
 
-![Register an Oauth App](https://www.ferretdb.io/wp-content/uploads/2022/05/cla1.jpg)
+![Register an Oauth App](../static/img/blog/cla1.jpg)
 
 App’s Authorization callback URL should be *`https://<domain>/auth/github/callback`*
 
 We also should register a [machine user account (a.k.a. bot)](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#personal-accounts) on GitHub and get a personal access token [there](https://github.com/settings/tokens) that will be used to call GitHub API on behalf of not authenticated users:
 
-![Get personal token access](https://www.ferretdb.io/wp-content/uploads/2022/05/cla2.jpg)
+![Get personal token access](../static/img/blog/cla2.jpg)
 
 The only required scope is “*public_repo*”.
 
