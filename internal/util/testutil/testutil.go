@@ -29,19 +29,11 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	ctx := context.Background()
+	// make one task per top-level test for nicer histograms
+	ctx, task := trace.NewTask(context.Background(), strings.Split(tb.Name(), "/")[0])
+	tb.Cleanup(task.End)
 
-	// given test name "TestX/Y/Z", create tasks "TestX", "TestX/Y", "TextX/Y/Z"
-	parts := strings.Split(tb.Name(), "/")
-	tasks := make([]*trace.Task, len(parts))
-	for i := 0; i < len(parts); i++ {
-		ctx, tasks[i] = trace.NewTask(ctx, strings.Join(parts[:i+1], "/"))
-	}
-	tb.Cleanup(func() {
-		for i := 0; i < len(tasks); i++ {
-			tasks[len(tasks)-i-1].End()
-		}
-	})
+	trace.Log(ctx, "test", tb.Name())
 
 	ctx, stop := notifyTestsTermination(ctx)
 
