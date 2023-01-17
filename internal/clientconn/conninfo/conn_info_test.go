@@ -106,12 +106,44 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 	assert.Equal(t, runs, len(connInfo.cursor))
 
+	// Test parallel read of cursor.
+
 	start = make(chan struct{})
 	ready = make(chan struct{}, runs)
 
-	// Test parallel read of cursor.
 	for i := 0; i < runs; i++ {
 		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
+		}(i)
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	// Test parallel read and write.
+
+	ready = make(chan struct{}, runs)
+	start = make(chan struct{})
+
+	for i := 0; i < runs/2; i++ {
+		wg.Add(2)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), nil)
+		}(i + 1000) // avoid setting the same cursor names.
 
 		go func(i int) {
 			defer wg.Done()
