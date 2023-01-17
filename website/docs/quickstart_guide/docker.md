@@ -52,7 +52,7 @@ For more configuration options check [Configuration flags and variables](/flags.
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password
    ```
 
-   FerretDB will use credentials passed in mongosh flags or mongodb URI to authenticate to the PostgreSQL database.
+   FerretDB will use credentials passed in `mongosh` flags or MongoDB URI to authenticate to the PostgreSQL database.
    See [Security#Authentication](/security.md#authentication) for more details.
 
 You can also install FerretDB with the `.deb` and `.rpm` packages
