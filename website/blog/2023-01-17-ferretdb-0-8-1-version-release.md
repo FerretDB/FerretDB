@@ -12,7 +12,8 @@ tags: [release]
 <!--truncate-->
 
 [FerretDB](https://www.ferretdb.io/) 0.8.1 is here, and it's better than ever!
-On the back of our Beta release, we've gone even further to improve FerretDB with lots of new features and enhancements. This FerretDB release and the continued support of our amazing community further strengthens our drive to bring you the open source alternative to MongoDB.
+On the back of our Beta release, we've gone even further to improve FerretDB with lots of new features and enhancements.
+This FerretDB release and the continued support of our amazing community further strengthens our drive to bring you the open source alternative to MongoDB.
 And now, as we approach our GA version later this quarter, we’re more emboldened to ensure FerretDB matches up with the behaviour you’d expect from MongoDB, and to create more compatibility with other applications and real world use cases.
 
 Keep reading to learn more.
@@ -20,13 +21,11 @@ Keep reading to learn more.
 ## What's new
 
 We'll start off with probably the most anticipated update!
-It is surely a concern having to use an older version of FerretDB, without knowing if a new version release is available or not.
-
-So first up on our list of updates for this release, we are delighted to announce that we now report the availability of newer versions of FerretDB in mongosh.
+We are delighted to announce that we now report the availability of newer versions of FerretDB in mongosh.
 However, this is only available for users with telemetry enabled.
 If telemetry is enabled and a newer version of FerretDB is available, you'll be notified and can stay up-to-date with the latest and best version of FerretDB.
 
-If you are yet to enable telemetry and you’d love to access and enable this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
+If you are yet to enable telemetry and you’d love to access this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
 
 Next, we've implemented the `distinct` command in FerretDB.
 With this command, you can easily find the unique values of a specific key in your data.
@@ -37,7 +36,7 @@ For instance, if you want to find the unique values of the "age" field in a spec
 db.runCommand( { distinct: "people", key: "age", query: {} } )
 ```
 
-The `distinct` argument essentially specifies the collection you want to query, the key argument specifies the field you want to find unique values for, and the query argument allows you to filter the results.
+The `distinct` argument essentially specifies the collection you want to query, the `key` argument specifies the field you want to find unique values for, and the `query` argument allows you to filter the results.
 
 Even better, FerretDB now supports the `$rename` field update operator, enabling you to rename fields in a document without changing its contents.
 You can use the operator this way:
@@ -47,19 +46,15 @@ db.collection.update( { }, { $rename: { "oldField": "newField" } }, { multi: tru
 ```
 
 Additionally, we are continuously improving our authentication and security process.
-And for that reason, we've also included a way to validate a client's TLS certificate when the root CA certificate is provided.
-In essence, this makes it possible to configure FerretDB to validate a client's certificates against the given CA certificate and reject connections without valid certificates.
+And for that reason, we've also included a way to validate a client's TLS certificate when the root CA certificate is provided, and reject connections without valid certificates.
 
 ## Documentation
 
 Our documentation is also not left out from this round of improvements.
-The biggest change is that addition of the FerretDB blog which was built on Docusaurus– an open source software, and which now resides in our centralized FerretDB repository.
+The biggest change is that addition of the FerretDB blog which was built on Docusaurus– an open source software - and which now resides in our centralized FerretDB repository.
 
 We've added a section for CLI flags and environment variables.
 On top of that, we've reformatted our documentation setup to ensure that the deployment URL is visible in logs and can be previewed, and we also added comments and warnings about Git LFS.
-
-This is just the tip of a iceberg.
-We have more changes in the works!
 
 To learn about other changes on FerretDB 0.8.1, please read [our release notes](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.1).
 
