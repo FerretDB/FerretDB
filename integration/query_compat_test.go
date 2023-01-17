@@ -15,12 +15,15 @@
 package integration
 
 import (
+	"errors"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -218,4 +221,90 @@ func TestQueryCompatBatchSize(t *testing.T) {
 	}
 
 	testQueryCompat(t, testCases)
+}
+
+func TestQueryBatchSizeCompatErrors(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatBatchSizeErrorsTestCase{
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"batchSize", int32(-1)},
+			},
+			err: true,
+		},
+		"BatchSizeZero": {
+			command: bson.D{
+				{"batchSize", int32(0)},
+			},
+		},
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"batchSize", bson.D{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+		},
+		"BatchSizeMaxInt32": {
+			command: bson.D{
+				{"batchSize", math.MaxInt32},
+			},
+		},
+	}
+
+	testQueryCompatBatchSizeErrors(t, testCases)
+}
+
+type queryCompatBatchSizeErrorsTestCase struct {
+	altMessage string
+	command    bson.D
+	err        bool
+}
+
+func testQueryCompatBatchSizeErrors(t *testing.T, testCases map[string]queryCompatBatchSizeErrorsTestCase) {
+	t.Helper()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{Providers: nil, AddNonExistentCollection: true})
+
+	// We expect to have only one collection as the result of setup.
+	require.Len(t, s.TargetCollections, 1)
+	require.Len(t, s.CompatCollections, 1)
+
+	targetCollection := s.TargetCollections[0]
+	compatCollection := s.CompatCollections[0]
+
+	ctx := s.Ctx
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			targetCommand := bson.D{{"find", targetCollection.Name()}}
+			targetCommand = append(targetCommand, tc.command...)
+			compatCommand := bson.D{{"find", compatCollection.Name()}}
+			compatCommand = append(compatCommand, tc.command...)
+
+			var targetResult, compatResult bson.D
+			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetResult)
+			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatResult)
+
+			if tc.err {
+				var compatCommandErr mongo.CommandError
+				if errors.As(compatErr, &compatCommandErr) {
+					t.Fatalf("expected error, got %v", compatCommandErr)
+				}
+
+				compatCommandErr.Raw = nil
+
+				AssertEqualAltError(t, compatCommandErr, tc.altMessage, targetErr)
+				return
+			}
+
+			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
+
+			require.Equal(t, targetResult, compatResult)
+		})
+	}
 }
