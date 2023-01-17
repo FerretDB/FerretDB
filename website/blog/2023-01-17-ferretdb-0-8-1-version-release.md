@@ -20,7 +20,7 @@ And now, as we approach our GA version later this quarter, we’re more embolden
 
 Keep reading to learn more.
 
-## New features
+## What's new
 
 We'll start off with probably the most anticipated update!
 It is surely a concern having to use an older version of FerretDB, without knowing if a new version release is available or not.
@@ -29,7 +29,7 @@ So first up on our list of updates for this release, we are delighted to announc
 However, this is only available for users with telemetry enabled.
 If telemetry is enabled and a newer version of FerretDB is available, you'll be notified and can stay up-to-date with the latest and best version of FerretDB.
 
-If you are yet to enable telemetry and you’d love to access and enable this feature, please [see our documentation here](https://a9b5c3ea.ferretdb-docs-dev.pages.dev/telemetry/).
+If you are yet to enable telemetry and you’d love to access and enable this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
 
 Next, we've implemented the `distinct` command in FerretDB.
 With this command, you can easily find the unique values of a specific key in your data.
@@ -52,10 +52,6 @@ db.collection.update( { }, { $rename: { "oldField": "newField" } }, { multi: tru
 Additionally, we are continuously improving our authentication and security process.
 And for that reason, we've also included a way to validate a client's TLS certificate when the root CA certificate is provided.
 In essence, this makes it possible to configure FerretDB to validate a client's certificates against the given CA certificate and reject connections without valid certificates.
-
-## Bug fix
-
-With this release, we've also fixed a bug with the `distinct` command where filter wasn't applied to it.
 
 ## Documentation
 
