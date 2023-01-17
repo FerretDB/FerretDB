@@ -119,6 +119,8 @@ func TestGetMoreCompat(t *testing.T) {
 }
 
 func TestGetMoreErrorsCompat(t *testing.T) {
+	// t.Skip("TODO: https://github.com/FerretDB/FerretDB/issues/1807")
+
 	t.Parallel()
 
 	testCases := map[string]queryGetMoreErrorsCompatTestCase{
