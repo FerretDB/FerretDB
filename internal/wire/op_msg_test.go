@@ -251,10 +251,7 @@ var msgTestCases = []testCase{{
 			))},
 		}},
 	},
-	err: `wire.OpMsg.Document: validation failed for ` +
-		`{ insert: "TestInsertSimple", ordered: true, $db: "testinsertsimple", ` +
-		`documents: [ { _id: ObjectId('637cfad88dc3cecde38e1e6b'), v: -0.0 } ] } ` +
-		`with: -0 is not supported`,
+	command: "insert",
 }, {
 	name: "MultiSectionInsert",
 	expectedB: []byte{

@@ -2,11 +2,11 @@
 slug: mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement
 title: "Overwhelming enthusiasm for Truly Open Source MongoDB Replacement"
 author: Peter Farkas
-image: https://www.ferretdb.io/wp-content/uploads/2022/02/home-img.jpg
-tags: [Ferretdb]
+image: ../static/img/blog/home-img.jpg
+tags: [FerretDB, open source database]
 ---
 
-![MangoDB: Enthusiasm for Truly Open Source MongoDB Replacement](https://www.ferretdb.io/wp-content/uploads/2022/02/home-img.jpg)
+![MangoDB: Enthusiasm for Truly Open Source MongoDB Replacement](../static/img/blog/home-img.jpg)
 
 <!--truncate-->
 

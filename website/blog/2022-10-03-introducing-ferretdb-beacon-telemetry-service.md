@@ -2,16 +2,17 @@
 slug: introducing-ferretdb-beacon-telemetry-service
 title: "Introducing FerretDB Beacon: Help Us Increase Compatibility"
 author: Peter Farkas
+image: ../static/img/blog/allen-cai-Y4RxCIaYaSk-unsplash-1024x683.jpg
 date: 2022-10-03
 ---
 
-![" class=](https://www.ferretdb.io/wp-content/uploads/2022/10/allen-cai-Y4RxCIaYaSk-unsplash-1024x683.jpg)
+![FerretDB Beacon](../static/img/blog/allen-cai-Y4RxCIaYaSk-unsplash-1024x683.jpg)
 
 <!--truncate-->
 
-(image credit: Allen Cai @aycai / [Unsplash](https://unsplash.com/photos/Y4RxCIaYaSk ""))
+(image credit: Allen Cai @aycai / [Unsplash](https://unsplash.com/photos/Y4RxCIaYaSk))
 
-At [FerretDB](https://www.ferretdb.io/ ""), we are on a journey to build the de-facto open source alternative to MongoDB, and this means we must ensure compatibility and support with all the necessary MongoDB drivers and protocols, as well as all your favorite commands.
+At [FerretDB](https://www.ferretdb.io/), we are on a journey to build the de-facto open source alternative to MongoDB, and this means we must ensure compatibility and support with all the necessary MongoDB drivers and protocols, as well as all your favorite commands.
 But this may be hard to do without knowing what’s missing or which particular issues our users are experiencing.
 
 That is the problem we are currently facing – how do we make FerretDB a better and more complete open source replacement for MongoDB?
@@ -39,5 +40,5 @@ And if you decide to opt out, we hope that you can join our community and provid
 Most importantly, we remain committed to the principles of open source and community, recognizing that we cannot do this without your help and support.
 In light of this, we’d like to get your opinion on some of the concerns you might have regarding the use of FerretDB Beacon and how we can ease those fears.
 
-If you have any questions or concerns you would like to raise, kindly reach out to us on [Slack  chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A "") and [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions "") for more information.
-You can also join our [open office hours meeting](https://calendar.google.com/event?action=TEMPLATE&amp;tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&amp;tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&amp;scp=ALL "") every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq "").
+If you have any questions or concerns you would like to raise, kindly reach out to us on [Slack  chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) and [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for more information.
+You can also join our [open office hours meeting](https://calendar.google.com/event?action=TEMPLATE&amp;tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&amp;tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&amp;scp=ALL) every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).

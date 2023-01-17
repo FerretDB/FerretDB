@@ -13,7 +13,7 @@ Let's take a look at how FerretDB's plans align with the latest trends!
 
 When it comes to databases, this year, we see close to 70k responses, and the survey concludes that PostgreSQL is most loved database (and relational database) among Professional developers, and second most popular overall.
 
-![Database survey](https://www.ferretdb.io/wp-content/uploads/2022/06/stackoverflow.jpg)
+![Database survey](../static/img/blog/stackoverflow.jpg)
 
 When it comes to document, or NoSQL databases, MongoDB is still the undisputed leader, and is heavily contesting the popularity of relational databases.
 
@@ -53,4 +53,4 @@ On Monday, [we released FerretDB](https://github.com/FerretDB/FerretDB/releases/
 We are also looking to partner with the PostgreSQL community and PostgreSQL DBaaS providers, who are interested in working with us providing an alternative to MongoDB.
 Feel free to let us know if you are interested!
 
-![FerretDB team](https://www.ferretdb.io/wp-content/uploads/2022/06/group-1024x679.jpg)
+![FerretDB team](../static/img/blog/group-1024x679.jpg)
