@@ -227,6 +227,20 @@ func TestQueryBatchSizeCompatErrors(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatBatchSizeErrorsTestCase{
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"batchSize", bson.D{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+		},
+		"BatchSizeArray": {
+			command: bson.D{
+				{"batchSize", bson.A{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'array', expected type 'int'",
+		},
 		"BatchSizeNegative": {
 			command: bson.D{
 				{"batchSize", int32(-1)},
@@ -237,13 +251,6 @@ func TestQueryBatchSizeCompatErrors(t *testing.T) {
 			command: bson.D{
 				{"batchSize", int32(0)},
 			},
-		},
-		"BatchSizeDocument": {
-			command: bson.D{
-				{"batchSize", bson.D{}},
-			},
-			err:        true,
-			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
 		},
 		"BatchSizeMaxInt32": {
 			command: bson.D{
@@ -291,7 +298,7 @@ func testQueryCompatBatchSizeErrors(t *testing.T, testCases map[string]queryComp
 
 			if tc.err {
 				var compatCommandErr mongo.CommandError
-				if errors.As(compatErr, &compatCommandErr) {
+				if !errors.As(compatErr, &compatCommandErr) {
 					t.Fatalf("expected error, got %v", compatCommandErr)
 				}
 
