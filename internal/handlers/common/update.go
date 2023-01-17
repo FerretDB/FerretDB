@@ -109,14 +109,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			changed = changed || mulChanged
 
-		case "$pop":
-			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
+		case "$rename":
+			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
-		case "$rename":
-			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
+		case "$pop":
+			changed, err = processPopArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -197,63 +197,6 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 				ErrUnsuitableValueType,
 				err.Error(),
 			)
-		}
-
-		changed = true
-	}
-
-	return changed, nil
-}
-
-// processPopFieldExpression changes document according to $pop operator.
-// If the document was changed it returns true.
-func processPopFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
-	var changed bool
-
-	for _, key := range update.Keys() {
-		popValueRaw := must.NotFail(update.Get(key))
-
-		popValue, err := GetWholeNumberParam(popValueRaw)
-		if err != nil {
-			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw))
-		}
-
-		if popValue != 1 && popValue != -1 {
-			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
-		}
-
-		path := types.NewPathFromString(key)
-
-		if !doc.HasByPath(path) {
-			continue
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
-
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, NewWriteErrorMsg(
-				ErrTypeMismatch,
-				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
-			)
-		}
-
-		if array.Len() == 0 {
-			continue
-		}
-
-		if popValue == -1 {
-			array.Remove(0)
-		} else {
-			array.Remove(array.Len() - 1)
-		}
-
-		err = doc.SetByPath(path, array)
-		if err != nil {
-			return false, lazyerrors.Error(err)
 		}
 
 		changed = true
@@ -768,10 +711,14 @@ func ValidateUpdateOperators(update *types.Document) error {
 func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
-		case "$currentDate",
-			"$inc", "$max", "$min", "$mul", // arithmetical operators
-			"$set", "$setOnInsert", "$unset", "$pop", "$rename", // field update operators
-			"$push": // array update operators
+		case // field update operators:
+			"$currentDate",
+			"$inc", "$min", "$max", "$mul",
+			"$rename",
+			"$set", "$setOnInsert", "$unset",
+
+			// array update operators:
+			"$pop", "$push":
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
