@@ -119,6 +119,8 @@ func detectNumberType(value any) numberOrderResult {
 // CompareOrder detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
 // This is used by update operator $max.
+// The different number types such as int64 and int32
+// are not equal in CompareOrder.
 func CompareOrder(a, b any, order SortType) CompareResult {
 	if a == nil {
 		panic("CompareOrder: a is nil")
@@ -135,7 +137,19 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 		return result
 	}
 
-	return Compare(a, b)
+	c := &comparer{
+		compareTypeOrder: compareType,
+	}
+
+	if result = c.compare(a, b); result != Equal {
+		return result
+	}
+
+	if detectDataType(a) == numbersDataType {
+		return c.compareTypeOrder(a, b)
+	}
+
+	return result
 }
 
 // CompareOrderForSort detects the data type for two values and compares them.

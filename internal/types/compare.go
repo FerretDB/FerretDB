@@ -54,40 +54,15 @@ func Compare(docValue, filterValue any) CompareResult {
 	}
 
 	c := &comparer{
-		compareTypeFunc: compareTypeOrder,
+		compareTypeOrder: compareTypeOrder,
 	}
 
 	return c.compare(docValue, filterValue)
 }
 
-// CompareForUpdate compares any BSON values for updating the document.
-//
-// Unlike Compare, different types are not equal.
-// Example:
-// * int64(1) and int32(1) are not equal.
-func CompareForUpdate(a, b any) CompareResult {
-	if a == nil {
-		panic("compare: a is nil")
-	}
-
-	if b == nil {
-		panic("compare: b is nil")
-	}
-
-	c := &comparer{
-		compareTypeFunc: compareType,
-	}
-
-	if res := c.compareTypeFunc(a, b); res != Equal {
-		return res
-	}
-
-	return c.compare(a, b)
-}
-
-// comparer uses compareTypeFunc to perform comparison.
+// comparer uses compareTypeOrder to perform type comparison.
 type comparer struct {
-	compareTypeFunc func(a, b any) CompareResult
+	compareTypeOrder func(a, b any) CompareResult
 }
 
 // compare result using comparer.
@@ -98,7 +73,7 @@ func (c *comparer) compare(a, b any) CompareResult {
 			return c.compareDocuments(a, filterDoc)
 		}
 
-		return c.compareTypeFunc(a, b)
+		return c.compareTypeOrder(a, b)
 	case *Array:
 		return c.compareArray(a, b)
 	default:
@@ -319,7 +294,7 @@ func (c *comparer) compareArrays(docArr, filterArr *Array) CompareResult {
 		}
 
 		// compare element type
-		if res := c.compareTypeFunc(docValue, filterValue); res != Equal {
+		if res := c.compareTypeOrder(docValue, filterValue); res != Equal {
 			return res
 		}
 
@@ -362,7 +337,7 @@ func (c *comparer) compareDocuments(a, b *Document) CompareResult {
 		}
 
 		// compare type
-		if result := c.compareTypeFunc(aValues[i], bValues[i]); result != Equal {
+		if result := c.compareTypeOrder(aValues[i], bValues[i]); result != Equal {
 			return result
 		}
 
