@@ -119,45 +119,6 @@ func TestGetMoreCompat(t *testing.T) {
 	testGetMoreCompat(t, testCases)
 }
 
-func TestGetMoreErrorsCompat(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryGetMoreErrorsCompatTestCase{
-		"InvalidCursorID": {
-			id:  int64(2),
-			err: true,
-		},
-		"CursorIdInt32": {
-			id:  int32(1),
-			err: true,
-		},
-		"CursorIDNegative": {
-			id:  int64(-1),
-			err: true,
-		},
-		"BatchSizeNegative": {
-			command: bson.D{
-				{"batchSize", int64(-1)},
-			},
-			err: true,
-		},
-		"BatchSizeDocument": {
-			command: bson.D{
-				{"batchSize", bson.D{}},
-			},
-			err:        true,
-			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
-		},
-		"BatchSizeResponse": {
-			command: bson.D{
-				{"batchSize", int64(200)},
-			},
-		},
-	}
-
-	testGetMoreCompatErrors(t, testCases)
-}
-
 type queryGetMoreErrorsCompatTestCase struct {
 	id         any
 	altMessage string
@@ -278,4 +239,43 @@ func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Coll
 	require.NoError(t, err)
 
 	return id
+}
+
+func TestGetMoreErrorsCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryGetMoreErrorsCompatTestCase{
+		"InvalidCursorID": {
+			id:  int64(2),
+			err: true,
+		},
+		"CursorIdInt32": {
+			id:  int32(1),
+			err: true,
+		},
+		"CursorIDNegative": {
+			id:  int64(-1),
+			err: true,
+		},
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"batchSize", int64(-1)},
+			},
+			err: true,
+		},
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"batchSize", bson.D{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'long'",
+		},
+		"BatchSizeResponse": {
+			command: bson.D{
+				{"batchSize", int64(200)},
+			},
+		},
+	}
+
+	testGetMoreCompatErrors(t, testCases)
 }

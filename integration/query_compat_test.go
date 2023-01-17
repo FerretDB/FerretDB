@@ -223,45 +223,6 @@ func TestQueryCompatBatchSize(t *testing.T) {
 	testQueryCompat(t, testCases)
 }
 
-func TestQueryBatchSizeCompatErrors(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryCompatBatchSizeErrorsTestCase{
-		"BatchSizeDocument": {
-			command: bson.D{
-				{"batchSize", bson.D{}},
-			},
-			err:        true,
-			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
-		},
-		"BatchSizeArray": {
-			command: bson.D{
-				{"batchSize", bson.A{}},
-			},
-			err:        true,
-			altMessage: "BSON field 'batchSize' is the wrong type 'array', expected type 'int'",
-		},
-		"BatchSizeNegative": {
-			command: bson.D{
-				{"batchSize", int32(-1)},
-			},
-			err: true,
-		},
-		"BatchSizeZero": {
-			command: bson.D{
-				{"batchSize", int32(0)},
-			},
-		},
-		"BatchSizeMaxInt32": {
-			command: bson.D{
-				{"batchSize", math.MaxInt32},
-			},
-		},
-	}
-
-	testQueryCompatBatchSizeErrors(t, testCases)
-}
-
 type queryCompatBatchSizeErrorsTestCase struct {
 	altMessage string
 	command    bson.D
@@ -314,4 +275,43 @@ func testQueryCompatBatchSizeErrors(t *testing.T, testCases map[string]queryComp
 			require.Equal(t, targetResult, compatResult)
 		})
 	}
+}
+
+func TestQueryBatchSizeCompatErrors(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatBatchSizeErrorsTestCase{
+		"BatchSizeDocument": {
+			command: bson.D{
+				{"batchSize", bson.D{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'object', expected type 'int'",
+		},
+		"BatchSizeArray": {
+			command: bson.D{
+				{"batchSize", bson.A{}},
+			},
+			err:        true,
+			altMessage: "BSON field 'batchSize' is the wrong type 'array', expected type 'int'",
+		},
+		"BatchSizeNegative": {
+			command: bson.D{
+				{"batchSize", int32(-1)},
+			},
+			err: true,
+		},
+		"BatchSizeZero": {
+			command: bson.D{
+				{"batchSize", int32(0)},
+			},
+		},
+		"BatchSizeMaxInt32": {
+			command: bson.D{
+				{"batchSize", math.MaxInt32},
+			},
+		},
+	}
+
+	testQueryCompatBatchSizeErrors(t, testCases)
 }
