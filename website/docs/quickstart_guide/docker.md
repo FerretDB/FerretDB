@@ -43,7 +43,7 @@ For more configuration options check [Configuration flags and variables](/flags.
    `ferretdb` runs FerretDB.
 
 2. Start services with `docker compose up -d`.
-To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
+   To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
 
 3. If you have `mongosh` installed, just run it to connect to FerretDB.
    If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
