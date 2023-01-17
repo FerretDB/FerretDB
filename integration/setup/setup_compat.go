@@ -161,6 +161,8 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			continue
 		}
 
+		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s/%s", collectionName, provider.Name()))
+
 		collection := database.Collection(collectionName)
 
 		// drop remnants of the previous failed run
@@ -202,6 +204,8 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		})
 
 		collections = append(collections, collection)
+
+		region.End()
 	}
 
 	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection

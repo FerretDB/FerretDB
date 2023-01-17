@@ -164,6 +164,8 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			continue
 		}
 
+		region := trace.StartRegion(ctx, fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name()))
+
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
 			var copts options.CreateCollectionOptions
@@ -181,6 +183,8 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 		inserted = true
+
+		region.End()
 	}
 
 	if len(opts.Providers) == 0 {
