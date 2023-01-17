@@ -9,8 +9,8 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
-  BUILDTAGS: ferretdb_tigris
-  SERVICES: postgres tigris mongodb
+  BUILDTAGS: ferretdb_debug,ferretdb_tigris
+  SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
 
 tasks:
   # invoked when `task` is run without arguments
@@ -30,7 +30,23 @@ tasks:
   gen-version:
     run: once
     cmds:
-      - go generate -x ./internal/util/version
+      - go generate -x ./build/version
+
+  # do not change that target much; see "Building and packaging" in README.md
+  build-release:
+    desc: "Build bin/ferretdb{{exeExt}} (release build)"
+    deps: [gen-version]
+    cmds:
+      - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
+    env:
+      CGO_ENABLED: 0
+
+  build-testcover:
+    desc: "Build bin/ferretdb-testcover{{exeExt}}"
+    run: once
+    deps: [gen-version]
+    cmds:
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
@@ -51,10 +67,6 @@ tasks:
     cmds:
       - go mod tidy
       - go mod verify
-
-  # deprecated alias
-  init-clean:
-    deps: [env-reset]
 
   env-reset:
     desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
@@ -161,8 +173,11 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt . -records-dir=../records
-        -handler=pg -target-unix-socket
+        -coverprofile=integration-pg.txt .
+        -handler=pg
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -records-dir=../records
+        -target-unix-socket
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -170,8 +185,13 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt . -records-dir=../records
+        -timeout=25m
+        -coverprofile=integration-tigris.txt .
         -handler=tigris
+        -records-dir=../records
+        -target-tls
+        -compat-port=37018
+        -compat-tls
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -179,8 +199,10 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-cockroach.txt . -records-dir=../records
-        -handler=pg -postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb?pool_min_conns=1
+        -coverprofile=integration-cockroach.txt .
+        -handler=pg
+        -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1
+        -records-dir=../records
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -188,8 +210,10 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt . -records-dir=../records
-        -target-port=37017 -compat-port=0
+        -coverprofile=integration-mongodb.txt .
+        -compat-port=0
+        -records-dir=../records
+        -target-port=37017
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -233,49 +257,82 @@ tasks:
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus seed {{.FUZZCORPUS}}
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus {{.FUZZCORPUS}} generated
 
-  build-testcover:
-    desc: "Build bin/ferretdb-testcover"
-    run: once
-    deps: [gen-version]
-    cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
-
   run:
     desc: "Run FerretDB"
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --mode=diff-normal
+        --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
+
+  run-secured:
+    desc: "Run secured FerretDB with TLS and authentication"
+    deps: [build-testcover]
+    cmds:
+      - >
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=''
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls-ca-file=./build/certs/rootCA.pem
+        --listen-tls=:27018
+        --mode=normal
+        --postgresql-url="postgres://127.0.0.1:5433/ferretdb"
+        --test-records-dir=records
 
   run-tigris:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --handler=tigris
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --handler=tigris
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
 
   run-cockroach:
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-normal --listen-addr=:27017 --postgresql-url=postgres://cockroach@127.0.0.1:26257/ferretdb
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-normal
+        --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt -- --test-records-dir=records
-        --mode=diff-proxy --listen-addr=:27017
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls=:27018
+        --mode=diff-proxy
+        --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
 
   lint:
     desc: "Run linters"
     cmds:
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./ferretdb/...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
       - bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration integration-lint
@@ -287,7 +344,7 @@ tasks:
 
   security:
     desc: "Run security scanners"
-    deps: [security-trivy]
+    deps: [security-trivy, security-govulncheck]
 
   security-trivy:
     cmds:
@@ -298,6 +355,11 @@ tasks:
         --cache-dir=./.cache/trivy
         --exit-code=1
 
+  security-govulncheck:
+    cmds:
+      - bin/govulncheck{{exeExt}} -v -test ./...
+      - bin/task{{exeExt}} -d integration integration-security
+
   godocs:
     desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
     cmds:
@@ -306,21 +368,35 @@ tasks:
   psql:
     desc: "Run psql"
     cmds:
-      - docker compose exec postgres psql -U postgres -d ferretdb
+      - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
       - >
-        docker compose exec mongodb mongosh mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
-        --verbose --eval 'disableTelemetry()' --shell /mongosh/test.js
+        docker compose exec mongodb mongosh
+        'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell
 
-  mongo:
-    desc: "Run legacy `mongo` shell"
+  mongosh-secured:
+    desc: "Run MongoDB shell (`mongosh`) for secured FerretDB"
     cmds:
       - >
-        docker compose exec mongodb mongo mongodb://host.docker.internal:27017/test?heartbeatFrequencyMS=300000
-        --verbose
+        docker compose exec mongodb mongosh
+        --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA.pem
+        'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&heartbeatFrequencyMS=300000'
+        --verbose --eval 'disableTelemetry()' --shell
+
+  mongo-test:
+    desc: "Run legacy MongoDB shell (`mongo`) with test script"
+    cmds:
+      - >
+        docker compose run --rm legacy-mongo-shell
+        --tlsCertificateKeyFile /etc/certs/server.pem
+        --tlsCAFile /etc/certs/rootCA.pem
+        --tls
+        'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
+        /legacy-mongo-shell/test.js
 
   docker-init:
     cmds:
@@ -339,43 +415,39 @@ tasks:
         --load .
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/version.txt
       COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
-
-  docker-cache:
-    deps: [gen-version]
-    cmds:
-      - >
-        docker buildx build --builder=ferretdb
-        --build-arg VERSION={{.VERSION}}
-        --build-arg COMMIT={{.COMMIT}}
-        --build-arg RACEFLAG={{.RACEFLAG}}
-        --platform=linux/arm/v7,linux/arm64,linux/amd64
-        .
-    vars:
-      VERSION:
-        sh: cat internal/util/version/gen/version.txt
-      COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
+        sh: cat build/version/commit.txt
 
   docker-push:
     deps: [gen-version]
     cmds:
-      - test {{.DOCKER_IMAGE}}
       - >
         docker buildx build --builder=ferretdb
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --build-arg RACEFLAG={{.RACEFLAG}}
         --platform=linux/arm/v7,linux/arm64,linux/amd64
-        --tag={{.DOCKER_IMAGE}}
+        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --push .
     vars:
       VERSION:
-        sh: cat internal/util/version/gen/version.txt
+        sh: cat build/version/version.txt
       COMMIT:
-        sh: cat internal/util/version/gen/commit.txt
+        sh: cat build/version/commit.txt
+
+  docker-push-release:
+    cmds:
+      - task: docker-push
+        vars:
+          DOCKER_IMAGES: >
+            ferretdb/ferretdb:latest,
+            ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
+            ghcr.io/ferretdb/ferretdb:latest,
+            ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
+    vars:
+      VERSION:
+        sh: cat build/version/version.txt
 
   packages:
     cmds:
@@ -383,30 +455,28 @@ tasks:
       - task: packages-rpm
 
   packages-deb:
-    deps: [build-testcover]
     dir: build
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
       - >
-        docker compose run --rm debian /bin/sh -c
+        docker compose run --rm ubuntu /bin/sh -c
         'dpkg -i /deb/ferretdb.deb && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../internal/util/version/gen/version.txt
+        sh: cat ../build/version/version.txt
       GOARCH:
         sh: go env GOARCH
 
   packages-rpm:
-    deps: [build-testcover]
     dir: build
     cmds:
       - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
       - >
-        docker compose run --rm centos /bin/sh -c
+        docker compose run --rm ubi /bin/sh -c
         'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
     env:
       VERSION:
-        sh: cat ../internal/util/version/gen/version.txt
+        sh: cat ../build/version/version.txt
       GOARCH:
         sh: go env GOARCH
 
@@ -415,6 +485,12 @@ tasks:
     deps: [docs-fmt]
     cmds:
       - docker compose run --rm docusaurus-docs build
+
+  blog:
+    desc: "Format, lint and build blog"
+    deps: [docs-fmt]
+    cmds:
+      - docker compose run --rm docusaurus-blog build
 
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
@@ -427,3 +503,17 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+
+  docs-cloudflare-preview:
+    cmds:
+      # for debugging
+      - >
+        docker compose run --rm
+        --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
+        wrangler
+      - docker compose run --rm wrangler pages deployment create --project-name=docs website/build
+
+  blog-dev:
+    desc: "Start blog development server"
+    cmds:
+      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0

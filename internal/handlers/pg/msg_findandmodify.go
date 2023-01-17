@@ -30,6 +30,11 @@ import (
 
 // MsgFindAndModify implements HandlerInterface.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -74,7 +79,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
 	// We might consider rewriting it later.
 	var reply wire.OpMsg
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var resDocs []*types.Document
 		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sqlParam)
 		if err != nil {
@@ -102,7 +107,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					update:             params.Update,
 					sqlParam:           &sqlParam,
 				}
-				upsert, upserted, err = h.upsert(ctx, tx, resDocs, p)
+				upsert, upserted, err = upsertDocuments(ctx, dbPool, tx, resDocs, p)
 				if err != nil {
 					return err
 				}
@@ -126,9 +131,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						return err
 					}
 
-					_, err = h.update(ctx, tx, &sqlParam, upsert)
-
-					if err != nil {
+					if _, err = updateDocument(ctx, tx, &sqlParam, upsert); err != nil {
 						return err
 					}
 				} else {
@@ -138,9 +141,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 					}
 
-					_, err = h.update(ctx, tx, &sqlParam, upsert)
-
-					if err != nil {
+					if _, err = updateDocument(ctx, tx, &sqlParam, upsert); err != nil {
 						return err
 					}
 				}
@@ -185,8 +186,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil
 			}
 
-			_, err = h.delete(ctx, &sqlParam, resDocs)
-			if err != nil {
+			if _, err = deleteDocuments(ctx, dbPool, &sqlParam, resDocs); err != nil {
 				return err
 			}
 
@@ -217,11 +217,11 @@ type upsertParams struct {
 	sqlParam           *pgdb.SQLParam
 }
 
-// upsert inserts new document if no documents in query result or updates given document.
+// upsertDocuments inserts new document if no documents in query result or updates given document.
 // When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document, params *upsertParams) (
-	*types.Document, bool, error,
-) {
+func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
+	// TODO split that block into own function since insert and update are very different
+	// (and one uses dbPool, while other uses tx)
 	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
@@ -242,8 +242,7 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 			}
 		}
 
-		err := h.insert(ctx, params.sqlParam, upsert)
-		if err != nil {
+		if err := insertDocument(ctx, dbPool, params.sqlParam, upsert); err != nil {
 			return nil, false, err
 		}
 
@@ -263,7 +262,7 @@ func (h *Handler) upsert(ctx context.Context, tx pgx.Tx, docs []*types.Document,
 		}
 	}
 
-	_, err := h.update(ctx, tx, params.sqlParam, upsert)
+	_, err := updateDocument(ctx, tx, params.sqlParam, upsert)
 	if err != nil {
 		return nil, false, err
 	}

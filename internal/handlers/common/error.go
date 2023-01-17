@@ -58,6 +58,9 @@ const (
 	// ErrInvalidID indicates that _id field is invalid.
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
+	// ErrEmptyName indicates that the field name is empty.
+	ErrEmptyName = ErrorCode(56) // EmptyName
+
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
@@ -73,8 +76,8 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
-	ErrFailedToParseInput = ErrorCode(40415) // Location40415
+	// ErrMechanismUnavailable indicates unsupported authentication mechanism.
+	ErrMechanismUnavailable = ErrorCode(334) // MechanismUnavailable
 
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
@@ -96,8 +99,14 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrEmptyFieldPath indicates that the field path is empty.
+	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
+
 	// ErrMissingField indicates that the required field in document is missing.
 	ErrMissingField = ErrorCode(40414) // Location40414
+
+	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
+	ErrFailedToParseInput = ErrorCode(40415) // Location40415
 
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
@@ -208,9 +217,9 @@ func CheckError(err error) error {
 
 	switch ve.Code() {
 	case types.ErrValidation, types.ErrIDNotFound:
-		return NewCommandErrorMsg(ErrBadValue, err.Error())
+		return NewCommandErrorMsg(ErrBadValue, ve.Error())
 	case types.ErrWrongIDType:
-		return NewWriteErrorMsg(ErrInvalidID, err.Error())
+		return NewWriteErrorMsg(ErrInvalidID, ve.Error())
 	default:
 		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 	}

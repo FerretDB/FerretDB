@@ -20,19 +20,25 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetLog implements HandlerInterface.
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -83,23 +89,32 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		info, err := h.db.Driver.Info(ctx)
-		if err != nil {
+		var info *driver.InfoResponse
+
+		if info, err = dbPool.Driver.Info(ctx); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		mv := version.Get()
 
 		startupWarnings := []string{
 			"Powered by FerretDB " + version.Get().Version + " and Tigris " + info.ServerVersion + ".",
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris.",
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1443
 		state := h.StateProvider.Get()
-		if state.Telemetry == nil {
+
+		switch {
+		case state.Telemetry == nil:
 			startupWarnings = append(
 				startupWarnings,
 				"The telemetry state is undecided; the first report will be sent soon. "+
 					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			)
+		case state.LatestVersion != mv.Version:
+			startupWarnings = append(
+				startupWarnings,
+				fmt.Sprintf("New version available! Latest version: %s; Current version: %s", state.LatestVersion, mv.Version),
 			)
 		}
 
@@ -120,9 +135,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-			if err = log.Append(string(b)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+
+			log.Append(string(b))
 		}
 		resDoc = must.NotFail(types.NewDocument(
 			"log", &log,

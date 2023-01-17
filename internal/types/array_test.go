@@ -24,31 +24,19 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
-	int32Array   = must.NotFail(NewArray(int32(42), int32(50), int32(2), int32(30)))
-	int64Array   = must.NotFail(NewArray(int64(42), int64(50), int64(2), int64(30)))
-	intArray     = must.NotFail(NewArray(int64(42), int64(50), int32(50), int64(2), int32(2), int64(30)))
-	floatArray   = must.NotFail(NewArray(42.0, 50.1, 2.2, 30.3))
-	numericArray = must.NotFail(NewArray(int64(2), int32(2), 2.0))
-	zeroArray    = must.NotFail(NewArray(int64(0), int32(0), math.Copysign(0, +1), math.Copysign(0, -1)))
-	emptyArray   = must.NotFail(NewArray())
-
-	stingArray = must.NotFail(NewArray("foo", "zoo", "", "bar"))
-
-	scalarTypesArray = must.NotFail(NewArray(
-		int32(42),
-		int64(42),
-		float64(42),
-		"foo",
-		Binary{},
-		ObjectID{},
-		true,
-		time.Time{},
-		NullType{},
-		Regex{},
-		Timestamp(42),
-	))
-)
+var scalarTypesArray = must.NotFail(NewArray(
+	int32(42),
+	int64(42),
+	float64(42),
+	"foo",
+	Binary{},
+	ObjectID{},
+	true,
+	time.Time{},
+	NullType{},
+	Regex{},
+	Timestamp(42),
+))
 
 func TestArray(t *testing.T) {
 	t.Parallel()
@@ -71,8 +59,7 @@ func TestArray(t *testing.T) {
 		assert.Equal(t, 0, a.Len())
 		assert.Nil(t, a.s)
 
-		err := a.Append(Null)
-		assert.NoError(t, err)
+		a.Append(Null)
 		value, err := a.Get(0)
 		assert.NoError(t, err)
 		assert.Equal(t, Null, value)
@@ -93,6 +80,14 @@ func TestArray(t *testing.T) {
 }
 
 func TestArrayMinMax(t *testing.T) {
+	int32Array := must.NotFail(NewArray(int32(42), int32(50), int32(2), int32(30)))
+	int64Array := must.NotFail(NewArray(int64(42), int64(50), int64(2), int64(30)))
+	intArray := must.NotFail(NewArray(int64(42), int64(50), int32(50), int64(2), int32(2), int64(30)))
+	floatArray := must.NotFail(NewArray(42.0, 50.1, 2.2, 30.3))
+	numericArray := must.NotFail(NewArray(int64(2), int32(2), 2.0))
+	zeroArray := must.NotFail(NewArray(int64(0), int32(0), math.Copysign(0, +1), math.Copysign(0, -1)))
+	stingArray := must.NotFail(NewArray("foo", "zoo", "", "bar"))
+
 	const (
 		min = "min"
 		max = "max"
@@ -116,7 +111,7 @@ func TestArrayMinMax(t *testing.T) {
 		"IntMin": {
 			arr:           intArray,
 			minOrMax:      min,
-			expectedValue: int32(2),
+			expectedValue: int64(2),
 		},
 		"FloatMin": {
 			arr:           floatArray,
@@ -126,12 +121,12 @@ func TestArrayMinMax(t *testing.T) {
 		"NumericMin": {
 			arr:           numericArray,
 			minOrMax:      min,
-			expectedValue: 2.0,
+			expectedValue: int64(2),
 		},
 		"ZeroMin": {
 			arr:           zeroArray,
 			minOrMax:      min,
-			expectedValue: math.Copysign(0, -1),
+			expectedValue: int64(0),
 		},
 		"StringMin": {
 			arr:           stingArray,
@@ -297,14 +292,14 @@ func TestFilterArrayByType(t *testing.T) {
 			)),
 		},
 		"EmptyArray": {
-			arr:           emptyArray,
+			arr:           must.NotFail(NewArray()),
 			refValue:      Timestamp(42),
-			expectedArray: emptyArray,
+			expectedArray: must.NotFail(NewArray()),
 		},
 		"Nil": {
 			arr:           nil,
 			refValue:      Timestamp(42),
-			expectedArray: emptyArray,
+			expectedArray: must.NotFail(NewArray()),
 		},
 	} {
 		name, tc := name, tc

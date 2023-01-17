@@ -16,10 +16,12 @@ package types
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -133,6 +135,11 @@ func (d *Document) Len() int {
 	}
 
 	return len(d.fields)
+}
+
+// Iterator returns an iterator over the document fields.
+func (d *Document) Iterator() iterator.Interface[string, any] {
+	return newDocumentIterator(d)
 }
 
 // Map returns this document as a map. Do not modify it.
@@ -325,6 +332,11 @@ func (d *Document) SetByPath(path Path, value any) error {
 			)
 		}
 
+		// In case if value is set in the middle of the array, we should fill the gap with Null
+		for i := inner.Len(); i <= index; i++ {
+			inner.Append(Null)
+		}
+
 		return inner.Set(index, value)
 	default:
 		return fmt.Errorf(
@@ -345,6 +357,43 @@ func (d *Document) RemoveByPath(path Path) {
 		return
 	}
 	removeByPath(d, path)
+}
+
+// SortFieldsByKey sorts the document fields by ascending order of the key.
+func (d *Document) SortFieldsByKey() *Document {
+	if d.Len() == 0 {
+		return d
+	}
+
+	sorter := &fieldSorter{fields: d.fields}
+	sorter.Sort()
+
+	return d
+}
+
+// fieldSorter sorts the document fields by the key.
+type fieldSorter struct {
+	fields []field
+}
+
+// Sort the document field by key name.
+func (ds *fieldSorter) Sort() {
+	sort.Sort(ds)
+}
+
+// Len returns the length of the fields.
+func (ds *fieldSorter) Len() int {
+	return len(ds.fields)
+}
+
+// Swap changes position of elements i and j.
+func (ds *fieldSorter) Swap(i, j int) {
+	ds.fields[i], ds.fields[j] = ds.fields[j], ds.fields[i]
+}
+
+// Less returns true if the name of i-th key is less than j-th key.
+func (ds *fieldSorter) Less(i, j int) bool {
+	return Compare(ds.fields[i].key, ds.fields[j].key) == Less
 }
 
 // isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.

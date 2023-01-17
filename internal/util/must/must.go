@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package must provides Do helper function.
+// Package must provides helper functions that panic on error.
 package must
 
 // NotFail panics if the error is not nil, returns res otherwise.

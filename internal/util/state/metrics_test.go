@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/version"
+	"github.com/FerretDB/FerretDB/build/version"
 )
 
 func TestMetrics(t *testing.T) {
@@ -46,13 +46,14 @@ func TestMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, problems)
 
+		//nolint:lll // it is more readable this way
 		expected := fmt.Sprintf(
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",telemetry="undecided",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",uuid=%q,version=%q} 1
 			`,
-			v.Branch, v.Commit, v.Debug, v.Dirty, uuid, v.Version,
+			v.Branch, v.Commit, v.DebugBuild, v.Dirty, uuid, v.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
@@ -69,9 +70,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",telemetry="undecided",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",version=%q} 1
 			`,
-			v.Branch, v.Commit, v.Debug, v.Dirty, v.Version,
+			v.Branch, v.Commit, v.DebugBuild, v.Dirty, v.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})

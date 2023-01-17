@@ -28,10 +28,13 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter     bson.D                   // required
-	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	projection bson.D                   // nil for leaving projection unset
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	filter         bson.D                   // required
+	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	projection     bson.D                   // nil for leaving projection unset
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown bool                     // defaults to false
+	skipForTigris  string                   // skip test for Tigris
+	skip           string                   // skip test for all backends, myst have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -46,6 +49,14 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			t.Parallel()
 
@@ -68,6 +79,18 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
+
+					explainQuery := bson.D{{"explain", bson.D{
+						{"find", targetCollection.Name()},
+						{"filter", filter},
+						{"sort", opts.Sort},
+						{"projection", opts.Projection},
+					}}}
+
+					var explainRes bson.D
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
+
+					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -136,14 +159,33 @@ func TestQueryCompat(t *testing.T) {
 			filter: bson.D{},
 		},
 		"IDString": {
-			filter: bson.D{{"_id", "string"}},
+			filter:         bson.D{{"_id", "string"}},
+			resultPushdown: true,
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
+			filter:         bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown: true,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
 			resultType: emptyResult,
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryCompatSort(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Asc": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", 1}, {"_id", 1}},
+		},
+		"Desc": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", -1}, {"_id", 1}},
 		},
 	}
 

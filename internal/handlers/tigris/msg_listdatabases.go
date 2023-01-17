@@ -27,6 +27,11 @@ import (
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -39,7 +44,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	common.Ignored(document, h.L, "comment", "authorizedDatabases")
 
-	databaseNames, err := h.db.Driver.ListDatabases(ctx)
+	databaseNames, err := dbPool.Driver.ListProjects(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +57,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var totalSize int64
 	databases := types.MakeArray(len(databaseNames))
 	for _, databaseName := range databaseNames {
-		res, err := h.db.Driver.DescribeDatabase(ctx, databaseName)
+		res, err := dbPool.Driver.DescribeDatabase(ctx, databaseName)
 		if err != nil {
 			// check if database was removed between ListDatabases and DescribeDatabase calls
 			if tigrisdb.IsNotFound(err) {
@@ -84,9 +89,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			))
 		}
 
-		if err = databases.Append(d); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		databases.Append(d)
 	}
 
 	if nameOnly {

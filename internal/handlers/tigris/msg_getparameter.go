@@ -16,16 +16,18 @@ package tigris
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetParameter implements HandlerInterface.
-func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -39,7 +41,6 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	resDB := must.NotFail(types.NewDocument(
-		"acceptApiVersion2", false,
 		"authSchemaVersion", int32(5),
 		"quiet", false,
 		"ok", float64(1),
@@ -48,7 +49,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	var reply wire.OpMsg
 	resDoc := resDB
 	if getParameter != "*" {
-		resDoc, err = selectParam(document, resDB)
+		resDoc, err = selectParam(resDB)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -69,21 +70,27 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 }
 
 // selectParam is makes a selection of requested parameters.
-func selectParam(document, resDB *types.Document) (doc *types.Document, err error) {
-	doc = must.NotFail(types.NewDocument())
-	keys := document.Keys()
+func selectParam(resDB *types.Document) (*types.Document, error) {
+	doc := must.NotFail(types.NewDocument())
 
-	for _, k := range keys {
+	iter := resDB.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, err
+		}
+
 		if k == "getParameter" || k == "comment" || k == "$db" {
 			continue
 		}
 
-		item, err := resDB.Get(k)
-		if err != nil {
-			continue
-		}
-
-		doc.Set(k, item)
+		doc.Set(k, v)
 	}
 
 	if doc.Len() < 1 {

@@ -103,7 +103,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 		switch v.(type) {
 		case string:
 			// filtering by string values is complicated if the storage supports encodings, collations, etc,
-			// but Tigris doesn't support any of these
+			// but Tigris does not support any of these
 		case types.ObjectID:
 			// filtering by ObjectID is always safe
 		default:

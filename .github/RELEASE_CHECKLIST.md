@@ -16,25 +16,23 @@
 ## Git tag
 
 1. Make a signed tag `vX.Y.Z` with the relevant section of the changelog using `--cleanup=verbatim`.
-2. Push it!
-3. Check `task gen; cat internal/util/version/gen/version.txt; git status` output.
+2. Check `task gen-version; git status` output.
+3. Push it!
 4. Refresh
    * `env GOPROXY=https://proxy.golang.org go mod download -x github.com/FerretDB/FerretDB@<tag>`
    * `https://pkg.go.dev/github.com/FerretDB/FerretDB@<tag>` from <https://pkg.go.dev/github.com/FerretDB/FerretDB?tab=versions>
 
 ## Docker
 
-1. `task docker-cache`
-2. `task docker-push` with four tags (`X.Y.Z` without leading `v` and `latest` for both ghcr.io and Docker Hub):
-   * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:latest`
-   * `task docker-push DOCKER_IMAGE=ferretdb/ferretdb:<tag>`
-   * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:latest`
-   * `task docker-push DOCKER_IMAGE=ghcr.io/ferretdb/ferretdb:<tag>`
-   * Check <https://hub.docker.com/r/ferretdb/ferretdb/tags>, <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>.
+1. Check `task gen-version; git status` output.
+2. `task docker-push-release`.
+3. Check <https://hub.docker.com/r/ferretdb/ferretdb/tags>, <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>.
 
 ## Release
 
-1. Upload .deb and .rpm packages [from the CI build for the tag](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush) to the draft release.
+1. Upload the binary and .deb and .rpm packages
+   [from the CI build for the tag](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
+   to the draft release.
 2. Close milestone in issues.
 3. Publish release on GitHub.
 4. Announce it on Slack.

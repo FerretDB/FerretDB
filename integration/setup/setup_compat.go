@@ -17,7 +17,7 @@ package setup
 import (
 	"context"
 	"errors"
-	"strings"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,7 +28,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -36,10 +35,6 @@ import (
 //
 // TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 type SetupCompatOpts struct {
-	// Database to use. If empty, temporary test-specific database is created and dropped after test.
-	// Most tests should keep this empty.
-	DatabaseName string
-
 	// Data providers.
 	Providers []shareddata.Provider
 
@@ -48,7 +43,6 @@ type SetupCompatOpts struct {
 	// TODO This flag is not needed, always add a non-existent collection https://github.com/FerretDB/FerretDB/issues/1545
 	AddNonExistentCollection bool
 
-	ownDatabase        bool
 	databaseName       string
 	baseCollectionName string
 }
@@ -57,10 +51,7 @@ type SetupCompatOpts struct {
 type SetupCompatResult struct {
 	Ctx               context.Context
 	TargetCollections []*mongo.Collection
-	TargetPort        uint16
 	CompatCollections []*mongo.Collection
-	CompatPort        uint16
-	StateProvider     *state.Provider
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
@@ -70,8 +61,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	startup()
 
 	// skip tests for MongoDB as soon as possible
-	compatPort := *compatPortF
-	if compatPort == 0 {
+	if *compatPortF == 0 {
 		tb.Skip("compatibility tests require second system")
 	}
 
@@ -79,16 +69,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
-	opts.databaseName = opts.DatabaseName
-	if opts.DatabaseName == "" {
-		// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
-		// they both use the same MongoDB instance.
-		// Add the handler's name to prevent the usage of the same database.
-		// The only test that uses DatabaseName is `TestEnvData`,
-		// but it is protected by a build tag; see comment there.
-		opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
-		opts.ownDatabase = true
-	}
+	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
+	// they both use the same MongoDB instance.
+	// Add the handler's name to prevent the usage of the same database.
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -100,32 +84,33 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	}
 	logger := testutil.Logger(tb, level)
 
-	var stateProvider *state.Provider
-	var uri string
-	targetPort := *targetPortF
-	if targetPort == 0 {
-		targetUnixSocket := *targetUnixSocketF
-		stateProvider, uri = setupListener(tb, ctx, logger, targetUnixSocket)
+	var targetURI string
+	if *targetPortF == 0 {
+		targetURI = setupListener(tb, ctx, logger)
 	} else {
-		uri = buildMongoDBURI(tb, targetPort)
+		targetURI = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
+		})
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatUri := buildMongoDBURI(tb, compatPort)
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, uri), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatUri), opts)
+	compatURI := buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
+		tls:      *compatTLSF,
+	})
+
+	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetURI), opts)
+	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatURI), opts)
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupCompatResult{
 		Ctx:               ctx,
 		TargetCollections: targetCollections,
-		TargetPort:        uint16(targetPort),
 		CompatCollections: compatCollections,
-		CompatPort:        uint16(compatPort),
-		StateProvider:     stateProvider,
 	}
 }
 
@@ -145,27 +130,22 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 	database := client.Database(opts.databaseName)
 
-	if opts.ownDatabase {
-		// drop remnants of the previous failed run
-		_ = database.Drop(ctx)
+	// drop remnants of the previous failed run
+	_ = database.Drop(ctx)
 
-		// delete database unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				return
-			}
+	// delete database unless test failed
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			return
+		}
 
-			err := database.Drop(ctx)
-			require.NoError(tb, err)
-		})
-	}
+		err := database.Drop(ctx)
+		require.NoError(tb, err)
+	})
 
 	collections := make([]*mongo.Collection, 0, len(opts.Providers))
 	for _, provider := range opts.Providers {
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
-		if !opts.ownDatabase {
-			collectionName = strings.ToLower(provider.Name())
-		}
 		fullName := opts.databaseName + "." + collectionName
 
 		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
@@ -205,18 +185,16 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
-		if opts.ownDatabase {
-			// delete collection unless test failed
-			tb.Cleanup(func() {
-				if tb.Failed() {
-					tb.Logf("Keeping %s for debugging.", fullName)
-					return
-				}
+		// delete collection unless test failed
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				tb.Logf("Keeping %s for debugging.", fullName)
+				return
+			}
 
-				err := collection.Drop(ctx)
-				require.NoError(tb, err)
-			})
-		}
+			err := collection.Drop(ctx)
+			require.NoError(tb, err)
+		})
 
 		collections = append(collections, collection)
 	}

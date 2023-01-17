@@ -26,7 +26,8 @@ type nullType types.NullType
 // pjsontype implements pjsontype interface.
 func (*nullType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
+// This method should never be called, as nullType values must be caught by the caller of this method.
 func (*nullType) UnmarshalJSON(data []byte) error {
 	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }

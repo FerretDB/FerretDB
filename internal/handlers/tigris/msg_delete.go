@@ -32,6 +32,11 @@ import (
 
 // MsgDelete implements HandlerInterface.
 func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -68,9 +73,10 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsg(
+		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
 		)
 	}
 
@@ -90,7 +96,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := h.execDelete(ctx, &fp, filter, limit)
+		del, err := h.execDelete(ctx, dbPool, &fp, filter, limit)
 		if err == nil {
 			deleted += del
 			continue
@@ -164,7 +170,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, fp *tigrisdb.FetchParam, filter *types.Document, limit int64) (int32, error) {
+func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam, filter *types.Document, limit int64) (int32, error) { //nolint:lll // argument list is too long
 	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
@@ -172,7 +178,7 @@ func (h *Handler) execDelete(ctx context.Context, fp *tigrisdb.FetchParam, filte
 	var deleted int32
 
 	// fetch current items from collection
-	fetchedDocs, err := h.db.QueryDocuments(ctx, fp)
+	fetchedDocs, err := dbPool.QueryDocuments(ctx, fp)
 	if err != nil {
 		return 0, err
 	}
@@ -201,7 +207,7 @@ func (h *Handler) execDelete(ctx context.Context, fp *tigrisdb.FetchParam, filte
 		return 0, nil
 	}
 
-	res, err := h.delete(ctx, fp, resDocs)
+	res, err := deleteDocuments(ctx, dbPool, fp, resDocs)
 	if err != nil {
 		return 0, err
 	}
@@ -211,8 +217,8 @@ func (h *Handler) execDelete(ctx context.Context, fp *tigrisdb.FetchParam, filte
 	return deleted, nil
 }
 
-// delete deletes documents by _id.
-func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*types.Document) (int, error) {
+// deleteDocuments deletes documents by _id.
+func deleteDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam, docs []*types.Document) (int, error) { //nolint:lll // argument list is too long
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
@@ -229,9 +235,7 @@ func (h *Handler) delete(ctx context.Context, fp *tigrisdb.FetchParam, docs []*t
 		f = must.NotFail(json.Marshal(map[string]any{"$or": ids}))
 	}
 
-	h.L.Sugar().Debugf("Delete filter: %s", f)
-
-	_, err := h.db.Driver.UseDatabase(fp.DB).Delete(ctx, fp.Collection, f)
+	_, err := dbPool.Driver.UseDatabase(fp.DB).Delete(ctx, fp.Collection, f)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}

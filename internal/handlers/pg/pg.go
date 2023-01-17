@@ -16,22 +16,33 @@
 package pg
 
 import (
+	"context"
+	"net/url"
+	"sync"
+
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
+	url url.URL
+
+	// accessed by DBPool(ctx)
+	rw    sync.RWMutex
+	pools map[string]*pgdb.Pool
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PgPool        *pgdb.Pool
+	PostgreSQLURL string
 	L             *zap.Logger
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
@@ -39,15 +50,73 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
+	if opts.PostgreSQLURL == "" {
+		return nil, lazyerrors.New("PostgreSQL URL is not provided")
+	}
+
+	u, err := url.Parse(opts.PostgreSQLURL)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	h := &Handler{
 		NewOpts: opts,
+		url:     *u,
+		pools:   make(map[string]*pgdb.Pool, 1),
 	}
+
 	return h, nil
 }
 
 // Close implements HandlerInterface.
 func (h *Handler) Close() {
-	h.PgPool.Close()
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	for k, pgPool := range h.pools {
+		pgPool.Close()
+		delete(h.pools, k)
+	}
+}
+
+// DBPool returns database connection pool for the given client connection.
+//
+// Pool is not closed when ctx is canceled.
+func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
+	connInfo := conninfo.Get(ctx)
+	username, password := connInfo.Auth()
+
+	// do not log password or full URL
+
+	// replace authentication info only if it is present in the connection
+	u := h.url
+	if username != "" && password != "" {
+		u.User = url.UserPassword(username, password)
+	}
+	url := u.String()
+
+	h.rw.RLock()
+	p, ok := h.pools[url]
+	h.rw.RUnlock()
+
+	if ok {
+		h.L.Debug("DBPool: found existing pool", zap.String("username", username))
+		return p, nil
+	}
+
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	p, err := pgdb.NewPool(ctx, url, h.L, h.StateProvider)
+	if err != nil {
+		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
+		return nil, lazyerrors.Error(err)
+	}
+
+	h.L.Info("DBPool: authentication succeed", zap.String("username", username))
+	h.pools[url] = p
+
+	return p, nil
 }
 
 // check interfaces

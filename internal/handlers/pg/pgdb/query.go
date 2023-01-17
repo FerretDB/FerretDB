@@ -54,37 +54,54 @@ type SQLParam struct {
 	Filter     *types.Document
 }
 
-// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
-// If the collection doesn't exist, it returns an empty iterator and no error.
-// If an error occurs, it returns nil and that error, possibly wrapped.
-func (pgPool *Pool) GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (
-	iterator.Interface[uint32, *types.Document], error,
-) {
-	q, args, err := buildQuery(ctx, tx, sp)
-	if err != nil {
-		if errors.Is(err, ErrTableNotExist) {
-			return newIterator(ctx, nil), nil
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	rows, err := tx.Query(ctx, q, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return newIterator(ctx, rows), nil
-}
-
 // Explain returns SQL EXPLAIN results for given query parameters.
 func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
-	q, args, err := buildQuery(ctx, tx, &sp)
+	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	rows, err := tx.Query(ctx, q, args...)
+	if !exists {
+		return nil, lazyerrors.Error(ErrTableNotExist)
+	}
+
+	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var query string
+
+	if sp.Explain {
+		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	}
+
+	query += `SELECT _jsonb `
+
+	if c := sp.Comment; c != "" {
+		// prevent SQL injections
+		c = strings.ReplaceAll(c, "/*", "/ *")
+		c = strings.ReplaceAll(c, "*/", "* /")
+
+		query += `/* ` + c + ` */ `
+	}
+
+	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+
+	var args []any
+
+	if sp.Filter != nil {
+		var where string
+
+		where, args = prepareWhereClause(sp.Filter)
+		query += where
+	}
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -119,35 +136,83 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 	return res, nil
 }
 
-// buildQuery builds SELECT or EXPLAIN SELECT query.
-//
-// It returns the query string and the arguments.
-// If schema/database or table/collection does not exist,
-// it returns (possibly wrapped) ErrSchemaNotExist or ErrTableNotExist.
-func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, error) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
+// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
+// If the collection doesn't exist, it returns an empty iterator and no error.
+// If an error occurs, it returns nil and that error, possibly wrapped.
+func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
+	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, ErrTableNotExist):
+		return newIterator(ctx, nil), nil
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
+		schema:  sp.DB,
+		table:   table,
+		explain: sp.Explain,
+		comment: sp.Comment,
+		filter:  sp.Filter,
+	})
 	if err != nil {
-		return "", nil, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	if !exists {
-		return "", nil, lazyerrors.Error(ErrTableNotExist)
+	return iter, nil
+}
+
+// queryById returns the first found document by its ID from the given PostgreSQL schema and table.
+// If the document is not found, it returns nil and no error.
+func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
+	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
+
+	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	query += where
+
+	var b []byte
+	err := tx.QueryRow(ctx, query, args...).Scan(&b)
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgx.ErrNoRows):
+		return nil, nil
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
-	table, err := getTableName(ctx, tx, sp.DB, sp.Collection)
+	doc, err := pjson.Unmarshal(b)
 	if err != nil {
-		return "", nil, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
+	return doc, nil
+}
+
+// iteratorParams contains parameters for building an iterator.
+type iteratorParams struct {
+	filter  *types.Document
+	schema  string
+	table   string
+	comment string
+	explain bool
+}
+
+// buildIterator returns an iterator to fetch documents for given iteratorParams.
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
 	var query string
 
-	if sp.Explain {
+	if p.explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
-	query += ` SELECT _jsonb `
+	query += `SELECT _jsonb `
 
-	if c := sp.Comment; c != "" {
+	if c := p.comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -155,18 +220,23 @@ func buildQuery(ctx context.Context, tx pgx.Tx, sp *SQLParam) (string, []any, er
 		query += `/* ` + c + ` */ `
 	}
 
-	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
 	var args []any
 
-	if sp.Filter != nil {
+	if p.filter != nil {
 		var where string
 
-		where, args = prepareWhereClause(sp.Filter)
+		where, args = prepareWhereClause(p.filter)
 		query += where
 	}
 
-	return query, args, nil
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return newIterator(ctx, rows), nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
@@ -179,10 +249,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		switch k {
 		case "_id":
 			switch v := v.(type) {
+			case string:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
 			case types.ObjectID:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-
-				args = append(args, string(must.NotFail(pjson.Marshal(v))))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
 		default:
 			continue
@@ -213,7 +286,7 @@ func convertJSON(value any) any {
 	case []any:
 		a := types.MakeArray(len(value))
 		for _, v := range value {
-			must.NoError(a.Append(convertJSON(v)))
+			a.Append(convertJSON(v))
 		}
 		return a
 

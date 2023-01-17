@@ -16,7 +16,7 @@ That makes it ideal for applications and workloads requiring flexible schemas, s
 
 :::note
 For Tigris, FerretDB requires you to declare a JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
-Get more information on the key differences [here](https://docs.ferretdb.io/diff/).
+Get more information on the key differences [here](/diff/).
 :::
 
 ## Documents
@@ -38,7 +38,7 @@ The above data is stored in a single document.
 
 :::note
 FerretDB follows almost the same naming conventions as MongoDB.
-However, there are a few restrictions, which you can find  [here](https://docs.ferretdb.io/diff/).
+However, there are a few restrictions, which you can find  [here](/diff/).
 :::
 
 For complex documents, you can nest objects (subdocuments) inside a document.
@@ -160,7 +160,7 @@ Read more on [jsonb in PostgreSQL](https://www.postgresql.org/docs/current/datat
 
 In Tigris case, we convert MongoDB BSON to Tigris data based on the [Tigris model](https://docs.tigrisdata.com/documents/datamodel).
 There are a few differences in how data is stored in PostgreSQL and Tigris.
-Please [check here](https://docs.ferretdb.io/diff/) for more details on the differences.
+Please [check here](/diff/) for more details on the differences.
 
 :::caution
 FerretDB is still under development and not currently suitable for production-ready environments.

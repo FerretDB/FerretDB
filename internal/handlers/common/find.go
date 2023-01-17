@@ -52,9 +52,10 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	var ok bool
 	if res.Collection, ok = collection.(string); !ok {
-		return nil, NewCommandErrorMsg(
+		return nil, NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collection)),
+			doc.Command(),
 		)
 	}
 

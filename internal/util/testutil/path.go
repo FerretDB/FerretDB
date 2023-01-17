@@ -82,6 +82,7 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expec
 
 	expectedV := GetByPath(tb, expected, path)
 	actualV := GetByPath(tb, actual, path)
+	assert.IsType(tb, expectedV, actualV)
 	assert.InDelta(tb, expectedV, actualV, delta)
 
 	SetByPath(tb, expected, actualV, path)

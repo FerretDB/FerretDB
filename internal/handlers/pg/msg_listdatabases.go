@@ -29,6 +29,11 @@ import (
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -48,7 +53,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var totalSize int64
 	var databases *types.Array
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var databaseNames []string
 		var err error
 		databaseNames, err = pgdb.Databases(ctx, tx)
@@ -59,7 +64,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		databases = types.MakeArray(len(databaseNames))
 		for _, databaseName := range databaseNames {
 			var sizeOnDisk int64
-			sizeOnDisk, err = h.PgPool.TablesSize(ctx, tx, databaseName)
+			sizeOnDisk, err = dbPool.TablesSize(ctx, tx, databaseName)
 			if err != nil {
 				return err
 			}
@@ -85,9 +90,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 				))
 			}
 
-			if err = databases.Append(d); err != nil {
-				return err
-			}
+			databases.Append(d)
 		}
 
 		if nameOnly {

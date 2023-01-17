@@ -35,7 +35,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -73,7 +74,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -132,7 +134,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `golangci-lint run --new` to work
+          lfs: false # LFS is used only by website
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -153,7 +156,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: source
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -172,7 +176,7 @@ jobs:
           repository: FerretDB/fuzz-corpus
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
           path: fuzz-corpus
-          fetch-depth: 0
+          fetch-depth: 0 # for commit and push to work
 
       - name: Start environment
         run: bin/task env-up-detach

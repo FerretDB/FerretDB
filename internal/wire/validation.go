@@ -24,27 +24,27 @@ import (
 
 // ValidationError is used for reporting validation errors.
 type ValidationError struct {
-	msg string
+	err error
 }
 
 // Error implements error interface.
 func (v ValidationError) Error() string {
-	return v.msg
+	return v.err.Error()
 }
 
 // Document returns the value of msg as a types.Document.
 func (v ValidationError) Document() *types.Document {
 	d := must.NotFail(types.NewDocument(
 		"ok", float64(0),
-		"errmsg", v.msg,
+		"errmsg", v.err.Error(),
 	))
 
 	return d
 }
 
-// NewValidationError returns new ValidationError.
-func NewValidationError(err error) error {
-	return &ValidationError{msg: err.Error()}
+// newValidationError returns new ValidationError.
+func newValidationError(err error) error {
+	return &ValidationError{err: err}
 }
 
 // validateValue checks given value and returns error if not supported value was encountered.
@@ -56,19 +56,18 @@ func validateValue(v any) error {
 				return err
 			}
 		}
+
 	case *types.Array:
 		for i := 0; i < v.Len(); i++ {
-			if err := validateValue(must.NotFail(v.Get(i))); err != nil {
+			v := must.NotFail(v.Get(i))
+			if err := validateValue(v); err != nil {
 				return err
 			}
 		}
+
 	case float64:
 		if math.IsNaN(v) {
 			return errors.New("NaN is not supported")
-		}
-
-		if v == 0 && math.Signbit(v) {
-			return errors.New("-0 is not supported")
 		}
 	}
 

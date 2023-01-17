@@ -17,6 +17,8 @@ package testutil
 import "testing"
 
 // TigrisURL returns Tigris URL for testing.
+//
+// TODO remove this function https://github.com/FerretDB/FerretDB/issues/1568
 func TigrisURL(tb testing.TB) string {
 	tb.Helper()
 

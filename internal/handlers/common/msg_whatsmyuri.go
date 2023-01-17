@@ -25,16 +25,10 @@ import (
 
 // MsgWhatsMyURI is a common implementation of the whatsMyURI command.
 func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	connInfo := conninfo.GetConnInfo(ctx)
-	var peerAddr string
-	if connInfo.PeerAddr != nil {
-		peerAddr = connInfo.PeerAddr.String()
-	}
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"you", peerAddr,
+			"you", conninfo.Get(ctx).PeerAddr,
 			"ok", float64(1),
 		))},
 	}))

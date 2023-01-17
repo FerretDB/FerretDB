@@ -28,14 +28,8 @@ type binaryType types.Binary
 // pjsontype implements pjsontype interface.
 func (bin *binaryType) pjsontype() {}
 
-// binaryJSON is a JSON object representation of the binaryType.
-type binaryJSON struct {
-	B []byte `json:"$b"`
-	S byte   `json:"s"`
-}
-
-// UnmarshalJSON implements pjsontype interface.
-func (bin *binaryType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
+func (bin *binaryType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -44,7 +38,7 @@ func (bin *binaryType) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o binaryJSON
+	var o []byte
 
 	err := dec.Decode(&o)
 	if err != nil {
@@ -55,18 +49,20 @@ func (bin *binaryType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	bin.B = o.B
-	bin.Subtype = types.BinarySubtype(o.S)
+	bin.B = o
+
+	if sch.Subtype == nil {
+		return lazyerrors.Errorf("binary subtype in the schema is nil")
+	}
+
+	bin.Subtype = *sch.Subtype
 
 	return nil
 }
 
 // MarshalJSON implements pjsontype interface.
 func (bin *binaryType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(binaryJSON{
-		B: bin.B,
-		S: byte(bin.Subtype),
-	})
+	res, err := json.Marshal(bin.B)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

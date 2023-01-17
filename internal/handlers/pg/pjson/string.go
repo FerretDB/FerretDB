@@ -27,7 +27,7 @@ type stringType string
 // pjsontype implements pjsontype interface.
 func (str *stringType) pjsontype() {}
 
-// UnmarshalJSON implements pjsontype interface.
+// UnmarshalJSON implements json.Unmarshaler interface.
 func (str *stringType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")

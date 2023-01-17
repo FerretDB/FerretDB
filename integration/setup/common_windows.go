@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-// listenUnix returns empty string on Windows because Unix domain sockets are not available.
-func listenUnix(tb testing.TB) string {
+// unixSocketPath returns empty string on Windows because Unix domain sockets are not available.
+func unixSocketPath(tb testing.TB) string {
 	return ""
 }

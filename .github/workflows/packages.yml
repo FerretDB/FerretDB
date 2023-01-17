@@ -33,7 +33,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -47,8 +48,19 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Build release binary
+        run: bin/task build-release
+
       - name: Build packages
         run: bin/task packages
+
+      - name: Upload ferretdb
+        uses: actions/upload-artifact@v3
+        with:
+          name: ferretdb
+          path: bin/ferretdb
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Upload ferretdb.deb
         uses: actions/upload-artifact@v3

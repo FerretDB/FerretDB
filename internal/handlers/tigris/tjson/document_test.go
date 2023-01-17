@@ -16,6 +16,7 @@ package tjson
 
 import (
 	"testing"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -46,21 +47,20 @@ func prepareTestCases() []testCase {
 				"name", "mongosh 1.0.1",
 			)),
 		)),
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "compression", must.NotFail(types.NewArray("none")),
+		"compression", must.NotFail(types.NewArray("none")),
 		"loadBalanced", false,
 	))
 	handshake1 := testCase{
 		name:   "handshake1",
 		v:      convertDocument(handshake1doc),
 		schema: must.NotFail(DocumentSchema(handshake1doc)),
-		j: `{"$k":["_id","ismaster","client","loadBalanced"],` +
+		j: `{"$k":["_id","ismaster","client","compression","loadBalanced"],` +
 			`"_id":"handshake1","ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
+			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
 	handshake2doc := must.NotFail(types.NewDocument(
@@ -82,21 +82,20 @@ func prepareTestCases() []testCase {
 				"name", "mongosh 1.0.1",
 			)),
 		)),
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "compression", must.NotFail(types.NewArray("none")),
+		"compression", must.NotFail(types.NewArray("none")),
 		"loadBalanced", false,
 	))
 	handshake2 := testCase{
 		name:   "handshake2",
 		v:      convertDocument(handshake2doc),
 		schema: must.NotFail(DocumentSchema(handshake2doc)),
-		j: `{"$k":["_id","ismaster","client","loadBalanced"],` +
+		j: `{"$k":["_id","ismaster","client","compression","loadBalanced"],` +
 			`"_id":"handshake2","ismaster":true,` +
 			`"client":{"$k":["driver","os","platform","application"],"driver":{"$k":["name","version"],` +
 			`"name":"nodejs","version":"4.0.0-beta.6"},"os":{"$k":["type","name","architecture","version"],` +
 			`"type":"Darwin","name":"darwin","architecture":"x64","version":"20.6.0"},` +
 			`"platform":"Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",` +
-			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"loadBalanced":false}`,
+			`"application":{"$k":["name"],"name":"mongosh 1.0.1"}},"compression":["none"],"loadBalanced":false}`,
 	}
 
 	handshake3doc := must.NotFail(types.NewDocument(
@@ -125,13 +124,11 @@ func prepareTestCases() []testCase {
 		"_id", "handshake4",
 		"version", "5.0.0",
 		"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "modules", must.NotFail(types.NewArray()),
+		"modules", must.NotFail(types.NewArray()),
 		"allocator", "tcmalloc",
 		"javascriptEngine", "mozjs",
 		"sysInfo", "deprecated",
-		// TODO Support arrays: https://github.com/FerretDB/FerretDB/issues/908
-		// "versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
+		"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
 		"openssl", must.NotFail(types.NewDocument(
 			"running", "OpenSSL 1.1.1f  31 Mar 2020",
 			"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
@@ -162,19 +159,18 @@ func prepareTestCases() []testCase {
 		"bits", int32(64),
 		"debug", false,
 		"maxBsonObjectSize", int32(16777216),
-		// TODO Support arrays:  https://github.com/FerretDB/FerretDB/issues/908
-		// "storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
+		"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 		"ok", float64(1),
 	))
 	handshake4 := testCase{
 		name:   "handshake4",
 		v:      convertDocument(handshake4doc),
 		schema: must.NotFail(DocumentSchema((handshake4doc))),
-		j: `{"$k":["_id","version","gitVersion","allocator","javascriptEngine","sysInfo",` +
-			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","ok"],` +
+		j: `{"$k":["_id","version","gitVersion","modules","allocator","javascriptEngine","sysInfo","versionArray",` +
+			`"openssl","buildEnvironment","bits","debug","maxBsonObjectSize","storageEngines","ok"],` +
 			`"_id":"handshake4",` +
-			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9",` +
-			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated",` +
+			`"version":"5.0.0","gitVersion":"1184f004a99660de6f5e745573419bda8a28c0e9","modules":[],` +
+			`"allocator":"tcmalloc","javascriptEngine":"mozjs","sysInfo":"deprecated","versionArray":[5,0,0,0],` +
 			`"openssl":{"$k":["running","compiled"],"running":"OpenSSL 1.1.1f  31 Mar 2020",` +
 			`"compiled":"OpenSSL 1.1.1f  31 Mar 2020"},` +
 			`"buildEnvironment":{"$k":["distmod","distarch","cc","ccflags","cxx","cxxflags","linkflags",` +
@@ -197,36 +193,44 @@ func prepareTestCases() []testCase {
 			`BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER ` +
 			`BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ` +
 			`ABSL_FORCE_ALIGNED_ACCESS"},"bits":64,"debug":false,"maxBsonObjectSize":16777216,` +
-			`"ok":1}`,
+			`"storageEngines":["devnull","ephemeralForTest","wiredTiger"],"ok":1}`,
 	}
 
 	allDoc := must.NotFail(types.NewDocument(
 		"_id", types.ObjectID(objectIDType{0x62, 0xea, 0x6a, 0x94, 0x3d, 0x44, 0xb1, 0x0e, 0x1b, 0x6b, 0x87, 0x97}),
-		"binary", types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-		"bool", true,
-		"double", 42.13,
-		"int32", int32(42),
-		"int64", int64(42),
-		"timestamp", types.Timestamp(1562470521),
-		"string", "foo",
-		"object", must.NotFail(types.NewDocument("foo", "bar")),
-		"regex", types.Regex{Pattern: "^foobar$", Options: "i"},
-		"null", "foo",
+		"binary", must.NotFail(types.NewArray(
+			types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
+			types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
+		)),
+		"bool", must.NotFail(types.NewArray(true, false)),
+		"datetime", must.NotFail(types.NewArray(
+			time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC),
+			time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC),
+		)),
+		"double", must.NotFail(types.NewArray(42.13, 0.0)),
+		"int32", must.NotFail(types.NewArray(int32(42), types.Null, int32(0))),
+		"int64", must.NotFail(types.NewArray(types.Null, int64(42), int64(0))),
+		"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
+		"string", must.NotFail(types.NewArray("foo", "")),
+		"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
+		"regex", must.NotFail(types.NewArray(types.Regex{Pattern: "^foobar$", Options: "i"}, types.Regex{})),
+		"null", must.NotFail(types.NewArray("null")), // null values need a schema too
 	))
+
 	allSchema := must.NotFail(DocumentSchema(allDoc))
-	allDoc.Set("null", types.Null) // Check that `null` set in a valid document and can be handled correctly
+	allDoc.Set("null", must.NotFail(types.NewArray(types.Null, types.Null)))
 	all := testCase{
 		name:   "all",
 		v:      convertDocument(allDoc),
 		schema: allSchema,
-		j: `{"$k":["_id","binary","bool","double","int32","int64","timestamp","string","object","regex","null"],` +
-			`"_id":"YupqlD1EsQ4ba4eX","binary":{"$b":"Qg==","s":128},"bool":true,"double":42.13,"int32":42,` +
-			`"int64":42,"timestamp":{"$t":"1562470521"},"string":"foo","object":{"$k":["foo"],"foo":"bar"},` +
-			`"regex":{"$r":"^foobar$","o":"i"},"null":null}`,
+		j: `{"$k":["_id","binary","bool","datetime","double","int32","int64","objectID","string","timestamp","regex","null"],` +
+			`"_id":"YupqlD1EsQ4ba4eX","binary":[{"$b":"Qg==","s":128},{"$b":"","s":0}],"bool":[true,false],` +
+			`"datetime":["2021-07-27T09:35:42.123Z","0000-01-01T00:00:00Z"],` +
+			`"double":[42.13,0],"int32":[42,null,0],"int64":[null,42,0],` +
+			`"objectID":["QgAAAAAAAAAAAAAA","AAAAAAAAAAAAAAAA"],"string":["foo",""],` +
+			`"timestamp":[{"$t":"42"},{"$t":"0"}],` +
+			`"regex":[{"$r":"^foobar$","o":"i"},{"$r":"","o":""}],"null":[null,null]}`,
 	}
-
-	// TODO Add a test case that contains arrays of various types (like in the pjson package):
-	// https://github.com/FerretDB/FerretDB/issues/908
 
 	eofDoc := must.NotFail(types.NewDocument("_id", "foo"))
 	eof := testCase{

@@ -13,6 +13,10 @@
 // limitations under the License.
 
 // Package ferretdb provides embeddable FerretDB implementation.
+//
+// See [build/version package documentation] for information about Go build tags that affect this package.
+//
+// [build/version package documentation]: https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version
 package ferretdb
 
 import (
@@ -23,6 +27,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -32,19 +37,13 @@ import (
 
 // Config represents FerretDB configuration.
 type Config struct {
-	// Listen address.
-	// If empty, TCP listener is disabled.
-	ListenAddr string
-
-	// Listen Unix domain socket path.
-	// If empty, Unix listener is disabled.
-	ListenUnix string
+	Listener ListenerConfig
 
 	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
-	PostgreSQLURL string // For example: `postgres://username:password@hostname:5432/ferretdb`.
+	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
 	// Tigris parameters for `tigris` handler.
 	// See https://docs.tigrisdata.com/overview/authentication
@@ -53,6 +52,30 @@ type Config struct {
 	TigrisClientSecret string
 	TigrisToken        string
 	TigrisURL          string
+}
+
+// ListenerConfig represents listener configuration.
+type ListenerConfig struct {
+	// Listen TCP address.
+	// If empty, TCP listener is disabled.
+	Addr string
+
+	// Listen Unix domain socket path.
+	// If empty, Unix listener is disabled.
+	Unix string
+
+	// Listen TLS address.
+	// If empty, TLS listener is disabled.
+	TLS string
+
+	// Server certificate path.
+	TLSCertFile string
+
+	// Server key path.
+	TLSKeyFile string
+
+	// Root CA certificate path.
+	TLSCAFile string
 }
 
 // FerretDB represents an instance of embeddable FerretDB implementation.
@@ -64,8 +87,10 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	if config.ListenAddr == "" && config.ListenUnix == "" {
-		return nil, errors.New("both ListenAddr and ListenUnix are empty")
+	if config.Listener.Addr == "" &&
+		config.Listener.Unix == "" &&
+		config.Listener.TLS == "" {
+		return nil, errors.New("Listener Addr, Unix and TLS are empty")
 	}
 
 	p, err := state.NewProvider("")
@@ -93,12 +118,18 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr: config.ListenAddr,
-		ListenUnix: config.ListenUnix,
-		Mode:       clientconn.NormalMode,
-		Metrics:    metrics,
-		Handler:    h,
-		Logger:     logger,
+		Listener: clientconn.ListenerOpts{
+			Addr:        config.Listener.Addr,
+			Unix:        config.Listener.Unix,
+			TLS:         config.Listener.TLS,
+			TLSCertFile: config.Listener.TLSCertFile,
+			TLSKeyFile:  config.Listener.TLSKeyFile,
+			TLSCAFile:   config.Listener.TLSCAFile,
+		},
+		Mode:    clientconn.NormalMode,
+		Metrics: metrics,
+		Handler: h,
+		Logger:  logger,
 	})
 
 	return &FerretDB{
@@ -133,16 +164,30 @@ func (f *FerretDB) Run(ctx context.Context) error {
 func (f *FerretDB) MongoDBURI() string {
 	var u *url.URL
 
-	if f.config.ListenAddr != "" {
+	switch {
+	case f.config.Listener.TLS != "":
+		q := make(url.Values)
+
+		q.Set("tls", "true")
+
+		u = &url.URL{
+			Scheme:   "mongodb",
+			Host:     f.l.TLS().String(),
+			Path:     "/",
+			RawQuery: q.Encode(),
+		}
+	case f.config.Listener.Addr != "":
 		u = &url.URL{
 			Scheme: "mongodb",
 			Host:   f.l.Addr().String(),
 			Path:   "/",
 		}
-	} else {
+	case f.config.Listener.Unix != "":
+		// MongoDB really wants Unix socket path in the host part of the URI
 		u = &url.URL{
 			Scheme: "mongodb",
-			Host:   f.l.Unix().String(), // TODO https://github.com/FerretDB/FerretDB/issues/1594
+			Host:   f.l.Unix().String(),
+			Path:   "/",
 		}
 	}
 
@@ -157,6 +202,11 @@ var logger *zap.Logger
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
 func init() {
-	logging.Setup(zap.ErrorLevel, "")
+	l := zap.ErrorLevel
+	if version.Get().DebugBuild {
+		l = zap.DebugLevel
+	}
+
+	logging.Setup(l, "")
 	logger = zap.L()
 }

@@ -27,7 +27,8 @@ const config = {
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
-        indexBlog: false,
+        indexBlog: true, // Index blog posts in search engine
+        indexDocs: true, // Blog plugin is disabled, blog search needs to be disabled too
       },
     ],
   ],
@@ -42,7 +43,6 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
         },
-        blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
@@ -61,15 +61,23 @@ const config = {
         },
         items: [
           {
-            type: 'doc',
-            docId: 'intro',
-            position: 'left',
+            to: '/',
             label: 'Documentation',
+            position: 'left'
           },
-          // {to: '/blog', label: 'Blog', position: 'left'},
+          {
+            href: 'https://blog.ferretdb.io/',
+            label: 'Blog',
+            position: 'left'
+          },
           {
             href: 'https://github.com/FerretDB/',
             label: 'GitHub',
+            position: 'right',
+          },
+          {
+            href: 'https://ferretdb.io/',
+            label: 'Go to FerretDB.io',
             position: 'right',
           },
         ],
@@ -82,7 +90,7 @@ const config = {
             items: [
               {
                 label: 'Documentation',
-                to: '/intro/',
+                to: '/',
               },
             ],
           },
@@ -110,10 +118,10 @@ const config = {
           {
             title: 'More',
             items: [
-              // {
-              //   label: 'Blog',
-              //   to: 'https://www.ferretdb.io/blog/',
-              // },
+              {
+                label: 'Blog',
+                to: 'https://blog.ferretdb.io/',
+              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',

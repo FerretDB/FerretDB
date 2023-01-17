@@ -16,20 +16,23 @@ package tigris
 
 import (
 	"context"
-	"net"
 	"os"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -55,28 +58,23 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	queryFilter := string(dbPool.BuildFilter(filter))
+
 	queryPlanner := must.NotFail(types.NewDocument(
-		"Filter", string(h.db.BuildFilter(filter)),
+		"Filter", queryFilter,
 	))
+
+	// if tigris query filter was set, it means, the pushdown was done
+	pushdown := queryFilter != "{}"
 
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var port int32
-
-	connInfo := conninfo.GetConnInfo(ctx)
-	if connInfo.PeerAddr != nil {
-		if tcpAddr, ok := connInfo.PeerAddr.(*net.TCPAddr); ok {
-			port = int32(tcpAddr.Port)
-		}
-	}
-
 	serverInfo := must.NotFail(types.NewDocument(
 		"host", hostname,
-		"port", port,
-		"version", version.MongoDBVersion,
+		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 		"ferretdbVersion", version.Get().Version,
 	))
@@ -91,6 +89,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
+			"pushdown", pushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

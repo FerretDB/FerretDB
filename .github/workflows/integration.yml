@@ -27,7 +27,7 @@ env:
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: ubuntu-22.04
+    runs-on: faster
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -45,7 +45,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

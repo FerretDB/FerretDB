@@ -27,7 +27,6 @@ func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, err
 		}
 		return docs[:limit], nil
 	default:
-		// TODO https://github.com/FerretDB/FerretDB/issues/79
 		return nil, NewCommandErrorMsg(ErrNotImplemented, "LimitDocuments: negative limit values are not supported")
 	}
 }

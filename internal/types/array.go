@@ -17,6 +17,7 @@ package types
 import (
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -32,6 +33,7 @@ func MakeArray(capacity int) *Array {
 	if capacity == 0 {
 		return new(Array)
 	}
+
 	return &Array{s: make([]any, 0, capacity)}
 }
 
@@ -60,6 +62,11 @@ func (a *Array) Len() int {
 	return len(a.s)
 }
 
+// Iterator returns an iterator for the array.
+func (a *Array) Iterator() iterator.Interface[int, any] {
+	return newArrayIterator(a)
+}
+
 // Get returns a value at the given index.
 func (a *Array) Get(index int) (any, error) {
 	if l := a.Len(); index < 0 || index >= l {
@@ -85,14 +92,13 @@ func (a *Array) Set(index int, value any) error {
 }
 
 // Append appends given values to the array.
-func (a *Array) Append(values ...any) error {
+func (a *Array) Append(values ...any) {
 	if a.s == nil {
 		a.s = values
-		return nil
+		return
 	}
 
 	a.s = append(a.s, values...)
-	return nil
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.

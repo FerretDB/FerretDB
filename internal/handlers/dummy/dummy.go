@@ -18,6 +18,8 @@
 package dummy
 
 import (
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
@@ -38,11 +40,15 @@ func notImplemented(command string) error {
 //   - listCommands;
 //   - setFreeMonitoringStatus;
 //   - whatsmyuri.
-type Handler struct{}
+type Handler struct {
+	l *zap.Logger
+}
 
 // New returns a new handler.
-func New() (handlers.Interface, error) {
-	return new(Handler), nil
+func New(l *zap.Logger) (handlers.Interface, error) {
+	return &Handler{
+		l: l,
+	}, nil
 }
 
 // Close implements handlers.Interface.

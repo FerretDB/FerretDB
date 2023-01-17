@@ -18,47 +18,23 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
 		"FindProjectionInclusions": {
-			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/537
-			projection: bson.D{{"foo", int32(1)}, {"42", true}},
+			filter:         bson.D{{"_id", "document-composite"}},
+			projection:     bson.D{{"foo", int32(1)}, {"42", true}},
+			skipForTigris:  "Tigris does not support field names started from numbers (`42`)",
+			resultPushdown: true,
 		},
 		"FindProjectionExclusions": {
-			filter: bson.D{{"_id", "document-composite"}},
-			// TODO: https://github.com/FerretDB/FerretDB/issues/537
-			projection: bson.D{{"foo", int32(0)}, {"array", false}},
-		},
-		"ProjectionSliceNonArrayField": {
-			filter:     bson.D{{"_id", "document"}},
-			projection: bson.D{{"_id", bson.D{{"$slice", 1}}}},
-		},
-	}
-
-	testQueryCompat(t, testCases)
-}
-
-func TestQueryProjectionCompatElemMatch(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/908")
-
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
-		"ElemMatch": {
-			filter: bson.D{{"_id", "document-composite"}},
-			projection: bson.D{{
-				"v",
-				bson.D{{"$elemMatch", bson.D{{"field", bson.D{{"$eq", 42}}}}}},
-			}},
+			filter:         bson.D{{"_id", "document-composite"}},
+			projection:     bson.D{{"foo", int32(0)}, {"array", false}},
+			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
+			resultPushdown: true,
 		},
 	}
 

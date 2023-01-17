@@ -9,12 +9,12 @@ FerretDB supports update operators, such as `$set` and `$setOnInsert` to update 
 
 At present, FerretDB currently supports the following update operators:
 
-| Operator name | Description |
-| --- | --- |
-| `$set` | Assigns the value for an updated field to the document. |
+| Operator name  | Description                                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `$set`         | Assigns the value for an updated field to the document.                                                                                                            |
 | `$setOnInsert` | Specifies the value of a field when an update operation results in the addition of a document.  However, there is no effect when it modifies an existing document. |
-| `$unset` | Removes a specific field from a document. |
-| `$pop` | In an array, this operator removes the first or last item. |
+| `$unset`       | Removes a specific field from a document.                                                                                                                          |
+| `$pop`         | In an array, this operator removes the first or last item.                                                                                                         |
 
 ## Update a single document
 
@@ -157,13 +157,13 @@ db.employees.insertMany([
 ])
 ```
 
-The folllowing command will query and update the `catalog` array in the `employee` collection using dot notation.
+The following command will query and update the `catalog` array in the `employee` collection using dot notation.
 The command will query the second field of the array in every document for `"pencil"`, and when there is a match, updates the first element of the array.
 
 ```js
 db.employees.updateMany({
     "catalog.1": "pencils"
-}, 
+},
 {
     $set: {
         "catalog.0": "ruler"
@@ -191,7 +191,7 @@ The following operation updates any embedded document that matches the specified
 ```js
 db.employees.updateMany({
     "name.first": "Clarke"
-}, 
+},
 {
     $set: {
         "name.last": "Elliot"

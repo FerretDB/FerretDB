@@ -31,6 +31,11 @@ import (
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -64,54 +69,38 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	command := document.Command()
 
-	var db, collection string
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-	if collection, err = common.GetRequiredParam[string](document, command); err != nil {
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 
-	// We use two separate transactions as there is a case when a query of the first transaction could fail,
-	// and we should consider it normal: it could happen if we attempt to create databases from two parallel requests.
-	// One of such requests will fail as the database was already created from another request,
-	// but it's a normal situation, and we should create both collections in such a case.
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
+		return nil, err
+	}
 
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-			switch {
-			case errors.Is(err, pgdb.ErrAlreadyExist):
-				// If the DB was created from a parallel query, it's ok.
-				// However, in this case one of the transaction queries failed,
-				// so we need to rollback the transaction.
-				return pgdb.ErrAlreadyExist
-			case errors.Is(pgdb.ErrInvalidDatabaseName, err):
-				msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
-				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-			default:
-				return lazyerrors.Error(err)
-			}
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		err = pgdb.CreateCollection(ctx, tx, db, collection)
+
+		switch {
+		case err == nil:
+			return nil
+
+		case errors.Is(err, pgdb.ErrAlreadyExist):
+			msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
+			return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
+
+		case errors.Is(err, pgdb.ErrInvalidDatabaseName):
+			msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
+			return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+
+		case errors.Is(err, pgdb.ErrInvalidCollectionName):
+			msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
+			return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+
+		default:
+			return lazyerrors.Error(err)
 		}
-		return nil
-	})
-	if err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
-		return nil, err
-	}
-
-	err = h.PgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if err := pgdb.CreateCollection(ctx, tx, db, collection); err != nil {
-			switch {
-			case errors.Is(err, pgdb.ErrAlreadyExist):
-				msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-				return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
-			case errors.Is(err, pgdb.ErrInvalidTableName):
-				msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
-				return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-			default:
-				return lazyerrors.Error(err)
-			}
-		}
-		return nil
 	})
 	if err != nil {
 		return nil, err

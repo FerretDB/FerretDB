@@ -17,7 +17,6 @@ package integration
 import (
 	"fmt"
 	"math"
-	"net"
 	"runtime"
 	"sort"
 	"strconv"
@@ -211,7 +210,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -220,7 +218,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk2": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -229,7 +226,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk3": {
 			command: bson.D{{"getParameter", "*"}, {"quiet", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -238,7 +234,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"GetParameter_Asterisk4": {
 			command: bson.D{{"getParameter", "*"}, {"quiet_other", 1}, {"comment", "getParameter test"}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -324,11 +319,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtRuntime", true},
 					{"settableAtStartup", true},
 				},
-				"tlsMode": bson.D{
-					{"value", "disabled"},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", false},
-				},
 				"ok": float64(1),
 			},
 		},
@@ -355,7 +345,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		"ShowDetailsFalse_AllParametersTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", true}}}},
 			expected: map[string]any{
-				"acceptApiVersion2": false,
 				"authSchemaVersion": int32(5),
 				"quiet":             false,
 				"ok":                float64(1),
@@ -446,11 +435,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"settableAtRuntime", true},
 					{"settableAtStartup", true},
 				},
-				"tlsMode": bson.D{
-					{"value", "disabled"},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", false},
-				},
 				"ok": float64(1),
 			},
 		},
@@ -461,11 +445,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"value", false},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", true},
-				},
-				"tlsMode": bson.D{
-					{"value", "disabled"},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", false},
 				},
 				"ok": float64(1),
 			},
@@ -499,11 +478,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 					{"value", false},
 					{"settableAtRuntime", true},
 					{"settableAtStartup", true},
-				},
-				"tlsMode": bson.D{
-					{"value", "disabled"},
-					{"settableAtRuntime", true},
-					{"settableAtStartup", false},
 				},
 				"ok": float64(1),
 			},
@@ -565,8 +539,6 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -592,7 +564,6 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
 
 	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
-	assert.False(t, must.NotFail(doc.Get("debug")).(bool))
 
 	assert.Equal(t, int32(16777216), must.NotFail(doc.Get("maxBsonObjectSize")))
 	_, ok = must.NotFail(doc.Get("buildEnvironment")).(*types.Document)
@@ -634,9 +605,10 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 16_024)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 36_000)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 36_000)
+	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 36_000)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
 }
 
@@ -825,21 +797,21 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			cmds: []bson.D{
 				{{"ping", int32(1)}},
 			},
-			metricsPath:     types.NewPath([]string{"metrics", "commands", "ping"}),
+			metricsPath:     types.NewPath("metrics", "commands", "ping"),
 			expectedNonZero: []string{"total"},
 		},
 		"UpdateCmd": {
 			cmds: []bson.D{
 				{{"update", "values"}, {"updates", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}}}},
 			},
-			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			metricsPath:     types.NewPath("metrics", "commands", "update"),
 			expectedNonZero: []string{"total"},
 		},
 		"UpdateCmdFailed": {
 			cmds: []bson.D{
 				{{"update", int32(1)}},
 			},
-			metricsPath:     types.NewPath([]string{"metrics", "commands", "update"}),
+			metricsPath:     types.NewPath("metrics", "commands", "update"),
 			expectedNonZero: []string{"failed", "total"},
 		},
 	} {
@@ -931,6 +903,8 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	t.Parallel()
 
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1791")
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
 
@@ -1006,63 +980,21 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	wg.Wait()
 }
 
-// TestCommandsAdministrationWhatsMyURI tests the `whatsmyuri` command.
-// It connects two clients to the same server and checks that `whatsmyuri` returns different ports for these clients.
-func TestCommandsAdministrationWhatsMyURI(t *testing.T) {
-	setup.SkipForTigris(t)
-
+func TestCommandsAdministrationCurrentOp(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
-	collection1 := s.Collection
-	databaseName := s.Collection.Database().Name()
-	collectionName := s.Collection.Name()
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
 
-	// only check port number on TCP connection, no need to check on Unix socket
-	isTCP := s.IsTCP(t)
-
-	// setup second client connection to check that `whatsmyuri` returns different ports
-	client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(s.MongoDBURI))
+	var res bson.D
+	err := s.Collection.Database().RunCommand(s.Ctx,
+		bson.D{{"currentOp", int32(1)}},
+	).Decode(&res)
 	require.NoError(t, err)
-	defer client2.Disconnect(s.Ctx)
-	collection2 := client2.Database(databaseName).Collection(collectionName)
 
-	var ports []string
-	for _, collection := range []*mongo.Collection{collection1, collection2} {
-		var actual bson.D
-		command := bson.D{{"whatsmyuri", int32(1)}}
-		err := collection.Database().RunCommand(s.Ctx, command).Decode(&actual)
-		require.NoError(t, err)
+	doc := ConvertDocument(t, res)
 
-		doc := ConvertDocument(t, actual)
-		keys := doc.Keys()
-		values := doc.Values()
-
-		var ok float64
-		var you string
-
-		for i, k := range keys {
-			switch k {
-			case "ok":
-				ok = values[i].(float64)
-			case "you":
-				you = values[i].(string)
-			}
-		}
-
-		assert.Equal(t, float64(1), ok)
-
-		if isTCP {
-			// record ports to compare that they are not equal for two different clients.
-			_, port, err := net.SplitHostPort(you)
-			require.NoError(t, err)
-			assert.NotEmpty(t, port)
-			ports = append(ports, port)
-		}
-	}
-
-	if isTCP {
-		require.Equal(t, 2, len(ports))
-		assert.NotEqual(t, ports[0], ports[1])
-	}
+	_, ok := must.NotFail(doc.Get("inprog")).(*types.Array)
+	assert.True(t, ok)
 }

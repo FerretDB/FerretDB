@@ -124,6 +124,12 @@ A keyword that starts with a `$` character to query, update, or transform data.
 An immutable identifier for a record.
 The primary key of a documents is stored in the `_id` field, which typically contains the `ObjectId`.
 
+#### proxy
+
+Proxy is any MongoDB-compatible database that is running in parallel with FerretDB.
+It's used to test differences between FerretDB and other databases.
+See [Operation modes](../operation_modes.md) for more details.
+
 #### PostgreSQL
 
 An open source relational database.

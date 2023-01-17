@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
@@ -38,18 +39,24 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	ListenAddr string `default:"127.0.0.1:27017"      help:"Listen address."`
-	ListenUnix string `default:""                     help:"Listen Unix domain socket path."`
-	ProxyAddr  string `default:"127.0.0.1:37017"      help:"Proxy address."`
-	DebugAddr  string `default:"127.0.0.1:8088"       help:"${help_debug_addr}"`
-	StateDir   string `default:"."                    help:"Process state directory."`
-	Mode       string `default:"${default_mode}"      help:"${help_mode}"             enum:"${enum_mode}"`
+	Listen struct {
+		Addr        string `default:"127.0.0.1:27017" help:"Listen address."`
+		Unix        string `default:""                help:"Listen Unix domain socket path."`
+		TLS         string `default:""                help:"Listen TLS address."`
+		TLSCertFile string `default:""                help:"TLS cert file path."`
+		TLSKeyFile  string `default:""                help:"TLS key file path."`
+		TLSCAFile   string `default:""                help:"TLS CA file path." name:"tls-ca-file"`
+	} `embed:"" prefix:"listen-"`
+
+	ProxyAddr string `default:""                help:"Proxy address."`
+	DebugAddr string `default:"127.0.0.1:8088"  help:"${help_debug_addr}"`
+	StateDir  string `default:"."               help:"Process state directory."`
+	Mode      string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -101,17 +108,14 @@ var (
 
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level":      zap.DebugLevel.String(),
+			"default_log_level":      defaultLogLevel().String(),
 			"default_mode":           clientconn.AllModes[0],
-			"default_postgresql_url": "postgres://postgres@127.0.0.1:5432/ferretdb",
+			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
 
 			"help_debug_addr": "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
-			"help_log_level": fmt.Sprintf(
-				"Log level: '%s'. Debug level also enables development mode.",
-				strings.Join(logLevels, "', '"),
-			),
-			"help_mode":    fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler": fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_handler":    fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
@@ -123,6 +127,15 @@ func main() {
 	kong.Parse(&cli, kongOptions...)
 
 	run()
+}
+
+// defaultLogLevel returns the default log level.
+func defaultLogLevel() zapcore.Level {
+	if version.Get().DebugBuild {
+		return zap.DebugLevel
+	}
+
+	return zap.InfoLevel
 }
 
 // setupState setups state provider.
@@ -169,7 +182,8 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("commit", info.Commit),
 		zap.String("branch", info.Branch),
 		zap.Bool("dirty", info.Dirty),
-		zap.Bool("debug", info.Debug),
+		zap.String("package", info.Package),
+		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
 	}
 	logUUID := stateProvider.Get().UUID
@@ -203,6 +217,20 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 	r.Run(ctx)
 }
 
+// dumpMetrics dumps all Prometheus metrics to stderr.
+func dumpMetrics() {
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, mf := range mfs {
+		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
+			panic(err)
+		}
+	}
+}
+
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
 	if cli.Version {
@@ -212,6 +240,8 @@ func run() {
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
 		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
+		fmt.Fprintln(os.Stdout, "package:", info.Package)
+		fmt.Fprintln(os.Stdout, "debugBuild:", info.DebugBuild)
 
 		return
 	}
@@ -281,8 +311,14 @@ func run() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		ListenAddr:     cli.ListenAddr,
-		ListenUnix:     cli.ListenUnix,
+		Listener: clientconn.ListenerOpts{
+			Addr:        cli.Listen.Addr,
+			Unix:        cli.Listen.Unix,
+			TLS:         cli.Listen.TLS,
+			TLSCertFile: cli.Listen.TLSCertFile,
+			TLSKeyFile:  cli.Listen.TLSKeyFile,
+			TLSCAFile:   cli.Listen.TLSCAFile,
+		},
 		ProxyAddr:      cli.ProxyAddr,
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
@@ -300,15 +336,11 @@ func run() {
 		logger.Error("Listener stopped", zap.Error(err))
 	}
 
+	stop()
+
 	wg.Wait()
 
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
-	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+	if version.Get().DebugBuild {
+		dumpMetrics()
 	}
 }

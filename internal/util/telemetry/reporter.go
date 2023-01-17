@@ -26,10 +26,10 @@ import (
 	"github.com/AlekSi/pointer"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/version"
 )
 
 // request represents telemetry request.
@@ -38,6 +38,7 @@ type request struct {
 	Commit           string         `json:"commit"`
 	Branch           string         `json:"branch"`
 	Dirty            bool           `json:"dirty"`
+	Package          string         `json:"-"` // TODO https://github.com/FerretDB/FerretDB/issues/1805
 	Debug            bool           `json:"debug"`
 	BuildEnvironment map[string]any `json:"build_environment"`
 	OS               string         `json:"os"`
@@ -189,7 +190,8 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		Commit:           v.Commit,
 		Branch:           v.Branch,
 		Dirty:            v.Dirty,
-		Debug:            v.Debug,
+		Package:          v.Package,
+		Debug:            v.DebugBuild,
 		BuildEnvironment: v.BuildEnvironment.Map(),
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,

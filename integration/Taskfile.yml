@@ -10,16 +10,36 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-        -tags=ferretdb_testenvdata . -records-dir=../records
+        -tags=ferretdb_testenvdata .
+        -compat-port=0
         -handler=pg
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -records-dir=../records
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-        -tags=ferretdb_testenvdata,ferretdb_tigris . -records-dir=../records
+        -tags=ferretdb_testenvdata .
+        -compat-port=0
+        -handler=pg
+        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
+        -records-dir=../records
+      - >
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        -tags=ferretdb_testenvdata,ferretdb_tigris .
+        -compat-port=0
         -handler=tigris
-      - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-        -tags=ferretdb_testenvdata . -records-dir=../records
-        -target-port=37017 -compat-port=0
+        -records-dir=../records
+      # - >
+      #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+      #   -tags=ferretdb_testenvdata .
+      #   -records-dir=../records
+        # -compat-port=0
+      #   -target-port=37017
+      # - >
+      #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+      #   -tags=ferretdb_testenvdata .
+      #   -compat-port=0
+      #   -records-dir=../records
+      #   -target-port=37018
 
   integration-gen:
     cmds:
@@ -36,3 +56,7 @@ tasks:
       - "**/*.go"
       - "../**/go.mod"
       - "../**/*.yml"
+
+  integration-security:
+    cmds:
+      - ../bin/govulncheck{{exeExt}} -v -test ./...

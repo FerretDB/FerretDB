@@ -16,7 +16,11 @@
 package tigris
 
 import (
+	"context"
+	"sync"
+
 	"github.com/tigrisdata/tigris-client-go/config"
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -40,27 +44,57 @@ type NewOpts struct {
 // Handler implements handlers.Interface on top of Tigris.
 type Handler struct {
 	*NewOpts
+
+	// accessed by DB(ctx)
+	// TODO replace with map
+	// https://github.com/FerretDB/FerretDB/issues/1789
+	rw sync.RWMutex
 	db *tigrisdb.TigrisDB
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	cfg := &config.Driver{
-		ClientID:     opts.ClientID,
-		ClientSecret: opts.ClientSecret,
-		Token:        opts.Token,
-		URL:          opts.URL,
+	if opts.URL == "" {
+		return nil, lazyerrors.New("Tigris URL is not provided")
 	}
-	db, err := tigrisdb.New(cfg, opts.L)
+
+	return &Handler{
+		NewOpts: opts,
+	}, nil
+}
+
+// DBPool returns database connection pool for the given client connection.
+//
+// Pool is not closed when ctx is canceled.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/1789
+func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
+	h.rw.RLock()
+	db := h.db
+	h.rw.RUnlock()
+
+	if db != nil {
+		return db, nil
+	}
+
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	cfg := &config.Driver{
+		ClientID:     h.ClientID,
+		ClientSecret: h.ClientSecret,
+		Token:        h.Token,
+		URL:          h.URL,
+		Protocol:     driver.GRPC,
+	}
+	db, err := tigrisdb.New(ctx, cfg, h.L)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	h := &Handler{
-		NewOpts: opts,
-		db:      db,
-	}
-	return h, nil
+	h.db = db
+
+	return h.db, nil
 }
 
 // Close implements handlers.Interface.

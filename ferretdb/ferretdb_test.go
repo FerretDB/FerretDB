@@ -18,13 +18,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path/filepath"
 )
 
 func Example_tcp() {
 	f, err := New(&Config{
-		ListenAddr:    "127.0.0.1:17027",
+		Listener: ListenerConfig{
+			Addr: "127.0.0.1:17027",
+		},
 		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -48,7 +51,7 @@ func Example_tcp() {
 	//
 	// [...]
 	//
-	// mongo.Connect(ctx, options.Client().ApplyURI(uri)
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	cancel()
 	<-done
@@ -58,9 +61,11 @@ func Example_tcp() {
 
 func Example_unix() {
 	f, err := New(&Config{
-		ListenUnix:    "/tmp/ferretdb-27017.sock",
+		Listener: ListenerConfig{
+			Unix: "/tmp/ferretdb-27017.sock",
+		},
 		Handler:       "pg",
-		PostgreSQLURL: "postgres://postgres@127.0.0.1:5432/ferretdb",
+		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -83,5 +88,52 @@ func Example_unix() {
 	cancel()
 	<-done
 
-	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock
+	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock/
+}
+
+func Example_tls() {
+	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
+	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
+	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
+
+	f, err := New(&Config{
+		Listener: ListenerConfig{
+			TLS:         "127.0.0.1:17028",
+			TLSCertFile: certPath,
+			TLSKeyFile:  keyPath,
+			TLSCAFile:   caPath,
+		},
+		Handler:       "pg",
+		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+
+	go func() {
+		log.Print(f.Run(ctx))
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+	fmt.Println(uri)
+
+	// Use MongoDB URI as usual. To connect to TLS listener, set TLS config.
+	// For example:
+	//
+	// import "go.mongodb.org/mongo-driver/mongo"
+	// import "go.mongodb.org/mongo-driver/mongo/options"
+	//
+	// [...]
+	//
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
+
+	cancel()
+	<-done
+
+	// Output: mongodb://127.0.0.1:17028/?tls=true
 }

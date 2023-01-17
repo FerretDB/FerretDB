@@ -44,11 +44,12 @@ type Provider interface {
 }
 
 // AllProviders returns all providers in random order.
-func AllProviders() []Provider {
+func AllProviders() Providers {
 	providers := []Provider{
 		Scalars,
 
 		Doubles,
+		BigDoubles,
 		Strings,
 		Binaries,
 		ObjectIDs,
@@ -59,7 +60,7 @@ func AllProviders() []Provider {
 		Int32s,
 		Timestamps,
 		Int64s,
-		// Unsets, TODO https://github.com/FerretDB/FerretDB/issues/1023
+		Unsets,
 		ObjectIDKeys,
 
 		Composites,
@@ -67,6 +68,11 @@ func AllProviders() []Provider {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+
+		ArrayStrings,
+		ArrayDoubles,
+		ArrayInt32s,
+		ArrayRegexes,
 	}
 
 	// check that names are unique and randomize order
@@ -81,6 +87,31 @@ func AllProviders() []Provider {
 	}
 
 	return maps.Values(res)
+}
+
+// Providers are array of providers.
+type Providers []Provider
+
+// Remove specified providers and return remaining providers.
+func (ps Providers) Remove(removeProviderNames ...string) Providers {
+	res := make([]Provider, 0, len(ps))
+
+	for _, p := range ps {
+		keep := true
+
+		for _, name := range removeProviderNames {
+			if p.Name() == name {
+				keep = false
+				break
+			}
+		}
+
+		if keep {
+			res = append(res, p)
+		}
+	}
+
+	return res
 }
 
 // Docs returns all documents from given providers.

@@ -17,11 +17,13 @@ package tigrisdb
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -40,10 +42,17 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 
 	// Database does not exist. Try to create it,
 	// but keep in mind that it can be created in concurrent connection.
-	// If we detect that other creation is in flight, we give up to three attempts to create the database.
+	// If we detect that other creation is in flight, we give up to retriesMax attempts to create the database.
 	// TODO https://github.com/FerretDB/FerretDB/issues/1341
-	for i := 0; i < 3; i++ {
-		err = tdb.Driver.CreateDatabase(ctx, db)
+	// TODO https://github.com/FerretDB/FerretDB/issues/1720
+	const (
+		retriesMax    = 3
+		retryDelayMin = 100 * time.Millisecond
+		retryDelayMax = 200 * time.Millisecond
+	)
+
+	for i := 0; i < retriesMax; i++ {
+		_, err = tdb.Driver.CreateProject(ctx, db)
 		tdb.l.Debug("createDatabaseIfNotExists", zap.String("db", db), zap.Error(err))
 
 		var driverErr *driver.Error
@@ -57,7 +66,8 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 			}
 
 			if isOtherCreationInFlight(err) {
-				time.Sleep(20 * time.Millisecond)
+				deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
+				ctxutil.Sleep(ctx, retryDelayMin+time.Duration(deltaMS)*time.Millisecond)
 				continue
 			}
 

@@ -28,6 +28,11 @@ import (
 
 // MsgFind implements HandlerInterface.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -51,24 +56,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Filter:     params.Filter,
 	}
 
-	fetchedDocs, err := h.db.QueryDocuments(ctx, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
 	if err != nil {
 		return nil, err
-	}
-
-	resDocs := make([]*types.Document, 0, 16)
-	for _, doc := range fetchedDocs {
-		var matches bool
-
-		if matches, err = common.FilterDocument(doc, params.Filter); err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
@@ -85,9 +75,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
-		if err = firstBatch.Append(doc); err != nil {
-			return nil, err
-		}
+		firstBatch.Append(doc)
 	}
 
 	var reply wire.OpMsg
@@ -103,4 +91,30 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided FetchParam.Filter.
+func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam) ([]*types.Document, error) {
+	fetchedDocs, err := dbPool.QueryDocuments(ctx, fp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	for _, doc := range fetchedDocs {
+		var matches bool
+
+		if matches, err = common.FilterDocument(doc, fp.Filter); err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+
+	return resDocs, nil
 }

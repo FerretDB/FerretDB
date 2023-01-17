@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
@@ -29,62 +31,68 @@ import (
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
 // If the document is not valid, it returns *types.ValidationError.
-func InsertDocument(ctx context.Context, pgPool *Pool, db, collection string, doc *types.Document) error {
+func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
 	if err := doc.ValidateData(); err != nil {
 		return err
 	}
 
-	var exists bool
-	err := pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var err error
-		exists, err = CollectionExists(ctx, tx, db, collection)
-		return err
-	})
-	if err != nil {
-		return err
-	}
+	var err error
 
-	if !exists {
-		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err = CreateDatabaseIfNotExists(ctx, tx, db); err != nil {
-				return lazyerrors.Error(err)
-			}
-			return nil
-		})
-		if err != nil && !errors.Is(err, ErrAlreadyExist) {
-			return err
-		}
-
-		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			if err = CreateCollection(ctx, tx, db, collection); err != nil {
-				return lazyerrors.Error(err)
-			}
-			return nil
-		})
-		if err != nil && !errors.Is(err, ErrAlreadyExist) {
-			return err
-		}
-	}
-
-	var table string
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		table, err = getTableName(ctx, tx, db, collection)
-		return err
-	})
+	err = CreateCollectionIfNotExists(ctx, tx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	sql := `INSERT INTO ` + pgx.Identifier{db, table}.Sanitize() +
-		` (_jsonb) VALUES ($1)`
+	var table string
+	table, err = getMetadata(ctx, tx, db, collection)
 
-	err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		_, err = tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)))
-		return err
-	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	p := insertParams{
+		schema: db,
+		table:  table,
+		doc:    doc,
+	}
+	err = insert(ctx, tx, p)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	return nil
+}
+
+// insertParams describes the parameters for inserting a document into a table.
+type insertParams struct {
+	doc    *types.Document // document to insert
+	schema string          // pg schema name
+	table  string          // pg table name
+}
+
+// insert marshals and inserts a document with the given params.
+//
+// If a PostgreSQL conflict occurs (the caller could retry the transaction) it returns
+// possibly wrapped *transactionConflictError.
+func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
+	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
+		` (_jsonb) VALUES ($1)`
+
+	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation, pgerrcode.DeadlockDetected:
+		// insert failed because such entry already exists or is being created.
+		return newTransactionConflictError(err)
+	default:
+		return lazyerrors.Error(err)
+	}
 }
