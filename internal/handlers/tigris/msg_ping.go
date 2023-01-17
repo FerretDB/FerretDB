@@ -24,10 +24,6 @@ import (
 
 // MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if _, err := h.db.Driver.Info(ctx); err != nil {
-		return nil, err
-	}
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

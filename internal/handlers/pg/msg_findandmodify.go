@@ -107,7 +107,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					update:             params.Update,
 					sqlParam:           &sqlParam,
 				}
-				upsert, upserted, err = h.upsert(ctx, dbPool, tx, resDocs, p)
+				upsert, upserted, err = upsertDocuments(ctx, dbPool, tx, resDocs, p)
 				if err != nil {
 					return err
 				}
@@ -217,9 +217,9 @@ type upsertParams struct {
 	sqlParam           *pgdb.SQLParam
 }
 
-// upsert inserts new document if no documents in query result or updates given document.
+// upsertDocuments inserts new document if no documents in query result or updates given document.
 // When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func (h *Handler) upsert(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
+func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
 	// TODO split that block into own function since insert and update are very different
 	// (and one uses dbPool, while other uses tx)
 	if len(docs) == 0 {
