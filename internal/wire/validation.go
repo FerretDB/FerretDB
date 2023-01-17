@@ -69,10 +69,6 @@ func validateValue(v any) error {
 		if math.IsNaN(v) {
 			return errors.New("NaN is not supported")
 		}
-
-		if v == 0 && math.Signbit(v) {
-			return errors.New("-0 is not supported")
-		}
 	}
 
 	return nil

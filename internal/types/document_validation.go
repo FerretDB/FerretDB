@@ -61,6 +61,7 @@ func (e *ValidationError) Code() ValidationErrorCode {
 
 // ValidateData checks if the document represents a valid "data document".
 // It places `_id` field into the fields slice 0 index.
+// It replaces negative zero -0 with valid positive zero 0.
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
 	d.moveIDToTheFirstIndex()
@@ -134,6 +135,10 @@ func (d *Document) ValidateData() error {
 					return newValidationError(ErrValidation, fmt.Errorf(
 						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(v),
 					))
+				case float64:
+					if item == 0 && math.Signbit(item) {
+						v.Set(i, math.Copysign(0, +1))
+					}
 				}
 			}
 		case float64:
@@ -141,6 +146,10 @@ func (d *Document) ValidateData() error {
 				return newValidationError(
 					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
 				)
+			}
+
+			if v == 0 && math.Signbit(v) {
+				d.Set(key, math.Copysign(0, +1))
 			}
 		case Regex:
 			if key == "_id" {
