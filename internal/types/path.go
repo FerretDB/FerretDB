@@ -173,6 +173,7 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
+
 			next, err = s.Get(index)
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
@@ -252,13 +253,8 @@ func insertByPath(doc *Document, path Path) error {
 			switch v := next.(type) {
 			case *Document:
 				v.Set(insertedPath.Slice()[suffix], must.NotFail(NewDocument()))
-			case *Array:
-				if insertedPath.Slice()[suffix] == "0" {
-					if err := v.Append(must.NotFail(NewDocument())); err == nil {
-						break
-					}
-				}
 
+			case *Array:
 				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
 					return newDocumentPathError(

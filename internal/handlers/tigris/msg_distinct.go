@@ -27,6 +27,11 @@ import (
 
 // MsgDistinct implements HandlerInterface.
 func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -43,7 +48,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		Filter:     dp.Filter,
 	}
 
-	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
 	if err != nil {
 		return nil, err
 	}

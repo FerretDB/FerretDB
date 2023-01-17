@@ -56,6 +56,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"commit":  v.Commit,
 		"branch":  v.Branch,
 		"dirty":   strconv.FormatBool(v.Dirty),
+		"package": v.Package,
 		"debug":   strconv.FormatBool(v.DebugBuild),
 	}
 

@@ -21,6 +21,7 @@
 //     similar to `git describe` output: `v<major>.<minor>.<patch>`.
 //   - commit.txt (optional) contains information about the source git commit.
 //   - branch.txt (optional) contains information about the source git branch.
+//   - package.txt (optional) contains package type (e.g. "deb", "rpm", "docker", etc).
 //
 // # Go build tags
 //
@@ -68,6 +69,7 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
+	Package          string // TODO https://github.com/FerretDB/FerretDB/issues/1805
 	DebugBuild       bool
 	BuildEnvironment *types.Document
 
@@ -107,6 +109,7 @@ func init() {
 		Commit:              unknown,
 		Branch:              unknown,
 		Dirty:               false,
+		Package:             unknown, // TODO https://github.com/FerretDB/FerretDB/issues/1805
 		DebugBuild:          debugBuild,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
@@ -125,8 +128,15 @@ func init() {
 		return
 	}
 
-	if b, _ := gen.ReadFile("version.txt"); len(b) > 0 {
-		info.Version = strings.TrimSpace(string(b))
+	for f, sp := range map[string]*string{
+		"version.txt": &info.Version,
+		"commit.txt":  &info.Commit,
+		"branch.txt":  &info.Branch,
+		"package.txt": &info.Package,
+	} {
+		if b, _ := gen.ReadFile(f); len(b) > 0 {
+			*sp = strings.TrimSpace(string(b))
+		}
 	}
 
 	if !strings.HasPrefix(info.Version, "v") {
@@ -135,14 +145,6 @@ func init() {
 		msg += "the output of `git describe`: `v<major>.<minor>.<patch>`.\n"
 		msg += "See https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version"
 		panic(msg)
-	}
-
-	if b, _ := gen.ReadFile("commit.txt"); len(b) > 0 {
-		info.Commit = strings.TrimSpace(string(b))
-	}
-
-	if b, _ := gen.ReadFile("branch.txt"); len(b) > 0 {
-		info.Branch = strings.TrimSpace(string(b))
 	}
 
 	for _, s := range buildInfo.Settings {

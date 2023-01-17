@@ -60,42 +60,6 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
-		"DotNotationDocumentFieldExist": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1661
-			id:       "document-composite",
-			update:   bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
-			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(1)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"DotNotationArrayFieldExist": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1661
-			id:       "document-composite",
-			update:   bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
-			expected: bson.D{{"_id", "document-composite"}, {"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(1), "foo", nil}}}}},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
-		"DocumentDotNotationArrayFieldNotExist": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1661
-			id:     "document",
-			update: bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
-			expected: bson.D{
-				{"_id", "document"},
-				{"v", bson.D{{"foo", int32(42)}, {"0", bson.D{{"foo", int32(1)}}}}},
-			},
-			stat: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
