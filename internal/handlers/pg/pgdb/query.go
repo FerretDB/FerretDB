@@ -248,7 +248,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	for k, v := range sqlFilters.Map() {
 		switch v := v.(type) {
 		case string:
-			filters = append(filters, fmt.Sprintf(`((_jsonb->'%s')::jsonb = %s)`, k, p.Next()))
+			//SELECT _jsonb FROM test."Composites_83e0b565" where ((_jsonb->'v'))::jsonb ?| array['42.0'] or ((_jsonb->'v'))::jsonb = '42.0'
+			val := p.Next()
+			//filters = append(filters, fmt.Sprintf(`((_jsonb->'%s')::jsonb ?| array['%s']) or ((_jsonb->'%s')::jsonb = %s);`, k, val, k, val))
+			filters = append(filters, fmt.Sprintf(`jsonb_array_elements(((_jsonb->'%s')::jsonb)) = %s or ((_jsonb->'%s')::jsonb = %s);`, k, val, k, val))
 			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			// TODO: handle arrays (array-composites)
 
