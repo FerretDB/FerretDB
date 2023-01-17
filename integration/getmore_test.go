@@ -22,7 +22,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -31,7 +30,7 @@ func TestGetMoreErrors(t *testing.T) {
 
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.Int32BigAmounts)
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		id         any

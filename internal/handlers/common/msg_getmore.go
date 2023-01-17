@@ -70,7 +70,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, NewCommandErrorMsg(ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
-	batchSize, err := GetBatchSize(document)
+	batchSize, err := getBatchSize(document)
 	if err != nil {
 		return nil, err
 	}
@@ -128,4 +128,34 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	return &reply, nil
+}
+
+// getBatchSize returns the batch size from the document.
+func getBatchSize(doc *types.Document) (int64, error) {
+	batchSizeValue, err := doc.Get("batchSize")
+	if err != nil {
+		return 0, nil
+	}
+
+	batchSize, err := GetWholeNumberParam(batchSizeValue)
+	if err != nil {
+		if errors.Is(err, errUnexpectedType) {
+			return 0, NewCommandErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf(
+					"BSON field 'batchSize' is the wrong type '%s', expected type 'long'",
+					AliasFromType(batchSizeValue),
+				),
+			)
+		}
+	}
+
+	if batchSize < 0 {
+		return 0, NewCommandErrorMsg(
+			ErrBatchSizeNegative,
+			"BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		)
+	}
+
+	return batchSize, nil
 }

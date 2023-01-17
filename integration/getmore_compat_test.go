@@ -83,6 +83,8 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 					}
 					require.NoError(t, compatResult.Err(), "compat error; target returned no error")
 
+					// Retrieve all documents from the cursor.
+					// Driver will call getMore until the cursor is exhausted.
 					var targetRes, compatRes []bson.D
 					require.NoError(t, targetResult.All(ctx, &targetRes))
 					require.NoError(t, compatResult.All(ctx, &compatRes))
