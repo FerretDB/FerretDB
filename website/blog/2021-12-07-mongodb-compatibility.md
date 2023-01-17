@@ -2,11 +2,11 @@
 slug: mongodb-compatibility-whats-really-important
 title: "MongoDB Compatibility - What’s Really Important ?"
 author: Peter Farkas
-image: https://www.ferretdb.io/wp-content/uploads/2022/02/home-img.jpg
+image: ../static/img/blog/blog-img.png
 tags: [Ferretdb]
 ---
 
-![MongoDB compatibility](https://www.ferretdb.io/wp-content/uploads/2022/02/blog-img.png)
+![MongoDB compatibility](../static/img/blog/blog-img.png)
 
 <!--truncate-->
 

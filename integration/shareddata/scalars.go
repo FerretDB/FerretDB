@@ -125,7 +125,6 @@ var Doubles = &Values[string]{
 		"double":                    42.13,
 		"double-whole":              42.0,
 		"double-zero":               0.0,
-		"double-max":                math.MaxFloat64,
 		"double-smallest":           math.SmallestNonzeroFloat64,
 		"double-big":                doubleBig,
 		"double-null":               nil,
@@ -135,11 +134,29 @@ var Doubles = &Values[string]{
 		"double-4":                  float64(123456789),
 		"double-5":                  float64(math.MaxInt64),
 		"double-6":                  float64(math.MaxInt64 + 1),
-		"double-7":                  1.79769e+307,
 		"double-max-overflow":       9.223372036854776833e+18,
 		"double-max-overflow-verge": 9.223372036854776832e+18,
 		"double-min-overflow":       -9.223372036854776833e+18,
 		"double-min-overflow-verge": -9.223372036854776832e+18,
+	},
+}
+
+// BigDoubles contains double values which would overflow on
+// numeric update operation such as $mul. Upon such,
+// target returns error and compat returns +INF or -INF.
+// BigDoubles may be excluded on such update tests and tested
+// in diff tests https://github.com/FerretDB/dance.
+var BigDoubles = &Values[string]{
+	name:     "BigDoubles",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
+		},
+	},
+	data: map[string]any{
+		"double-max": math.MaxFloat64,
+		"double-7":   1.79769e+307,
 	},
 }
 
