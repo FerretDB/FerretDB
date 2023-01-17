@@ -69,5 +69,5 @@ To learn about other changes on FerretDB 0.8.1, please read [our release notes](
 As always, we appreciate all our users, supporters, and the entire community that has been a part of the journey all to this moment.
 You've all played a role in the growth of FerretDB, and we're excited to continue growing FerretDB because of your unwavering support.
 
-Remember, if you have any questions or feedback, please let us know!
+Remember, if you have any questions or feedback, please [let us know](https://docs.ferretdb.io/#community)!
 We're always here to help you get the most out of FerretDB.
