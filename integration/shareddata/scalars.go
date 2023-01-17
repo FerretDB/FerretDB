@@ -362,7 +362,7 @@ func tigrisSchema(typeString string) string {
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {%%type%%},
-					"boo": {%%type%%},
+					"foo": {%%type%%},
 					"_id": {"type": "string"}
 				}
 			}`
