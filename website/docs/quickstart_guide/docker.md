@@ -5,7 +5,7 @@ sidebar_position: 1
 # Docker
 
 These steps describe a quick local setup.
-They are not suitable for most production use-cases because they keep all data 
+They are not suitable for most production use-cases because they keep all data
 inside containers and don't [encrypt incoming connections](/security.md#securing-connections-with-tls).
 For more configuration options check [Configuration flags and variables](/flags.md) page.
 
@@ -42,7 +42,8 @@ For more configuration options check [Configuration flags and variables](/flags.
    `postgres` container runs PostgreSQL that would store data.
    `ferretdb` runs FerretDB.
 
-2. Start services with `docker compose up -d`. To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
+2. Start services with `docker compose up -d`.
+To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
 
 3. If you have `mongosh` installed, just run it to connect to FerretDB.
    If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
@@ -51,7 +52,7 @@ For more configuration options check [Configuration flags and variables](/flags.
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password
    ```
 
-   FerretDB will use credentials passed in mongosh flags or mongodb URI to authenticate to the PostgreSQL database. 
+   FerretDB will use credentials passed in mongosh flags or mongodb URI to authenticate to the PostgreSQL database.
    See [Security#Authentication](/security.md#authentication) for more details.
 
 You can also install FerretDB with the `.deb` and `.rpm` packages
