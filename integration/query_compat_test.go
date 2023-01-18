@@ -179,8 +179,7 @@ func TestQueryCompat(t *testing.T) {
 			resultPushdown: true,
 		},
 		"Int64EqOperator": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64(42)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$eq", int64(42)}}}},
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},

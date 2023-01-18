@@ -241,20 +241,22 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
 func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
-	return "", nil
 	var filters []string
 	var args []any
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
+		// TODO skip array check for _id field
 		switch v := v.(type) {
-		case string:
-			//SELECT _jsonb FROM test."Composites_83e0b565" where ((_jsonb->'v'))::jsonb ?| array['42.0'] or ((_jsonb->'v'))::jsonb = '42.0'
+		case string, int64:
 			val := p.Next()
-			//filters = append(filters, fmt.Sprintf(`((_jsonb->'%s')::jsonb ?| array['%s']) or ((_jsonb->'%s')::jsonb = %s);`, k, val, k, val))
-			filters = append(filters, fmt.Sprintf(`jsonb_array_elements(((_jsonb->'%s')::jsonb)) = %s or ((_jsonb->'%s')::jsonb = %s);`, k, val, k, val))
+
+			sql := fmt.Sprintf(`((_jsonb->'%s')::jsonb = %s)`+
+				` OR (jsonb_typeof(_jsonb->'%s') = 'array' AND`+
+				` EXISTS (SELECT 1 FROM jsonb_array_elements(_jsonb->'%s') as elem WHERE (elem::jsonb = %s)))`, k, val, k, k, val)
+
+			filters = append(filters, sql)
 			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-			// TODO: handle arrays (array-composites)
 
 		case types.ObjectID:
 			filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
