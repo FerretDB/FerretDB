@@ -103,10 +103,11 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
-			err = doc.SetByPath(path, types.MakeArray(1))
-
-			if err != nil {
-				return false, lazyerrors.Error(err)
+			if err := doc.SetByPath(path, types.MakeArray(1)); err != nil {
+				return false, NewWriteErrorMsg(
+					ErrUnsuitableValueType,
+					err.Error(),
+				)
 			}
 		}
 

@@ -73,18 +73,18 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"Int32": {
+		"Simple": {
 			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 		},
-		"StringMany": {
+		"Conflicting": {
 			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 			resultType: emptyResult, // conflict because of duplicate keys set in $push
 		},
-		//		"DotNotation": {
-
-		//		},
 		"NonExistentField": {
 			update: bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
+		},
+		"ExistingPath": {
+			update: bson.D{{"$push", bson.D{{"v.foo", "foo"}}}},
 		},
 		"NonExistentPath": {
 			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},

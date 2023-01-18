@@ -128,6 +128,15 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 }
 
+// DocumentsArrays contains documents with arrays of documents with arrays for tests.
+// This data set is helpful for dot notation tests.
+var DocumentsArrays = &Values[string]{
+	name:       "DocumentsArrays",
+	handlers:   []string{"pg", "tigris"},
+	validators: map[string]map[string]any{},
+	data:       map[string]any{},
+}
+
 // ArrayStrings contains an array with string values for tests.
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
