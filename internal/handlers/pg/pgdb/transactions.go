@@ -39,7 +39,7 @@ func newTransactionConflictError(err error) error {
 
 // Error implements the error interface.
 func (e *transactionConflictError) Error() string {
-	return e.err.Error()
+	return "transactionConflictError: " + e.err.Error()
 }
 
 // InTransaction wraps the given function f in a transaction.
