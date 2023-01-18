@@ -21,6 +21,8 @@ COPY --from=build /src/bin/ferretdb /ferretdb
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]
 EXPOSE 27017 27018 8080
+
+# don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8080
