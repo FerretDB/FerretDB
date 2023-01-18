@@ -241,6 +241,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
 func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+	return "", nil
 	var filters []string
 	var args []any
 	var p Placeholder

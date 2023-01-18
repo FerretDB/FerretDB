@@ -57,6 +57,9 @@ var Composites = &Values[string]{
 			primitive.Timestamp{T: 42, I: 13},
 			int64(41),
 		},
+		"array-nested": bson.A{
+			bson.D{{"bar", bson.A{"foo", int64(42)}}},
+		},
 	},
 }
 
