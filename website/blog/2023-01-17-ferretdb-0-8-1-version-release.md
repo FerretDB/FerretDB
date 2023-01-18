@@ -40,21 +40,6 @@ db.collection.distinct(
 )
 ```
 
-For instance, if you want to find the unique values of the "age" field in a specific "people" collection, run the command below:
-
-```js
-db.people.distinct(
-    "age",
-    {
-        "age": {
-            $gt: 25
-        }
-    }
-)
-```
-
-The `distinct` argument essentially specifies the collection you want to query, the `key` argument specifies the field you want to find unique values for, and the `query` argument allows you to filter the results.
-
 Even better, FerretDB now supports the `$rename` field update operator, enabling you to rename fields in a document without changing its contents.
 You can use the operator this way:
 
