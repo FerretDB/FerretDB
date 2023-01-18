@@ -97,6 +97,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 			<-start
 			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), nil)
+			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
 		}(i)
 	}
 
