@@ -15,11 +15,11 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -92,7 +92,7 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 	for {
 		key, pushValueRaw, err := iter.Next()
 		if err != nil {
-			if err == iterator.ErrIteratorDone {
+			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
 
@@ -101,8 +101,13 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		path := types.NewPathFromString(key)
 
+		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
-			continue
+			err = doc.SetByPath(path, types.MakeArray(1))
+
+			if err != nil {
+				return false, lazyerrors.Error(err)
+			}
 		}
 
 		val, err := doc.GetByPath(path)
