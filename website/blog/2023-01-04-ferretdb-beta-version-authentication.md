@@ -46,7 +46,7 @@ Specify your host and port.
 
 6. Restore database using `mongorestore --uri="mongodb://localhost:27017"`
 
-7. In case something doesn't work and you need to rollback to FerretDB 0.7.1:
+7. While you can rollback with `mongorestore`, in case something doesn't work and you need to rollback to FerretDB 0.7.1:
    * Stop ferretdb
    * Delete ferretdb database (repeat step 4)
    * Restore `ferretdb` PostgreSQL db from the dump we created on the step 2:  `psql -h localhost -p 5432 -U username ferretdb -f ferretdb.sql`
