@@ -42,6 +42,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
+
 	db := collection.Database()
 	name := collection.Name()
 
@@ -99,6 +100,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
+
 	db := collection.Database()
 	name := db.Name()
 
@@ -142,6 +144,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 func TestCommandsAdministrationListDatabases(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
 	db := collection.Database()
 	name := db.Name()
 
@@ -617,7 +620,6 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 	t.Run("Existing", func(t *testing.T) {
 		t.Parallel()
-
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 		var actual bson.D
@@ -634,7 +636,6 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 	t.Run("NonExisting", func(t *testing.T) {
 		t.Parallel()
-
 		ctx, collection := setup.Setup(t)
 
 		var actual bson.D
@@ -818,7 +819,6 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-
 			ctx, collection := setup.Setup(t)
 
 			for _, cmd := range tc.cmds {
@@ -901,9 +901,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	t.Parallel()
-
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1791")
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
