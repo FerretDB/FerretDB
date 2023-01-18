@@ -14,7 +14,7 @@ author_title: FerretDB Team
 FerretDB - the open source alternative to MongoDB - is thrilled to announce release of our  Beta version (0.8.0), which includes various new features, bug fixes, improved documentation, and, most importantly, the implementation of authentication for PostgreSQL.
 This new and exciting release is no ordinary milestone; it's a culmination of FerretDB's journey as we work on bringing you the ultimate open-source alternative to MongoDB by converting MongoDB protocol queries to SQL, with PostgreSQL as the database engine.
 
-While we do not aim to cover all the features of MongoDB, our goal with the Beta - and our upcoming GA release later this quarter - is to provide a solid foundation on which to build targeted features that'll enable FerretDB to support more and more real-world use cases.
+While we do not aim to cover all the features of MongoDB, our goal with the Beta is to provide a solid foundation on which to build targeted features that'll enable FerretDB to support more and more real-world use cases.
 Be sure to [check our roadmap for further details](https://github.com/orgs/FerretDB/projects/2).
 
 :::caution
