@@ -16,12 +16,16 @@ package conninfo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 func TestConnInfo(t *testing.T) {
@@ -96,7 +100,14 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 			ready <- struct{}{}
 
 			<-start
-			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), nil)
+
+			array := types.MakeArray(10)
+			for j := 0; j < 10; j++ {
+				array.Append(fmt.Sprintf("%d:%d", i, j))
+			}
+
+			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), array.Iterator())
+			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
 		}(i)
 	}
 
@@ -120,7 +131,21 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 			ready <- struct{}{}
 
 			<-start
-			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
+
+			cursor := connInfo.Cursor(fmt.Sprintf("cursor %d", i))
+
+			for {
+				j, value, err := cursor.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					panic(err)
+				}
+
+				assert.Equal(t, fmt.Sprintf("%d:%d", i, j), value)
+			}
 		}(i)
 	}
 
@@ -142,7 +167,13 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 			ready <- struct{}{}
 
 			<-start
-			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), nil)
+
+			array := types.MakeArray(10)
+			for j := 0; j < 10; j++ {
+				array.Append(fmt.Sprintf("%d:%d", i, j))
+			}
+
+			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), array.Iterator())
 		}(i + 1000) // avoid setting the same cursor names.
 
 		go func(i int) {
@@ -151,7 +182,21 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 			ready <- struct{}{}
 
 			<-start
-			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
+
+			cursor := connInfo.Cursor(fmt.Sprintf("cursor %d", i))
+
+			for {
+				j, value, err := cursor.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					panic(err)
+				}
+
+				assert.Equal(t, fmt.Sprintf("%d:%d", i, j), value)
+			}
 		}(i)
 	}
 

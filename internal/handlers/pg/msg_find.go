@@ -21,7 +21,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -91,29 +90,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	batchSize := len(resDocs)
-	if len(resDocs) > int(params.BatchSize) {
-		batchSize = int(params.BatchSize)
-	}
-
-	firstBatch := types.MakeArray(batchSize)
-	moreResults := types.MakeArray(0)
-
-	for i := 0; i < len(resDocs); i++ {
-		if i < batchSize {
-			firstBatch.Append(resDocs[i])
-		} else {
-			moreResults.Append(resDocs[i])
-		}
-	}
-
-	id := int64(0)
-
-	if moreResults.Len() > 0 {
-		id = 1
-
-		conninfo.Get(ctx).SetCursor(sp.DB+"."+sp.Collection, moreResults.Iterator())
-	}
+	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), sp.DB+"."+sp.Collection)
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{

@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -74,29 +73,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	batchSize := len(resDocs)
-	if len(resDocs) > int(params.BatchSize) {
-		batchSize = int(params.BatchSize)
-	}
-
-	firstBatch := types.MakeArray(batchSize)
-	moreResults := types.MakeArray(0)
-
-	for i := 0; i < batchSize; i++ {
-		firstBatch.Append(resDocs[i])
-	}
-	
-	for i := batchSize; i < len(resDocs); i++ {
-		moreResults.Append(resDocs[i])
-	}
-
-	id := int64(0)
-
-	if moreResults.Len() > 0 {
-		id = 1
-
-		conninfo.Get(ctx).SetCursor(fp.DB+"."+fp.Collection, moreResults.Iterator())
-	}
+	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), fp.DB+"."+fp.Collection)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
