@@ -81,6 +81,11 @@ func detectDataType(value any) compareTypeOrderResult {
 	}
 }
 
+// isNumber returns true if a value is numbersDataType.
+func isNumber(value any) bool {
+	return detectDataType(value) == numbersDataType
+}
+
 // SortType represents sort type for $sort aggregation.
 type SortType int8
 
@@ -102,7 +107,8 @@ const (
 	int64DT
 )
 
-// detectNumberType returns a sequence for float64, int32 and int64 types.
+// detectNumberType returns a comparison order of a number type
+// for float64, int32 and int64 types.
 func detectNumberType(value any) numberOrderResult {
 	switch value := value.(type) {
 	case float64:
@@ -145,7 +151,7 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 		return result
 	}
 
-	if detectDataType(a) == numbersDataType {
+	if isNumber(a) {
 		return c.compareTypeOrder(a, b)
 	}
 
@@ -294,13 +300,13 @@ func compareTypeOrder(a, b any) CompareResult {
 
 // compareType compares compareTypeOrder then compares
 // number types. The number types int32, int64 and float64
-// are considered different.
+// are different in sort order.
 func compareType(a, b any) CompareResult {
 	if res := compareTypeOrder(a, b); res != Equal {
 		return res
 	}
 
-	if detectDataType(a) == numbersDataType {
+	if isNumber(a) {
 		aType := detectNumberType(a)
 		bType := detectNumberType(b)
 

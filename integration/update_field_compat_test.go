@@ -754,7 +754,9 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1816",
 		},
 		"DocSameNumberType": {
-			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)},
+				{"42", "foo"},
+				{"array", bson.A{int32(42), "foo", nil}}}}}}},
 			skipForTigris: "tigris produce empty result because composites dataset is not applicable",
 		},
 		"DocDifferentNumberType": {
