@@ -2,14 +2,15 @@
 slug: how-to-start-ferretdb-locally-with-docker
 title: "How to start FerretDB locally with Docker"
 author: Patryk Kwiatek
+image: ../static/img/blog/3g0okbkcve391.jpg
 date: 2022-10-06
 ---
 
-![how to start FerretDB locally](https://www.ferretdb.io/wp-content/uploads/2022/10/3g0okbkcve391.jpg)
+![how to start FerretDB locally](../static/img/blog/3g0okbkcve391.jpg)
 
 <!--truncate-->
 
-(image credit: [u/AssistantNava](https://www.reddit.com/user/AssistantNava/ "") / [Reddit](https://www.reddit.com/r/ferrets/comments/v3zv0z/ferret_on_da_computer/ ""))
+(image credit: [u/AssistantNava](https://www.reddit.com/user/AssistantNava/) / [Reddit](https://www.reddit.com/r/ferrets/comments/v3zv0z/ferret_on_da_computer/))
 
 Even though FerretDB is still in development, it's possible to check out its capabilities and run it in your local environment!
 
@@ -19,8 +20,8 @@ The process of installing and running FerretDB is not complicated at all, and yo
 
 To set up FerretDB locally using Docker, you will need to have the following installed:
 
-* [Docker](https://docs.docker.com/get-docker/ "")
-* [Docker Compose](https://docs.docker.com/compose/install/ "")
+* [Docker](https://docs.docker.com/get-docker/)
+* [Docker Compose](https://docs.docker.com/compose/install/)
 * Text editor of choice
 
 ## How to set up FerretDB environment locally
@@ -96,7 +97,7 @@ The user, hostname, port and database name after the slash should match the valu
 
 It’s good practice to specify the PostgreSQL hostname by using the PostgreSQL container name.
 
-You can also specify other flags,  but at the moment most of them are created for development and testing:
+You can also specify other flags, but at the moment most of them are created for development and testing:
 
 ```js
 Flags:
@@ -258,5 +259,5 @@ We’ve also tested it out by inserting and retrieving a document in a collectio
 
 Even though FerretDB is still under development and not suitable for production environments, running it locally using Docker gives you a taste of what's to come.
 But there’s still more to do.
-You can start contributing to FerretDB by taking a look at [this article](https://www.ferretdb.io/how-to-contribute-to-open-source-2022/ "").
-To learn more about FerretDB, contribute to the project, or for any questions you might have, do reach out to us on [Slack](https://github.com/FerretDB/FerretDB#community "") or [GitHub](https://github.com/FerretDB/FerretDB/discussions "").
+You can start contributing to FerretDB by taking a look at [this article](https://blog.ferretdb.io/how-to-contribute-to-open-source-2022/).
+To learn more about FerretDB, contribute to the project, or for any questions you might have, do reach out to us on [Slack](https://github.com/FerretDB/FerretDB#community) or [GitHub](https://github.com/FerretDB/FerretDB/discussions).

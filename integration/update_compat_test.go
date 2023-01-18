@@ -41,6 +41,7 @@ type updateCompatTestCase struct {
 	resultType    compatTestCaseResultType // defaults to nonEmptyResult
 	skip          string                   // skips test if non-empty
 	skipForTigris string                   // skips test for Tigris if non-empty
+	providers     []shareddata.Provider    // defaults to shareddata.AllProviders()
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -61,8 +62,13 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			t.Parallel()
 
+			providers := shareddata.AllProviders()
+			if tc.providers != nil {
+				providers = tc.providers
+			}
+
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                shareddata.AllProviders(),
+				Providers:                providers,
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -98,6 +104,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
 							var targetErr, compatErr error
 
+							// TODO replace with UpdateMany/ReplaceMany
+							// https://github.com/FerretDB/FerretDB/issues/1507
 							if update != nil {
 								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
 								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)

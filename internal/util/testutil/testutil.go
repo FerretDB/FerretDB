@@ -17,6 +17,8 @@ package testutil
 
 import (
 	"context"
+	"runtime/trace"
+	"strings"
 	"testing"
 
 	"go.uber.org/zap"
@@ -27,7 +29,13 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	ctx, stop := notifyTestsTermination(context.Background())
+	// make one task per top-level test for nicer histograms
+	ctx, task := trace.NewTask(context.Background(), strings.Split(tb.Name(), "/")[0])
+	tb.Cleanup(task.End)
+
+	trace.Log(ctx, "test", tb.Name())
+
+	ctx, stop := notifyTestsTermination(ctx)
 
 	go func() {
 		<-ctx.Done()
