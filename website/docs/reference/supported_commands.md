@@ -56,10 +56,10 @@ sidebar_position: 1
 |                 | `hint`                     | ❌      | Ignored                                                    |
 |                 | `comment`                  | ⚠️      | Not implemented in Tigris                                  |
 |                 | `let`                      | ⚠️      | Unimplemented                                              |
-| `getMore`       |                            | ✅      | Basic command if fully supported                           |
+| `getMore`       |                            | ✅      | Basic command is fully supported                           |
 |                 | `batchSize`                | ✅      |                                                            |
 |                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1808)  |
-|                 | `comment`                  | ⚠️     | Ignored                                                    |
+|                 | `comment`                  | ⚠️     | Unimplemented                                                    |
 | `insert`        |                            | ✅      | Basic command is fully supported                           |
 |                 | `documents`                | ✅      |                                                            |
 |                 | `ordered`                  | ✅      |                                                            |

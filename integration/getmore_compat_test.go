@@ -32,9 +32,9 @@ import (
 )
 
 type queryGetMoreCompatTestCase struct {
-	sort      bson.D
-	batchSize int
-	limit     int
+	sort      bson.D // defaults to bson.D{{"_id", 1}}
+	batchSize int   // defaults to 0
+	limit     int // defaults to 0
 }
 
 func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTestCase) {
@@ -122,10 +122,10 @@ func TestGetMoreCompat(t *testing.T) {
 }
 
 type queryGetMoreErrorsCompatTestCase struct {
-	id         any
-	altMessage string
-	command    bson.D
-	err        bool
+	id         any // defaults to id fetched from running find command
+	altMessage string // expects different error altMessage on target
+	command    bson.D // defaults to empty
+	err        bool // expects error if it is set to true
 }
 
 func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErrorsCompatTestCase) {

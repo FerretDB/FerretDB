@@ -82,12 +82,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	firstBatch := types.MakeArray(batchSize)
 	moreResults := types.MakeArray(0)
 
-	for i := 0; i < len(resDocs); i++ {
-		if i < batchSize {
-			firstBatch.Append(resDocs[i])
-		} else {
-			moreResults.Append(resDocs[i])
-		}
+	for i := 0; i < batchSize; i++ {
+		firstBatch.Append(resDocs[i])
+	}
+	
+	for i := batchSize; i < len(resDocs); i++ {
+		moreResults.Append(resDocs[i])
 	}
 
 	id := int64(0)
