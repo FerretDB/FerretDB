@@ -39,7 +39,7 @@ func newTransactionConflictError(err error) error {
 
 // Error implements the error interface.
 func (e *transactionConflictError) Error() string {
-	return e.err.Error()
+	return "transactionConflictError: " + e.err.Error()
 }
 
 // InTransaction wraps the given function f in a transaction.
@@ -88,7 +88,7 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 	// TODO use exponential backoff with jitter instead
 	// https://github.com/FerretDB/FerretDB/issues/1720
 	const (
-		retriesMax    = 20
+		retriesMax    = 30
 		retryDelayMin = 100 * time.Millisecond
 		retryDelayMax = 200 * time.Millisecond
 	)
@@ -104,7 +104,14 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 			return nil
 		case errors.As(err, &tcErr):
 			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
-			ctxutil.Sleep(ctx, retryDelayMin+time.Duration(deltaMS)*time.Millisecond)
+			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
+
+			pgPool.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelWarn, "transaction failed, retrying",
+				map[string]any{"err": err, "delay": delay},
+			)
+
+			ctxutil.Sleep(ctx, delay)
 		default:
 			return lazyerrors.Error(err)
 		}
