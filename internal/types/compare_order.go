@@ -140,7 +140,7 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 
 // CompareOrderForUpdate detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
-// If they are number type
+// If they are equal and number type, it compares number type.
 // This is used by update operator $set.
 func CompareOrderForUpdate(a, b any, order SortType) CompareResult {
 	if a == nil {
@@ -150,7 +150,7 @@ func CompareOrderForUpdate(a, b any, order SortType) CompareResult {
 	if b == nil {
 		panic("CompareOrder: b is nil")
 	}
-	
+
 	if order != Ascending && order != Descending {
 		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
