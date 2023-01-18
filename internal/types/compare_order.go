@@ -21,7 +21,6 @@ import (
 )
 
 //go:generate ../../bin/stringer -linecomment -type compareTypeOrderResult
-//go:generate ../../bin/stringer -linecomment -type numberOrderResult
 //go:generate ../../bin/stringer -linecomment -type SortType
 
 // compareTypeOrderResult represents the comparison order of data types.
@@ -81,11 +80,6 @@ func detectDataType(value any) compareTypeOrderResult {
 	}
 }
 
-// isNumber returns true if a value is numbersDataType.
-func isNumber(value any) bool {
-	return detectDataType(value) == numbersDataType
-}
-
 // SortType represents sort type for $sort aggregation.
 type SortType int8
 
@@ -125,8 +119,6 @@ func detectNumberType(value any) numberOrderResult {
 // CompareOrder detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
 // This is used by update operator $max.
-// The different number types such as int64 and int32
-// are not equal in CompareOrder.
 func CompareOrder(a, b any, order SortType) CompareResult {
 	if a == nil {
 		panic("CompareOrder: a is nil")
@@ -143,19 +135,38 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 		return result
 	}
 
-	c := &comparer{
-		compareTypeOrder: compareType,
+	return Compare(a, b)
+}
+
+// CompareOrderForUpdate detects the data type for two values and compares them.
+// When the types are equal, it compares their values using Compare.
+// If they are number type
+// This is used by update operator $set.
+func CompareOrderForUpdate(a, b any, order SortType) CompareResult {
+	if a == nil {
+		panic("CompareOrder: a is nil")
+	}
+	if b == nil {
+		panic("CompareOrder: b is nil")
+	}
+	if order != Ascending && order != Descending {
+		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
 
-	if result = c.compare(a, b); result != Equal {
+	result := compareTypeOrder(a, b)
+	if result != Equal {
+		return result
+	}
+
+	if result = Compare(a, b); result != Equal {
 		return result
 	}
 
 	if isNumber(a) {
-		return c.compareTypeOrder(a, b)
+		return compareType(a, b)
 	}
 
-	return result
+	return Equal
 }
 
 // CompareOrderForSort detects the data type for two values and compares them.
@@ -296,6 +307,11 @@ func compareTypeOrder(a, b any) CompareResult {
 	default:
 		return Equal
 	}
+}
+
+// isNumber returns true if a value is numbersDataType.
+func isNumber(value any) bool {
+	return detectDataType(value) == numbersDataType
 }
 
 // compareType compares compareTypeOrder then compares

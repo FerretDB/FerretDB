@@ -703,6 +703,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"DocDifferentNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int64(42)}}}}}},
 			skipForTigris: "Tigris cannot set different number type",
+			skip:          "https://github.com/FerretDB/FerretDB/issues/1827",
 		},
 		"DocFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
@@ -772,6 +773,7 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		"ArrayChangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int64(42), int64(43), 45.5}}}}},
 			skipForTigris: "Tigris does not support mixed types in arrays",
+			skip:          "https://github.com/FerretDB/FerretDB/issues/1827",
 		},
 		"ArrayUnchangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int32(42), int64(43), 45.5}}}}},
@@ -784,6 +786,7 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		"DocDifferentNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int64(42), "foo", nil}}}}}}},
 			skipForTigris: "Tigris does not support field names started from numbers (`42`)",
+			skip:          "https://github.com/FerretDB/FerretDB/issues/1827",
 		},
 	}
 
