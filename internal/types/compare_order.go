@@ -138,11 +138,11 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 	return Compare(a, b)
 }
 
-// CompareOrderForUpdate detects the data type for two values and compares them.
+// IsSameForUpdate detects the data type for two values and compares them.
 // When the types are equal, it compares their values using Compare.
 // If they are equal and number type, it compares number type.
 // This is used by update operator $set.
-func CompareOrderForUpdate(a, b any, order SortType) CompareResult {
+func IsSameForUpdate(a, b any, order SortType) bool {
 	if a == nil {
 		panic("CompareOrder: a is nil")
 	}
@@ -157,18 +157,18 @@ func CompareOrderForUpdate(a, b any, order SortType) CompareResult {
 
 	result := compareTypeOrder(a, b)
 	if result != Equal {
-		return result
+		return false
 	}
 
 	if result = Compare(a, b); result != Equal {
-		return result
+		return false
 	}
 
 	if isNumber(a) {
-		return compareType(a, b)
+		return isSameNumberType(a, b)
 	}
 
-	return Equal
+	return true
 }
 
 // CompareOrderForSort detects the data type for two values and compares them.
@@ -316,29 +316,13 @@ func isNumber(value any) bool {
 	return detectDataType(value) == numbersDataType
 }
 
-// compareType compares compareTypeOrder then compares
-// number types. The number types int32, int64 and float64
-// are different in sort order.
-func compareType(a, b any) CompareResult {
-	if res := compareTypeOrder(a, b); res != Equal {
-		return res
-	}
+// isSameNumberType returns true if a and b are the same
+// number type.
+func isSameNumberType(a, b any) bool {
+	aType := detectNumberType(a)
+	bType := detectNumberType(b)
 
-	if isNumber(a) {
-		aType := detectNumberType(a)
-		bType := detectNumberType(b)
-
-		switch {
-		case aType < bType:
-			return Less
-		case aType > bType:
-			return Greater
-		default:
-			return Equal
-		}
-	}
-
-	return Equal
+	return aType == bType
 }
 
 // getComparisonElementFromArray gets an element use for
