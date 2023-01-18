@@ -142,17 +142,13 @@ func CompareOrder(a, b any, order SortType) CompareResult {
 // When the types are equal, it compares their values using Compare.
 // If they are equal and number type, it compares number type.
 // This is used by update operator $set.
-func IsSameForUpdate(a, b any, order SortType) bool {
+func IsSameForUpdate(a, b any) bool {
 	if a == nil {
 		panic("CompareOrder: a is nil")
 	}
 
 	if b == nil {
 		panic("CompareOrder: b is nil")
-	}
-
-	if order != Ascending && order != Descending {
-		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
 
 	result := compareTypeOrder(a, b)
