@@ -28,12 +28,30 @@ If telemetry is enabled and a newer version of FerretDB is available, you'll be 
 If you are yet to enable telemetry and you’d love to access this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
 
 Next, we've implemented the `distinct` command in FerretDB.
-With this command, you can easily find the unique values of a specific key in your data.
+With this command, you can easily find the unique values of specific fields in your data.
 The `distinct` command takes three arguments: `distinct`, `key`, and `query`.
+See usage below:
+
+```js
+db.collection.distinct(
+    <key>,
+    {
+        <query>
+    }
+)
+```
+
 For instance, if you want to find the unique values of the "age" field in a specific "people" collection, run the command below:
 
 ```js
-db.runCommand( { distinct: "people", key: "age", query: {} } )
+db.people.distinct(
+    "age",
+    {
+        "age": {
+            $gt: 25
+        }
+    }
+)
 ```
 
 The `distinct` argument essentially specifies the collection you want to query, the `key` argument specifies the field you want to find unique values for, and the `query` argument allows you to filter the results.
@@ -42,7 +60,17 @@ Even better, FerretDB now supports the `$rename` field update operator, enabling
 You can use the operator this way:
 
 ```js
-db.collection.update( { }, { $rename: { "oldField": "newField" } }, { multi: true } )
+db.collection.update(
+    { },
+    {
+        $rename: {
+            "oldField": "newField"
+        }
+    },
+    {
+        "multi": true
+    }
+)
 ```
 
 Additionally, we are continuously improving our authentication and security process.
