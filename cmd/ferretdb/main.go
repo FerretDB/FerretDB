@@ -293,7 +293,6 @@ func run() {
 	}()
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: stateProvider,
