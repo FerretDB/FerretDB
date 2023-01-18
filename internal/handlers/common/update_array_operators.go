@@ -29,8 +29,18 @@ import (
 func processPopArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
 	var changed bool
 
-	for _, key := range update.Keys() {
-		popValueRaw := must.NotFail(update.Get(key))
+	iter := update.Iterator()
+	defer iter.Close()
+
+	for {
+		key, popValueRaw, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
 
 		popValue, err := GetWholeNumberParam(popValueRaw)
 		if err != nil {

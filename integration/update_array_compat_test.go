@@ -29,19 +29,30 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Pop": {
-			update:        bson.D{{"$pop", bson.D{{"v", 1}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1677",
+			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
 		},
 		"PopFirst": {
-			update:        bson.D{{"$pop", bson.D{{"v", -1}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1677",
+			update: bson.D{{"$pop", bson.D{{"v", -1}}}},
 		},
-		"PopDotNotation": {
-			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
+		"NonExistentField": {
+			update:     bson.D{{"$pop", bson.D{{"non-existent-field", 1}}}},
+			resultType: emptyResult,
 		},
-		"PopNoSuchKey": {
-			update:     bson.D{{"$pop", bson.D{{"foo", 1}}}},
+		"DotNotation": {
+			filter: bson.D{{"_id", "array-documents"}},
+			update: bson.D{{"$pop", bson.D{{"v.0.foo", 1}}}},
+		},
+		"DotNotationPopFirst": {
+			filter: bson.D{{"_id", "array-documents"}},
+			update: bson.D{{"$pop", bson.D{{"v.0.foo", -1}}}},
+		},
+		"DotNotationNonArray": {
+			filter:     bson.D{{"_id", "array-documents"}},
+			update:     bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNonExistentPath": {
+			update:     bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
 			resultType: emptyResult,
 		},
 		"PopEmptyValue": {
@@ -56,14 +67,6 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
 			resultType: emptyResult,
 		},
-		"PopLastAndFirst": {
-			update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/666",
-		},
-		"PopDotNotationNonArray": {
-			update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
-		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -73,16 +76,16 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
+		"DuplicateKeys": {
+			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
+			resultType: emptyResult, // conflict because of duplicate keys "v" set in $push
+		},
 		"String": {
 			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
 		},
 		"Int32": {
 			update:        bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
-		},
-		"DuplicateKeys": {
-			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
-			resultType: emptyResult, // conflict because of duplicate keys set in $push
 		},
 		"NonExistentField": {
 			update:        bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
@@ -92,7 +95,7 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			filter: bson.D{{"_id", "array-documents"}},
 			update: bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"bar", "zoo"}}}}}},
 		},
-		"DotNotationNotArray": {
+		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents"}},
 			update:     bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
 			resultType: emptyResult, // attempt to push to non-array
