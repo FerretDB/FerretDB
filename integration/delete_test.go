@@ -100,12 +100,11 @@ func TestDeleteLimitErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
 
+			t.Parallel()
 			ctx, collection := setup.Setup(t)
 
 			res := collection.Database().RunCommand(ctx, bson.D{
