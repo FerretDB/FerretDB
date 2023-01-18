@@ -31,7 +31,7 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
-	notForTigris := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	notForTigris := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.Nulls}
 
 	// Setups one collection for each data set for all handlers and MongoDB.
 	t.Run("All", func(t *testing.T) {
