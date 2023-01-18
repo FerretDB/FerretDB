@@ -74,7 +74,6 @@ db.collection.update(
         }
     }
 )
-
 ```
 
 We've also added support for `ordered` inserts, which allows you to insert data in the exact order it comes in.
@@ -88,7 +87,6 @@ db.collection.insert({
         ordered: true
     }
 )
-
 ```
 
 ## Bug fixes and enhancements
