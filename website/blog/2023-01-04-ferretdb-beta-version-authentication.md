@@ -59,7 +59,7 @@ In this blog post, we'll be sharing detailed information about the FerretDB beta
 
 Since the last release (0.7.2), we've made great strides in adding new features to FerretDB, especially the introduction of authentication for PostgreSQL.
 With authentication, users can now connect securely using passwords, ensuring that only authorized connections are established.
-You can implement an authenticated connection by specifying the connection string in this format: `postgres://username:password@postgres:5432/ferretdb`.
+You can do this by specifying your default username and password in the FerretDB connection string as `mongodb://username:password@ferretdb:27018/?tls=true&authMechanism=PLAIN`.
 See more details [in our documentation](https://docs.ferretdb.io/security/#authentication).
 
 But that's not all - in addition to the `$max` update operator, FerretDB beta now includes support for the `$min` update operator:
