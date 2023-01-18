@@ -11,7 +11,7 @@ author_title: FerretDB Team
 
 <!--truncate-->
 
-FerretDB - the open source alternative to MongoDB - is thrilled to announce release of our  Beta version(0.8.0), which includes various new features, bug fixes, improved documentation, and, most importantly, the implementation of authentication for PostgreSQL.
+FerretDB - the open source alternative to MongoDB - is thrilled to announce release of our  Beta version (0.8.0), which includes various new features, bug fixes, improved documentation, and, most importantly, the implementation of authentication for PostgreSQL.
 This new and exciting release is no ordinary milestone; it's a culmination of FerretDB's journey as we work on bringing you the ultimate open-source alternative to MongoDB by converting MongoDB protocol queries to SQL, with PostgreSQL as the database engine.
 
 While we do not aim to cover all the features of MongoDB, our goal with the Beta - and our upcoming GA release later this quarter - is to provide a solid foundation on which to build targeted features that'll enable FerretDB to support more and more real-world use cases.
@@ -24,7 +24,7 @@ There are numerous ways to dump and restore your data.
 For example, you can follow the following steps:
 
 1. Backup FerretDB databases with `mongodump`.
-Set your FerretDB connection string in `—uri` and run:
+Set your FerretDB connection string in `-—uri` and run:
    `mongodump --uri="mongodb://localhost:27017"`
    This command will create a directory with dumps for each FerretDB database on the given server.
 Later, we will use this dump to restore the database.
@@ -38,11 +38,11 @@ Specify your host and port.
 
 3. Stop FerretDB (This depends on your operating system and the way you run FerretDB)
 
-4. Connect to PostgreSQL and drop `ferredb` database as it's not needed anymore:
+4. Connect to PostgreSQL and drop `ferretdb` database as it's not needed anymore:
    * `psql -h localhost -p 5432 -U username postgres`
    * `DROP DATABASE ferretdb`
 
-5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to our documentation where we describe how to update and start FerretDB)
+5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
 
 6. Restore database using `mongorestore --uri="mongodb://localhost:27017"`
 
@@ -65,13 +65,30 @@ See more details [in our documentation](https://docs.ferretdb.io/security/#authe
 But that's not all - in addition to the `$max` update operator, FerretDB beta now includes support for the `$min` update operator:
 
 ```js
-db.collection.update( {}, { $min: { <field1>: <value1>, ... } } )
+db.collection.update(
+    {},
+    {
+        $min: {
+            <field1>: <value1>,
+            ...
+        }
+    }
+)
+
 ```
 
 We've also added support for `ordered` inserts, which allows you to insert data in the exact order it comes in.
 
 ```js
-db.collection.insert( { "field1": "value1" }, { ordered: true } )
+db.collection.insert({
+        <field1>: <value1>,
+        ...
+    },
+    {
+        ordered: true
+    }
+)
+
 ```
 
 ## Bug fixes and enhancements
@@ -90,6 +107,7 @@ Our documentation is not left out on the list of improvements!
 Specifically, we've updated it to include descriptions and examples for element query operators, array query operators, and comparison and logical query operators.
 
 These changes help make our documentation more comprehensive and user-friendly, which should hugely benefit our community and users alike.
+Please don't hesitate to let us know what you think about it.
 
 ## Other changes
 
@@ -107,11 +125,11 @@ Not to mention the growing number of partnerships, compatible applications, and 
 In 2022, we had:
 
 * 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community of contributors
-* ⭐️ 5.1k Stars on GitHub(Have you given us a Star yet? Be sure to [Star us on GitHub](https://github.com/FerretDB/FerretDB).)
+* ⭐️ 5.1k Stars on GitHub(Have you given us a Star yet? Be sure to [Star us on GitHub](https://github.com/FerretDB/FerretDB)
 * ⏫ More than 100 Docker image downloads
 
 We appreciate your continued and invaluable support and feedback, as we strive to make FerretDB even better.
 Stay tuned for more exciting developments and updates from us!
 
-Please remember, if you have questions about FerretDB, feel free to [contact us](https://docs.ferretdb.io/intro/#community).
+Please remember, if you have questions about FerretDB, feel free to [contact us](https://docs.ferretdb.io/#community).
 We'd love to hear from you!
