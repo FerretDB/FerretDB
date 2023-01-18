@@ -370,3 +370,30 @@ func errorTextContains(err error, texts ...string) bool {
 
 	return false
 }
+
+// getCursorID returns the cursor ID from a find command.
+func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) any {
+	t.Helper()
+
+	res := targetCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"find", targetCollection.Name()},
+			{"filter", bson.D{}},
+			{"sort", bson.D{{"_id", 1}}},
+		},
+	)
+	require.NoError(t, res.Err())
+
+	var result bson.D
+	err := res.Decode(&result)
+	require.NoError(t, err)
+
+	responseDoc := ConvertDocument(t, result)
+	cursor, err := responseDoc.Get("cursor")
+	require.NoError(t, err)
+
+	id, err := cursor.(*types.Document).Get("id")
+	require.NoError(t, err)
+
+	return id
+}
