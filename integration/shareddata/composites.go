@@ -235,7 +235,7 @@ var ArrayRegexes = &Values[string]{
 }
 
 // ArrayDocuments contains array with documents with arrays: {"v": [{"foo": [{"bar": "hello"}]}, ...]}.
-// This data set is helpful for dot notation tests: v.0.foo.0.bar
+// This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
 	name:     "ArrayDocuments",
 	handlers: []string{"pg", "tigris"},
