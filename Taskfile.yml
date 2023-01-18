@@ -173,6 +173,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -timeout=15m
         -coverprofile=integration-pg.txt .
         -handler=pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
