@@ -165,8 +165,12 @@ You can also run `task -C 1` to limit the number of concurrent tasks, which is u
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
-For example, to run a single test case for `pg` handler with all subtests running sequentially,
-you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`.
+For example:
+
+* to run a single test case for `pg` handler with all subtests running sequentially,
+  you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
+* to run all tests for `tigris` handler with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
+  you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
