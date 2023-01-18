@@ -17,6 +17,8 @@ package common
 import (
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -84,9 +86,44 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 func processPushArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
 	var changed bool
 
-	for _, key := range update.Keys() {
-		rawValue := must.NotFail(update.Get(key))
-		print(rawValue)
+	iter := update.Iterator()
+	defer iter.Close()
+
+	for {
+		key, pushValueRaw, err := iter.Next()
+		if err != nil {
+			if err == iterator.ErrIteratorDone {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		path := types.NewPathFromString(key)
+
+		if !doc.HasByPath(path) {
+			continue
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, NewWriteErrorMsg(
+				ErrTypeMismatch,
+				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
+			)
+		}
+
+		array.Append(pushValueRaw)
+
+		err = doc.SetByPath(path, array)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		changed = true
 	}

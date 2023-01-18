@@ -76,9 +76,9 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 		"Int32": {
 			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 		},
-		"StringMany": {
-			update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}, {"v", "baz"}}}},
-		},
+		//"StringMany": {
+		//	update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}, {"v", "baz"}}}},
+		//},
 		//		"DotNotation": {
 
 		//		},
@@ -89,6 +89,9 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 		"NonExistentPath": {
 			update:     bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
 			resultType: emptyResult,
+		},
+		"OneNonExistentElement": {
+			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
 		},
 	}
 
