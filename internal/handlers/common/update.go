@@ -676,12 +676,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$rename", update)
+	if err != nil {
+		return err
+	}
+
 	pop, err := extractValueFromUpdateOperator("$pop", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$rename", update)
+	push, err := extractValueFromUpdateOperator("$push", update)
 	if err != nil {
 		return err
 	}
@@ -690,7 +695,9 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
-	if err = checkConflictingOperators(mul, currentDate, inc, min, max, pop, set, setOnInsert, unset); err != nil {
+	if err = checkConflictingOperators(
+		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push,
+	); err != nil {
 		return err
 	}
 

@@ -76,9 +76,10 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 		"Int32": {
 			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 		},
-		//"StringMany": {
-		//	update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}, {"v", "baz"}}}},
-		//},
+		"StringMany": {
+			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
+			resultType: emptyResult, // conflict because of duplicate keys set in $push
+		},
 		//		"DotNotation": {
 
 		//		},
