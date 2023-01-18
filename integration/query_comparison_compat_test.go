@@ -81,10 +81,12 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"v", float64(2 << 60)}},
 		},
 		"String": {
-			filter: bson.D{{"v", "foo"}},
+			filter:         bson.D{{"v", "foo"}},
+			resultPushdown: true,
 		},
 		"StringEmpty": {
-			filter: bson.D{{"v", ""}},
+			filter:         bson.D{{"v", ""}},
+			resultPushdown: true,
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
@@ -329,7 +331,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
 				}},
 			}}},
-			resultType: emptyResult,
+			//resultType: emptyResult,
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", nil}}}}}},

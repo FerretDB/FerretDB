@@ -246,20 +246,33 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
+		// TODO: test empty key
+		if k == "" || k[0] == '$' {
+			continue
+		}
 		// TODO skip array check for _id field
+		if k == "_id" {
+			switch v := v.(type) {
+			case string:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			case types.ObjectID:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			}
+			continue
+		}
 		switch v := v.(type) {
-		case string, int64:
+		case string, int64, types.ObjectID:
+			key := p.Next()
 			val := p.Next()
 
-			sql := fmt.Sprintf(`((_jsonb->'%s')::jsonb = %s)`+
-				` OR (jsonb_typeof(_jsonb->'%s') = 'array' AND`+
-				` EXISTS (SELECT 1 FROM jsonb_array_elements(_jsonb->'%s') as elem WHERE (elem::jsonb = %s)))`, k, val, k, k, val)
+			sql := fmt.Sprintf(`((_jsonb->%s)::jsonb = %s)`+
+				` OR (jsonb_typeof(_jsonb->%s) = 'array' AND`+
+				` EXISTS (SELECT 1 FROM jsonb_array_elements(_jsonb->%s) as elem WHERE (elem::jsonb = %s)))`, key, val, key, key, val)
 
 			filters = append(filters, sql)
-			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-		case types.ObjectID:
-			filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+			args = append(args, k)
 			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		case types.Document:
