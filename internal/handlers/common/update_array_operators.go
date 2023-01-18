@@ -118,8 +118,11 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 		array, ok := val.(*types.Array)
 		if !ok {
 			return false, NewWriteErrorMsg(
-				ErrTypeMismatch,
-				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
+				ErrBadValue,
+				fmt.Sprintf(
+					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
+				),
 			)
 		}
 

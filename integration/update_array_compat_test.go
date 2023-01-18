@@ -83,12 +83,10 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 
 		//		},
 		"NonExistentField": {
-			update:     bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
-			resultType: emptyResult,
+			update: bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
 		},
 		"NonExistentPath": {
-			update:     bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
-			resultType: emptyResult,
+			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
 		},
 		"OneNonExistentElement": {
 			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
