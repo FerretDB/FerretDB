@@ -69,16 +69,20 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Double": {
-			filter: bson.D{{"v", 42.13}},
+			filter:         bson.D{{"v", 42.13}},
+			resultPushdown: true,
 		},
 		"DoubleMax": {
-			filter: bson.D{{"v", math.MaxFloat64}},
+			filter:         bson.D{{"v", math.MaxFloat64}},
+			resultPushdown: true,
 		},
 		"DoubleSmallest": {
-			filter: bson.D{{"v", math.SmallestNonzeroFloat64}},
+			filter:         bson.D{{"v", math.SmallestNonzeroFloat64}},
+			resultPushdown: true,
 		},
 		"DoubleBig": {
-			filter: bson.D{{"v", float64(2 << 60)}},
+			filter:         bson.D{{"v", float64(2 << 60)}},
+			resultPushdown: true,
 		},
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
@@ -115,6 +119,10 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
+		},
+		"EmptyString": {
+			filter: bson.D{{"", "value-of-empty-key"}},
+			//resultPushdown: true,
 		},
 	}
 

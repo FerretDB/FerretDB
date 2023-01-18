@@ -223,6 +223,26 @@ func TestDeleteCommentQuery(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
+func TestEmptyKey(t *testing.T) {
+	//setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{{"_id", "empty-key"}, {"", "foo"}})
+	require.NoError(t, err)
+
+	res, err := collection.Find(ctx, bson.D{{"", "foo"}})
+	require.NoError(t, err)
+
+	var actual []bson.D
+	require.NoError(t, res.All(ctx, &actual))
+
+	expected := []bson.D{bson.D{{"_id", "empty-key"}, {"", "foo"}}}
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestFindAndModifyCommentMethod(t *testing.T) {
 	setup.SkipForTigris(t)
 

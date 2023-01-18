@@ -263,7 +263,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 		}
 		switch v := v.(type) {
-		case string, int64, types.ObjectID:
+		case string, int32, int64, types.ObjectID, float32, float64:
 			key := p.Next()
 			val := p.Next()
 
