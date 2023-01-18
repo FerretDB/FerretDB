@@ -246,11 +246,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		// TODO: test empty key
-		if k == "" || k[0] == '$' {
+		if len(k) != 0 && k[0] == '$' {
 			continue
 		}
-		// TODO skip array check for _id field
+
+		// skip dot notation
+		if len(k) != 0 && types.NewPathFromString(k).Len() > 1 {
+			continue
+		}
 		if k == "_id" {
 			switch v := v.(type) {
 			case string:

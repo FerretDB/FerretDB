@@ -106,9 +106,8 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"FieldPositionField": {
-			filter:         bson.D{{"v.array.2.foo", "bar"}},
-			resultType:     emptyResult,
-			resultPushdown: true,
+			filter:     bson.D{{"v.array.2.foo", "bar"}},
+			resultType: emptyResult,
 		},
 	}
 

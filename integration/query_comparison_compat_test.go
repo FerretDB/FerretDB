@@ -115,14 +115,11 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"no-such-field", nil}},
 		},
 		"ValueNumber": {
-			filter: bson.D{{"v", 42}},
+			filter:         bson.D{{"v", 42}},
+			resultPushdown: true,
 		},
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
-		},
-		"EmptyString": {
-			filter: bson.D{{"", "value-of-empty-key"}},
-			//resultPushdown: true,
 		},
 	}
 

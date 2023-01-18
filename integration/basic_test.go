@@ -224,7 +224,7 @@ func TestDeleteCommentQuery(t *testing.T) {
 }
 
 func TestEmptyKey(t *testing.T) {
-	//setup.SkipForTigris(t)
+	setup.SkipForTigrisWithReason(t, "Tigris field name cannot be empty")
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
