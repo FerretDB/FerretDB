@@ -199,7 +199,6 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 
 func TestFindAndModifyNonExistingCollection(t *testing.T) {
 	t.Parallel()
-
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
