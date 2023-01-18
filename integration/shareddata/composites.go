@@ -258,6 +258,9 @@ var ArrayDocuments = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"array-documents": bson.A{bson.D{{"foo", bson.A{bson.D{{"bar", "hello"}}}}}},
+		"array-documents-nested": bson.A{bson.D{{"foo", bson.A{
+			bson.D{{"bar", "hello"}},
+			bson.D{{"bar", "world"}},
+		}}}},
 	},
 }

@@ -330,7 +330,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 						{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
 					}},
 				}},
-				{"_id", bson.D{{"$ne", "array-documents"}}}, // satisfies the $gt condition
+				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
 			resultType: emptyResult,
 		},
