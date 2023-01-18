@@ -14,7 +14,6 @@ tags: [release]
 [FerretDB](https://www.ferretdb.io/) 0.8.1 is here, and it's better than ever!
 On the back of our Beta release, we've gone even further to improve FerretDB with lots of new features and enhancements.
 This FerretDB release and the continued support of our amazing community further strengthens our drive to bring you the open source alternative to MongoDB.
-And now, as we approach our GA version later this quarter, we’re more emboldened to ensure FerretDB matches up with the behaviour you’d expect from MongoDB, and to create more compatibility with other applications and real world use cases.
 
 Keep reading to learn more.
 
