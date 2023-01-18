@@ -492,7 +492,6 @@ func TestDotNotation(t *testing.T) {
 // TestQueryNonExistingCollection tests that a query to a non existing collection doesn't fail but returns an empty result.
 func TestQueryNonExistingCollection(t *testing.T) {
 	t.Parallel()
-
 	ctx, collection := setup.Setup(t)
 
 	cursor, err := collection.Database().Collection("doesnotexist").Find(ctx, bson.D{})
