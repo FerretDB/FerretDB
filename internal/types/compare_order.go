@@ -146,9 +146,11 @@ func CompareOrderForUpdate(a, b any, order SortType) CompareResult {
 	if a == nil {
 		panic("CompareOrder: a is nil")
 	}
+
 	if b == nil {
 		panic("CompareOrder: b is nil")
 	}
+	
 	if order != Ascending && order != Descending {
 		panic(fmt.Sprintf("CompareOrder: order is %v", order))
 	}
