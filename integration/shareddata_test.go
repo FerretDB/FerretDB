@@ -62,7 +62,7 @@ func TestEnvData(t *testing.T) {
 		setup.SetupWithOpts(t, &setup.SetupOpts{
 			DatabaseName:   "test",
 			CollectionName: "values",
-			Providers:      notForTigris,
+			Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
 		})
 	})
 }
