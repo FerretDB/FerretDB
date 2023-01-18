@@ -25,7 +25,7 @@ FerretDB is compatible with MongoDB drivers and can be used as a direct replacem
 
 Currently, the project is still in its early stages of development and not yet suitable for use in production-ready environments.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](/diff/),
+a list of [known differences with MongoDB](diff.md),
 and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md).
 
 ## Community
