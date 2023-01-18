@@ -622,6 +622,13 @@ func TestUpdateFieldCompatUnsetArray(t *testing.T) {
 func TestUpdateFieldCompatSet(t *testing.T) {
 	t.Parallel()
 
+	// Tigris does not update number type upon set due to schema.
+	// Hence $set is tested on the same number type for tigris using
+	// following providers.
+	int32sProvider := shareddata.AllProviders().Remove("Int64s", "Doubles", "BigDoubles")
+	int64sProvider := shareddata.AllProviders().Remove("Int32s", "Doubles", "BigDoubles")
+	doublesProvider := shareddata.AllProviders().Remove("Int32s", "Int64s")
+
 	testCases := map[string]updateCompatTestCase{
 		"SetNullInExisingField": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
@@ -664,24 +671,36 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"foo", int32(12)}, {"v", nil}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
 		},
-		"SameValueInt32Type": {
+		"Int32Type": {
 			update:        bson.D{{"$set", bson.D{{"v", int32(42)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
+			skipForTigris: "tested in Int32TypeOnly without int64 and double shareddata",
 		},
-		"SameValueInt64Type": {
+		"Int32TypeOnly": {
+			update:    bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			providers: int32sProvider,
+		},
+		"Int64Type": {
 			update:        bson.D{{"$set", bson.D{{"v", int64(42)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
+			skipForTigris: "tested in Int64TypeOnly without int32 and double shareddata",
 		},
-		"SameValueDoubleType": {
+		"Int64TypeOnly": {
+			update:    bson.D{{"$set", bson.D{{"v", int64(42)}}}},
+			providers: int64sProvider,
+		},
+		"DoubleType": {
 			update:        bson.D{{"$set", bson.D{{"v", 42.0}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
+			skipForTigris: "tested in DoubleTypeOnly without int32 and int64 shareddata",
+		},
+		"DoubleTypeOnly": {
+			update:    bson.D{{"$set", bson.D{{"v", 42.0}}}},
+			providers: doublesProvider,
 		},
 		"DocSameNumberType": {
 			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}},
 		},
 		"DocDifferentNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int64(42)}}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
+			skipForTigris: "Tigris cannot set different number type",
 		},
 		"DocFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
@@ -722,6 +741,9 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 func TestUpdateFieldCompatSetArray(t *testing.T) {
 	t.Parallel()
 
+	stringsProvider := shareddata.AllProviders().
+		Remove("ArrayDoubles", "ArrayInt32s", "ArrayRegexes")
+
 	testCases := map[string]updateCompatTestCase{
 		"Many": {
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
@@ -732,36 +754,34 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		},
 		"ArrayNil": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
-			skipForTigris: "tigris produce empty result because composites dataset is not applicable",
+			skipForTigris: "TODO: tigris produce empty result because composites dataset is not applicable",
 		},
 		"EmptyArray": {
 			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
 		},
-		"ArrayNumbersAsc": {
-			update:        bson.D{{"$set", bson.D{{"v", bson.A{int32(42), int64(43), 45.5}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1668",
-		},
 		"ArrayStringsDesc": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{"c", "b", "a"}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1816",
+			skipForTigris: "tested in ArrayStringsOnly without array of doubles, int32s and regexes shareddata",
 		},
-		"ArrayDifferentNumberType": {
+		"ArrayStringsOnly": {
+			update:    bson.D{{"$set", bson.D{{"v", bson.A{"c", "b", "a"}}}}},
+			providers: stringsProvider,
+		},
+		"ArrayChangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int64(42), int64(43), 45.5}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1816",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
-		"ArraySameNumberType": {
+		"ArrayUnchangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int32(42), int64(43), 45.5}}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1816",
+			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocSameNumberType": {
-			update: bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)},
-				{"42", "foo"},
-				{"array", bson.A{int32(42), "foo", nil}}}}}}},
-			skipForTigris: "tigris produce empty result because composites dataset is not applicable",
+			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
+			skipForTigris: "Tigris does not support field names started from numbers (`42`)",
 		},
 		"DocDifferentNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int64(42), "foo", nil}}}}}}},
-			skipForTigris: "tigris produce empty result because composites dataset is not applicable",
+			skipForTigris: "Tigris does not support field names started from numbers (`42`)",
 		},
 	}
 
