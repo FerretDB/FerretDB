@@ -64,11 +64,11 @@ db.collection.update(
     { },
     {
         $rename: {
-            "oldField": "newField"
+            <oldField>: <newField>
         }
     },
     {
-        "multi": true
+        multi: true
     }
 )
 ```
