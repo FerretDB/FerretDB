@@ -128,15 +128,6 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 }
 
-// DocumentsArrays contains documents with arrays of documents with arrays for tests.
-// This data set is helpful for dot notation tests.
-var DocumentsArrays = &Values[string]{
-	name:       "DocumentsArrays",
-	handlers:   []string{"pg", "tigris"},
-	validators: map[string]map[string]any{},
-	data:       map[string]any{},
-}
-
 // ArrayStrings contains an array with string values for tests.
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
@@ -240,5 +231,33 @@ var ArrayRegexes = &Values[string]{
 	},
 	data: map[string]any{
 		"array-regex": bson.A{primitive.Regex{Pattern: "foo", Options: "i"}, primitive.Regex{Pattern: "foo", Options: "i"}},
+	},
+}
+
+// ArrayDocuments contains array with documents with arrays: {"v": [{"foo": [{"bar": "hello"}]}, ...]}.
+// This data set is helpful for dot notation tests: v.0.foo.0.bar
+var ArrayDocuments = &Values[string]{
+	name:     "ArrayDocuments",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {
+						"type": "array", "items": {
+							"type": "object",	
+							"properties": {	
+								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
+							}
+						}
+					}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-documents": bson.A{bson.D{{"foo", bson.A{bson.D{{"bar", "hello"}}}}}},
 	},
 }

@@ -73,24 +73,37 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"Simple": {
-			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
+		"String": {
+			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
 		},
-		"Conflicting": {
+		"Int32": {
+			update:        bson.D{{"$push", bson.D{{"v", int32(42)}}}},
+			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
+		},
+		"DuplicateKeys": {
 			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 			resultType: emptyResult, // conflict because of duplicate keys set in $push
 		},
 		"NonExistentField": {
-			update: bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
+			update:        bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
+			skipForTigris: "Tigris does not support adding new fields to documents",
 		},
-		"ExistingPath": {
-			update: bson.D{{"$push", bson.D{{"v.foo", "foo"}}}},
+		"DotNotation": {
+			filter: bson.D{{"_id", "array-documents"}},
+			update: bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"bar", "zoo"}}}}}},
 		},
-		"NonExistentPath": {
-			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
+		"DotNotationNotArray": {
+			filter:     bson.D{{"_id", "array-documents"}},
+			update:     bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
+			resultType: emptyResult, // attempt to push to non-array
 		},
-		"OneNonExistentElement": {
-			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
+		"DotNotationNonExistentPath": {
+			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
+			skipForTigris: "Tigris does not support adding new fields to documents",
+		},
+		"TwoElements": {
+			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
+			skipForTigris: "Tigris does not support adding new fields to documents",
 		},
 	}
 

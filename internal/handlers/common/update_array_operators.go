@@ -129,8 +129,7 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		array.Append(pushValueRaw)
 
-		err = doc.SetByPath(path, array)
-		if err != nil {
+		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)
 		}
 
