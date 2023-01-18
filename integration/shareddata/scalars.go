@@ -158,7 +158,6 @@ var Strings = &Values[string]{
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "string"},
 					"_id": {"type": "string"},
-					"": {"type": "string"},
 				}
 			}`,
 		},
@@ -169,7 +168,6 @@ var Strings = &Values[string]{
 		"string-whole":  "42",
 		"string-empty":  "",
 		"string-null":   nil,
-		"":              "foo",
 	},
 }
 
