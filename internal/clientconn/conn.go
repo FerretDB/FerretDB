@@ -25,6 +25,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime/trace"
 	"sync/atomic"
 	"time"
 
@@ -513,14 +514,17 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	return
 }
 
-func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, cmd string) (*wire.OpMsg, error) {
-	if cmd, ok := common.Commands[cmd]; ok {
+func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
+	if cmd, ok := common.Commands[command]; ok {
 		if cmd.Handler != nil {
+			// TODO move it to route, closer to Prometheus metrics
+			defer trace.StartRegion(ctx, command).End()
+
 			return cmd.Handler(c.h, ctx, msg)
 		}
 	}
 
-	errMsg := fmt.Sprintf("no such command: '%s'", cmd)
+	errMsg := fmt.Sprintf("no such command: '%s'", command)
 
 	return nil, common.NewCommandErrorMsg(common.ErrCommandNotFound, errMsg)
 }
