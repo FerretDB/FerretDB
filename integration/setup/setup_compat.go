@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/trace"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -60,6 +61,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	startup()
 
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+
+	defer trace.StartRegion(ctx, "SetupCompatWithOpts").End()
+
 	// skip tests for MongoDB as soon as possible
 	if *compatPortF == 0 {
 		tb.Skip("compatibility tests require second system")
@@ -75,8 +80,6 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
-
-	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if *debugSetupF {
@@ -128,6 +131,8 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts) []*mongo.Collection {
 	tb.Helper()
 
+	defer trace.StartRegion(ctx, "setupCompatCollections").End()
+
 	database := client.Database(opts.databaseName)
 
 	// drop remnants of the previous failed run
@@ -155,6 +160,8 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			)
 			continue
 		}
+
+		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s", collectionName))
 
 		collection := database.Collection(collectionName)
 
@@ -197,6 +204,8 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		})
 
 		collections = append(collections, collection)
+
+		region.End()
 	}
 
 	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection
