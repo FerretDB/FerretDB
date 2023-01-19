@@ -46,7 +46,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 	// TODO https://github.com/FerretDB/FerretDB/issues/1341
 	// TODO https://github.com/FerretDB/FerretDB/issues/1720
 	const (
-		retriesMax    = 3
+		retriesMax    = 5
 		retryDelayMin = 100 * time.Millisecond
 		retryDelayMax = 200 * time.Millisecond
 	)
@@ -67,7 +67,14 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 
 			if isOtherCreationInFlight(err) {
 				deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
-				ctxutil.Sleep(ctx, retryDelayMin+time.Duration(deltaMS)*time.Millisecond)
+				delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
+
+				tdb.l.Warn(
+					"createDatabaseIfNotExists failed, retrying",
+					zap.String("db", db), zap.Error(err), zap.Duration("delay", delay),
+				)
+
+				ctxutil.Sleep(ctx, delay)
 				continue
 			}
 

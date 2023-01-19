@@ -35,6 +35,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
+
 	db := collection.Database()
 
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
@@ -133,6 +134,7 @@ func TestUpdateCommentMethod(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -159,6 +161,7 @@ func TestUpdateCommentQuery(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -182,6 +185,7 @@ func TestDeleteCommentMethod(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -206,6 +210,7 @@ func TestDeleteCommentQuery(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -250,6 +255,7 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -274,6 +280,7 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
