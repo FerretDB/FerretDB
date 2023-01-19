@@ -31,6 +31,8 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
+
 	notForTigris := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 
 	// Setups one collection for each data set for all handlers and MongoDB.
