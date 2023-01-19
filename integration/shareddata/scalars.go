@@ -366,6 +366,9 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 	},
 }
 
+// tigrisSchema returns a tigris schema for the given type.
+// In addition to the "v" field, it also sets "foo" field with the same type, so it can be used
+// for test cases where multiple fields need to be supported (for example, $rename).
 func tigrisSchema(typeString string) string {
 	common := `{
 				"title": "%%collection%%",
