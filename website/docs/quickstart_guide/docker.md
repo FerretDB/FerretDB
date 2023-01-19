@@ -6,8 +6,8 @@ sidebar_position: 1
 
 These steps describe a quick local setup.
 They are not suitable for most production use-cases because they keep all data
-inside containers and don't [encrypt incoming connections](/security.md#securing-connections-with-tls).
-For more configuration options check [Configuration flags and variables](/flags.md) page.
+inside containers and don't [encrypt incoming connections](../security.md#securing-connections-with-tls).
+For more configuration options check [Configuration flags and variables](../flags.md) page.
 
 1. Store the following in the `docker-compose.yml` file:
 
@@ -45,15 +45,23 @@ For more configuration options check [Configuration flags and variables](/flags.
 2. Start services with `docker compose up -d`.
    To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
 
-3. If you have `mongosh` installed, just run it to connect to FerretDB.
-   If not, run the following command to run `mongosh` inside the temporary MongoDB container, attaching to the same Docker network:
+3. If you have `mongosh` installed, just run it to connect to FerretDB. It will use credentials passed in `mongosh` flags or MongoDB URI 
+   to authenticate to the PostgreSQL database. You'll also need to set `authMechanism` to `PLAIN`. 
+   The example uri would look like: 
 
-   ```sh
-   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo mongodb://ferretdb/ -u username -p password --authenticationMechanism=PLAIN
+   ``` sh
+   mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN"`
    ```
 
-   FerretDB will use credentials passed in `mongosh` flags or MongoDB URI to authenticate to the PostgreSQL database.
-   See [Security#Authentication](/security.md#authentication) for more details.
+   See [Security#Authentication](../security.md#authentication) for more details.
+
+   If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container, attaching to the same Docker network:
+
+   ```sh
+   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
+   ```
+
+   
 
 You can also install FerretDB with the `.deb` and `.rpm` packages
 provided for each [release](https://github.com/FerretDB/FerretDB/releases).
