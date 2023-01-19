@@ -122,7 +122,9 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
 								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+									if e.HasErrorCode(121) && errorTextContains(e,
+										"json schema validation failed for field", "does not validate with",
+									) {
 										setup.SkipForTigrisWithReason(t, targetErr.Error())
 									}
 								}
