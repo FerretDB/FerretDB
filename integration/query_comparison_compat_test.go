@@ -96,6 +96,14 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter:         bson.D{{"v", "foo"}},
 			resultPushdown: true,
 		},
+		"StringInt": {
+			filter:         bson.D{{"v", "42"}},
+			resultPushdown: true,
+		},
+		"StringDouble": {
+			filter:         bson.D{{"v", "42.13"}},
+			resultPushdown: true,
+		},
 		"StringEmpty": {
 			filter:         bson.D{{"v", ""}},
 			resultPushdown: true,
