@@ -246,25 +246,23 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		if len(k) != 0 && k[0] == '$' {
+
+		// don't pushdown query operators and dot notation yet
+		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
 			continue
 		}
 
-		// skip dot notation
-		if len(k) != 0 && types.NewPathFromString(k).Len() > 1 {
-			continue
-		}
+		// don't iterate through array for _id keys as it's invalid
 		if k == "_id" {
 			switch v := v.(type) {
-			case string:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-			case types.ObjectID:
+			case types.ObjectID, string:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
+
 			continue
 		}
+
 		switch v := v.(type) {
 		case string, int32, int64, types.ObjectID, float32, float64:
 			key := p.Next()
@@ -277,9 +275,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			filters = append(filters, sql)
 			args = append(args, k)
 			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-		case types.Document:
-			// TODO: filter all operators like $eq (probably not in the scope of this issue)
 		}
 	}
 
