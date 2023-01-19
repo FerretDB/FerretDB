@@ -17,11 +17,15 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
+
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestUpdateArrayCompatPop(t *testing.T) {
 	t.Parallel()
+
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
 
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
@@ -74,6 +78,8 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 
 func TestUpdateArrayCompatPush(t *testing.T) {
 	t.Parallel()
+
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
 
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {

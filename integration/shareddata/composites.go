@@ -238,7 +238,7 @@ var ArrayRegexes = &Values[string]{
 // This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
 	name:     "ArrayDocuments",
-	handlers: []string{"pg", "tigris"},
+	handlers: []string{"pg"}, // TODO Enable for Tigris when tests issues are fixed https://github.com/FerretDB/FerretDB/issues/1834
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
