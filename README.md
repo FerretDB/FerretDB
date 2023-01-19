@@ -74,9 +74,10 @@ For more configuration options check [Configuration flags and variables](https:/
 2. Start services with `docker compose up -d`.
    To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
 
-3. If you have `mongosh` installed, just run it to connect to FerretDB. It will use credentials passed in `mongosh` flags or MongoDB URI 
-   to authenticate to the PostgreSQL database. You'll also need to set `authMechanism` to `PLAIN`. 
-   The example uri would look like: 
+3. If you have `mongosh` installed, just run it to connect to FerretDB.
+   It will use credentials passed in `mongosh` flags or MongoDB URI to authenticate to the PostgreSQL database.
+   You'll also need to set `authMechanism` to `PLAIN`.
+   The example uri would look like:
 
    ``` sh
    mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN"`
