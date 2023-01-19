@@ -53,23 +53,19 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	Listener       ListenerOpts
-	ProxyAddr      string
-	Mode           Mode
-	Metrics        *connmetrics.ListenerMetrics
-	Handler        handlers.Interface
-	Logger         *zap.Logger
-	TestRecordsDir string // if empty, no records are created
-}
-
-// ListenerOpts represents listener configuration options.
-type ListenerOpts struct {
 	TCP         string
 	Unix        string
 	TLS         string
 	TLSCertFile string
 	TLSKeyFile  string
 	TLSCAFile   string
+
+	ProxyAddr      string
+	Mode           Mode
+	Metrics        *connmetrics.ListenerMetrics
+	Handler        handlers.Interface
+	Logger         *zap.Logger
+	TestRecordsDir string // if empty, no records are created
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -88,9 +84,9 @@ func NewListener(opts *NewListenerOpts) *Listener {
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.Logger.Named("listener")
 
-	if l.Listener.TCP != "" {
+	if l.TCP != "" {
 		var err error
-		if l.tcpListener, err = net.Listen("tcp", l.Listener.TCP); err != nil {
+		if l.tcpListener, err = net.Listen("tcp", l.TCP); err != nil {
 			return err
 		}
 
@@ -99,9 +95,9 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on TCP %s ...", l.TCPAddr())
 	}
 
-	if l.Listener.Unix != "" {
+	if l.Unix != "" {
 		var err error
-		if l.unixListener, err = net.Listen("unix", l.Listener.Unix); err != nil {
+		if l.unixListener, err = net.Listen("unix", l.Unix); err != nil {
 			return err
 		}
 
@@ -110,13 +106,13 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on Unix %s ...", l.UnixAddr())
 	}
 
-	if l.Listener.TLS != "" {
+	if l.TLS != "" {
 		var err error
 		if l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
-			addr:     l.Listener.TLS,
-			certFile: l.Listener.TLSCertFile,
-			keyFile:  l.Listener.TLSKeyFile,
-			caFile:   l.Listener.TLSCAFile,
+			addr:     l.TLS,
+			certFile: l.TLSCertFile,
+			keyFile:  l.TLSKeyFile,
+			caFile:   l.TLSCAFile,
 		}); err != nil {
 			return err
 		}
@@ -145,7 +141,7 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	var wg sync.WaitGroup
 
-	if l.Listener.TCP != "" {
+	if l.TCP != "" {
 		wg.Add(1)
 
 		go func() {
@@ -158,7 +154,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.Listener.Unix != "" {
+	if l.Unix != "" {
 		wg.Add(1)
 
 		go func() {
@@ -171,7 +167,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.Listener.TLS != "" {
+	if l.TLS != "" {
 		wg.Add(1)
 
 		go func() {

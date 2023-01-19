@@ -235,41 +235,32 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
 
-	proxyAddr := *proxyAddrF
-	mode := clientconn.NormalMode
-	if proxyAddr != "" {
-		mode = clientconn.DiffNormalMode
-	}
-
-	var listenUnix string
-	if *targetUnixSocketF {
-		listenUnix = unixSocketPath(tb)
-	}
-
-	listenerOpts := clientconn.ListenerOpts{
-		Unix: listenUnix,
-	}
-
-	hostPort := "127.0.0.1:0"
-
-	tls := *targetTLSF
-	if tls {
-		listenerOpts.TLS = hostPort
-		fp := GetTLSFilesPaths(tb, ServerSide)
-		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
-	} else {
-		listenerOpts.TCP = hostPort
-	}
-
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Listener:       listenerOpts,
-		ProxyAddr:      proxyAddr,
-		Mode:           mode,
+	listenerOpts := &clientconn.NewListenerOpts{
+		ProxyAddr:      *proxyAddrF,
+		Mode:           clientconn.NormalMode,
 		Metrics:        metrics,
 		Handler:        h,
 		Logger:         logger,
 		TestRecordsDir: *recordsDirF,
-	})
+	}
+
+	if listenerOpts.ProxyAddr != "" {
+		listenerOpts.Mode = clientconn.DiffNormalMode
+	}
+
+	if *targetUnixSocketF {
+		listenerOpts.Unix = unixSocketPath(tb)
+	}
+
+	if *targetTLSF {
+		listenerOpts.TLS = "127.0.0.1:0"
+		fp := GetTLSFilesPaths(tb, ServerSide)
+		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
+	} else {
+		listenerOpts.TCP = "127.0.0.1:0"
+	}
+
+	l := clientconn.NewListener(listenerOpts)
 
 	done := make(chan struct{})
 	go func() {
@@ -289,20 +280,19 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		h.Close()
 	})
 
-	opts := &buildMongoDBURIOpts{
-		tls: *targetTLSF,
-	}
+	var opts buildMongoDBURIOpts
 
 	switch {
-	case tls:
+	case listenerOpts.TLS != "":
 		opts.hostPort = l.TLSAddr().String()
-	case listenUnix != "":
+		opts.tls = true
+	case listenerOpts.Unix != "":
 		opts.unixSocketPath = l.UnixAddr().String()
 	default:
 		opts.hostPort = l.TCPAddr().String()
 	}
 
-	uri := buildMongoDBURI(tb, ctx, opts)
+	uri := buildMongoDBURI(tb, ctx, &opts)
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
 	return uri
