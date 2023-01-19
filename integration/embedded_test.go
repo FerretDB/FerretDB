@@ -46,7 +46,7 @@ func TestEmbedded(t *testing.T) {
 		"TCP": {
 			config: &ferretdb.Config{
 				Listener: ferretdb.ListenerConfig{
-					Addr: "127.0.0.1:65432",
+					TCP: "127.0.0.1:65432",
 				},
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),

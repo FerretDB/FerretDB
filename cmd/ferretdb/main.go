@@ -310,14 +310,13 @@ func run() {
 	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Listener: clientconn.ListenerOpts{
-			Addr:        cli.Listen.Addr,
-			Unix:        cli.Listen.Unix,
-			TLS:         cli.Listen.TLS,
-			TLSCertFile: cli.Listen.TLSCertFile,
-			TLSKeyFile:  cli.Listen.TLSKeyFile,
-			TLSCAFile:   cli.Listen.TLSCAFile,
-		},
+		TCP:         cli.Listen.Addr,
+		Unix:        cli.Listen.Unix,
+		TLS:         cli.Listen.TLS,
+		TLSCertFile: cli.Listen.TLSCertFile,
+		TLSKeyFile:  cli.Listen.TLSKeyFile,
+		TLSCAFile:   cli.Listen.TLSCAFile,
+
 		ProxyAddr:      cli.ProxyAddr,
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
