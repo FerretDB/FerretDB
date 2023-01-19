@@ -151,8 +151,9 @@ var ArrayStrings = &Values[string]{
 		"array-string-desc":      bson.A{"c", "b", "a"},
 		"array-string-duplicate": bson.A{nil, "foo", "b", "b", nil},
 		"array-string-numbers":   bson.A{"42", "0", "42.13"},
-		"array-string-empty":     bson.A{},
-		"array-string-nil":       bson.A{nil},
+		// "array-string-nil":       nil, TODO: https://github.com/FerretDB/FerretDB/issues/1836
+		"array-string-empty":    bson.A{},
+		"array-string-with-nil": bson.A{nil},
 	},
 }
 
