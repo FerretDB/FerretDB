@@ -29,6 +29,11 @@ import (
 
 // MsgDataSize implements HandlerInterface.
 func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -56,7 +61,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	db, collection := targets[0], targets[1]
 
-	querier := h.db.Driver.UseDatabase(db)
+	querier := dbPool.Driver.UseDatabase(db)
 
 	stats, err := tigrisdb.FetchStats(ctx, querier, collection)
 	if err != nil {

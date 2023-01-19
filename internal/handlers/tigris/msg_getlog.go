@@ -34,6 +34,11 @@ import (
 
 // MsgGetLog implements HandlerInterface.
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -86,8 +91,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	case "startupWarnings":
 		var info *driver.InfoResponse
 
-		info, err = h.db.Driver.Info(ctx)
-		if err != nil {
+		if info, err = dbPool.Driver.Info(ctx); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 

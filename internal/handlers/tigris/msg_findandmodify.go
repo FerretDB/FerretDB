@@ -28,6 +28,11 @@ import (
 
 // MsgFindAndModify implements HandlerInterface.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -68,7 +73,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		Filter:     params.Query,
 	}
 
-	resDocs, err := h.fetchAndFilterDocs(ctx, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +100,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				fetchParam:         &fp,
 			}
 
-			upsert, upserted, err = h.upsert(ctx, resDocs, p)
+			upsert, upserted, err = upsertDocuments(ctx, dbPool, resDocs, p)
 			if err != nil {
 				return nil, err
 			}
@@ -115,13 +120,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			if params.HasUpdateOperators {
 				upsert = resDocs[0].DeepCopy()
-				_, err = common.UpdateDocument(upsert, params.Update)
-				if err != nil {
+				if _, err = common.UpdateDocument(upsert, params.Update); err != nil {
 					return nil, err
 				}
 
-				_, err = h.update(ctx, &fp, upsert)
-				if err != nil {
+				if _, err = updateDocument(ctx, dbPool, &fp, upsert); err != nil {
 					return nil, err
 				}
 			} else {
@@ -131,8 +134,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 				}
 
-				_, err = h.update(ctx, &fp, upsert)
-				if err != nil {
+				if _, err = updateDocument(ctx, dbPool, &fp, upsert); err != nil {
 					return nil, err
 				}
 			}
@@ -179,8 +181,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		_, err = h.delete(ctx, &fp, resDocs)
-		if err != nil {
+		if _, err = deleteDocuments(ctx, dbPool, &fp, resDocs); err != nil {
 			return nil, err
 		}
 
@@ -206,9 +207,9 @@ type upsertParams struct {
 	fetchParam         *tigrisdb.FetchParam
 }
 
-// upsert inserts new document if no documents in query result or updates given document.
+// upsertDocuments inserts new document if no documents in query result or updates given document.
 // When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) {
+func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
 	if len(docs) == 0 {
 		upsert := must.NotFail(types.NewDocument())
 
@@ -229,8 +230,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 			}
 		}
 
-		err := h.insert(ctx, params.fetchParam, upsert)
-		if err != nil {
+		if err := insertDocument(ctx, dbPool, params.fetchParam, upsert); err != nil {
 			return nil, false, err
 		}
 
@@ -250,8 +250,7 @@ func (h *Handler) upsert(ctx context.Context, docs []*types.Document, params *up
 		}
 	}
 
-	_, err := h.update(ctx, params.fetchParam, upsert)
-	if err != nil {
+	if _, err := updateDocument(ctx, dbPool, params.fetchParam, upsert); err != nil {
 		return nil, false, err
 	}
 
