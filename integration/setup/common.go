@@ -37,7 +37,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 var (
@@ -60,7 +59,12 @@ var (
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
+	shareListenerF = flag.Bool("share-listener", false, "share listener between tests")
+
 	startupOnce sync.Once
+
+	setupListenerOnce sync.Once
+	sharedListenerURI string
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -98,8 +102,17 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
+// testingTB is a part of testing.TB interface without Cleanup method
+// which is problematic for getListener with shared listener.
+type testingTB interface {
+	require.TestingT
+	Helper()
+	Fatalf(string, ...any)
+	Logf(string, ...any)
+}
+
 // mongoClient returns a new connected MongoDB client for the given Mongodb URI.
-func mongoClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client, error) {
+func mongoClient(tb testingTB, ctx context.Context, uri string) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(uri)
 
 	if *targetTLSF {
@@ -124,7 +137,7 @@ func mongoClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client,
 }
 
 // checkMongoDBURI returns true if given MongoDB URI is working.
-func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
+func checkMongoDBURI(tb testingTB, ctx context.Context, uri string) bool {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
@@ -159,7 +172,7 @@ type buildMongoDBURIOpts struct {
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
 //
 // TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
-func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) string {
+func buildMongoDBURI(tb testingTB, ctx context.Context, opts *buildMongoDBURIOpts) string {
 	tb.Helper()
 
 	var host string
@@ -219,11 +232,21 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 	panic("not reached")
 }
 
+func getListener(tb testingTB, ctx context.Context, logger *zap.Logger) string {
+	if *shareListenerF {
+		setupListenerOnce.Do(func() {
+			sharedListenerURI = setupListener(tb, ctx, logger, false)
+		})
+
+		return sharedListenerURI
+	}
+
+	return setupListener(tb, ctx, logger, true)
+}
+
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
-	tb.Helper()
-
+func setupListener(tb testingTB, ctx context.Context, logger *zap.Logger, cleanup bool) string {
 	defer trace.StartRegion(ctx, "setupListener").End()
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
@@ -247,7 +270,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: testutil.TigrisURL(tb), // TODO use flag https://github.com/FerretDB/FerretDB/issues/1568
+		TigrisURL: "127.0.0.1:8081",
 	}
 	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
@@ -291,11 +314,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		}
 	}()
 
-	// ensure that all listener's logs are written before test ends
-	tb.Cleanup(func() {
-		<-done
-		h.Close()
-	})
+	if cleanup {
+		// ensure that all listener's logs are written before test ends
+		tb.(interface{ Cleanup(func()) }).Cleanup(func() {
+			<-done
+			h.Close()
+		})
+	}
 
 	var opts buildMongoDBURIOpts
 

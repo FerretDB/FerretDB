@@ -92,7 +92,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	var uri string
 	if *targetPortF == 0 {
-		uri = setupListener(tb, ctx, logger)
+		uri = getListener(tb, ctx, logger)
 	} else {
 		uri = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),

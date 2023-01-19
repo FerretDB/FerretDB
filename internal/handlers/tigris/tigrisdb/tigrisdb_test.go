@@ -33,7 +33,7 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 	cfg := &config.Driver{
-		URL: testutil.TigrisURL(t),
+		URL: "127.0.0.1:8081",
 	}
 
 	logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))

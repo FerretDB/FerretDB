@@ -18,13 +18,12 @@ package setup
 
 import (
 	"os"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 // unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testing.TB) string {
+func unixSocketPath(tb testingTB) string {
 	tb.Helper()
 
 	// do not use tb.TempDir() because generated path is too long on macOS

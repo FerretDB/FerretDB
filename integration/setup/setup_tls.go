@@ -19,7 +19,6 @@ import (
 	"crypto/x509"
 	"os"
 	"path/filepath"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 )
@@ -41,21 +40,21 @@ type TLSFilesPaths struct {
 }
 
 // GetTLSFilesPaths returns paths to TLS files - cert, key, ca.
-func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
+func GetTLSFilesPaths(tb testingTB, side TLSFileSide) *TLSFilesPaths {
 	certPath := filepath.Join("..", "build", "certs", string(side)+"-cert.pem")
 
 	_, err := os.Stat(certPath)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	keyPath := filepath.Join("..", "build", "certs", string(side)+"-key.pem")
 
 	_, err = os.Stat(keyPath)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
 
 	_, err = os.Stat(keyPath)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	return &TLSFilesPaths{
 		Cert: certPath,
@@ -65,19 +64,19 @@ func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
 }
 
 // GetClientTLSConfig returns a test TLS config for a client.
-func GetClientTLSConfig(t testing.TB) *tls.Config {
-	tlsFiles := GetTLSFilesPaths(t, ClientSide)
+func GetClientTLSConfig(tb testingTB) *tls.Config {
+	tlsFiles := GetTLSFilesPaths(tb, ClientSide)
 
 	// Load the root CA certificate
 	rootCA, err := os.ReadFile(tlsFiles.CA)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM(rootCA)
-	require.True(t, ok, "failed to parse root certificate")
+	require.True(tb, ok, "failed to parse root certificate")
 
 	cert, err := tls.LoadX509KeyPair(tlsFiles.Cert, tlsFiles.Key)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	// Create the TLS config
 	tlsConfig := &tls.Config{
