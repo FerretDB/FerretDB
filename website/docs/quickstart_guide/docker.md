@@ -49,7 +49,7 @@ For more configuration options check [Configuration flags and variables](../flag
    It will use credentials passed in `mongosh` flags or MongoDB URI
    to authenticate to the PostgreSQL database.
    You'll also need to set `authMechanism` to `PLAIN`.
-   The example uri would look like:
+   The example URI would look like:
 
    ``` sh
    mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN"`
