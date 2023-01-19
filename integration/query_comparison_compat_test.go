@@ -68,6 +68,14 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter:     bson.D{{"v.some.0", bson.A{42}}},
 			resultType: emptyResult,
 		},
+		"Int32": {
+			filter:         bson.D{{"v", int32(42)}},
+			resultPushdown: true,
+		},
+		"Int64": {
+			filter:         bson.D{{"v", int64(42)}},
+			resultPushdown: true,
+		},
 		"Double": {
 			filter:         bson.D{{"v", 42.13}},
 			resultPushdown: true,
