@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestUpdateFieldCompatCurrentDate(t *testing.T) {
@@ -703,7 +704,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"DocDifferentNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int64(42)}}}}}},
 			skipForTigris: "Tigris cannot set different number type",
-			skip:          "https://github.com/FerretDB/FerretDB/issues/1827",
 		},
 		"DocFieldExist": {
 			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
@@ -735,6 +735,51 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"DocumentField": {
 			update:        bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
+		},
+		"Binary": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+		},
+		"BinaryGenericSubtype": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Subtype: 0x00, Data: []byte{42, 0, 13}}}}}},
+		},
+		"BinaryEmpty": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Data: []byte{}}}}}},
+		},
+		"ObjectID": {
+			update: bson.D{{"$set", bson.D{{"v", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+		},
+		"ObjectIDEmpty": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.NilObjectID}}}},
+		},
+		"Bool": {
+			update: bson.D{{"$set", bson.D{{"v", true}}}},
+		},
+		"Datetime": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+		},
+		"DatetimeNanoSecDiff": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000001, time.UTC))}}}},
+		},
+		"DatetimeEpoch": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+		},
+		"Regex": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{Pattern: "foo"}}}}},
+		},
+		"RegexOption": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
+		},
+		"RegexEmpty": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{}}}}},
+		},
+		"Timestamp": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{T: 41, I: 12}}}}},
+		},
+		"TimestampNoI": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{T: 41}}}}},
+		},
+		"TimestampNoT": {
+			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{I: 12}}}}},
 		},
 	}
 
@@ -773,7 +818,6 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		"ArrayChangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int64(42), int64(43), 45.5}}}}},
 			skipForTigris: "Tigris does not support mixed types in arrays",
-			skip:          "https://github.com/FerretDB/FerretDB/issues/1827",
 		},
 		"ArrayUnchangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int32(42), int64(43), 45.5}}}}},
@@ -786,7 +830,6 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		"DocDifferentNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int64(42), "foo", nil}}}}}}},
 			skipForTigris: "Tigris does not support field names started from numbers (`42`)",
-			skip:          "https://github.com/FerretDB/FerretDB/issues/1827",
 		},
 	}
 

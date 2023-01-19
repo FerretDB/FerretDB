@@ -345,11 +345,6 @@ func compareDocuments(a, b *Document) CompareResult {
 }
 
 // compareArray compares array to any value.
-// If `as` and `b` are both array, each element of array is compared.
-// If `b` is not an array, compareArray returns Equal if `as` contains `b`.
-// If `as` does not contain any element that is the same type as `b`, it returns Less.
-// If `as` does not contain `b` but has elements same type as `b`,
-// it returns the result from the last element comparison.
 func compareArray(as *Array, b any) CompareResult {
 	if bs, ok := b.(*Array); ok {
 		return compareArrays(as, bs)

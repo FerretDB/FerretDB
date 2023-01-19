@@ -176,7 +176,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		if doc.HasByPath(path) {
 			docValue := must.NotFail(doc.GetByPath(path))
-			if types.IsSameForUpdate(setValue, docValue) {
+			if types.Identical(setValue, docValue) {
 				continue
 			}
 		}
