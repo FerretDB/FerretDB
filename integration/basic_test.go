@@ -229,7 +229,9 @@ func TestEmptyKey(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	_, err := collection.InsertOne(ctx, bson.D{{"_id", "empty-key"}, {"", "foo"}})
+	doc := bson.D{{"_id", "empty-key"}, {"", "foo"}}
+
+	_, err := collection.InsertOne(ctx, doc)
 	require.NoError(t, err)
 
 	res, err := collection.Find(ctx, bson.D{{"", "foo"}})
@@ -238,7 +240,7 @@ func TestEmptyKey(t *testing.T) {
 	var actual []bson.D
 	require.NoError(t, res.All(ctx, &actual))
 
-	expected := []bson.D{{{"_id", "empty-key"}, {"", "foo"}}}
+	expected := []bson.D{doc}
 
 	assert.Equal(t, expected, actual)
 }

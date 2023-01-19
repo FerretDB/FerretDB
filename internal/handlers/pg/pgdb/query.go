@@ -251,7 +251,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 		}
 
-		// don't iterate through array for _id keys as it's an invalid value
+		// don't iterate through array for _id keys to simplify the query
 		if k == "_id" {
 			switch v := v.(type) {
 			case types.ObjectID, string:
