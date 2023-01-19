@@ -15,12 +15,9 @@
 package conninfo
 
 import (
-	"sync/atomic"
-
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 type cursor struct {
-	id       atomic.Uint64
 	iterator iterator.Interface[int, any]
 }
