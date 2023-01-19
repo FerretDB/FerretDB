@@ -174,7 +174,7 @@ var Strings = &Values[string]{
 					"foo": {"type": "integer", "format": "int32"}, 
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "string"},
-					"_id": {"type": "string"},
+					"_id": {"type": "string"}
 				}
 			}`,
 		},
