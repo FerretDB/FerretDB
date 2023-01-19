@@ -93,6 +93,8 @@ func AllProviders() Providers {
 type Providers []Provider
 
 // Remove specified providers and return remaining providers.
+//
+// TODO Remove this method. Do not use in new code.
 func (ps Providers) Remove(removeProviderNames ...string) Providers {
 	res := make([]Provider, 0, len(ps))
 

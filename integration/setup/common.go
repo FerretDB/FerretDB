@@ -98,6 +98,31 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
+// mongoClient returns a new connected MongoDB client for the given Mongodb URI.
+func mongoClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client, error) {
+	opts := options.Client().ApplyURI(uri)
+
+	if *targetTLSF {
+		opts.SetTLSConfig(GetClientTLSConfig(tb))
+	}
+
+	// TODO tweak these options?
+	// https://github.com/FerretDB/FerretDB/issues/1507
+
+	opts.SetRetryReads(false)
+	opts.SetRetryWrites(false)
+
+	opts.SetMinPoolSize(5)
+	opts.SetMaxPoolSize(0)
+	opts.SetMaxConnecting(100)
+	opts.SetMaxConnIdleTime(0)
+	opts.SetDirect(true)
+
+	require.NoError(tb, opts.Validate())
+
+	return mongo.Connect(ctx, opts)
+}
+
 // checkMongoDBURI returns true if given MongoDB URI is working.
 func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	tb.Helper()
@@ -105,13 +130,7 @@ func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
 	trace.Log(ctx, "checkMongoDBURI", uri)
 
-	clientOpts := options.Client().ApplyURI(uri)
-
-	if *targetTLSF {
-		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
-	}
-
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongoClient(tb, ctx, uri)
 
 	if err == nil {
 		defer client.Disconnect(ctx)
@@ -153,18 +172,17 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 		host = opts.unixSocketPath
 	}
 
-	q := make(url.Values)
-
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme: "mongodb",
 		Host:   host,
 		Path:   "/",
 	}
+
+	q := make(url.Values)
 
 	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
 	for _, c := range []struct {
@@ -316,13 +334,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 
 	tb.Logf("setupClient: %s", uri)
 
-	clientOpts := options.Client().ApplyURI(uri)
-
-	if *targetTLSF {
-		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
-	}
-
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongoClient(tb, ctx, uri)
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
