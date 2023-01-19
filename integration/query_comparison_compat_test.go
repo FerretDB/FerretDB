@@ -39,7 +39,8 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentNull": {
-			filter: bson.D{{"v", bson.D{{"foo", nil}}}},
+			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
+			skipForTigris: "Tigris does not support null values in objects",
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{}}},
@@ -49,7 +50,8 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
-			filter: bson.D{{"v.foo", int32(42)}},
+			filter:        bson.D{{"v.foo", int32(42)}},
+			skipForTigris: "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentDotNotationNoSuchField": {
 			filter:     bson.D{{"no-such-field.some", 42}},

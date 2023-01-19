@@ -66,20 +66,7 @@ var DocumentsDoubles = &Values[string]{
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {
-						"type": "object", 
-						"properties": {
-							"foo": {"type": "object", "properties": {"bar": {"type": "string"}} }, 
-							"v": {"type": "number"}
-						}
-					},
-					"_id": {"type": "string"}
-				}
-			}`,
+			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "number"}}`),
 		},
 	},
 	data: map[string]any{
