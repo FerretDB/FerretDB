@@ -40,7 +40,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	db, err := GetRequiredParam[string](document, "$db")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	collection, err := GetRequiredParam[string](document, "collection")
