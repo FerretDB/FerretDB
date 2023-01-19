@@ -28,13 +28,14 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	projection     bson.D                   // nil for leaving projection unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
-	skipForTigris  string                   // skip test for Tigris
-	skip           string                   // skip test for all backends, myst have issue number mentioned
+	filter             bson.D                   // required
+	sort               bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	projection         bson.D                   // nil for leaving projection unset
+	resultType         compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown     bool                     // defaults to false
+	skipTigrisPushdown bool                     // defaults to false
+	skipForTigris      string                   // skip test for Tigris
+	skip               string                   // skip test for all backends, myst have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -90,7 +91,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+					// temporarily make possible to skip tigris pushdown checks
+					if tc.skipTigrisPushdown && setup.IsTigris(t) {
+						require.True(t, tc.resultPushdown, "Cannot use skipTigrisPushdown when resultPushdown is false'")
+						assert.Equal(t, false, explainRes.Map()["pushdown"], "Tigris pushdown check was skipped, but it was actually true")
+					} else {
+						assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+					}
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -167,8 +174,9 @@ func TestQueryCompat(t *testing.T) {
 			resultPushdown: true,
 		},
 		"ObjectID": {
-			filter:         bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter:             bson.D{{"v", primitive.NilObjectID}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
