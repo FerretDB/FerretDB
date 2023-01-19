@@ -312,7 +312,7 @@ func run() {
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		Listener: clientconn.ListenerOpts{
-			Addr:        cli.Listen.Addr,
+			TCP:         cli.Listen.Addr,
 			Unix:        cli.Listen.Unix,
 			TLS:         cli.Listen.TLS,
 			TLSCertFile: cli.Listen.TLSCertFile,

@@ -258,7 +258,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		fp := GetTLSFilesPaths(tb, ServerSide)
 		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
 	} else {
-		listenerOpts.Addr = hostPort
+		listenerOpts.TCP = hostPort
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
@@ -295,11 +295,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 	switch {
 	case tls:
-		opts.hostPort = l.TLS().String()
+		opts.hostPort = l.TLSAddr().String()
 	case listenUnix != "":
-		opts.unixSocketPath = l.Unix().String()
+		opts.unixSocketPath = l.UnixAddr().String()
 	default:
-		opts.hostPort = l.Addr().String()
+		opts.hostPort = l.TCPAddr().String()
 	}
 
 	uri := buildMongoDBURI(tb, ctx, opts)
