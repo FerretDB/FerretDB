@@ -95,20 +95,26 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// filter only by _id for now
-		if k != "_id" {
+		// don't pushdown query operators and dot notation yet
+		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
+			continue
+		}
+
+		// don't iterate through array for _id keys to simplify the query
+		if k == "_id" {
+			switch v.(type) {
+			case string, types.ObjectID:
+				// filter by the exact _id value
+				id := must.NotFail(tjson.Marshal(v))
+				res["_id"] = json.RawMessage(id)
+			}
+
 			continue
 		}
 
 		switch v.(type) {
-		case string:
-			// filtering by string values is complicated if the storage supports encodings, collations, etc,
-			// but Tigris does not support any of these
-		case types.ObjectID:
-			// filtering by ObjectID is always safe
-		default:
-			// skip other types for now
-			continue
+		case string, int32, int64, types.ObjectID, float32, float64:
+			res[k] = must.NotFail(tjson.Marshal(v))
 		}
 
 		// filter by the exact _id value
