@@ -114,12 +114,9 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 
 		switch v.(type) {
 		case string, int32, int64, types.ObjectID, float32, float64:
-			res[k] = must.NotFail(tjson.Marshal(v))
+			rawValue := must.NotFail(tjson.Marshal(v))
+			res[k] = json.RawMessage(rawValue)
 		}
-
-		// filter by the exact _id value
-		id := must.NotFail(tjson.Marshal(v))
-		res["_id"] = json.RawMessage(id)
 	}
 
 	return must.NotFail(json.Marshal(res))
