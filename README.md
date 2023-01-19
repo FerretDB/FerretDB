@@ -85,6 +85,8 @@ For more configuration options check [Configuration flags and variables](https:/
 
    See [Security#Authentication](../security.md#authentication) for more details.
 
+   If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container, attaching to the same Docker network:
+
    ```sh
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
    ```
