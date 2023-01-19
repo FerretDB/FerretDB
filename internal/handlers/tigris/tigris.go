@@ -69,6 +69,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		NewOpts: opts,
 		db:      db,
 	}
+
 	return h, nil
 }
 

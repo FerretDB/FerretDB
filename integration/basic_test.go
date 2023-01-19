@@ -238,7 +238,7 @@ func TestEmptyKey(t *testing.T) {
 	var actual []bson.D
 	require.NoError(t, res.All(ctx, &actual))
 
-	expected := []bson.D{bson.D{{"_id", "empty-key"}, {"", "foo"}}}
+	expected := []bson.D{{{"_id", "empty-key"}, {"", "foo"}}}
 
 	assert.Equal(t, expected, actual)
 }

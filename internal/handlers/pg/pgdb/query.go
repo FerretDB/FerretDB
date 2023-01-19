@@ -246,13 +246,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-
 		// don't pushdown query operators and dot notation yet
 		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
 			continue
 		}
 
-		// don't iterate through array for _id keys as it's invalid
+		// don't iterate through array for _id keys as it's an invalid value
 		if k == "_id" {
 			switch v := v.(type) {
 			case types.ObjectID, string:
@@ -265,12 +264,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 		switch v := v.(type) {
 		case string, int32, int64, types.ObjectID, float32, float64:
-			key := p.Next()
-			val := p.Next()
-
-			sql := fmt.Sprintf(`((_jsonb->%s)::jsonb = %s)`+
-				` OR (jsonb_typeof(_jsonb->%s) = 'array' AND`+
-				` EXISTS (SELECT 1 FROM jsonb_array_elements(_jsonb->%s) as elem WHERE (elem::jsonb = %s)))`, key, val, key, key, val)
+			sql := fmt.Sprintf(
+				`((_jsonb->%[1]s)::jsonb = %[2]s)`+ // Select if value under the key k is equal to value v.
+					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
+					` OR (jsonb_typeof(_jsonb->%[1]s) = 'array' AND`+
+					` EXISTS (SELECT 1 FROM jsonb_array_elements(_jsonb->%[1]s) as elem WHERE (elem::jsonb = %[2]s)))`,
+				p.Next(), // $1 = k
+				p.Next(), // $2 = v
+			)
 
 			filters = append(filters, sql)
 			args = append(args, k)

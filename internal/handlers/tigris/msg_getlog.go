@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -83,7 +84,9 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		info, err := h.db.Driver.Info(ctx)
+		var info *driver.InfoResponse
+
+		info, err = h.db.Driver.Info(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
