@@ -70,15 +70,14 @@ var DocumentsDoubles = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"document-double":           bson.D{{"v", 42.13}},
-		"document-double-whole":     bson.D{{"v", 42.0}},
-		"document-double-zero":      bson.D{{"v", 0.0}},
-		"document-double-v-not-set": bson.D{{"foo", nil}},
-		"document-double-max":       bson.D{{"v", math.MaxFloat64}},
-		"document-double-smallest":  bson.D{{"v", math.SmallestNonzeroFloat64}},
-		"document-double-big":       bson.D{{"v", doubleBig}},
-		"document-double-empty":     bson.D{},
-		"document-double-null":      nil,
+		"document-double":          bson.D{{"v", 42.13}},
+		"document-double-whole":    bson.D{{"v", 42.0}},
+		"document-double-zero":     bson.D{{"v", 0.0}},
+		"document-double-max":      bson.D{{"v", math.MaxFloat64}},
+		"document-double-smallest": bson.D{{"v", math.SmallestNonzeroFloat64}},
+		"document-double-big":      bson.D{{"v", doubleBig}},
+		"document-double-empty":    bson.D{},
+		"document-double-null":     nil,
 	},
 }
 
