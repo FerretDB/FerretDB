@@ -274,8 +274,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			)
 
 			filters = append(filters, sql)
-			args = append(args, k)
-			args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			args = append(args, k,
+				string(must.NotFail(pjson.MarshalSingleValue(v))),
+			)
 		}
 	}
 
