@@ -45,12 +45,12 @@ func Identical(a, b any) bool {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				return true
 			} else if err != nil {
-				return false
+				panic("types.Identical: " + err.Error())
 			}
 
 			_, bField, err := bIter.Next()
 			if err != nil {
-				return false
+				panic("types.Identical: " + err.Error())
 			}
 
 			if !Identical(aField, bField) {
@@ -76,12 +76,12 @@ func Identical(a, b any) bool {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				return true
 			} else if err != nil {
-				return false
+				panic("types.Identical: " + err.Error())
 			}
 
 			_, bItem, err := bIter.Next()
 			if err != nil {
-				return false
+				panic("types.Identical: " + err.Error())
 			}
 
 			if !Identical(aItem, bItem) {

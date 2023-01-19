@@ -628,9 +628,9 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	// Tigris does not update number type upon set due to schema.
 	// Hence $set is tested on the same number type for tigris using
 	// following providers.
-	int32sProvider := shareddata.AllProviders().Remove("Int64s", "Doubles", "BigDoubles")
-	int64sProvider := shareddata.AllProviders().Remove("Int32s", "Doubles", "BigDoubles")
-	doublesProvider := shareddata.AllProviders().Remove("Int32s", "Int64s")
+	int32sProvider := []shareddata.Provider{shareddata.Int32s}
+	int64sProvider := []shareddata.Provider{shareddata.Int64s}
+	doublesProvider := []shareddata.Provider{shareddata.Doubles}
 
 	testCases := map[string]updateCompatTestCase{
 		"SetNullInExisingField": {
@@ -794,9 +794,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 func TestUpdateFieldCompatSetArray(t *testing.T) {
 	t.Parallel()
 
-	stringsProvider := shareddata.AllProviders().
-		Remove("ArrayDoubles", "ArrayInt32s", "ArrayRegexes")
-
 	testCases := map[string]updateCompatTestCase{
 		"Many": {
 			update: bson.D{{"$set", bson.D{{"foo", int32(1)}, {"bar", bson.A{}}}}},
@@ -813,12 +810,7 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 			update: bson.D{{"$set", bson.D{{"v", bson.A{}}}}},
 		},
 		"ArrayStringsDesc": {
-			update:        bson.D{{"$set", bson.D{{"v", bson.A{"c", "b", "a"}}}}},
-			skipForTigris: "tested in ArrayStringsOnly without array of doubles, int32s and regexes shareddata",
-		},
-		"ArrayStringsOnly": {
-			update:    bson.D{{"$set", bson.D{{"v", bson.A{"c", "b", "a"}}}}},
-			providers: stringsProvider,
+			update: bson.D{{"$set", bson.D{{"v", bson.A{"c", "b", "a"}}}}},
 		},
 		"ArrayChangedNumberType": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{int64(42), int64(43), 45.5}}}}},
