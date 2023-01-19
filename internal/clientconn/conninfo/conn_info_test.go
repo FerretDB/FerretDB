@@ -81,7 +81,7 @@ func TestConnInfo(t *testing.T) {
 func TestConnInfoCursorParallelWork(t *testing.T) {
 	t.Parallel()
 
-	connInfo := NewConnInfo()
+	connInfo := ConnInfo{}
 
 	cursor := connInfo.Cursor(1)
 	require.Nil(t, cursor)
@@ -96,7 +96,8 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 	cursor = connInfo.Cursor(1)
 	require.NotNil(t, cursor)
 
-	items := []any{}
+	var items []any
+
 	for {
 		_, item, err := cursor.Next()
 		if err != nil {

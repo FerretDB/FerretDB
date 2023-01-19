@@ -38,14 +38,7 @@ type ConnInfo struct {
 	password string
 
 	curRW  sync.RWMutex
-	cursor cursor
-}
-
-// NewConnInfo returns a new ConnInfo.
-func NewConnInfo() *ConnInfo {
-	return &ConnInfo{
-		cursor: cursor{},
-	}
+	cursor iterator.Interface[int, any]
 }
 
 // Auth returns stored username and password.
@@ -71,7 +64,7 @@ func (connInfo *ConnInfo) Cursor(_ uint64) iterator.Interface[int, any] {
 	connInfo.curRW.RLock()
 	defer connInfo.curRW.RUnlock()
 
-	return connInfo.cursor.iterator
+	return connInfo.cursor
 }
 
 // SetCursor stores the cursor value.
@@ -80,7 +73,7 @@ func (connInfo *ConnInfo) SetCursor(iterator iterator.Interface[int, any]) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor.iterator = iterator
+	connInfo.cursor = iterator
 }
 
 // RemoveCursor removes the cursor value stored.
@@ -89,9 +82,9 @@ func (connInfo *ConnInfo) RemoveCursor(_ uint64) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor.iterator.Close()
+	connInfo.cursor.Close()
 
-	connInfo.cursor.iterator = nil
+	connInfo.cursor = nil
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

@@ -127,7 +127,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 //
 // The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
-	connInfo := conninfo.NewConnInfo()
+	connInfo := new(conninfo.ConnInfo)
 
 	if c.netConn.RemoteAddr().Network() != "unix" {
 		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
