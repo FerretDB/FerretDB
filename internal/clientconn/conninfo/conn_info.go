@@ -73,18 +73,13 @@ func (connInfo *ConnInfo) SetCursor(iterator iterator.Interface[int, any]) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
+	if connInfo.cursor != nil {
+		connInfo.cursor.Close()
+
+		connInfo.cursor = nil
+	}
+
 	connInfo.cursor = iterator
-}
-
-// RemoveCursor removes the cursor value stored.
-// We use "db.collection" as the key to remove the cursor.
-func (connInfo *ConnInfo) RemoveCursor(_ uint64) {
-	connInfo.curRW.Lock()
-	defer connInfo.curRW.Unlock()
-
-	connInfo.cursor.Close()
-
-	connInfo.cursor = nil
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

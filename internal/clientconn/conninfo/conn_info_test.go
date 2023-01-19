@@ -112,9 +112,4 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 	}
 
 	require.Equal(t, len(items), array.Len())
-
-	connInfo.RemoveCursor(1)
-
-	cursor = connInfo.Cursor(1)
-	require.Nil(t, cursor)
 }

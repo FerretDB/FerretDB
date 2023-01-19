@@ -106,8 +106,6 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	id := int64(1)
 
 	if done {
-		connInfo.RemoveCursor(1)
-
 		id = 0
 	}
 
