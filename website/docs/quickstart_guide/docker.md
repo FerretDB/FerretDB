@@ -51,8 +51,8 @@ For more configuration options check [Configuration flags and variables](../flag
    You'll also need to set `authMechanism` to `PLAIN`.
    The example URI would look like:
 
-   ``` sh
-   mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN"`
+   ```sh
+   mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN
    ```
 
    See [Security#Authentication](../security.md#authentication) for more details.
