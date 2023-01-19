@@ -252,7 +252,8 @@ var ArrayDocuments = &Values[string]{
 								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
 							}
 						}
-					}
+					},
+					"_id": {"type": "string"}
 				}
 			}`,
 		},
