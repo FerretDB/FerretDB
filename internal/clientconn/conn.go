@@ -127,7 +127,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 //
 // The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
-	connInfo := new(conninfo.ConnInfo)
+	var connInfo conninfo.ConnInfo
 
 	if c.netConn.RemoteAddr().Network() != "unix" {
 		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
@@ -135,7 +135,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	// keep connInfo in context for the whole connection lifetime;
 	// we need it for authentication to work
-	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
+	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, &connInfo))
 	defer cancel()
 
 	done := make(chan struct{})

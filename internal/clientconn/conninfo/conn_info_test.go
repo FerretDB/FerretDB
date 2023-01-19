@@ -78,7 +78,7 @@ func TestConnInfo(t *testing.T) {
 	}
 }
 
-func TestConnInfoCursorParallelWork(t *testing.T) {
+func TestConnInfoCursor(t *testing.T) {
 	t.Parallel()
 
 	connInfo := ConnInfo{}
