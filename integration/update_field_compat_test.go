@@ -746,22 +746,27 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Data: []byte{}}}}}},
 		},
 		"ObjectID": {
-			update: bson.D{{"$set", bson.D{{"v", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			update:        bson.D{{"$set", bson.D{{"v", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1830",
 		},
 		"ObjectIDEmpty": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NilObjectID}}}},
+			update:        bson.D{{"$set", bson.D{{"v", primitive.NilObjectID}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1830",
 		},
 		"Bool": {
 			update: bson.D{{"$set", bson.D{{"v", true}}}},
 		},
 		"Datetime": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			update:        bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1830",
 		},
 		"DatetimeNanoSecDiff": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000001, time.UTC))}}}},
+			update:        bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000001, time.UTC))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1830",
 		},
 		"DatetimeEpoch": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			update:        bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1830",
 		},
 		"Regex": {
 			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{Pattern: "foo"}}}}},
