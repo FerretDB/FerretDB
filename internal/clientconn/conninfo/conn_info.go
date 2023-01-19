@@ -38,13 +38,13 @@ type ConnInfo struct {
 	password string
 
 	curRW  sync.RWMutex
-	cursor map[string]iterator.Interface[int, any]
+	cursor cursor
 }
 
 // NewConnInfo returns a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	return &ConnInfo{
-		cursor: map[string]iterator.Interface[int, any]{},
+		cursor: cursor{},
 	}
 }
 
@@ -67,31 +67,31 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 
 // Cursor returns the cursor value stored.
 // We use "db.collection" as the key to get the cursor.
-func (connInfo *ConnInfo) Cursor(key string) iterator.Interface[int, any] {
+func (connInfo *ConnInfo) Cursor(_ uint64) iterator.Interface[int, any] {
 	connInfo.curRW.RLock()
 	defer connInfo.curRW.RUnlock()
 
-	return connInfo.cursor[key]
+	return connInfo.cursor.iterator
 }
 
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
-func (connInfo *ConnInfo) SetCursor(key string, cursor iterator.Interface[int, any]) {
+func (connInfo *ConnInfo) SetCursor(iterator iterator.Interface[int, any]) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor[key] = cursor
+	connInfo.cursor.iterator = iterator
 }
 
 // RemoveCursor removes the cursor value stored.
 // We use "db.collection" as the key to remove the cursor.
-func (connInfo *ConnInfo) RemoveCursor(key string) {
+func (connInfo *ConnInfo) RemoveCursor(_ uint64) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor[key].Close()
+	connInfo.cursor.iterator.Close()
 
-	delete(connInfo.cursor, key)
+	connInfo.cursor.iterator = nil
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

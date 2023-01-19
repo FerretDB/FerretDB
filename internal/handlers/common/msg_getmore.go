@@ -77,7 +77,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	connInfo := conninfo.Get(ctx)
 
-	cur := connInfo.Cursor(db + "." + collection)
+	cur := connInfo.Cursor(1)
 	if cur == nil {
 		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
 	}
@@ -106,7 +106,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	id := int64(1)
 
 	if done {
-		connInfo.RemoveCursor(db + "." + collection)
+		connInfo.RemoveCursor(1)
 
 		id = 0
 	}

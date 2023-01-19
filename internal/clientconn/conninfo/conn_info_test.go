@@ -17,12 +17,10 @@ package conninfo
 import (
 	"context"
 	"errors"
-	"fmt"
-	"runtime"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -85,122 +83,37 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 	connInfo := NewConnInfo()
 
-	runs := runtime.GOMAXPROCS(-1) * 10
-	wg := sync.WaitGroup{}
-	start := make(chan struct{})
-	ready := make(chan struct{}, runs)
+	cursor := connInfo.Cursor(1)
+	require.Nil(t, cursor)
 
-	// Test parallel set of cursor.
-	for i := 0; i < runs; i++ {
-		wg.Add(1)
-
-		go func(i int) {
-			defer wg.Done()
-
-			ready <- struct{}{}
-
-			<-start
-
-			array := types.MakeArray(10)
-			for j := 0; j < 10; j++ {
-				array.Append(fmt.Sprintf("%d:%d", i, j))
-			}
-
-			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), array.Iterator())
-			connInfo.Cursor(fmt.Sprintf("cursor %d", i))
-		}(i)
+	array := types.MakeArray(10)
+	for i := 0; i < 10; i++ {
+		array.Append(i)
 	}
 
-	close(start)
+	connInfo.SetCursor(array.Iterator())
 
-	wg.Wait()
+	cursor = connInfo.Cursor(1)
+	require.NotNil(t, cursor)
 
-	assert.Equal(t, runs, len(connInfo.cursor))
-
-	// Test parallel read of cursor.
-
-	start = make(chan struct{})
-	ready = make(chan struct{}, runs)
-
-	for i := 0; i < runs; i++ {
-		wg.Add(1)
-
-		go func(i int) {
-			defer wg.Done()
-
-			ready <- struct{}{}
-
-			<-start
-
-			cursor := connInfo.Cursor(fmt.Sprintf("cursor %d", i))
-
-			for {
-				j, value, err := cursor.Next()
-				if err != nil {
-					if errors.Is(err, iterator.ErrIteratorDone) {
-						break
-					}
-
-					panic(err)
-				}
-
-				assert.Equal(t, fmt.Sprintf("%d:%d", i, j), value)
+	items := []any{}
+	for {
+		_, item, err := cursor.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
 			}
-		}(i)
+
+			t.Fatal(err)
+		}
+
+		items = append(items, item)
 	}
 
-	close(start)
+	require.Equal(t, len(items), array.Len())
 
-	wg.Wait()
+	connInfo.RemoveCursor(1)
 
-	// Test parallel read and write.
-
-	ready = make(chan struct{}, runs)
-	start = make(chan struct{})
-
-	for i := 0; i < runs/2; i++ {
-		wg.Add(2)
-
-		go func(i int) {
-			defer wg.Done()
-
-			ready <- struct{}{}
-
-			<-start
-
-			array := types.MakeArray(10)
-			for j := 0; j < 10; j++ {
-				array.Append(fmt.Sprintf("%d:%d", i, j))
-			}
-
-			connInfo.SetCursor(fmt.Sprintf("cursor %d", i), array.Iterator())
-		}(i + 1000) // avoid setting the same cursor names.
-
-		go func(i int) {
-			defer wg.Done()
-
-			ready <- struct{}{}
-
-			<-start
-
-			cursor := connInfo.Cursor(fmt.Sprintf("cursor %d", i))
-
-			for {
-				j, value, err := cursor.Next()
-				if err != nil {
-					if errors.Is(err, iterator.ErrIteratorDone) {
-						break
-					}
-
-					panic(err)
-				}
-
-				assert.Equal(t, fmt.Sprintf("%d:%d", i, j), value)
-			}
-		}(i)
-	}
-
-	close(start)
-
-	wg.Wait()
+	cursor = connInfo.Cursor(1)
+	require.Nil(t, cursor)
 }

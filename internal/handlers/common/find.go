@@ -174,7 +174,7 @@ func MakeFindReplyParameters(ctx context.Context, resDocs []*types.Document, bat
 	if moreResults.Len() > 0 {
 		id = 1
 
-		conninfo.Get(ctx).SetCursor(cursor, moreResults.Iterator())
+		conninfo.Get(ctx).SetCursor(moreResults.Iterator())
 	}
 
 	return firstBatch, id
