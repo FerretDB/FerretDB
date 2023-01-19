@@ -186,7 +186,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -timeout=25m
+        -timeout=30m
         -coverprofile=integration-tigris.txt .
         -handler=tigris
         -records-dir=../records
