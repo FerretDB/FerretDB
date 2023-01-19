@@ -37,6 +37,8 @@ func Identical(a, b any) bool {
 		}
 
 		aIter, bIter := a.Iterator(), b.Iterator()
+		defer aIter.Close()
+		defer bIter.Close()
 
 		for {
 			_, aField, err := aIter.Next()
@@ -66,6 +68,8 @@ func Identical(a, b any) bool {
 		}
 
 		aIter, bIter := a.Iterator(), b.Iterator()
+		defer aIter.Close()
+		defer bIter.Close()
 
 		for {
 			_, aItem, err := aIter.Next()
