@@ -234,3 +234,35 @@ var ArrayRegexes = &Values[string]{
 		"array-regex": bson.A{primitive.Regex{Pattern: "foo", Options: "i"}, primitive.Regex{Pattern: "foo", Options: "i"}},
 	},
 }
+
+// ArrayDocuments contains array with documents with arrays: {"v": [{"foo": [{"bar": "hello"}]}, ...]}.
+// This data set is helpful for dot notation tests: v.0.foo.0.bar.
+var ArrayDocuments = &Values[string]{
+	name:     "ArrayDocuments",
+	handlers: []string{"pg"}, // TODO Enable for Tigris when tests issues are fixed https://github.com/FerretDB/FerretDB/issues/1834
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {
+						"type": "array", "items": {
+							"type": "object",	
+							"properties": {	
+								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
+							}
+						}
+					},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-documents-nested": bson.A{bson.D{{"foo", bson.A{
+			bson.D{{"bar", "hello"}},
+			bson.D{{"bar", "world"}},
+		}}}},
+	},
+}
