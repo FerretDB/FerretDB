@@ -37,12 +37,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Listener accepts incoming client connections.
+// Listener listens on one or multiple interfaces (TCP, Unix, TLS sockets)
+// and accepts incoming client connections.
 type Listener struct {
 	*NewListenerOpts
-	tcpListener       net.Listener
-	unixListener      net.Listener
-	tlsListener       net.Listener
+
+	tcpListener  net.Listener
+	unixListener net.Listener
+	tlsListener  net.Listener
+
 	tcpListenerReady  chan struct{}
 	unixListenerReady chan struct{}
 	tlsListenerReady  chan struct{}
@@ -50,23 +53,19 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	Listener       ListenerOpts
+	TCP         string
+	Unix        string
+	TLS         string
+	TLSCertFile string
+	TLSKeyFile  string
+	TLSCAFile   string
+
 	ProxyAddr      string
 	Mode           Mode
 	Metrics        *connmetrics.ListenerMetrics
 	Handler        handlers.Interface
 	Logger         *zap.Logger
 	TestRecordsDir string // if empty, no records are created
-}
-
-// ListenerOpts represents listener configuration options.
-type ListenerOpts struct {
-	Addr        string
-	Unix        string
-	TLS         string
-	TLSCertFile string
-	TLSKeyFile  string
-	TLSCAFile   string
 }
 
 // NewListener returns a new listener, configured by the NewListenerOpts argument.
@@ -85,42 +84,42 @@ func NewListener(opts *NewListenerOpts) *Listener {
 func (l *Listener) Run(ctx context.Context) error {
 	logger := l.Logger.Named("listener")
 
-	if l.Listener.Addr != "" {
+	if l.TCP != "" {
 		var err error
-		if l.tcpListener, err = net.Listen("tcp", l.Listener.Addr); err != nil {
+		if l.tcpListener, err = net.Listen("tcp", l.TCP); err != nil {
 			return err
 		}
 
 		close(l.tcpListenerReady)
 
-		logger.Sugar().Infof("Listening on TCP %s ...", l.Addr())
+		logger.Sugar().Infof("Listening on TCP %s ...", l.TCPAddr())
 	}
 
-	if l.Listener.Unix != "" {
+	if l.Unix != "" {
 		var err error
-		if l.unixListener, err = net.Listen("unix", l.Listener.Unix); err != nil {
+		if l.unixListener, err = net.Listen("unix", l.Unix); err != nil {
 			return err
 		}
 
 		close(l.unixListenerReady)
 
-		logger.Sugar().Infof("Listening on Unix %s ...", l.Unix())
+		logger.Sugar().Infof("Listening on Unix %s ...", l.UnixAddr())
 	}
 
-	if l.Listener.TLS != "" {
+	if l.TLS != "" {
 		var err error
 		if l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
-			addr:     l.Listener.TLS,
-			certFile: l.Listener.TLSCertFile,
-			keyFile:  l.Listener.TLSKeyFile,
-			caFile:   l.Listener.TLSCAFile,
+			addr:     l.TLS,
+			certFile: l.TLSCertFile,
+			keyFile:  l.TLSKeyFile,
+			caFile:   l.TLSCAFile,
 		}); err != nil {
 			return err
 		}
 
 		close(l.tlsListenerReady)
 
-		logger.Sugar().Infof("Listening on TLS %s ...", l.TLS())
+		logger.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
 	}
 
 	// close listeners on context cancellation to exit from listenLoop
@@ -142,12 +141,12 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	var wg sync.WaitGroup
 
-	if l.Listener.Addr != "" {
+	if l.TCP != "" {
 		wg.Add(1)
 
 		go func() {
 			defer func() {
-				logger.Sugar().Infof("%s stopped.", l.Addr())
+				logger.Sugar().Infof("%s stopped.", l.TCPAddr())
 				wg.Done()
 			}()
 
@@ -155,12 +154,12 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.Listener.Unix != "" {
+	if l.Unix != "" {
 		wg.Add(1)
 
 		go func() {
 			defer func() {
-				logger.Sugar().Infof("%s stopped.", l.Unix())
+				logger.Sugar().Infof("%s stopped.", l.UnixAddr())
 				wg.Done()
 			}()
 
@@ -168,7 +167,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
-	if l.Listener.TLS != "" {
+	if l.TLS != "" {
 		wg.Add(1)
 
 		go func() {
@@ -315,21 +314,22 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 	}
 }
 
-// Addr returns TCP listener's address.
+// TCPAddr returns TCP listener's address.
 // It can be used to determine an actually used port, if it was zero.
-func (l *Listener) Addr() net.Addr {
+func (l *Listener) TCPAddr() net.Addr {
 	<-l.tcpListenerReady
 	return l.tcpListener.Addr()
 }
 
-// Unix returns Unix domain socket address.
-func (l *Listener) Unix() net.Addr {
+// UnixAddr returns Unix domain socket listener's address.
+func (l *Listener) UnixAddr() net.Addr {
 	<-l.unixListenerReady
 	return l.unixListener.Addr()
 }
 
-// TLS returns TLS listener address.
-func (l *Listener) TLS() net.Addr {
+// TLSAddr returns TLS listener's address.
+// It can be used to determine an actually used port, if it was zero.
+func (l *Listener) TLSAddr() net.Addr {
 	<-l.tlsListenerReady
 	return l.tlsListener.Addr()
 }
