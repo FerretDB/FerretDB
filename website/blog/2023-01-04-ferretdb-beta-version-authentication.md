@@ -1,13 +1,15 @@
 ---
 title: FerretDB v0.8.0 - The Beta Version
 slug: ferretdb-beta-version-authentication
-image: ../static/img/blog/FerretDB-is-now-Beta.-1-980x551.png
+image: /img/blog/FerretDB-is-now-Beta.-1-980x551.png
 description: The FerretDB beta version (v.0.8.0) includes exciting new features, including authentication for PostgreSQL, `$min` operator support, and much more.
 author: Alexander Fashakin
-author_title: FerretDB Team
+date: 2023-01-04
 ---
 
-![FerretDB 0.8.0 release](../static/img/blog/FerretDB-is-now-Beta.-1-980x551.png)
+The FerretDB beta version (v.0.8.0) includes exciting new features, including authentication for PostgreSQL, `$min` operator support, and much more.
+
+![FerretDB 0.8.0 release](/img/blog/FerretDB-is-now-Beta.-1-980x551.png)
 
 <!--truncate-->
 
@@ -30,23 +32,23 @@ Set your FerretDB connection string in `-—uri` and run:
 Later, we will use this dump to restore the database.
 Instead of `mongodump`, you can also use `mongoexport` for this.
 
-2. Backup PostgreSQL `ferretdb` database.
+1. Backup PostgreSQL `ferretdb` database.
 If the migration goes well, we will not use this backup.
 But we recommend to do this step in case you need to rollback.
 Specify your host and port.
 `pg_dump -h localhost -p 5432 -U username ferretdb > ferretdb.sql`
 
-3. Stop FerretDB (This depends on your operating system and the way you run FerretDB)
+1. Stop FerretDB (This depends on your operating system and the way you run FerretDB)
 
-4. Connect to PostgreSQL and drop `ferretdb` database as it's not needed anymore:
+2. Connect to PostgreSQL and drop `ferretdb` database as it's not needed anymore:
    * `psql -h localhost -p 5432 -U username postgres`
    * `DROP DATABASE ferretdb`
 
-5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
+3. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
 
-6. Restore database using `mongorestore --uri="mongodb://localhost:27017"`
+4. Restore database using `mongorestore --uri="mongodb://localhost:27017"`
 
-7. While you can rollback with `mongorestore`, in case something doesn't work and you need to rollback to FerretDB 0.7.1:
+5. While you can rollback with `mongorestore`, in case something doesn't work and you need to rollback to FerretDB 0.7.1:
    * Stop ferretdb
    * Delete ferretdb database (repeat step 4)
    * Restore `ferretdb` PostgreSQL db from the dump we created on the step 2:  `psql -h localhost -p 5432 -U username ferretdb -f ferretdb.sql`
