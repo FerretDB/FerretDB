@@ -223,3 +223,4 @@ With `task` installed (see above), you may do the following:
 Before submitting a pull request, please make sure that:
 
 1. Documentation is formatted, linted, and built with `task docs`.
+2. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/)

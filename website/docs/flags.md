@@ -1,4 +1,5 @@
 ---
+sidebar_position: 8
 ---
 
 # Configuration flags and variables
