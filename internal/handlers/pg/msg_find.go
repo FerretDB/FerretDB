@@ -96,9 +96,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	err = reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
+				"firstBatch", firstBatch,
 				"id", id,
 				"ns", sp.DB+"."+sp.Collection,
-				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
 		))},
@@ -125,7 +125,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		_, doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
+				return resDocs, nil
 			}
 
 			return nil, err
@@ -142,6 +142,4 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 
 		resDocs = append(resDocs, doc)
 	}
-
-	return resDocs, nil
 }

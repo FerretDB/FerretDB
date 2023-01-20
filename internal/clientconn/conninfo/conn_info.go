@@ -75,8 +75,6 @@ func (connInfo *ConnInfo) SetCursor(iterator iterator.Interface[int, any]) {
 
 	if connInfo.cursor != nil {
 		connInfo.cursor.Close()
-
-		connInfo.cursor = nil
 	}
 
 	connInfo.cursor = iterator
