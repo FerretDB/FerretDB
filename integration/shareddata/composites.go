@@ -149,10 +149,11 @@ var ArrayStrings = &Values[string]{
 	},
 	data: map[string]any{
 		"array-string-desc":      bson.A{"c", "b", "a"},
-		"array-string-duplicate": bson.A{"b", "foo", "b"},
+		"array-string-duplicate": bson.A{nil, "foo", "b", "b", nil},
 		"array-string-numbers":   bson.A{"42", "0", "42.13"},
-		"array-string-nil":       nil,
-		"array-string-empty":     bson.A{},
+		// "array-string-nil":    nil, TODO: https://github.com/FerretDB/FerretDB/issues/1836
+		"array-string-empty":    bson.A{},
+		"array-string-with-nil": bson.A{nil},
 	},
 }
 
@@ -175,8 +176,8 @@ var ArrayDoubles = &Values[string]{
 	data: map[string]any{
 		"array-double-desc":      bson.A{float64(40), float64(15), float64(10)},
 		"array-double-duplicate": bson.A{float64(10), float64(10), float64(20)},
-		"array-double-nil":       nil,
-		"array-double-empty":     bson.A{},
+		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
+		"array-double-empty": bson.A{},
 	},
 }
 
@@ -200,7 +201,7 @@ var ArrayInt32s = &Values[string]{
 		"array-int32-one":   bson.A{int32(42)},
 		"array-int32-two":   bson.A{int32(42), int32(42)},
 		"array-int32-three": bson.A{int32(42), int32(43), int32(42)},
-		"array-int32-nil":   nil,
+		// "array-int32-nil": nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-int32-empty": bson.A{},
 	},
 }
