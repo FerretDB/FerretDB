@@ -32,16 +32,6 @@ func (v ValidationError) Error() string {
 	return v.err.Error()
 }
 
-// Document returns the value of msg as a types.Document.
-func (v ValidationError) Document() *types.Document {
-	d := must.NotFail(types.NewDocument(
-		"ok", float64(0),
-		"errmsg", v.err.Error(),
-	))
-
-	return d
-}
-
 // newValidationError returns new ValidationError.
 func newValidationError(err error) error {
 	return &ValidationError{err: err}
