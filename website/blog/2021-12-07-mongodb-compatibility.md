@@ -2,15 +2,15 @@
 slug: mongodb-compatibility-whats-really-important
 title: "MongoDB Compatibility - What’s Really Important ?"
 author: Peter Farkas
-image: ../static/img/blog/blog-img.png
+image: /img/blog/blog-img.png
 tags: [Ferretdb]
 ---
 
-![MongoDB compatibility](../static/img/blog/blog-img.png)
+In this recent [TheRegister Article](https://www.theregister.com/2021/12/06/aws_documentdb_not_mongodb_compatible/), there is an interview with MongoDB's CTO, Mark Porter, where the level of compatibility between MongoDB and DocumentDB is discussed.
+
+![MongoDB compatibility](/img/blog/blog-img.png)
 
 <!--truncate-->
-
-In this recent [TheRegister Article](https://www.theregister.com/2021/12/06/aws_documentdb_not_mongodb_compatible/), there is an interview with MongoDB's CTO, Mark Porter, where the level of compatibility between MongoDB and DocumentDB is discussed.
 
 In the interview, Mark claims that Amazon’s DocumentDB - one of the leading MongoDB alternatives - is just 34% compatible with MongoDB itself.
 
