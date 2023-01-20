@@ -79,7 +79,7 @@ For more configuration options check [Configuration flags and variables](https:/
    You'll also need to set `authMechanism` to `PLAIN`.
    The example URI would look like:
 
-   ```
+   ```text
    mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN
    ```
 
