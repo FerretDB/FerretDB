@@ -7,7 +7,7 @@ sidebar_position: 1
 ## Query commands
 
 | Command         | Argument                   | Status | Comments                                                   |
-| --------------- | -------------------------- | ------ |------------------------------------------------------------|
+| --------------- | -------------------------- | ------ | ---------------------------------------------------------- |
 | `delete`        |                            | ✅      | Basic command is fully supported                           |
 |                 | `deletes`                  | ✅      |                                                            |
 |                 | `comment`                  | ⚠️      | Ignored in Tigris                                          |
