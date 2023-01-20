@@ -59,7 +59,6 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 }
 
 // Cursor returns the cursor value stored.
-// We use "db.collection" as the key to get the cursor.
 func (connInfo *ConnInfo) Cursor(_ uint64) iterator.Interface[int, any] {
 	connInfo.curRW.RLock()
 	defer connInfo.curRW.RUnlock()
