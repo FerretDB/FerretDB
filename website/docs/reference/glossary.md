@@ -13,12 +13,12 @@ sidebar_position: 2
 #### aggregation
 
 A way of processsing documents in a collection and passing them through various operations or stages.
-See [list of supported aggregation operations and commands here](./supported_commands.md#aggregation-pipelines).
+See [list of supported aggregation operations and commands here](supported_commands.md#aggregation-pipelines).
 
 #### aggregation pipeline
 
 A set of operators that lets you perform complex operations that aggregate and summarize values.
-See [list of supported aggregation pipeline operators](./supported_commands.md#aggregation-pipeline-operators) here.
+See [list of supported aggregation pipeline operators](supported_commands.md#aggregation-pipeline-operators) here.
 
 ---
 
@@ -63,7 +63,7 @@ An organized repository for collections containing its own sets of documents, an
 #### database command
 
 The set of commands in FerretDB.
-For more information, see [supported commands](./supported_commands.md) for more details.
+For more information, see [supported commands](supported_commands.md) for more details.
 
 #### document
 
