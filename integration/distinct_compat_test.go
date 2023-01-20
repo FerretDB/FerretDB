@@ -27,10 +27,10 @@ import (
 
 // distinctCompatTestCase describes count compatibility test case.
 type distinctCompatTestCase struct {
-	field         string                   // required
-	skipForTigris string                   // optional
-	filter        bson.D                   // required
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
+	field      string                   // required
+	skip       string                   // optional
+	filter     bson.D                   // required
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
@@ -49,8 +49,8 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			if tc.skip != "" {
+				t.Skip(t, tc.skip)
 			}
 
 			t.Parallel()
@@ -151,6 +151,7 @@ func TestDistinctCompat(t *testing.T) {
 		"DotNotation": {
 			field:  "v.foo",
 			filter: bson.D{},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
 		},
 		"DotNotationArray": {
 			field:  "v.array.0",

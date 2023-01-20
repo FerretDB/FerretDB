@@ -50,7 +50,8 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
-			filter: bson.D{{"v.foo", int32(42)}},
+			filter:        bson.D{{"v.foo", int32(42)}},
+			skipForTigris: "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentDotNotationNoSuchField": {
 			filter:     bson.D{{"no-such-field.some", 42}},
@@ -171,8 +172,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"ArrayNull": {
-			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
-			skipForTigris: "Tigris does not support nil values in arrays",
+			filter: bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
 		},
 		"ArrayEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{}}}}},
@@ -324,11 +324,14 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v.foo", bson.D{{"$gt", int32(41)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{
-				{"$gt", bson.D{
-					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
+			filter: bson.D{
+				{"v", bson.D{
+					{"$gt", bson.D{
+						{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
+					}},
 				}},
-			}}},
+				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
+			},
 			resultType: emptyResult,
 		},
 		"DocumentNull": {
