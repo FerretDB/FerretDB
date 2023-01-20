@@ -256,7 +256,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		// don't iterate through array for _id keys to simplify the query
 		if k == "_id" {
 			switch v := v.(type) {
-			case string, types.ObjectID:
+			case float64, string, types.ObjectID, int32, int64:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
