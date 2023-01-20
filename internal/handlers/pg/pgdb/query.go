@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/maps"
@@ -246,15 +247,16 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		// don't pushdown query operators and dot notation yet
 		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
+			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/1841
 			continue
 		}
 
 		// don't iterate through array for _id keys to simplify the query
 		if k == "_id" {
 			switch v := v.(type) {
-			case types.ObjectID, string:
+			case string, types.ObjectID:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			}
@@ -263,7 +265,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		}
 
 		switch v := v.(type) {
-		case string, int32, int64, types.ObjectID, float32, float64:
+		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			continue
+
+		case float64, string, types.ObjectID, int32, int64:
 			sql := fmt.Sprintf(
 				`((_jsonb->%[1]s)::jsonb = %[2]s)`+ // Select if value under the key k is equal to value v.
 					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.

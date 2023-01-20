@@ -87,7 +87,7 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// IsTigris returns if tests are running against the tigris handler
+// IsTigris returns if tests are running against the tigris handler.
 func IsTigris(tb testing.TB) bool {
 	tb.Helper()
 	return *handlerF == "tigris"
