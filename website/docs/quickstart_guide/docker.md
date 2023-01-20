@@ -42,8 +42,8 @@ For more configuration options check [Configuration flags and variables](../flag
    `postgres` container runs PostgreSQL that would store data.
    `ferretdb` runs FerretDB.
 
-2. Start services with `docker compose up -d`.
-   To be sure that you've fetched the latest version you can precede the command with `docker compose pull`.
+2. Fetch the latest version of FerretDB with `docker compose pull`.
+   Afterwards start services with `docker compose up -d`.
 
 3. If you have `mongosh` installed, just run it to connect to FerretDB.
    It will use credentials passed in `mongosh` flags or MongoDB URI
