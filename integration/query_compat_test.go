@@ -272,7 +272,7 @@ func testQueryCompatBatchSizeErrors(t *testing.T, testCases map[string]queryComp
 			require.NoError(t, targetErr)
 			require.NoError(t, compatErr)
 
-			require.Equal(t, targetResult, compatResult)
+			require.Equal(t, compatResult, targetResult)
 		})
 	}
 }

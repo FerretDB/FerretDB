@@ -79,9 +79,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				"firstBatch", firstBatch,
 				"id", id,
 				"ns", fp.DB+"."+fp.Collection,
+				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
 		))},
