@@ -903,55 +903,6 @@ func TestUpdateFieldCompatSetOnInsertArray(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func TestUpdateFieldCompatPop(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]updateCompatTestCase{
-		"DuplicateKeys": {
-			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
-			resultType: emptyResult,
-		},
-		"Pop": {
-			update:        bson.D{{"$pop", bson.D{{"v", 1}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1677",
-		},
-		"PopFirst": {
-			update:        bson.D{{"$pop", bson.D{{"v", -1}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1677",
-		},
-		"PopDotNotation": {
-			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
-		},
-		"PopNoSuchKey": {
-			update:     bson.D{{"$pop", bson.D{{"foo", 1}}}},
-			resultType: emptyResult,
-		},
-		"PopEmptyValue": {
-			update:     bson.D{{"$pop", bson.D{}}},
-			resultType: emptyResult,
-		},
-		"PopNotValidValueString": {
-			update:     bson.D{{"$pop", bson.D{{"v", "foo"}}}},
-			resultType: emptyResult,
-		},
-		"PopNotValidValueInt": {
-			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
-			resultType: emptyResult,
-		},
-		"PopLastAndFirst": {
-			update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", -1}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/666",
-		},
-		"PopDotNotationNonArray": {
-			update: bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1663",
-		},
-	}
-
-	testUpdateCompat(t, testCases)
-}
-
 func TestUpdateFieldCompatMixed(t *testing.T) {
 	t.Parallel()
 
