@@ -4,6 +4,7 @@ title: "New release - embedding FerretDB 0.5.0 into Go programs"
 author: Alexey Palazhchenko
 description: FerretDB v0.5.0 includes a new exciting feature – the ability to use it as a regular Go library package.
 image: /img/blog/group-of-ferrets-on-white.jpg
+tags: [release]
 date: 2022-07-11
 ---
 
