@@ -358,11 +358,14 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v.foo", bson.D{{"$gt", int32(41)}}}},
 		},
 		"DocumentReverse": {
-			filter: bson.D{{"v", bson.D{
-				{"$gt", bson.D{
-					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
+			filter: bson.D{
+				{"v", bson.D{
+					{"$gt", bson.D{
+						{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
+					}},
 				}},
-			}}},
+				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
+			},
 			resultType: emptyResult,
 		},
 		"DocumentNull": {
