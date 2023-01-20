@@ -24,7 +24,7 @@ import (
 func Example_tcp() {
 	f, err := New(&Config{
 		Listener: ListenerConfig{
-			Addr: "127.0.0.1:17027",
+			TCP: "127.0.0.1:17027",
 		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",

@@ -58,7 +58,7 @@ type Config struct {
 type ListenerConfig struct {
 	// Listen TCP address.
 	// If empty, TCP listener is disabled.
-	Addr string
+	TCP string
 
 	// Listen Unix domain socket path.
 	// If empty, Unix listener is disabled.
@@ -87,10 +87,10 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
-	if config.Listener.Addr == "" &&
+	if config.Listener.TCP == "" &&
 		config.Listener.Unix == "" &&
 		config.Listener.TLS == "" {
-		return nil, errors.New("Listener Addr, Unix and TLS are empty")
+		return nil, errors.New("Listener TCP, Unix and TLS are empty")
 	}
 
 	p, err := state.NewProvider("")
@@ -118,14 +118,13 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		Listener: clientconn.ListenerOpts{
-			Addr:        config.Listener.Addr,
-			Unix:        config.Listener.Unix,
-			TLS:         config.Listener.TLS,
-			TLSCertFile: config.Listener.TLSCertFile,
-			TLSKeyFile:  config.Listener.TLSKeyFile,
-			TLSCAFile:   config.Listener.TLSCAFile,
-		},
+		TCP:         config.Listener.TCP,
+		Unix:        config.Listener.Unix,
+		TLS:         config.Listener.TLS,
+		TLSCertFile: config.Listener.TLSCertFile,
+		TLSKeyFile:  config.Listener.TLSKeyFile,
+		TLSCAFile:   config.Listener.TLSCAFile,
+
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
@@ -161,6 +160,7 @@ func (f *FerretDB) Run(ctx context.Context) error {
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
 //
 // TCP's connection string is returned if both TCP and Unix listeners are enabled.
+// TLS is preferred over both.
 func (f *FerretDB) MongoDBURI() string {
 	var u *url.URL
 
@@ -172,21 +172,21 @@ func (f *FerretDB) MongoDBURI() string {
 
 		u = &url.URL{
 			Scheme:   "mongodb",
-			Host:     f.l.TLS().String(),
+			Host:     f.l.TLSAddr().String(),
 			Path:     "/",
 			RawQuery: q.Encode(),
 		}
-	case f.config.Listener.Addr != "":
+	case f.config.Listener.TCP != "":
 		u = &url.URL{
 			Scheme: "mongodb",
-			Host:   f.l.Addr().String(),
+			Host:   f.l.TCPAddr().String(),
 			Path:   "/",
 		}
 	case f.config.Listener.Unix != "":
 		// MongoDB really wants Unix socket path in the host part of the URI
 		u = &url.URL{
 			Scheme: "mongodb",
-			Host:   f.l.Unix().String(),
+			Host:   f.l.UnixAddr().String(),
 			Path:   "/",
 		}
 	}
