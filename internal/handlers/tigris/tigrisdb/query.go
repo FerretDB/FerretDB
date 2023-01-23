@@ -71,6 +71,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	defer iter.Close()
 
 	var res []*types.Document
@@ -85,7 +86,17 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 		res = append(res, doc.(*types.Document))
 	}
 
-	return res, iter.Err()
+	err = iter.Err()
+	switch {
+	case err == nil:
+		fallthrough
+	case IsInvalidArgument(err):
+		break
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }
 
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
