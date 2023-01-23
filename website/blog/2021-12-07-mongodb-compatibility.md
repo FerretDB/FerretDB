@@ -2,6 +2,7 @@
 slug: mongodb-compatibility-whats-really-important
 title: "MongoDB Compatibility - What’s Really Important ?"
 author: Peter Farkas
+description: At FerretDB, we are in the business of making sure that there is a 100% Open Source choice for your MongoDB alternative needs.
 image: /img/blog/blog-img.png
 tags: [Ferretdb]
 ---
