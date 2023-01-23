@@ -257,7 +257,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		if k == "_id" {
 			switch v := v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-				// Don't do pushdown for invalid _id types
+				// type not supported for pushdown
 			case float64, string, types.ObjectID, int32, int64:
 				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
 				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
@@ -270,6 +270,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 		switch v := v.(type) {
 		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
