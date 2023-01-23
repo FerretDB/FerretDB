@@ -279,9 +279,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			)
 
 			filters = append(filters, sql)
-			args = append(args, k,
+			args = append(
+				args,
+				k,
 				string(must.NotFail(pjson.MarshalSingleValue(v))),
 			)
+		default:
+			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
 	}
 
