@@ -277,8 +277,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				// Select if value under the key k is equal to value v.
 				`((_jsonb->%[1]s)::jsonb = %[2]s)`+
 					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
-					` OR (jsonb_typeof(_jsonb->%[1]s) = 'array' AND`+
-					` (_jsonb->%[1]s)::jsonb @> %[2]s)`,
+					` OR (_jsonb->%[1]s)::jsonb @> %[2]s`,
 				p.Next(), // $1 = k
 				p.Next(), // $2 = v
 			)
