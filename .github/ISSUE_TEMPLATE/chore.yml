@@ -29,9 +29,9 @@ body:
       label: Definition of Done
       description: What should be done to consider this issue done? List everything that applies.
       value: |
-        - unit tests added;
-        - integration tests added;
-        - compatibility tests added;
+        - all handlers updated;
+        - unit tests added/updated;
+        - integration/compatibility tests added/updated;
         - spot refactorings done;
         - user documentation updated;
         - something else?
