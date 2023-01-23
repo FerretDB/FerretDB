@@ -83,7 +83,7 @@ sidebar_position: 1
 The following operators and modifiers are available in the `update` and `findAndModify` commands.
 
 | Operator          | Modifier    | Status | Comments                                                 |
-| ----------------- | ----------- | ------ |----------------------------------------------------------|
+| ----------------- | ----------- | ------ | -------------------------------------------------------- |
 | `$currentDate`    |             | ✅      |                                                          |
 | `$inc`            |             | ✅      |                                                          |
 | `$min`            |             | ✅      |                                                          |
@@ -281,7 +281,7 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
 The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
 
 | Command     | Argument | Status | Comments                                                  |
-|-------------|----------|--------|-----------------------------------------------------------|
+| ----------- | -------- | ------ | --------------------------------------------------------- |
 | `aggregate` |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1410) |
 | `count`     |          | ✅      |                                                           |
 | `distinct`  |          | ✅      |                                                           |
