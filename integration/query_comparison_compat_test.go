@@ -154,9 +154,8 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			skipTigrisPushdown: true,
 		},
 		"IDString": {
-			filter:             bson.D{{"_id", "string"}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"_id", "string"}},
+			resultPushdown: true,
 		},
 		"IDObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},
