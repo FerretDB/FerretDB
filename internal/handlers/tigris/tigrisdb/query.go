@@ -17,6 +17,8 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -114,19 +116,28 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 		// don't iterate through array for _id keys to simplify the query
 		if k == "_id" {
 			switch v.(type) {
-			case string, types.ObjectID:
+			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+				// type not supported for pushdown
+			case float64, string, types.ObjectID, int32, int64:
 				// filter by the exact _id value
 				id := must.NotFail(tjson.Marshal(v))
 				res["_id"] = json.RawMessage(id)
+			default:
+				panic(fmt.Sprintf("Unexpected type of value: %v", v))
 			}
 
 			continue
 		}
 
 		switch v.(type) {
-		case string, int32, int64, types.ObjectID, float32, float64:
+		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
+			continue
+		case float64, string, types.ObjectID, int32, int64:
 			rawValue := must.NotFail(tjson.Marshal(v))
 			res[k] = json.RawMessage(rawValue)
+		default:
+			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
 	}
 
