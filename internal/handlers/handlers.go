@@ -28,7 +28,7 @@ import (
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
 // Handlers are shared between all connections! Be careful when you need connection-specific information.
-// Currently, we pass connection information through context, see `ConnectionInfo` and its usage.
+// Currently, we pass connection information through context, see `ConnInfo` and its usage.
 //
 // Please keep methods documentation in sync with commands help text in the handlers/common package.
 type Interface interface {
