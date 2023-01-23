@@ -94,16 +94,6 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 		u.User = url.UserPassword(username, password)
 	}
 
-	// pgx 'defaultMaxConns' is 4, which is not enough for us.
-	// Set it to 20 by default if no query parameter is defined.
-	// See: https://github.com/FerretDB/FerretDB/issues/1844
-	values := u.Query()
-	if !values.Has("pool_max_conns") {
-		values.Set("pool_max_conns", "20")
-	}
-
-	u.RawQuery = values.Encode()
-
 	url := u.String()
 
 	h.rw.RLock()
