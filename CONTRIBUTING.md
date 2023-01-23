@@ -203,6 +203,7 @@ Some of our idiosyncrasies:
 Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
+   Dot notations for existing and non-existent documents and arrays should be tested.
 2. `task all` passes.
 3. Comments are added or updated for all new and changed top-level declarations (functions, types, etc).
    Both exported and unexported declarations should have comments.
