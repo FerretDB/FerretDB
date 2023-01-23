@@ -270,10 +270,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 		case float64, string, types.ObjectID, int32, int64:
 			sql := fmt.Sprintf(
-				`((_jsonb->%[1]s)::jsonb = %[2]s)`+ // Select if value under the key k is equal to value v.
+				// Select if value under the key k is equal to value v.
+				`((_jsonb->%[1]s)::jsonb = %[2]s)`+
 					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
 					` OR (jsonb_typeof(_jsonb->%[1]s) = 'array' AND`+
-					` EXISTS (SELECT 1 FROM jsonb_array_elements(_jsonb->%[1]s) as elem WHERE (elem::jsonb = %[2]s)))`,
+					` (_jsonb->%[1]s)::jsonb @> %[2]s)`,
 				p.Next(), // $1 = k
 				p.Next(), // $2 = v
 			)
