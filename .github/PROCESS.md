@@ -35,6 +35,7 @@ If the team thinks that the task is bigger than **L**, it should be decomposed i
 
 Unless the issue explicitly states otherwise, the following things are always in the scope:
 
+* All handlers.
 * Tests.
   See contributing documentation for general discussion about unit and integration tests.
 * Small spot refactorings.
