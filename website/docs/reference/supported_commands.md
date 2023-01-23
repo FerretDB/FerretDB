@@ -99,7 +99,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 | `$addToSet`       |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/825) |
 | `$pop`            |             | ✅      |                                                          |
 | `$pull`           |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/826) |
-| `$push`           |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/503) |
+| `$push`           |             | ✅️      |                                                          |
 | `$pullAll`        |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/827) |
 |                   | `$each`     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/828) |
 |                   | `$position` | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/829) |
