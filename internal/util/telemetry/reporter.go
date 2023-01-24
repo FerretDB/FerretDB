@@ -50,8 +50,8 @@ type request struct {
 	Uptime time.Duration `json:"uptime"`
 
 	// opcode (e.g. "OP_MSG", "OP_QUERY") ->
-	// command (e.g. "update", "aggregate") ->
-	// argument that caused an error (e.g. "$set", "$count (stage)"; or "unknown") ->
+	// command (e.g. "find", "aggregate") ->
+	// argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
 	// result (e.g. "NotImplemented", "InternalError"; or "ok") ->
 	// count.
 	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`

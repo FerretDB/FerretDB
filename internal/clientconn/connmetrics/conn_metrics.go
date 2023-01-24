@@ -75,8 +75,8 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 // GetResponses returns a map with all response metrics:
 //
 // opcode (e.g. "OP_MSG", "OP_QUERY") ->
-// command (e.g. "update", "aggregate") ->
-// argument that caused an error (e.g. "$set", "$count (stage)"; or "unknown") ->
+// command (e.g. "find", "aggregate") ->
+// argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
 // result (e.g. "NotImplemented", "InternalError"; or "ok") ->
 // count.
 func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMetrics {
