@@ -24,44 +24,44 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// extraDeps returns extra FerretDB dependencies (packages) when the given tag is enabled.
-func extraDeps(t *testing.T, tag string) []string {
+// tagPackages returns packages that are imported by FerretDB only when the given Go build tag is provided.
+func tagPackages(t *testing.T, tag string) []string {
 	t.Helper()
 
-	type goListResult struct {
+	packages := make(map[string]struct{}, 300)
+
+	var list struct {
 		Deps []string `json:"Deps"`
 	}
 
-	b, err := exec.Command("go", "list", "-json", "../../../cmd/ferretdb").Output()
+	// add packages with tag
+	b, err := exec.Command("go", "list", "-json", "-tags", tag, "../../../cmd/ferretdb").Output()
 	require.NoError(t, err)
-	var withoutTag goListResult
-	require.NoError(t, json.Unmarshal(b, &withoutTag))
-
-	b, err = exec.Command("go", "list", "-json", "-tags", tag, "../../../cmd/ferretdb").Output()
-	require.NoError(t, err)
-	var withTag goListResult
-	require.NoError(t, json.Unmarshal(b, &withTag))
-
-	diff := make(map[string]struct{}, len(withTag.Deps))
-	for _, dep := range withTag.Deps {
-		diff[dep] = struct{}{}
+	require.NoError(t, json.Unmarshal(b, &list))
+	for _, p := range list.Deps {
+		packages[p] = struct{}{}
 	}
 
-	for _, dep := range withoutTag.Deps {
-		delete(diff, dep)
+	// remove packages without tag
+	list.Deps = nil
+	b, err = exec.Command("go", "list", "-json", "../../../cmd/ferretdb").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &list))
+	for _, p := range list.Deps {
+		delete(packages, p)
 	}
 
-	return maps.Keys(diff)
+	return maps.Keys(packages)
 }
 
-// TestDeps ensures that extra dependencies are not used when the given Go build tag / backend is not enabled.
+// TestDeps ensures that some packages are imported only when the corresponding backend is enabled via Go build tag.
 func TestDeps(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Tigris", func(t *testing.T) {
 		t.Parallel()
 
-		diff := extraDeps(t, "ferretdb_tigris")
+		diff := tagPackages(t, "ferretdb_tigris")
 		assert.Contains(t, diff, "github.com/tigrisdata/tigris-client-go/driver")
 		assert.Contains(t, diff, "google.golang.org/grpc")
 	})
@@ -69,7 +69,7 @@ func TestDeps(t *testing.T) {
 	t.Run("Hana", func(t *testing.T) {
 		t.Parallel()
 
-		diff := extraDeps(t, "ferretdb_hana")
+		diff := tagPackages(t, "ferretdb_hana")
 		assert.Contains(t, diff, "github.com/SAP/go-hdb/driver")
 	})
 }
