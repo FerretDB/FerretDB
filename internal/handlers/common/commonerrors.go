@@ -14,13 +14,15 @@
 
 package common
 
-import (
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-)
+import "github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 
-// Deprecated: use commonerrors types instead.
 type (
-	ErrorCode   = commonerrors.ErrorCode
+	// ErrorCode should not be used in the new or updated code.
+	// Deprecated: use commonerrors types instead.
+	ErrorCode = commonerrors.ErrorCode
+
+	// WriteErrors should not be used in the new or updated code.
+	// Deprecated: use commonerrors types instead.
 	WriteErrors = commonerrors.WriteErrors
 )
 

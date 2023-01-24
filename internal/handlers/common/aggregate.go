@@ -35,6 +35,7 @@ func Aggregate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg
 	if err = Unimplemented(document, "explain", "cursor", "bypassDocumentValidation", "hint"); err != nil {
 		return nil, err
 	}
+
 	if err = Unimplemented(document, "readConcern", "writeConcern"); err != nil {
 		return nil, err
 	}

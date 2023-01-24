@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package stages provides aggregation stages.
 package stages
 
 import (
@@ -24,6 +25,7 @@ import (
 
 type newStage func(stage *types.Document) (Stage, error)
 
+// Stage is a common interface for all aggregation stages.
 type Stage interface {
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
 }
@@ -32,6 +34,7 @@ var stages = map[string]newStage{
 	"$count": newCount,
 }
 
+// NewStage creates a new aggregation stage.
 func NewStage(stage *types.Document) (Stage, error) {
 	name := stage.Command()
 
