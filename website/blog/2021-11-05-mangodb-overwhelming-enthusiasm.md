@@ -2,15 +2,16 @@
 slug: mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement
 title: "Overwhelming enthusiasm for Truly Open Source MongoDB Replacement"
 author: Peter Farkas
-image: ../static/img/blog/home-img.jpg
+description: Earlier this week, we unveiled our vision for MangoDB, the Truly Open Source MongoDB Replacement, which allows developers to use the powerful MongoDB interface while storing data in PostgreSQL.
+image: /img/blog/home-img.jpg
 tags: [FerretDB, open source database]
 ---
 
-![MangoDB: Enthusiasm for Truly Open Source MongoDB Replacement](../static/img/blog/home-img.jpg)
+Earlier this week, we unveiled our vision for MangoDB, the Truly Open Source MongoDB Replacement, which allows developers to use the powerful MongoDB interface while storing data in PostgreSQL.
+
+![MangoDB: Enthusiasm for Truly Open Source MongoDB Replacement](/img/blog/home-img.jpg)
 
 <!--truncate-->
-
-Earlier this week, we unveiled our vision for MangoDB, the Truly Open Source MongoDB Replacement, which allows developers to use the powerful MongoDB interface while storing data in PostgreSQL.
 
 We were overwhelmed with your support, seeing how MangoDB blown up on [Hacker News](https://news.ycombinator.com/item?id=29071623) within hours, and also became a hot topic on [Reddit](https://www.reddit.com/r/programming/comments/qlyalj/mangodb_a_truly_open_source_mongodb_alternative/).
 We got an unexpected amount of tech news coverage at [Changelog](https://changelog.com/news/mangodb-a-truly-open-source-mongodb-alternative-d3o0), [Tldr](https://tldr.tech/newsletter/2021-11-02), [Developpez](http://www.developpez.net/forums/d2120659/bases-donnees/nosql/mangodb-veritable-alternative-open-source-mongodb/), [Gamingdeputy](https://www.gamingdeputy.com/mangodb-project-develops-mongodb-protocol-implementation-on-top-of-postgresql/) and [Dev.to](https://dev.to/manishfoodtechs/mongodb-best-alternative-is-mangodb-try-it-57le).
