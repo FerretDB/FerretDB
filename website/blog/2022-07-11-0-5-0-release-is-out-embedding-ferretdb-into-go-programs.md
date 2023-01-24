@@ -2,18 +2,21 @@
 slug: 0-5-0-release-is-out-embedding-ferretdb-into-go-programs
 title: "New release - embedding FerretDB 0.5.0 into Go programs"
 author: Alexey Palazhchenko
-image: ../static/img/blog/group-of-ferrets-on-white.jpg
+description: FerretDB v0.5.0 includes a new exciting feature – the ability to use it as a regular Go library package.
+image: /img/blog/group-of-ferrets-on-white.jpg
+tags: [release]
 date: 2022-07-11
 ---
 
 [FerretDB v0.5.0, released today](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.0), includes a new exciting feature – the ability to use it as a regular Go library package.
-It can be embedded into a program and deployed as a single artifact without a need to run FerretDB as a separate process.
-Then any MongoDB client application could connect to it and use it normally, while data will be stored in PostgreSQL.
-Even the program that embeds FerretDB could connect to it if there is a need to do that.
+
+![Image credit: allthingsnature.org](/img/blog/group-of-ferrets-on-white.jpg)
 
 <!--truncate-->
 
-![Image credit: allthingsnature.org](../static/img/blog/group-of-ferrets-on-white.jpg)
+It can be embedded into a program and deployed as a single artifact without a need to run FerretDB as a separate process.
+Then any MongoDB client application could connect to it and use it normally, while data will be stored in PostgreSQL.
+Even the program that embeds FerretDB could connect to it if there is a need to do that.
 
 Let's see how the [ferretdb package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb) could be used.
 First, we need to add a Go module to dependencies as usual:

@@ -2,6 +2,8 @@
 slug: open-source-is-in-danger
 title: "Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed"
 author: Peter Farkas
+description: For those of us working in the IT industry, we should be well aware of the many benefits that open source software provides.
+image: /img/blog/Maintainer@5x-1-300x300.png
 date: 2022-08-23
 ---
 
@@ -57,6 +59,6 @@ New generations of users will have a very different understanding of what open s
 The reason why FerretDB supports the Open Source Initiative as a [Maintainer level sponsor](https://opensource.org/corporate-sponsors-support) is because we believe the integrity of Open Source should be preserved for future generations, and for all of us benefiting from FOSS software on a daily basis.
 This is one of the many ways we are planning to give back to the community.
 
-![Open source initiative](../static/img/blog/Maintainer@5x-1-300x300.png)
+![Open source initiative](/img/blog/Maintainer@5x-1-300x300.png)
 
 FerretDB is working on a true [Open Source MongoDB-compatible database replacement](https://github.com/FerretDB/FerretDB), released under Apache 2.0, to make sure that the Open Source community, and anyone wanting to avoid a vendor lock-in situation, will have an alternative.
