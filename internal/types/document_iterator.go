@@ -15,22 +15,32 @@
 package types
 
 import (
+	"runtime"
 	"sync/atomic"
 
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // documentIterator represents an iterator over the document fields.
 type documentIterator struct {
-	doc *Document
-	n   atomic.Uint32
+	n     atomic.Uint32
+	doc   *Document
+	stack []byte
 }
 
 // newDocumentIterator creates a new document iterator.
 func newDocumentIterator(document *Document) iterator.Interface[string, any] {
-	return &documentIterator{
-		doc: document,
+	iter := &documentIterator{
+		doc:   document,
+		stack: debugbuild.Stack(),
 	}
+
+	runtime.SetFinalizer(iter, func(iter *documentIterator) {
+		panic("documentIterator.Close() has not been called:\n" + string(iter.stack))
+	})
+
+	return iter
 }
 
 // Next implements iterator.Interface.
@@ -45,7 +55,9 @@ func (iter *documentIterator) Next() (string, any, error) {
 }
 
 // Close implements iterator.Interface.
-func (iter *documentIterator) Close() {}
+func (iter *documentIterator) Close() {
+	runtime.SetFinalizer(iter, nil)
+}
 
 // check interfaces
 var (

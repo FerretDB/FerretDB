@@ -12,16 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package stages
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// MsgAggregate implements HandlerInterface.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.Aggregate(ctx, msg, h.L)
+type newStage func(stage *types.Document) (Stage, error)
+
+type Stage interface {
+	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
+}
+
+var stages = map[string]newStage{
+	"$count": newCount,
+}
+
+func NewStage(stage *types.Document) (Stage, error) {
+	name := stage.Command()
+	f, ok := stages[name]
+	if !ok {
+		return nil, common.NewCommandErrorMsgWithArgument(
+			common.ErrNotImplemented,
+			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			name,
+		)
+	}
+
+	return f(stage)
 }

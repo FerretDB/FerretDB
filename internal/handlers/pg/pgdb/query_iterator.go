@@ -17,23 +17,23 @@ package pgdb
 import (
 	"context"
 	"runtime"
-	"sync"
 	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx       context.Context
-	rows      pgx.Rows
-	n         atomic.Uint32
-	closeOnce sync.Once
+	ctx   context.Context
+	n     atomic.Uint32
+	rows  pgx.Rows
+	stack []byte
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -41,14 +41,13 @@ type queryIterator struct {
 func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
 	// queryIterator is defined as pointer to address iter in the finalizer.
 	iter := &queryIterator{
-		ctx:  ctx,
-		rows: rows,
+		ctx:   ctx,
+		rows:  rows,
+		stack: debugbuild.Stack(),
 	}
 
-	runtime.SetFinalizer(iter, func(it *queryIterator) {
-		it.closeOnce.Do(func() {
-			panic("queryIterator.Close() has not been called")
-		})
+	runtime.SetFinalizer(iter, func(iter *queryIterator) {
+		panic("queryIterator.Close() has not been called:\n" + string(iter.stack))
 	})
 
 	return iter
@@ -86,11 +85,8 @@ func (iter *queryIterator) Next() (uint32, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	iter.closeOnce.Do(func() {
-		if iter.rows != nil {
-			iter.rows.Close()
-		}
-	})
+	iter.rows.Close()
+	runtime.SetFinalizer(iter, nil)
 }
 
 // check interfaces

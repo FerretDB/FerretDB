@@ -29,7 +29,8 @@ type Interface[K, V any] interface {
 
 	// Close indicates that the iterator will no longer be used.
 	// If Close is called, future calls to Next might panic.
+	// If Close is not called, the iterator might leak resources or panic.
 	// Close must be concurrency-safe and may be called multiple times.
-	// All calls after the first will have no effect.
+	// All calls after the first should have no effect.
 	Close()
 }

@@ -124,7 +124,7 @@ const (
 
 // ErrInfo represents additional optional error information.
 type ErrInfo struct {
-	Argument string // command's argument, operator, or aggregation pipeline stage
+	Argument string // command's argument, operator, or aggregation pipeline stage that caused an error
 }
 
 // ProtoErr represents protocol error type.

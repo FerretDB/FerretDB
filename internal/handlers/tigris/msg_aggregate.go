@@ -23,5 +23,5 @@ import (
 
 // MsgAggregate implements HandlerInterface.
 func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgAggregate(ctx, msg)
+	return common.Aggregate(ctx, msg, h.L)
 }

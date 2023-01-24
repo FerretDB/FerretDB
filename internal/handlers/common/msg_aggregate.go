@@ -18,23 +18,39 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgAggregate is a common implementation of the aggregate command.
-func MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// Aggregate is a part of common implementation of the aggregate command.
+func Aggregate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	if err = Unimplemented(document, "explain", "cursor", "bypassDocumentValidation", "hint"); err != nil {
+		return nil, err
+	}
+	if err = Unimplemented(document, "readConcern", "writeConcern"); err != nil {
+		return nil, err
+	}
+
+	Ignored(document, l, "allowDiskUse", "maxTimeMS", "collation", "comment", "let")
+
 	pipeline, err := GetRequiredParam[*types.Array](document, "pipeline")
 	if err != nil {
 		return nil, err
 	}
+
+	stages := make([]stages.Stage, pipeline.Len())
+	iter := pipeline.Iterator()
+	defer iter.Close()
 
 	if pipeline.Len() > 0 {
 		d := must.NotFail(pipeline.Get(0)).(*types.Document)

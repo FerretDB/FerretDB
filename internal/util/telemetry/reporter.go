@@ -49,7 +49,11 @@ type request struct {
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
 
-	// opcode (e.g. "OP_MSG") -> command (e.g. "update") -> argument (e.g. "$set") -> result (e.g. "ok") -> count
+	// opcode (e.g. "OP_MSG", "OP_QUERY") ->
+	// command (e.g. "update", "aggregate") ->
+	// argument that caused an error (e.g. "$set", "$count (stage)"; or "unknown") ->
+	// result (e.g. "NotImplemented", "InternalError"; or "ok") ->
+	// count.
 	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`
 }
 

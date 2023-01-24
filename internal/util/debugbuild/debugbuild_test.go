@@ -12,16 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package debugbuild
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgAggregate implements HandlerInterface.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.Aggregate(ctx, msg, h.L)
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
 }

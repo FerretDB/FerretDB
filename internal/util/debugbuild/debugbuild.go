@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !(ferretdb_debug || ferretdb_testcover || race)
-
-package version
-
-// debugBuild is false if that's not a debug build.
+// Package debugbuild provides information about whatever this is a debug build or not.
 //
-// See package documentation for more details.
-const debugBuild = false
+// It is a separate package to avoid dependency cycles.
+package debugbuild
+
+import "runtime/debug"
+
+// Stack returns a formatted stack trace of the goroutine that calls it for debug builds.
+// For non-debug builds, it returns nil.
+func Stack() []byte {
+	if enabled {
+		return debug.Stack()
+	}
+
+	return nil
+}
