@@ -21,6 +21,8 @@ import (
 	"runtime/trace"
 	"testing"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,7 +63,11 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	startup(tb)
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+	parentCtx, cancel := context.WithCancel(testutil.Ctx(tb))
+
+	// "Local" ctx is used to propagate spans correctly.
+	ctx, span := otel.Tracer("").Start(parentCtx, "SetupCompatWithOpts")
+	defer span.End()
 
 	defer trace.StartRegion(ctx, "SetupCompatWithOpts").End()
 
@@ -111,7 +117,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	level.SetLevel(*logLevelF)
 
 	return &SetupCompatResult{
-		Ctx:               ctx,
+		Ctx:               parentCtx,
 		TargetCollections: targetCollections,
 		CompatCollections: compatCollections,
 	}
@@ -130,6 +136,9 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts) []*mongo.Collection {
 	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupCompatCollections").End()
 
@@ -161,7 +170,9 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			continue
 		}
 
-		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s", collectionName))
+		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
+		ctx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
+		region := trace.StartRegion(ctx, spanName)
 
 		collection := database.Collection(collectionName)
 
@@ -206,6 +217,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collections = append(collections, collection)
 
 		region.End()
+		span.End()
 	}
 
 	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection

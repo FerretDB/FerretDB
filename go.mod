@@ -22,11 +22,7 @@ require (
 	golang.org/x/sys v0.4.0
 )
 
-require (
-	go.opentelemetry.io/otel v1.11.2
-	go.opentelemetry.io/otel/exporters/jaeger v1.11.2
-	go.opentelemetry.io/otel/sdk v1.11.2
-)
+require go.opentelemetry.io/otel v1.11.2
 
 require (
 	cloud.google.com/go/compute v1.7.0 // indirect

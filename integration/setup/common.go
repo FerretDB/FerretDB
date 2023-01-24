@@ -24,6 +24,10 @@ import (
 	"sync"
 	"testing"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+
+	"go.opentelemetry.io/otel/sdk/resource"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -316,7 +320,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
-	otelCtx, span := otel.Tracer("").Start(ctx, "setupClient")
+	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupClient").End()
@@ -330,15 +334,15 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
 	}
 
-	client, err := mongo.Connect(otelCtx, clientOpts)
+	client, err := mongo.Connect(ctx, clientOpts)
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
-		err = client.Disconnect(otelCtx)
+		err = client.Disconnect(ctx)
 		require.NoError(tb, err)
 	})
 
-	_, err = client.ListDatabases(otelCtx, bson.D{})
+	_, err = client.ListDatabases(ctx, bson.D{})
 	require.NoError(tb, err)
 
 	return client
@@ -373,6 +377,9 @@ func startup(tb testing.TB) {
 			tp := tracesdk.NewTracerProvider(
 				tracesdk.WithBatcher(exp),
 				tracesdk.WithSampler(tracesdk.AlwaysSample()),
+				tracesdk.WithResource(resource.NewSchemaless(
+					semconv.ServiceNameKey.String("FerretDB"),
+				)),
 			)
 
 			// Register TracerProvider globally to use it by default

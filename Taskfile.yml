@@ -3,6 +3,7 @@ version: 3
 
 env:
   GORACE: halt_on_error=1,history_size=2
+  JAEGER_ENDPOINT: # empty by default, set to enable jaeger tracing
 
 vars:
   BENCHTIME: 5s
@@ -11,7 +12,6 @@ vars:
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris
   SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
-  JAEGER_ENDPOINT: http://127.0.0.1:14268/api/traces
 
 tasks:
   # invoked when `task` is run without arguments
