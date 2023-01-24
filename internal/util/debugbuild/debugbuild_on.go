@@ -21,4 +21,4 @@ package debugbuild
 // See build/version package documentation for more details.
 //
 // It is a constant to allow the compiler to optimize away the code.
-const enabled = true
+const Enabled = true

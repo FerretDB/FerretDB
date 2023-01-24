@@ -22,7 +22,7 @@ import "runtime/debug"
 // Stack returns a formatted stack trace of the goroutine that calls it for debug builds.
 // For non-debug builds, it returns nil.
 func Stack() []byte {
-	if enabled {
+	if Enabled {
 		return debug.Stack()
 	}
 

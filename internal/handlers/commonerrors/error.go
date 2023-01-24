@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+// Package commonerrors providers errors shared by all handlers.
+package commonerrors
 
 import (
 	"errors"
@@ -167,44 +168,6 @@ func ProtocolError(err error) (ProtoErr, bool) {
 	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
 
 	return e, false
-}
-
-// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
-// Mask value used in error message.
-func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
-	switch err {
-	case errNotWholeNumber:
-		return NewCommandErrorMsgWithArgument(
-			ErrFailedToParse,
-			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
-			operator,
-		)
-
-	case errNegativeNumber:
-		if _, ok := maskValue.(float64); ok {
-			return NewCommandErrorMsgWithArgument(
-				ErrFailedToParse,
-				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
-				operator,
-			)
-		}
-
-		return NewCommandErrorMsgWithArgument(
-			ErrFailedToParse,
-			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
-			operator,
-		)
-
-	case errNotBinaryMask:
-		return NewCommandErrorMsgWithArgument(
-			ErrBadValue,
-			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
-			operator,
-		)
-
-	default:
-		return err
-	}
 }
 
 // CheckError checks error type and returns properly translated error.

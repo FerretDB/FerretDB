@@ -16,14 +16,12 @@ package common
 
 import (
 	"context"
-	"fmt"
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -48,19 +46,21 @@ func Aggregate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg
 		return nil, err
 	}
 
-	stages := make([]stages.Stage, pipeline.Len())
-	iter := pipeline.Iterator()
-	defer iter.Close()
+	_ = pipeline
 
-	if pipeline.Len() > 0 {
-		d := must.NotFail(pipeline.Get(0)).(*types.Document)
+	// stages := make([]stages.Stage, pipeline.Len())
+	// iter := pipeline.Iterator()
+	// defer iter.Close()
 
-		return nil, NewCommandErrorMsgWithArgument(
-			ErrNotImplemented,
-			fmt.Sprintf("`aggregate` %q is not implemented yet", d.Command()),
-			d.Command(),
-		)
-	}
+	// if pipeline.Len() > 0 {
+	// 	d := must.NotFail(pipeline.Get(0)).(*types.Document)
 
-	return nil, NewCommandErrorMsg(ErrNotImplemented, "`aggregate` command is not implemented yet")
+	// 	return nil, NewCommandErrorMsgWithArgument(
+	// 		ErrNotImplemented,
+	// 		fmt.Sprintf("`aggregate` %q is not implemented yet", d.Command()),
+	// 		d.Command(),
+	// 	)
+	// }
+
+	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "`aggregate` command is not implemented yet")
 }

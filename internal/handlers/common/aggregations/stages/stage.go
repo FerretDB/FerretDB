@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -34,10 +34,11 @@ var stages = map[string]newStage{
 
 func NewStage(stage *types.Document) (Stage, error) {
 	name := stage.Command()
+
 	f, ok := stages[name]
 	if !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrNotImplemented,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
 			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
 			name,
 		)

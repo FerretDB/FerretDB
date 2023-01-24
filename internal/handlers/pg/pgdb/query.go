@@ -31,13 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-const (
-	// FetchedChannelBufSize is the size of the buffer of the channel that is used in QueryDocuments.
-	FetchedChannelBufSize = 3
-	// FetchedSliceCapacity is the capacity of the slice in FetchedDocs.
-	FetchedSliceCapacity = 2
-)
-
 // FetchedDocs is a struct that contains a list of documents and an error.
 // It is used in the fetched channel returned by QueryDocuments.
 type FetchedDocs struct {
@@ -55,7 +48,7 @@ type SQLParam struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
+func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, error) {
 	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
