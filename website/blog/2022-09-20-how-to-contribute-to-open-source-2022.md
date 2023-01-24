@@ -2,11 +2,14 @@
 slug: how-to-contribute-to-open-source-2022
 title: "Hacktoberfest: How to be a Successful Open Source Contributor In 2022"
 author: Elena Grahovac
-image: ../static/img/blog/hacktoberfest.jpg
+description: Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2022.
+image: /img/blog/hacktoberfest.jpg
 date: 2022-09-20
 ---
 
-![Hacktoberfest at FerretDB](../static/img/blog/hacktoberfest.jpg)
+Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2022.
+
+![Hacktoberfest at FerretDB](/img/blog/hacktoberfest.jpg)
 
 <!--truncate-->
 
