@@ -247,14 +247,19 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
+		if len(k) != 0 && k[0] == '$' {
 			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/1841
 			continue
 		}
 
+		path := types.NewPathFromString(k)
+
 		// don't iterate through array for _id keys to simplify the query
 		if k == "_id" {
+			if path.Len() > 1 {
+				continue
+			}
+
 			switch v := v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
@@ -282,6 +287,16 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				p.Next(), // placeholder $1 used for field key k for preventing SQL injections
 				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
 			)
+			if path.Len() > 1 {
+				sql = fmt.Sprintf(
+					// Select if value under the key k is equal to value v.
+					`((_jsonb#>%[1]s)::jsonb = %[2]s)`+
+						// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
+						` OR (_jsonb#>%[1]s)::jsonb @> %[2]s`,
+					p.Next(), // placeholder $1 used for field key k for preventing SQL injections
+					p.Next(), // placeholder $2 used for field value v for preventing SQL injections
+				)
+			}
 
 			filters = append(filters, sql)
 			args = append(
