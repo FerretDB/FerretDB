@@ -2,16 +2,17 @@
 slug: new-ferretdb-minor-release-0-5-1
 title: "New FerretDB minor release - 0.5.1"
 author: Peter Farkas
-image: ../static/img/blog/rescue-kitten-komari-ferret-brothers-47.jpg
+description: Today we released FerretDB 0.5.1, a minor release which adds some new features, but mostly improvements and fixes.
+image: /img/blog/rescue-kitten-komari-ferret-brothers-47.jpg
 tags: [release]
 date: 2022-07-27
 ---
 
-![photo credit: boredpanda.com](../static/img/blog/rescue-kitten-komari-ferret-brothers-47.jpg)
+Today we released FerretDB 0.5.1, a minor release which adds some new features, but mostly improvements and fixes.
+
+![photo credit: boredpanda.com](/img/blog/rescue-kitten-komari-ferret-brothers-47.jpg)
 
 <!--truncate-->
-
-Today we released FerretDB 0.5.1, a minor release which adds some new features, but mostly improvements and fixes.
 
 As you may have noticed, our release schedule is every two weeks.
 A major version 0.y.z every month,, followed by a minor or patch release two weeks later.
