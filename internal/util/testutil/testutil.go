@@ -36,8 +36,8 @@ func Ctx(tb testing.TB) context.Context {
 	// make one task per top-level test for nicer histograms
 	ctx, task := trace.NewTask(ctx, strings.Split(tb.Name(), "/")[0])
 
+	tb.Cleanup(task.End)
 	tb.Cleanup(func() {
-		task.End()
 		span.End()
 	})
 

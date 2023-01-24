@@ -221,7 +221,7 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
-	_, span := otel.Tracer("testing").Start(ctx, "setupListener")
+	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
