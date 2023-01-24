@@ -2,16 +2,17 @@
 slug: new-release-ferretdb-0_6_1
 title: "New release: FerretDB 0.6.1!"
 author: Alexander Fashakin
-image: ../static/img/blog/six_ferrets-1024x917.jpg
+description: We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
+image: /img/blog/six_ferrets-1024x917.jpg
 tags: [release]
 date: 2022-11-11
 ---
 
-![Six ferrets](../static/img/blog/six_ferrets-1024x917.jpg)
+We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
+
+![Six ferrets](/img/blog/six_ferrets-1024x917.jpg)
 
 <!--truncate-->
-
-We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
 
 With the Alpha version, FerretDB has many notable and exciting features, bug fixes, and enhancements.
 This couldn't have been possible without the support, feedback, and help of many contributors from the community.
