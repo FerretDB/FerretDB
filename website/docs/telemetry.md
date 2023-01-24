@@ -25,8 +25,8 @@ The following data will be collected:
 * Command statistics:
   * protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
   * command names (e.g. `update`, `aggregate`);
-  * arguments (e.g. `$set`, `$count (stage)`).
-  * error codes (e.g. `NotImplemented`, `InternalError`; or `ok`);
+  * arguments (e.g. `$set`, `$count (stage)`);
+  * error codes (e.g. `NotImplemented`, `InternalError`; or `ok`).
 
 :::info
 Argument values, data field names, successful responses, or error messages are never collected.
