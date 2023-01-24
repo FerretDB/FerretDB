@@ -2,6 +2,7 @@
 slug: developers-need-ferretdb-stackoverflow-developer-survey-2022
 title: "Developers need FerretDB: StackOverflow Developer Survey 2022"
 author: Peter Farkas
+description: The annual StackOverflow Developer Survey is a great way to check the current adoption of different technologies out there.
 date: 2022-06-28
 ---
 
@@ -13,7 +14,7 @@ Let's take a look at how FerretDB's plans align with the latest trends!
 
 When it comes to databases, this year, we see close to 70k responses, and the survey concludes that PostgreSQL is most loved database (and relational database) among Professional developers, and second most popular overall.
 
-![Database survey](../static/img/blog/stackoverflow.jpg)
+![Database survey](/img/blog/stackoverflow.jpg)
 
 When it comes to document, or NoSQL databases, MongoDB is still the undisputed leader, and is heavily contesting the popularity of relational databases.
 
@@ -53,4 +54,4 @@ On Monday, [we released FerretDB](https://github.com/FerretDB/FerretDB/releases/
 We are also looking to partner with the PostgreSQL community and PostgreSQL DBaaS providers, who are interested in working with us providing an alternative to MongoDB.
 Feel free to let us know if you are interested!
 
-![FerretDB team](../static/img/blog/group-1024x679.jpg)
+![FerretDB team](/img/blog/group-1024x679.jpg)
