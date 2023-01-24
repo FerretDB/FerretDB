@@ -91,7 +91,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
-					// temporarily make it possible to skip Tigris pushdown checks
+					// If tc.skipTigrisPushdown is set check that pushdown actually wasn't made for Tigris.
 					if tc.skipTigrisPushdown && setup.IsTigris(t) {
 						require.True(t, tc.resultPushdown, "Cannot use skipTigrisPushdown when resultPushdown is false'")
 						assert.Equal(t, false, explainRes.Map()["pushdown"], "Tigris pushdown check was skipped, but it was actually true")
