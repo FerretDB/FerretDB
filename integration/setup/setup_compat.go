@@ -59,7 +59,7 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	startup()
+	startup(tb)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 

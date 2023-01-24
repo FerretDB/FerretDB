@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,6 +74,9 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+			ctx, span := otel.Tracer("testing").Start(ctx, "testUpdateCompat")
+			defer span.End()
 
 			update, replace := tc.update, tc.replace
 			if update != nil {

@@ -11,6 +11,7 @@ vars:
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris
   SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
+  JAEGER_ENDPOINT: http://127.0.0.1:14268/api/traces
 
 tasks:
   # invoked when `task` is run without arguments
@@ -179,6 +180,7 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
+        -jaeger-endpoint={{.JAEGER_ENDPOINT}}
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -193,6 +195,7 @@ tasks:
         -target-tls
         -compat-port=37018
         -compat-tls
+        -jaeger-endpoint={{.JAEGER_ENDPOINT}}
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"
@@ -215,6 +218,11 @@ tasks:
         -compat-port=0
         -records-dir=../records
         -target-port=37017
+
+  jaeger:
+    desc: "Start jaeger container (traces are stored in memory)"
+    cmds:
+      - docker compose run --rm --service-ports jaeger
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"

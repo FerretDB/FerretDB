@@ -21,10 +21,13 @@ import (
 	"strings"
 	"testing"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
@@ -74,9 +77,12 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
-	startup()
+	startup(tb)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+
+	_, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
+	defer span.End()
 
 	defer trace.StartRegion(ctx, "SetupWithOpts").End()
 
@@ -101,7 +107,15 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
-	tb.Cleanup(cancel)
+	tb.Cleanup(func() {
+		cancel()
+
+		// Shut down the tracer provider to ensure all spans are flushed.
+		tp := otel.GetTracerProvider()
+		if tp, ok := tp.(*tracesdk.TracerProvider); ok {
+			tp.Shutdown(ctx)
+		}
+	})
 
 	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri), opts)
 
@@ -128,6 +142,9 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
+	otelCtx, span := otel.Tracer("").Start(ctx, "setupCollection")
+	defer span.End()
+
 	defer trace.StartRegion(ctx, "setupCollection").End()
 
 	var ownDatabase bool
@@ -148,9 +165,9 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	_ = collection.Drop(ctx)
+	_ = collection.Drop(otelCtx)
 	if ownDatabase {
-		_ = database.Drop(ctx)
+		_ = database.Drop(otelCtx)
 	}
 
 	var inserted bool
@@ -164,7 +181,10 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			continue
 		}
 
-		region := trace.StartRegion(ctx, fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name()))
+		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
+		otelCtx, span := otel.Tracer("").Start(ctx, spanName)
+
+		region := trace.StartRegion(ctx, spanName)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
@@ -173,7 +193,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 				copts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(ctx, collectionName, &copts))
+			require.NoError(tb, database.CreateCollection(otelCtx, collectionName, &copts))
 		}
 
 		docs := shareddata.Docs(provider)
@@ -185,6 +205,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		inserted = true
 
 		region.End()
+		span.End()
 	}
 
 	if len(opts.Providers) == 0 {

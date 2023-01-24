@@ -29,6 +29,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -57,6 +61,8 @@ var (
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+
+	jaegerEndpointF = flag.String("jaeger-endpoint", "", "Jaeger URL to send traces, e.g. http://127.0.0.1:14268/api/traces")
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
@@ -102,10 +108,15 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	tb.Helper()
 
+	_, span := otel.Tracer("").Start(ctx, "checkMongoDBURI")
+	defer span.End()
+
 	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
 	trace.Log(ctx, "checkMongoDBURI", uri)
 
 	clientOpts := options.Client().ApplyURI(uri)
+
+	clientOpts.Monitor = otelmongo.NewMonitor()
 
 	if *targetTLSF {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
@@ -206,6 +217,9 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
+	_, span := otel.Tracer("testing").Start(ctx, "setupListener")
+	defer span.End()
+
 	defer trace.StartRegion(ctx, "setupListener").End()
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
@@ -302,33 +316,36 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
+	otelCtx, span := otel.Tracer("").Start(ctx, "setupClient")
+	defer span.End()
+
 	defer trace.StartRegion(ctx, "setupClient").End()
 	trace.Log(ctx, "setupClient", uri)
 
 	tb.Logf("setupClient: %s", uri)
 
-	clientOpts := options.Client().ApplyURI(uri)
+	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
 
 	if *targetTLSF {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
 	}
 
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongo.Connect(otelCtx, clientOpts)
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
-		err = client.Disconnect(ctx)
+		err = client.Disconnect(otelCtx)
 		require.NoError(tb, err)
 	})
 
-	_, err = client.ListDatabases(ctx, bson.D{})
+	_, err = client.ListDatabases(otelCtx, bson.D{})
 	require.NoError(tb, err)
 
 	return client
 }
 
 // startup initializes things that should be initialized only once.
-func startup() {
+func startup(tb testing.TB) {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
@@ -344,6 +361,29 @@ func startup() {
 			zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 		} else {
 			zap.S().Infof("Compat system: port %d.", p)
+		}
+
+		// Set open telemetry tracer if jaeger endpoint is provided.
+		if *jaegerEndpointF != "" {
+			exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(*jaegerEndpointF)))
+			if err != nil {
+				tb.Errorf("failed to create jaeger exporter: %v", err)
+			}
+
+			tp := tracesdk.NewTracerProvider(
+				tracesdk.WithBatcher(exp),
+				tracesdk.WithSampler(tracesdk.AlwaysSample()),
+			)
+
+			// Register TracerProvider globally to use it by default
+			otel.SetTracerProvider(tp)
+
+			tb.Cleanup(func() {
+				err := tp.Shutdown(context.Background())
+				if err != nil {
+					tb.Errorf("failed to shutdown tracer provider: %v", err)
+				}
+			})
 		}
 	})
 }
