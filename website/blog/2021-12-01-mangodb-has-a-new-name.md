@@ -2,15 +2,16 @@
 slug: mangodb-has-a-new-name-and-the-momentum-is-stronger-than-ever-meet-ferretdb
 title: "MangoDB has a new name, and the momentum is stronger than ever. Meet FerretDB!"
 author: Peter Farkas
-image: ../static/img/blog/blog-img-v02.jpg
+description: Just over a month ago, the unveiling of our new project - MangoDB, a truly open source MongoDB replacement, was met with overwhelming interest from within the Open Source community.
+image: /img/blog/blog-img-v02.jpg
 tags: [Ferretdb]
 ---
 
-![MangoDB has a new name-FerretDB](../static/img/blog/blog-img-v02.jpg)
+Just over a month ago, the unveiling of our new project - MangoDB, a truly open source MongoDB replacement, was met with overwhelming interest from within the Open Source community.
+
+![MangoDB has a new name-FerretDB](/img/blog/blog-img-v02.jpg)
 
 <!--truncate-->
-
-Just over a month ago, the unveiling of our new project - MangoDB, a truly open source MongoDB replacement, was met with overwhelming interest from within the Open Source community.
 
 The concept was discussed on many forums, such as [Hacker News](https://news.ycombinator.com/item?id=29071623), [Reddit](https://www.reddit.com/r/programming/comments/qlyalj/mangodb_a_truly_open_source_mongodb_alternative/), newsletters, blog posts, and [articles](https://dev.to/yugabyte/open-sourcemongodb-api-to-yugabytedb-with-mangodb-proxy-22ka).
 
