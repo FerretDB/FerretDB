@@ -15,9 +15,113 @@
 package integration
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
+	setup.SkipForTigrisWithReason(t, "postgreSQL authentication test")
+
+	t.Parallel()
+
+	testcases := map[string]struct {
+		skip            string
+		dbErr           string
+		listenerTLS     bool
+		clientTLS       bool
+		invalidUsername bool
+		invalidPassword bool
+	}{
+		"TLS": {
+			listenerTLS: true,
+			clientTLS:   true,
+		},
+		"TCP": {
+			listenerTLS: false,
+			clientTLS:   false,
+		},
+		"TLSWrongUsername": {
+			listenerTLS:     true,
+			clientTLS:       true,
+			invalidUsername: true,
+			dbErr: "connection() error occurred during connection handshake: auth error: " +
+				"unable to authenticate using mechanism \"PLAIN\": (InternalError) " +
+				"[msg_saslstart.go:66 pg.(*Handler).MsgSASLStart] [pg.go:114 pg.(*Handler).DBPool] " +
+				"pgdb.NewPool: failed to connect to `host=127.0.0.1 user=invalid database=ferretdb`: " +
+				"server error (FATAL: role \"invalid\" does not exist (SQLSTATE 28000))",
+		},
+		"TLSWrongPassword": {
+			listenerTLS:     true,
+			clientTLS:       true,
+			invalidPassword: true,
+			skip:            "TODO: Expects error but connection is established successfully",
+		},
+		"TLSWithNonTLSClient": {
+			listenerTLS: true,
+			clientTLS:   false,
+			skip:        "MongoDB driver attempts to reconnect until time out",
+		},
+	}
+
+	for name, tc := range testcases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				setup.SkipForPostgresWithReason(t, tc.skip)
+			}
+
+			postgreSQLURL := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+			port := 0
+			unix := false
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				Flags: setup.Flags{
+					TargetTLS:        &tc.listenerTLS,
+					TargetPort:       &port,
+					TargetUnixSocket: &unix,
+					PostgreSQLURL:    &postgreSQLURL,
+				},
+			})
+
+			ctx := s.Ctx
+
+			// s.MongoDBURI looks like `mongodb://username:password@127.0.0.1:35697/?authMechanism=PLAIN`.
+			// For testing invalid parameter, we replace each part of it.
+			clientURI := s.MongoDBURI
+
+			if tc.invalidUsername {
+				clientURI = strings.Replace(clientURI, "username", "invalid", 1)
+			}
+
+			if tc.invalidPassword {
+				clientURI = strings.Replace(clientURI, "password", "invalid", 1)
+			}
+
+			clientOpts := options.Client().ApplyURI(clientURI)
+
+			if tc.clientTLS {
+				clientOpts.SetTLSConfig(setup.GetClientTLSConfig(t))
+			}
+
+			client, err := mongo.Connect(ctx, clientOpts)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				err = client.Disconnect(ctx)
+				require.NoError(t, err)
+			})
+
+			_, err = client.ListDatabases(ctx, bson.D{})
+			if tc.dbErr != "" {
+				require.EqualError(t, err, tc.dbErr)
+				return
+			}
+		})
+	}
 }

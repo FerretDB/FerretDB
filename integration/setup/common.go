@@ -43,7 +43,6 @@ var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
 	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
@@ -114,25 +113,24 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 
 // buildMongoDBURIOpts represents connectMongoDB's options.
 type buildMongoDBURIOpts struct {
-	addr          string
-	authMechanism string
-	user          *url.Userinfo
-	tls           bool
-}
-
-// connectMongoDB connects to mongoDB.
-//
-// TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
-func connectMongoDB(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) *mongo.Client {
-	tb.Helper()
-
-	uri := buildMongoDBURI(opts)
-
-	return setupClient(tb, ctx, uri, opts.tls)
+	host           string
+	unixSocketPath string
+	tls            bool
+	authMechanism  string
+	user           *url.Userinfo
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
-func buildMongoDBURI(opts *buildMongoDBURIOpts) string {
+func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
+	if opts.tls {
+		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
+	}
+
+	host := opts.host
+	if opts.unixSocketPath != "" {
+		host = opts.unixSocketPath
+	}
+
 	q := make(url.Values)
 
 	if opts.authMechanism != "" {
@@ -142,7 +140,7 @@ func buildMongoDBURI(opts *buildMongoDBURIOpts) string {
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
-		Host:     opts.addr,
+		Host:     host,
 		Path:     "/",
 		User:     opts.user,
 		RawQuery: q.Encode(),
@@ -153,7 +151,7 @@ func buildMongoDBURI(opts *buildMongoDBURIOpts) string {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Flags) *mongo.Client {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Flags) (*mongo.Client, string) {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
@@ -162,8 +160,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 
 	// that's already checked by handlers constructors,
 	// but here we could produce a better error message
-	switch *handlerF {
-	case "pg":
+	if f.GetHandler() == "pg" {
 		require.NotEmpty(tb, f.GetPostgreSQLURL(), "-postgresql-url must be set for 'pg' handler")
 	}
 
@@ -209,7 +206,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 		fp := GetTLSFilesPaths(tb, ServerSide)
 		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
 	} else {
-		// TODO: should this only be assigned for non unix
 		listenerOpts.TCP = addr
 	}
 
@@ -240,19 +236,19 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 
 	switch {
 	case f.IsTargetTLS():
-		opts.addr = l.TLSAddr().String()
+		opts.host = l.TLSAddr().String()
 	case f.IsTargetUnixSocket():
-		opts.addr = l.UnixAddr().String()
+		opts.unixSocketPath = l.UnixAddr().String()
 	default:
-		opts.addr = l.TCPAddr().String()
+		opts.host = l.TCPAddr().String()
 	}
 
-	uri := buildMongoDBURI(opts)
+	uri := buildMongoDBURI(tb, opts)
 	client := setupClient(tb, ctx, uri, f.IsTargetTLS())
 
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
-	return client
+	return client, uri
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.

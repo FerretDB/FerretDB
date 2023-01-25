@@ -94,10 +94,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetClient *mongo.Client
 	if opts.Flags.GetTargetPort() == 0 {
-		targetClient = setupListener(tb, ctx, logger, opts.Flags)
+		targetClient, _ = setupListener(tb, ctx, logger, opts.Flags)
 	} else {
-		targetURI := buildMongoDBURI(&buildMongoDBURIOpts{
-			addr: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetTargetPort()),
+		targetURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
+			host: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetTargetPort()),
 			tls:  opts.Flags.IsTargetTLS(),
 			user: getUser(opts.Flags.IsTargetTLS()),
 		})
@@ -107,11 +107,12 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatClient := connectMongoDB(tb, ctx, &buildMongoDBURIOpts{
-		addr: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetCompatPort()),
+	uri := buildMongoDBURI(tb, &buildMongoDBURIOpts{
+		host: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetCompatPort()),
 		tls:  opts.Flags.IsCompatTLS(),
 		user: getUser(opts.Flags.IsCompatTLS()),
 	})
+	compatClient := setupClient(tb, ctx, uri, opts.Flags.IsCompatTLS())
 
 	targetCollections := setupCompatCollections(tb, ctx, targetClient, opts, true)
 	compatCollections := setupCompatCollections(tb, ctx, compatClient, opts, false)

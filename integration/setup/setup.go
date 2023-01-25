@@ -63,7 +63,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
-	// MongoDB really wants Unix socket path in the addr part of the URI
+	// MongoDB really wants Unix socket path in the host part of the URI
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	res := slices.ContainsFunc(opts.Hosts, func(host string) bool {
 		return strings.Contains(host, "/")
@@ -100,10 +100,11 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var uri string
 
 	if opts.Flags.GetTargetPort() == 0 {
-		client = setupListener(tb, ctx, logger, opts.Flags)
+		client, uri = setupListener(tb, ctx, logger, opts.Flags)
 	} else {
-		uri = buildMongoDBURI(&buildMongoDBURIOpts{
-			addr: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetTargetPort()),
+		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
+			host: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetTargetPort()),
+			user: getUser(opts.Flags.IsTargetTLS()),
 		})
 		client = setupClient(tb, ctx, uri, opts.Flags.IsTargetTLS())
 	}
