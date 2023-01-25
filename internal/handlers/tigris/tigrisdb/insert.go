@@ -51,41 +51,39 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 		}
 	}
 
-	return tdb.InTransaction(ctx, db, func(tx driver.Tx) error {
-		iter := docs.Iterator()
+	iter := docs.Iterator()
 
-		insertDocs := make([]driver.Document, docs.Len())
+	insertDocs := make([]driver.Document, docs.Len())
 
-		for {
-			i, d, err := iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return lazyerrors.Error(err)
+	for {
+		i, d, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
 			}
 
-			doc := d.(*types.Document)
-
-			if err = doc.ValidateData(); err != nil {
-				return err
-			}
-
-			b, err := tjson.Marshal(doc)
-			if err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			insertDocs[i] = b
-		}
-
-		if _, err := tx.Insert(ctx, collection, insertDocs); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		return nil
-	})
+		doc := d.(*types.Document)
+
+		if err = doc.ValidateData(); err != nil {
+			return err
+		}
+
+		b, err := tjson.Marshal(doc)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		insertDocs[i] = b
+	}
+
+	if _, err := tdb.Driver.UseDatabase(db).Insert(ctx, collection, insertDocs); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // InsertDocument inserts a document into FerretDB database and collection.
