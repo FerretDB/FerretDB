@@ -171,7 +171,7 @@ func TestQueryCompatRunner(t *testing.T) {
 		"Projection":    testQueryProjectionCompat(),
 	}
 
-	if runtime.GOARCH == "arm64" {
+	if runtime.GOARCH != "arm64" {
 		// https://github.com/FerretDB/FerretDB/issues/491
 		testcases["Mod"] = testQueryEvaluationCompatMod()
 	}
