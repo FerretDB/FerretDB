@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -1382,4 +1383,42 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 	}
 
 	return filterFieldExpr(doc, filterKey, expr)
+}
+
+// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
+// Mask value used in error message.
+func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
+	switch {
+	case errors.Is(err, errNotWholeNumber):
+		return NewCommandErrorMsgWithArgument(
+			ErrFailedToParse,
+			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
+			operator,
+		)
+
+	case errors.Is(err, errNegativeNumber):
+		if _, ok := maskValue.(float64); ok {
+			return NewCommandErrorMsgWithArgument(
+				ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
+				operator,
+			)
+		}
+
+		return NewCommandErrorMsgWithArgument(
+			ErrFailedToParse,
+			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
+			operator,
+		)
+
+	case errors.Is(err, errNotBinaryMask):
+		return NewCommandErrorMsgWithArgument(
+			ErrBadValue,
+			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
+			operator,
+		)
+
+	default:
+		return err
+	}
 }

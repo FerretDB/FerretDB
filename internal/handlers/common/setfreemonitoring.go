@@ -71,7 +71,7 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 	}
 
 	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
-		return nil, NewCommandErrorMsg(errInternalError, err.Error())
+		return nil, err
 	}
 
 	var reply wire.OpMsg
