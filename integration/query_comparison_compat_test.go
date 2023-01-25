@@ -49,13 +49,24 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
 			resultType: emptyResult,
 		},
+		"DocumentDotNotationArrayDocument": {
+			filter:         bson.D{{"v.array.0.foo", int32(42)}},
+			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
+			resultPushdown: true,
+		},
+		"DocumentDotNotationArrayDocumentNoIndex": {
+			filter: bson.D{{"v.array.foo", int32(42)}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
+		},
 		"DocumentDotNotation": {
-			filter:        bson.D{{"v.foo", int32(42)}},
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			filter:         bson.D{{"v.foo", int32(42)}},
+			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
+			resultPushdown: true,
 		},
 		"DocumentDotNotationNoSuchField": {
-			filter:     bson.D{{"no-such-field.some", 42}},
-			resultType: emptyResult,
+			filter:         bson.D{{"no-such-field.some", 42}},
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},

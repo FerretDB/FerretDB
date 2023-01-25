@@ -279,14 +279,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			sql := fmt.Sprintf(
-				// Select if value under the key k is equal to value v.
-				`((_jsonb->%[1]s)::jsonb = %[2]s)`+
-					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
-					` OR (_jsonb->%[1]s)::jsonb @> %[2]s`,
-				p.Next(), // placeholder $1 used for field key k for preventing SQL injections
-				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
-			)
+			var sql string
+
 			if path.Len() > 1 {
 				sql = fmt.Sprintf(
 					// Select if value under the key k is equal to value v.
@@ -296,14 +290,29 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 					p.Next(), // placeholder $1 used for field key k for preventing SQL injections
 					p.Next(), // placeholder $2 used for field value v for preventing SQL injections
 				)
+				args = append(
+					args,
+					path.Slice(),
+					string(must.NotFail(pjson.MarshalSingleValue(v))),
+				)
+
+			} else {
+				sql = fmt.Sprintf(
+					// Select if value under the key k is equal to value v.
+					`((_jsonb->%[1]s)::jsonb = %[2]s)`+
+						// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
+						` OR (_jsonb->%[1]s)::jsonb @> %[2]s`,
+					p.Next(), // placeholder $1 used for field key k for preventing SQL injections
+					p.Next(), // placeholder $2 used for field value v for preventing SQL injections
+				)
+				args = append(
+					args,
+					k,
+					string(must.NotFail(pjson.MarshalSingleValue(v))),
+				)
 			}
 
 			filters = append(filters, sql)
-			args = append(
-				args,
-				k,
-				string(must.NotFail(pjson.MarshalSingleValue(v))),
-			)
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}

@@ -31,6 +31,7 @@ var Composites = &Values[string]{
 	data: map[string]any{
 		"document":                   bson.D{{"foo", int32(42)}},
 		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
+		"document-array-document":    bson.D{{"array", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", int32(43)}}}}},
 		"document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
 		"document-null":              bson.D{{"foo", nil}},
 		"document-empty":             bson.D{},
