@@ -37,8 +37,8 @@ func (tdb *TigrisDB) InTransaction(ctx context.Context, db string, f func(driver
 			return
 		}
 
-		if err = tx.Rollback(ctx); err != nil {
-			tdb.l.Error("failed to perform rollback", zap.Error(err))
+		if rerr := tx.Rollback(ctx); rerr != nil {
+			tdb.l.Error("failed to perform rollback", zap.Error(rerr))
 		}
 	}()
 

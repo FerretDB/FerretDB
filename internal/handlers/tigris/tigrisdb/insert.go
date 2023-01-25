@@ -51,7 +51,7 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 		}
 	}
 
-	err := tdb.InTransaction(ctx, db, func(tx driver.Tx) error {
+	return tdb.InTransaction(ctx, db, func(tx driver.Tx) error {
 		iter := docs.Iterator()
 
 		insertDocs := make([]driver.Document, docs.Len())
@@ -86,11 +86,6 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 
 		return nil
 	})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
 }
 
 // InsertDocument inserts a document into FerretDB database and collection.
