@@ -16,6 +16,9 @@ package tigrisdb
 
 import (
 	"context"
+	"errors"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -24,6 +27,72 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+// InsertManyDocuments inserts many documents into FerretDB database and collection.
+// If database or collection does not exist, it will be created, the schema of the first document will be used
+// to create the collection.
+// Insertion is done in a transaction, if any document is not valid, it returns *types.ValidationError.
+func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection string, docs *types.Array) error {
+	if docs.Len() == 0 {
+		return nil
+	}
+
+	doc := must.NotFail(docs.Get(0)).(*types.Document)
+
+	schema, err := tjson.DocumentSchema(doc)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	schema.Title = collection
+	b := must.NotFail(schema.Marshal())
+
+	if _, err := tdb.CreateCollectionIfNotExist(ctx, db, collection, b); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	err = tdb.InTransaction(ctx, func(tx driver.Tx) error {
+		iter := docs.Iterator()
+
+		insertDocs := make([]driver.Document, docs.Len())
+
+		for {
+			i, d, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return lazyerrors.Error(err)
+			}
+
+			doc := d.(*types.Document)
+
+			if err := doc.ValidateData(); err != nil {
+				return err
+			}
+
+			b, err := tjson.Marshal(doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			insertDocs[i] = b
+		}
+
+		_, err = tx.Insert(ctx, collection, insertDocs)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
+	}, db)
+
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
 
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
