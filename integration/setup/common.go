@@ -114,7 +114,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 
 // buildMongoDBURIOpts represents connectMongoDB's options.
 type buildMongoDBURIOpts struct {
-	host          string
+	addr          string
 	authMechanism string
 	user          *url.Userinfo
 	tls           bool
@@ -134,12 +134,15 @@ func connectMongoDB(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpt
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
 func buildMongoDBURI(opts *buildMongoDBURIOpts) string {
 	q := make(url.Values)
-	q.Set("authMechanism", opts.authMechanism)
+
+	if opts.authMechanism != "" {
+		q.Set("authMechanism", opts.authMechanism)
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
-		Host:     opts.host,
+		Host:     opts.addr,
 		Path:     "/",
 		User:     opts.user,
 		RawQuery: q.Encode(),
@@ -161,7 +164,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 	// but here we could produce a better error message
 	switch *handlerF {
 	case "pg":
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
+		require.NotEmpty(tb, f.GetPostgreSQLURL(), "-postgresql-url must be set for 'pg' handler")
 	}
 
 	p, err := state.NewProvider("")
@@ -175,9 +178,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: *postgreSQLURLF,
+		PostgreSQLURL: f.GetPostgreSQLURL(),
 
-		TigrisURL: *tigrisURLF,
+		TigrisURL: f.GetTigrisURL(),
 	}
 	h, err := registry.NewHandler(f.GetHandler(), handlerOpts)
 	require.NoError(tb, err)
@@ -237,11 +240,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 
 	switch {
 	case f.IsTargetTLS():
-		opts.host = l.TLSAddr().String()
+		opts.addr = l.TLSAddr().String()
 	case f.IsTargetUnixSocket():
-		opts.host = l.UnixAddr().String()
+		opts.addr = l.UnixAddr().String()
 	default:
-		opts.host = l.TCPAddr().String()
+		opts.addr = l.TCPAddr().String()
 	}
 
 	uri := buildMongoDBURI(opts)
@@ -279,6 +282,15 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mo
 	require.NoError(tb, err)
 
 	return client
+}
+
+// getUser returns test user credential if TLS is enabled, nil otherwise.
+func getUser(isTLS bool) *url.Userinfo {
+	if isTLS {
+		return url.UserPassword("username", "password")
+	}
+
+	return nil
 }
 
 // startup initializes things that should be initialized only once.

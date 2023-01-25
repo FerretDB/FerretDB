@@ -46,8 +46,8 @@ type SetupOpts struct {
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
-	// Params overrides the flags set from cli.
-	Params Flags
+	// Flags overrides the flags set from cli.
+	Flags Flags
 }
 
 // SetupResult represents setup results.
@@ -63,7 +63,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
-	// MongoDB really wants Unix socket path in the host part of the URI
+	// MongoDB really wants Unix socket path in the addr part of the URI
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	res := slices.ContainsFunc(opts.Hosts, func(host string) bool {
 		return strings.Contains(host, "/")
@@ -88,7 +88,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		opts = new(SetupOpts)
 	}
 
-	opts.Params = *flags.ApplyOpts(opts.Params)
+	opts.Flags = *flags.ApplyOpts(opts.Flags)
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if *debugSetupF {
@@ -99,13 +99,13 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var client *mongo.Client
 	var uri string
 
-	if opts.Params.GetTargetPort() == 0 {
-		client = setupListener(tb, ctx, logger, opts.Params)
+	if opts.Flags.GetTargetPort() == 0 {
+		client = setupListener(tb, ctx, logger, opts.Flags)
 	} else {
 		uri = buildMongoDBURI(&buildMongoDBURIOpts{
-			host: fmt.Sprintf("127.0.0.1:%d", opts.Params.GetTargetPort()),
+			addr: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetTargetPort()),
 		})
-		client = setupClient(tb, ctx, uri, opts.Params.IsTargetTLS())
+		client = setupClient(tb, ctx, uri, opts.Flags.IsTargetTLS())
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -164,10 +164,10 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	for _, provider := range opts.Providers {
-		if opts.Params.GetTargetPort() == 0 && !slices.Contains(provider.Handlers(), opts.Params.GetHandler()) {
+		if opts.Flags.GetTargetPort() == 0 && !slices.Contains(provider.Handlers(), opts.Flags.GetHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping it.",
-				provider.Name(), opts.Params.GetHandler(),
+				provider.Name(), opts.Flags.GetHandler(),
 			)
 
 			continue
@@ -176,7 +176,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		region := trace.StartRegion(ctx, fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name()))
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(opts.Params.GetHandler(), collectionName); len(validators) > 0 {
+		if validators := provider.Validators(opts.Flags.GetHandler(), collectionName); len(validators) > 0 {
 			var copts options.CreateCollectionOptions
 			for key, value := range validators {
 				copts.SetValidator(bson.D{{key, value}})

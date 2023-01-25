@@ -47,8 +47,8 @@ type SetupCompatOpts struct {
 	databaseName       string
 	baseCollectionName string
 
-	// Params overrides the flags set from cli.
-	Params Flags
+	// Flags overrides the flags set from cli.
+	Flags Flags
 }
 
 // SetupCompatResult represents compatibility test setup results.
@@ -77,12 +77,12 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
-	opts.Params = *flags.ApplyOpts(opts.Params)
+	opts.Flags = *flags.ApplyOpts(opts.Flags)
 
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the handler'flags name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + opts.Params.GetHandler()
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + opts.Flags.GetHandler()
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -93,22 +93,24 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var targetClient *mongo.Client
-	if opts.Params.GetTargetPort() == 0 {
-		targetClient = setupListener(tb, ctx, logger, opts.Params)
+	if opts.Flags.GetTargetPort() == 0 {
+		targetClient = setupListener(tb, ctx, logger, opts.Flags)
 	} else {
 		targetURI := buildMongoDBURI(&buildMongoDBURIOpts{
-			host: fmt.Sprintf("127.0.0.1:%d", opts.Params.GetTargetPort()),
-			tls:  opts.Params.IsTargetTLS(),
+			addr: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetTargetPort()),
+			tls:  opts.Flags.IsTargetTLS(),
+			user: getUser(opts.Flags.IsTargetTLS()),
 		})
-		targetClient = setupClient(tb, ctx, targetURI, opts.Params.IsTargetTLS())
+		targetClient = setupClient(tb, ctx, targetURI, opts.Flags.IsTargetTLS())
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
 	compatClient := connectMongoDB(tb, ctx, &buildMongoDBURIOpts{
-		host: fmt.Sprintf("127.0.0.1:%d", opts.Params.GetCompatPort()),
-		tls:  opts.Params.IsCompatTLS(),
+		addr: fmt.Sprintf("127.0.0.1:%d", opts.Flags.GetCompatPort()),
+		tls:  opts.Flags.IsCompatTLS(),
+		user: getUser(opts.Flags.IsCompatTLS()),
 	})
 
 	targetCollections := setupCompatCollections(tb, ctx, targetClient, opts, true)
@@ -159,10 +161,10 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if opts.Params.GetTargetPort() == 0 && !slices.Contains(provider.Handlers(), opts.Params.GetHandler()) {
+		if opts.Flags.GetTargetPort() == 0 && !slices.Contains(provider.Handlers(), opts.Flags.GetHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping creating %q.",
-				provider.Name(), opts.Params.GetHandler(), fullName,
+				provider.Name(), opts.Flags.GetHandler(), fullName,
 			)
 			continue
 		}
@@ -176,7 +178,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		if isTarget {
 			// if validators are set, create collection with them (otherwise collection will be created on first insert)
-			if validators := provider.Validators(opts.Params.GetHandler(), collectionName); len(validators) > 0 {
+			if validators := provider.Validators(opts.Flags.GetHandler(), collectionName); len(validators) > 0 {
 				var opts options.CreateCollectionOptions
 				for key, value := range validators {
 					opts.SetValidator(bson.D{{key, value}})
@@ -197,7 +199,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(ctx, docs)
-		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), opts.Params.GetHandler(), fullName)
+		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), opts.Flags.GetHandler(), fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		// delete collection unless test failed
