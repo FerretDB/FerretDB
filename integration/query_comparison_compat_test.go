@@ -69,23 +69,55 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter:     bson.D{{"v.some.0", bson.A{42}}},
 			resultType: emptyResult,
 		},
+		"Int32": {
+			filter:             bson.D{{"v", int32(42)}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
+		"Int64": {
+			filter:             bson.D{{"v", int64(42)}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
 		"Double": {
-			filter: bson.D{{"v", 42.13}},
+			filter:             bson.D{{"v", 42.13}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"DoubleMax": {
-			filter: bson.D{{"v", math.MaxFloat64}},
+			filter:             bson.D{{"v", math.MaxFloat64}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"DoubleSmallest": {
-			filter: bson.D{{"v", math.SmallestNonzeroFloat64}},
+			filter:             bson.D{{"v", math.SmallestNonzeroFloat64}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"DoubleBig": {
-			filter: bson.D{{"v", float64(2 << 60)}},
+			filter:             bson.D{{"v", float64(2 << 60)}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"String": {
-			filter: bson.D{{"v", "foo"}},
+			filter:             bson.D{{"v", "foo"}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
+		"StringInt": {
+			filter:             bson.D{{"v", "42"}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
+		"StringDouble": {
+			filter:             bson.D{{"v", "42.13"}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"StringEmpty": {
-			filter: bson.D{{"v", ""}},
+			filter:             bson.D{{"v", ""}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
@@ -103,6 +135,32 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter:     bson.D{{"_id", nil}},
 			resultType: emptyResult,
 		},
+		"IDInt32": {
+			filter:             bson.D{{"_id", int32(1)}},
+			resultType:         emptyResult,
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
+		"IDInt64": {
+			filter:             bson.D{{"_id", int64(1)}},
+			resultType:         emptyResult,
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
+		"IDDouble": {
+			filter:             bson.D{{"_id", 4.2}},
+			resultType:         emptyResult,
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
+		},
+		"IDString": {
+			filter:         bson.D{{"_id", "string"}},
+			resultPushdown: true,
+		},
+		"IDObjectID": {
+			filter:         bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown: true,
+		},
 		"ValueNull": {
 			filter: bson.D{{"v", nil}},
 		},
@@ -110,7 +168,9 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"no-such-field", nil}},
 		},
 		"ValueNumber": {
-			filter: bson.D{{"v", 42}},
+			filter:             bson.D{{"v", 42}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
