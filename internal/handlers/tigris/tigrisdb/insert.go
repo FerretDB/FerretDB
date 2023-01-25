@@ -30,7 +30,8 @@ import (
 // InsertManyDocuments inserts many documents into FerretDB database and collection.
 // If database or collection does not exist, it will be created, the schema of the first document will be used
 // to create the collection.
-// Insertion is done in a transaction, if any document is not valid, it returns *types.ValidationError.
+// Insertion is done in a single request.
+// Documents are validated before insertion, if any document is not valid, it returns *types.ValidationError.
 func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection string, docs *types.Array) error {
 	if docs.Len() == 0 {
 		return nil
