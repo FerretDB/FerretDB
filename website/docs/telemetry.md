@@ -22,7 +22,15 @@ The following data will be collected:
 * Uptime
 * Backend (PostgreSQL or Tigris) version
 * Build configuration and installation type (Docker, package, self-built)
-* Query errors: error code, command name, and query operator name (but not the query itself or its values)
+* Command statistics:
+  * protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
+  * command names (e.g. `find`, `aggregate`);
+  * arguments (e.g. `sort`, `$count (stage)`);
+  * error codes (e.g. `NotImplemented`, `InternalError`; or `ok`).
+
+:::info
+Argument values, data field names, successful responses, or error messages are never collected.
+:::
 
 ## Version notification
 
