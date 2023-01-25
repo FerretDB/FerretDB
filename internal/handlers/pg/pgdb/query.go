@@ -249,23 +249,29 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	for k, v := range sqlFilters.Map() {
 		if len(k) != 0 && k[0] == '$' {
 			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			//continue
+			continue
 		}
 
-		path := types.NewPathFromString(k)
+		operator := "->"
+		var key any = k
+		var prefix string
+
+		if len(k) != 0 {
+			if path := types.NewPathFromString(k); path.Len() > 1 {
+				operator = "#>"
+				key = path.Slice()
+				prefix = path.Prefix()
+			}
+		}
 
 		// don't iterate through array for _id keys to simplify the query
-		if k == "_id" {
-			if path.Len() > 1 {
-				continue
-			}
-
+		if k == "_id" || prefix == "_id" {
 			switch v := v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
 			case float64, string, types.ObjectID, int32, int64:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+				filters = append(filters, fmt.Sprintf(`((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`, operator, p.Next(), p.Next()))
+				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			default:
 				panic(fmt.Sprintf("Unexpected type of value: %v", v))
 			}
@@ -281,22 +287,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		case float64, string, types.ObjectID, int32, int64:
 			var sql string
 
-			var key any = k
-			operator := "->"
-
-			if path.Len() > 1 {
-				key = path.Slice()
-				operator = "#>"
-			}
-
 			sql = fmt.Sprintf(
 				// Select if value under the key k is equal to value v.
-				`((_jsonb%[3]s%[1]s)::jsonb = %[2]s)`+
+				`((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`+
 					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
-					` OR (_jsonb%[3]s%[1]s)::jsonb @> %[2]s`,
+					` OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`,
+				operator, // -> or #>
 				p.Next(), // placeholder $1 used for field key k for preventing SQL injections
 				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
-				operator, // -> or #>
 			)
 
 			args = append(
