@@ -21,12 +21,11 @@ import (
 	"runtime/trace"
 	"testing"
 
-	"go.opentelemetry.io/otel"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
@@ -111,8 +110,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		tls:      *compatTLSF,
 	})
 
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetURI), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatURI), opts)
+	ctxT, span := otel.Tracer("").Start(ctx, "targetCollections")
+	targetCollections := setupCompatCollections(tb, ctxT, setupClient(tb, ctxT, targetURI), opts)
+	defer span.End()
+
+	ctxC, span := otel.Tracer("").Start(ctx, "compatCollections")
+	compatCollections := setupCompatCollections(tb, ctxC, setupClient(tb, ctxC, compatURI), opts)
+	defer span.End()
 
 	level.SetLevel(*logLevelF)
 

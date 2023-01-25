@@ -63,6 +63,8 @@ linters-settings:
         alias: api
       - pkg: github.com/prometheus/client_model/go
         alias: dto
+      - pkg: go.opentelemetry.io/otel/sdk/trace
+        alias: tracesdk
   # ineffassign
   lll:
     line-length: 175 # TODO reduce it to 130

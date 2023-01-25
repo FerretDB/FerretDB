@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -86,6 +87,9 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
+
+					ctx, span := otel.Tracer("").Start(ctx, targetCollection.Name())
+					defer span.End()
 
 					allDocs := FindAll(t, ctx, targetCollection)
 
