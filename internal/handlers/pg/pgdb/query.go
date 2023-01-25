@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/maps"
@@ -246,19 +247,50 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		switch k {
-		case "_id":
-			switch v := v.(type) {
-			case string:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-			case types.ObjectID:
-				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
-				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
-			}
-		default:
+		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
+			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/1841
 			continue
+		}
+
+		// don't iterate through array for _id keys to simplify the query
+		if k == "_id" {
+			switch v := v.(type) {
+			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+				// type not supported for pushdown
+			case float64, string, types.ObjectID, int32, int64:
+				filters = append(filters, fmt.Sprintf(`((_jsonb->'_id')::jsonb = %s)`, p.Next()))
+				args = append(args, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			default:
+				panic(fmt.Sprintf("Unexpected type of value: %v", v))
+			}
+
+			continue
+		}
+
+		switch v := v.(type) {
+		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
+			continue
+
+		case float64, string, types.ObjectID, int32, int64:
+			sql := fmt.Sprintf(
+				// Select if value under the key k is equal to value v.
+				`((_jsonb->%[1]s)::jsonb = %[2]s)`+
+					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
+					` OR (_jsonb->%[1]s)::jsonb @> %[2]s`,
+				p.Next(), // placeholder $1 used for field key k for preventing SQL injections
+				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
+			)
+
+			filters = append(filters, sql)
+			args = append(
+				args,
+				k,
+				string(must.NotFail(pjson.MarshalSingleValue(v))),
+			)
+		default:
+			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
 	}
 
