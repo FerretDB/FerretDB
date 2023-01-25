@@ -2,16 +2,18 @@
 slug: new-release-ferretdb-0-4-0
 title: "New release: FerretDB 0.4.0!"
 author: Peter Farkas
-image: ../static/img/blog/4ferrets.webp
+description: We are happy to announce that FerretDB’s newest 0.4.0 release is now available on GitHub with some exciting new features and fixes in it.
+image: /img/blog/4ferrets.webp
 tags: [release]
 date: 2022-06-28
 ---
 
-![New FerretDB release 0.4.0](../static/img/blog/4ferrets.webp)
+We are happy to announce that [FerretDB’s newest 0.4.0 release is now available on GitHub,](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) with some exciting new features and fixes in it.
+
+![New FerretDB release 0.4.0](/img/blog/4ferrets.webp)
 
 <!--truncate-->
 
-We are happy to announce that [FerretDB’s newest 0.4.0 release is now available on GitHub,](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) with some exciting new features and fixes in it.
 We wish to thank everyone in the community who contributed to this release, either with code or feedback.
 Special thanks to [ribaraka](https://github.com/ribaraka) and [fenogentov](https://github.com/fenogentov) for their sustained efforts.
 
@@ -39,7 +41,7 @@ This is a feature which exists since MongoDB 4.0, and provides support for getti
 While our primary focus is still PostgreSQL, our newest release marks the first time where we include functionality related to [Tigris](http://www.tigrisdata.com).
 Tigris is one of the database backends we are going to support next to PostgreSQL and potential others in the future.
 
-![support for tigris](../static/img/blog/cf73bb31-fa1b-4465-8277-e73da46127de-1650484034538-1-300x120.png)Tigris is a work in progress, fully open source database as a service platform, which aims to add MongoDB compatibility by using FerretDB as an interface.
+![support for tigris](/img/blog/cf73bb31-fa1b-4465-8277-e73da46127de-1650484034538-1-300x120.png)Tigris is a work in progress, fully open source database as a service platform, which aims to add MongoDB compatibility by using FerretDB as an interface.
 [Check them out on GitHub](https://github.com/tigrisdata).
 
 We see enormous potential in our partnership in terms of value: together, FerretDB and Tigris will be able to provide an alternative to MongoDB Atlas.

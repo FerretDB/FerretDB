@@ -2,11 +2,14 @@
 slug: mongodb-crud-operations-with-ferretdb
 title: "How to Pass Basic MongoDB CRUD Operations With FerretDB"
 author: Alexander Fashakin
-image: ../static/img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg
+image: /img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg
+description: In this tutorial, we will show you how to pass basic MongoDB CRUD operations in FerretDB - the open source MongoDB alternative.
 date: 2022-11-14
 ---
 
-![Pass Basic CRUD Operations in FerretDB](../static/img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg)
+In this tutorial, we will show you how to pass basic MongoDB CRUD operations in FerretDB - the open source MongoDB alternative.
+
+![Pass Basic CRUD Operations in FerretDB](/img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg)
 
 <!--truncate-->
 

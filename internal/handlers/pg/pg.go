@@ -93,6 +93,7 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	if username != "" && password != "" {
 		u.User = url.UserPassword(username, password)
 	}
+
 	url := u.String()
 
 	h.rw.RLock()

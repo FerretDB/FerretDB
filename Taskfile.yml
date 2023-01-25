@@ -525,4 +525,4 @@ tasks:
   blog-dev:
     desc: "Start blog development server"
     cmds:
-      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0
+      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0 --port=3001
