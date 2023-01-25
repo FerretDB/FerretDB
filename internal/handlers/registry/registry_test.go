@@ -28,26 +28,27 @@ import (
 func tagPackages(t *testing.T, tag string) []string {
 	t.Helper()
 
-	packages := make(map[string]struct{}, 300)
-
-	var list struct {
+	type list struct {
 		Deps []string `json:"Deps"`
 	}
 
-	// add packages with tag
+	var withTag list
 	b, err := exec.Command("go", "list", "-json", "-tags", tag, "../../../cmd/ferretdb").Output()
 	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, &list))
-	for _, p := range list.Deps {
+	require.NoError(t, json.Unmarshal(b, &withTag))
+
+	var withoutTag list
+	b, err = exec.Command("go", "list", "-json", "../../../cmd/ferretdb").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &withoutTag))
+
+	packages := make(map[string]struct{}, len(withTag.Deps))
+
+	for _, p := range withTag.Deps {
 		packages[p] = struct{}{}
 	}
 
-	// remove packages without tag
-	list.Deps = nil
-	b, err = exec.Command("go", "list", "-json", "../../../cmd/ferretdb").Output()
-	require.NoError(t, err)
-	require.NoError(t, json.Unmarshal(b, &list))
-	for _, p := range list.Deps {
+	for _, p := range withoutTag.Deps {
 		delete(packages, p)
 	}
 
