@@ -183,13 +183,13 @@ We have an additional integration testing system in another repository: <https:/
 
 #### Observability in tests
 
-Optionally, for those who prefer [OpenTelemetry tracing approach](https://opentelemetry.io/docs/concepts/signals/traces/), 
+Optionally, for those who prefer [OpenTelemetry tracing approach](https://opentelemetry.io/docs/concepts/signals/traces/),
 it is possible to use [Jaeger](https://www.jaegertracing.io/) in tests.
 
 Run `task jaeger` to start all-in-one Jaeger Docker container (the traces will be stored in memory and will be available
 while the container is running).
 
-Then run `task test-integration-pg JAEGER_ENDPOINT=http://localhost:14268/api/traces` 
+Then run `task test-integration-pg JAEGER_ENDPOINT=http://localhost:14268/api/traces`
 to run `pg` handler tests with tracing enabled.
 
 Now you can visit [Jaeger UI](http://localhost:16686/) to see the spans collected from testing.
