@@ -54,11 +54,6 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
 			resultPushdown: true,
 		},
-		"DocumentDotNotationArrayDocuments2": {
-			filter:         bson.D{{"v.array[0].foo", int32(42)}},
-			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
-			resultPushdown: true,
-		},
 		"DocumentDotNotationArrayDocumentNoIndex": {
 			filter: bson.D{{"v.array.foo", int32(42)}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
