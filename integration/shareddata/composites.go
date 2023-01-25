@@ -38,6 +38,7 @@ var Composites = &Values[string]{
 			{"*", int32(42)},
 			{"foo[*]", int32(42)},
 			{"@", int32(42)},
+			{"f,oo", int32(42)},
 			//TODO ..
 		},
 		"document-null":  bson.D{{"foo", nil}},

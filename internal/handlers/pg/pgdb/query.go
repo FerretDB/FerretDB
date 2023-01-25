@@ -249,7 +249,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	for k, v := range sqlFilters.Map() {
 		if len(k) != 0 && k[0] == '$' {
 			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			continue
+			//continue
 		}
 
 		path := types.NewPathFromString(k)

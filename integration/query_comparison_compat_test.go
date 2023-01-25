@@ -217,13 +217,18 @@ func TestQueryComparisonCompatPostgres(t *testing.T) {
 			filter:         bson.D{{"v.*", int32(42)}},
 			resultPushdown: true,
 		},
-		"Monke": {
+		"At": {
 			filter:         bson.D{{"v.@", int32(42)}},
 			resultPushdown: true,
 		},
-		"Dot": {
-			filter:         bson.D{{"v..foo[0]", int32(42)}},
+		"Comma": {
+			filter:         bson.D{{"v.f,oo", int32(42)}},
 			resultPushdown: true,
+		},
+		"DollarSign": {
+			filter:         bson.D{{"v.$", int32(42)}},
+			resultPushdown: true,
+			resultType:     emptyResult,
 		},
 	}
 
