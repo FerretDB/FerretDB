@@ -65,6 +65,8 @@ linters-settings:
         alias: dto
       - pkg: go.opentelemetry.io/otel/sdk/trace
         alias: tracesdk
+      - pkg: go.opentelemetry.io/otel/semconv/v1.12.0
+        alias: semconv
   # ineffassign
   lll:
     line-length: 175 # TODO reduce it to 130

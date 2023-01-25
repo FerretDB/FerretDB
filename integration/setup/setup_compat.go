@@ -112,10 +112,12 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	ctxT, span := otel.Tracer("").Start(ctx, "targetCollections")
 	targetCollections := setupCompatCollections(tb, ctxT, setupClient(tb, ctxT, targetURI), opts)
+
 	defer span.End()
 
 	ctxC, span := otel.Tracer("").Start(ctx, "compatCollections")
 	compatCollections := setupCompatCollections(tb, ctxC, setupClient(tb, ctxC, compatURI), opts)
+
 	defer span.End()
 
 	level.SetLevel(*logLevelF)
@@ -175,13 +177,13 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		}
 
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
-		ctx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
+		collCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(ctx, spanName)
 
 		collection := database.Collection(collectionName)
 
 		// drop remnants of the previous failed run
-		_ = collection.Drop(ctx)
+		_ = collection.Drop(collCtx)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
@@ -190,7 +192,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			err := database.CreateCollection(ctx, collectionName, &opts)
+			err := database.CreateCollection(collCtx, collectionName, &opts)
 			if err != nil {
 				var cmdErr *mongo.CommandError
 				if errors.As(err, &cmdErr) {
@@ -203,7 +205,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(ctx, docs)
+		res, err := collection.InsertMany(collCtx, docs)
 		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
@@ -214,7 +216,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				return
 			}
 
-			err := collection.Drop(ctx)
+			err := collection.Drop(collCtx)
 			require.NoError(tb, err)
 		})
 

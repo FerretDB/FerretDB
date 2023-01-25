@@ -173,7 +173,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		}
 
 		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
-		ctx, span := otel.Tracer("").Start(ctx, spanName)
+		provCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(ctx, spanName)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
@@ -183,13 +183,13 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 				copts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(ctx, collectionName, &copts))
+			require.NoError(tb, database.CreateCollection(provCtx, collectionName, &copts))
 		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(ctx, docs)
+		res, err := collection.InsertMany(provCtx, docs)
 		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 		inserted = true

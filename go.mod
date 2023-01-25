@@ -15,14 +15,13 @@ require (
 	github.com/prometheus/common v0.39.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tigrisdata/tigris-client-go v1.0.0-beta.18
+	go.opentelemetry.io/otel v1.11.2
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20230108222341-4b8118a2686a
 	golang.org/x/net v0.5.0
 	golang.org/x/sys v0.4.0
 )
-
-require go.opentelemetry.io/otel v1.11.2
 
 require (
 	cloud.google.com/go/compute v1.7.0 // indirect

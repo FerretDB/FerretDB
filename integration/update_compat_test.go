@@ -72,7 +72,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				Providers:                providers,
 				AddNonExistentCollection: true,
 			})
-			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+			parentCtx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 			update, replace := tc.update, tc.replace
 			if update != nil {
@@ -88,7 +88,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					ctx, span := otel.Tracer("").Start(ctx, targetCollection.Name())
+					ctx, span := otel.Tracer("").Start(parentCtx, targetCollection.Name())
 					defer span.End()
 
 					allDocs := FindAll(t, ctx, targetCollection)
