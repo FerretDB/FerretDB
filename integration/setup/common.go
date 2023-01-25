@@ -95,6 +95,12 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	}
 }
 
+// IsTigris returns if tests are running against the Tigris handler.
+func IsTigris(tb testing.TB) bool {
+	tb.Helper()
+	return *handlerF == "tigris"
+}
+
 // SkipForPostgresWithReason skips the current test for Postgres (pg) handler.
 //
 // Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
