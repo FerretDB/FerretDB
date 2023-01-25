@@ -37,7 +37,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 var (
@@ -54,6 +53,8 @@ var (
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 
+	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL for 'tigris' handler.")
+
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
@@ -62,6 +63,19 @@ var (
 
 	startupOnce sync.Once
 )
+
+// Flags store flags used for test setup.
+type Flags struct {
+	TargetPort       *int
+	TargetTLS        *bool
+	Handler          *string
+	TargetUnixSocket *bool
+	ProxyAddr        *string
+	CompatPort       *int
+	CompatTLS        *bool
+	PostgreSQLURL    *string
+	TigrisURL        *string
+}
 
 // SkipForTigris skips the current test for Tigris handler.
 //
@@ -98,117 +112,50 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// checkMongoDBURI returns true if given MongoDB URI is working.
-func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
-	tb.Helper()
-
-	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
-	trace.Log(ctx, "checkMongoDBURI", uri)
-
-	clientOpts := options.Client().ApplyURI(uri)
-
-	if *targetTLSF {
-		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
-	}
-
-	client, err := mongo.Connect(ctx, clientOpts)
-
-	if err == nil {
-		defer client.Disconnect(ctx)
-
-		_, err = client.ListDatabases(ctx, bson.D{})
-	}
-
-	if err != nil {
-		tb.Logf("checkMongoDBURI: %s: %s", uri, err)
-
-		return false
-	}
-
-	tb.Logf("checkMongoDBURI: %s: connected", uri)
-
-	return true
+// buildMongoDBURIOpts represents connectMongoDB's options.
+type buildMongoDBURIOpts struct {
+	host          string
+	authMechanism string
+	user          *url.Userinfo
+	tls           bool
 }
 
-// buildMongoDBURIOpts represents buildMongoDBURI's options.
-type buildMongoDBURIOpts struct {
-	hostPort       string
-	unixSocketPath string
-	tls            bool
+// connectMongoDB connects to mongoDB.
+//
+// TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
+func connectMongoDB(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) *mongo.Client {
+	tb.Helper()
+
+	uri := buildMongoDBURI(opts)
+
+	return setupClient(tb, ctx, uri, opts.tls)
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
-//
-// TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
-func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) string {
-	tb.Helper()
-
-	var host string
-
-	if opts.hostPort != "" {
-		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
-		host = opts.hostPort
-	} else {
-		require.NotEmpty(tb, opts.unixSocketPath, "neither hostPort nor unixSocketPath are set")
-		host = opts.unixSocketPath
-	}
-
+func buildMongoDBURI(opts *buildMongoDBURIOpts) string {
 	q := make(url.Values)
-
-	if opts.tls {
-		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
-	}
+	q.Set("authMechanism", opts.authMechanism)
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
-		Scheme: "mongodb",
-		Host:   host,
-		Path:   "/",
+		Scheme:   "mongodb",
+		Host:     opts.host,
+		Path:     "/",
+		User:     opts.user,
+		RawQuery: q.Encode(),
 	}
 
-	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
-	for _, c := range []struct {
-		user          *url.Userinfo
-		authMechanism string
-	}{{
-		user:          nil,
-		authMechanism: "",
-	}, {
-		user:          url.UserPassword("username", "password"),
-		authMechanism: "PLAIN",
-	}, {
-		user:          url.UserPassword("username", "password"),
-		authMechanism: "", // defaults to SCRAM when username is set
-	}} {
-		u.User = c.user
-
-		q.Del("authMechanism")
-
-		if c.authMechanism != "" {
-			q.Set("authMechanism", c.authMechanism)
-		}
-
-		u.RawQuery = q.Encode()
-		res := u.String()
-
-		if checkMongoDBURI(tb, ctx, res) {
-			return res
-		}
-	}
-
-	tb.Fatalf("buildMongoDBURI: failed for %+v", opts)
-
-	panic("not reached")
+	return u.String()
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Flags) *mongo.Client {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
 
-	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
+	require.Zero(tb, f.GetTargetPort(), "-target-port must be 0 for in-process FerretDB")
 
 	// that's already checked by handlers constructors,
 	// but here we could produce a better error message
@@ -230,13 +177,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: testutil.TigrisURL(tb), // TODO use flag https://github.com/FerretDB/FerretDB/issues/1568
+		TigrisURL: *tigrisURLF,
 	}
-	h, err := registry.NewHandler(*handlerF, handlerOpts)
+	h, err := registry.NewHandler(f.GetHandler(), handlerOpts)
 	require.NoError(tb, err)
 
 	listenerOpts := &clientconn.NewListenerOpts{
-		ProxyAddr:      *proxyAddrF,
+		ProxyAddr:      f.GetProxyAddr(),
 		Mode:           clientconn.NormalMode,
 		Metrics:        metrics,
 		Handler:        h,
@@ -244,20 +191,23 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		TestRecordsDir: *recordsDirF,
 	}
 
-	if listenerOpts.ProxyAddr != "" {
+	if f.GetProxyAddr() != "" {
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
-	if *targetUnixSocketF {
+	if f.IsTargetUnixSocket() {
 		listenerOpts.Unix = unixSocketPath(tb)
 	}
 
-	if *targetTLSF {
-		listenerOpts.TLS = "127.0.0.1:0"
+	addr := "127.0.0.1:0"
+
+	if f.IsTargetTLS() {
+		listenerOpts.TLS = addr
 		fp := GetTLSFilesPaths(tb, ServerSide)
 		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
 	} else {
-		listenerOpts.TCP = "127.0.0.1:0"
+		// TODO: should this only be assigned for non unix
+		listenerOpts.TCP = addr
 	}
 
 	l := clientconn.NewListener(listenerOpts)
@@ -280,26 +230,30 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		h.Close()
 	})
 
-	var opts buildMongoDBURIOpts
-
-	switch {
-	case listenerOpts.TLS != "":
-		opts.hostPort = l.TLSAddr().String()
-		opts.tls = true
-	case listenerOpts.Unix != "":
-		opts.unixSocketPath = l.UnixAddr().String()
-	default:
-		opts.hostPort = l.TCPAddr().String()
+	opts := &buildMongoDBURIOpts{
+		user:          url.UserPassword("username", "password"),
+		authMechanism: "PLAIN",
 	}
 
-	uri := buildMongoDBURI(tb, ctx, &opts)
+	switch {
+	case f.IsTargetTLS():
+		opts.host = l.TLSAddr().String()
+	case f.IsTargetUnixSocket():
+		opts.host = l.UnixAddr().String()
+	default:
+		opts.host = l.TCPAddr().String()
+	}
+
+	uri := buildMongoDBURI(opts)
+	client := setupClient(tb, ctx, uri, f.IsTargetTLS())
+
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
-	return uri
+	return client
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.
-func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mongo.Client {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupClient").End()
@@ -309,12 +263,12 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 
 	clientOpts := options.Client().ApplyURI(uri)
 
-	if *targetTLSF {
+	if isTLS {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
 	}
 
 	client, err := mongo.Connect(ctx, clientOpts)
-	require.NoError(tb, err, "URI: %s", uri)
+	require.NoError(tb, err)
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
@@ -328,7 +282,8 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 }
 
 // startup initializes things that should be initialized only once.
-func startup() {
+// It returns flag values.
+func startup() Flags {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
@@ -346,4 +301,138 @@ func startup() {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
 	})
+
+	return Flags{
+		TargetPort:       targetPortF,
+		TargetTLS:        targetTLSF,
+		Handler:          handlerF,
+		TargetUnixSocket: targetUnixSocketF,
+		ProxyAddr:        proxyAddrF,
+		CompatPort:       compatPortF,
+		CompatTLS:        compatTLSF,
+		PostgreSQLURL:    postgreSQLURLF,
+		TigrisURL:        tigrisURLF,
+	}
+}
+
+// ApplyOpts applies non nil value of opts.
+func (c *Flags) ApplyOpts(opts Flags) *Flags {
+	if opts.TargetPort != nil {
+		c.TargetPort = opts.TargetPort
+	}
+
+	if opts.TargetTLS != nil {
+		c.TargetTLS = opts.TargetTLS
+	}
+
+	if opts.Handler != nil {
+		c.Handler = opts.Handler
+	}
+
+	if opts.TargetUnixSocket != nil {
+		c.TargetUnixSocket = opts.TargetUnixSocket
+	}
+
+	if opts.ProxyAddr != nil {
+		c.ProxyAddr = opts.ProxyAddr
+	}
+
+	if opts.CompatPort != nil {
+		c.CompatPort = opts.CompatPort
+	}
+
+	if opts.CompatTLS != nil {
+		c.CompatTLS = opts.CompatTLS
+	}
+
+	if opts.PostgreSQLURL != nil {
+		c.PostgreSQLURL = opts.PostgreSQLURL
+	}
+
+	if opts.TigrisURL != nil {
+		c.TigrisURL = opts.TigrisURL
+	}
+
+	return c
+}
+
+// IsTargetTLS returns true if TargetTLS is set.
+func (c *Flags) IsTargetTLS() bool {
+	if c.TargetTLS == nil {
+		return false
+	}
+
+	return *c.TargetTLS
+}
+
+// GetTargetPort returns target port number.
+func (c *Flags) GetTargetPort() int {
+	if c.TargetPort == nil {
+		return 0
+	}
+
+	return *c.TargetPort
+}
+
+// GetHandler returns the handler name.
+func (c *Flags) GetHandler() string {
+	if c.Handler == nil {
+		return ""
+	}
+
+	return *c.Handler
+}
+
+// IsTargetUnixSocket returns true if TargetUnixSocket is set.
+func (c *Flags) IsTargetUnixSocket() bool {
+	if c.TargetUnixSocket == nil {
+		return false
+	}
+
+	return *c.TargetUnixSocket
+}
+
+// GetProxyAddr returns proxy address.
+func (c *Flags) GetProxyAddr() string {
+	if c.ProxyAddr == nil {
+		return ""
+	}
+
+	return *c.ProxyAddr
+}
+
+// IsCompatTLS returns true if CompatTLS is set.
+func (c *Flags) IsCompatTLS() bool {
+	if c.CompatTLS == nil {
+		return false
+	}
+
+	return *c.CompatTLS
+}
+
+// GetCompatPort returns compat port number.
+func (c *Flags) GetCompatPort() int {
+	if c.CompatPort == nil {
+		return 0
+	}
+
+	return *c.CompatPort
+}
+
+// GetPostgreSQLURL returns postgreSQL url.
+func (c *Flags) GetPostgreSQLURL() string {
+	if c.PostgreSQLURL == nil {
+		return ""
+	}
+
+	return *c.PostgreSQLURL
+}
+
+// GetTigrisURL returns tigris url.
+func (c *Flags) GetTigrisURL() string {
+	if c.TigrisURL == nil {
+		return ""
+	}
+
+	return *c.TigrisURL
 }
