@@ -18,11 +18,13 @@ import (
 	"context"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-func (tdb *TigrisDB) InTransaction(ctx context.Context, f func(driver.Tx) error, db string) (err error) {
+// InTransaction executes a function in a transaction.
+func (tdb *TigrisDB) InTransaction(ctx context.Context, db string, f func(driver.Tx) error) (err error) {
 	var tx driver.Tx
 
 	if tx, err = tdb.Driver.UseDatabase(db).BeginTx(ctx, nil); err != nil {
@@ -35,8 +37,8 @@ func (tdb *TigrisDB) InTransaction(ctx context.Context, f func(driver.Tx) error,
 			return
 		}
 
-		if rerr := tx.Rollback(ctx); rerr != nil {
-			//	tdb.l.Error("failed to perform rollback", "error", rerr)
+		if err = tx.Rollback(ctx); err != nil {
+			tdb.l.Error("failed to perform rollback", zap.Error(err))
 		}
 	}()
 

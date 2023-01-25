@@ -18,12 +18,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -37,20 +36,22 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 		return nil
 	}
 
-	doc := must.NotFail(docs.Get(0)).(*types.Document)
+	if ok, _ := tdb.collectionExists(ctx, db, collection); !ok {
+		doc := must.NotFail(docs.Get(0)).(*types.Document)
 
-	schema, err := tjson.DocumentSchema(doc)
-	if err != nil {
-		return lazyerrors.Error(err)
+		schema, err := tjson.DocumentSchema(doc)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		schema.Title = collection
+		b := must.NotFail(schema.Marshal())
+
+		if _, err := tdb.CreateCollectionIfNotExist(ctx, db, collection, b); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
-	schema.Title = collection
-	b := must.NotFail(schema.Marshal())
 
-	if _, err := tdb.CreateCollectionIfNotExist(ctx, db, collection, b); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	err = tdb.InTransaction(ctx, func(tx driver.Tx) error {
+	err := tdb.InTransaction(ctx, db, func(tx driver.Tx) error {
 		iter := docs.Iterator()
 
 		insertDocs := make([]driver.Document, docs.Len())
@@ -67,7 +68,7 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 
 			doc := d.(*types.Document)
 
-			if err := doc.ValidateData(); err != nil {
+			if err = doc.ValidateData(); err != nil {
 				return err
 			}
 
@@ -79,14 +80,12 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 			insertDocs[i] = b
 		}
 
-		_, err = tx.Insert(ctx, collection, insertDocs)
-		if err != nil {
+		if _, err := tx.Insert(ctx, collection, insertDocs); err != nil {
 			return lazyerrors.Error(err)
 		}
 
 		return nil
-	}, db)
-
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
