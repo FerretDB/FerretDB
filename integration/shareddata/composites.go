@@ -33,8 +33,15 @@ var Composites = &Values[string]{
 		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
 		"document-array-document":    bson.D{{"array", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", int32(43)}}}}},
 		"document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
-		"document-null":              bson.D{{"foo", nil}},
-		"document-empty":             bson.D{},
+		"document-postgres": bson.D{
+			{"foo[0]", int32(42)},
+			{"*", int32(42)},
+			{"foo[*]", int32(42)},
+			{"@", int32(42)},
+			//TODO ..
+		},
+		"document-null":  bson.D{{"foo", nil}},
+		"document-empty": bson.D{},
 
 		"array":               bson.A{int32(42)},
 		"array-two":           bson.A{42.13, "foo"},
