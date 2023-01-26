@@ -11,6 +11,8 @@ ENV GORACE=halt_on_error=1,history_size=2
 
 # split into several commands for better logging on GitHub Actions
 RUN go mod download
+
+# TODO add ferretdb_hana
 RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG}                 ./cmd/ferretdb
 RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG} -coverpkg=./... ./cmd/ferretdb
 
