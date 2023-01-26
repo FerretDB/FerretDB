@@ -60,7 +60,7 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	b.Run("NoPushdown", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"v", 42.0}})
+			cur, err := coll.Find(ctx, bson.D{{"v", bson.D{{"$eq", 42.0}}}})
 			require.NoError(b, err)
 
 			var res []bson.D
