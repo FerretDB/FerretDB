@@ -252,10 +252,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 		}
 
-		operator := "->"
-		var key any = k
-		var prefix string
+		// Variables required to handle and differentiate the dot notation
+		operator := "->"  // operator is the operator that is used to access the field. (->/#>)
+		var key any = k   // key can be either a string or path
+		var prefix string // prefix is the first key in path, if the key is a string, the prefix is empty
 
+		// If the key is in dot notation use path operator (#>)
 		if len(k) != 0 {
 			if path := types.NewPathFromString(k); path.Len() > 1 {
 				operator = "#>"
@@ -264,13 +266,16 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			}
 		}
 
+		// Select if value under the key k is equal to value v.
+		sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`
+
 		// don't iterate through array for _id keys to simplify the query
 		if k == "_id" || prefix == "_id" {
 			switch v := v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
 			case float64, string, types.ObjectID, int32, int64:
-				filters = append(filters, fmt.Sprintf(`((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`, operator, p.Next(), p.Next()))
+				filters = append(filters, fmt.Sprintf(sql, operator, p.Next(), p.Next()))
 				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
 			default:
 				panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -285,13 +290,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			var sql string
 
 			sql = fmt.Sprintf(
 				// Select if value under the key k is equal to value v.
-				`((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`+
-					// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
-					` OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`,
+				// If it's not, but the value under the key k is an array - select if it contains the value equal to v.
+				sql+` OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`,
 				operator, // -> or #>
 				p.Next(), // placeholder $1 used for field key k for preventing SQL injections
 				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
