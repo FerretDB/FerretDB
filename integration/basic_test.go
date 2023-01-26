@@ -250,6 +250,28 @@ func TestEmptyKey(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestDotNotationID(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Tigris _id cannot be a document")
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	doc := bson.D{{"_id", bson.D{{"foo", "bar"}}}}
+
+	_, err := collection.InsertOne(ctx, doc)
+	require.NoError(t, err)
+
+	res, err := collection.Find(ctx, bson.D{{"_id.foo", "bar"}})
+	require.NoError(t, err)
+
+	var actual []bson.D
+	require.NoError(t, res.All(ctx, &actual))
+
+	expected := []bson.D{doc}
+
+	assert.Equal(t, expected, actual)
+}
+
 func TestFindAndModifyCommentMethod(t *testing.T) {
 	setup.SkipForTigris(t)
 
