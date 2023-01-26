@@ -259,7 +259,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mo
 	}
 
 	client, err := mongo.Connect(ctx, clientOpts)
-	require.NoError(tb, err)
+	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
