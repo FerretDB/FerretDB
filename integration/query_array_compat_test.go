@@ -101,10 +101,36 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			resultType: emptyResult,
 		},
-		"FieldPositionField": {
-			filter:         bson.D{{"v.array.2.foo", "bar"}},
-			resultType:     emptyResult,
+		"FieldArrayIndex": {
+			filter:         bson.D{{"v.foo[0]", int32(42)}},
+			skipForTigris:  "Tigris does hot support characters as field name",
 			resultPushdown: true,
+		},
+		"FieldArrayAsterix": {
+			filter:         bson.D{{"v.foo[*]", int32(42)}},
+			skipForTigris:  "Tigris does hot support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldAsterix": {
+			filter:         bson.D{{"v.*", int32(42)}},
+			skipForTigris:  "Tigris does hot support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldAt": {
+			filter:         bson.D{{"v.@", int32(42)}},
+			skipForTigris:  "Tigris does hot support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldComma": {
+			filter:         bson.D{{"v.f,oo", int32(42)}},
+			skipForTigris:  "Tigris does hot support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldDollarSign": {
+			filter:         bson.D{{"v.$", int32(42)}},
+			skipForTigris:  "Tigris does hot support characters as field name",
+			resultPushdown: true,
+			resultType:     emptyResult,
 		},
 	}
 

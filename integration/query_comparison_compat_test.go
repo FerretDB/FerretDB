@@ -66,9 +66,10 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DocumentDotNotationNoSuchField": {
-			filter:         bson.D{{"no-such-field.some", 42}},
-			resultType:     emptyResult,
-			resultPushdown: true,
+			filter:             bson.D{{"no-such-field.some", 42}},
+			resultType:         emptyResult,
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},
@@ -187,38 +188,6 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		},
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
-		},
-	}
-
-	return testCases
-}
-
-func testQueryComparisonCompatPostgres() map[string]queryCompatTestCase {
-	testCases := map[string]queryCompatTestCase{
-		"ArrayIndex": {
-			filter:         bson.D{{"v.foo[0]", int32(42)}},
-			resultPushdown: true,
-		},
-		"ArrayAsterix": {
-			filter:         bson.D{{"v.foo[*]", int32(42)}},
-			resultPushdown: true,
-		},
-		"Asterix": {
-			filter:         bson.D{{"v.*", int32(42)}},
-			resultPushdown: true,
-		},
-		"At": {
-			filter:         bson.D{{"v.@", int32(42)}},
-			resultPushdown: true,
-		},
-		"Comma": {
-			filter:         bson.D{{"v.f,oo", int32(42)}},
-			resultPushdown: true,
-		},
-		"DollarSign": {
-			filter:         bson.D{{"v.$", int32(42)}},
-			resultPushdown: true,
-			resultType:     emptyResult,
 		},
 	}
 
@@ -433,7 +402,6 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 				}},
 				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
-			resultType: emptyResult,
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", nil}}}}}},

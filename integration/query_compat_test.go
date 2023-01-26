@@ -159,7 +159,6 @@ func TestQueryCompatRunner(t *testing.T) {
 		"ArrayEquality": testQueryArrayCompatEquality(),
 		"ArrayAll":      testQueryArrayCompatAll(),
 		"ImplicitEq":    testQueryComparisonCompatImplicit(),
-		"Postgres":      testQueryComparisonCompatPostgres(),
 		"Eq":            testQueryComparisonCompatEq(),
 		"Gt":            testQueryComparisonCompatGt(),
 		"Gte":           testQueryComparisonCompatGte(),
