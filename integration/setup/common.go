@@ -63,19 +63,6 @@ var (
 	startupOnce sync.Once
 )
 
-// Flags store flags used for test setup.
-type Flags struct {
-	TargetPort       *int
-	TargetTLS        *bool
-	Handler          *string
-	TargetUnixSocket *bool
-	ProxyAddr        *string
-	CompatPort       *int
-	CompatTLS        *bool
-	PostgreSQLURL    *string
-	TigrisURL        *string
-}
-
 // SkipForTigris skips the current test for Tigris handler.
 //
 // This function should not be used lightly in new tests and should eventually be removed.
@@ -117,7 +104,7 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// buildMongoDBURIOpts represents connectMongoDB's options.
+// buildMongoDBURIOpts represents buildMongoDBURI's options.
 type buildMongoDBURIOpts struct {
 	host           string
 	unixSocketPath string
@@ -156,8 +143,8 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
-// It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Flags) (*mongo.Client, string) {
+// It returns client and MongoDB URI of the new listener.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f flags) (*mongo.Client, string) {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
@@ -235,21 +222,20 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f Fla
 		h.Close()
 	})
 
-	opts := &buildMongoDBURIOpts{
-		user:          url.UserPassword("username", "password"),
-		authMechanism: "PLAIN",
-	}
+	var opts buildMongoDBURIOpts
 
 	switch {
 	case f.IsTargetTLS():
 		opts.host = l.TLSAddr().String()
+		opts.user = url.UserPassword("username", "password")
+		opts.authMechanism = "PLAIN"
 	case f.IsTargetUnixSocket():
 		opts.unixSocketPath = l.UnixAddr().String()
 	default:
 		opts.host = l.TCPAddr().String()
 	}
 
-	uri := buildMongoDBURI(tb, opts)
+	uri := buildMongoDBURI(tb, &opts)
 	client := setupClient(tb, ctx, uri, f.IsTargetTLS())
 
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
@@ -296,8 +282,8 @@ func getUser(isTLS bool) *url.Userinfo {
 }
 
 // startup initializes things that should be initialized only once.
-// It returns flag values.
-func startup() Flags {
+// It returns flag values from cli.
+func startup() flags {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
@@ -316,137 +302,15 @@ func startup() Flags {
 		}
 	})
 
-	return Flags{
-		TargetPort:       targetPortF,
-		TargetTLS:        targetTLSF,
-		Handler:          handlerF,
-		TargetUnixSocket: targetUnixSocketF,
-		ProxyAddr:        proxyAddrF,
-		CompatPort:       compatPortF,
-		CompatTLS:        compatTLSF,
-		PostgreSQLURL:    postgreSQLURLF,
-		TigrisURL:        tigrisURLF,
+	return flags{
+		targetPort:       targetPortF,
+		targetTLS:        targetTLSF,
+		handler:          handlerF,
+		targetUnixSocket: targetUnixSocketF,
+		proxyAddr:        proxyAddrF,
+		compatPort:       compatPortF,
+		compatTLS:        compatTLSF,
+		postgreSQLURL:    postgreSQLURLF,
+		tigrisURL:        tigrisURLF,
 	}
-}
-
-// ApplyOpts applies non nil value of opts.
-func (c *Flags) ApplyOpts(opts Flags) *Flags {
-	if opts.TargetPort != nil {
-		c.TargetPort = opts.TargetPort
-	}
-
-	if opts.TargetTLS != nil {
-		c.TargetTLS = opts.TargetTLS
-	}
-
-	if opts.Handler != nil {
-		c.Handler = opts.Handler
-	}
-
-	if opts.TargetUnixSocket != nil {
-		c.TargetUnixSocket = opts.TargetUnixSocket
-	}
-
-	if opts.ProxyAddr != nil {
-		c.ProxyAddr = opts.ProxyAddr
-	}
-
-	if opts.CompatPort != nil {
-		c.CompatPort = opts.CompatPort
-	}
-
-	if opts.CompatTLS != nil {
-		c.CompatTLS = opts.CompatTLS
-	}
-
-	if opts.PostgreSQLURL != nil {
-		c.PostgreSQLURL = opts.PostgreSQLURL
-	}
-
-	if opts.TigrisURL != nil {
-		c.TigrisURL = opts.TigrisURL
-	}
-
-	return c
-}
-
-// IsTargetTLS returns true if TargetTLS is set.
-func (c *Flags) IsTargetTLS() bool {
-	if c.TargetTLS == nil {
-		return false
-	}
-
-	return *c.TargetTLS
-}
-
-// GetTargetPort returns target port number.
-func (c *Flags) GetTargetPort() int {
-	if c.TargetPort == nil {
-		return 0
-	}
-
-	return *c.TargetPort
-}
-
-// GetHandler returns the handler name.
-func (c *Flags) GetHandler() string {
-	if c.Handler == nil {
-		return ""
-	}
-
-	return *c.Handler
-}
-
-// IsTargetUnixSocket returns true if TargetUnixSocket is set.
-func (c *Flags) IsTargetUnixSocket() bool {
-	if c.TargetUnixSocket == nil {
-		return false
-	}
-
-	return *c.TargetUnixSocket
-}
-
-// GetProxyAddr returns proxy address.
-func (c *Flags) GetProxyAddr() string {
-	if c.ProxyAddr == nil {
-		return ""
-	}
-
-	return *c.ProxyAddr
-}
-
-// IsCompatTLS returns true if CompatTLS is set.
-func (c *Flags) IsCompatTLS() bool {
-	if c.CompatTLS == nil {
-		return false
-	}
-
-	return *c.CompatTLS
-}
-
-// GetCompatPort returns compat port number.
-func (c *Flags) GetCompatPort() int {
-	if c.CompatPort == nil {
-		return 0
-	}
-
-	return *c.CompatPort
-}
-
-// GetPostgreSQLURL returns postgreSQL url.
-func (c *Flags) GetPostgreSQLURL() string {
-	if c.PostgreSQLURL == nil {
-		return ""
-	}
-
-	return *c.PostgreSQLURL
-}
-
-// GetTigrisURL returns tigris url.
-func (c *Flags) GetTigrisURL() string {
-	if c.TigrisURL == nil {
-		return ""
-	}
-
-	return *c.TigrisURL
 }

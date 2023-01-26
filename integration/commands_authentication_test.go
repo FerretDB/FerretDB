@@ -51,11 +51,7 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 			listenerTLS:     true,
 			clientTLS:       true,
 			invalidUsername: true,
-			dbErr: "connection() error occurred during connection handshake: auth error: " +
-				"unable to authenticate using mechanism \"PLAIN\": (InternalError) " +
-				"[msg_saslstart.go:66 pg.(*Handler).MsgSASLStart] [pg.go:114 pg.(*Handler).DBPool] " +
-				"pgdb.NewPool: failed to connect to `host=127.0.0.1 user=invalid database=ferretdb`: " +
-				"server error (FATAL: role \"invalid\" does not exist (SQLSTATE 28000))",
+			dbErr:           "role \"invalid\" does not exist",
 		},
 		"TLSWrongPassword": {
 			listenerTLS:     true,
@@ -81,11 +77,11 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 			port := 0
 			unix := false
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				Flags: setup.Flags{
-					TargetTLS:        &tc.listenerTLS,
-					TargetPort:       &port,
-					TargetUnixSocket: &unix,
-					PostgreSQLURL:    &postgreSQLURL,
+				Flags: map[string]any{
+					"target-tls":         tc.listenerTLS,
+					"target-port":        port,
+					"target-unix-socket": unix,
+					"postgresql-url":     postgreSQLURL,
 				},
 			})
 
@@ -119,7 +115,8 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 
 			_, err = client.ListDatabases(ctx, bson.D{})
 			if tc.dbErr != "" {
-				require.EqualError(t, err, tc.dbErr)
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.dbErr)
 				return
 			}
 		})

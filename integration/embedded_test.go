@@ -47,10 +47,10 @@ func TestEmbedded(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			port := 0
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				Flags: setup.Flags{
-					TargetTLS:     &tc.isTLS,
-					TargetPort:    &port,
-					PostgreSQLURL: &tc.postgreSQLURL,
+				Flags: map[string]any{
+					"target-tls":     tc.isTLS,
+					"target-port":    port,
+					"postgresql-url": tc.postgreSQLURL,
 				},
 			})
 
