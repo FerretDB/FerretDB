@@ -16,16 +16,12 @@ package integration
 
 import (
 	"math"
-	"runtime"
-	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
-	t.Parallel()
-
+func testQueryEvaluationCompatRegexErrors() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"MissingClosingParen": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
@@ -83,15 +79,6 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"$regex", `(aa){3,10001}`}}}},
 			resultType: emptyResult,
 		},
-	}
-
-	testQueryCompat(t, testCases)
-}
-
-func TestQueryEvaluationCompatRegex(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
 		"RegexNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
 			resultType: emptyResult,
@@ -106,16 +93,10 @@ func TestQueryEvaluationCompatRegex(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryEvaluationCompatMod(t *testing.T) {
-	if runtime.GOARCH == "arm64" {
-		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
-	}
-
-	t.Parallel()
-
+func testQueryEvaluationCompatMod() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{4000, 80}}}}},
@@ -311,5 +292,5 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }

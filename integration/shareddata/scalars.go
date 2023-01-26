@@ -264,9 +264,8 @@ var DateTimes = &Values[string]{
 
 // Nulls contains null value for tests.
 var Nulls = &Values[string]{
-	name:       "Nulls",
-	handlers:   []string{"pg"}, // Not compatible with Tigris as it needs a data type to be set.
-	validators: map[string]map[string]any{},
+	name:     "Nulls",
+	handlers: []string{"pg"}, // Not compatible with Tigris as it needs a data type to be set.
 	data: map[string]any{
 		"null": nil,
 	},
