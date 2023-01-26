@@ -388,6 +388,7 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 				}},
 				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
+			resultType: emptyResult,
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", nil}}}}}},
