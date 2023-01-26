@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commonerrors
 
 import (
 	"errors"
@@ -53,7 +53,7 @@ func NewCommandErrorMsg(code ErrorCode, msg string) error {
 	return NewCommandError(code, errors.New(msg))
 }
 
-// NewCommandErrorMsgWithArgument creates a new wire protocol error with argument.
+// NewCommandErrorMsgWithArgument creates a new wire protocol error with an argument that caused the error.
 func NewCommandErrorMsgWithArgument(code ErrorCode, msg string, argument string) error {
 	return &CommandError{
 		err:  errors.New(msg),
