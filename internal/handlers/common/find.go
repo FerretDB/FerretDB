@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -103,7 +104,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	}
 
 	if res.BatchSize < 0 {
-		return nil, NewCommandError(ErrBatchSizeNegative,
+		return nil, NewCommandError(commonerrors.ErrBatchSizeNegative,
 			fmt.Errorf("BSON field 'batchSize' value must be >= 0, actual value '%d'", res.BatchSize),
 		)
 	}
