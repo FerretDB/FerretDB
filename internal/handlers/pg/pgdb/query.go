@@ -248,12 +248,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 	for k, v := range sqlFilters.Map() {
 		if len(k) != 0 && k[0] == '$' {
-			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+			// skip $comment
 			continue
 		}
 
-		keyOperator := "->" // operator is the operator that is used to access the field. (->/#>)
+		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
 		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
 		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
@@ -272,9 +271,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			switch v := v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
-
+				// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
+				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 			case float64, string, types.ObjectID, int32, int64:
-
 				// Select if value under the key is equal to provided value.
 				sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`
 
@@ -295,10 +294,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		switch v := v.(type) {
 		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
+			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
+			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-
 			// Select if value under the key is equal to provided value.
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
