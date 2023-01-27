@@ -248,12 +248,21 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 	for k, v := range sqlFilters.Map() {
 		if len(k) != 0 && k[0] == '$' {
-			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			continue
+			switch k {
+			case "$eq":
+				condition, ok := v.(*types.Document)
+				if !ok {
+					panic(fmt.Sprintf("Unexpected type: %T", condition))
+				}
+				panic(condition)
+			default:
+				panic(k)
+				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+				continue
+			}
 		}
 
-		operator := "->" // operator is the operator that is used to access the field. (->/#>)
+		keyOperator := "->" // operator is the operator that is used to access the field. (->/#>)
 
 		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
 		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
@@ -261,7 +270,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		// If the key is in dot notation use path operator (#>)
 		if len(k) != 0 {
 			if path := types.NewPathFromString(k); path.Len() > 1 {
-				operator = "#>"
+				keyOperator = "#>"
 				key = path.Slice()     // '{v,foo}'
 				prefix = path.Prefix() // 'v'
 			}
@@ -278,10 +287,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 			case float64, string, types.ObjectID, int32, int64:
 				filters = append(filters, fmt.Sprintf(
-					sql,      // simple query that checks for equal value under the key
-					operator, // -> or #>
-					p.Next(), // placeholder $1 used for field key or it's path for preventing SQL injections
-					p.Next(), // placeholder $2 used for field value v for preventing SQL injections
+					sql,         // simple query that checks for equal value under the key
+					keyOperator, // -> or #>
+					p.Next(),    // placeholder $1 used for field key or it's path for preventing SQL injections
+					p.Next(),    // placeholder $2 used for field value v for preventing SQL injections
 				))
 
 				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
@@ -303,9 +312,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				// If the value under the key is not equal to v,
 				// but the value under the key k is an array - select if it contains the value equal to v.
 				sql+` OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`,
-				operator, // -> or #>
-				p.Next(), // placeholder $1 used for field key or it's path for preventing SQL injections
-				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
+				keyOperator, // -> or #>
+				p.Next(),    // placeholder $1 used for field key or it's path for preventing SQL injections
+				p.Next(),    // placeholder $2 used for field value v for preventing SQL injections
 			))
 			args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
