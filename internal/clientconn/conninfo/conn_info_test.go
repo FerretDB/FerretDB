@@ -17,6 +17,7 @@ package conninfo
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestConnInfo(t *testing.T) {
@@ -80,6 +82,7 @@ func TestConnInfo(t *testing.T) {
 
 type testIterator struct {
 	array *types.Array
+	i     atomic.Uint64
 }
 
 func newTestIterator(array *types.Array) *testIterator {
@@ -89,8 +92,23 @@ func newTestIterator(array *types.Array) *testIterator {
 }
 
 func (t *testIterator) Next() (uint32, *types.Document, error) {
-	//TODO implement me
-	panic("implement me")
+	i := t.i.Add(1)
+
+	if i > uint64(t.array.Len()) {
+		return 0, nil, iterator.ErrIteratorDone
+	}
+
+	elem, err := t.array.Get(int(i) - 1)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	doc, ok := elem.(*types.Document)
+	if !ok {
+		panic("not a document")
+	}
+
+	return uint32(i), doc, nil
 }
 
 func (t *testIterator) Close() {
@@ -101,21 +119,21 @@ func (t *testIterator) Close() {
 func TestConnInfoCursor(t *testing.T) {
 	t.Parallel()
 
-	connInfo := ConnInfo{}
+	connInfo := NewConnInfo()
 
 	cursor := connInfo.Cursor(1)
 	require.Nil(t, cursor)
 
 	array := types.MakeArray(10)
 	for i := 0; i < 10; i++ {
-		array.Append(i)
+		array.Append(must.NotFail(types.NewDocument("v", i)))
 	}
 
 	iter := newTestIterator(array)
 
-	connInfo.SetCursor(iter)
+	id := connInfo.SetCursor(nil, iter)
 
-	cursor = connInfo.Cursor(1)
+	cursor = connInfo.Cursor(id)
 	require.NotNil(t, cursor)
 
 	var items []any
