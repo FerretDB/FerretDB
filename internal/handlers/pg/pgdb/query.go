@@ -253,7 +253,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 		}
 
-		operator := "->" // operator is the operator that is used to access the field. (->/#>)
+		keyOperator := "->" // operator is the operator that is used to access the field. (->/#>)
 
 		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
 		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
@@ -261,14 +261,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		// If the key is in dot notation use path operator (#>)
 		if len(k) != 0 {
 			if path := types.NewPathFromString(k); path.Len() > 1 {
-				operator = "#>"
+				keyOperator = "#>"
 				key = path.Slice()     // '{v,foo}'
 				prefix = path.Prefix() // 'v'
 			}
 		}
-
-		// Select if value under the key is equal to provided value
-		sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s)` // %1 - operator; %2 - key; %3 - value
 
 		// Handle _id with a simpler query, as it can't be an array
 		if k == "_id" || prefix == "_id" {
@@ -277,13 +274,15 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				// type not supported for pushdown
 
 			case float64, string, types.ObjectID, int32, int64:
-				filters = append(filters, fmt.Sprintf(
-					sql,      // simple query that checks for equal value under the key
-					operator, // -> or #>
-					p.Next(), // placeholder $1 used for field key or it's path for preventing SQL injections
-					p.Next(), // placeholder $2 used for field value v for preventing SQL injections
-				))
 
+				// Select if value under the key is equal to provided value.
+				sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`
+
+				// operator is -> for non-array, and #> for array
+				// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
+				// placeholder $1 is used for field key or it's path,
+				// placeholder $2 is used for field value v.
+				filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
 				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 			default:
@@ -299,14 +298,17 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			filters = append(filters, fmt.Sprintf(
-				// If the value under the key is not equal to v,
-				// but the value under the key k is an array - select if it contains the value equal to v.
-				sql+` OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`,
-				operator, // -> or #>
-				p.Next(), // placeholder $1 used for field key or it's path for preventing SQL injections
-				p.Next(), // placeholder $2 used for field value v for preventing SQL injections
-			))
+
+			// Select if value under the key is equal to provided value.
+			// If the value under the key is not equal to v,
+			// but the value under the key k is an array - select if it contains the value equal to v.
+			sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+
+			// operator is -> for non-array, and #> for array
+			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
+			// placeholder $1 is used for field key or it's path,
+			// placeholder $2 is used for field value v.
+			filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
 			args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
