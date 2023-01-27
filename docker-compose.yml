@@ -49,6 +49,26 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
+  tigris1:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_tigris1
+    ports:
+      - 8082:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
+
+  tigris2:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_tigris2
+    ports:
+      - 8083:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
+
   cockroach:
     build:
       context: ./build/deps
