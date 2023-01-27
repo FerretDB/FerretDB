@@ -6,7 +6,7 @@ description: "Find out how FerretDB uses query pushdown to fetch data from the s
 image: /img/blog/ferretdb-query-pushdown.jpg
 ---
 
-Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as “backend”)
+Find out how FerretDB uses query pushdown to fetch data from PostgreSQL.
 
 ![How FerretDB fetches data - about query pushdown](/img/blog/ferretdb-query-pushdown.jpg)
 **Credit:** [Mohamed Hassan](https://pixabay.com/users/mohamed_hassan-5229782/)
