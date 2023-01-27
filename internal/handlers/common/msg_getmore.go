@@ -67,8 +67,11 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		)
 	}
 
-	if cursorID != 1 {
-		return nil, NewCommandErrorMsg(commonerrors.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
+	if cursorID <= 0 {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("Bad cursor ID: %d", cursorID),
+		)
 	}
 
 	batchSize, err := getBatchSize(document)
@@ -78,7 +81,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	connInfo := conninfo.Get(ctx)
 
-	cur := connInfo.Cursor(1)
+	cur := connInfo.Cursor(cursorID)
 	if cur == nil {
 		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
 	}
@@ -103,11 +106,8 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		resDocs.Append(doc)
 	}
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/1811
-	id := int64(1)
-
 	if done {
-		id = 0
+		cursorID = 0
 	}
 
 	var reply wire.OpMsg
@@ -116,7 +116,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"nextBatch", resDocs,
-				"id", id,
+				"id", cursorID,
 				"ns", db+"."+collection,
 			)),
 			"ok", float64(1),

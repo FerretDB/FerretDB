@@ -58,10 +58,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	// Only apply batchSize if sorting is not set.
 	if params.Sort == nil {
-		batchSize = int(params.Limit)
-		if params.Limit > int64(params.BatchSize) {
-			batchSize = int(params.BatchSize)
-		}
+		batchSize = int(params.BatchSize)
 	}
 
 	sp := pgdb.SQLParam{
@@ -81,13 +78,19 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	resDocs := make([]*types.Document, 0, 16)
 	var iter iterator.Interface[uint32, *types.Document]
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, iter, err = h.fetchAndFilterDocs(ctx, tx, &sp)
-		return err
-	})
 
+	tx, err := dbPool.Begin(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	resDocs, iter, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+	if err != nil {
+		return nil, err
+	}
+
+	if iter == nil {
+		tx.Commit(ctx)
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
@@ -102,7 +105,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter)
+	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx)
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{

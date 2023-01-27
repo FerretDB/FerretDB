@@ -22,6 +22,8 @@ import (
 	"math/rand"
 	"sync"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
@@ -41,7 +43,18 @@ type ConnInfo struct {
 	password string
 
 	curRW  sync.RWMutex
-	cursor map[int64]iterator.Interface[uint32, *types.Document]
+	cursor map[int64]Cursor
+}
+
+func NewConnInfo() *ConnInfo {
+	return &ConnInfo{
+		cursor: make(map[int64]Cursor),
+	}
+}
+
+type Cursor struct {
+	iter iterator.Interface[uint32, *types.Document]
+	tx   pgx.Tx
 }
 
 // Auth returns stored username and password.
@@ -66,20 +79,40 @@ func (connInfo *ConnInfo) Cursor(id int64) iterator.Interface[uint32, *types.Doc
 	connInfo.curRW.RLock()
 	defer connInfo.curRW.RUnlock()
 
-	return connInfo.cursor[id]
+	return connInfo.cursor[id].iter
 }
 
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
-func (connInfo *ConnInfo) SetCursor(iter iterator.Interface[uint32, *types.Document]) int64 {
+func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *types.Document]) int64 {
 	id := connInfo.generateCursorID()
 
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor[id] = iter
+	connInfo.cursor[id] = Cursor{
+		iter: iter,
+		tx:   tx,
+	}
 
 	return id
+}
+
+func (connInfo *ConnInfo) DeleteCursor(id int64) error {
+	connInfo.curRW.Lock()
+	defer connInfo.curRW.Unlock()
+
+	cur := connInfo.cursor[id]
+	err := cur.tx.Commit(context.Background())
+	if err != nil {
+		return err
+	}
+
+	cur.iter.Close()
+
+	delete(connInfo.cursor, id)
+
+	return nil
 }
 
 func (connInfo *ConnInfo) generateCursorID() int64 {
@@ -102,6 +135,15 @@ func (connInfo *ConnInfo) generateCursorID() int64 {
 	}
 
 	return id
+}
+
+func (connInfo *ConnInfo) Close() {
+	connInfo.curRW.Lock()
+	defer connInfo.curRW.Unlock()
+
+	for k, _ := range connInfo.cursor {
+		connInfo.DeleteCursor(k)
+	}
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -159,6 +160,7 @@ func MakeFindReplyParameters(
 	ctx context.Context,
 	resDocs []*types.Document, batch int,
 	p iterator.Interface[uint32, *types.Document],
+	tx pgx.Tx,
 ) (
 	*types.Array, int64,
 ) {
@@ -171,7 +173,7 @@ func MakeFindReplyParameters(
 	id := int64(0)
 
 	if p != nil {
-		id = conninfo.Get(ctx).SetCursor(p)
+		id = conninfo.Get(ctx).SetCursor(tx, p)
 	}
 
 	return firstBatch, id
