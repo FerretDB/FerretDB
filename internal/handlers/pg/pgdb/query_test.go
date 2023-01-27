@@ -51,9 +51,7 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			err := InsertDocument(ctx, tx, databaseName, collection, expectedDoc)
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 
 			sp := &SQLParam{DB: databaseName, Collection: collection}
 			iter, err := GetDocuments(ctx, tx, sp)
@@ -64,12 +62,12 @@ func TestGetDocuments(t *testing.T) {
 
 			n, doc, err := iter.Next()
 			assert.NoError(t, err)
-			assert.Equal(t, uint32(0), n)
+			assert.Equal(t, 0, n)
 			assert.Equal(t, expectedDoc, doc)
 
 			n, doc, err = iter.Next()
 			assert.Equal(t, iterator.ErrIteratorDone, err)
-			assert.Equal(t, uint32(0), n)
+			assert.Equal(t, 0, n)
 			assert.Nil(t, doc)
 
 			return nil
@@ -90,9 +88,7 @@ func TestGetDocuments(t *testing.T) {
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			for _, doc := range expectedDocs {
 				err := InsertDocument(ctx, tx, databaseName, collection, doc)
-				if err != nil {
-					return err
-				}
+				require.NoError(t, err)
 			}
 
 			ctxTest, cancel := context.WithCancel(ctx)
@@ -105,13 +101,13 @@ func TestGetDocuments(t *testing.T) {
 
 			n, doc, err := iter.Next()
 			assert.NoError(t, err)
-			assert.Equal(t, uint32(0), n)
+			assert.Equal(t, 0, n)
 			assert.Equal(t, expectedDocs[0], doc)
 
 			cancel()
 			n, doc, err = iter.Next()
 			assert.Equal(t, context.Canceled, err)
-			assert.Equal(t, uint32(0), n)
+			assert.Equal(t, 0, n)
 			assert.Nil(t, doc)
 
 			return nil
@@ -127,9 +123,7 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			err := CreateCollection(ctx, tx, databaseName, collection)
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 
 			sp := &SQLParam{DB: databaseName, Collection: collection}
 			iter, err := GetDocuments(ctx, tx, sp)
@@ -140,7 +134,7 @@ func TestGetDocuments(t *testing.T) {
 
 			n, doc, err := iter.Next()
 			assert.Equal(t, iterator.ErrIteratorDone, err)
-			assert.Equal(t, uint32(0), n)
+			assert.Equal(t, 0, n)
 			assert.Nil(t, doc)
 
 			return nil
@@ -165,7 +159,7 @@ func TestGetDocuments(t *testing.T) {
 
 		n, doc, err := iter.Next()
 		assert.Equal(t, iterator.ErrIteratorDone, err)
-		assert.Equal(t, uint32(0), n)
+		assert.Equal(t, 0, n)
 		assert.Nil(t, doc)
 
 		require.NoError(t, tx.Commit(ctx))

@@ -90,10 +90,6 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		query += where
 	}
 
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -132,7 +128,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
+func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[int, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 
 	switch {
@@ -196,7 +192,7 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[int, *types.Document], error) {
 	var query string
 
 	if p.explain {

@@ -17,20 +17,28 @@ package iterator
 
 import "errors"
 
-// ErrIteratorDone is returned when the iterator is read to the end.
-var ErrIteratorDone = errors.New("iterator is read to the end")
+// ErrIteratorDone is returned when the iterator is read to the end or closed.
+var ErrIteratorDone = errors.New("iterator is read to the end or closed")
 
 // Interface is an iterator interface.
 type Interface[K, V any] interface {
 	// Next returns the next key/value pair, where the key is a slice index, map key, document number, etc,
 	// and the value is the slice or map value, next document, etc.
+	//
 	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error.
+	// Even if iterator was read to the end, and Next returned ErrIteratorDone,
+	// Close method still should be called.
+	//
+	// Next should not be called concurrently.
 	Next() (K, V, error)
 
 	// Close indicates that the iterator will no longer be used.
-	// If Close is called, future calls to Next might panic.
-	// If Close is not called, the iterator might leak resources or panic.
+	// After Close is called, future calls to Next must return ErrIteratorDone.
+	//
+	// Close must be called.
+	// If it wasn't, the iterator might leak resources or panic later.
+	//
 	// Close must be concurrency-safe and may be called multiple times.
-	// All calls after the first should have no effect.
+	// All calls after the first should have no observable effect.
 	Close()
 }

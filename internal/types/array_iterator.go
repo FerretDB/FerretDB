@@ -56,6 +56,7 @@ func (iter *arrayIterator) Next() (int, any, error) {
 
 // Close implements iterator.Interface.
 func (iter *arrayIterator) Close() {
+	iter.n.Store(uint32(iter.arr.Len()))
 	runtime.SetFinalizer(iter, nil)
 }
 

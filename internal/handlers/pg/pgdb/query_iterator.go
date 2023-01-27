@@ -37,9 +37,11 @@ type queryIterator struct {
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
-// It sets finalizer to close the rows.
-func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
-	// queryIterator is defined as pointer to address iter in the finalizer.
+//
+// Iterator's Close method closes rows.
+//
+// Nil rows are possible and return already done iterator.
+func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,
@@ -55,17 +57,21 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, 
 
 // Next implements iterator.Interface.
 //
-// If an error occurs, it returns 0, nil, and the error.
-// Possible errors are: context.Canceled, context.DeadlineExceeded, and lazy error.
+// Errors (possibly wrapped) are:
+//   - context.Canceled;
+//   - context.DeadlineExceeded;
+//   - iterator.ErrIteratorDone;
+//   - something else.
+//
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
-func (iter *queryIterator) Next() (uint32, *types.Document, error) {
-	if err := iter.ctx.Err(); err != nil {
-		return 0, nil, err
-	}
-
+func (iter *queryIterator) Next() (int, *types.Document, error) {
 	if iter.rows == nil || !iter.rows.Next() {
 		return 0, nil, iterator.ErrIteratorDone
+	}
+
+	if err := iter.ctx.Err(); err != nil {
+		return 0, nil, err
 	}
 
 	var b []byte
@@ -80,16 +86,19 @@ func (iter *queryIterator) Next() (uint32, *types.Document, error) {
 
 	n := iter.n.Add(1) - 1
 
-	return n, doc, nil
+	return int(n), doc, nil
 }
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	iter.rows.Close()
+	if iter.rows != nil {
+		iter.rows.Close()
+	}
+
 	runtime.SetFinalizer(iter, nil)
 }
 
 // check interfaces
 var (
-	_ iterator.Interface[uint32, *types.Document] = (*queryIterator)(nil)
+	_ iterator.Interface[int, *types.Document] = (*queryIterator)(nil)
 )

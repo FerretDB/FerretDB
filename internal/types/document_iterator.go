@@ -56,6 +56,7 @@ func (iter *documentIterator) Next() (string, any, error) {
 
 // Close implements iterator.Interface.
 func (iter *documentIterator) Close() {
+	iter.n.Store(uint32(iter.doc.Len()))
 	runtime.SetFinalizer(iter, nil)
 }
 
