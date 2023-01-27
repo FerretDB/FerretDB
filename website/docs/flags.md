@@ -7,6 +7,7 @@ sidebar_position: 8
 FerretDB provides numerous configuration flags that you can customize to suit your needs and environment.
 You can always access them by using the `--help` flag.
 To make user experience cloud native, every flag has its environment variable equivalent.
+There is no configuration file.
 
 :::info
 Some default values are overridden in [our Docker image](quickstart_guide/docker.md).
