@@ -16,14 +16,11 @@ package integration
 
 import (
 	"math"
-	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func TestQueryElementCompatExists(t *testing.T) {
-	t.Parallel()
-
+func testQueryElementCompatExists() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"Exists": {
 			filter: bson.D{{"_id", bson.D{{"$exists", true}}}},
@@ -43,12 +40,10 @@ func TestQueryElementCompatExists(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryElementCompatElementType(t *testing.T) {
-	t.Parallel()
-
+func testQueryElementCompatElementType() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$type", "object"}}}},
@@ -136,5 +131,5 @@ func TestQueryElementCompatElementType(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
