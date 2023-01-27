@@ -53,6 +53,7 @@ type SQLParam struct {
 	Comment    string
 	Explain    bool
 	Filter     *types.Document
+	BatchSize  int
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.

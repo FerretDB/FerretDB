@@ -18,8 +18,11 @@ package conninfo
 
 import (
 	"context"
+	"math"
+	"math/rand"
 	"sync"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
@@ -38,7 +41,7 @@ type ConnInfo struct {
 	password string
 
 	curRW  sync.RWMutex
-	cursor iterator.Interface[int, any]
+	cursor map[int64]iterator.Interface[uint32, *types.Document]
 }
 
 // Auth returns stored username and password.
@@ -59,24 +62,46 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 }
 
 // Cursor returns the cursor value stored.
-func (connInfo *ConnInfo) Cursor(_ uint64) iterator.Interface[int, any] {
+func (connInfo *ConnInfo) Cursor(id int64) iterator.Interface[uint32, *types.Document] {
 	connInfo.curRW.RLock()
 	defer connInfo.curRW.RUnlock()
 
-	return connInfo.cursor
+	return connInfo.cursor[id]
 }
 
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
-func (connInfo *ConnInfo) SetCursor(iterator iterator.Interface[int, any]) {
+func (connInfo *ConnInfo) SetCursor(iter iterator.Interface[uint32, *types.Document]) int64 {
+	id := connInfo.generateCursorID()
+
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	if connInfo.cursor != nil {
-		connInfo.cursor.Close()
+	connInfo.cursor[id] = iter
+
+	return id
+}
+
+func (connInfo *ConnInfo) generateCursorID() int64 {
+	var id int64
+
+	for {
+		id = rand.Int63()
+		if _, ok := connInfo.cursor[id]; !ok {
+			break
+		}
+
+		if id < 0 {
+			id = int64(math.Abs(float64(id)))
+		}
+
+		_, ok := connInfo.cursor[id]
+		if !ok {
+			break
+		}
 	}
 
-	connInfo.cursor = iterator
+	return id
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

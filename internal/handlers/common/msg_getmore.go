@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -67,7 +68,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	if cursorID != 1 {
-		return nil, NewCommandErrorMsg(ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
+		return nil, NewCommandErrorMsg(commonerrors.ErrCursorNotFound, fmt.Sprintf("cursor id %d not found", cursorID))
 	}
 
 	batchSize, err := getBatchSize(document)
@@ -150,7 +151,7 @@ func getBatchSize(doc *types.Document) (int64, error) {
 
 	if batchSize < 0 {
 		return 0, NewCommandErrorMsg(
-			ErrBatchSizeNegative,
+			commonerrors.ErrBatchSizeNegative,
 			"BSON field 'batchSize' value must be >= 0, actual value '-1'",
 		)
 	}

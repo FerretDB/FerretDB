@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // defaultBatchSize is the default batch size for find operation.
@@ -154,28 +155,23 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 // MakeFindReplyParameters returns `find` command reply parameters.
 // If the amount of documents is more than the batch size, the rest of the documents will be saved in the cursor.
-func MakeFindReplyParameters(ctx context.Context, resDocs []*types.Document, batch int, cursor string) (*types.Array, int64) {
-	if batch > len(resDocs) {
-		batch = len(resDocs)
-	}
-
-	firstBatch := types.MakeArray(batch)
-	moreResults := types.MakeArray(0)
+func MakeFindReplyParameters(
+	ctx context.Context,
+	resDocs []*types.Document, batch int,
+	p iterator.Interface[uint32, *types.Document],
+) (
+	*types.Array, int64,
+) {
+	firstBatch := types.MakeArray(len(resDocs))
 
 	for i := 0; i < batch; i++ {
 		firstBatch.Append(resDocs[i])
 	}
 
-	for i := batch; i < len(resDocs); i++ {
-		moreResults.Append(resDocs[i])
-	}
-
 	id := int64(0)
 
-	if moreResults.Len() > 0 {
-		id = 1
-
-		conninfo.Get(ctx).SetCursor(moreResults.Iterator())
+	if p != nil {
+		id = conninfo.Get(ctx).SetCursor(p)
 	}
 
 	return firstBatch, id

@@ -78,6 +78,26 @@ func TestConnInfo(t *testing.T) {
 	}
 }
 
+type testIterator struct {
+	array *types.Array
+}
+
+func newTestIterator(array *types.Array) *testIterator {
+	return &testIterator{
+		array: array,
+	}
+}
+
+func (t *testIterator) Next() (uint32, *types.Document, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *testIterator) Close() {
+	//TODO implement me
+	panic("implement me")
+}
+
 func TestConnInfoCursor(t *testing.T) {
 	t.Parallel()
 
@@ -91,7 +111,9 @@ func TestConnInfoCursor(t *testing.T) {
 		array.Append(i)
 	}
 
-	connInfo.SetCursor(array.Iterator())
+	iter := newTestIterator(array)
+
+	connInfo.SetCursor(iter)
 
 	cursor = connInfo.Cursor(1)
 	require.NotNil(t, cursor)

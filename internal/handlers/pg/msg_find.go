@@ -54,11 +54,22 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
+	var batchSize int
+
+	// Only apply batchSize if sorting is not set.
+	if params.Sort == nil {
+		batchSize = int(params.Limit)
+		if params.Limit > int64(params.BatchSize) {
+			batchSize = int(params.BatchSize)
+		}
+	}
+
 	sp := pgdb.SQLParam{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
 		Filter:     params.Filter,
+		BatchSize:  batchSize,
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
@@ -69,8 +80,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	resDocs := make([]*types.Document, 0, 16)
+	var iter iterator.Interface[uint32, *types.Document]
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		resDocs, iter, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 		return err
 	})
 
@@ -90,7 +102,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), sp.DB+"."+sp.Collection)
+	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter)
 
 	var reply wire.OpMsg
 	err = reply.SetSections(wire.OpMsgSection{
@@ -111,29 +123,36 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) (
+	[]*types.Document, iterator.Interface[uint32, *types.Document], error,
+) {
 	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	defer iter.Close()
+	var closeIter bool
+	defer func() {
+		if closeIter {
+			iter.Close()
+		}
+	}()
 
 	resDocs := make([]*types.Document, 0, 16)
 
-	for {
+	for i := 0; i < sqlParam.BatchSize; {
 		_, doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				return resDocs, nil
+				break
 			}
 
-			return nil, err
+			return nil, nil, err
 		}
 
 		matches, err := common.FilterDocument(doc, sqlParam.Filter)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if !matches {
@@ -141,5 +160,13 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		}
 
 		resDocs = append(resDocs, doc)
+		i++
 	}
+
+	if len(resDocs) < sqlParam.BatchSize {
+		closeIter = true
+		return resDocs, nil, nil
+	}
+
+	return resDocs, iter, nil
 }

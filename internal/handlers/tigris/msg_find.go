@@ -73,7 +73,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), fp.DB+"."+fp.Collection)
+	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), nil)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
