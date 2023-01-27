@@ -6,8 +6,12 @@ description: "Find out how FerretDB uses query pushdown to fetch data from the s
 image: /img/blog/ferretdb-query-pushdown.jpg
 ---
 
+Find out how FerretDB uses query pushdown to fetch data from PostgreSQL.
+
 ![How FerretDB fetches data - about query pushdown](/img/blog/ferretdb-query-pushdown.jpg)
 **Credit:** [Mohamed Hassan](https://pixabay.com/users/mohamed_hassan-5229782/)
+
+<!--truncate-->
 
 Pushdown is the method of optimizing a query by reducing the amount of data read and processed.
 It saves memory space, and network bandwidth, and reduces the query execution time by not prefetching unnecessary data to the database management system.
