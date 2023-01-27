@@ -89,15 +89,37 @@ type CompositeTypeInterface interface {
 
 //go-sumtype:decl CompositeTypeInterface
 
-type (
-	// NullType represents BSON type Null.
-	//
-	// Most callers should use types.Null value instead.
-	NullType struct{}
-)
+// assertType panics if value is not a BSON type (scalar or composite).
+//
+// It should be used in places where we can't use compile-time check via type parameters (generics).
+// For example, `NewArray(42)` should panic, because `int` is not a BSON type.
+// It should check only type, not value.
+func assertType(value any) {
+	switch value := value.(type) {
+	case *Document, *Array:
+		return
+	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
+		return
+	case nil:
+		panic("types: unexpected nil type")
+	default:
+		panic(fmt.Sprintf("types: unexpected type %[1]T (%#[1]v)", value))
+	}
+}
 
-// Null represents BSON value Null.
-var Null = NullType{}
+// isScalar check if v is a BSON scalar value.
+func isScalar(v any) bool {
+	if v == nil {
+		panic("v is nil")
+	}
+
+	switch v.(type) {
+	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
+		return true
+	}
+
+	return false
+}
 
 // deepCopy returns a deep copy of the given value.
 func deepCopy(value any) any {
@@ -155,6 +177,6 @@ func deepCopy(value any) any {
 		return value
 
 	default:
-		panic(fmt.Sprintf("types.deepCopy: unsupported type: %[1]T (%[1]v)", value))
+		panic(fmt.Sprintf("types.deepCopy: unexpected type %[1]T (%#[1]v)", value))
 	}
 }

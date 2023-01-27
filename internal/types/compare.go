@@ -45,6 +45,9 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(docValue, filterValue any) CompareResult {
+	assertType(docValue)
+	assertType(filterValue)
+
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
@@ -68,6 +71,9 @@ func Compare(docValue, filterValue any) CompareResult {
 
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
+	assertType(v1)
+	assertType(v2)
+
 	if !isScalar(v1) || !isScalar(v2) {
 		return compareTypeOrder(v1, v2)
 	}
@@ -196,20 +202,6 @@ func compareScalars(v1, v2 any) CompareResult {
 	}
 
 	panic("not reached")
-}
-
-// isScalar check if v is a BSON scalar value.
-func isScalar(v any) bool {
-	if v == nil {
-		panic("v is nil")
-	}
-
-	switch v.(type) {
-	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
-		return true
-	}
-
-	return false
 }
 
 // compareInvert swaps Less and Greater, keeping Equal.
@@ -346,6 +338,8 @@ func compareDocuments(a, b *Document) CompareResult {
 
 // compareArray compares array to any value.
 func compareArray(as *Array, b any) CompareResult {
+	assertType(b)
+
 	if bs, ok := b.(*Array); ok {
 		return compareArrays(as, bs)
 	}

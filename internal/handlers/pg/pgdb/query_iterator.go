@@ -49,7 +49,7 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *ty
 	}
 
 	runtime.SetFinalizer(iter, func(iter *queryIterator) {
-		panic("queryIterator.Close() has not been called:\n" + string(iter.stack))
+		panic("queryIterator.Close() has not been called; created at:\n" + string(iter.stack))
 	})
 
 	return iter

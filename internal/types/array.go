@@ -38,7 +38,13 @@ func MakeArray(capacity int) *Array {
 }
 
 // NewArray creates an array with the given values.
+//
+// It panics if any of the values is not a valid BSON type.
 func NewArray(values ...any) (*Array, error) {
+	for _, v := range values {
+		assertType(v)
+	}
+
 	return &Array{s: values}, nil
 }
 
@@ -49,6 +55,7 @@ func (a *Array) DeepCopy() *Array {
 	if a == nil {
 		panic("types.Array.DeepCopy: nil array")
 	}
+
 	return deepCopy(a).(*Array)
 }
 
@@ -59,6 +66,7 @@ func (a *Array) Len() int {
 	if a == nil {
 		return 0
 	}
+
 	return len(a.s)
 }
 
@@ -82,7 +90,11 @@ func (a *Array) GetByPath(path Path) (any, error) {
 }
 
 // Set sets the value at the given index.
+//
+// It panics if the value is not a valid BSON type.
 func (a *Array) Set(index int, value any) error {
+	assertType(value)
+
 	if l := a.Len(); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
@@ -92,7 +104,13 @@ func (a *Array) Set(index int, value any) error {
 }
 
 // Append appends given values to the array.
+//
+// It panics if any of the values is not a valid BSON type.
 func (a *Array) Append(values ...any) {
+	for _, v := range values {
+		assertType(v)
+	}
+
 	if a.s == nil {
 		a.s = values
 		return
@@ -160,7 +178,11 @@ func (a *Array) FilterArrayByType(ref any) *Array {
 }
 
 // Contains checks if the Array contains the given value.
+//
+// It panics if the filterValue is not a valid BSON type.
 func (a *Array) Contains(filterValue any) bool {
+	assertType(filterValue)
+
 	switch filterValue := filterValue.(type) {
 	case *Document, *Array:
 		// filterValue is a composite type, so either a and filterValue must be equal

@@ -48,6 +48,14 @@ func TestArray(t *testing.T) {
 		assert.Zero(t, a.Len())
 	})
 
+	t.Run("Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Panics(t, func() {
+			NewArray(42)
+		})
+	})
+
 	t.Run("ZeroValues", func(t *testing.T) {
 		t.Parallel()
 

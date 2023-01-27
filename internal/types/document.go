@@ -109,6 +109,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
+		assertType(value)
 
 		doc.fields = append(doc.fields, field{key: key, value: value})
 	}
@@ -123,6 +124,7 @@ func (d *Document) DeepCopy() *Document {
 	if d == nil {
 		panic("types.Document.DeepCopy: nil document")
 	}
+
 	return deepCopy(d).(*Document)
 }
 
@@ -254,6 +256,8 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
+	assertType(value)
+
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
 	}
@@ -303,6 +307,8 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // The Document type will be used to create these parts.
 // If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
+	assertType(value)
+
 	if path.Len() == 1 {
 		d.Set(path.Slice()[0], value)
 		return nil

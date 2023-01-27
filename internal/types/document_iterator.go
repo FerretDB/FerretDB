@@ -37,7 +37,7 @@ func newDocumentIterator(document *Document) iterator.Interface[string, any] {
 	}
 
 	runtime.SetFinalizer(iter, func(iter *documentIterator) {
-		panic("documentIterator.Close() has not been called:\n" + string(iter.stack))
+		panic("documentIterator.Close() has not been called; created at:\n" + string(iter.stack))
 	})
 
 	return iter

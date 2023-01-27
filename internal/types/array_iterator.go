@@ -36,8 +36,8 @@ func newArrayIterator(array *Array) iterator.Interface[int, any] {
 		stack: debugbuild.Stack(),
 	}
 
-	runtime.SetFinalizer(iter, func(iter *documentIterator) {
-		panic("arrayIterator.Close() has not been called:\n" + string(iter.stack))
+	runtime.SetFinalizer(iter, func(iter *arrayIterator) {
+		panic("arrayIterator.Close() has not been called; created at:\n" + string(iter.stack))
 	})
 
 	return iter

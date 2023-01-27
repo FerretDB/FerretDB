@@ -27,6 +27,37 @@ import (
 func TestArrayIterator(t *testing.T) {
 	t.Parallel()
 
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
+
+		iter := must.NotFail(NewArray(1, 2, 3)).Iterator()
+		defer iter.Close()
+
+		n, v, err := iter.Next()
+		assert.Equal(t, 0, n)
+		assert.Equal(t, nil, v)
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
+
+		iter := must.NotFail(NewArray()).Iterator()
+		defer iter.Close()
+
+		n, v, err := iter.Next()
+		assert.Equal(t, 0, n)
+		assert.Equal(t, nil, v)
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+
+		iter.Close()
+
+		n, v, err = iter.Next()
+		assert.Equal(t, 0, n)
+		assert.Equal(t, nil, v)
+		assert.Equal(t, iterator.ErrIteratorDone, err)
+	})
+
 	for name, tc := range map[string]struct {
 		arr      *Array
 		expected []any
@@ -34,14 +65,6 @@ func TestArrayIterator(t *testing.T) {
 		"empty": {
 			arr:      must.NotFail(NewArray()),
 			expected: []any{},
-		},
-		"one": {
-			arr:      must.NotFail(NewArray(1)),
-			expected: []any{1},
-		},
-		"two": {
-			arr:      must.NotFail(NewArray(1, 2)),
-			expected: []any{1, 2},
 		},
 		"three": {
 			arr:      must.NotFail(NewArray(1, 2, 3)),
