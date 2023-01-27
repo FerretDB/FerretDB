@@ -113,18 +113,22 @@ type buildMongoDBURIOpts struct {
 	user           *url.Userinfo
 }
 
-// buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
+// buildMongoDBURI builds MongoDB URI with given URI options.
 func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
+	q := make(url.Values)
+
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
+		q.Set("tls", "true")
 	}
 
-	host := opts.host
-	if opts.unixSocketPath != "" {
+	var host string
+	if opts.host != "" {
+		require.Empty(tb, opts.unixSocketPath, "unixSocketPath and TCP/TLS cannot be both set")
+		host = opts.host
+	} else {
 		host = opts.unixSocketPath
 	}
-
-	q := make(url.Values)
 
 	if opts.authMechanism != "" {
 		q.Set("authMechanism", opts.authMechanism)
@@ -229,6 +233,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f fla
 		opts.host = l.TLSAddr().String()
 		opts.user = url.UserPassword("username", "password")
 		opts.authMechanism = "PLAIN"
+		opts.tls = true
 	case f.IsTargetUnixSocket():
 		opts.unixSocketPath = l.UnixAddr().String()
 	default:

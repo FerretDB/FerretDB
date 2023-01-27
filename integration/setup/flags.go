@@ -80,6 +80,7 @@ func (f *flags) ApplyOpts(tb testing.TB, opts map[string]any) *flags {
 		case "tigris-url":
 			tigrisURL, ok := v.(string)
 			require.True(tb, ok, "%s is not string: %T", v)
+
 			f.tigrisURL = &tigrisURL
 		default:
 			tb.Errorf("unknown flag is set: %s", k)

@@ -178,12 +178,12 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(f.GetHandler(), collectionName); len(validators) > 0 {
-			var copts options.CreateCollectionOptions
+			var opts options.CreateCollectionOptions
 			for key, value := range validators {
-				copts.SetValidator(bson.D{{key, value}})
+				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(ctx, collectionName, &copts))
+			require.NoError(tb, database.CreateCollection(ctx, collectionName, &opts))
 		}
 
 		docs := shareddata.Docs(provider)

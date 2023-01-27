@@ -37,7 +37,7 @@ func TestEmbedded(t *testing.T) {
 			isTLS:         true,
 		},
 		"TCP": {
-			postgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			postgreSQLURL: "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1",
 			isTLS:         false,
 		},
 	}
