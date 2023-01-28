@@ -35,25 +35,24 @@ func TestGetDocuments(t *testing.T) {
 
 	pool := getPool(ctx, t)
 	databaseName := testutil.DatabaseName(t)
-	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return CreateDatabaseIfNotExists(ctx, tx, databaseName)
-	})
-	require.NoError(t, err)
+	doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
+	doc2 := must.NotFail(types.NewDocument("_id", int32(1)))
 
-	t.Run("one-document", func(t *testing.T) {
+	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
-		collection := collectionName + "-one"
-		expectedDoc := must.NotFail(types.NewDocument("_id", "foo", "id", "1"))
+		collectionName := testutil.CollectionName(t)
 
-		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collection, expectedDoc)
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
 			require.NoError(t, err)
 
-			sp := &SQLParam{DB: databaseName, Collection: collection}
+			err = InsertDocument(ctx, tx, databaseName, collectionName, doc2)
+			require.NoError(t, err)
+
+			sp := &SQLParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
@@ -61,13 +60,24 @@ func TestGetDocuments(t *testing.T) {
 			defer iter.Close()
 
 			n, doc, err := iter.Next()
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, 0, n)
-			assert.Equal(t, expectedDoc, doc)
+			assert.Equal(t, doc1, doc)
 
 			n, doc, err = iter.Next()
-			assert.Equal(t, iterator.ErrIteratorDone, err)
-			assert.Equal(t, 0, n)
+			require.NoError(t, err)
+			assert.Equal(t, 1, n)
+			assert.Equal(t, doc2, doc)
+
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			return nil
@@ -76,38 +86,31 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("cancel-context", func(t *testing.T) {
+	t.Run("EarlyClose", func(t *testing.T) {
 		t.Parallel()
 
-		collection := collectionName + "-two"
-		expectedDocs := []*types.Document{
-			must.NotFail(types.NewDocument("_id", "bar", "id", "1")),
-			must.NotFail(types.NewDocument("_id", "foo", "id", "2")),
-		}
+		collectionName := testutil.CollectionName(t)
 
-		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			for _, doc := range expectedDocs {
-				err := InsertDocument(ctx, tx, databaseName, collection, doc)
-				require.NoError(t, err)
-			}
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
+			require.NoError(t, err)
 
-			ctxTest, cancel := context.WithCancel(ctx)
-			sp := &SQLParam{DB: databaseName, Collection: collection}
-			iter, err := GetDocuments(ctxTest, tx, sp)
+			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			iter, err := GetDocuments(ctx, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
 
-			defer iter.Close()
+			iter.Close()
 
 			n, doc, err := iter.Next()
-			assert.NoError(t, err)
-			assert.Equal(t, 0, n)
-			assert.Equal(t, expectedDocs[0], doc)
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
 
-			cancel()
+			// still done
 			n, doc, err = iter.Next()
-			assert.Equal(t, context.Canceled, err)
-			assert.Equal(t, 0, n)
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			return nil
@@ -116,12 +119,49 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("empty-collection", func(t *testing.T) {
+	t.Run("CancelContext", func(t *testing.T) {
 		t.Parallel()
 
-		collection := collectionName + "-empty"
+		ctx, cancel := context.WithCancel(ctx)
 
-		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		collectionName := testutil.CollectionName(t)
+
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
+			require.NoError(t, err)
+
+			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			iter, err := GetDocuments(ctx, tx, sp)
+			require.NoError(t, err)
+			require.NotNil(t, iter)
+
+			cancel()
+
+			// FIXME context.Canceled first, done later?
+
+			n, doc, err := iter.Next()
+			require.Equal(t, context.Canceled, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			return nil
+		})
+
+		require.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("EmptyCollection", func(t *testing.T) {
+		t.Parallel()
+
+		collection := testutil.CollectionName(t)
+
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			err := CreateCollection(ctx, tx, databaseName, collection)
 			require.NoError(t, err)
 
@@ -133,8 +173,14 @@ func TestGetDocuments(t *testing.T) {
 			defer iter.Close()
 
 			n, doc, err := iter.Next()
-			assert.Equal(t, iterator.ErrIteratorDone, err)
-			assert.Equal(t, 0, n)
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			return nil
@@ -143,25 +189,33 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("non-existent-collection", func(t *testing.T) {
+	t.Run("NonExistentCollection", func(t *testing.T) {
 		t.Parallel()
 
-		tx, err := pool.Begin(ctx)
+		collection := testutil.CollectionName(t)
+
+		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			sp := &SQLParam{DB: databaseName, Collection: collection}
+			iter, err := GetDocuments(ctx, tx, sp)
+			require.NoError(t, err)
+			require.NotNil(t, iter)
+
+			defer iter.Close()
+
+			n, doc, err := iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			return nil
+		})
+
 		require.NoError(t, err)
-		defer tx.Rollback(ctx)
-
-		sp := &SQLParam{DB: databaseName, Collection: collectionName + "-non-existent"}
-		iter, err := GetDocuments(ctx, tx, sp)
-		require.NoError(t, err)
-		require.NotNil(t, iter)
-
-		defer iter.Close()
-
-		n, doc, err := iter.Next()
-		assert.Equal(t, iterator.ErrIteratorDone, err)
-		assert.Equal(t, 0, n)
-		assert.Nil(t, doc)
-
-		require.NoError(t, tx.Commit(ctx))
 	})
 }

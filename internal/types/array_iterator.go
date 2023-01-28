@@ -37,7 +37,12 @@ func newArrayIterator(array *Array) iterator.Interface[int, any] {
 	}
 
 	runtime.SetFinalizer(iter, func(iter *arrayIterator) {
-		panic("arrayIterator.Close() has not been called; created at:\n" + string(iter.stack))
+		msg := "arrayIterator.Close() has not been called"
+		if iter.stack != nil {
+			msg += "\narrayIterator created at:\n" + string(iter.stack)
+		}
+
+		panic(msg)
 	})
 
 	return iter
