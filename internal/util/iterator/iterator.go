@@ -25,15 +25,18 @@ type Interface[K, V any] interface {
 	// Next returns the next key/value pair, where the key is a slice index, map key, document number, etc,
 	// and the value is the slice or map value, next document, etc.
 	//
-	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error.
-	// Even if iterator was read to the end, and Next returned ErrIteratorDone,
+	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error
+	// like (possibly wrapped) context.Canceled.
+	// In any case, even if iterator was read to the end, and Next returned ErrIteratorDone,
+	// or Next returned fatal error,
 	// Close method still should be called.
 	//
 	// Next should not be called concurrently.
 	Next() (K, V, error)
 
 	// Close indicates that the iterator will no longer be used.
-	// After Close is called, future calls to Next must return ErrIteratorDone.
+	// After Close is called, future calls to Next must return ErrIteratorDone,
+	// even if previous call returned a different error.
 	//
 	// Close must be called.
 	// If it wasn't, the iterator might leak resources or panic later.

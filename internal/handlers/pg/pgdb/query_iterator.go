@@ -17,7 +17,7 @@ package pgdb
 import (
 	"context"
 	"runtime"
-	"sync/atomic"
+	"sync"
 
 	"github.com/jackc/pgx/v4"
 
@@ -30,10 +30,12 @@ import (
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx   context.Context
-	n     atomic.Uint32
+	ctx context.Context
+
+	m     sync.Mutex
 	rows  pgx.Rows
 	stack []byte
+	n     int
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -63,20 +65,32 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *ty
 // Next implements iterator.Interface.
 //
 // Errors (possibly wrapped) are:
+//   - iterator.ErrIteratorDone;
 //   - context.Canceled;
 //   - context.DeadlineExceeded;
-//   - iterator.ErrIteratorDone;
 //   - something else.
 //
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
 func (iter *queryIterator) Next() (int, *types.Document, error) {
-	if iter.rows == nil || !iter.rows.Next() {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	// ignore context error, if any, if iterator is already closed
+	if iter.rows == nil {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
 	if err := iter.ctx.Err(); err != nil {
-		return 0, nil, err
+		return 0, nil, lazyerrors.Error(err)
+	}
+
+	if !iter.rows.Next() {
+		// to avoid context cancellation changing the next `Next()` error
+		// from `iterator.ErrIteratorDone` to `context.Canceled`
+		iter.close()
+
+		return 0, nil, iterator.ErrIteratorDone
 	}
 
 	var b []byte
@@ -89,18 +103,27 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
-	n := iter.n.Add(1) - 1
+	iter.n++
 
-	return int(n), doc, nil
+	return iter.n - 1, doc, nil
 }
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	iter.close()
+}
+
+// close closes iterator without holding mutex.
+func (iter *queryIterator) close() {
+	runtime.SetFinalizer(iter, nil)
+
 	if iter.rows != nil {
 		iter.rows.Close()
+		iter.rows = nil
 	}
-
-	runtime.SetFinalizer(iter, nil)
 }
 
 // check interfaces

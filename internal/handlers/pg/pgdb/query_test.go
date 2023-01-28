@@ -43,6 +43,7 @@ func TestGetDocuments(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
+		ctxGet, cancelGet := context.WithCancel(ctx)
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -53,7 +54,7 @@ func TestGetDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctx, tx, sp)
+			iter, err := GetDocuments(ctxGet, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
 
@@ -70,13 +71,21 @@ func TestGetDocuments(t *testing.T) {
 			assert.Equal(t, doc2, doc)
 
 			n, doc, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			// still done
 			n, doc, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			cancelGet()
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
@@ -89,6 +98,7 @@ func TestGetDocuments(t *testing.T) {
 	t.Run("EarlyClose", func(t *testing.T) {
 		t.Parallel()
 
+		ctxGet, cancelGet := context.WithCancel(ctx)
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -96,20 +106,28 @@ func TestGetDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctx, tx, sp)
+			iter, err := GetDocuments(ctxGet, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
 
 			iter.Close()
 
 			n, doc, err := iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			// still done
 			n, doc, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			cancelGet()
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
@@ -123,7 +141,6 @@ func TestGetDocuments(t *testing.T) {
 		t.Parallel()
 
 		ctxGet, cancelGet := context.WithCancel(ctx)
-
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -137,16 +154,28 @@ func TestGetDocuments(t *testing.T) {
 
 			cancelGet()
 
-			// FIXME context.Canceled first, done later?
-
 			n, doc, err := iter.Next()
-			require.Equal(t, context.Canceled, err)
+			require.ErrorIs(t, err, context.Canceled, "%v", err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			// still canceled
+			n, doc, err = iter.Next()
+			require.ErrorIs(t, err, context.Canceled, "%v", err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			iter.Close()
+
+			// done now
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			// still done
 			n, doc, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
@@ -159,27 +188,36 @@ func TestGetDocuments(t *testing.T) {
 	t.Run("EmptyCollection", func(t *testing.T) {
 		t.Parallel()
 
-		collection := testutil.CollectionName(t)
+		ctxGet, cancelGet := context.WithCancel(ctx)
+		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			err := CreateCollection(ctx, tx, databaseName, collection)
+			err := CreateCollection(ctx, tx, databaseName, collectionName)
 			require.NoError(t, err)
 
-			sp := &SQLParam{DB: databaseName, Collection: collection}
-			iter, err := GetDocuments(ctx, tx, sp)
+			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			iter, err := GetDocuments(ctxGet, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
 
 			defer iter.Close()
 
 			n, doc, err := iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			// still done
 			n, doc, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			cancelGet()
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
@@ -192,24 +230,33 @@ func TestGetDocuments(t *testing.T) {
 	t.Run("NonExistentCollection", func(t *testing.T) {
 		t.Parallel()
 
-		collection := testutil.CollectionName(t)
+		ctxGet, cancelGet := context.WithCancel(ctx)
+		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			sp := &SQLParam{DB: databaseName, Collection: collection}
-			iter, err := GetDocuments(ctx, tx, sp)
+			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			iter, err := GetDocuments(ctxGet, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
 
 			defer iter.Close()
 
 			n, doc, err := iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			// still done
 			n, doc, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
+			assert.Zero(t, n)
+			assert.Nil(t, doc)
+
+			cancelGet()
+
+			// still done
+			n, doc, err = iter.Next()
+			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
 			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
