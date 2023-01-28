@@ -39,6 +39,14 @@ var stages = map[string]newStage{
 
 // NewStage creates a new aggregation stage.
 func NewStage(stage *types.Document) (Stage, error) {
+	if stage.Len() != 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidStage,
+			"A pipeline stage specification object must contain exactly one field.",
+			"aggregate",
+		)
+	}
+
 	name := stage.Command()
 
 	f, ok := stages[name]

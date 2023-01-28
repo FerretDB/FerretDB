@@ -43,7 +43,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "explain", "cursor", "bypassDocumentValidation", "hint"); err != nil {
+	// FIXME
+	common.Ignored(document, h.L, "cursor")
+
+	if err = common.Unimplemented(document, "explain", "bypassDocumentValidation", "hint"); err != nil {
 		return nil, err
 	}
 

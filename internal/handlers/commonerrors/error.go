@@ -100,6 +100,9 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrInvalidStage indicates invalid aggregation pipeline stage.
+	ErrInvalidStage = ErrorCode(40323) // Location40323
+
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
 
