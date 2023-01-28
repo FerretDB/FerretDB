@@ -68,7 +68,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	resDocs := make([]*types.Document, 0, 16)
+	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 		return err

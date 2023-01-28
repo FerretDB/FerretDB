@@ -12,40 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stages
+package aggregations
 
 import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-type count struct {
-	field string
+type match struct {
+	filter *types.Document
 }
 
-func newCount(stage *types.Document) (Stage, error) {
-	if stage.Len() != 1 {
-		return nil, lazyerrors.Errorf("$count stage must have exactly one argument")
-	}
-
-	field, err := common.GetRequiredParam[string](stage, "$count")
-	if err != nil {
-		return nil, err
-	}
-
-	return &count{
-		field: field,
+func newMatch(stage *types.Document) (Stage, error) {
+	return &match{
+		filter: stage,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
-	return []*types.Document{res}, nil
+func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	var res []*types.Document
+
+	for _, doc := range in {
+		matches, err := common.FilterDocument(doc, m.filter)
+		if err != nil {
+			return nil, err
+		}
+		if matches {
+			res = append(res, doc)
+		}
+	}
+
+	return res, nil
 }
 
 // check interfaces
