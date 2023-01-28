@@ -26,8 +26,13 @@ type match struct {
 }
 
 func newMatch(stage *types.Document) (Stage, error) {
+	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
+	if err != nil {
+		return nil, err
+	}
+
 	return &match{
-		filter: stage,
+		filter: filter,
 	}, nil
 }
 

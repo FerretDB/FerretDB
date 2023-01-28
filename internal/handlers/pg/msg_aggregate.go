@@ -111,7 +111,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return err
 		}
 
-		docs, err = iterator.ConsumeValues(docsIter)
+		docs, err = iterator.Values(docsIter)
 		return err
 	})
 
