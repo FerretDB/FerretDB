@@ -44,7 +44,6 @@ func GetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *state.
 	}
 
 	var reply wire.OpMsg
-
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"state", telemetryState,

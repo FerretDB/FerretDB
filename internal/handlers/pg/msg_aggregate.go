@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
@@ -44,7 +43,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// FIXME
+	// TODO
 	common.Ignored(document, h.L, "cursor", "lsid")
 
 	if err = common.Unimplemented(document, "explain", "bypassDocumentValidation", "hint"); err != nil {
@@ -68,6 +67,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	// TODO handle collection-agnostic pipelines ({aggregate: 1})
 	var ok bool
 	if sp.Collection, ok = collection.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
@@ -82,44 +82,35 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	st := make([]aggregations.Stage, pipeline.Len())
-	iter := pipeline.Iterator()
-	defer iter.Close()
+	stagesDocs := must.NotFail(iterator.Values(pipeline.Iterator()))
+	stages := make([]aggregations.Stage, len(stagesDocs))
 
-	for {
-		i, s, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
+	for i, d := range stagesDocs {
+		var s aggregations.Stage
 
-			return nil, lazyerrors.Error(err)
-		}
-
-		ss, err := aggregations.NewStage(s.(*types.Document))
-		if err != nil {
+		if s, err = aggregations.NewStage(d.(*types.Document)); err != nil {
 			return nil, err
 		}
 
-		st[i] = ss
+		stages[i] = s
 	}
 
 	var docs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		docsIter, err := pgdb.GetDocuments(ctx, tx, &sp)
-		if err != nil {
-			return err
+		iter, getErr := pgdb.GetDocuments(ctx, tx, &sp)
+		if getErr != nil {
+			return getErr
 		}
 
-		docs, err = iterator.Values(docsIter)
-		return err
+		docs, getErr = iterator.Values(iter)
+		return getErr
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	for _, s := range st {
+	for _, s := range stages {
 		if docs, err = s.Process(ctx, docs); err != nil {
 			return nil, err
 		}
@@ -131,7 +122,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -140,10 +131,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)),
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

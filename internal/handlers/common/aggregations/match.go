@@ -45,6 +45,7 @@ func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 		if err != nil {
 			return nil, err
 		}
+
 		if matches {
 			res = append(res, doc)
 		}

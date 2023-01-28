@@ -58,6 +58,7 @@ func Values[K, V any](iter Interface[K, V]) ([]V, error) {
 	defer iter.Close()
 
 	var res []V
+
 	for {
 		_, v, err := iter.Next()
 		if err != nil {

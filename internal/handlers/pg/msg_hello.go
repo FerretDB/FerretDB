@@ -20,7 +20,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -28,7 +27,7 @@ import (
 // MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
-	err := reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"isWritablePrimary", true,
 			// topologyVersion
@@ -43,10 +42,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			"readOnly", false,
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }
