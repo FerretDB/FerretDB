@@ -41,7 +41,7 @@ var stages = map[string]newStage{
 func NewStage(stage *types.Document) (Stage, error) {
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidStage,
+			commonerrors.ErrStageInvalid,
 			"A pipeline stage specification object must contain exactly one field.",
 			"aggregate",
 		)

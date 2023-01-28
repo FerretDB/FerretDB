@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -28,13 +28,13 @@ type count struct {
 }
 
 func newCount(stage *types.Document) (Stage, error) {
-	if stage.Len() != 1 {
-		return nil, lazyerrors.Errorf("$count stage must have exactly one argument")
-	}
-
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountNonEmptyString,
+			"the count field must be a non-empty string",
+			"$count",
+		)
 	}
 
 	return &count{

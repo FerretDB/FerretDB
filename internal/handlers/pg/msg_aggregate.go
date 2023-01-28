@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -44,7 +45,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// FIXME
-	common.Ignored(document, h.L, "cursor")
+	common.Ignored(document, h.L, "cursor", "lsid")
 
 	if err = common.Unimplemented(document, "explain", "bypassDocumentValidation", "hint"); err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	defer iter.Close()
 
 	for {
-		_, s, err := iter.Next()
+		i, s, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -100,12 +101,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		st = append(st, ss)
+		st[i] = ss
 	}
 
 	var docs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		docs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		docsIter, err := pgdb.GetDocuments(ctx, tx, &sp)
+		if err != nil {
+			return err
+		}
+
+		docs, err = iterator.ConsumeValues(docsIter)
 		return err
 	})
 
@@ -119,8 +125,25 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	// TODO
-	_ = docs
+	firstBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
+		firstBatch.Append(doc)
+	}
 
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "`aggregate` command is not implemented yet")
+	var reply wire.OpMsg
+	err = reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"firstBatch", firstBatch,
+				"id", int64(0), // TODO
+				"ns", sp.DB+"."+sp.Collection,
+			)),
+			"ok", float64(1),
+		))},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &reply, nil
 }
