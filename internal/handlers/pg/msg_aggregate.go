@@ -102,8 +102,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return getErr
 		}
 
-		docs, getErr = iterator.Values(iter)
-		return getErr
+		docs, err = iterator.Values(iter)
+		return err
 	})
 
 	if err != nil {
