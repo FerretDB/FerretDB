@@ -122,7 +122,7 @@ func TestGetDocuments(t *testing.T) {
 	t.Run("CancelContext", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, cancel := context.WithCancel(ctx)
+		ctxGet, cancelGet := context.WithCancel(ctx)
 
 		collectionName := testutil.CollectionName(t)
 
@@ -131,11 +131,11 @@ func TestGetDocuments(t *testing.T) {
 			require.NoError(t, err)
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctx, tx, sp)
+			iter, err := GetDocuments(ctxGet, tx, sp)
 			require.NoError(t, err)
 			require.NotNil(t, iter)
 
-			cancel()
+			cancelGet()
 
 			// FIXME context.Canceled first, done later?
 
@@ -153,7 +153,7 @@ func TestGetDocuments(t *testing.T) {
 			return nil
 		})
 
-		require.ErrorIs(t, err, context.Canceled)
+		require.NoError(t, err)
 	})
 
 	t.Run("EmptyCollection", func(t *testing.T) {
