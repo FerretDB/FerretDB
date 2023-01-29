@@ -15,20 +15,37 @@
 package types
 
 import (
+	"runtime"
 	"sync/atomic"
 
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // arrayIterator represents an iterator for an Array.
 type arrayIterator struct {
-	arr *Array
-	n   atomic.Uint32
+	n     atomic.Uint32
+	arr   *Array
+	stack []byte
 }
 
 // newArrayIterator returns a new arrayIterator.
 func newArrayIterator(array *Array) iterator.Interface[int, any] {
-	return &arrayIterator{arr: array}
+	iter := &arrayIterator{
+		arr:   array,
+		stack: debugbuild.Stack(),
+	}
+
+	runtime.SetFinalizer(iter, func(iter *arrayIterator) {
+		msg := "arrayIterator.Close() has not been called"
+		if iter.stack != nil {
+			msg += "\narrayIterator created at:\n" + string(iter.stack)
+		}
+
+		panic(msg)
+	})
+
+	return iter
 }
 
 // Next implements iterator.Interface.
@@ -43,7 +60,10 @@ func (iter *arrayIterator) Next() (int, any, error) {
 }
 
 // Close implements iterator.Interface.
-func (iter *arrayIterator) Close() {}
+func (iter *arrayIterator) Close() {
+	iter.n.Store(uint32(iter.arr.Len()))
+	runtime.SetFinalizer(iter, nil)
+}
 
 // check interfaces
 var (
