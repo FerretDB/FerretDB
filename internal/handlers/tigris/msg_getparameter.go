@@ -46,7 +46,6 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 		"ok", float64(1),
 	))
 
-	var reply wire.OpMsg
 	resDoc := resDB
 	if getParameter != "*" {
 		resDoc, err = selectParam(resDB)
@@ -55,10 +54,10 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 		}
 	}
 
-	err = reply.SetSections(wire.OpMsgSection{Documents: []*types.Document{resDoc}})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{resDoc},
+	}))
 
 	common.Ignored(document, h.L, "comment")
 
