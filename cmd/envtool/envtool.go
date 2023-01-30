@@ -151,7 +151,8 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
-	for _, port := range []uint16{8081, 8082, 8083, 8084, 8085} {
+	// Skip 8084 because since it is used by userland proxy.
+	for _, port := range []uint16{8081, 8082, 8083, 8085, 8086} {
 		err := waitForPort(ctx, logger, port)
 		if err != nil {
 			return err

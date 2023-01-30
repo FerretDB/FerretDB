@@ -20,7 +20,7 @@ import (
 )
 
 // ports are available port of Tigris.
-var ports = []uint16{8081, 8082, 8083, 8084, 8085}
+var ports = []uint16{8081, 8082, 8083, 8085, 8086}
 
 // startupInitializer keeps tracks of the number of times
 // ports have been requested.

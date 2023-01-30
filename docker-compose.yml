@@ -75,7 +75,7 @@ services:
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
     container_name: ferretdb_speedup_3
     ports:
-      - 8084:8081
+      - 8085:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
@@ -85,7 +85,7 @@ services:
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
     container_name: ferretdb_speedup_4
     ports:
-      - 8085:8081
+      - 8086:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
