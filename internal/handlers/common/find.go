@@ -164,13 +164,16 @@ func MakeFindReplyParameters(
 ) (
 	*types.Array, int64,
 ) {
+	id := int64(0)
 	firstBatch := types.MakeArray(len(resDocs))
+
+	if len(resDocs) == 0 {
+		return firstBatch, id
+	}
 
 	for i := 0; i < batch; i++ {
 		firstBatch.Append(resDocs[i])
 	}
-
-	id := int64(0)
 
 	if p != nil {
 		id = conninfo.Get(ctx).SetCursor(tx, p)

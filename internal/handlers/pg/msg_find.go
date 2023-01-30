@@ -76,7 +76,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	resDocs := make([]*types.Document, 0, 16)
+	var resDocs []*types.Document
 	var iter iterator.Interface[uint32, *types.Document]
 
 	tx, err := dbPool.Begin(ctx)

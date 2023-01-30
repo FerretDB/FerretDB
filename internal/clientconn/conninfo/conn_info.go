@@ -46,12 +46,14 @@ type ConnInfo struct {
 	cursor map[int64]Cursor
 }
 
+// NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	return &ConnInfo{
-		cursor: make(map[int64]Cursor),
+		cursor: map[int64]Cursor{},
 	}
 }
 
+// Cursor represents a cursor.
 type Cursor struct {
 	iter iterator.Interface[uint32, *types.Document]
 	tx   pgx.Tx
@@ -98,11 +100,13 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *
 	return id
 }
 
+// DeleteCursor deletes the cursor from ConnInfo.
 func (connInfo *ConnInfo) DeleteCursor(id int64) error {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
 	cur := connInfo.cursor[id]
+
 	err := cur.tx.Commit(context.Background())
 	if err != nil {
 		return err
@@ -137,11 +141,12 @@ func (connInfo *ConnInfo) generateCursorID() int64 {
 	return id
 }
 
+// Close frees all opened cursors.
 func (connInfo *ConnInfo) Close() {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	for k, _ := range connInfo.cursor {
+	for k := range connInfo.cursor {
 		connInfo.DeleteCursor(k)
 	}
 }
