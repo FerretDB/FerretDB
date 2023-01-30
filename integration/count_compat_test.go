@@ -129,6 +129,9 @@ func TestCountCompat(t *testing.T) {
 		"FieldTypeArrays": {
 			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
 		},
+		"DotNotation": {
+			filter: bson.D{{"v.foo.bar", "world"}},
+		},
 	}
 
 	testCountCompat(t, testCases)
