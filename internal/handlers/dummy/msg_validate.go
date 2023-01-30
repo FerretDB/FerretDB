@@ -23,5 +23,5 @@ import (
 
 // MsgValidate implements HandlerInterface.
 func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.Validate(ctx, msg, h.l)
+	return common.Validate(ctx, msg, h.L)
 }

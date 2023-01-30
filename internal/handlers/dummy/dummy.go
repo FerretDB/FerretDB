@@ -41,13 +41,13 @@ func notImplemented(command string) error {
 //   - setFreeMonitoringStatus;
 //   - whatsmyuri.
 type Handler struct {
-	l *zap.Logger
+	L *zap.Logger
 }
 
 // New returns a new handler.
 func New(l *zap.Logger) (handlers.Interface, error) {
 	return &Handler{
-		l: l,
+		L: l,
 	}, nil
 }
 
