@@ -171,3 +171,51 @@ func TestGetDocuments(t *testing.T) {
 		require.NoError(t, tx.Commit(ctx))
 	})
 }
+
+func TestPrepareWhereClause(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		sqlFilters  *types.Document
+		whereClause string
+		args        []any
+	}{
+		"QueryID": {
+			sqlFilters:  must.NotFail(types.NewDocument("_id", "foo")),
+			whereClause: " WHERE ((_jsonb->$1)::jsonb = $2)",
+			args:        []any{"_id", `"foo"`},
+		},
+		"QueryIDNested": {
+			sqlFilters:  must.NotFail(types.NewDocument("_id.v", "foo")),
+			whereClause: " WHERE ((_jsonb#>$1)::jsonb = $2)",
+			args:        []any{[]string{"_id", "v"}, `"foo"`},
+		},
+		"QueryTwoFields": {
+			sqlFilters: must.NotFail(types.NewDocument("v", "foo", "v2", "bar")),
+			whereClause: " WHERE ((_jsonb->$1)::jsonb = $2) OR (_jsonb->$1)::jsonb @> $2" +
+				" AND ((_jsonb->$3)::jsonb = $4) OR (_jsonb->$3)::jsonb @> $4",
+			args: []any{"v", `"foo"`, "v2", `"bar"`},
+		},
+		"DeepNestedDocument": {
+			sqlFilters:  must.NotFail(types.NewDocument("v.foo.bar", "baz")),
+			whereClause: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			args:        []any{[]string{"v", "foo", "bar"}, `"baz"`},
+		},
+		"QueryArray": {
+			sqlFilters:  must.NotFail(types.NewDocument("v.0", "foo")),
+			whereClause: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			args:        []any{[]string{"v", "0"}, `"foo"`},
+		},
+	}
+	for name, tc := range tests {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, got1 := prepareWhereClause(tc.sqlFilters)
+			assert.Equalf(t, tc.whereClause, got, "prepareWhereClause(%v)", tc.sqlFilters)
+			assert.Equalf(t, tc.args, got1, "prepareWhereClause(%v)", tc.sqlFilters)
+		})
+	}
+}

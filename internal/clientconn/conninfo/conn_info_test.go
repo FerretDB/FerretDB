@@ -111,10 +111,7 @@ func (t *testIterator) Next() (uint32, *types.Document, error) {
 	return uint32(i), doc, nil
 }
 
-func (t *testIterator) Close() {
-	//TODO implement me
-	panic("implement me")
-}
+func (t *testIterator) Close() {}
 
 func TestConnInfoCursor(t *testing.T) {
 	t.Parallel()
