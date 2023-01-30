@@ -47,10 +47,8 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateArrayCompatPop() map[string]updateCompatEmptyResultTestCase {
-	//setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
-
-	testCases := map[string]updateCompatEmptyResultTestCase{
+func testUpdateArrayCompatPop() map[string]updateCollectionsParams {
+	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
 		},
@@ -112,10 +110,8 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateArrayCompatPush() map[string]updateCompatEmptyResultTestCase {
-	// setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
-
-	testCases := map[string]updateCompatEmptyResultTestCase{
+func testUpdateArrayCompatPush() map[string]updateCollectionsParams {
+	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 		},
