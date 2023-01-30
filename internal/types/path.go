@@ -170,24 +170,19 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 
 		case *Array:
 			index, err := strconv.Atoi(p)
-			if err != nil {
-				// If p is not an array index, it could be a key of a document inside the array.
-				for i := 0; i < s.Len(); i++ {
-					v := must.NotFail(s.Get(i))
 
-					if d, ok := v.(*Document); ok {
-						if next, err = d.Get(p); err == nil {
-							return next, nil
-						}
-					}
+			switch err {
+			case nil:
+				next, err = s.Get(index)
+				if err != nil {
+					return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
 				}
-
-				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
-			}
-
-			next, err = s.Get(index)
-			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
+			default:
+				// If p is not an array index, it could be a key of a document inside the array.
+				var ok bool
+				if next, ok = getObjectValueFromArray(s, p); !ok {
+					return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+				}
 			}
 
 		default:
@@ -199,6 +194,21 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	}
 
 	return next, nil
+}
+
+// getObjectValueFromArray returns a value of the first document in the array that has a key with given name.
+func getObjectValueFromArray(a *Array, key string) (any, bool) {
+	for i := 0; i < a.Len(); i++ {
+		v := must.NotFail(a.Get(i))
+
+		if d, ok := v.(*Document); ok {
+			if next, err := d.Get(key); err == nil {
+				return next, true
+			}
+		}
+	}
+
+	return nil, false
 }
 
 // removeByPath removes path elements for given value, which could be *Document or *Array.
