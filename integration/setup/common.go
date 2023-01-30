@@ -373,28 +373,33 @@ func startup(tb testing.TB) {
 
 		// Set open telemetry tracer if jaeger endpoint is provided.
 		if *jaegerEndpointF != "" {
-			exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(*jaegerEndpointF)))
-			if err != nil {
-				tb.Errorf("failed to create jaeger exporter: %v", err)
-			}
+			startupTracer(tb)
+		}
+	})
+}
 
-			tp := tracesdk.NewTracerProvider(
-				tracesdk.WithBatcher(exp),
-				tracesdk.WithSampler(tracesdk.AlwaysSample()),
-				tracesdk.WithResource(resource.NewSchemaless(
-					semconv.ServiceNameKey.String("FerretDB"),
-				)),
-			)
+// startupTracer initializes open telemetry tracer that could be used in tests.
+func startupTracer(tb testing.TB) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(*jaegerEndpointF)))
+	if err != nil {
+		tb.Errorf("failed to create jaeger exporter: %v", err)
+	}
 
-			// Register TracerProvider globally to use it by default
-			otel.SetTracerProvider(tp)
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithBatcher(exp),
+		tracesdk.WithSampler(tracesdk.AlwaysSample()),
+		tracesdk.WithResource(resource.NewSchemaless(
+			semconv.ServiceNameKey.String("FerretDB"),
+		)),
+	)
 
-			tb.Cleanup(func() {
-				err := tp.Shutdown(context.Background())
-				if err != nil {
-					tb.Errorf("failed to shutdown tracer provider: %v", err)
-				}
-			})
+	// Register TracerProvider globally to use it by default
+	otel.SetTracerProvider(tp)
+
+	tb.Cleanup(func() {
+		err := tp.Shutdown(context.Background())
+		if err != nil {
+			tb.Errorf("failed to shutdown tracer provider: %v", err)
 		}
 	})
 }
