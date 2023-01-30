@@ -68,7 +68,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	resDocs := make([]*types.Document, 0, 16)
+	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 		return err
@@ -96,7 +96,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -105,10 +105,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			)),
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

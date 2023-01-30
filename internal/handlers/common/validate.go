@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// Validate is a common implementation of the validate command.
+// Validate is a part of a common implementation of the validate command.
 func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

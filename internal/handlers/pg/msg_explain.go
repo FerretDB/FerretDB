@@ -98,7 +98,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	cmd.Set("$db", sp.DB)
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
@@ -107,9 +107,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
+
 	return &reply, nil
 }

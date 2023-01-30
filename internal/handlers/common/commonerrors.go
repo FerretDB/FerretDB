@@ -26,7 +26,7 @@ type (
 	WriteErrors = commonerrors.WriteErrors
 )
 
-// Deprecated: use commonerrors functions instead.
+// Deprecated: use commonerrors functions instead; do not add new functions there.
 var (
 	CheckError                     = commonerrors.CheckError
 	NewCommandError                = commonerrors.NewCommandError
@@ -36,7 +36,7 @@ var (
 	ProtocolError                  = commonerrors.ProtocolError
 )
 
-// Deprecated: use commonerrors constant instead.
+// Deprecated: use commonerrors constant instead; do not add new errors there.
 const (
 	ErrBadValue                   = commonerrors.ErrBadValue
 	ErrFailedToParse              = commonerrors.ErrFailedToParse
