@@ -49,14 +49,21 @@ func (e *transactionConflictError) Error() string {
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
-
 	if tx, err = pgPool.Begin(ctx); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}
 
+	var committed bool
+
 	defer func() {
-		if err == nil {
+		// It is not enough to check `err == nil` there,
+		// because in tests `f` could contain testify/require.XXX or `testing.TB.FailNow()` calls
+		// that call `runtime.Goexit()`, leaving `err` unset in `err = f(tx)` below.
+		// This situation would hang a test.
+		//
+		// As a bonus, checking a separate variable also handles any panics in `f`.
+		if committed {
 			return
 		}
 
@@ -65,6 +72,11 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 				ctx, pgx.LogLevelError, "failed to perform rollback",
 				map[string]any{"error": rerr},
 			)
+
+			// in case of `runtime.Goexit()` or `panic(nil)`; see above
+			if err == nil {
+				err = rerr
+			}
 		}
 	}()
 
@@ -78,6 +90,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		return
 	}
 
+	committed = true
 	return
 }
 
