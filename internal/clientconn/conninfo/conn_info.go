@@ -42,21 +42,22 @@ type ConnInfo struct {
 	username string
 	password string
 
-	curRW  sync.RWMutex
-	cursor map[int64]Cursor
+	curRW   sync.RWMutex
+	cursors map[int64]Cursor
 }
 
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	return &ConnInfo{
-		cursor: map[int64]Cursor{},
+		cursors: map[int64]Cursor{},
 	}
 }
 
 // Cursor represents a cursor.
 type Cursor struct {
-	iter iterator.Interface[uint32, *types.Document]
-	tx   pgx.Tx
+	tx     pgx.Tx
+	Iter   iterator.Interface[uint32, *types.Document]
+	Filter *types.Document
 }
 
 // Auth returns stored username and password.
@@ -77,24 +78,30 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 }
 
 // Cursor returns the cursor value stored.
-func (connInfo *ConnInfo) Cursor(id int64) iterator.Interface[uint32, *types.Document] {
+func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 	connInfo.curRW.RLock()
 	defer connInfo.curRW.RUnlock()
 
-	return connInfo.cursor[id].iter
+	cursor, ok := connInfo.cursors[id]
+	if !ok {
+		return nil
+	}
+
+	return &cursor
 }
 
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
-func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *types.Document]) int64 {
+func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *types.Document], filter *types.Document) int64 {
 	id := connInfo.generateCursorID()
 
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursor[id] = Cursor{
-		iter: iter,
-		tx:   tx,
+	connInfo.cursors[id] = Cursor{
+		Iter:   iter,
+		tx:     tx,
+		Filter: filter,
 	}
 
 	return id
@@ -105,16 +112,16 @@ func (connInfo *ConnInfo) DeleteCursor(id int64) error {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	cur := connInfo.cursor[id]
+	cursor := connInfo.cursors[id]
 
-	err := cur.tx.Commit(context.Background())
+	cursor.Iter.Close()
+
+	err := cursor.tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
 
-	cur.iter.Close()
-
-	delete(connInfo.cursor, id)
+	delete(connInfo.cursors, id)
 
 	return nil
 }
@@ -124,7 +131,7 @@ func (connInfo *ConnInfo) generateCursorID() int64 {
 
 	for {
 		id = rand.Int63()
-		if _, ok := connInfo.cursor[id]; !ok {
+		if _, ok := connInfo.cursors[id]; !ok {
 			break
 		}
 
@@ -132,7 +139,7 @@ func (connInfo *ConnInfo) generateCursorID() int64 {
 			id = int64(math.Abs(float64(id)))
 		}
 
-		_, ok := connInfo.cursor[id]
+		_, ok := connInfo.cursors[id]
 		if !ok {
 			break
 		}
@@ -146,7 +153,7 @@ func (connInfo *ConnInfo) Close() {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	for k := range connInfo.cursor {
+	for k := range connInfo.cursors {
 		connInfo.DeleteCursor(k)
 	}
 }

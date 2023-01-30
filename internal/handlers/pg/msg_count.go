@@ -91,7 +91,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, _, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 		return err
 	})
 

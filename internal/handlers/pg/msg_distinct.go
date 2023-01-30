@@ -53,7 +53,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, _, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 		return err
 	})
 

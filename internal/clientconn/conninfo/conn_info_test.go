@@ -131,7 +131,7 @@ func TestConnInfoCursor(t *testing.T) {
 
 	iter := newTestIterator(array)
 
-	id := connInfo.SetCursor(nil, iter)
+	id := connInfo.SetCursor(nil, iter, nil)
 
 	cursor = connInfo.Cursor(id)
 	require.NotNil(t, cursor)
@@ -139,7 +139,7 @@ func TestConnInfoCursor(t *testing.T) {
 	var items []any
 
 	for {
-		_, item, err := cursor.Next()
+		_, item, err := cursor.Iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -183,7 +183,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 			iter := &testIterator{array: array}
 
-			id := connInfo.SetCursor(nil, iter)
+			id := connInfo.SetCursor(nil, iter, nil)
 			connInfo.Cursor(id)
 			cursorIDs[i] = id
 		}(i)
@@ -193,7 +193,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 	wg.Wait()
 
-	assert.Equal(t, runs, len(connInfo.cursor))
+	assert.Equal(t, runs, len(connInfo.cursors))
 
 	// Test parallel read of cursor.
 
@@ -213,7 +213,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 			cursor := connInfo.Cursor(cursorIDs[i])
 
 			for {
-				j, value, err := cursor.Next()
+				j, value, err := cursor.Iter.Next()
 				if err != nil {
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
@@ -253,7 +253,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 			iter := &testIterator{array: array}
 
-			connInfo.SetCursor(nil, iter)
+			connInfo.SetCursor(nil, iter, nil)
 		}(i + 1000) // avoid setting the same cursor names.
 
 		go func(i int) {
@@ -266,7 +266,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 			cursor := connInfo.Cursor(cursorIDs[i])
 
 			for {
-				j, value, err := cursor.Next()
+				j, value, err := cursor.Iter.Next()
 				if err != nil {
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break

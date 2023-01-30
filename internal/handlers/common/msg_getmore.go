@@ -81,19 +81,20 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	connInfo := conninfo.Get(ctx)
 
-	cur := connInfo.Cursor(cursorID)
-	if cur == nil {
+	cursor := connInfo.Cursor(cursorID)
+	if cursor == nil {
 		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
 	}
 
 	resDocs := types.MakeArray(0)
+	iter := cursor.Iter
 
 	var done bool
 
 	for i := 0; i < int(batchSize); i++ {
 		var doc any
 
-		_, doc, err = cur.Next()
+		_, doc, err = iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				done = true
@@ -101,6 +102,17 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 			}
 
 			return nil, lazyerrors.Error(err)
+		}
+
+		var matches bool
+
+		matches, err = FilterDocument(document, cursor.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
 		}
 
 		resDocs.Append(doc)

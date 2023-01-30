@@ -84,7 +84,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	resDocs, iter, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+	resDocs, iter, err = h.fetchAndFilterDocs1(ctx, tx, &sp)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx)
+	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, sp.Filter)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -122,8 +122,41 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
+	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
+	if err != nil {
+		return nil, err
+	}
+
+	defer iter.Close()
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	for {
+		_, doc, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return resDocs, nil
+			}
+
+			return nil, err
+		}
+
+		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+	}
+}
+
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) (
+func (h *Handler) fetchAndFilterDocs1(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) (
 	[]*types.Document, iterator.Interface[uint32, *types.Document], error,
 ) {
 	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
@@ -144,6 +177,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 		_, doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
+				closeIter = true
 				break
 			}
 

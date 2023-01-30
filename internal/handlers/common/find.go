@@ -161,6 +161,7 @@ func MakeFindReplyParameters(
 	resDocs []*types.Document, batch int,
 	p iterator.Interface[uint32, *types.Document],
 	tx pgx.Tx,
+	filter *types.Document,
 ) (
 	*types.Array, int64,
 ) {
@@ -176,7 +177,7 @@ func MakeFindReplyParameters(
 	}
 
 	if p != nil {
-		id = conninfo.Get(ctx).SetCursor(tx, p)
+		id = conninfo.Get(ctx).SetCursor(tx, p, filter)
 	}
 
 	return firstBatch, id
