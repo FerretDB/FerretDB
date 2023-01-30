@@ -77,20 +77,51 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var resDocs []*types.Document
-	var iter iterator.Interface[uint32, *types.Document]
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
 
-	tx, err := dbPool.Begin(ctx)
+		return err
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	resDocs, iter, err = h.fetchAndFilterDocs1(ctx, tx, &sp)
-	if err != nil {
-		return nil, err
-	}
+	if params.Sort == nil {
+		var iter iterator.Interface[uint32, *types.Document]
+		var tx pgx.Tx
 
-	if iter == nil {
-		tx.Commit(ctx)
+		tx, err = dbPool.Begin(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		resDocs, iter, err = h.fetchAndFilterDocs1(ctx, tx, &sp)
+		if err != nil {
+			return nil, err
+		}
+
+		if iter == nil {
+			tx.Commit(ctx)
+		}
+
+		if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
+			return nil, err
+		}
+
+		firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, sp.Filter)
+
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"cursor", must.NotFail(types.NewDocument(
+					"id", id,
+					"ns", sp.DB+"."+sp.Collection,
+					"firstBatch", firstBatch,
+				)),
+				"ok", float64(1),
+			))},
+		}))
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
@@ -105,13 +136,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, sp.Filter)
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
+		firstBatch.Append(doc)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				"id", id,
+				"id", int64(0),
 				"ns", sp.DB+"."+sp.Collection,
 				"firstBatch", firstBatch,
 			)),

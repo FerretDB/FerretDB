@@ -172,6 +172,10 @@ func MakeFindReplyParameters(
 		return firstBatch, id
 	}
 
+	if batch > len(resDocs) {
+		batch = len(resDocs)
+	}
+
 	for i := 0; i < batch; i++ {
 		firstBatch.Append(resDocs[i])
 	}
