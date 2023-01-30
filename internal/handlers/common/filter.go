@@ -68,21 +68,40 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			doc = docValue
 			filterKey = path.Suffix()
 		case *types.Array:
-			index, err := strconv.Atoi(path.Suffix())
-			if err != nil {
-				return false, nil
-			}
+			p := path.Suffix()
+			index, err := strconv.Atoi(p)
 
-			if docValue.Len() == 0 || docValue.Len() <= index {
-				return false, nil
-			}
+			switch err {
+			case nil:
+				if docValue.Len() == 0 || docValue.Len() <= index {
+					return false, nil
+				}
 
-			value, err := docValue.Get(index)
-			if err != nil {
-				return false, err
-			}
+				value, err := docValue.Get(index)
+				if err != nil {
+					return false, err
+				}
 
-			doc = must.NotFail(types.NewDocument(filterKey, value))
+				doc = must.NotFail(types.NewDocument(filterKey, value))
+
+			default:
+				// If p is not an array index, it could be a key of a document inside the array.
+				// We need to iterate over all documents in the array and check if any of them
+				// matches the filter.
+				for i := 0; i < docValue.Len(); i++ {
+					v := must.NotFail(docValue.Get(i))
+					if d, ok := v.(*types.Document); ok {
+						matched, err := filterDocumentPair(d, p, filterValue)
+						if err != nil {
+							return false, err
+						}
+
+						if matched {
+							return true, nil
+						}
+					}
+				}
+			}
 		}
 	}
 
