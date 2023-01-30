@@ -141,10 +141,9 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{Documents: []*types.Document{resDoc}})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{resDoc},
+	}))
 
 	return &reply, nil
 }
