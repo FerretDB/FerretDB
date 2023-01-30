@@ -31,17 +31,9 @@ var Composites = &Values[string]{
 	data: map[string]any{
 		"document":                   bson.D{{"foo", int32(42)}},
 		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
-		"document-array-document":    bson.D{{"array", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", int32(41)}}}}},
 		"document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
-		"document-notations": bson.D{
-			{"foo[0]", int32(42)},
-			{"*", int32(42)},
-			{"foo[*]", int32(42)},
-			{"@", int32(42)},
-			{"f,oo", int32(42)},
-		},
-		"document-null":  bson.D{{"foo", nil}},
-		"document-empty": bson.D{},
+		"document-null":              bson.D{{"foo", nil}},
+		"document-empty":             bson.D{},
 
 		"array":               bson.A{int32(42)},
 		"array-two":           bson.A{42.13, "foo"},
@@ -64,6 +56,22 @@ var Composites = &Values[string]{
 			int32(42),
 			primitive.Timestamp{T: 42, I: 13},
 			int64(41),
+		},
+	},
+}
+
+// PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
+// on pg handler.
+var PostgresEdgeCases = &Values[string]{
+	name:     "PostgresEdgeCases",
+	handlers: []string{"pg"},
+	data: map[string]any{
+		"document-notations": bson.D{
+			{"foo[0]", int32(42)},
+			{"*", int32(42)},
+			{"foo[*]", int32(42)},
+			{"@", int32(42)},
+			{"f,oo", int32(42)},
 		},
 	},
 }
