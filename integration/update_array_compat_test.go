@@ -28,19 +28,11 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
 
 	testCases := map[string]updateCompatTestCase{
-		"DuplicateKeys": {
-			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
-			resultType: emptyResult,
-		},
 		"Pop": {
 			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
 		},
 		"PopFirst": {
 			update: bson.D{{"$pop", bson.D{{"v", -1}}}},
-		},
-		"NonExistentField": {
-			update:     bson.D{{"$pop", bson.D{{"non-existent-field", 1}}}},
-			resultType: emptyResult,
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -50,30 +42,40 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$pop", bson.D{{"v.0.foo", -1}}}},
 		},
-		"DotNotationNonArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
-			update:     bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
-			resultType: emptyResult,
-		},
-		"DotNotationNonExistentPath": {
-			update:     bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
-			resultType: emptyResult,
-		},
-		"PopEmptyValue": {
-			update:     bson.D{{"$pop", bson.D{}}},
-			resultType: emptyResult,
-		},
-		"PopNotValidValueString": {
-			update:     bson.D{{"$pop", bson.D{{"v", "foo"}}}},
-			resultType: emptyResult,
-		},
-		"PopNotValidValueInt": {
-			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
-			resultType: emptyResult,
-		},
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func testUpdateArrayCompatPop() map[string]updateCompatEmptyResultTestCase {
+	//setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
+
+	testCases := map[string]updateCompatEmptyResultTestCase{
+		"DuplicateKeys": {
+			update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
+		},
+		"NonExistentField": {
+			update: bson.D{{"$pop", bson.D{{"non-existent-field", 1}}}},
+		},
+		"DotNotationNonArray": {
+			filter: bson.D{{"_id", "array-documents-nested"}},
+			update: bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
+		},
+		"DotNotationNonExistentPath": {
+			update: bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
+		},
+		"PopEmptyValue": {
+			update: bson.D{{"$pop", bson.D{}}},
+		},
+		"PopNotValidValueString": {
+			update: bson.D{{"$pop", bson.D{{"v", "foo"}}}},
+		},
+		"PopNotValidValueInt": {
+			update: bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
+		},
+	}
+
+	return testCases
 }
 
 func TestUpdateArrayCompatPush(t *testing.T) {
@@ -82,10 +84,6 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
 
 	testCases := map[string]updateCompatTestCase{
-		"DuplicateKeys": {
-			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
-			resultType: emptyResult, // conflict because of duplicate keys "v" set in $push
-		},
 		"String": {
 			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
 		},
@@ -101,11 +99,6 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"bar", "zoo"}}}}}},
 		},
-		"DotNotationNonArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
-			update:     bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
-			resultType: emptyResult, // attempt to push to non-array
-		},
 		"DotNotationNonExistentPath": {
 			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
 			skipForTigris: "Tigris does not support adding new fields to documents",
@@ -117,4 +110,20 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func testUpdateArrayCompatPush() map[string]updateCompatEmptyResultTestCase {
+	// setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
+
+	testCases := map[string]updateCompatEmptyResultTestCase{
+		"DuplicateKeys": {
+			update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
+		},
+		"DotNotationNonArray": {
+			filter: bson.D{{"_id", "array-documents-nested"}},
+			update: bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
+		},
+	}
+
+	return testCases
 }
