@@ -58,8 +58,8 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var ok bool
 
 	if cursorID, ok = cursorIDValue.(int64); !ok {
-		return nil, NewCommandErrorMsg(
-			ErrTypeMismatch,
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field 'getMore.getMore' is the wrong type '%s', expected type 'long'`,
 				AliasFromType(cursorIDValue),
