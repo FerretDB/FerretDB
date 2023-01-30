@@ -293,18 +293,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 
 		switch v := v.(type) {
 		case *types.Document:
-			//switch v {
-			//case "$eq":
-			//	condition, ok := v.(*types.Document)
-			//	if !ok {
-			//		panic(fmt.Sprintf("Unexpected type: %T", condition))
-			//	}
-			//	panic(condition)
-			//default:
-			//	panic(k)
-			//	// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			//	continue
-			//}
+			generateWhereForOperator(v)
 		case *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
@@ -336,6 +325,21 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	}
 
 	return query, args
+}
+
+func generateWhereForOperator(doc *types.Document) {
+	for k, v := range doc.Map() {
+		switch k {
+		case "$eq":
+			switch v := v.(type) {
+			case *types.Document:
+			default:
+			}
+		default:
+			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+			continue
+		}
+	}
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
