@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// GetFreeMonitoringStatus is a common implementation of the getFreeMonitoringStatus command.
+// GetFreeMonitoringStatus is a part of common implementation of the getFreeMonitoringStatus command.
 func GetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *state.State) (*wire.OpMsg, error) {
 	if state == nil {
 		panic("state cannot be equal to nil")
@@ -44,7 +44,6 @@ func GetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *state.
 	}
 
 	var reply wire.OpMsg
-
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"state", telemetryState,
