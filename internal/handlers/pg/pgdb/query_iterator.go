@@ -53,7 +53,7 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *ty
 	runtime.SetFinalizer(iter, func(iter *queryIterator) {
 		msg := "queryIterator.Close() has not been called"
 		if iter.stack != nil {
-			msg += "\nqueryIterator created at:\n" + string(iter.stack)
+			msg += "\nqueryIterator created by " + string(iter.stack)
 		}
 
 		panic(msg)
