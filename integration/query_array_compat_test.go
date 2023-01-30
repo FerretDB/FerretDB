@@ -102,7 +102,7 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotationArrayDocument": {
-			filter:         bson.D{{"v.foo.0.bar", "hello"}},
+			filter:         bson.D{{"v.0.foo.0.bar", "hello"}},
 			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
 			resultPushdown: true,
 		},
