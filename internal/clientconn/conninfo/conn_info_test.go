@@ -17,6 +17,9 @@ package conninfo
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -92,13 +95,13 @@ func newTestIterator(array *types.Array) *testIterator {
 }
 
 func (t *testIterator) Next() (uint32, *types.Document, error) {
-	i := t.i.Add(1)
+	i := int(t.i.Add(1) - 1)
 
-	if i > uint64(t.array.Len()) {
+	if i >= t.array.Len() {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	elem, err := t.array.Get(int(i) - 1)
+	elem, err := t.array.Get(i)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -149,4 +152,135 @@ func TestConnInfoCursor(t *testing.T) {
 	}
 
 	require.Equal(t, len(items), array.Len())
+}
+
+func TestConnInfoCursorParallelWork(t *testing.T) {
+	t.Parallel()
+
+	connInfo := NewConnInfo()
+
+	runs := runtime.GOMAXPROCS(-1) * 10
+	wg := sync.WaitGroup{}
+	start := make(chan struct{})
+	ready := make(chan struct{}, runs)
+	cursorIDs := make([]int64, runs)
+
+	// Test parallel set of cursor.
+	for i := 0; i < runs; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			array := types.MakeArray(10)
+			for j := 0; j < 10; j++ {
+				array.Append(must.NotFail(types.NewDocument("v", fmt.Sprintf("%d:%d", i, j))))
+			}
+
+			iter := &testIterator{array: array}
+
+			id := connInfo.SetCursor(nil, iter)
+			connInfo.Cursor(id)
+			cursorIDs[i] = id
+		}(i)
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	assert.Equal(t, runs, len(connInfo.cursor))
+
+	// Test parallel read of cursor.
+
+	start = make(chan struct{})
+	ready = make(chan struct{}, runs)
+
+	for i := 0; i < runs; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			cursor := connInfo.Cursor(cursorIDs[i])
+
+			for {
+				j, value, err := cursor.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					panic(err)
+				}
+
+				assert.Equal(t, fmt.Sprintf("%d:%d", i, j), must.NotFail(value.Get("v")))
+			}
+		}(i)
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	// Test parallel read and write.
+
+	ready = make(chan struct{}, runs)
+	start = make(chan struct{})
+
+	for i := 0; i < runs/2; i++ {
+		wg.Add(2)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			array := types.MakeArray(10)
+			for j := 0; j < 10; j++ {
+				array.Append(fmt.Sprintf("%d:%d", i, j))
+			}
+
+			iter := &testIterator{array: array}
+
+			connInfo.SetCursor(nil, iter)
+		}(i + 1000) // avoid setting the same cursor names.
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			cursor := connInfo.Cursor(cursorIDs[i])
+
+			for {
+				j, value, err := cursor.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					panic(err)
+				}
+
+				assert.Equal(t, fmt.Sprintf("%d:%d", i, j), value)
+			}
+		}(i)
+	}
+
+	close(start)
+
+	wg.Wait()
 }
