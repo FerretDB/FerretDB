@@ -171,6 +171,17 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
+				// If p is not an array index, it could be a key of a document inside the array.
+				for i := 0; i < s.Len(); i++ {
+					v := must.NotFail(s.Get(i))
+
+					if d, ok := v.(*Document); ok {
+						if next, err = d.Get(p); err == nil {
+							return next, nil
+						}
+					}
+				}
+
 				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
 			}
 
