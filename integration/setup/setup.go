@@ -104,6 +104,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	} else {
 		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
 			host: fmt.Sprintf("127.0.0.1:%d", f.GetTargetPort()),
+			tls:  f.IsTargetTLS(),
 			user: getUser(f.IsTargetTLS()),
 		})
 		client = setupClient(tb, ctx, uri, f.IsTargetTLS())

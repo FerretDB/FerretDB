@@ -139,12 +139,15 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			_, err = client.ListDatabases(ctx, bson.D{})
+			dbs, err := client.ListDatabaseNames(ctx, bson.D{})
 			if tc.dbErr != "" {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tc.dbErr)
 				return
 			}
+
+			require.NoError(t, err)
+			require.NotEmpty(t, dbs)
 		})
 	}
 }
