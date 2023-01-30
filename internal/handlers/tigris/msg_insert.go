@@ -107,6 +107,12 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.Fet
 	var inserted int32
 	var insErrors common.WriteErrors
 
+	// Attempt to insert all the documents in the same request to make insert faster.
+	if err := dbPool.InsertManyDocuments(ctx, fp.DB, fp.Collection, docs); err == nil {
+		return int32(docs.Len()), &insErrors
+	}
+
+	// If the transaction failed, attempt to insert each document separately.
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
