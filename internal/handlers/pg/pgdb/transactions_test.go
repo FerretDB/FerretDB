@@ -12,16 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+package pgdb
 
 import (
-	"context"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// MsgValidate implements HandlerInterface.
-func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.Validate(ctx, msg, h.L)
+func TestInTransaction(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := getPool(ctx, t)
+
+	assert.Panics(t, func() {
+		pool.InTransaction(ctx, func(pgx.Tx) error {
+			// We can't test `runtime.Goexit()`, but `panic(nil)` hangs the buggy code as well;
+			// see comments inside `InTransaction`.
+			//
+			//nolint:vet // we need it for testing
+			panic(nil)
+		})
+	})
 }

@@ -10,7 +10,7 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
-  BUILDTAGS: ferretdb_debug,ferretdb_tigris
+  BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
 
 tasks:
@@ -38,6 +38,7 @@ tasks:
     desc: "Build bin/ferretdb{{exeExt}} (release build)"
     deps: [gen-version]
     cmds:
+      # TODO add ferretdb_hana
       - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
     env:
       CGO_ENABLED: 0
