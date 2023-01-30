@@ -49,23 +49,43 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
-  tigris1:
+  tigris_speedup_1:
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris1
+    container_name: ferretdb_speedup_1
     ports:
       - 8082:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
-  tigris2:
+  tigris_speedup_2:
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris2
+    container_name: ferretdb_speedup_2
     ports:
       - 8083:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
+
+  tigris_speedup_3:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_speedup_3
+    ports:
+      - 8084:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
+
+  tigris_speedup_4:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_speedup_4
+    ports:
+      - 8085:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 

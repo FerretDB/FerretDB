@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"runtime/trace"
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -62,6 +61,7 @@ var (
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
 	startupOnce sync.Once
+	startupEnv  *startupInitializer
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -210,7 +210,7 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupEnv) string {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer) string {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
@@ -237,7 +237,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.p.getNextPort()),
+		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.getNextTigrisPort()),
 	}
 	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
@@ -335,7 +335,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 }
 
 // startup initializes things that should be initialized only once.
-func startup() *startupEnv {
+func startup() *startupInitializer {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
@@ -352,38 +352,8 @@ func startup() *startupEnv {
 		} else {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
-		sEnv = startupEnv{p: newPortFetcher()}
+		startupEnv = newStartupInitializer()
 	})
 
-	return &sEnv
-}
-
-type startupEnv struct {
-	p *portFetcher
-}
-
-var sEnv startupEnv
-
-// ports are available port of tigris
-var ports = []uint16{8081, 8082, 8083}
-
-// portFetcher keeps tracks of number of times
-// ports have been requested.
-type portFetcher struct {
-	n *uint64
-}
-
-// newPortFetcher creates an instance
-func newPortFetcher() *portFetcher {
-	n := uint64(0)
-	return &portFetcher{n: &n}
-}
-
-// getNextPort gets the next port number to be used
-// for testing in Round Robin fashion.
-func (p *portFetcher) getNextPort() uint16 {
-	i := atomic.AddUint64(p.n, 1)
-	numPorts := uint64(len(ports))
-
-	return ports[i%numPorts]
+	return startupEnv
 }

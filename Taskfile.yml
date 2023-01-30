@@ -10,7 +10,7 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
-  SERVICES: postgres postgres_secured tigris tigris1 tigris2 mongodb mongodb_secured
+  SERVICES: postgres postgres_secured tigris tigris_speedup_1 tigris_speedup_2 tigris_speedup_3 tigris_speedup_4 mongodb mongodb_secured
 
 tasks:
   # invoked when `task` is run without arguments
