@@ -265,9 +265,9 @@ var ArrayDocuments = &Values[string]{
 				bson.D{{"bar", "hello"}},
 				bson.D{{"bar", "world"}},
 			}}},
-			bson.D{{"food", bson.A{
+			bson.D{{"foo", bson.A{
 				bson.D{{"bar", "hello"}},
-				bson.D{{"bar", "world"}},
+				bson.D{{"bar", "baz"}},
 			}}},
 		},
 	},

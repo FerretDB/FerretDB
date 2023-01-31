@@ -169,6 +169,18 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
+		"UpdateDotNotation": {
+			command: bson.D{
+				{"query", bson.D{{"v.foo.bar", "baz"}}},
+				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "qaz"}}}}},
+			},
+		},
+		"UpdateDotNotationWrongSet": {
+			command: bson.D{
+				{"query", bson.D{{"v.foo.bar", "baz"}}},
+				{"update", bson.D{{"$set", bson.D{{"v.foo.bar", "qaz"}}}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)

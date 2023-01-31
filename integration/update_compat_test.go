@@ -456,6 +456,15 @@ func TestUpdateCompatArray(t *testing.T) {
 			replace:       bson.D{{"replacement-value", int32(1)}},
 			skipForTigris: "Tigris does not support language keyword 'array' as field name",
 		},
+		"DotNotationDocsArrays": {
+			filter: bson.D{{"v.foo.bar", "baz"}},
+			update: bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "qaz"}}}},
+		},
+		"UpdateDotNotationWrongSet": {
+			filter:     bson.D{{"v.foo.bar", "baz"}},
+			update:     bson.D{{"$set", bson.D{{"v.foo.bar", "qaz"}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
