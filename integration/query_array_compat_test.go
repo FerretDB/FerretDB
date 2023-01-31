@@ -84,12 +84,14 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"Field": {
-			filter:        bson.D{{"v.array", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter:         bson.D{{"v.array", int32(42)}},
+			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
+			resultPushdown: true,
 		},
 		"FieldPosition": {
-			filter:        bson.D{{"v.array.0", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter:         bson.D{{"v.array.0", int32(42)}},
+			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
+			resultPushdown: true,
 		},
 		"FieldPositionQuery": {
 			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
@@ -99,9 +101,45 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			resultType: emptyResult,
 		},
-		"FieldPositionField": {
-			filter:     bson.D{{"v.array.2.foo", "bar"}},
-			resultType: emptyResult,
+		"DocumentDotNotationArrayDocument": {
+			filter:         bson.D{{"v.0.foo.0.bar", "hello"}},
+			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
+			resultPushdown: true,
+		},
+		"DocumentDotNotationArrayDocumentNoIndex": {
+			filter: bson.D{{"v.foo.bar", "hello"}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
+		},
+		"FieldArrayIndex": {
+			filter:         bson.D{{"v.foo[0]", int32(42)}},
+			skipForTigris:  "Tigris does not support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldArrayAsterix": {
+			filter:         bson.D{{"v.foo[*]", int32(42)}},
+			skipForTigris:  "Tigris does not support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldAsterix": {
+			filter:         bson.D{{"v.*", int32(42)}},
+			skipForTigris:  "Tigris does not support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldAt": {
+			filter:         bson.D{{"v.@", int32(42)}},
+			skipForTigris:  "Tigris does not support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldComma": {
+			filter:         bson.D{{"v.f,oo", int32(42)}},
+			skipForTigris:  "Tigris does not support characters as field name",
+			resultPushdown: true,
+		},
+		"FieldDollarSign": {
+			filter:         bson.D{{"v.$", int32(42)}},
+			skipForTigris:  "Tigris does not support characters as field name",
+			resultPushdown: true,
+			resultType:     emptyResult,
 		},
 	}
 
