@@ -110,8 +110,6 @@ func testUpdateCollections(t *testing.T, s *setup.SetupCompatResult, p updateCol
 		t.Run(targetCollection.Name(), func(t *testing.T) {
 			t.Helper()
 
-			t.Parallel()
-
 			allDocs := FindAll(t, ctx, targetCollection)
 
 			for _, doc := range allDocs {
@@ -458,8 +456,6 @@ func testUpdateCurrentDateCollections(t *testing.T, s *setup.SetupCompatResult, 
 
 		t.Run(targetCollection.Name(), func(t *testing.T) {
 			t.Helper()
-
-			t.Parallel()
 
 			allDocs := FindAll(t, ctx, targetCollection)
 
