@@ -2,13 +2,13 @@
 title: "FerretDB v0.9.0 - The Developer Preview"
 slug: ferretdb-v-0-9-0-developer-preview
 author: Alexander Fashakin
-description: "FerretDB 0.9.0 brings with it amazing new features, including support for `$mul` field update operator and `$push` array update operator."
-image: /img/blog/ferretdb-query-pushdown.jpg
+description: "FerretDB 0.9.0 brings with it amazing new features, especially the basic support for aggregation pipelines."
+image: /img/blog/developer_preview.jpg
 ---
 
-FerretDB 0.9.0 brings with it amazing new features, including support for `$mul` field update operator and `$push` array update operator.
+FerretDB 0.9.0 brings with it amazing new features, especially the basic support for aggregation pipelines.
 
-![FerretDB v0.9.0 - The Developer Preview](/img/blog/ferretdb-query-pushdown.jpg)
+![FerretDB v0.9.0 - The Developer Preview](/img/blog/developer_preview.jpg)
 
 <!--truncate-->
 
