@@ -47,8 +47,6 @@ const (
 //
 // It panics if the value is not a valid BSON type.
 func detectDataType(value any) compareTypeOrderResult {
-	assertType(value)
-
 	switch value := value.(type) {
 	case *Document:
 		return documentDataType

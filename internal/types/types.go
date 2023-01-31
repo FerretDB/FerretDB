@@ -89,24 +89,6 @@ type CompositeTypeInterface interface {
 
 //go-sumtype:decl CompositeTypeInterface
 
-// assertType panics if value is not a BSON type (scalar or composite).
-//
-// It should be used in places where we can't use compile-time check via type parameters (generics).
-// For example, `NewArray(42)` should panic, because `int` is not a BSON type.
-// It should check only type, not value.
-func assertType(value any) {
-	switch value := value.(type) {
-	case *Document, *Array:
-		return
-	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
-		return
-	case nil:
-		panic("types: unexpected nil type")
-	default:
-		panic(fmt.Sprintf("types: unexpected type %[1]T (%#[1]v)", value))
-	}
-}
-
 // isScalar check if v is a BSON scalar value.
 func isScalar(v any) bool {
 	if v == nil {
