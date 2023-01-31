@@ -41,7 +41,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if mechanism != "PLAIN" {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrTypeMismatch,
-			"Unsupported mechanism 'PLAIN'",
+			"Unsupported mechanism '"+mechanism+"'",
 			"mechanism",
 		)
 	}
