@@ -27,48 +27,71 @@ import (
 func TestDocumentIterator(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		doc      *Document
-		expected []field
-	}{
-		"empty": {
-			doc:      must.NotFail(NewDocument()),
-			expected: []field{},
-		},
-		"one": {
-			doc:      must.NotFail(NewDocument("foo", "bar")),
-			expected: []field{{key: "foo", value: "bar"}},
-		},
-		"two": {
-			doc:      must.NotFail(NewDocument("foo", "bar", "baz", "qux")),
-			expected: []field{{key: "foo", value: "bar"}, {key: "baz", value: "qux"}},
-		},
-		"duplicates": {
-			doc:      must.NotFail(NewDocument("foo", "bar", "baz", "qux", "foo", "quuz")),
-			expected: []field{{key: "foo", value: "bar"}, {key: "baz", value: "qux"}, {key: "foo", value: "quuz"}},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
 
-			iter := tc.doc.Iterator()
-			defer iter.Close()
+		iter := must.NotFail(NewDocument("foo", "bar", "baz", "qux")).Iterator()
+		defer iter.Close()
 
-			for i := 0; i < len(tc.expected); i++ {
-				key, value, err := iter.Next()
-				require.NoError(t, err)
+		k, v, err := iter.Next()
+		require.NoError(t, err)
+		assert.Equal(t, "foo", k)
+		assert.Equal(t, "bar", v)
 
-				require.Equal(t, tc.expected[i].key, key)
-				require.Equal(t, tc.expected[i].value, value)
-			}
+		k, v, err = iter.Next()
+		require.NoError(t, err)
+		assert.Equal(t, "baz", k)
+		assert.Equal(t, "qux", v)
 
-			_, _, err := iter.Next()
-			assert.Equal(t, iterator.ErrIteratorDone, err)
+		k, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
 
-			// check that Next() can be called again
-			_, _, err = iter.Next()
-			assert.Equal(t, iterator.ErrIteratorDone, err)
-		})
-	}
+		// still done
+		k, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+	})
+
+	t.Run("EarlyClose", func(t *testing.T) {
+		t.Parallel()
+
+		iter := must.NotFail(NewDocument("foo", "bar", "baz", "qux")).Iterator()
+		defer iter.Close()
+
+		iter.Close()
+
+		k, v, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+
+		// still done
+		k, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
+
+		iter := must.NotFail(NewDocument()).Iterator()
+		defer iter.Close()
+
+		k, v, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+
+		iter.Close()
+
+		// still done after Close()
+		k, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+	})
 }
