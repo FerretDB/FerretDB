@@ -123,7 +123,6 @@ func (d *Document) DeepCopy() *Document {
 	if d == nil {
 		panic("types.Document.DeepCopy: nil document")
 	}
-
 	return deepCopy(d).(*Document)
 }
 

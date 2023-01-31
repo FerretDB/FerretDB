@@ -44,8 +44,6 @@ const (
 )
 
 // detectDataType returns a sequence for build-in type.
-//
-// It panics if the value is not a valid BSON type.
 func detectDataType(value any) compareTypeOrderResult {
 	switch value := value.(type) {
 	case *Document:
