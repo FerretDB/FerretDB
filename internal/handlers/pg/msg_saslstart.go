@@ -63,8 +63,10 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	authzid, authcid, passwd := parts[0], parts[1], parts[2]
 
-	// some drivers (Go) send empty realm,
-	// while others (Java) set it to the same value as username
+	// Some drivers (Go) send empty authorization identity (authzid),
+	// while others (Java) set it to the same value as authentication identity (authcid)
+	// (see https://www.rfc-editor.org/rfc/rfc4616.html).
+	// Ignore authzid for now.
 	_ = authzid
 
 	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd))
