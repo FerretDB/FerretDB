@@ -58,46 +58,48 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		// {field1./.../.fieldN: filterValue}
 		path := types.NewPathFromString(filterKey)
 		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValue, err := doc.GetByPath(path.TrimSuffix())
+		docValues, err := doc.GetAllByPath(path.TrimSuffix())
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}
 
-		switch docValue := docValue.(type) {
-		case *types.Document:
-			doc = docValue
-			filterKey = path.Suffix()
-		case *types.Array:
-			p := path.Suffix()
-			index, err := strconv.Atoi(p)
+		for _, docValue := range docValues {
+			switch docValue := docValue.(type) {
+			case *types.Document:
+				doc = docValue
+				filterKey = path.Suffix()
+			case *types.Array:
+				p := path.Suffix()
+				index, err := strconv.Atoi(p)
 
-			switch err {
-			case nil:
-				if docValue.Len() == 0 || docValue.Len() <= index {
-					return false, nil
-				}
+				switch err {
+				case nil:
+					if docValue.Len() == 0 || docValue.Len() <= index {
+						continue
+					}
 
-				value, err := docValue.Get(index)
-				if err != nil {
-					return false, err
-				}
+					value, err := docValue.Get(index)
+					if err != nil {
+						continue
+					}
 
-				doc = must.NotFail(types.NewDocument(filterKey, value))
+					doc = must.NotFail(types.NewDocument(filterKey, value))
 
-			default:
-				// If p is not an array index, it could be a key of a document inside the array.
-				// We need to iterate over all documents in the array and check if any of them
-				// matches the filter.
-				for i := 0; i < docValue.Len(); i++ {
-					v := must.NotFail(docValue.Get(i))
-					if d, ok := v.(*types.Document); ok {
-						matched, err := filterDocumentPair(d, p, filterValue)
-						if err != nil {
-							return false, err
-						}
+				default:
+					// If p is not an array index, it could be a key of a document inside the array.
+					// We need to iterate over all documents in the array and check if any of them
+					// matches the filter.
+					for i := 0; i < docValue.Len(); i++ {
+						v := must.NotFail(docValue.Get(i))
+						if d, ok := v.(*types.Document); ok {
+							matched, err := filterDocumentPair(d, p, filterValue)
+							if err != nil {
+								return false, err
+							}
 
-						if matched {
-							return true, nil
+							if matched {
+								return true, nil
+							}
 						}
 					}
 				}

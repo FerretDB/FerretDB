@@ -156,7 +156,7 @@ func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
 }
 
-// getByPath returns a value by path - a sequence of indexes and keys.
+// getByPath returns all matching values by path - a sequence of indexes and keys.
 func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	var next any = comp
 	for _, p := range path.Slice() {
@@ -170,19 +170,13 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 
 		case *Array:
 			index, err := strconv.Atoi(p)
+			if err != nil {
+				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+			}
 
-			switch err {
-			case nil:
-				next, err = s.Get(index)
-				if err != nil {
-					return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
-				}
-			default:
-				// If p is not an array index, it could be a key of a document inside the array.
-				var ok bool
-				if next, ok = getObjectValueFromArray(s, p); !ok {
-					return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
-				}
+			next, err = s.Get(index)
+			if err != nil {
+				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		default:
@@ -196,19 +190,77 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	return next, nil
 }
 
-// getObjectValueFromArray returns a value of the first document in the array that has a key with given name.
-func getObjectValueFromArray(a *Array, key string) (any, bool) {
+// getAllByPath returns all matching values by path - a sequence of indexes and keys.
+func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
+	next := []any{comp}
+
+	for _, p := range path.Slice() {
+		var newNext []any
+
+		for _, n := range next {
+			switch s := n.(type) {
+			case *Document:
+				v, err := s.Get(p)
+				if err != nil {
+					return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
+				}
+
+				newNext = append(newNext, v)
+
+			case *Array:
+				index, err := strconv.Atoi(p)
+
+				switch err {
+				case nil:
+					var v any
+					v, err = s.Get(index)
+
+					if err != nil {
+						return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
+					}
+					newNext = append(newNext, v)
+
+				default:
+					// If p is not an array index, it could be a key of documents inside the array.
+					docs := getObjectValuesFromArray(s, p)
+
+					if len(docs) == 0 {
+						return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+					}
+
+					newNext = append(newNext, docs...)
+				}
+
+			default:
+				return nil, newDocumentPathError(
+					ErrDocumentPathCannotAccess,
+					fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
+				)
+			}
+		}
+
+		next = newNext
+	}
+
+	return next, nil
+}
+
+// getObjectValuesFromArray returns a list of documents in the array that have a key with given name.
+// If no documents are found, an empty list is returned.
+func getObjectValuesFromArray(a *Array, key string) []any {
+	var docs []any
+
 	for i := 0; i < a.Len(); i++ {
 		v := must.NotFail(a.Get(i))
 
 		if d, ok := v.(*Document); ok {
 			if next, err := d.Get(key); err == nil {
-				return next, true
+				docs = append(docs, next)
 			}
 		}
 	}
 
-	return nil, false
+	return docs
 }
 
 // removeByPath removes path elements for given value, which could be *Document or *Array.

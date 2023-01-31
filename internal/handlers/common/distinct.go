@@ -99,29 +99,29 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 	distinct := types.MakeArray(len(docs))
 
 	for _, doc := range docs {
-		var val any
-
-		val, err := doc.GetByPath(types.NewPathFromString(key))
+		vals, err := doc.GetAllByPath(types.NewPathFromString(key))
 		if err != nil {
 			continue
 		}
 
-		switch v := val.(type) {
-		case *types.Array:
-			for i := 0; i < v.Len(); i++ {
-				el, err := v.Get(i)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
+		for _, val := range vals {
+			switch v := val.(type) {
+			case *types.Array:
+				for i := 0; i < v.Len(); i++ {
+					el, err := v.Get(i)
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+
+					if !distinct.Contains(el) {
+						distinct.Append(el)
+					}
 				}
 
-				if !distinct.Contains(el) {
-					distinct.Append(el)
+			default:
+				if !distinct.Contains(v) {
+					distinct.Append(v)
 				}
-			}
-
-		default:
-			if !distinct.Contains(v) {
-				distinct.Append(v)
 			}
 		}
 	}

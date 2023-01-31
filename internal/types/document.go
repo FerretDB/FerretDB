@@ -298,6 +298,11 @@ func (d *Document) GetByPath(path Path) (any, error) {
 	return getByPath(d, path)
 }
 
+// GetAllByPath returns all values by path - a sequence of indexes and keys.
+func (d *Document) GetAllByPath(path Path) ([]any, error) {
+	return getAllByPath(d, path)
+}
+
 // SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
 // If some parts of the path are missing, they will be created.
 // The Document type will be used to create these parts.
