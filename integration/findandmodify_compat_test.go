@@ -180,6 +180,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"v.foo.bar", "baz"}}},
 				{"update", bson.D{{"$set", bson.D{{"v.foo.bar", "qaz"}}}}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1903",
 		},
 	}
 
@@ -328,7 +329,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					targetErr = targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetMod)
 					compatErr = compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatMod)
 					require.Equal(t, targetErr, compatErr)
-					AssertEqualDocuments(t, targetMod, compatMod)
+					AssertEqualDocuments(t, compatMod, targetMod)
 
 					// To make sure that the results of modification are equal,
 					// find all the documents in target and compat collections and compare that they are the same
