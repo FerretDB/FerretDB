@@ -37,6 +37,7 @@
 //
 // Debug builds of FerretDB behave differently in a few aspects:
 //   - Some internal errors cause crashes instead of being handled more gracefully.
+//   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.
 //   - The default logging level is set to debug.
 package version
@@ -50,6 +51,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -111,7 +113,7 @@ func init() {
 		Branch:              unknown,
 		Dirty:               false,
 		Package:             unknown, // TODO https://github.com/FerretDB/FerretDB/issues/1805
-		DebugBuild:          debugBuild,
+		DebugBuild:          debugbuild.Enabled,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
 		MongoDBVersionArray: mongoDBVersionArray,

@@ -15,21 +15,60 @@
 // Package iterator describes a generic Iterator interface.
 package iterator
 
-import "errors"
+import (
+	"errors"
 
-// ErrIteratorDone is returned when the iterator is read to the end.
-var ErrIteratorDone = errors.New("iterator is read to the end")
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+// ErrIteratorDone is returned when the iterator is read to the end or closed.
+var ErrIteratorDone = errors.New("iterator is read to the end or closed")
 
 // Interface is an iterator interface.
 type Interface[K, V any] interface {
 	// Next returns the next key/value pair, where the key is a slice index, map key, document number, etc,
 	// and the value is the slice or map value, next document, etc.
-	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error.
+	//
+	// Returned error could be (possibly wrapped) ErrIteratorDone or some fatal error
+	// like (possibly wrapped) context.Canceled.
+	// In any case, even if iterator was read to the end, and Next returned ErrIteratorDone,
+	// or Next returned fatal error,
+	// Close method still should be called.
+	//
+	// Next should not be called concurrently.
 	Next() (K, V, error)
 
 	// Close indicates that the iterator will no longer be used.
-	// If Close is called, future calls to Next might panic.
+	// After Close is called, future calls to Next must return ErrIteratorDone,
+	// even if previous call returned a different error.
+	//
+	// Close must be called.
+	// If it wasn't, the iterator might leak resources or panic later.
+	//
 	// Close must be concurrency-safe and may be called multiple times.
-	// All calls after the first will have no effect.
+	// All calls after the first should have no observable effect.
 	Close()
+}
+
+// Values consumes all values from iterator until it is done.
+// ErrIteratorDone error is returned as nil; any other error is returned as-is.
+//
+// Iterator is always closed at the end.
+func Values[K, V any](iter Interface[K, V]) ([]V, error) {
+	defer iter.Close()
+
+	var res []V
+
+	for {
+		_, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, ErrIteratorDone) {
+				return res, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		res = append(res, v)
+	}
 }
