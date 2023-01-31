@@ -15,10 +15,10 @@ require (
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.39.0
 	github.com/stretchr/testify v1.8.1
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.18
+	github.com/tigrisdata/tigris-client-go v1.0.0-beta.19
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0 // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20230116083435-1de6713980de
+	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
 	golang.org/x/net v0.5.0
 	golang.org/x/sys v0.4.0
 )
