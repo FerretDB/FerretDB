@@ -93,10 +93,10 @@ func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
 func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *types.Document], filter *types.Document) int64 {
-	id := connInfo.generateCursorID()
-
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
+
+	id := connInfo.generateCursorID()
 
 	connInfo.cursors[id] = Cursor{
 		Iter:   iter,
