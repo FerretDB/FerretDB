@@ -32,13 +32,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-const (
-	// FetchedChannelBufSize is the size of the buffer of the channel that is used in QueryDocuments.
-	FetchedChannelBufSize = 3
-	// FetchedSliceCapacity is the capacity of the slice in FetchedDocs.
-	FetchedSliceCapacity = 2
-)
-
 // FetchedDocs is a struct that contains a list of documents and an error.
 // It is used in the fetched channel returned by QueryDocuments.
 type FetchedDocs struct {
@@ -57,7 +50,7 @@ type SQLParam struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
+func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, error) {
 	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -99,10 +92,6 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		query += where
 	}
 
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -141,7 +130,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
+func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[int, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 
 	switch {
@@ -205,7 +194,7 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[int, *types.Document], error) {
 	var query string
 
 	if p.explain {
