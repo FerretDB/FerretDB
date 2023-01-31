@@ -12,16 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+//go:build ferretdb_debug || ferretdb_testcover || race
 
-import (
-	"context"
+package debugbuild
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgValidate implements HandlerInterface.
-func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.Validate(ctx, msg, h.L)
-}
+// Enabled is true if that's a debug build.
+//
+// See build/version package documentation for more details.
+//
+// It is a constant to allow the compiler to optimize away the code.
+const Enabled = true

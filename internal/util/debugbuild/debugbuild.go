@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+// Package debugbuild provides information about whatever this is a debug build or not.
+//
+// It is a separate package to avoid dependency cycles.
+package debugbuild
 
-import (
-	"context"
+import "runtime/debug"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
+// Stack returns a formatted stack trace of the goroutine that calls it for debug builds.
+// For non-debug builds, it returns nil.
+func Stack() []byte {
+	if Enabled {
+		return debug.Stack()
+	}
 
-// MsgValidate implements HandlerInterface.
-func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.Validate(ctx, msg, h.L)
+	return nil
 }

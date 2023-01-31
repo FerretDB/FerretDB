@@ -12,34 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package aggregations
 
 import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCreateIndexes implements HandlerInterface.
-func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/78
+// match represents $match stage.
+type match struct {
+	filter *types.Document
+}
 
-	document, err := msg.Document()
+// newMatch creates a new $match stage.
+func newMatch(stage *types.Document) (Stage, error) {
+	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
-
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	}))
-
-	return &reply, nil
+	return &match{
+		filter: filter,
+	}, nil
 }
+
+// Process implements Stage interface.
+func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	var res []*types.Document
+
+	for _, doc := range in {
+		matches, err := common.FilterDocument(doc, m.filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if matches {
+			res = append(res, doc)
+		}
+	}
+
+	return res, nil
+}
+
+// check interfaces
+var (
+	_ Stage = (*count)(nil)
+)

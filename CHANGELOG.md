@@ -1,5 +1,78 @@
 # Changelog
 
+## [v0.9.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.0) (2023-01-31)
+
+## What's Changed
+
+We are pleased to announce our first Developer Preview release!
+
+This release adds an initial implementation of aggregation pipelines.
+For now, only the `$match` and `$count` stages are implemented.
+Additional stages will be implemented in future releases.
+
+This release also pushes more filtering queries to the backend, significantly improving their speed.
+Again, more will be implemented in future releases.
+
+### New Features 🎉
+* Support `$mul` field update operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1760
+* Support `$push` array update operator by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1819
+* Support PostgreSQL pushdowns for numbers by @noisersup in https://github.com/FerretDB/FerretDB/pull/1809
+* Pushdown SQL queries with dot notation by @noisersup in https://github.com/FerretDB/FerretDB/pull/1864
+* Initial support for aggregation pipelines by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1860
+
+### Fixed Bugs 🐛
+* Fix error types and array handling when dot notation is used with `$set` operator by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1795
+* Fix `$inc` operator panics for non-existing array index by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1787
+* Fix `$set` operator to apply correct comparison by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1814
+
+### Enhancements 🛠
+* Set default `pool_max_conns` to 20 for PostgreSQL by @jkoenig134 in https://github.com/FerretDB/FerretDB/pull/1852
+
+### Documentation 📄
+* Blog and documentation configuration improvements by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1799
+* Fix internal links and images by @Fashander in https://github.com/FerretDB/FerretDB/pull/1796
+* Bump ferretdb/docusaurus-docs from 2.2.0-2 to 2.2.0-3 in /build/deps by @dependabot in https://github.com/FerretDB/FerretDB/pull/1823
+* Tweak documentation about flags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1820
+* Add blog post about FerretDB v0.8.1 release by @Fashander in https://github.com/FerretDB/FerretDB/pull/1813
+* Add blog post on FerretDB beta release 0.8.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/1815
+* Add basic documentation writing guide by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1826
+* Update docker deployment documentation by @noisersup in https://github.com/FerretDB/FerretDB/pull/1817
+* Reformat Markdown tables by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1847
+* Reformat blog and documentation setup by @Fashander in https://github.com/FerretDB/FerretDB/pull/1839
+* Clarify what command statistics we gather by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1861
+* Add blog post on "How FerretDB fetches data (About query pushdown)" by @Fashander in https://github.com/FerretDB/FerretDB/pull/1853
+* Add content creation process for documentation and blog by @Fashander in https://github.com/FerretDB/FerretDB/pull/1859
+* Mention that there is no configuration file by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1879
+* Truncate blog post display by @Fashander in https://github.com/FerretDB/FerretDB/pull/1874
+
+### Other Changes 🤖
+* Simplify `types.Array` `Append` signature by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1793
+* Integrate `explain` into tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/1790
+* Add `package.txt` stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1806
+* Remove lazy connection pools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1812
+* Add Go execution tracing for tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1804
+* Retry transaction more times and log retries by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1818
+* Migrate to Tigris `beta.27` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1810
+* Remove `ListenerOpts` from another `ListenerOpts` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1837
+* Update CONTRIBUTING.md for test data tip by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1832
+* Tiny cleanups by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1849
+* Update development documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1851
+* Make proper port visible on blog development server by @noisersup in https://github.com/FerretDB/FerretDB/pull/1862
+* Ensure that we don't import extra dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1856
+* Extract handler errors into own package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1872
+* Run query compat tests on same collection by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1870
+* Fix `InTransaction` helper's edge case by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1881
+* Improve insert in Tigris by using single query for multiple documents by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1871
+* Unify reply code in handlers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1883
+* Make iterator interface more strict by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1882
+
+## New Contributors
+* @jkoenig134 made their first contribution in https://github.com/FerretDB/FerretDB/pull/1852
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/13?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.8.1...v0.9.0).
+
+
 ## [v0.8.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.1) (2023-01-16)
 
 ### New Features 🎉
