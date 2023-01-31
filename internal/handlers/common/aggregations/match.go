@@ -21,10 +21,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// match represents $match stage.
 type match struct {
 	filter *types.Document
 }
 
+// newMatch creates a new $match stage.
 func newMatch(stage *types.Document) (Stage, error) {
 	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {

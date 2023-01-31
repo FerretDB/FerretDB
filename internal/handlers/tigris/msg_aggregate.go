@@ -38,6 +38,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/1891
+
 	if pipeline.Len() > 0 {
 		d := must.NotFail(pipeline.Get(0)).(*types.Document)
 

@@ -23,10 +23,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// count represents $count stage.
 type count struct {
 	field string
 }
 
+// newCount creates a new $count stage.
 func newCount(stage *types.Document) (Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {

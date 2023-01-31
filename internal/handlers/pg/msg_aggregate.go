@@ -43,7 +43,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO
+	// TODO https://github.com/FerretDB/FerretDB/issues/1892
 	common.Ignored(document, h.L, "cursor", "lsid")
 
 	if err = common.Unimplemented(document, "explain", "bypassDocumentValidation", "hint"); err != nil {
@@ -68,6 +68,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// TODO handle collection-agnostic pipelines ({aggregate: 1})
+	// https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
 	if sp.Collection, ok = collection.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
@@ -116,6 +117,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/1892
 	firstBatch := types.MakeArray(len(docs))
 	for _, doc := range docs {
 		firstBatch.Append(doc)
@@ -126,7 +128,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
+				"id", int64(0),
 				"ns", sp.DB+"."+sp.Collection,
 			)),
 			"ok", float64(1),
