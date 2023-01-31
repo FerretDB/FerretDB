@@ -212,7 +212,7 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 }
 
 // TestUpdateFieldCompatIncComplex are test that do not work on tigris.
-func testUpdateFieldCompatInc() map[string]updateCollectionsParams {
+func testUpdateFieldCompatIncUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
@@ -352,7 +352,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatMax() map[string]updateCollectionsParams {
+func testUpdateFieldCompatMaxUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
@@ -484,7 +484,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatMin() map[string]updateCollectionsParams {
+func testUpdateFieldCompatMinUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$min", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
@@ -519,7 +519,7 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatRename() map[string]updateCollectionsParams {
+func testUpdateFieldCompatRenameUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateField": {
 			update: bson.D{{"$rename", bson.D{{"v", "v"}}}},
@@ -590,7 +590,7 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatUnset() map[string]updateCollectionsParams {
+func testUpdateFieldCompatUnsetUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"NonExisting": {
 			update: bson.D{{"$unset", bson.D{{"foo", ""}}}},
@@ -768,7 +768,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatSet() map[string]updateCollectionsParams {
+func testUpdateFieldCompatSetUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
@@ -828,7 +828,7 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatSetOnInsert() map[string]updateCollectionsParams {
+func testUpdateFieldCompatSetOnInsertUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"Nil": {
 			update: bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
@@ -868,7 +868,7 @@ func testUpdateFieldCompatSetOnInsert() map[string]updateCollectionsParams {
 	return testCases
 }
 
-func testUpdateFieldCompatSetOnInsertArray() map[string]updateCollectionsParams {
+func testUpdateFieldCompatSetOnInsertArrayUnchaged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"Array": {
 			update: bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
@@ -881,7 +881,7 @@ func testUpdateFieldCompatSetOnInsertArray() map[string]updateCollectionsParams 
 	return testCases
 }
 
-func testUpdateFieldCompatMixed() map[string]updateCollectionsParams {
+func testUpdateFieldCompatMixedUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"SetSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
@@ -999,7 +999,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateFieldCompatMul() map[string]updateCollectionsParams {
+func testUpdateFieldCompatMulUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"Empty": {
 			update: bson.D{{"$mul", bson.D{}}},

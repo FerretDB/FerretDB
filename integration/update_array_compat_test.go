@@ -47,7 +47,7 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateArrayCompatPop() map[string]updateCollectionsParams {
+func testUpdateArrayCompatPopUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
 			update: bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
@@ -110,12 +110,14 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateArrayCompatPush() map[string]updateCollectionsParams {
+func testUpdateArrayCompatPushUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"DuplicateKeys": {
+			// conflict because of duplicate keys "v"
 			update: bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
 		},
 		"DotNotationNonArray": {
+			// attempt to push to non-array
 			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
 		},

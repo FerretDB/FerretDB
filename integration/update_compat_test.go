@@ -47,7 +47,7 @@ type updateCompatTestCase struct {
 // testUpdateCompat tests update compatibility test cases.
 // It creates a collection for each test case and
 // asserts that the collection has been changed.
-// Use testUpdateCompatUnchanged if update test does not
+// Use TestUpdateCompatUnchangedRunner test if update test does not
 // update the collection.
 func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 	t.Helper()
@@ -87,7 +87,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 	}
 }
 
-// testUpdateCollections updates collection and returns true if any collection was modified.
+// testUpdateCollections applies updateOne operation to collections
+// and returns true if any collection was modified.
 func testUpdateCollections(t *testing.T, s *setup.SetupCompatResult, p updateCollectionsParams) bool {
 	t.Helper()
 
@@ -212,25 +213,26 @@ func testUpdateCompatUnchanged(t *testing.T, testCases map[string]updateCollecti
 }
 
 // TestUpdateCompatUnchangedRunner is temporary runner to address
-// slowness of compat setup by only setting up collection once
-// for all update tests which either errors or nothing is updated.
+// slowness of compat setup by only setting up the collection once
+// for all tests defined in here. These tests either throws error
+// or nothing is updated due to no filter match.
 func TestUpdateCompatUnchangedRunner(t *testing.T) {
 	t.Parallel()
 
 	testcases := map[string]map[string]updateCollectionsParams{
-		"Implicit":         testUpdateCompatImplicit(),
-		"Inc":              testUpdateFieldCompatInc(),
-		"Max":              testUpdateFieldCompatMax(),
-		"Min":              testUpdateFieldCompatMin(),
-		"Rename":           testUpdateFieldCompatRename(),
-		"Unset":            testUpdateFieldCompatUnset(),
-		"set":              testUpdateFieldCompatSet(),
-		"SetOnInsert":      testUpdateFieldCompatSetOnInsert(),
-		"SetOnInsertArray": testUpdateFieldCompatSetOnInsertArray(),
-		"MultipleOp":       testUpdateFieldCompatMixed(),
-		"Mul":              testUpdateFieldCompatMul(),
-		"Push":             testUpdateArrayCompatPush(),
-		"Pop":              testUpdateArrayCompatPop(),
+		"Implicit":         testUpdateCompatImplicitUnchanged(),
+		"Inc":              testUpdateFieldCompatIncUnchanged(),
+		"Max":              testUpdateFieldCompatMaxUnchanged(),
+		"Min":              testUpdateFieldCompatMinUnchanged(),
+		"Rename":           testUpdateFieldCompatRenameUnchanged(),
+		"Unset":            testUpdateFieldCompatUnsetUnchanged(),
+		"set":              testUpdateFieldCompatSetUnchanged(),
+		"SetOnInsert":      testUpdateFieldCompatSetOnInsertUnchanged(),
+		"SetOnInsertArray": testUpdateFieldCompatSetOnInsertArrayUnchaged(),
+		"MultipleOp":       testUpdateFieldCompatMixedUnchanged(),
+		"Mul":              testUpdateFieldCompatMulUnchanged(),
+		"Push":             testUpdateArrayCompatPushUnchanged(),
+		"Pop":              testUpdateArrayCompatPopUnchanged(),
 	}
 
 	allTestcases := make(map[string]updateCollectionsParams, 0)
@@ -433,7 +435,9 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 	}
 }
 
-// testUpdateCurrentDateCollections updates collection and returns true if any collection was modified.
+// testUpdateCurrentDateCollections applies update operation to
+// the collections and returns true if any collection was modified.
+// It checks current date in compat and target are within acceptable difference.
 func testUpdateCurrentDateCollections(t *testing.T, s *setup.SetupCompatResult, p updateCurrentDateCollectionParams) bool {
 	t.Helper()
 
@@ -521,10 +525,10 @@ type updateCurrentDateCollectionParams struct {
 	filter bson.D       // defaults to bson.D{{"_id", id}}
 }
 
-// testUpdateCurrentDateCompatUnchanged tests update compatibility test cases for current date
+// testUpdateCurrentDateCompatUnchanged tests update compatibility
+// test cases for current date
 // where collection is not updated due to invalid query or
 // update query which does not match any item in the collection.
-// It checks current date in compat and target are within acceptable difference.
 // It creates collection once then uses that collection to test
 // all test cases to speed up compat tests.
 func testUpdateCurrentDateCompatUnchanged(t *testing.T, testCases map[string]updateCurrentDateCollectionParams) {
@@ -582,7 +586,7 @@ func TestUpdateCompat(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func testUpdateCompatImplicit() map[string]updateCollectionsParams {
+func testUpdateCompatImplicitUnchanged() map[string]updateCollectionsParams {
 	testCases := map[string]updateCollectionsParams{
 		"UpdateEmptyDocument": {
 			update: bson.D{},
