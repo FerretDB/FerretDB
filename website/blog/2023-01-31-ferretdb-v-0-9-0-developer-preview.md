@@ -71,7 +71,7 @@ Here's how you can use it:
 
 ```js
 db.collection.update(
-    {<query> },
+    {<query>},
     {
         $push: {
             <fieldName>: <value>
