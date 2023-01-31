@@ -53,6 +53,7 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 	}
 
 	iter := docs.Iterator()
+	defer iter.Close()
 
 	insertDocs := make([]driver.Document, docs.Len())
 
