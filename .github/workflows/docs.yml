@@ -45,7 +45,7 @@ jobs:
       - name: Check LFS status
         uses: actionsdesk/lfs-warning@v3.2
         with:
-          filesizelimit: 102400b
+          filesizelimit: 204800b
           labelName: use-git-lfs
           exclusionPatterns: |
             **/*.js
