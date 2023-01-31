@@ -50,6 +50,9 @@ services:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
   tigris_speedup_1:
+    # The additional Tigris docker instances were added to make
+    # integration tests run faster.
+    # https://github.com/FerretDB/FerretDB/issues/1887
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
@@ -60,6 +63,9 @@ services:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
   tigris_speedup_2:
+    # The additional Tigris docker instances were added to make
+    # integration tests run faster.
+    # https://github.com/FerretDB/FerretDB/issues/1887
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
@@ -70,6 +76,9 @@ services:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
   tigris_speedup_3:
+    # The additional Tigris docker instances were added to make
+    # integration tests run faster.
+    # https://github.com/FerretDB/FerretDB/issues/1887
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
@@ -80,6 +89,9 @@ services:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
   tigris_speedup_4:
+    # The additional Tigris docker instances were added to make
+    # integration tests run faster.
+    # https://github.com/FerretDB/FerretDB/issues/1887
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile

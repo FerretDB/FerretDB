@@ -151,7 +151,12 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
-	// Skip 8084 because since it is used by userland proxy.
+	// The additional Tigris docker instances were added to make
+	// integration tests run faster, they use ports 8082, 8083, 8085 and 8086.
+	// Port 8084 is not used since the address is already in use on CI.
+	// The ports are also defined in docker-compose.yml and
+	// within integration tests.
+	// https://github.com/FerretDB/FerretDB/issues/1887
 	for _, port := range []uint16{8081, 8082, 8083, 8085, 8086} {
 		err := waitForPort(ctx, logger, port)
 		if err != nil {
