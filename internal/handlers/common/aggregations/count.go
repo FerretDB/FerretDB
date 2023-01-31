@@ -12,43 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package aggregations
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgAggregate implements HandlerInterface.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+// count represents $count stage.
+type count struct {
+	field string
+}
+
+// newCount creates a new $count stage.
+func newCount(stage *types.Document) (Stage, error) {
+	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/1891
-
-	if pipeline.Len() > 0 {
-		d := must.NotFail(pipeline.Get(0)).(*types.Document)
-
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			fmt.Sprintf("`aggregate` %q is not implemented yet", d.Command()),
-			d.Command(),
+			commonerrors.ErrStageCountNonEmptyString,
+			"the count field must be a non-empty string",
+			"$count",
 		)
 	}
 
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "`aggregate` command is not implemented yet")
+	return &count{
+		field: field,
+	}, nil
 }
+
+// Process implements Stage interface.
+func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
+	return []*types.Document{res}, nil
+}
+
+// check interfaces
+var (
+	_ Stage = (*count)(nil)
+)
