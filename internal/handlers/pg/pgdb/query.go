@@ -296,10 +296,15 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			for docKey, docVal := range v.Map() {
 				switch docKey {
 				case "$eq":
-
-					sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-					filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-					args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+					switch docVal := docVal.(type) {
+					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+					case float64, string, types.ObjectID, int32, int64:
+						sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
+						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
 				default:
 					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 					continue
@@ -340,19 +345,19 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 }
 
 func generateWhereForOperator(doc *types.Document) {
-	for k, v := range doc.Map() {
-		switch k {
-		case "$eq":
+	//for k, v := range doc.Map() {
+	//	switch k {
+	//	case "$eq":
 
-			//switch v := v.(type) {
-			//case *types.Document:
-			//default:
-			//}
-		default:
-			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			continue
-		}
-	}
+	//		//switch v := v.(type) {
+	//		//case *types.Document:
+	//		//default:
+	//		//}
+	//	default:
+	//		// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+	//		continue
+	//	}
+	//}
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
