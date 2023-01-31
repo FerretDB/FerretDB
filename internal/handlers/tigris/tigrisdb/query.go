@@ -113,7 +113,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 			continue
 		}
 
-		// don't iterate through array for _id keys to simplify the query
+		// _id field supports only specific types
 		if k == "_id" {
 			switch v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
@@ -123,7 +123,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 				id := must.NotFail(tjson.Marshal(v))
 				res["_id"] = json.RawMessage(id)
 			default:
-				panic(fmt.Sprintf("Unexpected type of value: %v", v))
+				panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 			}
 
 			continue
@@ -137,7 +137,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 			rawValue := must.NotFail(tjson.Marshal(v))
 			res[k] = json.RawMessage(rawValue)
 		default:
-			panic(fmt.Sprintf("Unexpected type of value: %v", v))
+			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
 	}
 
