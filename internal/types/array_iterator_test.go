@@ -27,49 +27,71 @@ import (
 func TestArrayIterator(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		arr      *Array
-		expected []any
-	}{
-		"empty": {
-			arr:      must.NotFail(NewArray()),
-			expected: []any{},
-		},
-		"one": {
-			arr:      must.NotFail(NewArray(1)),
-			expected: []any{1},
-		},
-		"two": {
-			arr:      must.NotFail(NewArray(1, 2)),
-			expected: []any{1, 2},
-		},
-		"three": {
-			arr:      must.NotFail(NewArray(1, 2, 3)),
-			expected: []any{1, 2, 3},
-		},
-	} {
-		name, tc := name, tc
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
 
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		iter := must.NotFail(NewArray(int32(1), int32(2))).Iterator()
+		defer iter.Close()
 
-			iter := tc.arr.Iterator()
-			defer iter.Close()
+		n, v, err := iter.Next()
+		require.NoError(t, err)
+		assert.Equal(t, 0, n)
+		assert.Equal(t, int32(1), v)
 
-			for i := 0; i < len(tc.expected); i++ {
-				n, v, err := iter.Next()
-				require.NoError(t, err)
+		n, v, err = iter.Next()
+		require.NoError(t, err)
+		assert.Equal(t, 1, n)
+		assert.Equal(t, int32(2), v)
 
-				assert.Equal(t, i, n)
-				assert.Equal(t, tc.expected[i], v)
-			}
+		n, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, n)
+		assert.Nil(t, v)
 
-			_, _, err := iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
+		// still done
+		n, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, n)
+		assert.Nil(t, v)
+	})
 
-			// check that Next() can be called again
-			_, _, err = iter.Next()
-			require.Equal(t, iterator.ErrIteratorDone, err)
-		})
-	}
+	t.Run("EarlyClose", func(t *testing.T) {
+		t.Parallel()
+
+		iter := must.NotFail(NewArray(int32(1), int32(2))).Iterator()
+		defer iter.Close()
+
+		iter.Close()
+
+		n, v, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, n)
+		assert.Nil(t, v)
+
+		// still done
+		n, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, n)
+		assert.Nil(t, v)
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
+
+		iter := must.NotFail(NewArray()).Iterator()
+		defer iter.Close()
+
+		n, v, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, n)
+		assert.Nil(t, v)
+
+		iter.Close()
+
+		// still done after Close()
+		n, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, n)
+		assert.Nil(t, v)
+	})
 }

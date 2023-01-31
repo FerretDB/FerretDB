@@ -841,6 +841,8 @@ func validateRenameExpression(update *types.Document) error {
 	}
 
 	iter := doc.Iterator()
+	defer iter.Close()
+
 	keys := map[string]struct{}{}
 
 	for {

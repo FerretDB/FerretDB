@@ -60,6 +60,22 @@ var Composites = &Values[string]{
 	},
 }
 
+// PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
+// on pg handler.
+var PostgresEdgeCases = &Values[string]{
+	name:     "PostgresEdgeCases",
+	handlers: []string{"pg"},
+	data: map[string]any{
+		"document-notations": bson.D{
+			{"foo[0]", int32(42)},
+			{"*", int32(42)},
+			{"foo[*]", int32(42)},
+			{"@", int32(42)},
+			{"f,oo", int32(42)},
+		},
+	},
+}
+
 // DocumentsDoubles contains documents with double values for tests.
 var DocumentsDoubles = &Values[string]{
 	name:     "DocumentsDoubles",
