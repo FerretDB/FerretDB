@@ -53,6 +53,11 @@ func TestDeleteCompat(t *testing.T) {
 				{},
 			},
 		},
+		"DotNotation": {
+			filters: []bson.D{
+				{{"v.foo.bar", "baz"}},
+			},
+		},
 
 		"Two": {
 			filters: []bson.D{
