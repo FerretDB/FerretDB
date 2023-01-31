@@ -56,7 +56,7 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexNested": {
-			filter:      bson.D{{"v.foo.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
+			filter:      bson.D{{"v.food.bar", bson.D{{"$regex", primitive.Regex{Pattern: "quz"}}}}},
 			expectedIDs: []any{"document-nested-strings"},
 		},
 		"RegexWithOption": {

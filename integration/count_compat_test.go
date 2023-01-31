@@ -130,7 +130,7 @@ func TestCountCompat(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
 		},
 		"DotNotation": {
-			filter: bson.D{{"v.foo.bar", "world"}},
+			filter: bson.D{{"v.food.bar", "world"}},
 		},
 	}
 

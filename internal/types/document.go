@@ -294,11 +294,20 @@ func (d *Document) HasByPath(path Path) bool {
 
 // GetExactByPath returns a value by path - a sequence of indexes and keys.
 // If the Path has only one element, it returns the value for the given key.
+//
+// Use this method when you need the exact path to match, for example when you need
+// to get a value by path and modify it.
+// For querying and filtering, use GetAllByPath.
 func (d *Document) GetExactByPath(path Path) (any, error) {
 	return getExactByPath(d, path)
 }
 
 // GetAllByPath returns all values by path - a sequence of indexes and keys.
+//
+// It should be used for querying and filtering.
+//
+// For arrays of objects if index is not specified, all matching objects are returned.
+// For example, if document is "foo": [{a: 1}, {a: 2}, {b: 3}], then d.GetAllByPath(Path({"foo", "a"})) will return [1, 2].
 func (d *Document) GetAllByPath(path Path) ([]any, error) {
 	return getAllByPath(d, path)
 }

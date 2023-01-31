@@ -82,10 +82,6 @@ func (a *Array) GetExactByPath(path Path) (any, error) {
 }
 
 // GetAllByPath returns all values that match the path - a sequence of indexes and keys.
-// It should be used for querying and filtering.
-//
-// For arrays of objects if index is not specified, all matching objects are returned.
-// For example, if the array is "foo": [{a: 1}, {a: 2}, {b: 3}], then GetAllByPath(Path({"foo", "a"})) will return [1, 2].
 func (a *Array) GetAllByPath(path Path) ([]any, error) {
 	return getAllByPath(a, path)
 }
