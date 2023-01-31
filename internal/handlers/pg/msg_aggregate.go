@@ -54,7 +54,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "allowDiskUse", "maxTimeMS", "collation", "comment", "let")
+	if err = common.Unimplemented(document, "let"); err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.L, "allowDiskUse", "maxTimeMS", "collation", "comment")
 
 	var sp pgdb.SQLParam
 
