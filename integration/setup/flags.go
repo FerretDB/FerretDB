@@ -22,15 +22,15 @@ import (
 
 // flags are used to override flags set from cli with test setup option.
 type flags struct {
-	targetPort       int
-	targetTLS        bool
 	handler          string
-	targetUnixSocket bool
 	proxyAddr        string
-	compatPort       int
-	compatTLS        bool
 	postgreSQLURL    string
 	tigrisURL        string
+	targetTLS        bool
+	compatTLS        bool
+	targetUnixSocket bool
+	targetPort       int
+	compatPort       int
 }
 
 // ApplyOpts applies opts to the flags to override it.

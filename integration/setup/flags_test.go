@@ -15,8 +15,9 @@
 package setup
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestFlags(t *testing.T) {
@@ -24,9 +25,9 @@ func TestFlags(t *testing.T) {
 
 	t.Run("ApplyOpts", func(t *testing.T) {
 		testcases := map[string]struct {
-			initialFlag flags
 			input       map[string]any
 			expected    *flags
+			initialFlag flags
 		}{
 			"TargetPort": {
 				input: map[string]any{
@@ -118,7 +119,7 @@ func TestFlags(t *testing.T) {
 					postgreSQLURL:    "pg url",
 					tigrisURL:        "tigris url",
 				},
-				input: map[string]any{},
+				input: make(map[string]any, 0),
 				expected: &flags{
 					targetPort:       1,
 					targetTLS:        true,
