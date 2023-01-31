@@ -24,6 +24,7 @@ import (
 type flags struct {
 	targetPort       int
 	targetTLS        bool
+	handler          string
 	targetUnixSocket bool
 	proxyAddr        string
 	compatPort       int
@@ -46,6 +47,12 @@ func (f *flags) ApplyOpts(tb testing.TB, opts map[string]any) *flags {
 			require.True(tb, ok, "%s is not bool: %T", v)
 
 			f.targetTLS = targetTLS
+
+		case "handler":
+			handler, ok := v.(string)
+			require.True(tb, ok, "%s is not string: %T", v)
+
+			f.handler = handler
 		case "target-unix-socket":
 			targetUnixSocket, ok := v.(bool)
 			require.True(tb, ok, "%s is not bool: %T", v)
@@ -65,7 +72,7 @@ func (f *flags) ApplyOpts(tb testing.TB, opts map[string]any) *flags {
 			compatTLS, ok := v.(bool)
 			require.True(tb, ok, "%s is not bool: %T", v)
 
-			f.targetTLS = compatTLS
+			f.compatTLS = compatTLS
 		case "postgresql-url":
 			postgreSQLURL, ok := v.(string)
 			require.True(tb, ok, "%s is not string: %T", v)
@@ -96,7 +103,7 @@ func (f *flags) GetTargetPort() int {
 
 // GetHandler returns the handler name.
 func (f *flags) GetHandler() string {
-	return f.GetHandler()
+	return f.handler
 }
 
 // IsTargetUnixSocket returns true if targetUnixSocket is set.

@@ -240,6 +240,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f fla
 		opts.host = l.TCPAddr().String()
 	}
 
+	// When TLS is enabled, RootCAs and Certificates are fetched
+	// upon creating client. Target uses PLAIN for authMechanism.
+	// Listeners are created only for Target since targetPort must be 0,
+	// for listener creation, so we use f.IsTargetTLS() to find TLS.
 	uri := buildMongoDBURI(tb, &opts)
 	client := setupClient(tb, ctx, uri, f.IsTargetTLS())
 
@@ -259,6 +263,8 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mo
 
 	clientOpts := options.Client().ApplyURI(uri)
 
+	// set TLSConfig to the client option, this adds
+	// RootCAs and Certificates.
 	if isTLS {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
 	}
@@ -292,6 +298,7 @@ func startup() flags {
 	f := flags{
 		targetPort:       *targetPortF,
 		targetTLS:        *targetTLSF,
+		handler:          *handlerF,
 		targetUnixSocket: *targetUnixSocketF,
 		proxyAddr:        *proxyAddrF,
 		compatPort:       *compatPortF,

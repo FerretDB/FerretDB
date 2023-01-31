@@ -96,6 +96,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if f.GetTargetPort() == 0 {
 		targetClient, _ = setupListener(tb, ctx, logger, f)
 	} else {
+		// When TLS is enabled, RootCAs and Certificates are fetched
+		// upon creating client. Target uses PLAIN for authMechanism.
 		targetURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
 			host: fmt.Sprintf("127.0.0.1:%d", f.GetTargetPort()),
 			tls:  f.IsTargetTLS(),
@@ -107,6 +109,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
+	// When TLS is enabled, RootCAs and Certificates are fetched
+	// upon creating client. Compat leaves authMechanism empty which defaults to SCRAM.
 	uri := buildMongoDBURI(tb, &buildMongoDBURIOpts{
 		host: fmt.Sprintf("127.0.0.1:%d", f.GetCompatPort()),
 		tls:  f.IsCompatTLS(),
@@ -177,6 +181,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		// drop remnants of the previous failed run
 		_ = collection.Drop(ctx)
 
+		// Validators are only applied to target. Compat is compatible with all provider.
 		if isTarget {
 			// if validators are set, create collection with them (otherwise collection will be created on first insert)
 			if validators := provider.Validators(f.GetHandler(), collectionName); len(validators) > 0 {
