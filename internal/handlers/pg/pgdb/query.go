@@ -299,9 +299,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 					switch docVal := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 					case float64, string, types.ObjectID, int32, int64:
-						sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+						f, a := equalWhereArray(key, docVal, keyOperator, p)
+
+						filters = append(filters, f)
+						args = append(args, a...)
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -318,17 +319,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			// Select if value under the key is equal to provided value.
-			// If the value under the key is not equal to v,
-			// but the value under the key k is an array - select if it contains the value equal to v.
-			sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+			f, a := equalWhereArray(key, v, keyOperator, p)
 
-			// operator is -> for non-array, and #> for array
-			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-			// placeholder $1 is used for field key or it's path,
-			// placeholder $2 is used for field value v.
-			filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-			args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			filters = append(filters, f)
+			args = append(args, a...)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -342,6 +336,22 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	}
 
 	return query, args
+}
+
+func equalWhereArray(k any, v any, keyOperator string, p Placeholder) (string, []any) {
+	// Select if value under the key is equal to provided value.
+	// If the value under the key is not equal to v,
+	// but the value under the key k is an array - select if it contains the value equal to v.
+	sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+
+	// operator is -> for non-array, and #> for array
+	// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
+	// placeholder $1 is used for field key or it's path,
+	// placeholder $2 is used for field value v.
+	filter := fmt.Sprintf(sql, keyOperator, p.Next(), p.Next())
+	args := []any{k, string(must.NotFail(pjson.MarshalSingleValue(v)))}
+
+	return filter, args
 }
 
 func generateWhereForOperator(doc *types.Document) {
