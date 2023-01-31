@@ -449,6 +449,7 @@ func TestDotNotation(t *testing.T) {
 					bson.A{bson.D{{"edc", bson.A{bson.D{{"rfv", int32(1)}}}}}},
 				},
 			},
+			bson.D{{"_id", bson.D{{"foo", "bar"}}}},
 		},
 	)
 	require.NoError(t, err)
@@ -472,6 +473,10 @@ func TestDotNotation(t *testing.T) {
 		"FieldArrayFieldArrayField": {
 			filter:      bson.D{{"wsx.0.edc.0.rfv", int32(1)}},
 			expectedIDs: []any{"document-deeply-nested"},
+		},
+		"FieldID": {
+			filter:      bson.D{{"_id.foo", "bar"}},
+			expectedIDs: []any{bson.D{{"foo", "bar"}}},
 		},
 	} {
 		name, tc := name, tc
