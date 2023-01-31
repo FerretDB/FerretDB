@@ -18,37 +18,45 @@ import (
 	"context"
 	"runtime"
 	"sync"
-	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx       context.Context
-	rows      pgx.Rows
-	n         atomic.Uint32
-	closeOnce sync.Once
+	ctx context.Context
+
+	m     sync.Mutex
+	rows  pgx.Rows
+	stack []byte
+	n     int
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
-// It sets finalizer to close the rows.
-func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, *types.Document] {
-	// queryIterator is defined as pointer to address iter in the finalizer.
+//
+// Iterator's Close method closes rows.
+//
+// Nil rows are possible and return already done iterator.
+func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
-		ctx:  ctx,
-		rows: rows,
+		ctx:   ctx,
+		rows:  rows,
+		stack: debugbuild.Stack(),
 	}
 
-	runtime.SetFinalizer(iter, func(it *queryIterator) {
-		it.closeOnce.Do(func() {
-			panic("queryIterator.Close() has not been called")
-		})
+	runtime.SetFinalizer(iter, func(iter *queryIterator) {
+		msg := "queryIterator.Close() has not been called"
+		if iter.stack != nil {
+			msg += "\nqueryIterator created by " + string(iter.stack)
+		}
+
+		panic(msg)
 	})
 
 	return iter
@@ -56,16 +64,32 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[uint32, 
 
 // Next implements iterator.Interface.
 //
-// If an error occurs, it returns 0, nil, and the error.
-// Possible errors are: context.Canceled, context.DeadlineExceeded, and lazy error.
+// Errors (possibly wrapped) are:
+//   - iterator.ErrIteratorDone;
+//   - context.Canceled;
+//   - context.DeadlineExceeded;
+//   - something else.
+//
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
-func (iter *queryIterator) Next() (uint32, *types.Document, error) {
-	if err := iter.ctx.Err(); err != nil {
-		return 0, nil, err
+func (iter *queryIterator) Next() (int, *types.Document, error) {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	// ignore context error, if any, if iterator is already closed
+	if iter.rows == nil {
+		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	if iter.rows == nil || !iter.rows.Next() {
+	if err := iter.ctx.Err(); err != nil {
+		return 0, nil, lazyerrors.Error(err)
+	}
+
+	if !iter.rows.Next() {
+		// to avoid context cancellation changing the next `Next()` error
+		// from `iterator.ErrIteratorDone` to `context.Canceled`
+		iter.close()
+
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
@@ -79,21 +103,30 @@ func (iter *queryIterator) Next() (uint32, *types.Document, error) {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
-	n := iter.n.Add(1) - 1
+	iter.n++
 
-	return n, doc, nil
+	return iter.n - 1, doc, nil
 }
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	iter.closeOnce.Do(func() {
-		if iter.rows != nil {
-			iter.rows.Close()
-		}
-	})
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	iter.close()
+}
+
+// close closes iterator without holding mutex.
+func (iter *queryIterator) close() {
+	runtime.SetFinalizer(iter, nil)
+
+	if iter.rows != nil {
+		iter.rows.Close()
+		iter.rows = nil
+	}
 }
 
 // check interfaces
 var (
-	_ iterator.Interface[uint32, *types.Document] = (*queryIterator)(nil)
+	_ iterator.Interface[int, *types.Document] = (*queryIterator)(nil)
 )
