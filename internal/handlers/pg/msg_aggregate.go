@@ -96,6 +96,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stages[i] = s
 	}
 
+	// TODO pushdown `$match` https://github.com/FerretDB/FerretDB/issues/1894
+
 	var docs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		iter, getErr := pgdb.GetDocuments(ctx, tx, &sp)

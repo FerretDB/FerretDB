@@ -22,8 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// newStage is a function that creates a new aggregation stage.
-type newStage func(stage *types.Document) (Stage, error)
+// newStageFunc is a type for a function that creates a new aggregation stage.
+type newStageFunc func(stage *types.Document) (Stage, error)
 
 // Stage is a common interface for all aggregation stages.
 //
@@ -34,8 +34,8 @@ type Stage interface {
 }
 
 // stages maps all supported aggregation stages.
-var stages = map[string]newStage{
-	// please keep sorted
+var stages = map[string]newStageFunc{
+	// sorted alphabetically
 	"$count": newCount,
 	"$match": newMatch,
 }
