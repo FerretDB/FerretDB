@@ -352,6 +352,9 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
 		},
+		"DotNotation": {
+			filter: bson.D{{"v.food.bar", bson.D{{"$eq", "world"}}}},
+		},
 	}
 
 	return testCases
