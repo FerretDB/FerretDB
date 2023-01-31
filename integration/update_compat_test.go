@@ -17,6 +17,7 @@ package integration
 import (
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -99,7 +100,7 @@ func testUpdateCollections(t *testing.T, s *setup.SetupCompatResult, p updateCol
 		require.NotNil(t, replace, "`replace` must be set if `update` is nil")
 	}
 
-	var nonEmptyResults bool
+	var nonEmptyResults uint32
 
 	for i := range targetCollections {
 		targetCollection := targetCollections[i]
@@ -158,7 +159,8 @@ func testUpdateCollections(t *testing.T, s *setup.SetupCompatResult, p updateCol
 					}
 
 					if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
-						nonEmptyResults = true
+						// use atomic operation to avoid data race.
+						atomic.AddUint32(&nonEmptyResults, 1)
 					}
 
 					assert.Equal(t, compatUpdateRes, targetUpdateRes)
@@ -172,7 +174,7 @@ func testUpdateCollections(t *testing.T, s *setup.SetupCompatResult, p updateCol
 		})
 	}
 
-	return nonEmptyResults
+	return nonEmptyResults > 0
 }
 
 // updateCollectionsParams describes update parameters.
@@ -444,7 +446,7 @@ func testUpdateCurrentDateCollections(t *testing.T, s *setup.SetupCompatResult, 
 
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
-	var nonEmptyResults bool
+	var nonEmptyResults uint32
 
 	for i := range targetCollections {
 		targetCollection := targetCollections[i]
@@ -486,7 +488,8 @@ func testUpdateCurrentDateCollections(t *testing.T, s *setup.SetupCompatResult, 
 					}
 
 					if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
-						nonEmptyResults = true
+						// use atomic operation to avoid data race.
+						atomic.AddUint32(&nonEmptyResults, 1)
 					}
 
 					assert.Equal(t, compatUpdateRes, targetUpdateRes)
@@ -508,7 +511,7 @@ func testUpdateCurrentDateCollections(t *testing.T, s *setup.SetupCompatResult, 
 		})
 	}
 
-	return nonEmptyResults
+	return nonEmptyResults > 0
 }
 
 // updateCurrentDateCollectionParams describes update current date params.

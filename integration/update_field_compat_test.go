@@ -1000,8 +1000,6 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 }
 
 func testUpdateFieldCompatMul() map[string]updateCollectionsParams {
-	//setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1668")
-
 	testCases := map[string]updateCollectionsParams{
 		"Empty": {
 			update: bson.D{{"$mul", bson.D{}}},
