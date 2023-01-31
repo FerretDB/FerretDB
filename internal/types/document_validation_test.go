@@ -155,7 +155,7 @@ func TestDocumentValidateData(t *testing.T) {
 				err := tc.doc.ValidateData()
 				assert.NoError(t, err)
 
-				v, err := tc.doc.GetByPath(tc.expected)
+				v, err := tc.doc.GetExactByPath(tc.expected)
 				assert.NoError(t, err)
 
 				actual, ok := v.(float64)

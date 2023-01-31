@@ -81,7 +81,7 @@ type Type interface {
 type CompositeTypeInterface interface {
 	CompositeType
 
-	GetByPath(path Path) (any, error)
+	GetExactByPath(path Path) (any, error)
 	GetAllByPath(path Path) ([]any, error)
 	RemoveByPath(path Path)
 

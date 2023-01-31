@@ -287,15 +287,15 @@ func (d *Document) Remove(key string) any {
 
 // HasByPath returns true if the given path is present in the document.
 func (d *Document) HasByPath(path Path) bool {
-	_, err := d.GetByPath(path)
+	_, err := d.GetExactByPath(path)
 
 	return err == nil
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
+// GetExactByPath returns a value by path - a sequence of indexes and keys.
 // If the Path has only one element, it returns the value for the given key.
-func (d *Document) GetByPath(path Path) (any, error) {
-	return getByPath(d, path)
+func (d *Document) GetExactByPath(path Path) (any, error) {
+	return getExactByPath(d, path)
 }
 
 // GetAllByPath returns all values by path - a sequence of indexes and keys.
@@ -320,7 +320,7 @@ func (d *Document) SetByPath(path Path, value any) error {
 		}
 	}
 
-	innerComp := must.NotFail(d.GetByPath(path.TrimSuffix()))
+	innerComp := must.NotFail(d.GetExactByPath(path.TrimSuffix()))
 
 	switch inner := innerComp.(type) {
 	case *Document:

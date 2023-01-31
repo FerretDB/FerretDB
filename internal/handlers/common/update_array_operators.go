@@ -57,7 +57,7 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 			continue
 		}
 
-		val, err := doc.GetByPath(path)
+		val, err := doc.GetExactByPath(path)
 		if err != nil {
 			return false, err
 		}
@@ -121,7 +121,7 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			}
 		}
 
-		val, err := doc.GetByPath(path)
+		val, err := doc.GetExactByPath(path)
 		if err != nil {
 			return false, err
 		}

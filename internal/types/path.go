@@ -156,8 +156,8 @@ func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
 }
 
-// getByPath returns all matching values by path - a sequence of indexes and keys.
-func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
+// getExactByPath returns all matching values by path - a sequence of indexes and keys.
+func getExactByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	var next any = comp
 	for _, p := range path.Slice() {
 		switch s := next.(type) {
@@ -165,24 +165,24 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			var err error
 			next, err = s.Get(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getExactByPath: %w", err))
 			}
 
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getExactByPath: %w", err))
 			}
 
 			next, err = s.Get(index)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getExactByPath: %w", err))
 			}
 
 		default:
 			return nil, newDocumentPathError(
 				ErrDocumentPathCannotAccess,
-				fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
+				fmt.Errorf("types.getExactByPath: can't access %T by path %q", next, p),
 			)
 		}
 	}
@@ -202,7 +202,7 @@ func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
 			case *Document:
 				v, err := s.Get(p)
 				if err != nil {
-					return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
+					return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getAllByPath: %w", err))
 				}
 
 				newNext = append(newNext, v)
@@ -216,7 +216,10 @@ func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
 					v, err = s.Get(index)
 
 					if err != nil {
-						return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
+						return nil, newDocumentPathError(
+							ErrDocumentPathIndexOutOfBound,
+							fmt.Errorf("types.getAllByPath: %w", err),
+						)
 					}
 					newNext = append(newNext, v)
 
@@ -225,7 +228,10 @@ func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
 					docs := getObjectValuesFromArray(s, p)
 
 					if len(docs) == 0 {
-						return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+						return nil, newDocumentPathError(
+							ErrDocumentPathArrayInvalidIndex,
+							fmt.Errorf("types.getAllByPath: %w", err),
+						)
 					}
 
 					newNext = append(newNext, docs...)
@@ -234,7 +240,7 @@ func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
 			default:
 				return nil, newDocumentPathError(
 					ErrDocumentPathCannotAccess,
-					fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
+					fmt.Errorf("types.getAllByPath: can't access %T by path %q", next, p),
 				)
 			}
 		}
@@ -316,7 +322,7 @@ func insertByPath(doc *Document, path Path) error {
 	for _, pathElem := range path.TrimSuffix().Slice() {
 		insertedPath = insertedPath.Append(pathElem)
 
-		v, err := doc.GetByPath(insertedPath)
+		v, err := doc.GetExactByPath(insertedPath)
 		if err != nil {
 			suffix := len(insertedPath.Slice()) - 1
 			if suffix < 0 {
@@ -360,7 +366,7 @@ func insertByPath(doc *Document, path Path) error {
 				)
 			}
 
-			next = must.NotFail(doc.GetByPath(insertedPath)).(*Document)
+			next = must.NotFail(doc.GetExactByPath(insertedPath)).(*Document)
 
 			continue
 		}

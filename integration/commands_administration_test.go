@@ -831,7 +831,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			require.NoError(t, err)
 
-			actualMetric, err := ConvertDocument(t, actual).GetByPath(tc.metricsPath)
+			actualMetric, err := ConvertDocument(t, actual).GetExactByPath(tc.metricsPath)
 			assert.NoError(t, err)
 
 			actualDoc, ok := actualMetric.(*types.Document)

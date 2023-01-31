@@ -208,7 +208,7 @@ func TestRemoveByPathArray(t *testing.T) {
 	}
 }
 
-func TestGetByPath(t *testing.T) {
+func TestGetExactByPath(t *testing.T) {
 	t.Parallel()
 
 	doc := must.NotFail(NewDocument(
@@ -253,25 +253,25 @@ func TestGetByPath(t *testing.T) {
 		)),
 	}, {
 		path: NewPath("client", "0"),
-		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
+		err:  `types.getExactByPath: types.Document.Get: key not found: "0"`,
 	}, {
 		path: NewPath("compression", "invalid"),
-		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
+		err:  `types.getExactByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
 		path: NewPath("client", "missing"),
-		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
+		err:  `types.getExactByPath: types.Document.Get: key not found: "missing"`,
 	}, {
 		path: NewPath("compression", "1"),
-		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
+		err:  `types.getExactByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
 		path: NewPath("compression", "0", "invalid"),
-		err:  `types.getByPath: can't access string by path "invalid"`,
+		err:  `types.getExactByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			res, err := getByPath(doc, tc.path)
+			res, err := getExactByPath(doc, tc.path)
 			if tc.err == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.res, res)

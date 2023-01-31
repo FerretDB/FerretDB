@@ -181,7 +181,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 		path := types.NewPathFromString(setKey)
 
 		if doc.HasByPath(path) {
-			docValue := must.NotFail(doc.GetByPath(path))
+			docValue := must.NotFail(doc.GetExactByPath(path))
 			if types.Identical(setValue, docValue) {
 				continue
 			}
@@ -226,11 +226,11 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		targetPath := types.NewPathFromString(renameValue)
 
 		// Get value to move
-		val, err := doc.GetByPath(sourcePath)
+		val, err := doc.GetExactByPath(sourcePath)
 		if err != nil {
 			var dpe *types.DocumentPathError
 			if !errors.As(err, &dpe) {
-				panic("getByPath returned error with invalid type")
+				panic("GetExactByPath returned error with invalid type")
 			}
 
 			if dpe.Code() == types.ErrDocumentPathKeyNotFound {
@@ -291,7 +291,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
-		docValue, err := doc.GetByPath(types.NewPathFromString(incKey))
+		docValue, err := doc.GetExactByPath(types.NewPathFromString(incKey))
 		if err != nil {
 			return false, err
 		}
@@ -499,7 +499,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		var err error
 
-		docValue, err := doc.GetByPath(path)
+		docValue, err := doc.GetExactByPath(path)
 		if err != nil {
 			return false, err
 		}

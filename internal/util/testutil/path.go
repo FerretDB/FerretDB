@@ -26,11 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types.Path) any {
+// GetExactByPath returns a value by path - a sequence of indexes and keys.
+func GetExactByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types.Path) any {
 	tb.Helper()
 
-	res, err := comp.GetByPath(path)
+	res, err := comp.GetExactByPath(path)
 	require.NoError(tb, err)
 	return res
 }
@@ -80,8 +80,8 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path types.Path) {
 	tb.Helper()
 
-	expectedV := GetByPath(tb, expected, path)
-	actualV := GetByPath(tb, actual, path)
+	expectedV := GetExactByPath(tb, expected, path)
+	actualV := GetExactByPath(tb, actual, path)
 	assert.IsType(tb, expectedV, actualV)
 	assert.InDelta(tb, expectedV, actualV, delta)
 
@@ -95,8 +95,8 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expec
 func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta time.Duration, path types.Path) {
 	tb.Helper()
 
-	expectedV := GetByPath(tb, expected, path)
-	actualV := GetByPath(tb, actual, path)
+	expectedV := GetExactByPath(tb, expected, path)
+	actualV := GetExactByPath(tb, actual, path)
 	assert.IsType(tb, expectedV, actualV)
 
 	switch actualV := actualV.(type) {
