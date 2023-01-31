@@ -56,7 +56,7 @@ func NewConnInfo() *ConnInfo {
 // Cursor represents a cursor.
 type Cursor struct {
 	tx     pgx.Tx
-	Iter   iterator.Interface[uint32, *types.Document]
+	Iter   iterator.Interface[int, *types.Document]
 	Filter *types.Document
 }
 
@@ -92,7 +92,7 @@ func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
-func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *types.Document], filter *types.Document) int64 {
+func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[int, *types.Document], filter *types.Document) int64 {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
@@ -108,10 +108,17 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *
 }
 
 // DeleteCursor deletes the cursor from ConnInfo.
-func (connInfo *ConnInfo) DeleteCursor(id int64) (err error) {
+func (connInfo *ConnInfo) DeleteCursor(id int64) error {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
+	err := connInfo.deleteCursor(id)
+
+	return err
+}
+
+// deleteCursor deletes the cursor from ConnInfo without acquiring a lock.
+func (connInfo *ConnInfo) deleteCursor(id int64) (err error) {
 	cursor := connInfo.cursors[id]
 
 	cursor.Iter.Close()
@@ -147,6 +154,7 @@ func (connInfo *ConnInfo) DeleteCursor(id int64) (err error) {
 	return nil
 }
 
+// generateCursorID generates a unique cursor ID without acquiring a lock.
 func (connInfo *ConnInfo) generateCursorID() int64 {
 	var id int64
 
@@ -174,8 +182,8 @@ func (connInfo *ConnInfo) Close() {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	for k := range connInfo.cursors {
-		connInfo.DeleteCursor(k)
+	for id := range connInfo.cursors {
+		connInfo.deleteCursor(id)
 	}
 }
 

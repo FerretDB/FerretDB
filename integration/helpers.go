@@ -29,7 +29,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -371,8 +373,8 @@ func errorTextContains(err error, texts ...string) bool {
 	return false
 }
 
-// getCursorID returns the cursor ID from a find command.
-func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) any {
+// getCursorIDAndFirstBatch returns the cursor ID and first batch of documents from a find command.
+func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) (any, *types.Array) {
 	t.Helper()
 
 	res := targetCollection.Database().RunCommand(
@@ -394,5 +396,56 @@ func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Coll
 	id, err := cursor.(*types.Document).Get("id")
 	require.NoError(t, err)
 
-	return id
+	docs, err := cursor.(*types.Document).Get("firstBatch")
+	require.NoError(t, err)
+
+	docsArray, ok := docs.(*types.Array)
+	require.True(t, ok)
+
+	return id, docsArray
+}
+
+// getDocuments returns all documents from first batch and next batch sorted by _id.
+func getDocuments(t *testing.T, firstBatch, nextBatch *types.Array) []*types.Document {
+	t.Helper()
+
+	var docs []*types.Document
+
+	firstBatchIter := firstBatch.Iterator()
+	defer firstBatchIter.Close()
+
+	for {
+		_, doc, err := firstBatchIter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+			require.NoError(t, err)
+		}
+
+		docs = append(docs, doc.(*types.Document))
+	}
+
+	nextBatchIter := nextBatch.Iterator()
+	defer nextBatchIter.Close()
+
+	for {
+		_, doc, err := nextBatchIter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+			require.NoError(t, err)
+		}
+
+		docs = append(docs, doc.(*types.Document))
+	}
+
+	sort, err := types.NewDocument("_id", int32(1))
+	require.NoError(t, err)
+
+	err = common.SortDocuments(docs, sort)
+	require.NoError(t, err)
+
+	return docs
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type queryGetMoreCompatTestCase struct {
@@ -150,9 +151,11 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 
 			targetID := tc.id
 			compatID := tc.id
+
+			var targetFirstBatch, compatFirstBatch *types.Array
 			if tc.id == nil {
-				targetID = getCursorID(t, ctx, targetCollection)
-				compatID = getCursorID(t, ctx, compatCollection)
+				targetID, targetFirstBatch = getCursorIDAndFirstBatch(t, ctx, targetCollection)
+				compatID, compatFirstBatch = getCursorIDAndFirstBatch(t, ctx, compatCollection)
 			}
 			targetCommand := bson.D{{"getMore", targetID}, {"collection", targetCollection.Name()}}
 			targetCommand = append(targetCommand, tc.command...)
@@ -184,25 +187,17 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			targetDoc := ConvertDocument(t, targetResult)
 			compatDoc := ConvertDocument(t, compatResult)
 
-			targetCursorDoc, err := targetDoc.Get("cursor")
-			require.NoError(t, err)
+			targetCursor := must.NotFail(targetDoc.Get("cursor")).(*types.Document)
+			compatCursor := must.NotFail(compatDoc.Get("cursor")).(*types.Document)
 
-			compatCursorDoc, err := compatDoc.Get("cursor")
-			require.NoError(t, err)
+			targetNextBatch := must.NotFail(targetCursor.Get("nextBatch")).(*types.Array)
+			compatNextBatch := must.NotFail(compatCursor.Get("nextBatch")).(*types.Array)
 
-			targetCursor, ok := targetCursorDoc.(*types.Document)
-			require.True(t, ok, "expected target cursor to be a document")
+			targetDocuments := getDocuments(t, targetFirstBatch, targetNextBatch)
+			compatDocuments := getDocuments(t, compatFirstBatch, compatNextBatch)
 
-			compatCursor, ok := compatCursorDoc.(*types.Document)
-			require.True(t, ok, "expected compat cursor to be a document")
-
-			targetNextBatch, err := targetCursor.Get("nextBatch")
-			require.NoError(t, err)
-
-			compatNextBatch, err := compatCursor.Get("nextBatch")
-			require.NoError(t, err)
-
-			assert.Equal(t, targetNextBatch, compatNextBatch, "nextBatch mismatch")
+			require.Equal(t, len(compatDocuments), len(targetDocuments), "result length mismatch")
+			require.Equal(t, compatDocuments, targetDocuments, "result mismatch")
 
 			targetNS, err := targetCursor.Get("ns")
 			require.NoError(t, err)
@@ -210,7 +205,7 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			compatNS, err := compatCursor.Get("ns")
 			require.NoError(t, err)
 
-			assert.Equal(t, targetNS, compatNS, "ns mismatch")
+			require.Equal(t, targetNS, compatNS, "ns mismatch")
 		})
 	}
 }
@@ -220,8 +215,9 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 
 	testCases := map[string]queryGetMoreErrorsCompatTestCase{
 		"InvalidCursorID": {
-			id:  int64(2),
-			err: true,
+			id:         int64(2),
+			err:        true,
+			altMessage: "cursor id 2 not found",
 		},
 		"CursorIdInt32": {
 			id:  int32(1),
@@ -249,11 +245,12 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 			command: bson.D{
 				{"batchSize", int64(-1)},
 			},
-			err: true,
+			err:        true,
+			altMessage: "cursor id -1 not found",
 		},
 		"BatchSizeResponse": {
 			command: bson.D{
-				{"batchSize", int64(200)},
+				{"batchSize", int64(300)},
 			},
 		},
 	}

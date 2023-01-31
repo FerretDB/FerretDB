@@ -69,8 +69,8 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	if cursorID <= 0 {
 		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("Bad cursor ID: %d", cursorID),
+			commonerrors.ErrCursorNotFound,
+			fmt.Sprintf("cursor id %d not found", cursorID),
 		)
 	}
 
@@ -83,7 +83,10 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	cursor := connInfo.Cursor(cursorID)
 	if cursor == nil {
-		return nil, lazyerrors.Errorf("cursor for collection %s not found", collection)
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrCursorNotFound,
+			fmt.Sprintf("cursor id %d not found", cursorID),
+		)
 	}
 
 	resDocs := types.MakeArray(0)

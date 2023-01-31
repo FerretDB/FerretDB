@@ -159,7 +159,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 func MakeFindReplyParameters(
 	ctx context.Context,
 	resDocs []*types.Document, batch int,
-	p iterator.Interface[uint32, *types.Document],
+	p iterator.Interface[int, *types.Document],
 	tx pgx.Tx,
 	filter *types.Document,
 ) (

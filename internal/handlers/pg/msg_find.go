@@ -77,7 +77,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.Sort == nil {
-		var iter iterator.Interface[uint32, *types.Document]
+		var iter iterator.Interface[int, *types.Document]
 		var tx pgx.Tx
 		var resDocs []*types.Document
 
@@ -86,7 +86,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return nil, err
 		}
 
-		resDocs, iter, err = h.fetchAndFilterDocs1(ctx, tx, &sp)
+		resDocs, iter, err = h.getFirstBatchAndIterator(ctx, tx, &sp)
 		if err != nil {
 			return nil, err
 		}
@@ -192,9 +192,9 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 	}
 }
 
-// fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs1(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) (
-	[]*types.Document, iterator.Interface[uint32, *types.Document], error,
+// getFirstBatchAndIterator fetches documents from the database and filters them using the provided sqlParam.Filter.
+func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) (
+	[]*types.Document, iterator.Interface[int, *types.Document], error,
 ) {
 	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
 	if err != nil {

@@ -15,7 +15,6 @@
 package shareddata
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"strings"
@@ -385,13 +384,13 @@ func tigrisSchema(typeString string) string {
 
 // generateBigMap generates `count` amount of key-value pairs for a map.
 // It can be used to generate a big map that is bigger than default batch size (101).
-func generateBigMap(count int) map[string]any {
+func generateBigMap(count int) map[int32]any {
 	rand.Seed(time.Now().UnixNano())
 
-	res := make(map[string]any, count)
+	res := make(map[int32]any, count)
 
 	for i := 0; i < count; i++ {
-		res[fmt.Sprintf("key-%d", i)] = rand.Int31()
+		res[int32(i)] = rand.Int31()
 	}
 
 	return res
@@ -401,7 +400,7 @@ func generateBigMap(count int) map[string]any {
 // That data provider is not included by default
 // to avoid big amount of data and long execution time for compatibility tests.
 // It can be used when there is a need to test amount of data bigger than default batch size (101).
-var Int32BigAmounts = &Values[string]{
+var Int32BigAmounts = &Values[int32]{
 	name:     "Int32BigAmounts",
 	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
