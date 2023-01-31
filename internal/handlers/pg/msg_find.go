@@ -76,20 +76,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	var resDocs []*types.Document
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
-
-		return err
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
 	if params.Sort == nil {
 		var iter iterator.Interface[uint32, *types.Document]
 		var tx pgx.Tx
+		var resDocs []*types.Document
 
 		tx, err = dbPool.Begin(ctx)
 		if err != nil {
@@ -122,6 +112,19 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 				"ok", float64(1),
 			))},
 		}))
+		return &reply, nil
+	}
+
+	var resDocs []*types.Document
+
+	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+
+		return err
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {

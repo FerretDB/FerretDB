@@ -379,7 +379,6 @@ func getCursorID(t *testing.T, ctx context.Context, targetCollection *mongo.Coll
 		ctx, bson.D{
 			{"find", targetCollection.Name()},
 			{"filter", bson.D{}},
-			{"sort", bson.D{{"_id", 1}}},
 		},
 	)
 	require.NoError(t, res.Err())

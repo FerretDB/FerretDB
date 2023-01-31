@@ -108,7 +108,7 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[uint32, *
 }
 
 // DeleteCursor deletes the cursor from ConnInfo.
-func (connInfo *ConnInfo) DeleteCursor(id int64) error {
+func (connInfo *ConnInfo) DeleteCursor(id int64) (err error) {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
@@ -116,10 +116,31 @@ func (connInfo *ConnInfo) DeleteCursor(id int64) error {
 
 	cursor.Iter.Close()
 
-	err := cursor.tx.Commit(context.Background())
+	var committed bool
+
+	defer func() {
+		if committed {
+			return
+		}
+
+		if rerr := cursor.tx.Rollback(context.Background()); rerr != nil {
+			cursor.tx.Conn().Config().Logger.Log(
+				context.Background(), pgx.LogLevelError, "failed to perform rollback",
+				map[string]any{"error": rerr},
+			)
+
+			if err == nil {
+				err = rerr
+			}
+		}
+	}()
+
+	err = cursor.tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
+
+	committed = true
 
 	delete(connInfo.cursors, id)
 
