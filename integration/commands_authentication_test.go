@@ -67,16 +67,6 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 			invalidAuthMechanism: true,
 			dbErr:                "auth error",
 		},
-		"TLSWithNonTLSClient": {
-			listenerTLS: true,
-			clientTLS:   false,
-			skip:        "driver attempts to reconnect until time out",
-		},
-		"TCPWithTLSClient": {
-			listenerTLS: false,
-			clientTLS:   true,
-			skip:        "driver attempts to reconnect until time out",
-		},
 	}
 
 	for name, tc := range testcases {
@@ -139,6 +129,7 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 				require.NoError(t, err)
 			})
 
+			// client calls any query to check authentication success or error.
 			dbs, err := client.ListDatabaseNames(ctx, bson.D{})
 			if tc.dbErr != "" {
 				require.Error(t, err)
@@ -147,6 +138,8 @@ func TestCommandsAuthenticationSASLStart(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+
+			// expects to find databases such as "admin" and "public".
 			require.NotEmpty(t, dbs)
 		})
 	}

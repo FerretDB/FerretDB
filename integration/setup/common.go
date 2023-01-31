@@ -243,7 +243,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f fla
 	uri := buildMongoDBURI(tb, &opts)
 	client := setupClient(tb, ctx, uri, f.IsTargetTLS())
 
-	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+	logger.Info("Listener started", zap.String("handler", f.GetHandler()), zap.String("uri", uri))
 
 	return client, uri
 }
@@ -289,13 +289,24 @@ func getUser(isTLS bool) *url.Userinfo {
 // startup initializes things that should be initialized only once.
 // It returns flag values from cli.
 func startup() flags {
+	f := flags{
+		targetPort:       *targetPortF,
+		targetTLS:        *targetTLSF,
+		targetUnixSocket: *targetUnixSocketF,
+		proxyAddr:        *proxyAddrF,
+		compatPort:       *compatPortF,
+		compatTLS:        *compatTLSF,
+		postgreSQLURL:    *postgreSQLURLF,
+		tigrisURL:        *tigrisURLF,
+	}
+
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
 		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 		if p := *targetPortF; p == 0 {
-			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
+			zap.S().Infof("Target system: in-process FerretDB with %q handler.", f.GetHandler())
 		} else {
 			zap.S().Infof("Target system: port %d.", p)
 		}
@@ -307,15 +318,5 @@ func startup() flags {
 		}
 	})
 
-	return flags{
-		targetPort:       targetPortF,
-		targetTLS:        targetTLSF,
-		handler:          handlerF,
-		targetUnixSocket: targetUnixSocketF,
-		proxyAddr:        proxyAddrF,
-		compatPort:       compatPortF,
-		compatTLS:        compatTLSF,
-		postgreSQLURL:    postgreSQLURLF,
-		tigrisURL:        tigrisURLF,
-	}
+	return f
 }
