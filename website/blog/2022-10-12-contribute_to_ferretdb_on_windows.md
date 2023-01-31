@@ -2,11 +2,14 @@
 slug: contribute_to_ferretdb_on_windows
 title: "How to start contributing to FerretDB on Windows"
 author: Dmitry Eremenko
-image: ../static/img/blog/image4-1024x683.jpg
+description: In this post, you’ll find out how to properly configure and set up your Windows OS, avoid typical Windows environment issues, and start contributing to FerretDB.
+image: /img/blog/image4-1024x683.jpg
 date: 2022-10-12
 ---
 
-![Contribute to FerretDB on Windows](../static/img/blog/image4-1024x683.jpg)
+In this post, you’ll find out how to properly configure and set up your Windows OS, avoid typical Windows environment issues, and start contributing to FerretDB.
+
+![Contribute to FerretDB on Windows](/img/blog/image4-1024x683.jpg)
 
 <!--truncate-->
 
@@ -51,12 +54,12 @@ We should have installed git, Golang, and Docker for Windows by now.
 To start contributing, we will need the FerretDB source code located [here](https://github.com/FerretDB/FerretDB.git).
 So we must fork the repository to make it possible to send PR.
 
-![fork the FerretDB repository](../static/img/blog/image6.png)
+![fork the FerretDB repository](/img/blog/image6.png)
 
 You need to set up old branch removal to keep your repository clean.
 You need to set up the “Automatically delete head branches” flag in the “General” section of your fork repository settings.
 
-![delete head branches](../static/img/blog/image5.png)
+![delete head branches](/img/blog/image5.png)
 
 In your local terminal, clone the forked repository with the following command:
 
@@ -117,11 +120,11 @@ bin\task env-up
 
 to run the local environment.
 
-![run the local environment](../static/img/blog/image7.png)
+![run the local environment](/img/blog/image7.png)
 
 After that, we will have a console with FerretDB containers logs output.
 
-![FerretDB containers](../static/img/blog/image2.png)
+![FerretDB containers](/img/blog/image2.png)
 
 In a separate console window, we need to run FerretDB with
 
@@ -129,11 +132,11 @@ In a separate console window, we need to run FerretDB with
 bin\task run
 ```
 
-![run FerretDB](../static/img/blog/image3.png)
+![run FerretDB](/img/blog/image3.png)
 
 We can open another terminal window and run tests (*bin\task test*) or “mongosh” (*bin\task mongosh*).
 
-![terminal window](../static/img/blog/image1-1.png)
+![terminal window](/img/blog/image1-1.png)
 
 ## Start contributing to FerretDB on Windows
 

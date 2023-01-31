@@ -225,13 +225,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// c.netConn is closed by the caller
 	}()
 
-	// check function contract
-	defer func() {
-		if err == nil {
-			panic("err must be non-nil")
-		}
-	}()
-
 	for {
 		var reqHeader *wire.MsgHeader
 		var reqBody wire.MsgBody

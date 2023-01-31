@@ -174,7 +174,7 @@ var Strings = &Values[string]{
 					"foo": {"type": "integer", "format": "int32"}, 
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "string"},
-					"_id": {"type": "string"},
+					"_id": {"type": "string"}
 				}
 			}`,
 		},
@@ -265,18 +265,7 @@ var DateTimes = &Values[string]{
 // Nulls contains null value for tests.
 var Nulls = &Values[string]{
 	name:     "Nulls",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
+	handlers: []string{"pg"}, // Not compatible with Tigris as it needs a data type to be set.
 	data: map[string]any{
 		"null": nil,
 	},
@@ -312,10 +301,10 @@ var Int32s = &Values[string]{
 		"int32-zero": int32(0),
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
-		"int32-null": nil,
-		"int32-1":    int32(4080),
-		"int32-2":    int32(1048560),
-		"int32-3":    int32(268435440),
+		// "int32-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
+		"int32-1": int32(4080),
+		"int32-2": int32(1048560),
+		"int32-3": int32(268435440),
 	},
 }
 
@@ -350,10 +339,10 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		"int64-big":  int64Big,
-		"int64-null": nil,
-		"int64-1":    int64(1099511628000),
-		"int64-2":    int64(281474976700000),
-		"int64-3":    int64(72057594040000000),
+		// "int64-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
+		"int64-1": int64(1099511628000),
+		"int64-2": int64(281474976700000),
+		"int64-3": int64(72057594040000000),
 	},
 }
 
@@ -376,13 +365,16 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 	},
 }
 
+// tigrisSchema returns a tigris schema for the given type.
+// In addition to the "v" field, it also sets "foo" field with the same type, so it can be used
+// for test cases where multiple fields need to be supported (for example, $rename).
 func tigrisSchema(typeString string) string {
 	common := `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {%%type%%},
-					"boo": {%%type%%},
+					"foo": {%%type%%},
 					"_id": {"type": "string"}
 				}
 			}`

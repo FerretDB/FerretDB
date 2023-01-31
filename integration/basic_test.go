@@ -228,28 +228,6 @@ func TestDeleteCommentQuery(t *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func TestEmptyKey(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Tigris field name cannot be empty")
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
-
-	doc := bson.D{{"_id", "empty-key"}, {"", "foo"}}
-
-	_, err := collection.InsertOne(ctx, doc)
-	require.NoError(t, err)
-
-	res, err := collection.Find(ctx, bson.D{{"", "foo"}})
-	require.NoError(t, err)
-
-	var actual []bson.D
-	require.NoError(t, res.All(ctx, &actual))
-
-	expected := []bson.D{doc}
-
-	assert.Equal(t, expected, actual)
-}
-
 func TestFindAndModifyCommentMethod(t *testing.T) {
 	setup.SkipForTigris(t)
 

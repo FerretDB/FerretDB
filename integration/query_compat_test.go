@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,13 +29,14 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	projection     bson.D                   // nil for leaving projection unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
-	skipForTigris  string                   // skip test for Tigris
-	skip           string                   // skip test for all backends, myst have issue number mentioned
+	filter             bson.D                   // required
+	sort               bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	projection         bson.D                   // nil for leaving projection unset
+	resultType         compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown     bool                     // defaults to false
+	skipTigrisPushdown bool                     // defaults to false
+	skipForTigris      string                   // skip test for Tigris
+	skip               string                   // skip test for all backends, must have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -90,7 +92,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+					// If tc.skipTigrisPushdown is set check that pushdown actually wasn't made for Tigris.
+					if tc.skipTigrisPushdown && setup.IsTigris(t) {
+						require.True(t, tc.resultPushdown, "Cannot use skipTigrisPushdown when resultPushdown is false'")
+						assert.Equal(t, false, explainRes.Map()["pushdown"], "Tigris pushdown check was skipped, but it was actually true")
+					} else {
+						assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+					}
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -136,9 +144,57 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	}
 }
 
-func TestQueryCompat(t *testing.T) {
+// TestQueryCompatRunner is temporary runner to address
+// slowness of compat setup by only setting it up once
+// for all query tests.
+func TestQueryCompatRunner(t *testing.T) {
 	t.Parallel()
 
+	testcases := map[string]map[string]queryCompatTestCase{
+		"Basic":         testQueryCompatBasic(),
+		"Sort":          testQueryCompatSort(),
+		"Size":          testQueryArrayCompatSize(),
+		"DotNotation":   testQueryArrayCompatDotNotation(),
+		"ElemMatch":     testQueryArrayCompatElemMatch(),
+		"ArrayEquality": testQueryArrayCompatEquality(),
+		"ArrayAll":      testQueryArrayCompatAll(),
+		"ImplicitEq":    testQueryComparisonCompatImplicit(),
+		"Eq":            testQueryComparisonCompatEq(),
+		"Gt":            testQueryComparisonCompatGt(),
+		"Gte":           testQueryComparisonCompatGte(),
+		"Lt":            testQueryComparisonCompatLt(),
+		"Lte":           testQueryComparisonCompatLte(),
+		"Nin":           testQueryComparisonCompatNin(),
+		"In":            testQueryComparisonCompatIn(),
+		"Ne":            testQueryComparisonCompatNe(),
+		"MultipleOp":    testQueryComparisonCompatMultipleOperators(),
+		"Exists":        testQueryElementCompatExists(),
+		"Type":          testQueryElementCompatElementType(),
+		"Regex":         testQueryEvaluationCompatRegexErrors(),
+		"And":           testQueryLogicalCompatAnd(),
+		"Or":            testQueryLogicalCompatOr(),
+		"Nor":           testQueryLogicalCompatNor(),
+		"Not":           testQueryLogicalCompatNot(),
+		"Projection":    testQueryProjectionCompat(),
+	}
+
+	if runtime.GOARCH != "arm64" {
+		// https://github.com/FerretDB/FerretDB/issues/491
+		testcases["Mod"] = testQueryEvaluationCompatMod()
+	}
+
+	allTestcases := make(map[string]queryCompatTestCase, 0)
+
+	for op, tcs := range testcases {
+		for name, tc := range tcs {
+			allTestcases[op+name] = tc
+		}
+	}
+
+	testQueryCompat(t, allTestcases)
+}
+
+func testQueryCompatBasic() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"BadSortValue": {
 			filter:     bson.D{},
@@ -176,12 +232,10 @@ func TestQueryCompat(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryCompatSort(t *testing.T) {
-	t.Parallel()
-
+func testQueryCompatSort() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"Asc": {
 			filter: bson.D{},
@@ -193,5 +247,5 @@ func TestQueryCompatSort(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }

@@ -9,7 +9,7 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
-  BUILDTAGS: ferretdb_debug,ferretdb_tigris
+  BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
 
 tasks:
@@ -37,6 +37,7 @@ tasks:
     desc: "Build bin/ferretdb{{exeExt}} (release build)"
     deps: [gen-version]
     cmds:
+      # TODO add ferretdb_hana
       - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
     env:
       CGO_ENABLED: 0
@@ -173,6 +174,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -timeout=15m
         -coverprofile=integration-pg.txt .
         -handler=pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
@@ -185,7 +187,7 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -timeout=25m
+        -timeout=30m
         -coverprofile=integration-tigris.txt .
         -handler=tigris
         -records-dir=../records
@@ -516,4 +518,4 @@ tasks:
   blog-dev:
     desc: "Start blog development server"
     cmds:
-      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0
+      - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0 --port=3001

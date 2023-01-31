@@ -16,15 +16,12 @@ package integration
 
 import (
 	"math"
-	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestQueryArrayCompatSize(t *testing.T) {
-	t.Parallel()
-
+func testQueryArrayCompatSize() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"float64": {
 			filter: bson.D{{"v", bson.D{{"$size", float64(2)}}}},
@@ -64,12 +61,10 @@ func TestQueryArrayCompatSize(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryArrayCompatDotNotation(t *testing.T) {
-	t.Parallel()
-
+func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"PositionIndexGreaterThanArrayLength": {
 			filter:     bson.D{{"v.5", bson.D{{"$type", "double"}}}},
@@ -79,8 +74,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			filter: bson.D{{"v.1", bson.D{{"$type", "string"}}}},
 		},
 		"PositionTypeNull": {
-			filter:        bson.D{{"v.0", bson.D{{"$type", "null"}}}},
-			skipForTigris: "Tigris does not support nil values in arrays",
+			filter: bson.D{{"v.0", bson.D{{"$type", "null"}}}},
 		},
 		"PositionRegex": {
 			filter: bson.D{{"v.1", primitive.Regex{Pattern: "foo"}}},
@@ -111,12 +105,10 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryArrayCompatElemMatch(t *testing.T) {
-	t.Parallel()
-
+func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"DoubleTarget": {
 			filter: bson.D{
@@ -187,12 +179,10 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryArrayCompatEquality(t *testing.T) {
-	t.Parallel()
-
+func testQueryArrayCompatEquality() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"One": {
 			filter: bson.D{{"v", bson.A{int32(42)}}},
@@ -213,17 +203,14 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 			filter: bson.D{{"v", bson.A{}}},
 		},
 		"Null": {
-			filter:        bson.D{{"v", bson.A{nil}}},
-			skipForTigris: "Tigris does not support nil values in arrays",
+			filter: bson.D{{"v", bson.A{nil}}},
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }
 
-func TestQueryArrayCompatAll(t *testing.T) {
-	t.Parallel()
-
+func testQueryArrayCompatAll() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"String": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
@@ -258,8 +245,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"MultiAllWithNil": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
-			skipForTigris: "Tigris does not support nil values in arrays",
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
 		},
 		"Empty": {
 			filter:     bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
@@ -284,13 +270,12 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(42), int32(43), int32(43), int32(42)}}}}},
 		},
 		"Nil": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
-			skipForTigris: "Tigris does not support nil values in arrays",
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil}}}}},
 		},
 		"NilRepeated": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{nil, nil, nil}}}}},
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	return testCases
 }

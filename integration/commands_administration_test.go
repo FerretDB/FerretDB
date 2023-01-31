@@ -631,7 +631,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 		assert.InDelta(t, float64(24_576), must.NotFail(doc.Get("size")), 24_576)
 		assert.InDelta(t, float64(4), must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
-		assert.InDelta(t, float64(150), must.NotFail(doc.Get("millis")), 150)
+		assert.InDelta(t, float64(200), must.NotFail(doc.Get("millis")), 200)
 	})
 
 	t.Run("NonExisting", func(t *testing.T) {
@@ -647,7 +647,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 		assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 		assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-		assert.InDelta(t, float64(150), must.NotFail(doc.Get("millis")), 150)
+		assert.InDelta(t, float64(159), must.NotFail(doc.Get("millis")), 159)
 	})
 }
 
