@@ -192,6 +192,7 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			targetNextBatch := must.NotFail(targetCursor.Get("nextBatch")).(*types.Array)
 			compatNextBatch := must.NotFail(compatCursor.Get("nextBatch")).(*types.Array)
 
+			// We can't compare documents here as they are not guaranteed to be in the same order.
 			require.Equal(t, compatNextBatch.Len(), targetNextBatch.Len(), "result length mismatch")
 
 			targetNS, err := targetCursor.Get("ns")
