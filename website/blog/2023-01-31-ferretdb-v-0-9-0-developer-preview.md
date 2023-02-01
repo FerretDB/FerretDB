@@ -37,13 +37,19 @@ db.collection.aggregate([
 ])
 ```
 
-On the other hand, the `$count` stage returns the number of documents in the collection that match the specified query conditions.
+On the other hand, the `$count` stage counts the number of documents input into the stage and passes the result as a document to the next stage.
+In the example below, the `field` represents the output field that contains the count of all documents that match the query conditions in the `$match` stage as its value.
 
 ```js
 db.collection.aggregate([
     {
-        $count: {
+        $match: {
             <query>
+        }
+    },
+    {
+        $count: {
+            <field>
         }
     }
 ])
