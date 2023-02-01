@@ -122,6 +122,8 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	if done {
+		connInfo.DeleteCursor(cursorID)
+
 		cursorID = 0
 	}
 

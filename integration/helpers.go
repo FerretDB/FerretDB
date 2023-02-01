@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -374,7 +375,7 @@ func errorTextContains(err error, texts ...string) bool {
 }
 
 // getCursorIDAndFirstBatch returns the cursor ID and first batch of documents from a find command.
-func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) any {
+func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) (any, *types.Array) {
 	t.Helper()
 
 	res := targetCollection.Database().RunCommand(
@@ -390,13 +391,19 @@ func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollectio
 	require.NoError(t, err)
 
 	responseDoc := ConvertDocument(t, result)
-	cursor, err := responseDoc.Get("cursor")
+	cursor, ok := must.NotFail(responseDoc.Get("cursor")).(*types.Document)
+	require.True(t, ok)
+
+	id, err := cursor.Get("id")
 	require.NoError(t, err)
 
-	id, err := cursor.(*types.Document).Get("id")
+	firstBatch, err := cursor.Get("firstBatch")
 	require.NoError(t, err)
 
-	return id
+	docs, ok := firstBatch.(*types.Array)
+	require.True(t, ok)
+
+	return id, docs
 }
 
 // getDocuments returns all documents from first batch and next batch sorted by _id.

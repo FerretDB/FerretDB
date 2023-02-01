@@ -152,9 +152,10 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			targetID := tc.id
 			compatID := tc.id
 
+			var targetFirstBatch, compatFirstBatch *types.Array
 			if tc.id == nil {
-				targetID = getCursorIDAndFirstBatch(t, ctx, targetCollection)
-				compatID = getCursorIDAndFirstBatch(t, ctx, compatCollection)
+				targetID, targetFirstBatch = getCursorIDAndFirstBatch(t, ctx, targetCollection)
+				compatID, compatFirstBatch = getCursorIDAndFirstBatch(t, ctx, compatCollection)
 			}
 			targetCommand := bson.D{{"getMore", targetID}, {"collection", targetCollection.Name()}}
 			targetCommand = append(targetCommand, tc.command...)
@@ -192,8 +193,11 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 			targetNextBatch := must.NotFail(targetCursor.Get("nextBatch")).(*types.Array)
 			compatNextBatch := must.NotFail(compatCursor.Get("nextBatch")).(*types.Array)
 
-			// We can't compare documents here as they are not guaranteed to be in the same order.
-			require.Equal(t, compatNextBatch.Len(), targetNextBatch.Len(), "result length mismatch")
+			targetDocuments := getDocuments(t, targetFirstBatch, targetNextBatch)
+			compatDocuments := getDocuments(t, compatFirstBatch, compatNextBatch)
+
+			require.Equal(t, compatDocuments, targetDocuments, "result mismatch")
+			require.Equal(t, len(compatDocuments), len(targetDocuments), "result length mismatch")
 
 			targetNS, err := targetCursor.Get("ns")
 			require.NoError(t, err)
@@ -246,7 +250,7 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 		},
 		"BatchSizeResponse": {
 			command: bson.D{
-				{"batchSize", int64(300)},
+				{"batchSize", int64(500)},
 			},
 		},
 	}
