@@ -112,6 +112,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 				"ok", float64(1),
 			))},
 		}))
+
 		return &reply, nil
 	}
 
