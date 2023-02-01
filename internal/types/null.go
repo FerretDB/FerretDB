@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !(ferretdb_debug || ferretdb_testcover || race)
+package types
 
-package version
+type (
+	// NullType represents BSON type Null.
+	//
+	// Most callers should use types.Null value instead.
+	NullType struct{}
+)
 
-// debugBuild is false if that's not a debug build.
-//
-// See package documentation for more details.
-const debugBuild = false
+// Null represents BSON value Null.
+var Null = NullType{}

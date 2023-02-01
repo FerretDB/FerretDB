@@ -44,6 +44,8 @@ func getPool(ctx context.Context, tb testing.TB) *Pool {
 	return pool
 }
 
+// setupDatabase ensures that test-specific FerretDB database / PostgreSQL schema does not exist
+// before and after the test.
 func setupDatabase(ctx context.Context, tb testing.TB, pool *Pool, db string) {
 	dropDatabase := func() {
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {

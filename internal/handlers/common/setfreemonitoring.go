@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// SetFreeMonitoring is a common implementation of the setFreeMonitoring command.
+// SetFreeMonitoring is a part of common implementation of the setFreeMonitoring command.
 func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
 	if provider == nil {
 		panic("provider cannot be equal to nil")
@@ -71,11 +71,10 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 	}
 
 	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
-		return nil, NewCommandErrorMsg(errInternalError, err.Error())
+		return nil, err
 	}
 
 	var reply wire.OpMsg
-
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ok", float64(1),

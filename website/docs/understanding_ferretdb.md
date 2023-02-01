@@ -16,7 +16,7 @@ That makes it ideal for applications and workloads requiring flexible schemas, s
 
 :::note
 For Tigris, FerretDB requires you to declare a JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
-Get more information on the key differences [here](/diff/).
+Get more information on the key differences [here](diff.md).
 :::
 
 ## Documents
@@ -38,7 +38,7 @@ The above data is stored in a single document.
 
 :::note
 FerretDB follows almost the same naming conventions as MongoDB.
-However, there are a few restrictions, which you can find  [here](/diff/).
+However, there are a few restrictions, which you can find [here](diff.md).
 :::
 
 For complex documents, you can nest objects (subdocuments) inside a document.
@@ -82,8 +82,8 @@ To reference the fourth field in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
-* [Query an array](./basic_operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
-* [Update an array](./basic_operations/update.md#update-an-array-element)
+* [Query an array](basic_operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
+* [Update an array](basic_operations/update.md#update-an-array-element)
 
 ### Embedded documents
 
@@ -115,8 +115,8 @@ To reference the `city` field in the embedded document, use the dot notation `"c
 
 For dot notation examples on embedded documents, see here:
 
-* [Query an embedded document](./basic_operations/read.md#query-on-an-embedded-or-nested-document)
-* [Update an embedded document](./basic_operations/update.md#update-an-embedded-document)
+* [Query an embedded document](basic_operations/read.md#query-on-an-embedded-or-nested-document)
+* [Update an embedded document](basic_operations/update.md#update-an-embedded-document)
 
 ## Collections
 
@@ -160,7 +160,7 @@ Read more on [jsonb in PostgreSQL](https://www.postgresql.org/docs/current/datat
 
 In Tigris case, we convert MongoDB BSON to Tigris data based on the [Tigris model](https://docs.tigrisdata.com/documents/datamodel).
 There are a few differences in how data is stored in PostgreSQL and Tigris.
-Please [check here](/diff/) for more details on the differences.
+Please [check here](diff.md) for more details on the differences.
 
 :::caution
 FerretDB is still under development and not currently suitable for production-ready environments.

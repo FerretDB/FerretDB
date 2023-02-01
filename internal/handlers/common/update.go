@@ -109,14 +109,20 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			changed = changed || mulChanged
 
-		case "$pop":
-			changed, err = processPopFieldExpression(doc, updateV.(*types.Document))
+		case "$rename":
+			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
-		case "$rename":
-			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
+		case "$pop":
+			changed, err = processPopArrayUpdateExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
+		case "$push":
+			changed, err = processPushArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -191,63 +197,6 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 				ErrUnsuitableValueType,
 				err.Error(),
 			)
-		}
-
-		changed = true
-	}
-
-	return changed, nil
-}
-
-// processPopFieldExpression changes document according to $pop operator.
-// If the document was changed it returns true.
-func processPopFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
-	var changed bool
-
-	for _, key := range update.Keys() {
-		popValueRaw := must.NotFail(update.Get(key))
-
-		popValue, err := GetWholeNumberParam(popValueRaw)
-		if err != nil {
-			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw))
-		}
-
-		if popValue != 1 && popValue != -1 {
-			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
-		}
-
-		path := types.NewPathFromString(key)
-
-		if !doc.HasByPath(path) {
-			continue
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
-
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, NewWriteErrorMsg(
-				ErrTypeMismatch,
-				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
-			)
-		}
-
-		if array.Len() == 0 {
-			continue
-		}
-
-		if popValue == -1 {
-			array.Remove(0)
-		} else {
-			array.Remove(array.Len() - 1)
-		}
-
-		err = doc.SetByPath(path, array)
-		if err != nil {
-			return false, lazyerrors.Error(err)
 		}
 
 		changed = true
@@ -727,12 +676,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	_, err = extractValueFromUpdateOperator("$rename", update)
+	if err != nil {
+		return err
+	}
+
 	pop, err := extractValueFromUpdateOperator("$pop", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$rename", update)
+	push, err := extractValueFromUpdateOperator("$push", update)
 	if err != nil {
 		return err
 	}
@@ -741,7 +695,9 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
-	if err = checkConflictingOperators(mul, currentDate, inc, min, max, pop, set, setOnInsert, unset); err != nil {
+	if err = checkConflictingOperators(
+		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push,
+	); err != nil {
 		return err
 	}
 
@@ -756,31 +712,21 @@ func ValidateUpdateOperators(update *types.Document) error {
 	return nil
 }
 
-// HasSupportedUpdateModifiers checks that update document contains only modifiers that are supported.
+// HasSupportedUpdateModifiers checks that update document contains supported update operators.
+// If no update operators are found it returns false.
+// If update document contains unsupported update operators it returns an error.
 func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
-	updateModifier := false
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
-		case "$currentDate":
-			fallthrough
-		case "$inc":
-			fallthrough
-		case "$max":
-			fallthrough
-		case "$min":
-			fallthrough
-		case "$mul":
-			fallthrough
-		case "$set":
-			fallthrough
-		case "$setOnInsert":
-			fallthrough
-		case "$unset":
-			fallthrough
-		case "$pop":
-			fallthrough
-		case "$rename":
-			updateModifier = true
+		case // field update operators:
+			"$currentDate",
+			"$inc", "$min", "$max", "$mul",
+			"$rename",
+			"$set", "$setOnInsert", "$unset",
+
+			// array update operators:
+			"$pop", "$push":
+			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewWriteErrorMsg(
@@ -796,7 +742,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 		}
 	}
 
-	return updateModifier, nil
+	return false, nil
 }
 
 // checkConflictingOperators checks if there are the same keys in these documents and returns an error, if any.
@@ -895,6 +841,8 @@ func validateRenameExpression(update *types.Document) error {
 	}
 
 	iter := doc.Iterator()
+	defer iter.Close()
+
 	keys := map[string]struct{}{}
 
 	for {

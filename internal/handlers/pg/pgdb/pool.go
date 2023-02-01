@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -57,7 +58,22 @@ type DBStats struct {
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
 func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provider) (*Pool, error) {
-	config, err := pgxpool.ParseConfig(uri)
+	u, err := url.Parse(uri)
+	if err != nil {
+		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
+	}
+
+	// pgx 'defaultMaxConns' is 4, which is not enough for us.
+	// Set it to 20 by default if no query parameter is defined.
+	// See: https://github.com/FerretDB/FerretDB/issues/1844
+	values := u.Query()
+	if !values.Has("pool_max_conns") {
+		values.Set("pool_max_conns", "20")
+	}
+
+	u.RawQuery = values.Encode()
+
+	config, err := pgxpool.ParseConfig(u.String())
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}

@@ -2,11 +2,14 @@
 slug: pjson-how-to-store-bson-in-jsonb
 title: "How FerretDB stores BSON in JSONB"
 author: Chi Fujii
-image: ../static/img/blog/six_ferrets-1024x917.jpg
+description: In this article, we show how FerretDB stores and translates MongoDB's BSON format into JSONB in PostgreSQL.
+image: /img/blog/six_ferrets-1024x917.jpg
 date: 2022-11-08
 ---
 
-![How FerretDB stores BSON in JSONB](../static/img/blog/christian-wiediger-WkfDrhxDMC8-unsplash-1024x683.jpg)
+In this article, we show how FerretDB stores and translates MongoDB's BSON format into JSONB in PostgreSQL.
+
+![How FerretDB stores BSON in JSONB](/img/blog/christian-wiediger-WkfDrhxDMC8-unsplash-1024x683.jpg)
 
 <!--truncate-->
 

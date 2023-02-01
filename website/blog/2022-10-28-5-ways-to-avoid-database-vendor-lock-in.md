@@ -2,11 +2,15 @@
 slug: 5-ways-to-avoid-database-vendor-lock-in
 title: "5 Tips to Help Mitigate the Risks of Vendor Lock-In In Your Database"
 author: Alexander Fashakin
-image: ../static/img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg
+description: Database vendor lock-in poses a technical, financial, and legal risk for all companies. This article provides you with the 5 tips you need to avoid these risks.
+image: /img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg
 date: 2022-10-28
 ---
 
-![How to avoid vendor lock-in](../static/img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg)
+Database vendor lock-in poses a technical, financial, and legal risk for all companies.
+This article provides you with the 5 tips you need to avoid these risks
+
+![How to avoid vendor lock-in](/img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg)
 
 <!--truncate-->
 

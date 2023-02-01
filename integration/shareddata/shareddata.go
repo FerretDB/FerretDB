@@ -64,6 +64,7 @@ func AllProviders() Providers {
 		ObjectIDKeys,
 
 		Composites,
+		PostgresEdgeCases,
 
 		DocumentsDoubles,
 		DocumentsStrings,
@@ -73,6 +74,7 @@ func AllProviders() Providers {
 		ArrayDoubles,
 		ArrayInt32s,
 		ArrayRegexes,
+		ArrayDocuments,
 	}
 
 	// check that names are unique and randomize order

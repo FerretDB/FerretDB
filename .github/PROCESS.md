@@ -35,6 +35,7 @@ If the team thinks that the task is bigger than **L**, it should be decomposed i
 
 Unless the issue explicitly states otherwise, the following things are always in the scope:
 
+* All handlers.
 * Tests.
   See contributing documentation for general discussion about unit and integration tests.
 * Small spot refactorings.
@@ -64,14 +65,16 @@ Try to estimate on the planning as best as you can.
 2. Pull request **title** should be accurate and descriptive as it is used in the generated changelog.
    It should not mention the issue number but describe the fixed issue instead.
 3. Most of the time pull requests are related to some issues.
-   In such cases, pull request **description** should mention the issue number like `Closes #{issue_number}.`.
-   Do not use URLs like `https://github.com/org/repo/issue/123` even if they are rendered the same on GitHub.
+   In such cases, pull request **description** should mention the issue number
+   like `Closes #{issue_number}.` or `Closes org/repo#{issue_number}.`.
+   Do not use URLs like `https://github.com/org/repo/issue/123` or paths like `org/repo/issue/123`
+   even if they are rendered the same on GitHub.
    If you propose a tiny fix, there is no needed to create a new issue.
 4. We provide a pull requests template that includes suggestions and readiness checklist.
    Please use it.
 5. It is fine to send several sequential pull requests for one issue to make them easier to review.
-   In that case, please still use the `Closes #{issue_number}.` phrase
-   (as [words like "refs" do not link PR to the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)),
+   In that case, please still use the `Closes` word as described above
+   (because [words like "refs" do not link PR to the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)),
    but don't forget to reopen the issue once PR is merged,
    but the issue as a whole is not done.
 6. Please create a draft pull request as soon as you start working on an issue; that is needed for our process tooling.

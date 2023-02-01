@@ -16,12 +16,39 @@ package tigris
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgAggregate implements HandlerInterface.
 func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgAggregate(ctx, msg)
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1891
+
+	if pipeline.Len() > 0 {
+		d := must.NotFail(pipeline.Get(0)).(*types.Document)
+
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("`aggregate` %q is not implemented yet", d.Command()),
+			d.Command(),
+		)
+	}
+
+	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "`aggregate` command is not implemented yet")
 }

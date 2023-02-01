@@ -59,10 +59,11 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      image: 'img/logo_dark.jpg',
       navbar: {
         logo: {
           alt: 'FerretDB Logo',
-          src: 'img/logo_dark.png',
+          src: 'img/logo_dark.jpg',
           srcDark:'img/logo_light.png'
         },
         items: [
@@ -124,6 +125,11 @@ const config = {
           {
             title: 'More',
             items: [
+              {
+                href: 'https://ferretdb.io/',
+                label: 'Go to FerretDB.io',
+                position: 'right',
+              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/FerretDB/',

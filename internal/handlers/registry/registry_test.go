@@ -14,8 +14,63 @@
 
 package registry
 
-import "testing"
+import (
+	"encoding/json"
+	"os/exec"
+	"testing"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
+)
+
+// tagPackages returns packages that are imported by FerretDB only when the given Go build tag is provided.
+func tagPackages(t *testing.T, tag string) []string {
+	t.Helper()
+
+	type list struct {
+		Deps []string `json:"Deps"`
+	}
+
+	var withTag list
+	b, err := exec.Command("go", "list", "-json", "-tags", tag, "../../../cmd/ferretdb").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &withTag))
+
+	var withoutTag list
+	b, err = exec.Command("go", "list", "-json", "../../../cmd/ferretdb").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &withoutTag))
+
+	packages := make(map[string]struct{}, len(withTag.Deps))
+
+	for _, p := range withTag.Deps {
+		packages[p] = struct{}{}
+	}
+
+	for _, p := range withoutTag.Deps {
+		delete(packages, p)
+	}
+
+	return maps.Keys(packages)
+}
+
+// TestDeps ensures that some packages are imported only when the corresponding backend is enabled via Go build tag.
+func TestDeps(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Tigris", func(t *testing.T) {
+		t.Parallel()
+
+		diff := tagPackages(t, "ferretdb_tigris")
+		assert.Contains(t, diff, "github.com/tigrisdata/tigris-client-go/driver")
+		assert.Contains(t, diff, "google.golang.org/grpc")
+	})
+
+	t.Run("Hana", func(t *testing.T) {
+		t.Parallel()
+
+		diff := tagPackages(t, "ferretdb_hana")
+		assert.Contains(t, diff, "github.com/SAP/go-hdb/driver")
+	})
 }
