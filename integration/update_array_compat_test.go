@@ -71,6 +71,17 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
 			resultType: emptyResult,
 		},
+		"DotNotationArray": {
+			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
+		},
+		"DotNotationObjectInArray": {
+			update:     bson.D{{"$pop", bson.D{{"v.array.foo.array", 1}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationObject": {
+			update:     bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)

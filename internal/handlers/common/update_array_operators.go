@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,6 +55,11 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 		path := types.NewPathFromString(key)
 
 		if !doc.HasByPath(path) {
+			// If any prefix of the path exists, pop returns error.
+			if err = ensureNonExistentPrefix(doc, key, path); err != nil {
+				return false, err
+			}
+
 			continue
 		}
 
@@ -89,6 +95,39 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 	}
 
 	return changed, nil
+}
+
+// ensureNonExistentPrefix checks if a given path and its prefix
+// does not exist in doc. It returns error if any prefix exists in the path.
+func ensureNonExistentPrefix(doc *types.Document, key string, path types.Path) error {
+	// non-existing key returns no error.
+	if path.Len() == 1 {
+		return nil
+	}
+
+	prefix := path.Prefix()
+
+	// check if prefix exists in the document.
+	if doc.Has(prefix) {
+		val := must.NotFail(doc.Get(prefix))
+		if prefixDoc, ok := val.(*types.Document); ok {
+			// recursively check if document contains prefix.
+			return ensureNonExistentPrefix(prefixDoc, prefix, path.TrimPrefix())
+		}
+
+		return commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrUnsuitableValueType,
+			fmt.Sprintf(
+				"Cannot use the part (%[1]s) of (%[2]s) to traverse the element ({%[1]s: %#[3]v})",
+				path.Suffix(),
+				key,
+				val,
+			),
+		)
+	}
+
+	// non-existing prefix returns no error.
+	return nil
 }
 
 // processPushArrayUpdateExpression changes document according to $push array update operator.
