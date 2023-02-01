@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package setup provides integration tests setup helpers.
 package setup
 
 import (
@@ -29,9 +28,9 @@ type startupInitializer struct {
 }
 
 // startupInitializer creates an instance of startupInitializer.
-func newStartupInitializer() *startupInitializer {
+func newStartupInitializer() {
 	nPortCalls := uint64(0)
-	return &startupInitializer{nPortCalls: &nPortCalls}
+	startupEnv = &startupInitializer{nPortCalls: &nPortCalls}
 }
 
 // getNextTigrisPort gets the next port number of Tigris to be used

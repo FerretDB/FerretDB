@@ -27,8 +27,8 @@ func TestGetNextTigrisPort(t *testing.T) {
 	var previousPort uint16
 
 	for i := 0; i < 10; i++ {
-		s := startup()
-		newPort := s.getNextTigrisPort()
+		startup()
+		newPort := startupEnv.getNextTigrisPort()
 		require.NotEqual(t, previousPort, newPort)
 		previousPort = newPort
 	}

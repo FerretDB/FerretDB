@@ -32,6 +32,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -219,7 +222,7 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer) string {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -249,7 +252,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.getNextTigrisPort()),
+		TigrisURL: fmt.Sprintf("127.0.0.1:%d", startupEnv.getNextTigrisPort()),
 	}
 	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
@@ -350,7 +353,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 }
 
 // startup initializes things that should be initialized only once.
-func startup() *startupInitializer {
+func startup() {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
@@ -376,7 +379,6 @@ func startup() *startupInitializer {
 	})
 }
 
-/*
 // startupTracer initializes open telemetry tracer that could be used in tests.
 func startupTracer(tb testing.TB) {
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(*jaegerEndpointF)))
@@ -400,11 +402,5 @@ func startupTracer(tb testing.TB) {
 		if err != nil {
 			tb.Errorf("failed to shutdown tracer provider: %v", err)
 		}
-=======
-		startupEnv = newStartupInitializer()
->>>>>>> main
 	})
-
-	return startupEnv
 }
-*/
