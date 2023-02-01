@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -390,7 +390,7 @@ func startupTracer(tb testing.TB) {
 		tracesdk.WithBatcher(exp),
 		tracesdk.WithSampler(tracesdk.AlwaysSample()),
 		tracesdk.WithResource(resource.NewSchemaless(
-			semconv.ServiceNameKey.String("FerretDB"),
+			otelsemconv.ServiceNameKey.String("FerretDB"),
 		)),
 	)
 
