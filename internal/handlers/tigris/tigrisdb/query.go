@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -112,6 +113,23 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 		// don't pushdown query operators and dot notation yet
 		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
 			continue
+		}
+
+		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
+		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
+
+		// If the key is in dot notation translate it to the tigris dot notation
+		if len(k) != 0 {
+			if path := types.NewPathFromString(k); path.Len() > 1 {
+				for _, k := range path.Slice() {
+					if _, err := strconv.Atoi(k); err == nil {
+						continue
+					}
+				}
+
+				key = path.String()    // 'v.foo'
+				prefix = path.Prefix() // 'v'
+			}
 		}
 
 		// _id field supports only specific types
