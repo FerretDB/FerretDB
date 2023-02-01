@@ -45,10 +45,11 @@ jobs:
       - name: Check LFS status
         uses: actionsdesk/lfs-warning@v3.2
         with:
-          filesizelimit: 102400b
+          filesizelimit: 10240b
           labelName: use-git-lfs
           exclusionPatterns: |
             **/*.js
+            **/go.sum
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
