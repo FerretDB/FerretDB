@@ -374,7 +374,7 @@ func errorTextContains(err error, texts ...string) bool {
 }
 
 // getCursorIDAndFirstBatch returns the cursor ID and first batch of documents from a find command.
-func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) (any, *types.Array) {
+func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollection *mongo.Collection) any {
 	t.Helper()
 
 	res := targetCollection.Database().RunCommand(
@@ -396,13 +396,7 @@ func getCursorIDAndFirstBatch(t *testing.T, ctx context.Context, targetCollectio
 	id, err := cursor.(*types.Document).Get("id")
 	require.NoError(t, err)
 
-	docs, err := cursor.(*types.Document).Get("firstBatch")
-	require.NoError(t, err)
-
-	docsArray, ok := docs.(*types.Array)
-	require.True(t, ok)
-
-	return id, docsArray
+	return id
 }
 
 // getDocuments returns all documents from first batch and next batch sorted by _id.
