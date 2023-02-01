@@ -48,9 +48,7 @@ db.collection.aggregate([
         }
     },
     {
-        $count: {
-            <field>
-        }
+        $count: <field>
     }
 ])
 ```
