@@ -118,9 +118,10 @@ func ensureNonExistentPrefix(doc *types.Document, key string, path types.Path) e
 		return commonerrors.NewWriteErrorMsg(
 			commonerrors.ErrUnsuitableValueType,
 			fmt.Sprintf(
-				"Cannot use the part (%[1]s) of (%[2]s) to traverse the element ({%[1]s: %#[3]v})",
+				"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
 				path.Suffix(),
 				key,
+				prefix,
 				val,
 			),
 		)
