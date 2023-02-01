@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+package types
 
-import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+type (
+	// NullType represents BSON type Null.
+	//
+	// Most callers should use types.Null value instead.
+	NullType struct{}
 )
 
-// MsgAggregate implements HandlerInterface.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
-}
+// Null represents BSON value Null.
+var Null = NullType{}

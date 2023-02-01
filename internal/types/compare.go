@@ -198,20 +198,6 @@ func compareScalars(v1, v2 any) CompareResult {
 	panic("not reached")
 }
 
-// isScalar check if v is a BSON scalar value.
-func isScalar(v any) bool {
-	if v == nil {
-		panic("v is nil")
-	}
-
-	switch v.(type) {
-	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
-		return true
-	}
-
-	return false
-}
-
 // compareInvert swaps Less and Greater, keeping Equal.
 func compareInvert(res CompareResult) CompareResult {
 	switch res {
