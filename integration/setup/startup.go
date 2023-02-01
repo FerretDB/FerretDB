@@ -19,13 +19,8 @@ import (
 	"sync/atomic"
 )
 
-// ports are the port numbers where Tigris instances are running.
-// The additional Tigris docker instances were added to make
-// integration tests run faster, they use ports 8082, 8083, 8085 and 8086.
-// Port 8084 is not used since the address is already in use on CI.
-// The ports are also defined in env tool and docker-compose.yml.
-// https://github.com/FerretDB/FerretDB/issues/1887
-var ports = []uint16{8081, 8082, 8083, 8085, 8086}
+// See docker-compose.yml.
+var tigrisPorts = []uint16{8081, 8091, 8092, 8093, 8094}
 
 // startupInitializer keeps tracks of the number of times
 // ports have been requested.
@@ -43,7 +38,7 @@ func newStartupInitializer() *startupInitializer {
 // for testing in Round Robin fashion.
 func (p *startupInitializer) getNextTigrisPort() uint16 {
 	i := atomic.AddUint64(p.nPortCalls, 1)
-	numPorts := uint64(len(ports))
+	numPorts := uint64(len(tigrisPorts))
 
-	return ports[i%numPorts]
+	return tigrisPorts[i%numPorts]
 }
