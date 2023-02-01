@@ -120,12 +120,11 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 				continue
 			}
 
-			// If the key is in dot notation translate it to the tigris dot notation
+			// If the key is in dot notation translate it to a tigris dot notation
 			if path := types.NewPathFromString(k); path.Len() > 1 {
 				for _, k := range path.Slice() {
 					if _, err := strconv.Atoi(k); err == nil {
-						// Don't pushdown array filtering
-						// TODO: is it possible to have number in the field
+						// Don't pushdown array filtering yet TODO: create issue
 						continue
 					}
 				}
