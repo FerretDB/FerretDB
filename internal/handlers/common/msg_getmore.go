@@ -46,12 +46,12 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	collection, err := GetRequiredParam[string](document, "collection")
 	if err != nil {
-		return nil, NewCommandErrorMsg(ErrBadValue, `required parameter "collection" is missing`)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, `required parameter "collection" is missing`)
 	}
 
 	cursorIDValue, err := document.Get("getMore")
 	if err != nil {
-		return nil, NewCommandErrorMsg(ErrBadValue, `required parameter "getMore" is missing`)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, `required parameter "getMore" is missing`)
 	}
 
 	var cursorID int64
@@ -154,8 +154,8 @@ func getBatchSize(doc *types.Document) (int64, error) {
 	batchSize, err := GetWholeNumberParam(batchSizeValue)
 	if err != nil {
 		if errors.Is(err, errUnexpectedType) {
-			return 0, NewCommandErrorMsg(
-				ErrTypeMismatch,
+			return 0, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					"BSON field 'batchSize' is the wrong type '%s', expected type 'long'",
 					AliasFromType(batchSizeValue),
@@ -165,7 +165,7 @@ func getBatchSize(doc *types.Document) (int64, error) {
 	}
 
 	if batchSize < 0 {
-		return 0, NewCommandErrorMsg(
+		return 0, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrBatchSizeNegative,
 			"BSON field 'batchSize' value must be >= 0, actual value '-1'",
 		)
