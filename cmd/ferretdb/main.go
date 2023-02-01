@@ -104,6 +104,8 @@ var tigrisFlags struct {
 // The hanaFlags struct represents flags that are used specifically by "hana" handler.
 //
 // See main_hana.go.
+//
+//nolint:unused // remove once it is used
 var hanaFlags struct{}
 
 // Additional variables for the kong parsers.
