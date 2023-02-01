@@ -94,7 +94,7 @@ func newTestIterator(array *types.Array) *testIterator {
 	}
 }
 
-func (t *testIterator) Next() (uint32, *types.Document, error) {
+func (t *testIterator) Next() (int, *types.Document, error) {
 	i := int(t.i.Add(1) - 1)
 
 	if i >= t.array.Len() {
@@ -111,7 +111,7 @@ func (t *testIterator) Next() (uint32, *types.Document, error) {
 		panic("not a document")
 	}
 
-	return uint32(i), doc, nil
+	return i, doc, nil
 }
 
 func (t *testIterator) Close() {}
