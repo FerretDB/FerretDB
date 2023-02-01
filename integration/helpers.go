@@ -421,6 +421,7 @@ func getDocuments(t *testing.T, firstBatch, nextBatch *types.Array) []*types.Doc
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
+
 			require.NoError(t, err)
 		}
 
@@ -436,6 +437,7 @@ func getDocuments(t *testing.T, firstBatch, nextBatch *types.Array) []*types.Doc
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
+
 			require.NoError(t, err)
 		}
 
