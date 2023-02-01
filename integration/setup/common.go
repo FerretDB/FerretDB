@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/url"
 	"runtime/trace"
 	"sync"
@@ -31,10 +32,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/sdk/resource"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -43,7 +40,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 var (
@@ -69,6 +65,7 @@ var (
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
 	startupOnce sync.Once
+	startupEnv  *startupInitializer
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -222,7 +219,7 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -252,7 +249,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: testutil.TigrisURL(tb), // TODO use flag https://github.com/FerretDB/FerretDB/issues/1568
+		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.getNextTigrisPort()),
 	}
 	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
@@ -353,7 +350,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 }
 
 // startup initializes things that should be initialized only once.
-func startup(tb testing.TB) {
+func startup() *startupInitializer {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
@@ -371,13 +368,15 @@ func startup(tb testing.TB) {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
 
-		// Set open telemetry tracer if jaeger endpoint is provided.
-		if *jaegerEndpointF != "" {
-			startupTracer(tb)
-		}
+		// TODO
+		// // Set open telemetry tracer if jaeger endpoint is provided.
+		// if *jaegerEndpointF != "" {
+		// 	startupTracer(tb)
+		// }
 	})
 }
 
+/*
 // startupTracer initializes open telemetry tracer that could be used in tests.
 func startupTracer(tb testing.TB) {
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(*jaegerEndpointF)))
@@ -401,5 +400,11 @@ func startupTracer(tb testing.TB) {
 		if err != nil {
 			tb.Errorf("failed to shutdown tracer provider: %v", err)
 		}
+=======
+		startupEnv = newStartupInitializer()
+>>>>>>> main
 	})
+
+	return startupEnv
 }
+*/
