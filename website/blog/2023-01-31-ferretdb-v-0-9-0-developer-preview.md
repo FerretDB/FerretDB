@@ -66,7 +66,7 @@ db.collection.update(
 )
 ```
 
-Besides that, FerretDB v0.9.0 now supports `$push` array update operator so that you can add elements to the end of an array field in a document.
+Besides that, FerretDB v0.9.0 now supports `$push` array update operator so that you can add elements to the end of an array field.
 Here's how you can use it:
 
 ```js
