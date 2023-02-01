@@ -42,4 +42,5 @@
 
 1. Bump the latest version on [Beacon](https://beacon.ferretdb.io).
 2. Publish and announce blog post.
-3. Update NixOS package.
+3. Tweet, toot.
+4. Update NixOS package.
