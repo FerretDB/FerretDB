@@ -106,33 +106,37 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
+// TODO: unit test
 func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// don't pushdown query operators and dot notation yet
-		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
-			continue
-		}
+		var key string // key can be either a string '"v"' or path '"v.foo"'
+		//var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
 
-		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
-		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
+		if k != "" {
+			// skip $comment
+			if k[0] == '$' {
+				continue
+			}
 
-		// If the key is in dot notation translate it to the tigris dot notation
-		if len(k) != 0 {
+			// If the key is in dot notation translate it to the tigris dot notation
 			if path := types.NewPathFromString(k); path.Len() > 1 {
 				for _, k := range path.Slice() {
 					if _, err := strconv.Atoi(k); err == nil {
+						// Don't pushdown array filtering
+						// TODO: is it possible to have number in the field
 						continue
 					}
 				}
 
-				key = path.String()    // 'v.foo'
-				prefix = path.Prefix() // 'v'
+				key = path.String() // 'v.foo'
+				//prefix = path.Prefix() // 'v'
 			}
 		}
 
 		// _id field supports only specific types
+		// TODO: what types for _id for tigris are allowed (do we need to support prefix =="_id" _id.foo cases?)
 		if k == "_id" {
 			switch v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
@@ -154,7 +158,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 			continue
 		case float64, string, types.ObjectID, int32, int64:
 			rawValue := must.NotFail(tjson.Marshal(v))
-			res[k] = json.RawMessage(rawValue)
+			res[key] = json.RawMessage(rawValue)
 		default:
 			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
