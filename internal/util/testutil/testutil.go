@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	_ "go.opentelemetry.io/otel" // TODO
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
