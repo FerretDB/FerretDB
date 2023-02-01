@@ -89,6 +89,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	}
 
 	err = iter.Err()
+
 	switch {
 	case err == nil:
 		fallthrough
