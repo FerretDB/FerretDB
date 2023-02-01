@@ -88,22 +88,32 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var targetURI string
+	var err error
 	if *targetPortF == 0 {
-		targetURI = getListener(tb, ctx, logger)
+		require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
+
+		var cleanup func()
+		targetURI, cleanup, err = getListener(ctx, logger)
+		if cleanup != nil {
+			tb.Cleanup(cleanup)
+		}
 	} else {
-		targetURI = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+		targetURI, err = buildMongoDBURI(ctx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
 			tls:      *targetTLSF,
 		})
 	}
 
+	require.NoError(tb, err)
+
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatURI := buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+	compatURI, err := buildMongoDBURI(ctx, &buildMongoDBURIOpts{
 		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
 		tls:      *compatTLSF,
 	})
+	require.NoError(tb, err)
 
 	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetURI), opts)
 	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatURI), opts)

@@ -19,6 +19,6 @@ import (
 )
 
 // unixSocketPath returns empty string on Windows because Unix domain sockets are not available.
-func unixSocketPath(tb testingT) string {
-	return ""
+func unixSocketPath() (string, error) {
+	return "", nil
 }

@@ -190,10 +190,7 @@ tasks:
         -timeout=30m
         -coverprofile=integration-tigris.txt .
         -handler=tigris
-        -records-dir=../records
-        -target-tls
-        -compat-port=37018
-        -compat-tls
+        -target-unix-socket
 
   test-integration-cockroach:
     desc: "Run integration tests for CockroachDB with pg handler"

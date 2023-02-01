@@ -95,8 +95,8 @@ func CollectionName(tb testing.TB) string {
 	// do not use strings.ToLower because collection names can contain uppercase letters
 	name := tb.Name()
 
-	name = strings.ReplaceAll(name, "/", "-")
-	name = strings.ReplaceAll(name, " ", "_")
+	// name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, " ", "-")
 	name = strings.ReplaceAll(name, "$", "_")
 
 	require.Less(tb, len(name), 255)

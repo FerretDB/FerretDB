@@ -32,7 +32,7 @@ import (
 )
 
 // validateCollectionNameRe validates collection names.
-var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,119}$")
+var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9/_-]{0,119}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //

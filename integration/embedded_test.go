@@ -36,7 +36,11 @@ func TestEmbedded(t *testing.T) {
 
 	t.Parallel()
 
-	serverTLSFiles := setup.GetTLSFilesPaths(t, setup.ServerSide)
+	serverTLSFiles, err := setup.GetTLSFilesPaths(setup.ServerSide)
+	require.NoError(t, err)
+
+	tlsConfig, err := setup.GetClientTLSConfig()
+	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
 		config    *ferretdb.Config
@@ -63,7 +67,7 @@ func TestEmbedded(t *testing.T) {
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 			},
-			tlsConfig: setup.GetClientTLSConfig(t),
+			tlsConfig: tlsConfig,
 		},
 	} {
 		name, tc := name, tc

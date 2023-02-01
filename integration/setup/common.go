@@ -35,6 +35,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -108,21 +109,16 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// testingTB is a part of testing.TB interface without Cleanup method
-// which is problematic for getListener with shared listener.
-type testingTB interface {
-	require.TestingT
-	Helper()
-	Fatalf(string, ...any)
-	Logf(string, ...any)
-}
-
 // mongoClient returns a new connected MongoDB client for the given Mongodb URI.
-func mongoClient(tb testingTB, ctx context.Context, uri string) (*mongo.Client, error) {
+func mongoClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	opts := options.Client().ApplyURI(uri)
 
 	if *targetTLSF {
-		opts.SetTLSConfig(GetClientTLSConfig(tb))
+		cfg, err := GetClientTLSConfig()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		opts.SetTLSConfig(cfg)
 	}
 
 	// TODO tweak these options?
@@ -137,19 +133,19 @@ func mongoClient(tb testingTB, ctx context.Context, uri string) (*mongo.Client, 
 	opts.SetMaxConnIdleTime(0)
 	opts.SetDirect(true)
 
-	require.NoError(tb, opts.Validate())
+	if err := opts.Validate(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return mongo.Connect(ctx, opts)
 }
 
 // checkMongoDBURI returns true if given MongoDB URI is working.
-func checkMongoDBURI(tb testingTB, ctx context.Context, uri string) bool {
-	tb.Helper()
-
+func checkMongoDBURI(ctx context.Context, uri string) bool {
 	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
 	trace.Log(ctx, "checkMongoDBURI", uri)
 
-	client, err := mongoClient(tb, ctx, uri)
+	client, err := mongoClient(ctx, uri)
 
 	if err == nil {
 		defer client.Disconnect(ctx)
@@ -158,12 +154,14 @@ func checkMongoDBURI(tb testingTB, ctx context.Context, uri string) bool {
 	}
 
 	if err != nil {
-		tb.Logf("checkMongoDBURI: %s: %s", uri, err)
+		// FIXME
+		// tb.Logf("checkMongoDBURI: %s: %s", uri, err)
 
 		return false
 	}
 
-	tb.Logf("checkMongoDBURI: %s: connected", uri)
+	// FIXME
+	// tb.Logf("checkMongoDBURI: %s: connected", uri)
 
 	return true
 }
@@ -178,21 +176,23 @@ type buildMongoDBURIOpts struct {
 // buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
 //
 // TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
-func buildMongoDBURI(tb testingTB, ctx context.Context, opts *buildMongoDBURIOpts) string {
-	tb.Helper()
-
+func buildMongoDBURI(ctx context.Context, opts *buildMongoDBURIOpts) (string, error) {
 	var host string
 
 	if opts.hostPort != "" {
-		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
+		if opts.unixSocketPath != "" {
+			return "", lazyerrors.Errorf("both hostPort and unixSocketPath are set")
+		}
 		host = opts.hostPort
 	} else {
-		require.NotEmpty(tb, opts.unixSocketPath, "neither hostPort nor unixSocketPath are set")
+		if opts.unixSocketPath == "" {
+			return "", lazyerrors.Errorf("neither hostPort nor unixSocketPath are set")
+		}
 		host = opts.unixSocketPath
 	}
 
-	if opts.tls {
-		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
+	if opts.tls && opts.unixSocketPath != "" {
+		return "", lazyerrors.Errorf("unixSocketPath cannot be used with TLS")
 	}
 
 	u := &url.URL{
@@ -228,48 +228,41 @@ func buildMongoDBURI(tb testingTB, ctx context.Context, opts *buildMongoDBURIOpt
 		u.RawQuery = q.Encode()
 		res := u.String()
 
-		if checkMongoDBURI(tb, ctx, res) {
-			return res
+		if checkMongoDBURI(ctx, res) {
+			return res, nil
 		}
 	}
 
-	tb.Fatalf("buildMongoDBURI: failed for %+v", opts)
-
-	panic("not reached")
+	return "", lazyerrors.Errorf("buildMongoDBURI: failed for %+v", opts)
 }
 
-func getListener(tb testingTB, ctx context.Context, logger *zap.Logger) string {
+func getListener(ctx context.Context, logger *zap.Logger) (string, func(), error) {
+	defer trace.StartRegion(ctx, "getListener").End()
+
 	if *shareListenerF {
+		var err error
+
 		setupListenerOnce.Do(func() {
-			sharedListenerURI = setupListener(tb, ctx, logger, false)
+			sharedListenerURI, _, err = setupListener(context.Background(), zap.NewNop())
 		})
 
-		return sharedListenerURI
+		return sharedListenerURI, nil, err
 	}
 
-	return setupListener(tb, ctx, logger, true)
+	return setupListener(ctx, logger)
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
-// It returns MongoDB URI for that listener.
-func setupListener(tb testingTB, ctx context.Context, logger *zap.Logger, cleanup bool) string {
-	defer trace.StartRegion(ctx, "setupListener").End()
-
-	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
-
-	// that's already checked by handlers constructors,
-	// but here we could produce a better error message
-	switch *handlerF {
-	case "pg":
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
-	}
-
+// It returns MongoDB URI for that listener and cleanup function.
+func setupListener(ctx context.Context, logger *zap.Logger) (string, func(), error) {
 	p, err := state.NewProvider("")
-	require.NoError(tb, err)
+	if err != nil {
+		return "", nil, lazyerrors.Error(err)
+	}
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	handlerOpts := &registry.NewHandlerOpts{
+	h, err := registry.NewHandler(*handlerF, &registry.NewHandlerOpts{
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
@@ -277,9 +270,10 @@ func setupListener(tb testingTB, ctx context.Context, logger *zap.Logger, cleanu
 		PostgreSQLURL: *postgreSQLURLF,
 
 		TigrisURL: "127.0.0.1:8081",
+	})
+	if err != nil {
+		return "", nil, lazyerrors.Error(err)
 	}
-	h, err := registry.NewHandler(*handlerF, handlerOpts)
-	require.NoError(tb, err)
 
 	listenerOpts := &clientconn.NewListenerOpts{
 		ProxyAddr:      *proxyAddrF,
@@ -295,12 +289,17 @@ func setupListener(tb testingTB, ctx context.Context, logger *zap.Logger, cleanu
 	}
 
 	if *targetUnixSocketF {
-		listenerOpts.Unix = unixSocketPath(tb)
+		if listenerOpts.Unix, err = unixSocketPath(); err != nil {
+			return "", nil, lazyerrors.Error(err)
+		}
 	}
 
 	if *targetTLSF {
 		listenerOpts.TLS = "127.0.0.1:0"
-		fp := GetTLSFilesPaths(tb, ServerSide)
+		fp, err := GetTLSFilesPaths(ServerSide)
+		if err != nil {
+			return "", nil, lazyerrors.Error(err)
+		}
 		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
 	} else {
 		listenerOpts.TCP = "127.0.0.1:0"
@@ -320,14 +319,6 @@ func setupListener(tb testingTB, ctx context.Context, logger *zap.Logger, cleanu
 		}
 	}()
 
-	if cleanup {
-		// ensure that all listener's logs are written before test ends
-		tb.(interface{ Cleanup(func()) }).Cleanup(func() {
-			<-done
-			h.Close()
-		})
-	}
-
 	var opts buildMongoDBURIOpts
 
 	switch {
@@ -340,10 +331,20 @@ func setupListener(tb testingTB, ctx context.Context, logger *zap.Logger, cleanu
 		opts.hostPort = l.TCPAddr().String()
 	}
 
-	uri := buildMongoDBURI(tb, ctx, &opts)
+	uri, err := buildMongoDBURI(ctx, &opts)
+	if err != nil {
+		return "", nil, lazyerrors.Error(err)
+	}
+
 	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
 
-	return uri
+	// ensure that all listener's logs are written before test ends
+	cleanup := func() {
+		<-done
+		h.Close()
+	}
+
+	return uri, cleanup, nil
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.
@@ -355,7 +356,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 
 	tb.Logf("setupClient: %s", uri)
 
-	client, err := mongoClient(tb, ctx, uri)
+	client, err := mongoClient(ctx, uri)
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {

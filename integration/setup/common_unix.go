@@ -18,23 +18,22 @@ package setup
 
 import (
 	"os"
-
-	"github.com/stretchr/testify/require"
 )
 
 // unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testingTB) string {
-	tb.Helper()
-
-	// do not use tb.TempDir() because generated path is too long on macOS
+func unixSocketPath() (string, error) {
 	f, err := os.CreateTemp("", "ferretdb-*.sock")
-	require.NoError(tb, err)
+	if err != nil {
+		return "", err
+	}
 
 	// remove file so listener could create it (and remove it itself on stop)
-	err = f.Close()
-	require.NoError(tb, err)
-	err = os.Remove(f.Name())
-	require.NoError(tb, err)
+	if err = f.Close(); err != nil {
+		return "", err
+	}
+	if err = os.Remove(f.Name()); err != nil {
+		return "", err
+	}
 
-	return f.Name()
+	return f.Name(), nil
 }

@@ -91,14 +91,22 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.Logger(tb, level)
 
 	var uri string
+	var err error
 	if *targetPortF == 0 {
-		uri = getListener(tb, ctx, logger)
+		require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
+		var cleanup func()
+		uri, cleanup, err = getListener(ctx, logger)
+		if cleanup != nil {
+			tb.Cleanup(cleanup)
+		}
 	} else {
-		uri = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+		uri, err = buildMongoDBURI(ctx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
 			tls:      *targetTLSF,
 		})
 	}
+
+	require.NoError(tb, err)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)

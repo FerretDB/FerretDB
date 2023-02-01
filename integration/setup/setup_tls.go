@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/stretchr/testify/require"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // TLSFileSide defines a "side" of TLS file (client or server).
@@ -40,43 +40,55 @@ type TLSFilesPaths struct {
 }
 
 // GetTLSFilesPaths returns paths to TLS files - cert, key, ca.
-func GetTLSFilesPaths(tb testingTB, side TLSFileSide) *TLSFilesPaths {
+func GetTLSFilesPaths(side TLSFileSide) (*TLSFilesPaths, error) {
 	certPath := filepath.Join("..", "build", "certs", string(side)+"-cert.pem")
 
-	_, err := os.Stat(certPath)
-	require.NoError(tb, err)
+	if _, err := os.Stat(certPath); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	keyPath := filepath.Join("..", "build", "certs", string(side)+"-key.pem")
 
-	_, err = os.Stat(keyPath)
-	require.NoError(tb, err)
+	if _, err := os.Stat(keyPath); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
 
-	_, err = os.Stat(keyPath)
-	require.NoError(tb, err)
+	if _, err := os.Stat(keyPath); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return &TLSFilesPaths{
 		Cert: certPath,
 		Key:  keyPath,
 		CA:   caPath,
-	}
+	}, nil
 }
 
 // GetClientTLSConfig returns a test TLS config for a client.
-func GetClientTLSConfig(tb testingTB) *tls.Config {
-	tlsFiles := GetTLSFilesPaths(tb, ClientSide)
+func GetClientTLSConfig() (*tls.Config, error) {
+	tlsFiles, err := GetTLSFilesPaths(ClientSide)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	// Load the root CA certificate
 	rootCA, err := os.ReadFile(tlsFiles.CA)
-	require.NoError(tb, err)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM(rootCA)
-	require.True(tb, ok, "failed to parse root certificate")
+	if !ok {
+		return nil, lazyerrors.New("failed to parse root certificate")
+	}
 
 	cert, err := tls.LoadX509KeyPair(tlsFiles.Cert, tlsFiles.Key)
-	require.NoError(tb, err)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	// Create the TLS config
 	tlsConfig := &tls.Config{
@@ -84,5 +96,5 @@ func GetClientTLSConfig(tb testingTB) *tls.Config {
 		Certificates: []tls.Certificate{cert},
 	}
 
-	return tlsConfig
+	return tlsConfig, nil
 }
