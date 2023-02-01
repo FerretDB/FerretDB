@@ -408,5 +408,5 @@ var Int32BigAmounts = &Values[int32]{
 			"$tigrisSchemaString": tigrisSchema(`{"type": "number"}`),
 		},
 	},
-	data: generateBigMap(500),
+	data: generateBigMap(200),
 }

@@ -250,7 +250,7 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 		},
 		"BatchSizeResponse": {
 			command: bson.D{
-				{"batchSize", int64(500)},
+				{"batchSize", int64(200)},
 			},
 		},
 	}
