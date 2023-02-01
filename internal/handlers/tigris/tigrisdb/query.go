@@ -111,8 +111,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		var key string // key can be either a string '"v"' or path '"v.foo"'
-		//var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
+		var key string // key can be either a single key string '"v"' or dot notation '"v.foo"'
 
 		if k != "" {
 			// skip $comment
@@ -129,18 +128,16 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 					}
 				}
 
-				key = path.String() // 'v.foo'
-				//prefix = path.Prefix() // 'v'
+				key = path.String() // '"v.foo"'
 			}
 		}
 
 		// _id field supports only specific types
-		// TODO: what types for _id for tigris are allowed (do we need to support prefix =="_id" _id.foo cases?)
 		if k == "_id" {
 			switch v.(type) {
-			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			case *types.Document, *types.Array, float64, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
-			case float64, string, types.ObjectID, int32, int64:
+			case string, types.ObjectID, int32, int64:
 				// filter by the exact _id value
 				id := must.NotFail(tjson.Marshal(v))
 				res["_id"] = json.RawMessage(id)
