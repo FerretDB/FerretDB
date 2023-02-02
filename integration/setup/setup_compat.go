@@ -60,13 +60,12 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	parentCtx, cancel := context.WithCancel(testutil.Ctx(tb))
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	// "Local" ctx is used to propagate spans correctly.
-	ctx, span := otel.Tracer("").Start(parentCtx, "SetupCompatWithOpts")
+	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "SetupCompatWithOpts").End()
+	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
 
 	// skip tests for MongoDB as soon as possible
 	if *compatPortF == 0 {
@@ -92,9 +91,9 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetURI string
 	if *targetPortF == 0 {
-		targetURI = setupListener(tb, ctx, logger)
+		targetURI = setupListener(tb, setupCtx, logger)
 	} else {
-		targetURI = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+		targetURI = buildMongoDBURI(tb, setupCtx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
 			tls:      *targetTLSF,
 		})
@@ -103,25 +102,23 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatURI := buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+	compatURI := buildMongoDBURI(tb, setupCtx, &buildMongoDBURIOpts{
 		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
 		tls:      *compatTLSF,
 	})
 
-	ctxT, span := otel.Tracer("").Start(ctx, "targetCollections")
+	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")
+	defer span.End()
 	targetCollections := setupCompatCollections(tb, ctxT, setupClient(tb, ctxT, targetURI), opts)
 
+	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
 	defer span.End()
-
-	ctxC, span := otel.Tracer("").Start(ctx, "compatCollections")
 	compatCollections := setupCompatCollections(tb, ctxC, setupClient(tb, ctxC, compatURI), opts)
-
-	defer span.End()
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupCompatResult{
-		Ctx:               parentCtx,
+		Ctx:               ctx,
 		TargetCollections: targetCollections,
 		CompatCollections: compatCollections,
 	}
@@ -176,7 +173,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
 		collCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(ctx, spanName)
+		region := trace.StartRegion(collCtx, spanName)
 
 		collection := database.Collection(collectionName)
 

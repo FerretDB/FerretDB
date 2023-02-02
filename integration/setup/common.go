@@ -116,15 +116,13 @@ func SkipForPostgresWithReason(tb testing.TB, reason string) {
 func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
 	tb.Helper()
 
-	_, span := otel.Tracer("").Start(ctx, "checkMongoDBURI")
+	ctx, span := otel.Tracer("").Start(ctx, "checkMongoDBURI")
 	defer span.End()
 
 	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
 	trace.Log(ctx, "checkMongoDBURI", uri)
 
-	clientOpts := options.Client().ApplyURI(uri)
-
-	clientOpts.Monitor = otelmongo.NewMonitor()
+	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
 
 	if *targetTLSF {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))

@@ -75,13 +75,12 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
-	parentCtx, cancel := context.WithCancel(testutil.Ctx(tb))
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	// "Local" ctx is used to propagate spans correctly.
-	ctx, span := otel.Tracer("").Start(parentCtx, "SetupWithOpts")
+	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "SetupWithOpts").End()
+	defer trace.StartRegion(setupCtx, "SetupWithOpts").End()
 
 	if opts == nil {
 		opts = new(SetupOpts)
@@ -95,9 +94,9 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	var uri string
 	if *targetPortF == 0 {
-		uri = setupListener(tb, ctx, logger)
+		uri = setupListener(tb, setupCtx, logger)
 	} else {
-		uri = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
+		uri = buildMongoDBURI(tb, setupCtx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
 			tls:      *targetTLSF,
 		})
@@ -106,12 +105,12 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, setupClient(tb, ctx, uri), opts)
+	collection := setupCollection(tb, setupCtx, setupClient(tb, setupCtx, uri), opts)
 
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
-		Ctx:        parentCtx,
+		Ctx:        ctx,
 		Collection: collection,
 		MongoDBURI: uri,
 	}
@@ -172,7 +171,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(ctx, spanName)
+		region := trace.StartRegion(provCtx, spanName)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {

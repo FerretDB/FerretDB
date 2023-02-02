@@ -18,7 +18,6 @@ package testutil
 import (
 	"context"
 	"runtime/trace"
-	"strings"
 	"testing"
 
 	"go.opentelemetry.io/otel"
@@ -30,18 +29,13 @@ import (
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	// root span
 	ctx, span := otel.Tracer("").Start(context.Background(), tb.Name())
-
-	// make one task per top-level test for nicer histograms
-	ctx, task := trace.NewTask(ctx, strings.Split(tb.Name(), "/")[0])
-
-	tb.Cleanup(task.End)
 	tb.Cleanup(func() {
 		span.End()
 	})
 
-	trace.Log(ctx, "test", tb.Name())
+	ctx, task := trace.NewTask(ctx, tb.Name())
+	tb.Cleanup(task.End)
 
 	ctx, stop := notifyTestsTermination(ctx)
 

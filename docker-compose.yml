@@ -159,7 +159,7 @@ services:
       dockerfile: jaeger.Dockerfile
     container_name: ferretdb_jaeger
     ports:
-      - 16686:16686 # frontend (UI)
+      - 16686:16686 # UI on http://127.0.0.1:16686/
       - 14268:14268 # to receive spans from clients
 
   trivy:

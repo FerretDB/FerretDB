@@ -38,6 +38,7 @@ var jaegerExporter *jaeger.Exporter
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
 
+	// use any available port to allow running different configuration in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 	if p := *targetPortF; p == 0 {
@@ -52,8 +53,8 @@ func Startup() {
 		zap.S().Infof("Compat system: port %d.", p)
 	}
 
-	// pass options explicitly to avoid environment variables effects
-	exporter := must.NotFail(jaeger.New(jaeger.WithCollectorEndpoint(
+	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects
+	jaegerExporter = must.NotFail(jaeger.New(jaeger.WithCollectorEndpoint(
 		jaeger.WithEndpoint("http://127.0.0.1:14268/api/traces"),
 		jaeger.WithUsername(""),
 		jaeger.WithPassword(""),
@@ -61,14 +62,13 @@ func Startup() {
 	)))
 
 	tp := oteltrace.NewTracerProvider(
-		oteltrace.WithBatcher(exporter),
+		oteltrace.WithBatcher(jaegerExporter),
 		oteltrace.WithSampler(oteltrace.AlwaysSample()),
 		oteltrace.WithResource(resource.NewSchemaless(
 			otelsemconv.ServiceNameKey.String("FerretDB"),
 		)),
 	)
 
-	// Register TracerProvider globally to use it by default
 	otel.SetTracerProvider(tp)
 }
 
