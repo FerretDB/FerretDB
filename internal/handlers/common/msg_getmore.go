@@ -74,11 +74,6 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		)
 	}
 
-	batchSize, err := getBatchSize(document)
-	if err != nil {
-		return nil, err
-	}
-
 	connInfo := conninfo.Get(ctx)
 
 	cursor := connInfo.Cursor(cursorID)
@@ -89,18 +84,32 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		)
 	}
 
+	var done bool
+	defer func() {
+		if done {
+			connInfo.DeleteCursor(cursorID)
+
+			cursorID = 0
+		}
+	}()
+
+	batchSize, err := getBatchSize(document)
+	if err != nil {
+		done = true
+		return nil, err
+	}
+
 	resDocs := types.MakeArray(0)
 	iter := cursor.Iter
-
-	var done bool
 
 	for i := 0; i < int(batchSize); i++ {
 		var doc any
 
 		_, doc, err = iter.Next()
 		if err != nil {
+			done = true
+
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				done = true
 				break
 			}
 
@@ -111,6 +120,8 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 		matches, err = FilterDocument(document, cursor.Filter)
 		if err != nil {
+			done = true
+
 			return nil, err
 		}
 
@@ -119,12 +130,6 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		}
 
 		resDocs.Append(doc)
-	}
-
-	if done {
-		connInfo.DeleteCursor(cursorID)
-
-		cursorID = 0
 	}
 
 	var reply wire.OpMsg
@@ -140,6 +145,8 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		))},
 	})
 	if err != nil {
+		done = true
+
 		return nil, lazyerrors.Error(err)
 	}
 
