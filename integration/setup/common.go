@@ -61,6 +61,9 @@ var (
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/1912
+	_ = flag.Bool("disable-pushdown", false, "disable query pushdown")
+
 	startupOnce sync.Once
 	startupEnv  *startupInitializer
 )
