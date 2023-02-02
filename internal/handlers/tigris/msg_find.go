@@ -86,7 +86,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"cursor", must.NotFail(types.NewDocument(
 				"id", id,
 				"ns", fp.DB+"."+fp.Collection,
-				"firstBatch", resDocs,
+				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
 		))},
