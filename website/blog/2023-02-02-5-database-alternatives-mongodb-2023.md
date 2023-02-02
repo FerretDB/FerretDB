@@ -35,12 +35,12 @@ Case in point: MongoDB.
 If you conduct a simple search to see if it's open source, you'll likely arrive at an article that describes it as one.
 But what does it mean to be *truly* open source, and what benefits do they have over proprietary databases?
 
-An open source software is licensed under Apache License 2.0, or other similar OSI-approved licenses that follow the principles of open source to be freely available to modify, use, deploy, and manage.
+An open source software is licensed under Apache License 2.0, or other similar licenses approved by the Open Source Initiative (OSI) that follow the principles of open source to be freely available to modify, use, deploy, and manage, and most importantly.
 
 Yet, in the last few years, there have been some *redefinitions* and untruths on what open source actually means.
 
 The biggest culprits and prime examples among them are MongoDB's Server Side Public License (SSPL) and Elastic's source-available license, Elastic license.
-None of these licenses have been endorsed by the Open source Initiative (OSI), generally considered the official arbiters in the open source community.
+None of these licenses have been endorsed by the Open Source Initiative, generally considered the official arbiters in the open source community.
 
 While several euphemisms are used to describe these licenses as either free or open, *they are not*.
 They come with restrictions that go against the principles of OSS.
