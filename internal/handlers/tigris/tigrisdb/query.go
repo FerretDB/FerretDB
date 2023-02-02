@@ -123,7 +123,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 			if path := types.NewPathFromString(k); path.Len() > 1 {
 				for _, k := range path.Slice() {
 					if _, err := strconv.Atoi(k); err == nil {
-						// Don't pushdown array filtering yet TODO: create issue
+						// TODO https://github.com/FerretDB/FerretDB/issues/1914
 						continue
 					}
 				}
