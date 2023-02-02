@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"net/url"
 	"runtime/trace"
 	"sync"
@@ -44,8 +43,6 @@ var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
-	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
@@ -53,6 +50,8 @@ var (
 	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
+
+	tigrisURLsF = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -79,7 +78,7 @@ func SkipForTigris(tb testing.TB) {
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if *handlerF == "tigris" {
+	if getHandler(tb) == "tigris" {
 		if reason == "" {
 			tb.Skipf("Skipping for Tigris")
 		} else {
@@ -91,17 +90,22 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 // IsTigris returns if tests are running against the Tigris handler.
 func IsTigris(tb testing.TB) bool {
 	tb.Helper()
-	return *handlerF == "tigris"
+	return getHandler(tb) == "tigris"
 }
 
-// SkipForPostgresWithReason skips the current test for Postgres (pg) handler.
+// ApplyForTigrisOnlyWithReason applies the current test for Tigris handler only.
+// It skips on PosgreSQL and MongoDB.
 //
 // Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
-func SkipForPostgresWithReason(tb testing.TB, reason string) {
+func ApplyForTigrisOnlyWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if *handlerF == "pg" {
+	if getHandler(tb) == "pg" {
 		tb.Skipf("Skipping for Postgres: %s", reason)
+	}
+
+	if getHandler(tb) == "" {
+		tb.Skipf("Skipping for MongoDB: %s", reason)
 	}
 }
 
@@ -217,13 +221,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
-	// that's already checked by handlers constructors,
-	// but here we could produce a better error message
-	switch *handlerF {
-	case "pg":
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
-	}
-
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
@@ -237,9 +234,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.getNextTigrisPort()),
+		TigrisURL: s.getNextTigrisURL(),
 	}
-	h, err := registry.NewHandler(*handlerF, handlerOpts)
+	h, err := registry.NewHandler(getHandler(tb), handlerOpts)
 	require.NoError(tb, err)
 
 	listenerOpts := &clientconn.NewListenerOpts{
@@ -300,9 +297,41 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 	}
 
 	uri := buildMongoDBURI(tb, ctx, &opts)
-	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+	logger.Info("Listener started", zap.String("handler", getHandler(tb)), zap.String("uri", uri))
 
 	return uri
+}
+
+// validateFlags validates flag values
+func validateFlags(tb testing.TB) {
+	tb.Helper()
+
+	// only one of postgresql-url and tigris-urls should be set.
+	if *tigrisURLsF != "" && *postgreSQLURLF != "" {
+		tb.Fatalf("postgresql-url and tigris-urls must not be both set, only one should be set.")
+	}
+
+	// target-port is required when neither postgresql-url nor tigris-urls is set
+	if *tigrisURLsF == "" && *postgreSQLURLF == "" && *targetPortF == 0 {
+		tb.Fatalf("target-port must be non-zero for empty postgresql-url and tigris-urls.")
+	}
+}
+
+// getHandler gets pg, tigris or empty for mongoDB.
+func getHandler(tb testing.TB) string {
+	tb.Helper()
+
+	validateFlags(tb)
+
+	if *tigrisURLsF != "" {
+		return "tigris"
+	}
+
+	if *postgreSQLURLF != "" {
+		return "pg"
+	}
+
+	return ""
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.
@@ -335,14 +364,14 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 }
 
 // startup initializes things that should be initialized only once.
-func startup() *startupInitializer {
+func startup(tb testing.TB) *startupInitializer {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
 		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 		if p := *targetPortF; p == 0 {
-			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
+			zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler(tb))
 		} else {
 			zap.S().Infof("Target system: port %d.", p)
 		}
@@ -352,7 +381,7 @@ func startup() *startupInitializer {
 		} else {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
-		startupEnv = newStartupInitializer()
+		startupEnv = newStartupInitializer(tb, *tigrisURLsF)
 	})
 
 	return startupEnv

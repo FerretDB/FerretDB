@@ -59,7 +59,7 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	s := startup()
+	s := startup(tb)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -74,10 +74,12 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
+	validateFlags(tb)
+
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the handler's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + getHandler(tb)
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -153,10 +155,10 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
+		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler(tb)) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping creating %q.",
-				provider.Name(), *handlerF, fullName,
+				provider.Name(), getHandler(tb), fullName,
 			)
 			continue
 		}
@@ -169,7 +171,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		_ = collection.Drop(ctx)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
+		if validators := provider.Validators(getHandler(tb), collectionName); len(validators) > 0 {
 			var opts options.CreateCollectionOptions
 			for key, value := range validators {
 				opts.SetValidator(bson.D{{key, value}})
@@ -189,7 +191,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(ctx, docs)
-		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
+		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), getHandler(tb), fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		// delete collection unless test failed

@@ -21,15 +21,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetNextTigrisPort(t *testing.T) {
+func TestGetNextTigrisURL(t *testing.T) {
 	t.Parallel()
 
-	var previousPort uint16
+	t.Run("RoundRobin", func(t *testing.T) {
+		urls := "127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083,127.0.0.1:8085,127.0.0.1:8086"
+		tigrisURLsF = &urls
 
-	for i := 0; i < 10; i++ {
-		s := startup()
-		newPort := s.getNextTigrisPort()
-		require.NotEqual(t, previousPort, newPort)
-		previousPort = newPort
-	}
+		s := startup(t)
+		nextURL := s.getNextTigrisURL()
+		require.NotEqual(t, "127.0.0.1:8081", nextURL)
+
+		nextURL = s.getNextTigrisURL()
+		require.NotEqual(t, "127.0.0.1:8082", nextURL)
+
+		nextURL = s.getNextTigrisURL()
+		require.NotEqual(t, "127.0.0.1:8083", nextURL)
+
+		nextURL = s.getNextTigrisURL()
+		require.NotEqual(t, "127.0.0.1:8085", nextURL)
+
+		nextURL = s.getNextTigrisURL()
+		require.NotEqual(t, "127.0.0.1:8086", nextURL)
+
+		nextURL = s.getNextTigrisURL()
+		require.NotEqual(t, "127.0.0.1:8081", nextURL)
+	})
 }

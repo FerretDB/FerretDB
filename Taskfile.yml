@@ -179,7 +179,6 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -timeout=15m
         -coverprofile=integration-pg.txt .
-        -handler=pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
@@ -187,12 +186,18 @@ tasks:
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
     dir: integration
+    # tigris-urls are the urls of Tigris instances running in docker.
+    # The additional Tigris docker instances were added to make
+    # integration tests run faster, they use ports 8082, 8083, 8085 and 8086.
+    # Port 8084 is not used since the address is already in use on CI.
+    # The ports are also defined in env tool and docker-compose.yml.
+    # https://github.com/FerretDB/FerretDB/issues/1887
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -timeout=30m
         -coverprofile=integration-tigris.txt .
-        -handler=tigris
+        -tigris-urls=127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083,127.0.0.1:8085,127.0.0.1:8086
         -records-dir=../records
         -target-tls
         -compat-port=37018
@@ -205,7 +210,6 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-cockroach.txt .
-        -handler=pg
         -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1
         -records-dir=../records
 

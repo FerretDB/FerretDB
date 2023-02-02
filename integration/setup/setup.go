@@ -74,7 +74,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
-	s := startup()
+	s := startup(tb)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -83,6 +83,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if opts == nil {
 		opts = new(SetupOpts)
 	}
+
+	validateFlags(tb)
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if *debugSetupF {
@@ -155,10 +157,10 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	for _, provider := range opts.Providers {
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
+		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler(tb)) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping it.",
-				provider.Name(), *handlerF,
+				provider.Name(), getHandler(tb),
 			)
 
 			continue
@@ -167,7 +169,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		region := trace.StartRegion(ctx, fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name()))
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
+		if validators := provider.Validators(getHandler(tb), collectionName); len(validators) > 0 {
 			var copts options.CreateCollectionOptions
 			for key, value := range validators {
 				copts.SetValidator(bson.D{{key, value}})
