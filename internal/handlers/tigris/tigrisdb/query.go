@@ -109,8 +109,13 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// don't pushdown query operators and dot notation yet
-		if len(k) != 0 && (k[0] == '$' || types.NewPathFromString(k).Len() > 1) {
+		// TODO bug
+		if k == "" {
+			continue
+		}
+
+		// don't pushdown $comment and dot notation yet
+		if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
 			continue
 		}
 
@@ -118,7 +123,8 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 		if k == "_id" {
 			switch v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-				// type not supported for pushdown
+			// type not supported for pushdown
+
 			case float64, string, types.ObjectID, int32, int64:
 				// filter by the exact _id value
 				id := must.NotFail(tjson.Marshal(v))
@@ -134,7 +140,9 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
-		case float64, string, types.ObjectID, int32, int64:
+		case types.ObjectID:
+			// TODO filtering bug
+		case float64, string, int32, int64:
 			rawValue := must.NotFail(tjson.Marshal(v))
 			res[k] = json.RawMessage(rawValue)
 		default:
