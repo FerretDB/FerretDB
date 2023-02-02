@@ -59,7 +59,7 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	startup()
+	s := startup()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -89,7 +89,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetURI string
 	if *targetPortF == 0 {
-		targetURI = setupListener(tb, ctx, logger)
+		targetURI = setupListener(tb, ctx, logger, s)
 	} else {
 		targetURI = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
 			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
