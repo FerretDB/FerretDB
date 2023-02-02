@@ -213,7 +213,9 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 	resDocs := make([]*types.Document, 0, 16)
 
 	for i := 0; i < sqlParam.BatchSize; {
-		_, doc, err := iter.Next()
+		var doc *types.Document
+
+		_, doc, err = iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
