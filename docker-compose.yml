@@ -39,6 +39,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
+  # The main Tigris instance that is used by `task run-tigris`, etc.
   tigris:
     build:
       context: ./build/deps
@@ -49,55 +50,42 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
-  tigris_speedup_1:
-    # The additional Tigris docker instances were added to make
-    # integration tests run faster.
-    # https://github.com/FerretDB/FerretDB/issues/1887
+  # Additional instances for faster integration tests.
+  # Due to the single-core nature of FoundationDB, that's the easiest way to speed up them.
+  tigris1:
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_speedup_1
+    container_name: ferretdb_tigris1
     ports:
-      - 8082:8081
+      - 8091:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
-
-  tigris_speedup_2:
-    # The additional Tigris docker instances were added to make
-    # integration tests run faster.
-    # https://github.com/FerretDB/FerretDB/issues/1887
+  tigris2:
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_speedup_2
+    container_name: ferretdb_tigris2
     ports:
-      - 8083:8081
+      - 8092:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
-
-  tigris_speedup_3:
-    # The additional Tigris docker instances were added to make
-    # integration tests run faster.
-    # https://github.com/FerretDB/FerretDB/issues/1887
+  tigris3:
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_speedup_3
+    container_name: ferretdb_tigris3
     ports:
-      - 8085:8081
+      - 8093:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
-
-  tigris_speedup_4:
-    # The additional Tigris docker instances were added to make
-    # integration tests run faster.
-    # https://github.com/FerretDB/FerretDB/issues/1887
+  tigris4:
     build:
       context: ./build/deps
       dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_speedup_4
+    container_name: ferretdb_tigris4
     ports:
-      - 8086:8081
+      - 8094:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 

@@ -12,16 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummy
+//go:build !(ferretdb_debug || ferretdb_testcover || race)
 
-import (
-	"context"
+package debugbuild
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgAggregate implements HandlerInterface.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
-}
+// Enabled is false if that's not a debug build.
+//
+// See build/version package documentation for more details.
+//
+// It is a constant to allow the compiler to optimize away the code.
+const Enabled = false

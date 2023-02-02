@@ -89,15 +89,19 @@ type CompositeTypeInterface interface {
 
 //go-sumtype:decl CompositeTypeInterface
 
-type (
-	// NullType represents BSON type Null.
-	//
-	// Most callers should use types.Null value instead.
-	NullType struct{}
-)
+// isScalar check if v is a BSON scalar value.
+func isScalar(v any) bool {
+	if v == nil {
+		panic("v is nil")
+	}
 
-// Null represents BSON value Null.
-var Null = NullType{}
+	switch v.(type) {
+	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
+		return true
+	}
+
+	return false
+}
 
 // deepCopy returns a deep copy of the given value.
 func deepCopy(value any) any {
@@ -155,6 +159,6 @@ func deepCopy(value any) any {
 		return value
 
 	default:
-		panic(fmt.Sprintf("types.deepCopy: unsupported type: %[1]T (%[1]v)", value))
+		panic(fmt.Sprintf("types.deepCopy: unexpected type %[1]T (%#[1]v)", value))
 	}
 }
