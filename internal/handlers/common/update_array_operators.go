@@ -54,18 +54,15 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		path := types.NewPathFromString(key)
 
-		if !doc.HasByPath(path) {
-			// If any prefix of the path exists, pop returns error.
-			if err = ensureNonExistentPrefix(doc, key, path); err != nil {
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			// If any part of the path exists in doc, pop returns ErrUnsuitableValueType.
+			if err = checkUnsuitableValueError(doc, key, path); err != nil {
 				return false, err
 			}
 
+			// doc does not have a path, nothing to do.
 			continue
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
 		}
 
 		array, ok := val.(*types.Array)
@@ -97,24 +94,28 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 	return changed, nil
 }
 
-// ensureNonExistentPrefix checks if a given path and its prefix
-// does not exist in doc. It returns error if any prefix exists in the path.
-func ensureNonExistentPrefix(doc *types.Document, key string, path types.Path) error {
-	// non-existing key returns no error.
+// checkUnsuitableValueError returns ErrUnsuitableValueType when part of
+// the path is used by non document value type.
+// If path is "v.foo" and
+// - doc is {v: 42} it returns ErrUnsuitableValueType, v is used by unsuitable value type.
+// - doc is {c: 10} it returns no error since the path does not exist.
+func checkUnsuitableValueError(doc *types.Document, key string, path types.Path) error {
+	// return no error if path is suffix or key.
 	if path.Len() == 1 {
 		return nil
 	}
 
 	prefix := path.Prefix()
 
-	// check if prefix exists in the document.
+	// check if part of the path exists in the document.
 	if doc.Has(prefix) {
 		val := must.NotFail(doc.Get(prefix))
 		if prefixDoc, ok := val.(*types.Document); ok {
-			// recursively check if document contains prefix.
-			return ensureNonExistentPrefix(prefixDoc, prefix, path.TrimPrefix())
+			// recursively check if document contains part of the part.
+			return checkUnsuitableValueError(prefixDoc, key, path.TrimPrefix())
 		}
 
+		// ErrUnsuitableValueType is returned if the document contains prefix.
 		return commonerrors.NewWriteErrorMsg(
 			commonerrors.ErrUnsuitableValueType,
 			fmt.Sprintf(
@@ -127,7 +128,7 @@ func ensureNonExistentPrefix(doc *types.Document, key string, path types.Path) e
 		)
 	}
 
-	// non-existing prefix returns no error.
+	// no part of the path exists in the doc.
 	return nil
 }
 
