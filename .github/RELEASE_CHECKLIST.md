@@ -37,5 +37,10 @@
 2. Close milestone in issues.
 3. Publish release on GitHub.
 4. Announce it on Slack.
-5. Bump the latest version on [Beacon](https://beacon.ferretdb.io).
-6. Publish blog post, etc.
+
+## Soon after
+
+1. Bump the latest version on [Beacon](https://beacon.ferretdb.io).
+2. Publish and announce blog post.
+3. Tweet, toot.
+4. Update NixOS package.
