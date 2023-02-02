@@ -15,6 +15,7 @@
 package tjson
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -35,7 +36,8 @@ var doubleTestCases = []testCase{{
 	name:   "max float64",
 	v:      pointer.To(doubleType(math.MaxFloat64)),
 	schema: doubleSchema,
-	j:      `1.7976931348623157e+308`,
+	j:      fmt.Sprintf("%f", math.MaxFloat64),
+	//j:      `1.7976931348623157e+308`,
 }, {
 	name:   "smallest positive float64",
 	v:      pointer.To(doubleType(math.SmallestNonzeroFloat64)),

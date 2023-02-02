@@ -17,6 +17,7 @@ package tjson
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -50,10 +51,7 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements tjsontype interface.
 func (d *doubleType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(float64(*d))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	res := []byte(fmt.Sprintf("%f", float64(*d)))
 	return res, nil
 }
 
