@@ -57,6 +57,8 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 		val, err := doc.GetByPath(path)
 		if err != nil {
 			// If any part of the path exists in doc, pop returns ErrUnsuitableValueType.
+			// Cannot use doc.HasByPath(path) because pop does not error on non-existent
+			// path, pop returns error if other value type exists on part of path.
 			if err = checkUnsuitableValueError(doc, key, path); err != nil {
 				return false, err
 			}
