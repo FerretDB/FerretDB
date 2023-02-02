@@ -75,8 +75,6 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
-	startup()
-
 	parentCtx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	// "Local" ctx is used to propagate spans correctly.

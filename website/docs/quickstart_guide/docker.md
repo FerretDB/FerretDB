@@ -52,7 +52,7 @@ For more configuration options check [Configuration flags and variables](../flag
    The example URI would look like:
 
    ```text
-   mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN
+   mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
    See [Security#Authentication](../security.md#authentication) for more details.

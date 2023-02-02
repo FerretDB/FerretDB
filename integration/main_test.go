@@ -12,24 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package setup provides integration tests setup helpers.
-package setup
+package integration
 
 import (
+	"flag"
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestGetNextTigrisPort(t *testing.T) {
-	t.Parallel()
+// TestMain is the entry point for all integration tests.
+func TestMain(m *testing.M) {
+	flag.Parse()
 
-	var previousPort uint16
+	var code int
 
-	for i := 0; i < 10; i++ {
-		startup()
-		newPort := startupEnv.getNextTigrisPort()
-		require.NotEqual(t, previousPort, newPort)
-		previousPort = newPort
-	}
+	// ensure that Shutdown runs for any exit code or panic
+	func() {
+		setup.Startup()
+		defer setup.Shutdown()
+
+		code = m.Run()
+	}()
+
+	os.Exit(code)
 }

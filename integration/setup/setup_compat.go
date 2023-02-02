@@ -60,8 +60,6 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	startup()
-
 	parentCtx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	// "Local" ctx is used to propagate spans correctly.

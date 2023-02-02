@@ -153,6 +153,15 @@ services:
       - ./build/certs:/etc/certs
       - ./build/legacy-mongo-shell/test.js:/legacy-mongo-shell/test.js
 
+  jaeger:
+    build:
+      context: ./build/deps
+      dockerfile: jaeger.Dockerfile
+    container_name: ferretdb_jaeger
+    ports:
+      - 16686:16686 # frontend (UI)
+      - 14268:14268 # to receive spans from clients
+
   trivy:
     build:
       context: ./build/deps
@@ -244,13 +253,3 @@ services:
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
 
       - ./website/build:/workdir/docusaurus-docs/build:rw
-
-  # open telemetry (tracing)
-  jaeger:
-    build:
-      context: ./build/deps
-      dockerfile: jaeger.Dockerfile
-    container_name: ferretdb_jaeger
-    ports:
-      - 16686:16686 # frontend (UI)
-      - 14268:14268 # to receive spans from clients

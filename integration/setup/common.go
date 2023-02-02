@@ -22,29 +22,24 @@ import (
 	"fmt"
 	"net/url"
 	"runtime/trace"
-	"sync"
+	"sync/atomic"
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/sdk/resource"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
+// Flags.
 var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
@@ -63,15 +58,17 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	jaegerEndpointF = flag.String("jaeger-endpoint", "", "Jaeger URL to send traces, e.g. http://127.0.0.1:14268/api/traces")
-
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1912
 	_ = flag.Bool("disable-pushdown", false, "disable query pushdown")
+)
 
-	startupOnce sync.Once
-	startupEnv  *startupInitializer
+// Other globals.
+var (
+	// See docker-compose.yml.
+	tigrisPorts      = []uint16{8081, 8091, 8092, 8093, 8094}
+	tigrisPortsIndex atomic.Uint32
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -223,6 +220,12 @@ func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOp
 	panic("not reached")
 }
 
+// nextTigrisPort returns the next port for the Tigris handler.
+func nextTigrisPort() uint16 {
+	i := int(tigrisPortsIndex.Add(1)) - 1
+	return tigrisPorts[i%len(tigrisPorts)]
+}
+
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns MongoDB URI for that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
@@ -255,7 +258,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: fmt.Sprintf("127.0.0.1:%d", startupEnv.getNextTigrisPort()),
+		TigrisURL: fmt.Sprintf("127.0.0.1:%d", nextTigrisPort()),
 	}
 	h, err := registry.NewHandler(*handlerF, handlerOpts)
 	require.NoError(tb, err)
@@ -353,57 +356,4 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	require.NoError(tb, err)
 
 	return client
-}
-
-// startup initializes things that should be initialized only once.
-func startup() {
-	startupOnce.Do(func() {
-		logging.Setup(zap.DebugLevel, "")
-
-		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
-
-		if p := *targetPortF; p == 0 {
-			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
-		} else {
-			zap.S().Infof("Target system: port %d.", p)
-		}
-
-		if p := *compatPortF; p == 0 {
-			zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
-		} else {
-			zap.S().Infof("Compat system: port %d.", p)
-		}
-
-		// TODO
-		// // Set open telemetry tracer if jaeger endpoint is provided.
-		// if *jaegerEndpointF != "" {
-		// 	startupTracer(tb)
-		// }
-	})
-}
-
-// startupTracer initializes open telemetry tracer that could be used in tests.
-func startupTracer(tb testing.TB) {
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(*jaegerEndpointF)))
-	if err != nil {
-		tb.Errorf("failed to create jaeger exporter: %v", err)
-	}
-
-	tp := tracesdk.NewTracerProvider(
-		tracesdk.WithBatcher(exp),
-		tracesdk.WithSampler(tracesdk.AlwaysSample()),
-		tracesdk.WithResource(resource.NewSchemaless(
-			otelsemconv.ServiceNameKey.String("FerretDB"),
-		)),
-	)
-
-	// Register TracerProvider globally to use it by default
-	otel.SetTracerProvider(tp)
-
-	tb.Cleanup(func() {
-		err := tp.Shutdown(context.Background())
-		if err != nil {
-			tb.Errorf("failed to shutdown tracer provider: %v", err)
-		}
-	})
 }
