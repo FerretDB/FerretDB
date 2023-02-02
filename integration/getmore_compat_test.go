@@ -100,7 +100,7 @@ func TestGetMoreCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryGetMoreCompatTestCase{
-		"id": {
+		"batchSize": {
 			batchSize: 200,
 		},
 		"getMoreWithLimitLessThanBatch": {
