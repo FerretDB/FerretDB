@@ -39,7 +39,7 @@ type queryCompatTestCase struct {
 	resultPushdown     bool                     // defaults to false
 	skipTigrisPushdown bool                     // defaults to false
 	skipForTigris      string                   // skip test for Tigris
-	skip               string                   // skip test for all backends, must have issue number mentioned
+	skip               string                   // skip test for all handlers, must have issue number mentioned
 	batchSize          int32                    // defaults to 0
 }
 
