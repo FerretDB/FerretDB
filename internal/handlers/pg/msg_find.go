@@ -224,7 +224,9 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 			return nil, nil, err
 		}
 
-		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		var matches bool
+
+		matches, err = common.FilterDocument(doc, sqlParam.Filter)
 		if err != nil {
 			return nil, nil, err
 		}
