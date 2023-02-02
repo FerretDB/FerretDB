@@ -40,65 +40,63 @@ type queryGetMoreCompatTestCase struct {
 func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTestCase) {
 	t.Helper()
 
-	res := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers: []shareddata.Provider{
-			shareddata.Int32BigAmounts,
-		},
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: []shareddata.Provider{shareddata.Int32BigAmounts},
 	})
 
-	ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+	// We expect to have only one collection as the result of setup.
+	require.Len(t, s.TargetCollections, 1)
+	require.Len(t, s.CompatCollections, 1)
+
+	targetCollection := s.TargetCollections[0]
+	compatCollection := s.CompatCollections[0]
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
+			t.Run(targetCollection.Name(), func(t *testing.T) {
+				t.Helper()
 
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				sort := tc.sort
+				if sort == nil {
+					sort = bson.D{{"_id", 1}}
+				}
+				opts := options.Find().SetSort(sort)
 
-					sort := tc.sort
-					if sort == nil {
-						sort = bson.D{{"_id", 1}}
-					}
-					opts := options.Find().SetSort(sort)
+				var batchSize int32
+				if tc.batchSize != 0 {
+					batchSize = int32(tc.batchSize)
+				}
+				opts = opts.SetBatchSize(batchSize)
 
-					var batchSize int32
-					if tc.batchSize != 0 {
-						batchSize = int32(tc.batchSize)
-					}
-					opts = opts.SetBatchSize(batchSize)
+				var limit int64
+				if tc.limit != 0 {
+					limit = int64(tc.limit)
+				}
+				opts = opts.SetLimit(limit)
 
-					var limit int64
-					if tc.limit != 0 {
-						limit = int64(tc.limit)
-					}
-					opts = opts.SetLimit(limit)
+				targetResult, targetErr := targetCollection.Find(s.Ctx, bson.D{}, opts)
+				compatResult, compatErr := compatCollection.Find(s.Ctx, bson.D{}, opts)
 
-					targetResult, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
-					compatResult, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
+				if targetErr != nil {
+					t.Logf("Target error: %v", targetErr)
+					AssertMatchesCommandError(t, compatErr, targetErr)
 
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						AssertMatchesCommandError(t, compatErr, targetErr)
+					return
+				}
 
-						return
-					}
+				require.NoError(t, targetErr)
+				require.NoError(t, compatErr, "compat error; target returned no error")
 
-					require.NoError(t, targetErr)
-					require.NoError(t, compatErr, "compat error; target returned no error")
+				// Retrieve all documents from the cursor.
+				// Driver will call getMore until the cursor is exhausted.
+				var targetRes, compatRes []bson.D
+				require.NoError(t, targetResult.All(s.Ctx, &targetRes))
+				require.NoError(t, compatResult.All(s.Ctx, &compatRes))
 
-					// Retrieve all documents from the cursor.
-					// Driver will call getMore until the cursor is exhausted.
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetResult.All(ctx, &targetRes))
-					require.NoError(t, compatResult.All(ctx, &compatRes))
-
-					assert.Equal(t, len(compatRes), len(targetRes), "result length mismatch")
-				})
-			}
+				assert.Equal(t, len(compatRes), len(targetRes), "result length mismatch")
+			})
 		})
 	}
 }
@@ -250,7 +248,7 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 		},
 		"BatchSizeResponse": {
 			command: bson.D{
-				{"batchSize", int64(200)},
+				{"batchSize", int64(100)},
 			},
 		},
 	}
