@@ -102,6 +102,10 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 }
 
 func TestGetMoreCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Iterators are not implemented yet")
+
+	t.Parallel()
+
 	testCases := map[string]queryGetMoreCompatTestCase{
 		"id": {
 			batchSize: 200,
@@ -209,6 +213,8 @@ func testGetMoreCompatErrors(t *testing.T, testCases map[string]queryGetMoreErro
 }
 
 func TestGetMoreErrorsCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Iterators are not implemented yet")
+
 	t.Parallel()
 
 	testCases := map[string]queryGetMoreErrorsCompatTestCase{

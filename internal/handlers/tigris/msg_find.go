@@ -73,7 +73,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), nil, nil, nil)
+	id := int64(0)
+
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
+		firstBatch.Append(doc)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -81,7 +86,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"cursor", must.NotFail(types.NewDocument(
 				"id", id,
 				"ns", fp.DB+"."+fp.Collection,
-				"firstBatch", firstBatch,
+				"firstBatch", resDocs,
 			)),
 			"ok", float64(1),
 		))},
