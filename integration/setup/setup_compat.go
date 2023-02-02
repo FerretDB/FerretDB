@@ -62,7 +62,8 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	f := startup()
+	s := startup()
+	f := getFlags()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -94,7 +95,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetClient *mongo.Client
 	if f.GetTargetPort() == 0 {
-		targetClient, _ = setupListener(tb, ctx, logger, f)
+		targetClient, _ = setupListener(tb, ctx, logger, s, f)
 	} else {
 		// When TLS is enabled, RootCAs and Certificates are fetched
 		// upon creating client. Target uses PLAIN for authMechanism.

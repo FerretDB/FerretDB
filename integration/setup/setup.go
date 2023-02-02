@@ -78,7 +78,8 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
-	f := startup()
+	s := startup()
+	f := getFlags()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -100,7 +101,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var uri string
 
 	if f.GetTargetPort() == 0 {
-		client, uri = setupListener(tb, ctx, logger, f)
+		client, uri = setupListener(tb, ctx, logger, s, f)
 	} else {
 		// When TLS is enabled, RootCAs and Certificates are fetched
 		// upon creating client. Target uses PLAIN for authMechanism.

@@ -135,3 +135,18 @@ func (f *flags) GetPostgreSQLURL() string {
 func (f *flags) GetTigrisURL() string {
 	return f.tigrisURL
 }
+
+// getFlags gets flags from CLI.
+func getFlags() flags {
+	return flags{
+		targetPort:       *targetPortF,
+		targetTLS:        *targetTLSF,
+		handler:          *handlerF,
+		targetUnixSocket: *targetUnixSocketF,
+		proxyAddr:        *proxyAddrF,
+		compatPort:       *compatPortF,
+		compatTLS:        *compatTLSF,
+		postgreSQLURL:    *postgreSQLURLF,
+		tigrisURL:        *tigrisURLF,
+	}
+}

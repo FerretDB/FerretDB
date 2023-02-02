@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/url"
 	"runtime/trace"
 	"sync"
@@ -61,6 +62,7 @@ var (
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
 	startupOnce sync.Once
+	startupEnv  *startupInitializer
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -147,8 +149,8 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
-// It returns client and MongoDB URI of the new listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f flags) (*mongo.Client, string) {
+// It returns client and MongoDB URI of that listener.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer, f flags) (*mongo.Client, string) {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
@@ -174,7 +176,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, f fla
 
 		PostgreSQLURL: f.GetPostgreSQLURL(),
 
-		TigrisURL: f.GetTigrisURL(),
+		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.getNextTigrisPort()),
 	}
 	h, err := registry.NewHandler(f.GetHandler(), handlerOpts)
 	require.NoError(tb, err)
@@ -294,26 +296,14 @@ func getUser(isTLS bool) *url.Userinfo {
 
 // startup initializes things that should be initialized only once.
 // It returns flag values from cli.
-func startup() flags {
-	f := flags{
-		targetPort:       *targetPortF,
-		targetTLS:        *targetTLSF,
-		handler:          *handlerF,
-		targetUnixSocket: *targetUnixSocketF,
-		proxyAddr:        *proxyAddrF,
-		compatPort:       *compatPortF,
-		compatTLS:        *compatTLSF,
-		postgreSQLURL:    *postgreSQLURLF,
-		tigrisURL:        *tigrisURLF,
-	}
-
+func startup() *startupInitializer {
 	startupOnce.Do(func() {
 		logging.Setup(zap.DebugLevel, "")
 
 		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 		if p := *targetPortF; p == 0 {
-			zap.S().Infof("Target system: in-process FerretDB with %q handler.", f.GetHandler())
+			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
 		} else {
 			zap.S().Infof("Target system: port %d.", p)
 		}
@@ -323,7 +313,8 @@ func startup() flags {
 		} else {
 			zap.S().Infof("Compat system: port %d.", p)
 		}
+		startupEnv = newStartupInitializer()
 	})
 
-	return f
+	return startupEnv
 }
