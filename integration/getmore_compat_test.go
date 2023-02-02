@@ -32,9 +32,8 @@ import (
 )
 
 type queryGetMoreCompatTestCase struct {
-	sort      bson.D // defaults to bson.D{{"_id", 1}}
-	batchSize int    // defaults to 0
-	limit     int    // defaults to 0
+	batchSize int // defaults to 0
+	limit     int // defaults to 0
 }
 
 func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTestCase) {
@@ -58,17 +57,11 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				sort := tc.sort
-				if sort == nil {
-					sort = bson.D{{"_id", 1}}
-				}
-				opts := options.Find().SetSort(sort)
-
 				var batchSize int32
 				if tc.batchSize != 0 {
 					batchSize = int32(tc.batchSize)
 				}
-				opts = opts.SetBatchSize(batchSize)
+				opts := options.Find().SetBatchSize(batchSize)
 
 				var limit int64
 				if tc.limit != 0 {

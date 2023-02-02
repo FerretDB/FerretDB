@@ -67,6 +67,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Comment:    params.Comment,
 		Filter:     params.Filter,
 		BatchSize:  batchSize,
+		Limit:      int(params.Limit),
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
@@ -202,7 +203,7 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 		return nil, nil, err
 	}
 
-	var closeIter bool
+	closeIter := true
 	defer func() {
 		if closeIter {
 			iter.Close()
@@ -215,7 +216,6 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 		_, doc, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				closeIter = true
 				break
 			}
 
@@ -235,10 +235,20 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 		i++
 	}
 
-	if len(resDocs) < sqlParam.BatchSize {
-		closeIter = true
+	if sqlParam.Limit > 0 && sqlParam.BatchSize > sqlParam.Limit {
+		resDocs, err = common.LimitDocuments(resDocs, int64(sqlParam.Limit))
+		if err != nil {
+			return nil, nil, err
+		}
+
 		return resDocs, nil, nil
 	}
+
+	if len(resDocs) < sqlParam.BatchSize {
+		return resDocs, nil, nil
+	}
+
+	closeIter = false
 
 	return resDocs, iter, nil
 }

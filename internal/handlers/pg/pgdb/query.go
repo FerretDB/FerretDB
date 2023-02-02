@@ -47,6 +47,7 @@ type SQLParam struct {
 	Explain    bool
 	Filter     *types.Document
 	BatchSize  int
+	Limit      int
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
