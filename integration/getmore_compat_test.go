@@ -244,8 +244,7 @@ func TestGetMoreErrorsCompat(t *testing.T) {
 			command: bson.D{
 				{"batchSize", int64(-1)},
 			},
-			err:        true,
-			altMessage: "cursor id -1 not found",
+			err: true,
 		},
 		"BatchSizeResponse": {
 			command: bson.D{
