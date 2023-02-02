@@ -50,6 +50,8 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 	targetCollection := s.TargetCollections[0]
 	compatCollection := s.CompatCollections[0]
 
+	ctx := s.Ctx
+
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -69,8 +71,8 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 				}
 				opts = opts.SetLimit(limit)
 
-				targetResult, targetErr := targetCollection.Find(s.Ctx, bson.D{}, opts)
-				compatResult, compatErr := compatCollection.Find(s.Ctx, bson.D{}, opts)
+				targetResult, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
+				compatResult, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
 
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
@@ -85,8 +87,8 @@ func testGetMoreCompat(t *testing.T, testCases map[string]queryGetMoreCompatTest
 				// Retrieve all documents from the cursor.
 				// Driver will call getMore until the cursor is exhausted.
 				var targetRes, compatRes []bson.D
-				require.NoError(t, targetResult.All(s.Ctx, &targetRes))
-				require.NoError(t, compatResult.All(s.Ctx, &compatRes))
+				require.NoError(t, targetResult.All(ctx, &targetRes))
+				require.NoError(t, compatResult.All(ctx, &compatRes))
 
 				assert.Equal(t, len(compatRes), len(targetRes), "result length mismatch")
 			})
