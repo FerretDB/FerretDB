@@ -58,7 +58,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		// {field1./.../.fieldN: filterValue}
 		path := types.NewPathFromString(filterKey)
 		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValues, err := doc.GetAllByPath(path.TrimSuffix())
+		docValues, err := doc.GetAllByPath(path.TrimSuffix(), true)
 		if err != nil {
 			return false, nil // no error - the field is just not present
 		}

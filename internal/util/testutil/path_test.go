@@ -70,7 +70,7 @@ func TestSetByPath(t *testing.T) {
 			doc := newDoc()
 			SetByPath(t, doc, tc.value, tc.path)
 			assert.Equal(t, tc.res, doc)
-			assert.Equal(t, tc.value, GetExactByPath(t, doc, tc.path))
+			assert.Equal(t, tc.value, GetAllByPath(t, doc, tc.path)[0])
 		})
 	}
 }

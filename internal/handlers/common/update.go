@@ -76,7 +76,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 			for _, key := range unsetDoc.Keys() {
 				path := types.NewPathFromString(key)
-				if doc.HasByPath(path) {
+				if err = doc.HasByPath(path); err == nil {
 					doc.RemoveByPath(path)
 					changed = true
 				}
@@ -180,8 +180,15 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		path := types.NewPathFromString(setKey)
 
-		if doc.HasByPath(path) {
-			docValue := must.NotFail(doc.GetExactByPath(path))
+		if err := doc.HasByPath(path); err == nil {
+			docValues := must.NotFail(doc.GetAllByPath(path, false))
+
+			if len(docValues) != 1 {
+				panic("has by path returned no error but multiple values")
+			}
+
+			docValue := docValues[0]
+
 			if types.Identical(setValue, docValue) {
 				continue
 			}
@@ -226,7 +233,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		targetPath := types.NewPathFromString(renameValue)
 
 		// Get value to move
-		val, err := doc.GetExactByPath(sourcePath)
+		vals, err := doc.GetAllByPath(sourcePath, false)
 		if err != nil {
 			var dpe *types.DocumentPathError
 			if !errors.As(err, &dpe) {
@@ -239,6 +246,12 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 			return changed, NewWriteErrorMsg(ErrUnsuitableValueType, dpe.Error())
 		}
+
+		if len(vals) != 1 {
+			panic("GetExactByPath returned more than one value")
+		}
+
+		val := vals[0]
 
 		// Remove old document
 		doc.RemoveByPath(sourcePath)
@@ -267,7 +280,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path := types.NewPathFromString(incKey)
 
-		if !doc.HasByPath(path) {
+		if err := doc.HasByPath(path); err != nil {
 			// ensure incValue is a valid number type.
 			switch incValue.(type) {
 			case float64, int32, int64:
@@ -291,10 +304,16 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
-		docValue, err := doc.GetExactByPath(types.NewPathFromString(incKey))
+		docValues, err := doc.GetAllByPath(types.NewPathFromString(incKey), false)
 		if err != nil {
 			return false, err
 		}
+
+		if len(docValues) != 1 {
+			panic("expected only one value")
+		}
+
+		docValue := docValues[0]
 
 		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
@@ -468,7 +487,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path := types.NewPathFromString(mulKey)
 
-		if !doc.HasByPath(path) {
+		if err := doc.HasByPath(path); err != nil {
 			// $mul sets the field to zero if the field does not exist.
 			switch mulValue.(type) {
 			case float64:
@@ -499,13 +518,19 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		var err error
 
-		docValue, err := doc.GetExactByPath(path)
+		docValues, err := doc.GetAllByPath(path, false)
 		if err != nil {
 			return false, err
 		}
 
+		if len(docValues) != 1 {
+			panic("expected only one value")
+		}
+
+		docValue := docValues[0]
+
 		var multiplied any
-		multiplied, err = multiplyNumbers(mulValue, docValue)
+		multiplied, err = multiplyNumbers(mulValue, docValues[0])
 
 		switch {
 		case err == nil:

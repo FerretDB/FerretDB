@@ -76,14 +76,9 @@ func (a *Array) Get(index int) (any, error) {
 	return a.s[index], nil
 }
 
-// GetExactByPath returns a value by the exact path - a sequence of indexes and keys.
-func (a *Array) GetExactByPath(path Path) (any, error) {
-	return getExactByPath(a, path)
-}
-
 // GetAllByPath returns all values that match the path - a sequence of indexes and keys.
-func (a *Array) GetAllByPath(path Path) ([]any, error) {
-	return getAllByPath(a, path)
+func (a *Array) GetAllByPath(path Path, wildcard bool) ([]any, error) {
+	return getAllByPath(a, path, wildcard)
 }
 
 // Set sets the value at the given index.

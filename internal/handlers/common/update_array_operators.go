@@ -53,20 +53,24 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		path := types.NewPathFromString(key)
 
-		if !doc.HasByPath(path) {
+		if err = doc.HasByPath(path); err != nil {
 			continue
 		}
 
-		val, err := doc.GetExactByPath(path)
+		vals, err := doc.GetAllByPath(path, false)
 		if err != nil {
 			return false, err
 		}
 
-		array, ok := val.(*types.Array)
+		if len(vals) != 1 {
+			panic("common.processPopArrayUpdateExpression: : only one element is expected for the given path")
+		}
+
+		array, ok := vals[0].(*types.Array)
 		if !ok {
 			return false, NewWriteErrorMsg(
 				ErrTypeMismatch,
-				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
+				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(vals[0])),
 			)
 		}
 
@@ -112,7 +116,7 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 		path := types.NewPathFromString(key)
 
 		// If the path does not exist, create a new array and set it.
-		if !doc.HasByPath(path) {
+		if err = doc.HasByPath(path); err != nil {
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
 				return false, NewWriteErrorMsg(
 					ErrUnsuitableValueType,
@@ -121,18 +125,22 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			}
 		}
 
-		val, err := doc.GetExactByPath(path)
+		vals, err := doc.GetAllByPath(path, false)
 		if err != nil {
 			return false, err
 		}
 
-		array, ok := val.(*types.Array)
+		if len(vals) != 1 {
+			panic("common.processPushArrayUpdateExpression: only one element is expected for the given path")
+		}
+
+		array, ok := vals[0].(*types.Array)
 		if !ok {
 			return false, NewWriteErrorMsg(
 				ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
+					key, AliasFromType(vals[0]), must.NotFail(doc.Get("_id")),
 				),
 			)
 		}

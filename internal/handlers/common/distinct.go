@@ -99,7 +99,7 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 	distinct := types.MakeArray(len(docs))
 
 	for _, doc := range docs {
-		vals, err := doc.GetAllByPath(types.NewPathFromString(key))
+		vals, err := doc.GetAllByPath(types.NewPathFromString(key), true)
 		if err != nil {
 			continue
 		}

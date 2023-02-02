@@ -286,20 +286,8 @@ func (d *Document) Remove(key string) any {
 }
 
 // HasByPath returns true if the given path is present in the document.
-func (d *Document) HasByPath(path Path) bool {
-	_, err := d.GetExactByPath(path)
-
-	return err == nil
-}
-
-// GetExactByPath returns a value by path - a sequence of indexes and keys.
-// If the Path has only one element, it returns the value for the given key.
-//
-// Use this method when you need the exact path to match, for example when you need
-// to get a value by path and modify it.
-// For querying and filtering, use GetAllByPath.
-func (d *Document) GetExactByPath(path Path) (any, error) {
-	return getExactByPath(d, path)
+func (d *Document) HasByPath(path Path) error {
+	return hasByPath(d, path)
 }
 
 // GetAllByPath returns all values by path - a sequence of indexes and keys.
@@ -308,8 +296,8 @@ func (d *Document) GetExactByPath(path Path) (any, error) {
 //
 // For arrays of objects if index is not specified, all matching objects are returned.
 // For example, if document is "foo": [{a: 1}, {a: 2}, {b: 3}], then d.GetAllByPath(Path({"foo", "a"})) will return [1, 2].
-func (d *Document) GetAllByPath(path Path) ([]any, error) {
-	return getAllByPath(d, path)
+func (d *Document) GetAllByPath(path Path, wildcard bool) ([]any, error) {
+	return getAllByPath(d, path, wildcard)
 }
 
 // SetByPath sets value by given path. If the Path has only one element, it sets the value for the given key.
@@ -322,14 +310,20 @@ func (d *Document) SetByPath(path Path, value any) error {
 		return nil
 	}
 
-	if !d.HasByPath(path.TrimSuffix()) {
+	if err := d.HasByPath(path.TrimSuffix()); err != nil {
 		// we should insert the missing part of the path
 		if err := insertByPath(d, path); err != nil {
 			return err
 		}
 	}
 
-	innerComp := must.NotFail(d.GetExactByPath(path.TrimSuffix()))
+	comps := must.NotFail(d.GetAllByPath(path.TrimSuffix(), false))
+
+	if len(comps) > 1 {
+		panic("types.Document.SetByPath: multiple fields match the path")
+	}
+
+	innerComp := comps[0]
 
 	switch inner := innerComp.(type) {
 	case *Document:

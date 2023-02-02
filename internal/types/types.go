@@ -81,8 +81,7 @@ type Type interface {
 type CompositeTypeInterface interface {
 	CompositeType
 
-	GetExactByPath(path Path) (any, error)
-	GetAllByPath(path Path) ([]any, error)
+	GetAllByPath(path Path, wildcard bool) ([]any, error)
 	RemoveByPath(path Path)
 
 	compositeType() // seal for go-sumtype

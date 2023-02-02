@@ -155,10 +155,11 @@ func TestDocumentValidateData(t *testing.T) {
 				err := tc.doc.ValidateData()
 				assert.NoError(t, err)
 
-				v, err := tc.doc.GetExactByPath(tc.expected)
-				assert.NoError(t, err)
+				v, err := tc.doc.GetAllByPath(tc.expected, false)
+				require.NoError(t, err)
+				require.Len(t, v, 1)
 
-				actual, ok := v.(float64)
+				actual, ok := v[0].(float64)
 				assert.True(t, ok, "should be float64")
 				assert.Equal(t, float64(0), actual)
 				assert.False(t, math.Signbit(actual), "should be positive zero 0 but it was -0")

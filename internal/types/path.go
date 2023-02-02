@@ -156,8 +156,12 @@ func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
 }
 
-// getExactByPath returns all matching values by path - a sequence of indexes and keys.
-func getExactByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
+// hasByPath checks if the given component contains the given path.
+// It returns nil if the path exists and newDocumentPathError otherwise.
+// In case of error, its code could be used to determine the exact reason why the path is not found.
+//
+// It checks the exact path, i.e. to check array element, you need to mention its index in the path.
+func hasByPath[T CompositeTypeInterface](comp T, path Path) error {
 	var next any = comp
 	for _, p := range path.Slice() {
 		switch s := next.(type) {
@@ -165,33 +169,33 @@ func getExactByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			var err error
 			next, err = s.Get(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getExactByPath: %w", err))
+				return newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.hasByPath: %w", err))
 			}
 
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getExactByPath: %w", err))
+				return newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.hasByPath: %w", err))
 			}
 
 			next, err = s.Get(index)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getExactByPath: %w", err))
+				return newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.hasByPath: %w", err))
 			}
 
 		default:
-			return nil, newDocumentPathError(
+			return newDocumentPathError(
 				ErrDocumentPathCannotAccess,
-				fmt.Errorf("types.getExactByPath: can't access %T by path %q", next, p),
+				fmt.Errorf("types.hasByPath: can't access %T by path %q", next, p),
 			)
 		}
 	}
 
-	return next, nil
+	return nil
 }
 
 // getAllByPath returns all matching values by path - a sequence of indexes and keys.
-func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
+func getAllByPath[T CompositeTypeInterface](comp T, path Path, wildcard bool) ([]any, error) {
 	next := []any{comp}
 
 	for _, p := range path.Slice() {
@@ -224,6 +228,13 @@ func getAllByPath[T CompositeTypeInterface](comp T, path Path) ([]any, error) {
 					newNext = append(newNext, v)
 
 				default:
+					if !wildcard {
+						return nil, newDocumentPathError(
+							ErrDocumentPathArrayInvalidIndex,
+							fmt.Errorf("types.getAllByPath: %w", err),
+						)
+					}
+
 					// If p is not an array index, it could be a key of documents inside the array.
 					docs := getObjectValuesFromArray(s, p)
 
@@ -322,8 +333,9 @@ func insertByPath(doc *Document, path Path) error {
 	for _, pathElem := range path.TrimSuffix().Slice() {
 		insertedPath = insertedPath.Append(pathElem)
 
-		v, err := doc.GetExactByPath(insertedPath)
-		if err != nil {
+		var v any
+
+		if err := doc.HasByPath(insertedPath); err != nil {
 			suffix := len(insertedPath.Slice()) - 1
 			if suffix < 0 {
 				panic("invalid path")
@@ -366,7 +378,7 @@ func insertByPath(doc *Document, path Path) error {
 				)
 			}
 
-			next = must.NotFail(doc.GetExactByPath(insertedPath)).(*Document)
+			next = must.NotFail(doc.GetAllByPath(insertedPath, false))[0].(*Document)
 
 			continue
 		}

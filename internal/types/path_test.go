@@ -253,28 +253,29 @@ func TestGetExactByPath(t *testing.T) {
 		)),
 	}, {
 		path: NewPath("client", "0"),
-		err:  `types.getExactByPath: types.Document.Get: key not found: "0"`,
+		err:  `types.hasByPath: types.Document.Get: key not found: "0"`,
 	}, {
 		path: NewPath("compression", "invalid"),
-		err:  `types.getExactByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
+		err:  `types.hasByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
 		path: NewPath("client", "missing"),
-		err:  `types.getExactByPath: types.Document.Get: key not found: "missing"`,
+		err:  `types.hasByPath: types.Document.Get: key not found: "missing"`,
 	}, {
 		path: NewPath("compression", "1"),
-		err:  `types.getExactByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
+		err:  `types.hasByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
 		path: NewPath("compression", "0", "invalid"),
-		err:  `types.getExactByPath: can't access string by path "invalid"`,
+		err:  `types.hasByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
 		t.Run(fmt.Sprint(tc.path), func(t *testing.T) {
 			t.Parallel()
 
-			res, err := getExactByPath(doc, tc.path)
+			res, err := getAllByPath(doc, tc.path, false)
 			if tc.err == "" {
 				require.NoError(t, err)
-				assert.Equal(t, tc.res, res)
+				require.Len(t, res, 1)
+				assert.Equal(t, tc.res, res[0])
 			} else {
 				assert.Empty(t, res)
 				assert.EqualError(t, err, tc.err)

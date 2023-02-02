@@ -26,11 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// GetExactByPath returns a value by path - a sequence of indexes and keys.
-func GetExactByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types.Path) any {
+// GetAllByPath returns a value by path - a sequence of indexes and keys.
+func GetAllByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types.Path) []any {
 	tb.Helper()
 
-	res, err := comp.GetExactByPath(path)
+	res, err := comp.GetAllByPath(path, false)
 	require.NoError(tb, err)
 	return res
 }
@@ -80,8 +80,14 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path types.Path) {
 	tb.Helper()
 
-	expectedV := GetExactByPath(tb, expected, path)
-	actualV := GetExactByPath(tb, actual, path)
+	expectedVs := GetAllByPath(tb, expected, path)
+	actualVs := GetAllByPath(tb, actual, path)
+
+	require.Len(tb, expectedVs, 1, "expected component must have exactly one element matching the path %q", path)
+	require.Len(tb, actualVs, 1, "actual component must have exactly one element matching the path %q", path)
+
+	expectedV, actualV := expectedVs[0], actualVs[0]
+
 	assert.IsType(tb, expectedV, actualV)
 	assert.InDelta(tb, expectedV, actualV, delta)
 
@@ -95,8 +101,14 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expec
 func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta time.Duration, path types.Path) {
 	tb.Helper()
 
-	expectedV := GetExactByPath(tb, expected, path)
-	actualV := GetExactByPath(tb, actual, path)
+	expectedVs := GetAllByPath(tb, expected, path)
+	actualVs := GetAllByPath(tb, actual, path)
+
+	require.Len(tb, expectedVs, 1, "expected component must have exactly one element matching the path %q", path)
+	require.Len(tb, actualVs, 1, "actual component must have exactly one element matching the path %q", path)
+
+	expectedV, actualV := expectedVs[0], actualVs[0]
+
 	assert.IsType(tb, expectedV, actualV)
 
 	switch actualV := actualV.(type) {
