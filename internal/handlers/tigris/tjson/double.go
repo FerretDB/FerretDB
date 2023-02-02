@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -51,7 +53,16 @@ func (d *doubleType) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements tjsontype interface.
 func (d *doubleType) MarshalJSON() ([]byte, error) {
-	res := []byte(fmt.Sprintf("%f", float64(*d)))
+	// This will default to precision of 6
+	//res := []byte(fmt.Sprintf("%f", float64(*d)))
+
+	// get precision of the value to preserve it
+	dStr := strconv.FormatFloat(float64(*d), 'f', -1, 64)
+	precision := len(dStr) - strings.Index(dStr, ".") - 1
+
+	res := []byte(fmt.Sprintf("%."+strconv.Itoa(precision)+"f", float64(*d)))
+
+	// This function still does not handle some corner cases like TestDouble/zero where we expect to return "0" and not "0.0"
 	return res, nil
 }
 

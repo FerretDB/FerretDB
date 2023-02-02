@@ -31,12 +31,12 @@ var doubleTestCases = []testCase{{
 	name:   "zero",
 	v:      pointer.To(doubleType(math.Copysign(0, +1))),
 	schema: doubleSchema,
-	j:      `0`,
+	j:      `0`, // vs 0.0
 }, {
 	name:   "max float64",
 	v:      pointer.To(doubleType(math.MaxFloat64)),
 	schema: doubleSchema,
-	j:      fmt.Sprintf("%f", math.MaxFloat64),
+	j:      fmt.Sprintf("%f", math.MaxFloat64), // what precision do we expect here?
 	//j:      `1.7976931348623157e+308`,
 }, {
 	name:   "smallest positive float64",
