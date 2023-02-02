@@ -151,33 +151,36 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
-	err := waitForPort(ctx, logger, 8081)
-	if err != nil {
-		return err
-	}
-
-	cfg := &config.Driver{
-		URL: "127.0.0.1:8081",
-	}
-
-	var db *tigrisdb.TigrisDB
-
-	for ctx.Err() == nil {
-		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
-			break
+	// See docker-compose.yml.
+	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
+		err := waitForPort(ctx, logger, port)
+		if err != nil {
+			return err
 		}
 
-		logger.Infof("%s: %s", cfg.URL, err)
-		ctxutil.Sleep(ctx, time.Second)
-	}
+		cfg := &config.Driver{
+			URL: fmt.Sprintf("127.0.0.1:%d", port),
+		}
 
-	defer db.Driver.Close()
+		var db *tigrisdb.TigrisDB
 
-	logger.Info("Creating databases...")
+		for ctx.Err() == nil {
+			if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
+				break
+			}
 
-	for _, name := range []string{"admin", "test"} {
-		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
-			return err
+			logger.Infof("%s: %s", cfg.URL, err)
+			ctxutil.Sleep(ctx, time.Second)
+		}
+
+		defer db.Driver.Close()
+
+		logger.Info("Creating databases...")
+
+		for _, name := range []string{"admin", "test"} {
+			if _, err = db.Driver.CreateProject(ctx, name); err != nil {
+				return err
+			}
 		}
 	}
 
