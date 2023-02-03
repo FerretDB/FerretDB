@@ -16,11 +16,15 @@ package types
 
 import (
 	"runtime"
+	"runtime/pprof"
 	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
+
+// documentIteratorProfiles keeps track on all document iterators.
+var documentIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/types.documentIterator")
 
 // documentIterator represents an iterator over the document fields.
 type documentIterator struct {
@@ -35,6 +39,8 @@ func newDocumentIterator(document *Document) iterator.Interface[string, any] {
 		doc:   document,
 		stack: debugbuild.Stack(),
 	}
+
+	documentIteratorProfiles.Add(iter, 1)
 
 	runtime.SetFinalizer(iter, func(iter *documentIterator) {
 		msg := "documentIterator.Close() has not been called"
@@ -62,6 +68,9 @@ func (iter *documentIterator) Next() (string, any, error) {
 // Close implements iterator.Interface.
 func (iter *documentIterator) Close() {
 	iter.n.Store(uint32(iter.doc.Len()))
+
+	documentIteratorProfiles.Remove(iter)
+
 	runtime.SetFinalizer(iter, nil)
 }
 
