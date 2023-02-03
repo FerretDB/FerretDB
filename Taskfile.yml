@@ -10,7 +10,7 @@ vars:
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
-  SERVICES: postgres postgres_secured tigris mongodb mongodb_secured
+  SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured
 
 tasks:
   # invoked when `task` is run without arguments
@@ -174,7 +174,6 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -timeout=15m
         -coverprofile=integration-pg.txt .
         -handler=pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
@@ -187,7 +186,6 @@ tasks:
     cmds:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -timeout=30m
         -coverprofile=integration-tigris.txt .
         -handler=tigris
         -records-dir=../records

@@ -49,6 +49,7 @@ jobs:
           labelName: use-git-lfs
           exclusionPatterns: |
             **/*.js
+            **/go.sum
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
