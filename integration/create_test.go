@@ -296,7 +296,7 @@ func TestCreateStressSameCollection(t *testing.T) {
 }
 
 func TestCreateTigris(t *testing.T) {
-	setup.SkipForPostgresWithReason(t, "Tigris-specific schema is used")
+	setup.SkipForNonTigrisWithReason(t, "Tigris-specific schema is used")
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there

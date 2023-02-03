@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"net/url"
 	"runtime/trace"
 	"sync"
@@ -44,7 +43,6 @@ var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
 
-	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
@@ -53,7 +51,7 @@ var (
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 
-	tigrisURLF = flag.String("tigris-url", "127.0.0.1:8081", "Tigris URL for 'tigris' handler.")
+	tigrisURLsF = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -83,7 +81,7 @@ func SkipForTigris(tb testing.TB) {
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if *handlerF == "tigris" {
+	if getHandler() == "tigris" {
 		if reason == "" {
 			tb.Skipf("Skipping for Tigris")
 		} else {
@@ -95,16 +93,16 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 // IsTigris returns if tests are running against the Tigris handler.
 func IsTigris(tb testing.TB) bool {
 	tb.Helper()
-	return *handlerF == "tigris"
+	return getHandler() == "tigris"
 }
 
-// SkipForPostgresWithReason skips the current test for Postgres (pg) handler.
+// SkipForNonTigrisWithReason skips the current test for handlers that is not tigris.
 //
 // Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
-func SkipForPostgresWithReason(tb testing.TB, reason string) {
+func SkipForNonTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if *handlerF == "pg" {
+	if getHandler() == "pg" {
 		tb.Skipf("Skipping for Postgres: %s", reason)
 	}
 }
@@ -153,17 +151,21 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer, f flags) (*mongo.Client, string) {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer) (*mongo.Client, string) {
 	tb.Helper()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
 
-	require.Zero(tb, f.GetTargetPort(), "-target-port must be 0 for in-process FerretDB")
+	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
 	// that's already checked by handlers constructors,
 	// but here we could produce a better error message
-	if f.GetHandler() == "pg" {
-		require.NotEmpty(tb, f.GetPostgreSQLURL(), "-postgresql-url must be set for 'pg' handler")
+	if getHandler() == "pg" {
+		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
+	}
+
+	if getHandler() == "tigris" {
+		require.NotEmpty(tb, *tigrisURLsF, "-tigris-urls must be set for 'tigris' handler")
 	}
 
 	p, err := state.NewProvider("")
@@ -177,15 +179,15 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: f.GetPostgreSQLURL(),
+		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: fmt.Sprintf("127.0.0.1:%d", s.getNextTigrisPort()),
+		TigrisURL: s.getNextTigrisURL(),
 	}
-	h, err := registry.NewHandler(f.GetHandler(), handlerOpts)
+	h, err := registry.NewHandler(getHandler(), handlerOpts)
 	require.NoError(tb, err)
 
 	listenerOpts := &clientconn.NewListenerOpts{
-		ProxyAddr:      f.GetProxyAddr(),
+		ProxyAddr:      *proxyAddrF,
 		Mode:           clientconn.NormalMode,
 		Metrics:        metrics,
 		Handler:        h,
@@ -193,17 +195,17 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 		TestRecordsDir: *recordsDirF,
 	}
 
-	if f.GetProxyAddr() != "" {
+	if *proxyAddrF != "" {
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
-	if f.IsTargetUnixSocket() {
+	if *targetUnixSocketF {
 		listenerOpts.Unix = unixSocketPath(tb)
 	}
 
 	addr := "127.0.0.1:0"
 
-	if f.IsTargetTLS() {
+	if *targetTLSF {
 		listenerOpts.TLS = addr
 		fp := GetTLSFilesPaths(tb, ServerSide)
 		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
@@ -234,12 +236,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 	var opts buildMongoDBURIOpts
 
 	switch {
-	case f.IsTargetTLS():
+	case *targetTLSF:
 		opts.host = l.TLSAddr().String()
 		opts.user = url.UserPassword("username", "password")
 		opts.authMechanism = "PLAIN"
 		opts.tls = true
-	case f.IsTargetUnixSocket():
+	case *targetUnixSocketF:
 		opts.unixSocketPath = l.UnixAddr().String()
 	default:
 		opts.host = l.TCPAddr().String()
@@ -250,9 +252,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 	// Listeners are created only for Target since targetPort must be 0,
 	// for listener creation, so we use f.IsTargetTLS() to find TLS.
 	uri := buildMongoDBURI(tb, &opts)
-	client := setupClient(tb, ctx, uri, f.IsTargetTLS())
+	client := setupClient(tb, ctx, uri, *targetTLSF)
 
-	logger.Info("Listener started", zap.String("handler", f.GetHandler()), zap.String("uri", uri))
+	logger.Info("Listener started", zap.String("handler", getHandler()), zap.String("uri", uri))
 
 	return client, uri
 }
@@ -288,6 +290,22 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mo
 	return client
 }
 
+// getHandler returns the handler based on the URL.
+// When postgreSQLURLF is set it's pg handler,
+// when tigrisURLsF is set it's tigris handler,
+// and the handler is empty for mongoDB.
+func getHandler() string {
+	if *postgreSQLURLF != "" {
+		return "pg"
+	}
+
+	if *tigrisURLsF != "" {
+		return "tigris"
+	}
+
+	return ""
+}
+
 // getUser returns test user credential if TLS is enabled, nil otherwise.
 func getUser(isTLS bool) *url.Userinfo {
 	if isTLS {
@@ -306,7 +324,7 @@ func startup() *startupInitializer {
 		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 		if p := *targetPortF; p == 0 {
-			zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
+			zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
 		} else {
 			zap.S().Infof("Target system: port %d.", p)
 		}
