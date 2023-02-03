@@ -46,9 +46,6 @@ type SetupCompatOpts struct {
 
 	databaseName       string
 	baseCollectionName string
-
-	// Flags overrides the flags set from cli.
-	Flags map[string]any
 }
 
 // SetupCompatResult represents compatibility test setup results.

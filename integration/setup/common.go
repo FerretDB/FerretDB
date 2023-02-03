@@ -96,14 +96,14 @@ func IsTigris(tb testing.TB) bool {
 	return getHandler() == "tigris"
 }
 
-// SkipForNonTigrisWithReason skips the current test for handlers that is not tigris.
+// TigrisOnlyWithReason skips the current test for handlers that is not tigris.
 //
 // Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
-func SkipForNonTigrisWithReason(tb testing.TB, reason string) {
+func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if getHandler() == "pg" {
-		tb.Skipf("Skipping for Postgres: %s", reason)
+	if getHandler() != "tigris" {
+		tb.Skipf("Skipping for non-tigris: %s", reason)
 	}
 }
 
@@ -158,14 +158,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
-	// that's already checked by handlers constructors,
-	// but here we could produce a better error message
-	if getHandler() == "pg" {
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
-	}
-
-	if getHandler() == "tigris" {
-		require.NotEmpty(tb, *tigrisURLsF, "-tigris-urls must be set for 'tigris' handler")
+	// only one of postgresql-url and tigris-urls should be set.
+	if *tigrisURLsF != "" && *postgreSQLURLF != "" {
+		tb.Fatalf("postgresql-url and tigris-urls must not be both set, only one should be set.")
 	}
 
 	p, err := state.NewProvider("")
@@ -248,9 +243,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 	}
 
 	// When TLS is enabled, RootCAs and Certificates are fetched
-	// upon creating client. Target uses PLAIN for authMechanism.
-	// Listeners are created only for Target since targetPort must be 0,
-	// for listener creation, so we use f.IsTargetTLS() to find TLS.
+	// upon creating client and target uses PLAIN for authMechanism.
 	uri := buildMongoDBURI(tb, &opts)
 	client := setupClient(tb, ctx, uri, *targetTLSF)
 
@@ -291,8 +284,8 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mo
 }
 
 // getHandler returns the handler based on the URL.
-// When postgreSQLURLF is set it's pg handler,
-// when tigrisURLsF is set it's tigris handler,
+// When postgreSQLURLF is set it is pg handler,
+// when tigrisURLsF is set it is tigris handler,
 // and the handler is empty for mongoDB.
 func getHandler() string {
 	if *postgreSQLURLF != "" {

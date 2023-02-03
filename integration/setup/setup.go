@@ -45,9 +45,6 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
-
-	// Flags overrides the flags set from cli.
-	Flags map[string]any
 }
 
 // SetupResult represents setup results.
