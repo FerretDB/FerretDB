@@ -172,6 +172,9 @@ For example:
 * to run all tests for `tigris` handler with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
+(It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
+or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.)
+
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
 and real objects over mocks.
@@ -180,6 +183,12 @@ and real objects over mocks.
 let's not fight over it.)
 
 We have an additional integration testing system in another repository: <https://github.com/FerretDB/dance>.
+
+#### Observability in tests
+
+Integration tests start a debug handler with pprof profiles and execution traces on a random port
+(to allow running multiple test configurations in parallel).
+They also send telemetry traces to the local Jaeger instance that can be accessed at <http://127.0.0.1:16686/>.
 
 ### Code style and conventions
 
