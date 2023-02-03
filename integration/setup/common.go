@@ -160,7 +160,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 	// only one of postgresql-url and tigris-urls should be set.
 	if *tigrisURLsF != "" && *postgreSQLURLF != "" {
-		tb.Fatalf("postgresql-url and tigris-urls must not be both set, only one should be set.")
+		tb.Fatalf("Both postgresql-url and tigris-urls are set, only one should be set.")
+	}
+
+	// one of postgresql-url or tigris-urls should be set.
+	if *tigrisURLsF == "" && *postgreSQLURLF == "" {
+		tb.Fatalf("Both postgresql-url and tigris-urls are empty, one should be set.")
 	}
 
 	p, err := state.NewProvider("")
