@@ -19,7 +19,6 @@ package conninfo
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -97,7 +96,9 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[int, *typ
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	id := atomic.AddInt64(&connInfo.cursorCounter, 1)
+	connInfo.cursorCounter++
+
+	id := connInfo.cursorCounter
 
 	connInfo.cursors[id] = Cursor{
 		Iter:   iter,
