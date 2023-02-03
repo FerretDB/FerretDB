@@ -172,6 +172,9 @@ For example:
 * to run all tests for `tigris` handler with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
+(It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
+or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.)
+
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
 and real objects over mocks.
@@ -183,16 +186,9 @@ We have an additional integration testing system in another repository: <https:/
 
 #### Observability in tests
 
-Optionally, for those who prefer [OpenTelemetry tracing approach](https://opentelemetry.io/docs/concepts/signals/traces/),
-it is possible to use [Jaeger](https://www.jaegertracing.io/) in tests.
-
-Run `task jaeger` to start all-in-one Jaeger Docker container (the traces will be stored in memory and will be available
-while the container is running).
-
-Then run `task test-integration-pg JAEGER_ENDPOINT=http://localhost:14268/api/traces`
-to run `pg` handler tests with tracing enabled.
-
-Now you can visit [Jaeger UI](http://localhost:16686/) to see the spans collected from testing.
+Integration tests start a debug handler with pprof profiles and execution traces on a random port
+(to allow running multiple test configurations in parallel).
+They also send telemetry traces to the local Jaeger instance that can be accessed at <http://127.0.0.1:16686/>.
 
 ### Code style and conventions
 
