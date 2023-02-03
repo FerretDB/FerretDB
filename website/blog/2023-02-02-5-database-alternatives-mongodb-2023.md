@@ -3,11 +3,11 @@ slug: 5-database-alternatives-mongodb-2023
 title: "MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023"
 author: Alexander Fashakin
 image: /img/blog/mongodb-alternatives.png
-description: "The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and ToroDB."
+description: "The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale."
 date: 2023-02-02
 ---
 
-The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and ToroDB.
+The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale.
 
 ![5 Database Alternatives to MongoDB](/img/blog/mongodb-alternatives.png)
 
@@ -91,15 +91,15 @@ Users can also use its instant scalability features with little or no warmup tim
 Cosmos DB offers a fully managed database on Azure, enabling you to manage all your infrastructure on your own.
 Since it can only run on Azure, it raises the same vendor lock-in concerns that stop you from deploying in multiple cloud environments, the same as MongoDB.
 
-### 4. ToroDB
+### 4. MariaDB MaxScale - NoSQL Protocol Module
 
-[ToroDB](https://www.torodb.com/) is an open source database service built to read and convert MongoDB NoSQL to SQL.
-With PostgreSQL as the storage layer, ToroDB doesn't use jsonb; Instead, it uses a relational approach to store data.
-ToroDB also implements the MongoDB protocol, making it compatible with most MongoDB applications.
+[MaxScale](https://mariadb.com/kb/en/mariadb-maxscale-6-nosql-protocol-module/) is a database proxy that allows applications to access MariaDB databases while enjoying the benefits of a decoupled architecture.
+With MaxScale's NoSQL Protocol module, you have another viable alternative to MongoDB.
 
-Despite ToroDB's potential as a viable MongoDB alternative, one big red flag is the absence of consistent updates or improvements on the database project for a while now, making it an unlikely choice for would-be users.
-In fact, there hasn’t been any activity on the project since 2019.
-Nevertheless, the project is still available on GitHub, and users can happily experiment with it.
+Maxcale NoSQL protocol module is a communication protocol between MariaDB and MongoDB, which enables the use of a MariaDB server or cluster as the backend for an application that uses a MongoDB client library.
+
+Users can interact with MariaDB databases using NoSQL-style commands, which are then converted into SQL and executed on the MariaDB backend.
+The responses from MariaDB are then transformed into the format required by the MongoDB client library and application.
 
 ### 5. GaussDB(for Mongo)
 
@@ -108,6 +108,18 @@ Similar to DocumentDB, it offers decoupled storage and compute, enabling seamles
 
 GaussDB is especially good for gaming applications that require enterprise-class performance, high flexibility and storage capacity, and a friendly UI.
 The ease of adding compute nodes makes it perfect for online gaming scenarios with high-concurrency levels.
+
+### Notable Mention: ToroDB
+
+ToroDB is not a part of this list due to the limited activity on the project in recent years; however, it's another MongoDB alternative that's worthy of mention.
+
+[ToroDB](https://www.torodb.com/) is an open source database service built to read and convert MongoDB NoSQL to SQL.
+With PostgreSQL as the storage layer, ToroDB doesn't use jsonb; Instead, it uses a relational approach to store data.
+ToroDB also implements the MongoDB protocol, making it compatible with most MongoDB applications.
+
+Despite ToroDB's potential as a viable MongoDB alternative, one big red flag is the absence of consistent updates or improvements on the database project for a while now, making it an unlikely choice for would-be users.
+In fact, there hasn’t been any activity on the project since 2019.
+Nevertheless, the project is still available on GitHub, and users can happily experiment with it.
 
 ## Choosing the MongoDB alternative for your app
 
