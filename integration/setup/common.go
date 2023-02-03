@@ -71,7 +71,7 @@ var (
 // Other globals.
 var (
 	// See docker-compose.yml.
-	tigrisPortsIndex atomic.Uint32
+	tigrisURLsIndex atomic.Uint32
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -159,7 +159,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 
 // nextTigrisUrl returns the next url for the Tigris handler.
 func nextTigrisUrl() string {
-	i := int(tigrisPortsIndex.Add(1)) - 1
+	i := int(tigrisURLsIndex.Add(1)) - 1
 	urls := strings.Split(*tigrisURLsF, ",")
 
 	return urls[i%len(urls)]
