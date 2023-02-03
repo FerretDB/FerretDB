@@ -83,7 +83,7 @@ For more configuration options check [Configuration flags and variables](https:/
    mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
-   See [Security#Authentication](../security.md#authentication) for more details.
+   See [Security Authentication](https://docs.ferretdb.io/security/#authentication) for more details.
 
    If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container, attaching to the same Docker network:
 
