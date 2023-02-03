@@ -122,10 +122,10 @@ func checkUnsuitableValueError(doc *types.Document, key string, path types.Path)
 			commonerrors.ErrUnsuitableValueType,
 			fmt.Sprintf(
 				"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
-				path.Suffix(),
+				path.Slice()[1],
 				key,
 				prefix,
-				val,
+				types.FormatAnyValue(val),
 			),
 		)
 	}
