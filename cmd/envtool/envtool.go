@@ -149,8 +149,7 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 
 // setupAnyTigris configures given Tigris.
 func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
-	err := waitForPort(ctx, logger, port)
-	if err != nil {
+	if err := waitForPort(ctx, logger, port); err != nil {
 		return err
 	}
 
