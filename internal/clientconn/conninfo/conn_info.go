@@ -18,9 +18,8 @@ package conninfo
 
 import (
 	"context"
-	"math"
-	"math/rand"
 	"sync"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -42,14 +41,16 @@ type ConnInfo struct {
 	username string
 	password string
 
-	curRW   sync.RWMutex
-	cursors map[int64]Cursor
+	curRW         sync.RWMutex
+	cursors       map[int64]Cursor
+	cursorCounter int64
 }
 
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	return &ConnInfo{
-		cursors: map[int64]Cursor{},
+		cursors:       map[int64]Cursor{},
+		cursorCounter: 1,
 	}
 }
 
@@ -96,7 +97,7 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[int, *typ
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	id := connInfo.generateCursorID()
+	id := atomic.AddInt64(&connInfo.cursorCounter, 1)
 
 	connInfo.cursors[id] = Cursor{
 		Iter:   iter,
@@ -152,29 +153,6 @@ func (connInfo *ConnInfo) deleteCursor(id int64) (err error) {
 	delete(connInfo.cursors, id)
 
 	return nil
-}
-
-// generateCursorID generates a unique cursor ID without acquiring a lock.
-func (connInfo *ConnInfo) generateCursorID() int64 {
-	var id int64
-
-	for {
-		id = rand.Int63()
-		if _, ok := connInfo.cursors[id]; !ok {
-			break
-		}
-
-		if id < 0 {
-			id = int64(math.Abs(float64(id)))
-		}
-
-		_, ok := connInfo.cursors[id]
-		if !ok {
-			break
-		}
-	}
-
-	return id
 }
 
 // Close frees all opened cursors.
