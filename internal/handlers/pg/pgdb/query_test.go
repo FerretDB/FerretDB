@@ -47,15 +47,19 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
+				return err
+			}
 
-			err = InsertDocument(ctx, tx, databaseName, collectionName, doc2)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc2); err != nil {
+				return err
+			}
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
@@ -102,12 +106,15 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
+				return err
+			}
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			require.NotNil(t, iter)
 
 			iter.Close()
@@ -144,12 +151,15 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
+				return err
+			}
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			require.NotNil(t, iter)
 
 			cancelGet()
@@ -192,12 +202,15 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
+			if err := CreateCollection(ctx, tx, databaseName, collectionName); err != nil {
+				return err
+			}
 
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
@@ -236,7 +249,9 @@ func TestGetDocuments(t *testing.T) {
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			sp := &SQLParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			if err != nil {
+				return err
+			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()

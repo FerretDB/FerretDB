@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"runtime"
+	"runtime/pprof"
 	"sync"
 
 	"github.com/jackc/pgx/v4"
@@ -27,6 +28,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+// queryIteratorProfiles keeps track on all query iterators.
+var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb.queryIterator")
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
@@ -49,6 +53,8 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *ty
 		rows:  rows,
 		stack: debugbuild.Stack(),
 	}
+
+	queryIteratorProfiles.Add(iter, 1)
 
 	runtime.SetFinalizer(iter, func(iter *queryIterator) {
 		msg := "queryIterator.Close() has not been called"
@@ -118,6 +124,8 @@ func (iter *queryIterator) Close() {
 
 // close closes iterator without holding mutex.
 func (iter *queryIterator) close() {
+	queryIteratorProfiles.Remove(iter)
+
 	runtime.SetFinalizer(iter, nil)
 
 	if iter.rows != nil {

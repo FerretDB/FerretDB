@@ -153,6 +153,15 @@ services:
       - ./build/certs:/etc/certs
       - ./build/legacy-mongo-shell/test.js:/legacy-mongo-shell/test.js
 
+  jaeger:
+    build:
+      context: ./build/deps
+      dockerfile: jaeger.Dockerfile
+    container_name: ferretdb_jaeger
+    ports:
+      - 16686:16686 # UI on http://127.0.0.1:16686/
+      - 14268:14268 # to receive spans from clients
+
   trivy:
     build:
       context: ./build/deps
