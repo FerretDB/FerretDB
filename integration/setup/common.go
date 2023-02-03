@@ -21,7 +21,9 @@ import (
 	"flag"
 	"net/url"
 	"runtime/trace"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -64,6 +66,12 @@ var (
 
 	startupOnce sync.Once
 	startupEnv  *startupInitializer
+)
+
+// Other globals.
+var (
+	// See docker-compose.yml.
+	tigrisPortsIndex atomic.Uint32
 )
 
 // SkipForTigris skips the current test for Tigris handler.
@@ -149,6 +157,14 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	return u.String()
 }
 
+// nextTigrisUrl returns the next url for the Tigris handler.
+func nextTigrisUrl() string {
+	i := int(tigrisPortsIndex.Add(1)) - 1
+	urls := strings.Split(*tigrisURLsF, ",")
+
+	return urls[i%len(urls)]
+}
+
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer) (*mongo.Client, string) {
@@ -181,7 +197,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: s.getNextTigrisURL(),
+		TigrisURL: nextTigrisUrl(),
 	}
 	h, err := registry.NewHandler(getHandler(), handlerOpts)
 	require.NoError(tb, err)

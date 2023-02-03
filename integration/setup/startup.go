@@ -16,34 +16,29 @@
 package setup
 
 import (
-	"strings"
 	"sync/atomic"
 )
 
-// startupInitializer keeps tracks of the number of times
-// tigris urls have been requested.
 // See docker-compose.yml.
+var tigrisPorts = []uint16{8081, 8091, 8092, 8093, 8094}
+
+// startupInitializer keeps tracks of the number of times
+// ports have been requested.
 type startupInitializer struct {
-	numCalls   *uint64
-	tigrisURLs []string
+	nPortCalls *uint64
 }
 
 // startupInitializer creates an instance of startupInitializer.
 func newStartupInitializer() *startupInitializer {
-	numCalls := uint64(0)
-	urls := strings.Split(*tigrisURLsF, ",")
-
-	return &startupInitializer{
-		numCalls:   &numCalls,
-		tigrisURLs: urls,
-	}
+	nPortCalls := uint64(0)
+	return &startupInitializer{nPortCalls: &nPortCalls}
 }
 
-// getNextTigrisURL gets the next URL of Tigris to be used
+// getNextTigrisPort gets the next port number of Tigris to be used
 // for testing in Round Robin fashion.
-func (p *startupInitializer) getNextTigrisURL() string {
-	i := atomic.AddUint64(p.numCalls, 1)
-	numUrls := uint64(len(p.tigrisURLs))
+func (p *startupInitializer) getNextTigrisPort() uint16 {
+	i := atomic.AddUint64(p.nPortCalls, 1)
+	numPorts := uint64(len(tigrisPorts))
 
-	return p.tigrisURLs[i%numUrls]
+	return tigrisPorts[i%numPorts]
 }
