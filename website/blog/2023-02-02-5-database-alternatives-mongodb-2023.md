@@ -101,6 +101,8 @@ MaxScale NoSQL protocol module is a communication protocol between MariaDB and M
 Users can interact with MariaDB databases using NoSQL-style commands, which are then converted into SQL and executed on the MariaDB backend.
 The responses from MariaDB are then transformed into the format required by the MongoDB client library and application.
 
+The MariaDB NoSQL protocol module is suitable for users that require relational database support, scalability, and integration with existing MariaDB infrastructure.
+
 ### 5. GaussDB(for Mongo)
 
 [GaussDB(for Mongo)](https://www.huaweicloud.com/intl/en-us/product/gaussdbformongo.html) is a proprietary cloud-native database that's compatible with MongoDB.
