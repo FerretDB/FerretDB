@@ -96,7 +96,7 @@ Since it can only run on Azure, it raises the same vendor lock-in concerns that 
 [MaxScale](https://mariadb.com/kb/en/mariadb-maxscale-6-nosql-protocol-module/) is a database proxy that allows applications to access MariaDB databases while enjoying the benefits of a decoupled architecture.
 With MaxScale's NoSQL Protocol module, you have another viable alternative to MongoDB.
 
-Maxcale NoSQL protocol module is a communication protocol between MariaDB and MongoDB, which enables the use of a MariaDB server or cluster as the backend for an application that uses a MongoDB client library.
+MaxScale NoSQL protocol module is a communication protocol between MariaDB and MongoDB, which enables the use of a MariaDB server or cluster as the backend for an application that uses a MongoDB client library.
 
 Users can interact with MariaDB databases using NoSQL-style commands, which are then converted into SQL and executed on the MariaDB backend.
 The responses from MariaDB are then transformed into the format required by the MongoDB client library and application.
