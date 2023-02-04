@@ -17,10 +17,9 @@ package integration
 import (
 	"fmt"
 	"math"
-	"runtime"
 	"sort"
 	"strconv"
-	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -901,81 +900,64 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
-
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
 
-	dbNum := runtime.GOMAXPROCS(-1) * 10
+	var collections atomic.Int32
 
-	ready := make(chan struct{}, dbNum)
-	start := make(chan struct{})
+	stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		i := collections.Add(1) - 1
 
-	var wg sync.WaitGroup
-	for i := 0; i < dbNum; i++ {
-		wg.Add(1)
+		dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
+		db := client.Database(dbName)
+		_ = db.Drop(ctx) // make sure DB doesn't exist (it will be created together with the collection)
 
-		go func(i int) {
-			defer wg.Done()
+		collName := fmt.Sprintf("stress_%d", i)
 
-			ready <- struct{}{}
-
-			<-start
-
-			dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
-			db := client.Database(dbName)
-			_ = db.Drop(ctx) // make sure DB doesn't exist (it will be created together with the collection)
-
-			collName := fmt.Sprintf("stress_%d", i)
-
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-			opts := options.CreateCollectionOptions{
-				Validator: bson.D{{"$tigrisSchemaString", schema}},
+		schema := fmt.Sprintf(`{
+			"title": "%s",
+			"description": "Create Collection Stress %d",
+			"primary_key": ["_id"],
+			"properties": {
+				"_id": {"type": "string"},
+				"v": {"type": "string"}
 			}
+		}`, collName, i,
+		)
+		opts := options.CreateCollectionOptions{
+			Validator: bson.D{{"$tigrisSchemaString", schema}},
+		}
 
-			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error that support for "validator" is not implemented, that's Postgres.
-			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
-			// In both cases, we create a collection without a schema.
-			err := db.CreateCollection(ctx, collName, &opts)
-			if err != nil {
-				if errorTextContains(err,
-					`support for field "validator" is not implemented yet`,
-					`unknown top level operator: $tigrisSchemaString`,
-				) {
-					err = db.CreateCollection(ctx, collName)
-				}
+		ready <- struct{}{}
+		<-start
+
+		// Attempt to create a collection for Tigris with a schema.
+		// If we get an error that support for "validator" is not implemented, that's Postgres.
+		// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
+		// In both cases, we create a collection without a schema.
+		//
+		// TODO remove this: https://github.com/FerretDB/FerretDB/issues/1568
+		err := db.CreateCollection(ctx, collName, &opts)
+		if err != nil {
+			if errorTextContains(err,
+				`support for field "validator" is not implemented yet`,
+				`unknown top level operator: $tigrisSchemaString`,
+			) {
+				err = db.CreateCollection(ctx, collName)
 			}
+		}
 
-			assert.NoError(t, err)
+		assert.NoError(t, err)
 
-			err = db.Drop(ctx)
-			assert.NoError(t, err)
+		err = db.Drop(ctx)
+		assert.NoError(t, err)
 
-			command := bson.D{{"serverStatus", int32(1)}}
-			var actual bson.D
-			err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+		command := bson.D{{"serverStatus", int32(1)}}
+		var actual bson.D
+		err = collection.Database().RunCommand(ctx, command).Decode(&actual)
 
-			assert.NoError(t, err)
-		}(i)
-	}
-
-	for i := 0; i < dbNum; i++ {
-		<-ready
-	}
-
-	close(start)
-
-	wg.Wait()
+		assert.NoError(t, err)
+	})
 }
 
 func TestCommandsAdministrationCurrentOp(t *testing.T) {

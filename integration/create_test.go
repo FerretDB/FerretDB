@@ -35,10 +35,10 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	var tasks atomic.Int32
+	var collections atomic.Int32
 
-	stress(t, func() {
-		i := tasks.Add(1) - 1
+	stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		i := collections.Add(1) - 1
 
 		collName := fmt.Sprintf("stress_%d", i)
 
@@ -55,6 +55,9 @@ func TestCreateStress(t *testing.T) {
 		opts := options.CreateCollectionOptions{
 			Validator: bson.D{{"$tigrisSchemaString", schema}},
 		}
+
+		ready <- struct{}{}
+		<-start
 
 		// Attempt to create a collection for Tigris with a schema.
 		// If we get an error that support for "validator" is not implemented, that's Postgres.
@@ -82,10 +85,10 @@ func TestCreateStress(t *testing.T) {
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 
-	require.Len(t, colls, int(tasks.Load()))
+	require.Len(t, colls, int(collections.Load()))
 
 	// check that all collections were created, and we can query them
-	for i := 0; i < int(tasks.Load()); i++ {
+	for i := 0; i < int(collections.Load()); i++ {
 		collName := fmt.Sprintf("stress_%d", i)
 
 		var doc bson.D

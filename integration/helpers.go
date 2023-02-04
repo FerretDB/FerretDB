@@ -373,37 +373,36 @@ func errorTextContains(err error, texts ...string) bool {
 	return false
 }
 
-// stress runs f in multiple goroutines.
-func stress(tb testing.TB, f func()) {
+// stress runs function f in multiple goroutines.
+//
+// Function f should send a message to ready channel when it is ready to start,
+// and then wait for start channel to be closed.
+func stress(tb testing.TB, f func(ready chan<- struct{}, start <-chan struct{})) {
 	tb.Helper()
 
-	goroutines := runtime.GOMAXPROCS(-1) * 10
+	stressGoroutines := runtime.GOMAXPROCS(-1) * 10
 
 	// do a bit more work to reduce a change that one goroutine would finish
 	// before the other one is still being created
 	var wg sync.WaitGroup
-	ready := make(chan struct{}, goroutines)
-	start := make(chan struct{})
+	readyCh := make(chan struct{}, stressGoroutines)
+	startCh := make(chan struct{})
 
-	for g := 0; g < goroutines; g++ {
+	for g := 0; g < stressGoroutines; g++ {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			ready <- struct{}{}
-
-			<-start
-
-			f()
+			f(readyCh, startCh)
 		}()
 	}
 
-	for i := 0; i < goroutines; i++ {
-		<-ready
+	for i := 0; i < stressGoroutines; i++ {
+		<-readyCh
 	}
 
-	close(start)
+	close(startCh)
 
 	wg.Wait()
 }
