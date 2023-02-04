@@ -8,13 +8,14 @@ tags: [release]
 date: 2023-01-31
 ---
 
-FerretDB 0.9.0 brings with it amazing new features, especially the initial support for aggregation pipelines.
+FerretDB 0.9.0 brings exciting new features, such as support for aggregation pipelines.
 
 ![FerretDB v0.9.0 - Developer Preview](/img/blog/developer_preview.png)
 
 <!--truncate-->
 
-We just rolled out our first Developer Preview - FerretDB v0.9.0, and we are so excited to show you all the exciting updates now available for you.
+We just rolled out our first Developer Preview - FerretDB v0.9.0, and we are so excited to show you all the new updates now available for you.
+The changes mentioned in this article are not exhaustive - see [our release notes on GitHUb](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.0) for the full list.
 This version of [FerretDB](https://www.ferretdb.io) brings us closer to our mission of providing you with a true open-source alternative to MongoDB that supports more real-world use cases.
 
 All this wouldn't be possible without the support of our community and everyone who contributed immensely to this release through their feedback, code, and support.
@@ -93,9 +94,9 @@ More of this will be implemented in future releases.
 ## Bug Fixes
 
 In this release, we've fixed a few pesky bugs causing issues for our users.
-One of these bugs caused wrong error types to be returned when using dot notation with the `$set` operator, and the `$inc` operator to panic for non-existing array indices; that's now fixed.
+[One of these bugs](https://github.com/FerretDB/FerretDB/pull/1814) caused wrong error types to be returned when using dot notation with the `$set` operator, and the `$inc` operator to panic for non-existing array indices; that's now fixed.
 
-Finally, we have fixed the `$set` operator to correctly apply comparisons.
+Also, we have [fixed](https://github.com/FerretDB/FerretDB/pull/1814) the `$set` operator to correctly apply comparisons.
 Previously, the modified count was not correctly updated when changing to the same value.
 
 ## Documentation
