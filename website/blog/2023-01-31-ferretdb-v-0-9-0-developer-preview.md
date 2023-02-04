@@ -16,6 +16,7 @@ FerretDB 0.9.0 brings exciting new features, such as support for aggregation pip
 
 We just rolled out our first Developer Preview - FerretDB v0.9.0, and we are so excited to show you all the new updates now available for you.
 The changes mentioned in this article are not exhaustive - see [our release notes on GitHUb](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.0) for the full list.
+
 This version of [FerretDB](https://www.ferretdb.io) brings us closer to our mission of providing you with a true open-source alternative to MongoDB that supports more real-world use cases.
 
 All this wouldn't be possible without the support of our community and everyone who contributed immensely to this release through their feedback, code, and support.
