@@ -249,7 +249,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	metrics := connmetrics.NewListenerMetrics()
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
