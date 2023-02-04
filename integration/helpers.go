@@ -18,7 +18,9 @@ package integration
 import (
 	"context"
 	"errors"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -51,21 +53,21 @@ const (
 // convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
-func convert(t testing.TB, v any) any {
-	t.Helper()
+func convert(tb testing.TB, v any) any {
+	tb.Helper()
 
 	switch v := v.(type) {
 	// composite types
 	case primitive.D:
 		doc := types.MakeDocument(len(v))
 		for _, e := range v {
-			doc.Set(e.Key, convert(t, e.Value))
+			doc.Set(e.Key, convert(tb, e.Value))
 		}
 		return doc
 	case primitive.A:
 		arr := types.MakeArray(len(v))
 		for _, e := range v {
-			arr.Append(convert(t, e))
+			arr.Append(convert(tb, e))
 		}
 		return arr
 
@@ -99,29 +101,29 @@ func convert(t testing.TB, v any) any {
 	case int64:
 		return v
 	default:
-		t.Fatalf("unexpected type %T", v)
+		tb.Fatalf("unexpected type %T", v)
 		panic("not reached")
 	}
 }
 
 // ConvertDocument converts given driver's document to FerretDB's *types.Document.
-func ConvertDocument(t testing.TB, doc bson.D) *types.Document {
-	t.Helper()
+func ConvertDocument(tb testing.TB, doc bson.D) *types.Document {
+	tb.Helper()
 
-	v := convert(t, doc)
+	v := convert(tb, doc)
 
 	var res *types.Document
-	require.IsType(t, res, v)
+	require.IsType(tb, res, v)
 	return v.(*types.Document)
 }
 
 // ConvertDocuments converts given driver's documents slice to FerretDB's []*types.Document.
-func ConvertDocuments(t testing.TB, docs []bson.D) []*types.Document {
-	t.Helper()
+func ConvertDocuments(tb testing.TB, docs []bson.D) []*types.Document {
+	tb.Helper()
 
 	res := make([]*types.Document, len(docs))
 	for i, doc := range docs {
-		res[i] = ConvertDocument(t, doc)
+		res[i] = ConvertDocument(tb, doc)
 	}
 	return res
 }
@@ -130,40 +132,40 @@ func ConvertDocuments(t testing.TB, docs []bson.D) []*types.Document {
 // (NaNs are equal, etc).
 //
 // See testutil.AssertEqual for details.
-func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
-	t.Helper()
+func AssertEqualDocuments(tb testing.TB, expected, actual bson.D) bool {
+	tb.Helper()
 
-	expectedDoc := ConvertDocument(t, expected)
-	actualDoc := ConvertDocument(t, actual)
-	return testutil.AssertEqual(t, expectedDoc, actualDoc)
+	expectedDoc := ConvertDocument(tb, expected)
+	actualDoc := ConvertDocument(tb, actual)
+	return testutil.AssertEqual(tb, expectedDoc, actualDoc)
 }
 
 // AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests
 // (NaNs are equal, etc).
 //
 // See testutil.AssertEqual for details.
-func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
-	t.Helper()
+func AssertEqualDocumentsSlice(tb testing.TB, expected, actual []bson.D) bool {
+	tb.Helper()
 
-	expectedDocs := ConvertDocuments(t, expected)
-	actualDocs := ConvertDocuments(t, actual)
-	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
+	expectedDocs := ConvertDocuments(tb, expected)
+	actualDocs := ConvertDocuments(tb, actual)
+	return testutil.AssertEqualSlices(tb, expectedDocs, actualDocs)
 }
 
 // AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
-func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
-	t.Helper()
+func AssertEqualError(tb testing.TB, expected mongo.CommandError, actual error) bool {
+	tb.Helper()
 
 	a, ok := actual.(mongo.CommandError)
 	if !ok {
-		return assert.Equal(t, expected, actual)
+		return assert.Equal(tb, expected, actual)
 	}
 
 	// set expected fields that might be helpful in the test output
-	require.Nil(t, expected.Raw)
+	require.Nil(tb, expected.Raw)
 	expected.Raw = a.Raw
 
-	return assert.Equal(t, expected, a)
+	return assert.Equal(tb, expected, a)
 }
 
 // AssertMatchesCommandError asserts error code, name and wrapped are the same.
@@ -213,16 +215,16 @@ func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
 //     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
-func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
-	t.Helper()
+func AssertEqualAltError(tb testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	tb.Helper()
 
 	a, ok := actual.(mongo.CommandError)
 	if !ok {
-		return assert.Equal(t, expected, actual)
+		return assert.Equal(tb, expected, actual)
 	}
 
 	// set expected fields that might be helpful in the test output
-	require.Nil(t, expected.Raw)
+	require.Nil(tb, expected.Raw)
 	expected.Raw = a.Raw
 
 	if assert.ObjectsAreEqual(expected, a) {
@@ -230,7 +232,7 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	}
 
 	expected.Message = altMessage
-	return assert.Equal(t, expected, a)
+	return assert.Equal(tb, expected, a)
 }
 
 // AssertEqualWriteError asserts that the expected error is the same as the actual.
@@ -286,8 +288,8 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
 //
 // Error is checked using a regular type assertion; wrapped errors (errors.As) are not checked.
-func UnsetRaw(t testing.TB, err error) error {
-	t.Helper()
+func UnsetRaw(tb testing.TB, err error) error {
+	tb.Helper()
 
 	switch err := err.(type) {
 	case mongo.CommandError:
@@ -313,13 +315,13 @@ func UnsetRaw(t testing.TB, err error) error {
 // CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.
-func CollectIDs(t testing.TB, docs []bson.D) []any {
-	t.Helper()
+func CollectIDs(tb testing.TB, docs []bson.D) []any {
+	tb.Helper()
 
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id, ok := doc.Map()["_id"]
-		require.True(t, ok)
+		require.True(tb, ok)
 		ids[i] = id
 	}
 
@@ -329,8 +331,8 @@ func CollectIDs(t testing.TB, docs []bson.D) []any {
 // CollectKeys returns document keys.
 //
 // The order is preserved.
-func CollectKeys(t testing.TB, doc bson.D) []string {
-	t.Helper()
+func CollectKeys(tb testing.TB, doc bson.D) []string {
+	tb.Helper()
 
 	res := make([]string, len(doc))
 	for i, e := range doc {
@@ -341,21 +343,21 @@ func CollectKeys(t testing.TB, doc bson.D) []string {
 }
 
 // FetchAll fetches all documents from the cursor, closing it.
-func FetchAll(t testing.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
+func FetchAll(tb testing.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	var res []bson.D
 	err := cursor.All(ctx, &res)
-	require.NoError(t, cursor.Close(ctx))
-	require.NoError(t, err)
+	require.NoError(tb, cursor.Close(ctx))
+	require.NoError(tb, err)
 	return res
 }
 
 // FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+func FindAll(tb testing.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	cursor, err := collection.Find(ctx, bson.D{}, opts)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
-	return FetchAll(t, ctx, cursor)
+	return FetchAll(tb, ctx, cursor)
 }
 
 // errorTextContains returns true if the error message contains at least one element of the given text slice.
@@ -369,4 +371,39 @@ func errorTextContains(err error, texts ...string) bool {
 	}
 
 	return false
+}
+
+// stress runs f in multiple goroutines.
+func stress(tb testing.TB, f func()) {
+	tb.Helper()
+
+	goroutines := runtime.GOMAXPROCS(-1) * 10
+
+	// do a bit more work to reduce a change that one goroutine would finish
+	// before the other one is still being created
+	var wg sync.WaitGroup
+	ready := make(chan struct{}, goroutines)
+	start := make(chan struct{})
+
+	for g := 0; g < goroutines; g++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			f()
+		}()
+	}
+
+	for i := 0; i < goroutines; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
 }
