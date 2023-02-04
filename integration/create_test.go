@@ -35,25 +35,14 @@ func TestCreateStress(t *testing.T) {
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
-	collNum := runtime.GOMAXPROCS(-1) * 10
+	var tasks atomic.Int32
 
-	ready := make(chan struct{}, collNum)
-	start := make(chan struct{})
+	stress(t, func() {
+		i := tasks.Add(1) - 1
 
-	var wg sync.WaitGroup
-	for i := 0; i < collNum; i++ {
-		wg.Add(1)
+		collName := fmt.Sprintf("stress_%d", i)
 
-		go func(i int) {
-			defer wg.Done()
-
-			ready <- struct{}{}
-
-			<-start
-
-			collName := fmt.Sprintf("stress_%d", i)
-
-			schema := fmt.Sprintf(`{
+		schema := fmt.Sprintf(`{
 				"title": "%s",
 				"description": "Create Collection Stress %d",
 				"primary_key": ["_id"],
@@ -62,60 +51,47 @@ func TestCreateStress(t *testing.T) {
 					"v": {"type": "string"}
 				}
 			}`, collName, i,
-			)
-			opts := options.CreateCollectionOptions{
-				Validator: bson.D{{"$tigrisSchemaString", schema}},
+		)
+		opts := options.CreateCollectionOptions{
+			Validator: bson.D{{"$tigrisSchemaString", schema}},
+		}
+
+		// Attempt to create a collection for Tigris with a schema.
+		// If we get an error that support for "validator" is not implemented, that's Postgres.
+		// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
+		// In both cases, we create a collection without a schema.
+		//
+		// TODO remove this: https://github.com/FerretDB/FerretDB/issues/1568
+		err := db.CreateCollection(ctx, collName, &opts)
+		if err != nil {
+			if errorTextContains(err,
+				`support for field "validator" is not implemented yet`,
+				`unknown top level operator: $tigrisSchemaString`,
+			) {
+				err = db.CreateCollection(ctx, collName)
 			}
-
-			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error that support for "validator" is not implemented, that's Postgres.
-			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
-			// In both cases, we create a collection without a schema.
-			err := db.CreateCollection(ctx, collName, &opts)
-			if err != nil {
-				if errorTextContains(err,
-					`support for field "validator" is not implemented yet`,
-					`unknown top level operator: $tigrisSchemaString`,
-				) {
-					err = db.CreateCollection(ctx, collName)
-				}
-
-				assert.NoError(t, err)
-			}
-
-			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
 			assert.NoError(t, err)
-		}(i)
-	}
+		}
 
-	for i := 0; i < collNum; i++ {
-		<-ready
-	}
+		_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
-	close(start)
-
-	wg.Wait()
+		assert.NoError(t, err)
+	})
 
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 
-	require.Len(t, colls, collNum)
+	require.Len(t, colls, int(tasks.Load()))
 
 	// check that all collections were created, and we can query them
-	for i := 0; i < collNum; i++ {
-		i := i
+	for i := 0; i < int(tasks.Load()); i++ {
+		collName := fmt.Sprintf("stress_%d", i)
 
-		t.Run(fmt.Sprintf("check_stress_%d", i), func(t *testing.T) {
-			t.Parallel()
-
-			collName := fmt.Sprintf("stress_%d", i)
-
-			var doc bson.D
-			err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo"}}).Decode(&doc)
-			require.NoError(t, err)
-			require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
-		})
+		var doc bson.D
+		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo"}}).Decode(&doc)
+		require.NoError(t, err)
+		require.Equal(t, bson.D{{"_id", "foo"}, {"v", "bar"}}, doc)
 	}
 }
 
