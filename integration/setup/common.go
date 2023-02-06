@@ -70,18 +70,16 @@ var (
 	tigrisURLsIndex atomic.Uint32
 )
 
-// SkipForTigris skips the current test for Tigris handler.
-//
-// This function should not be used lightly in new tests and should eventually be removed.
+// SkipForTigris is deprecated.
 //
 // Deprecated: use SkipForTigrisWithReason instead if you must.
 func SkipForTigris(tb testing.TB) {
 	SkipForTigrisWithReason(tb, "")
 }
 
-// SkipForTigrisWithReason skips the current test for Tigris handler.
+// SkipForTigrisWithReason skips the current test for `tigris` handler.
 //
-// This function should not be used lightly in new tests and should eventually be removed.
+// This function should not be used lightly.
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
@@ -94,15 +92,17 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// IsTigris returns if tests are running against the Tigris handler.
+// IsTigris returns if tests are running against the `tigris`handler.
+//
+// This function should not be used lightly.
 func IsTigris(tb testing.TB) bool {
 	tb.Helper()
 	return getHandler() == "tigris"
 }
 
-// TigrisOnlyWithReason skips the current test for handlers that is not tigris.
+// TigrisOnlyWithReason skips the current test for handlers that are not `tigris`.
 //
-// Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
+// This function should not be used lightly.
 func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
@@ -249,12 +249,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		h.Close()
 	})
 
-	var opts buildMongoDBURIOpts
+	opts := buildMongoDBURIOpts{
+		user: getUser(*targetTLSF),
+	}
 
 	switch {
 	case *targetTLSF:
 		opts.host = l.TLSAddr().String()
-		opts.user = url.UserPassword("username", "password")
 		opts.authMechanism = "PLAIN"
 		opts.tls = true
 	case *targetUnixSocketF:
