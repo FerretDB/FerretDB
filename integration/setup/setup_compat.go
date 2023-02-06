@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime/trace"
 	"testing"
@@ -198,13 +197,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				}
 
 				err := database.CreateCollection(ctx, collectionName, &opts)
-				if err != nil {
-					var cmdErr *mongo.CommandError
-					if errors.As(err, &cmdErr) {
-						// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok:
-						require.Contains(tb, cmdErr.Message, `unknown top level operator: $tigrisSchemaString`)
-					}
-				}
+				require.NoError(tb, err)
 			}
 		}
 

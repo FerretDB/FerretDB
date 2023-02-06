@@ -63,25 +63,15 @@ func TestCreateStress(t *testing.T) {
 				}
 			}`, collName, i,
 			)
-			opts := options.CreateCollectionOptions{
-				Validator: bson.D{{"$tigrisSchemaString", schema}},
+
+			// Set $tigrisSchemaString for tigris only.
+			var opts options.CreateCollectionOptions
+			if setup.IsTigris(t) {
+				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
 			}
 
-			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error that support for "validator" is not implemented, that's Postgres.
-			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
-			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
-			if err != nil {
-				if errorTextContains(err,
-					`support for field "validator" is not implemented yet`,
-					`unknown top level operator: $tigrisSchemaString`,
-				) {
-					err = db.CreateCollection(ctx, collName)
-				}
-
-				assert.NoError(t, err)
-			}
+			assert.NoError(t, err)
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
 
@@ -228,24 +218,14 @@ func TestCreateStressSameCollection(t *testing.T) {
 				}
 			}`, collName, i,
 			)
-			opts := options.CreateCollectionOptions{
-				Validator: bson.D{{"$tigrisSchemaString", schema}},
+
+			// Set $tigrisSchemaString for tigris only.
+			var opts options.CreateCollectionOptions
+			if setup.IsTigris(t) {
+				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
 			}
 
-			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error that support for "validator" is not implemented, that's Postgres.
-			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
-			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
-			if err != nil {
-				if errorTextContains(err,
-					`support for field "validator" is not implemented yet`,
-					`unknown top level operator: $tigrisSchemaString`,
-				) {
-					err = db.CreateCollection(ctx, collName)
-				}
-			}
-
 			if err == nil {
 				created.Add(1)
 			} else {
