@@ -22,25 +22,24 @@ import (
 	"net/url"
 	"runtime/trace"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
+// Flags.
 var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
@@ -63,9 +62,13 @@ var (
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1912
 	_ = flag.Bool("disable-pushdown", false, "disable query pushdown")
+)
 
-	startupOnce sync.Once
-	startupEnv  *startupInitializer
+// Other globals.
+var (
+	// See docker-compose.yml.
+	tigrisPorts      = []uint16{8081, 8091, 8092, 8093, 8094}
+	tigrisPortsIndex atomic.Uint32
 )
 
 // Other globals.
@@ -167,8 +170,11 @@ func nextTigrisUrl() string {
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *startupInitializer) (*mongo.Client, string) {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
 	tb.Helper()
+
+	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupListener").End()
 
@@ -190,7 +196,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 	metrics := connmetrics.NewListenerMetrics()
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
@@ -277,12 +282,15 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, s *st
 func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mongo.Client {
 	tb.Helper()
 
+	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
+	defer span.End()
+
 	defer trace.StartRegion(ctx, "setupClient").End()
 	trace.Log(ctx, "setupClient", uri)
 
 	tb.Logf("setupClient: %s", uri)
 
-	clientOpts := options.Client().ApplyURI(uri)
+	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
 
 	// set TLSConfig to the client option, this adds
 	// RootCAs and Certificates.
@@ -327,29 +335,4 @@ func getUser(isTLS bool) *url.Userinfo {
 	}
 
 	return nil
-}
-
-// startup initializes things that should be initialized only once.
-// It returns flag values from cli.
-func startup() *startupInitializer {
-	startupOnce.Do(func() {
-		logging.Setup(zap.DebugLevel, "")
-
-		go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
-
-		if p := *targetPortF; p == 0 {
-			zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
-		} else {
-			zap.S().Infof("Target system: port %d.", p)
-		}
-
-		if p := *compatPortF; p == 0 {
-			zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
-		} else {
-			zap.S().Infof("Compat system: port %d.", p)
-		}
-		startupEnv = newStartupInitializer()
-	})
-
-	return startupEnv
 }

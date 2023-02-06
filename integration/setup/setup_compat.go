@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
@@ -59,11 +60,12 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	s := startup()
-
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	defer trace.StartRegion(ctx, "SetupCompatWithOpts").End()
+	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
+	defer span.End()
+
+	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
 
 	// skip tests for MongoDB as soon as possible
 	if *compatPortF == 0 {
@@ -89,7 +91,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetClient *mongo.Client
 	if *targetPortF == 0 {
-		targetClient, _ = setupListener(tb, ctx, logger, s)
+		targetClient, _ = setupListener(tb, ctx, logger)
 	} else {
 		// When TLS is enabled, RootCAs and Certificates are fetched
 		// upon creating client. Target uses PLAIN for authMechanism.
@@ -113,8 +115,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	})
 	compatClient := setupClient(tb, ctx, uri, *compatTLSF)
 
-	targetCollections := setupCompatCollections(tb, ctx, targetClient, opts, true)
-	compatCollections := setupCompatCollections(tb, ctx, compatClient, opts, false)
+	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")
+	defer span.End()
+	targetCollections := setupCompatCollections(tb, ctxT, targetClient, opts, true)
+
+	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
+	defer span.End()
+	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)
 
@@ -138,6 +145,9 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, isTarget bool) []*mongo.Collection {
 	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupCompatCollections").End()
 
@@ -169,12 +179,14 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			continue
 		}
 
-		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s", collectionName))
+		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
+		collCtx, span := otel.Tracer("").Start(ctx, spanName)
+		region := trace.StartRegion(collCtx, spanName)
 
 		collection := database.Collection(collectionName)
 
 		// drop remnants of the previous failed run
-		_ = collection.Drop(ctx)
+		_ = collection.Drop(collCtx)
 
 		// Validators are only applied to target. Compat is compatible with all provider.
 		if isTarget {
@@ -210,13 +222,14 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				return
 			}
 
-			err := collection.Drop(ctx)
+			err := collection.Drop(collCtx)
 			require.NoError(tb, err)
 		})
 
 		collections = append(collections, collection)
 
 		region.End()
+		span.End()
 	}
 
 	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection

@@ -101,7 +101,6 @@ func New(config *Config) (*FerretDB, error) {
 	metrics := connmetrics.NewListenerMetrics()
 
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Ctx:           context.Background(),
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
