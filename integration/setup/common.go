@@ -67,13 +67,6 @@ var (
 // Other globals.
 var (
 	// See docker-compose.yml.
-	tigrisPorts      = []uint16{8081, 8091, 8092, 8093, 8094}
-	tigrisPortsIndex atomic.Uint32
-)
-
-// Other globals.
-var (
-	// See docker-compose.yml.
 	tigrisURLsIndex atomic.Uint32
 )
 
@@ -129,6 +122,8 @@ type buildMongoDBURIOpts struct {
 
 // buildMongoDBURI builds MongoDB URI with given URI options.
 func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
+	tb.Helper()
+
 	q := make(url.Values)
 
 	if opts.tls {

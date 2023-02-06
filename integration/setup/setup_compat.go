@@ -91,7 +91,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetClient *mongo.Client
 	if *targetPortF == 0 {
-		targetClient, _ = setupListener(tb, ctx, logger)
+		targetClient, _ = setupListener(tb, setupCtx, logger)
 	} else {
 		// When TLS is enabled, RootCAs and Certificates are fetched
 		// upon creating client. Target uses PLAIN for authMechanism.
@@ -100,7 +100,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 			tls:  *targetTLSF,
 			user: getUser(*targetTLSF),
 		})
-		targetClient = setupClient(tb, ctx, targetURI, *targetTLSF)
+		targetClient = setupClient(tb, setupCtx, targetURI, *targetTLSF)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -113,7 +113,6 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		tls:  *compatTLSF,
 		user: getUser(*compatTLSF),
 	})
-	compatClient := setupClient(tb, ctx, uri, *compatTLSF)
 
 	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")
 	defer span.End()
@@ -121,6 +120,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
 	defer span.End()
+	compatClient := setupClient(tb, ctxC, uri, *compatTLSF)
 	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)
@@ -211,7 +211,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(ctx, docs)
+		res, err := collection.InsertMany(collCtx, docs)
 		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), getHandler(), fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
