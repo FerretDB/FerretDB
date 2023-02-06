@@ -109,14 +109,11 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// TODO bug
-		if k == "" {
-			continue
-		}
-
-		// don't pushdown $comment and dot notation yet
-		if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
-			continue
+		if k != "" {
+			// don't pushdown $comment and dot notation yet
+			if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
+				continue
+			}
 		}
 
 		// _id field supports only specific types
@@ -140,9 +137,7 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
-		case types.ObjectID:
-			// TODO filtering bug
-		case float64, string, int32, int64:
+		case float64, string, types.ObjectID, int32, int64:
 			rawValue := must.NotFail(tjson.Marshal(v))
 			res[k] = json.RawMessage(rawValue)
 		default:

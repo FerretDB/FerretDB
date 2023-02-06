@@ -84,9 +84,10 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"Field": {
-			filter:         bson.D{{"v.array", int32(42)}},
-			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
-			resultPushdown: true,
+			filter:             bson.D{{"v.array", int32(42)}},
+			skipForTigris:      "Tigris does not support language keyword 'array' as field name",
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"FieldPosition": {
 			filter:         bson.D{{"v.array.0", int32(42)}},
