@@ -308,9 +308,10 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mo
 }
 
 // getHandler returns the handler based on the URL.
-// When postgreSQLURLF is set it is pg handler,
-// when tigrisURLsF is set it is tigris handler,
-// and the handler is empty for mongoDB.
+//
+//   - when `-postgresql-url` flag is set, it is `pg` handler;
+//   - when `tigris-urls` flag is set, it is `tigris` handler;
+//   - and the handler is empty for MongoDB.
 func getHandler() string {
 	if *postgreSQLURLF != "" {
 		return "pg"
