@@ -94,6 +94,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	case err == nil:
 		fallthrough
 	case IsInvalidArgument(err):
+		// Skip errors from filtering invalid types
 		break
 	default:
 		return nil, lazyerrors.Error(err)
