@@ -98,12 +98,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetPortF == 0 {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		// When TLS is enabled, RootCAs and Certificates are fetched
-		// upon creating client. Target uses PLAIN for authMechanism.
 		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
-			host: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:  *targetTLSF,
-			user: getUser(*targetTLSF),
+			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
+			user:     getUser(*targetTLSF),
 		})
 		client = setupClient(tb, ctx, uri, *targetTLSF)
 	}

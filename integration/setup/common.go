@@ -47,12 +47,12 @@ var (
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
-	compatPortF = flag.Int("compat-port", 37017, "compat system's port for compatibility tests; if 0, they are skipped")
+	compatPortF = flag.Int("compat-port", 37017, "compat system's (MongoDB) port for compatibility tests; if 0, they are skipped")
 	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 
-	tigrisURLsF = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
+	tigrisURLSF = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -114,7 +114,7 @@ func TigrisOnlyWithReason(tb testing.TB, reason string) {
 
 // buildMongoDBURIOpts represents buildMongoDBURI's options.
 type buildMongoDBURIOpts struct {
-	host           string
+	hostPort       string // for TCP and TLS
 	unixSocketPath string
 	tls            bool
 	authMechanism  string
@@ -130,12 +130,13 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
 		q.Set("tls", "true")
+		// certificates are set by setupClient
 	}
 
 	var host string
-	if opts.host != "" {
-		require.Empty(tb, opts.unixSocketPath, "unixSocketPath and TCP/TLS cannot be both set")
-		host = opts.host
+	if opts.hostPort != "" {
+		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
+		host = opts.hostPort
 	} else {
 		host = opts.unixSocketPath
 	}
@@ -159,7 +160,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 // nextTigrisUrl returns the next url for the Tigris handler.
 func nextTigrisUrl() string {
 	i := int(tigrisURLsIndex.Add(1)) - 1
-	urls := strings.Split(*tigrisURLsF, ",")
+	urls := strings.Split(*tigrisURLSF, ",")
 
 	return urls[i%len(urls)]
 }
@@ -177,12 +178,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
 	// only one of postgresql-url and tigris-urls should be set.
-	if *tigrisURLsF != "" && *postgreSQLURLF != "" {
+	if *tigrisURLSF != "" && *postgreSQLURLF != "" {
 		tb.Fatalf("Both postgresql-url and tigris-urls are set, only one should be set.")
 	}
 
 	// one of postgresql-url or tigris-urls should be set.
-	if *tigrisURLsF == "" && *postgreSQLURLF == "" {
+	if *tigrisURLSF == "" && *postgreSQLURLF == "" {
 		tb.Fatalf("Both postgresql-url and tigris-urls are empty, one should be set.")
 	}
 
@@ -256,17 +257,15 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	switch {
 	case *targetTLSF:
-		opts.host = l.TLSAddr().String()
+		opts.hostPort = l.TLSAddr().String()
 		opts.authMechanism = "PLAIN"
 		opts.tls = true
 	case *targetUnixSocketF:
 		opts.unixSocketPath = l.UnixAddr().String()
 	default:
-		opts.host = l.TCPAddr().String()
+		opts.hostPort = l.TCPAddr().String()
 	}
 
-	// When TLS is enabled, RootCAs and Certificates are fetched
-	// upon creating client and target uses PLAIN for authMechanism.
 	uri := buildMongoDBURI(tb, &opts)
 	client := setupClient(tb, ctx, uri, *targetTLSF)
 
@@ -319,7 +318,7 @@ func getHandler() string {
 		return "pg"
 	}
 
-	if *tigrisURLsF != "" {
+	if *tigrisURLSF != "" {
 		return "tigris"
 	}
 

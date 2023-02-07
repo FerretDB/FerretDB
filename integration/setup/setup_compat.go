@@ -92,12 +92,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *targetPortF == 0 {
 		targetClient, _ = setupListener(tb, setupCtx, logger)
 	} else {
-		// When TLS is enabled, RootCAs and Certificates are fetched
-		// upon creating client. Target uses PLAIN for authMechanism.
 		targetURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
-			host: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:  *targetTLSF,
-			user: getUser(*targetTLSF),
+			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:      *targetTLSF,
+			user:     getUser(*targetTLSF),
 		})
 		targetClient = setupClient(tb, setupCtx, targetURI, *targetTLSF)
 	}
@@ -108,9 +106,9 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// When TLS is enabled, RootCAs and Certificates are fetched
 	// upon creating client. Compat leaves authMechanism empty which defaults to SCRAM.
 	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
-		host: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
-		tls:  *compatTLSF,
-		user: getUser(*compatTLSF),
+		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
+		tls:      *compatTLSF,
+		user:     getUser(*compatTLSF),
 	})
 
 	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")

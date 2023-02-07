@@ -145,10 +145,11 @@ you can run those with `task test-unit` after starting the environment as descri
 
 We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
-They could test target any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP port.
-They also could test target in-process FerretDB instances
+They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
+They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given handler.
-Some tests (so-called compatibility or "compat" tests) connect to two systems ("target" and "compat") at the same time,
+Finally, some tests (so-called compatibility or "compat" tests) connect to two systems
+("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
 
@@ -206,6 +207,17 @@ Some of our idiosyncrasies:
 1. We use type switches over BSON types in many places in our code.
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+
+#### Integration tests conventions
+
+We prefer our integration tests to be straightforward,
+branchless (with a few, if any, `if` and `switch` statements),
+and backend-independent.
+Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
+If that's impossible without some branching, use helpers exported from the `setup` package,
+such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
+The bar for using other ways of branching, such as checking error codes and messages, is very high.
+Writing separate tests might be much better than making a single test that checks error text.
 
 ### Submitting code changes
 
