@@ -102,6 +102,12 @@ func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigr
 		return nil, lazyerrors.Error(err)
 	}
 
+	if iter == nil {
+		return nil, nil
+	}
+
+	defer iter.Close()
+
 	resDocs := make([]*types.Document, 0, 16)
 
 	for {
