@@ -99,7 +99,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 			tls:  *targetTLSF,
 			user: getUser(*targetTLSF),
 		})
-		targetClient = setupClient(tb, setupCtx, targetURI, *targetTLSF)
+		targetClient = setupClient(tb, setupCtx, targetURI)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -107,7 +107,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	// When TLS is enabled, RootCAs and Certificates are fetched
 	// upon creating client. Compat leaves authMechanism empty which defaults to SCRAM.
-	uri := buildMongoDBURI(tb, &buildMongoDBURIOpts{
+	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
 		host: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
 		tls:  *compatTLSF,
 		user: getUser(*compatTLSF),
@@ -119,7 +119,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
 	defer span.End()
-	compatClient := setupClient(tb, ctxC, uri, *compatTLSF)
+	compatClient := setupClient(tb, ctxC, compatURI)
 	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)
