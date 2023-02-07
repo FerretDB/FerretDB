@@ -109,11 +109,14 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		if k != "" {
-			// don't pushdown $comment and dot notation yet
-			if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
-				continue
-			}
+		// don't pushdown empty strings yet
+		if k == "" {
+			continue
+		}
+
+		// don't pushdown $comment and dot notation yet
+		if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
+			continue
 		}
 
 		// _id field supports only specific types

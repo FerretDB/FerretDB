@@ -223,9 +223,8 @@ func testQueryCompatBasic() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"ObjectID": {
-			filter:             bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", primitive.NilObjectID}},
+			resultPushdown: true,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
