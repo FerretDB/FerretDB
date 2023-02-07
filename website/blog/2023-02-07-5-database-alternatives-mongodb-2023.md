@@ -78,7 +78,7 @@ It lets you take advantage of existing MongoDB drivers and tools to run, manage,
 
 Amazon DocumentDB has a decoupled architecture where storage and compute run independently, making it easier to scale dynamic workloads.
 With its deep integration with AWS services, DocumentDB offers compelling reasons as the ideal alternative for MongoDB.
-However, vendor lock-in still remains an underlying problem.
+However, since DocumentDB is a proprietary database, vendor lock-in still remains an underlying problem.
 
 **Read more:** [5 tips to help mitigate the risks of vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/)
 
@@ -101,7 +101,7 @@ MaxScale NoSQL protocol module is a communication protocol between MariaDB and M
 Users can interact with MariaDB databases using NoSQL-style commands, which are then converted into SQL and executed on the MariaDB backend.
 The responses from MariaDB are then transformed into the format required by the MongoDB client library and application.
 
-The MariaDB NoSQL protocol module is suitable for users that require relational database support, scalability, and integration with existing MariaDB infrastructure.
+The MariaDB NoSQL protocol module is suitable for users that require relational database support, scalability, and integration with existing MariaDB infrastructure. Note that MaxScale is published under a proprietary licence (BSL), meaning you're still faced with similar concerns of vendor lock-in.
 
 ### 5. GaussDB(for Mongo)
 
