@@ -44,15 +44,13 @@ var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
 
+	postgreSQLURLF    = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
+	tigrisURLSF       = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
 	compatPortF = flag.Int("compat-port", 37017, "compat system's (MongoDB) port for compatibility tests; if 0, they are skipped")
 	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
-
-	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
-
-	tigrisURLSF = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
