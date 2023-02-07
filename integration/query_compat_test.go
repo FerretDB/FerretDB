@@ -27,6 +27,9 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
+// queryCompatTestSet describes a set of query compatibility test cases.
+type queryCompatTestSet map[string]queryCompatTestCase
+
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
 	filter             bson.D                   // required
@@ -40,105 +43,112 @@ type queryCompatTestCase struct {
 }
 
 // testQueryCompat tests query compatibility test cases.
-func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+func testQueryCompat(t *testing.T, testSets map[string]queryCompatTestSet) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+	for setName, ts := range testSets {
+		setName, ts := setName, ts
+		t.Run(setName, func(t *testing.T) {
 			t.Helper()
 
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
-			t.Parallel()
-
-			filter := tc.filter
-			require.NotNil(t, filter, "filter should be set")
-
-			sort := tc.sort
-			if sort == nil {
-				sort = bson.D{{"_id", 1}}
-			}
-			opts := options.Find().SetSort(sort)
-
-			if tc.projection != nil {
-				opts = opts.SetProjection(tc.projection)
-			}
-
-			var nonEmptyResults bool
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
+			for name, tc := range ts {
+				name, tc := name, tc
+				t.Run(name, func(t *testing.T) {
 					t.Helper()
 
-					explainQuery := bson.D{{"explain", bson.D{
-						{"find", targetCollection.Name()},
-						{"filter", filter},
-						{"sort", opts.Sort},
-						{"projection", opts.Projection},
-					}}}
-
-					var explainRes bson.D
-					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
-
-					// If tc.skipTigrisPushdown is set check that pushdown actually wasn't made for Tigris.
-					if tc.skipTigrisPushdown && setup.IsTigris(t) {
-						require.True(t, tc.resultPushdown, "Cannot use skipTigrisPushdown when resultPushdown is false'")
-						assert.Equal(t, false, explainRes.Map()["pushdown"], "Tigris pushdown check was skipped, but it was actually true")
-					} else {
-						assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+					if tc.skipForTigris != "" {
+						setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 					}
 
-					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
-					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
-
-					if targetCursor != nil {
-						defer targetCursor.Close(ctx)
-					}
-					if compatCursor != nil {
-						defer compatCursor.Close(ctx)
+					if tc.skip != "" {
+						t.Skip(tc.skip)
 					}
 
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						AssertMatchesCommandError(t, compatErr, targetErr)
+					t.Parallel()
 
-						return
+					filter := tc.filter
+					require.NotNil(t, filter, "filter should be set")
+
+					sort := tc.sort
+					if sort == nil {
+						sort = bson.D{{"_id", 1}}
 					}
-					require.NoError(t, compatErr, "compat error; target returned no error")
+					opts := options.Find().SetSort(sort)
 
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetCursor.All(ctx, &targetRes))
-					require.NoError(t, compatCursor.All(ctx, &compatRes))
+					if tc.projection != nil {
+						opts = opts.SetProjection(tc.projection)
+					}
 
-					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
-					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
-					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+					var nonEmptyResults bool
+					for i := range targetCollections {
+						targetCollection := targetCollections[i]
+						compatCollection := compatCollections[i]
+						t.Run(targetCollection.Name(), func(t *testing.T) {
+							t.Helper()
 
-					if len(targetRes) > 0 || len(compatRes) > 0 {
-						nonEmptyResults = true
+							explainQuery := bson.D{{"explain", bson.D{
+								{"find", targetCollection.Name()},
+								{"filter", filter},
+								{"sort", opts.Sort},
+								{"projection", opts.Projection},
+							}}}
+
+							var explainRes bson.D
+							require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
+
+							// If tc.skipTigrisPushdown is set check that pushdown actually wasn't made for Tigris.
+							if tc.skipTigrisPushdown && setup.IsTigris(t) {
+								require.True(t, tc.resultPushdown, "Cannot use skipTigrisPushdown when resultPushdown is false'")
+								assert.Equal(t, false, explainRes.Map()["pushdown"], "Tigris pushdown check was skipped, but it was actually true")
+							} else {
+								assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+							}
+
+							targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
+							compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
+
+							if targetCursor != nil {
+								defer targetCursor.Close(ctx)
+							}
+							if compatCursor != nil {
+								defer compatCursor.Close(ctx)
+							}
+
+							if targetErr != nil {
+								t.Logf("Target error: %v", targetErr)
+								AssertMatchesCommandError(t, compatErr, targetErr)
+
+								return
+							}
+							require.NoError(t, compatErr, "compat error; target returned no error")
+
+							var targetRes, compatRes []bson.D
+							require.NoError(t, targetCursor.All(ctx, &targetRes))
+							require.NoError(t, compatCursor.All(ctx, &compatRes))
+
+							t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+							t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+							AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+							if len(targetRes) > 0 || len(compatRes) > 0 {
+								nonEmptyResults = true
+							}
+						})
+					}
+
+					switch tc.resultType {
+					case nonEmptyResult:
+						assert.True(t, nonEmptyResults, "expected non-empty results")
+					case emptyResult:
+						assert.False(t, nonEmptyResults, "expected empty results")
+					default:
+						t.Fatalf("unknown result type %v", tc.resultType)
 					}
 				})
-			}
-
-			switch tc.resultType {
-			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -150,7 +160,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 func TestQueryCompatRunner(t *testing.T) {
 	t.Parallel()
 
-	testcases := map[string]map[string]queryCompatTestCase{
+	testsets := map[string]map[string]queryCompatTestCase{
 		"Basic":         testQueryCompatBasic(),
 		"Sort":          testQueryCompatSort(),
 		"Size":          testQueryArrayCompatSize(),
@@ -180,18 +190,18 @@ func TestQueryCompatRunner(t *testing.T) {
 
 	if runtime.GOARCH != "arm64" {
 		// https://github.com/FerretDB/FerretDB/issues/491
-		testcases["Mod"] = testQueryEvaluationCompatMod()
+		testsets["Mod"] = testQueryEvaluationCompatMod()
 	}
 
-	allTestcases := make(map[string]queryCompatTestCase, 0)
+	allTestsets := make(map[string]queryCompatTestSet, 0)
 
-	for op, tcs := range testcases {
-		for name, tc := range tcs {
-			allTestcases[op+name] = tc
+	for op, ts := range testsets {
+		for range ts {
+			allTestsets[op] = ts
 		}
 	}
 
-	testQueryCompat(t, allTestcases)
+	testQueryCompat(t, allTestsets)
 }
 
 func testQueryCompatBasic() map[string]queryCompatTestCase {
