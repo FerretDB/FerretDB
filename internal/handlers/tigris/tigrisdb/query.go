@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -37,7 +38,7 @@ type FetchParam struct {
 }
 
 // QueryDocuments fetches documents from the given collection.
-func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*types.Document, error) {
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (iterator.Interface[int, *types.Document], error) {
 	db := tdb.Driver.UseDatabase(param.DB)
 
 	collection, err := db.DescribeCollection(ctx, param.Collection)
@@ -51,7 +52,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 				zap.String("db", param.DB), zap.String("collection", param.Collection),
 			)
 
-			return []*types.Document{}, nil
+			return nil, nil
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -67,25 +68,14 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	filter := tdb.BuildFilter(param.Filter)
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
-	iter, err := db.Read(ctx, param.Collection, filter, nil)
+	tigrisIter, err := db.Read(ctx, param.Collection, filter, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer iter.Close()
 
-	var res []*types.Document
+	iter := newQueryIterator(tigrisIter, &schema)
 
-	var d driver.Document
-	for iter.Next(&d) {
-		doc, err := tjson.Unmarshal(d, &schema)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res = append(res, doc.(*types.Document))
-	}
-
-	return res, iter.Err()
+	return iter, nil
 }
 
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.

@@ -18,7 +18,11 @@ import (
 	"runtime"
 	"runtime/pprof"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
@@ -26,12 +30,19 @@ import (
 var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb.queryIterator")
 
 type queryIterator struct {
+	iter   driver.Iterator
+	schema *tjson.Schema
+
 	stack []byte
 	n     int
 }
 
-func newQueryIterator() iterator.Interface[int, *types.Document] {
-	iter := &queryIterator{}
+func newQueryIterator(tigrisIter driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
+	iter := &queryIterator{
+		iter:   tigrisIter,
+		schema: schema,
+		stack:  debugbuild.Stack(),
+	}
 
 	queryIteratorProfiles.Add(iter, 1)
 
@@ -47,10 +58,26 @@ func newQueryIterator() iterator.Interface[int, *types.Document] {
 	return iter
 }
 
-func (q *queryIterator) Next() (int, *types.Document, error) {
-	panic("implement me")
+// Next implements iterator.Interface.
+func (iter *queryIterator) Next() (int, *types.Document, error) {
+	var document driver.Document
+
+	ok := iter.iter.Next(&document)
+	if !ok {
+		return 0, nil, iterator.ErrIteratorDone
+	}
+
+	doc, err := tjson.Unmarshal(document, iter.schema)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	iter.n++
+
+	return iter.n, doc.(*types.Document), nil
 }
 
-func (q *queryIterator) Close() {
-	panic("implement me")
+// Close implements iterator.Interface.
+func (iter *queryIterator) Close() {
+	iter.iter.Close()
 }

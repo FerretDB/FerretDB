@@ -17,6 +17,7 @@ package tigris
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -25,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -174,13 +176,24 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp 
 	var deleted int32
 
 	// fetch current items from collection
-	fetchedDocs, err := dbPool.QueryDocuments(ctx, fp)
+	iter, err := dbPool.QueryDocuments(ctx, fp)
 	if err != nil {
 		return 0, err
 	}
 
 	// iterate through every row and delete matching ones
-	for _, doc := range fetchedDocs {
+	for {
+		var doc *types.Document
+
+		_, doc, err = iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return 0, lazyerrors.Error(err)
+		}
+
 		// fetch current items from collection
 		matches, err := common.FilterDocument(doc, filter)
 		if err != nil {
