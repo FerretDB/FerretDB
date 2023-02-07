@@ -61,21 +61,14 @@ func TestCreateCompat(t *testing.T) {
 				}
 			}`, collName,
 	)
-	opts := options.CreateCollectionOptions{
-		Validator: bson.D{{"$tigrisSchemaString", schema}},
+
+	// Set $tigrisSchemaString for tigris only.
+	var opts options.CreateCollectionOptions
+	if setup.IsTigris(t) {
+		opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
 	}
 
 	targetErr := targetDB.CreateCollection(s.Ctx, collName, &opts)
-	if targetErr != nil {
-		if errorTextContains(targetErr,
-			`support for field "validator" is not implemented yet`,
-		) {
-			targetErr = targetDB.CreateCollection(s.Ctx, collName)
-		}
-
-		require.NoError(t, targetErr)
-	}
-
 	compatErr := compatDB.CreateCollection(s.Ctx, collName)
 	require.Equal(t, targetErr, compatErr)
 

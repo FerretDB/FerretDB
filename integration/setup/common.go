@@ -19,9 +19,9 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"net/url"
 	"runtime/trace"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -44,8 +44,6 @@ var (
 	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
 	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
-	handlerF          = flag.String("handler", "pg", "handler to use for in-process FerretDB")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
@@ -53,6 +51,8 @@ var (
 	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
+
+	tigrisURLsF = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -67,26 +67,32 @@ var (
 // Other globals.
 var (
 	// See docker-compose.yml.
-	tigrisPorts      = []uint16{8081, 8091, 8092, 8093, 8094}
-	tigrisPortsIndex atomic.Uint32
+	tigrisURLsIndex atomic.Uint32
 )
 
-// SkipForTigris skips the current test for Tigris handler.
+// IsTigris returns if tests are running against the `tigris`handler.
 //
-// This function should not be used lightly in new tests and should eventually be removed.
+// This function should not be used lightly.
+func IsTigris(tb testing.TB) bool {
+	tb.Helper()
+
+	return getHandler() == "tigris"
+}
+
+// SkipForTigris is deprecated.
 //
 // Deprecated: use SkipForTigrisWithReason instead if you must.
 func SkipForTigris(tb testing.TB) {
 	SkipForTigrisWithReason(tb, "")
 }
 
-// SkipForTigrisWithReason skips the current test for Tigris handler.
+// SkipForTigrisWithReason skips the current test for `tigris` handler.
 //
-// This function should not be used lightly in new tests and should eventually be removed.
+// This function should not be used lightly.
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if *handlerF == "tigris" {
+	if getHandler() == "tigris" {
 		if reason == "" {
 			tb.Skipf("Skipping for Tigris")
 		} else {
@@ -95,138 +101,72 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	}
 }
 
-// IsTigris returns if tests are running against the Tigris handler.
-func IsTigris(tb testing.TB) bool {
-	tb.Helper()
-	return *handlerF == "tigris"
-}
-
-// SkipForPostgresWithReason skips the current test for Postgres (pg) handler.
+// TigrisOnlyWithReason skips the current test for handlers that are not `tigris`.
 //
-// Ideally, this function should not be used. It is allowed to use it in Tigris-specific tests only.
-func SkipForPostgresWithReason(tb testing.TB, reason string) {
+// This function should not be used lightly.
+func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if *handlerF == "pg" {
-		tb.Skipf("Skipping for Postgres: %s", reason)
+	if getHandler() != "tigris" {
+		tb.Skipf("Skipping for non-tigris: %s", reason)
 	}
-}
-
-// checkMongoDBURI returns true if given MongoDB URI is working.
-func checkMongoDBURI(tb testing.TB, ctx context.Context, uri string) bool {
-	tb.Helper()
-
-	ctx, span := otel.Tracer("").Start(ctx, "checkMongoDBURI")
-	defer span.End()
-
-	defer trace.StartRegion(ctx, "checkMongoDBURI").End()
-	trace.Log(ctx, "checkMongoDBURI", uri)
-
-	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
-
-	if *targetTLSF {
-		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
-	}
-
-	client, err := mongo.Connect(ctx, clientOpts)
-
-	if err == nil {
-		defer client.Disconnect(ctx)
-
-		_, err = client.ListDatabases(ctx, bson.D{})
-	}
-
-	if err != nil {
-		tb.Logf("checkMongoDBURI: %s: %s", uri, err)
-
-		return false
-	}
-
-	tb.Logf("checkMongoDBURI: %s: connected", uri)
-
-	return true
 }
 
 // buildMongoDBURIOpts represents buildMongoDBURI's options.
 type buildMongoDBURIOpts struct {
-	hostPort       string
+	host           string
 	unixSocketPath string
 	tls            bool
+	authMechanism  string
+	user           *url.Userinfo
 }
 
-// buildMongoDBURI builds MongoDB URI with given URI options and validates that it works.
-//
-// TODO rework or remove this https://github.com/FerretDB/FerretDB/issues/1568
-func buildMongoDBURI(tb testing.TB, ctx context.Context, opts *buildMongoDBURIOpts) string {
+// buildMongoDBURI builds MongoDB URI with given URI options.
+func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	tb.Helper()
-
-	var host string
-
-	if opts.hostPort != "" {
-		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
-		host = opts.hostPort
-	} else {
-		require.NotEmpty(tb, opts.unixSocketPath, "neither hostPort nor unixSocketPath are set")
-		host = opts.unixSocketPath
-	}
 
 	q := make(url.Values)
 
 	if opts.tls {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
+		q.Set("tls", "true")
+	}
+
+	var host string
+	if opts.host != "" {
+		require.Empty(tb, opts.unixSocketPath, "unixSocketPath and TCP/TLS cannot be both set")
+		host = opts.host
+	} else {
+		host = opts.unixSocketPath
+	}
+
+	if opts.authMechanism != "" {
+		q.Set("authMechanism", opts.authMechanism)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
-		Scheme: "mongodb",
-		Host:   host,
-		Path:   "/",
+		Scheme:   "mongodb",
+		Host:     host,
+		Path:     "/",
+		User:     opts.user,
+		RawQuery: q.Encode(),
 	}
 
-	// we don't know if that's FerretDB or MongoDB, so try different auth mechanisms
-	for _, c := range []struct {
-		user          *url.Userinfo
-		authMechanism string
-	}{{
-		user:          nil,
-		authMechanism: "",
-	}, {
-		user:          url.UserPassword("username", "password"),
-		authMechanism: "PLAIN",
-	}, {
-		user:          url.UserPassword("username", "password"),
-		authMechanism: "", // defaults to SCRAM when username is set
-	}} {
-		u.User = c.user
-
-		q.Del("authMechanism")
-
-		if c.authMechanism != "" {
-			q.Set("authMechanism", c.authMechanism)
-		}
-
-		u.RawQuery = q.Encode()
-		res := u.String()
-
-		if checkMongoDBURI(tb, ctx, res) {
-			return res
-		}
-	}
-
-	tb.Fatalf("buildMongoDBURI: failed for %+v", opts)
-
-	panic("not reached")
+	return u.String()
 }
 
-// nextTigrisPort returns the next port for the Tigris handler.
-func nextTigrisPort() uint16 {
-	i := int(tigrisPortsIndex.Add(1)) - 1
-	return tigrisPorts[i%len(tigrisPorts)]
+// nextTigrisUrl returns the next url for the Tigris handler.
+func nextTigrisUrl() string {
+	i := int(tigrisURLsIndex.Add(1)) - 1
+	urls := strings.Split(*tigrisURLsF, ",")
+
+	return urls[i%len(urls)]
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
-// It returns MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
+// It returns client and MongoDB URI of that listener.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -236,11 +176,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
 
-	// that's already checked by handlers constructors,
-	// but here we could produce a better error message
-	switch *handlerF {
-	case "pg":
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for 'pg' handler")
+	// only one of postgresql-url and tigris-urls should be set.
+	if *tigrisURLsF != "" && *postgreSQLURLF != "" {
+		tb.Fatalf("Both postgresql-url and tigris-urls are set, only one should be set.")
+	}
+
+	// one of postgresql-url or tigris-urls should be set.
+	if *tigrisURLsF == "" && *postgreSQLURLF == "" {
+		tb.Fatalf("Both postgresql-url and tigris-urls are empty, one should be set.")
 	}
 
 	p, err := state.NewProvider("")
@@ -255,9 +198,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		TigrisURL: fmt.Sprintf("127.0.0.1:%d", nextTigrisPort()),
+		TigrisURL: nextTigrisUrl(),
 	}
-	h, err := registry.NewHandler(*handlerF, handlerOpts)
+	h, err := registry.NewHandler(getHandler(), handlerOpts)
 	require.NoError(tb, err)
 
 	listenerOpts := &clientconn.NewListenerOpts{
@@ -269,7 +212,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		TestRecordsDir: *recordsDirF,
 	}
 
-	if listenerOpts.ProxyAddr != "" {
+	if *proxyAddrF != "" {
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
@@ -277,12 +220,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		listenerOpts.Unix = unixSocketPath(tb)
 	}
 
+	addr := "127.0.0.1:0"
+
 	if *targetTLSF {
-		listenerOpts.TLS = "127.0.0.1:0"
+		listenerOpts.TLS = addr
 		fp := GetTLSFilesPaths(tb, ServerSide)
 		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
 	} else {
-		listenerOpts.TCP = "127.0.0.1:0"
+		listenerOpts.TCP = addr
 	}
 
 	l := clientconn.NewListener(listenerOpts)
@@ -305,26 +250,33 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		h.Close()
 	})
 
-	var opts buildMongoDBURIOpts
-
-	switch {
-	case listenerOpts.TLS != "":
-		opts.hostPort = l.TLSAddr().String()
-		opts.tls = true
-	case listenerOpts.Unix != "":
-		opts.unixSocketPath = l.UnixAddr().String()
-	default:
-		opts.hostPort = l.TCPAddr().String()
+	opts := buildMongoDBURIOpts{
+		user: getUser(*targetTLSF),
 	}
 
-	uri := buildMongoDBURI(tb, ctx, &opts)
-	logger.Info("Listener started", zap.String("handler", *handlerF), zap.String("uri", uri))
+	switch {
+	case *targetTLSF:
+		opts.host = l.TLSAddr().String()
+		opts.authMechanism = "PLAIN"
+		opts.tls = true
+	case *targetUnixSocketF:
+		opts.unixSocketPath = l.UnixAddr().String()
+	default:
+		opts.host = l.TCPAddr().String()
+	}
 
-	return uri
+	// When TLS is enabled, RootCAs and Certificates are fetched
+	// upon creating client and target uses PLAIN for authMechanism.
+	uri := buildMongoDBURI(tb, &opts)
+	client := setupClient(tb, ctx, uri, *targetTLSF)
+
+	logger.Info("Listener started", zap.String("handler", getHandler()), zap.String("uri", uri))
+
+	return client, uri
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.
-func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -337,7 +289,9 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 
 	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
 
-	if *targetTLSF {
+	// set TLSConfig to the client option, this adds
+	// RootCAs and Certificates.
+	if isTLS {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
 	}
 
@@ -353,4 +307,30 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	require.NoError(tb, err)
 
 	return client
+}
+
+// getHandler returns the handler based on the URL.
+//
+//   - when `-postgresql-url` flag is set, it is `pg` handler;
+//   - when `tigris-urls` flag is set, it is `tigris` handler;
+//   - and the handler is empty for MongoDB.
+func getHandler() string {
+	if *postgreSQLURLF != "" {
+		return "pg"
+	}
+
+	if *tigrisURLsF != "" {
+		return "tigris"
+	}
+
+	return ""
+}
+
+// getUser returns test user credential if TLS is enabled, nil otherwise.
+func getUser(isTLS bool) *url.Userinfo {
+	if isTLS {
+		return url.UserPassword("username", "password")
+	}
+
+	return nil
 }

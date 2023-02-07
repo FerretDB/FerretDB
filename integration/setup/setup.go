@@ -92,20 +92,26 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := testutil.Logger(tb, level)
 
+	var client *mongo.Client
 	var uri string
+
 	if *targetPortF == 0 {
-		uri = setupListener(tb, setupCtx, logger)
+		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		uri = buildMongoDBURI(tb, setupCtx, &buildMongoDBURIOpts{
-			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:      *targetTLSF,
+		// When TLS is enabled, RootCAs and Certificates are fetched
+		// upon creating client. Target uses PLAIN for authMechanism.
+		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
+			host: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
+			tls:  *targetTLSF,
+			user: getUser(*targetTLSF),
 		})
+		client = setupClient(tb, ctx, uri, *targetTLSF)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, setupCtx, setupClient(tb, setupCtx, uri), opts)
+	collection := setupCollection(tb, ctx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -160,10 +166,10 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	for _, provider := range opts.Providers {
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
+		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping it.",
-				provider.Name(), *handlerF,
+				provider.Name(), getHandler(),
 			)
 
 			continue
@@ -174,7 +180,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		region := trace.StartRegion(provCtx, spanName)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
+		if validators := provider.Validators(getHandler(), collectionName); len(validators) > 0 {
 			var copts options.CreateCollectionOptions
 			for key, value := range validators {
 				copts.SetValidator(bson.D{{key, value}})
