@@ -70,6 +70,15 @@ var (
 	tigrisURLsIndex atomic.Uint32
 )
 
+// IsTigris returns if tests are running against the `tigris`handler.
+//
+// This function should not be used lightly.
+func IsTigris(tb testing.TB) bool {
+	tb.Helper()
+
+	return getHandler() == "tigris"
+}
+
 // SkipForTigris is deprecated.
 //
 // Deprecated: use SkipForTigrisWithReason instead if you must.
@@ -90,14 +99,6 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 			tb.Skipf("Skipping for Tigris: %s", reason)
 		}
 	}
-}
-
-// IsTigris returns if tests are running against the `tigris`handler.
-//
-// This function should not be used lightly.
-func IsTigris(tb testing.TB) bool {
-	tb.Helper()
-	return getHandler() == "tigris"
 }
 
 // TigrisOnlyWithReason skips the current test for handlers that are not `tigris`.

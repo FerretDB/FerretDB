@@ -121,12 +121,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
-								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-									if e.HasErrorCode(121) && errorTextContains(e,
-										"json schema validation failed for field", "does not validate with",
-									) {
-										setup.SkipForTigrisWithReason(t, targetErr.Error())
-									}
+								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
 								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
@@ -246,10 +242,8 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
-								if errors.As(targetErr, &e) && e.Name == "DocumentValidationFailure" {
-									if e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
-										setup.SkipForTigrisWithReason(t, targetErr.Error())
-									}
+								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
 								AssertMatchesCommandError(t, compatErr, targetErr)
