@@ -42,7 +42,7 @@ func Startup() {
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 	if p := *targetPortF; p == 0 {
-		zap.S().Infof("Target system: in-process FerretDB with %q handler.", *handlerF)
+		zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
 	} else {
 		zap.S().Infof("Target system: port %d.", p)
 	}
