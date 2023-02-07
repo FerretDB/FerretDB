@@ -268,7 +268,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	// When TLS is enabled, RootCAs and Certificates are fetched
 	// upon creating client and target uses PLAIN for authMechanism.
 	uri := buildMongoDBURI(tb, &opts)
-	client := setupClient(tb, ctx, uri)
+	client := setupClient(tb, ctx, uri, *targetTLSF)
 
 	logger.Info("Listener started", zap.String("handler", getHandler()), zap.String("uri", uri))
 
@@ -276,7 +276,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 }
 
 // setupClient returns MongoDB client for database on given MongoDB URI.
-func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -289,9 +289,9 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 
 	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
 
-	// TLSConfig is set when `tls` query parameter is set;
-	// add certificates to it.
-	if clientOpts.TLSConfig != nil {
+	// set TLSConfig to the client option, this adds
+	// RootCAs and Certificates.
+	if isTLS {
 		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
 	}
 
