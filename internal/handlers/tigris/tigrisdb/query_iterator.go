@@ -39,9 +39,9 @@ type queryIterator struct {
 	iter   driver.Iterator
 	schema *tjson.Schema
 
-	stack []byte
-	m     sync.Mutex
-	n     int
+	stack []byte     // formatted stack trace that is used to format finalizer error message
+	m     sync.Mutex // protects call to iter.Next(), iter.Close and n
+	n     int        // number of current iteration starting from 0
 }
 
 // newIterator returns a new queryIterator for the given driver.Iterator.
@@ -118,7 +118,7 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 
 	doc, err := tjson.Unmarshal(document, iter.schema)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, lazyerrors.Error(err)
 	}
 
 	iter.n++
