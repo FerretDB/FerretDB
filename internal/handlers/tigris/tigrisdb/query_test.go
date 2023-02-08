@@ -67,12 +67,8 @@ func TestQueryDocuments(t *testing.T) {
 			var doc *types.Document
 
 			n, doc, err = iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
+			if errors.Is(err, iterator.ErrIteratorDone) {
 					break
-				}
-
-				require.NoError(t, err)
 			}
 			require.NoError(t, err)
 			require.Equal(t, i, n)
