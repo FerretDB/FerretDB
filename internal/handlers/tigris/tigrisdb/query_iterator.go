@@ -37,15 +37,15 @@ type queryIterator struct {
 	iter   driver.Iterator
 	schema *tjson.Schema
 
-	m     sync.Mutex
 	stack []byte
+	m     sync.Mutex
 	n     int
 }
 
-func newQueryIterator(ctx context.Context, tigrisIter driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
+func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
 		ctx:    ctx,
-		iter:   tigrisIter,
+		iter:   titer,
 		schema: schema,
 		stack:  debugbuild.Stack(),
 	}

@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package tigrisdb
 
 import (
@@ -49,7 +63,10 @@ func TestQueryDocuments(t *testing.T) {
 
 		i := 0
 		for {
-			n, doc, err := iter.Next()
+			var n int
+			var doc *types.Document
+
+			n, doc, err = iter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
@@ -158,13 +175,10 @@ func TestQueryDocuments(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(ctx)
 
-		inserted := make([]*types.Document, 0)
 		for i := 0; i < 10; i++ {
 			doc := must.NotFail(types.NewDocument("_id", int64(i)))
 			err := tdb.InsertDocument(ctx, dbName, collName, doc)
 			require.NoError(t, err)
-
-			inserted = append(inserted, doc)
 		}
 
 		iter, err := tdb.QueryDocuments(ctx, &FetchParam{
@@ -223,5 +237,6 @@ func setup(t *testing.T) (string, string, context.Context, *TigrisDB) {
 		_, e := tdb.Driver.DeleteProject(ctx, dbName)
 		require.NoError(t, e)
 	})
+
 	return dbName, collName, ctx, tdb
 }
