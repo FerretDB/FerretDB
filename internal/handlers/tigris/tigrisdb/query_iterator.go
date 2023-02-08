@@ -135,6 +135,7 @@ func (iter *queryIterator) Close() {
 }
 
 // close closes iterator without holding mutex.
+//
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
 	queryIteratorProfiles.Remove(iter)
