@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -29,6 +28,7 @@ import (
 func TestBuildFilter(t *testing.T) {
 	t.Parallel()
 	tdb := TigrisDB{}
+	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
@@ -67,16 +67,12 @@ func TestBuildFilter(t *testing.T) {
 			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
 		},
 		"ObjectID": {
-			filter: must.NotFail(types.NewDocument("v",
-				types.ObjectID(must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))),
-			)),
-			expected: `{"v":"AAECAwQFBgcICRAR"}`,
+			filter:   must.NotFail(types.NewDocument("v", objectID)),
+			expected: `{"v":"YlbFugutwP/u////"}`,
 		},
 		"IDObjectID": {
-			filter: must.NotFail(types.NewDocument("_id", types.ObjectID(
-				must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011")),
-			))),
-			expected: `{"_id":"AAECAwQFBgcICRAR"}`,
+			filter:   must.NotFail(types.NewDocument("_id", objectID)),
+			expected: `{"_id":"YlbFugutwP/u////"}`,
 		},
 		"IDString": {
 			filter:   must.NotFail(types.NewDocument("_id", "foo")),
