@@ -33,7 +33,7 @@ type TigrisDB struct {
 
 // New returns a new TigrisDB connection pool.
 //
-// Passed context is used only by the first checking connection.
+// Passed ctx is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
 func New(ctx context.Context, cfg *config.Driver, logger *zap.Logger) (*TigrisDB, error) {
 	d, err := driver.NewDriver(ctx, cfg)

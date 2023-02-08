@@ -181,6 +181,7 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp 
 		return 0, err
 	}
 
+	// no documents found
 	if iter == nil {
 		return 0, nil
 	}

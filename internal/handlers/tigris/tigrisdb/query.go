@@ -73,7 +73,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (ite
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := newQueryIterator(tigrisIter, &schema)
+	iter := newQueryIterator(ctx, tigrisIter, &schema)
 
 	return iter, nil
 }

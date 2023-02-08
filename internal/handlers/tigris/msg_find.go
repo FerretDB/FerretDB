@@ -102,6 +102,7 @@ func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigr
 		return nil, lazyerrors.Error(err)
 	}
 
+	// no documents found
 	if iter == nil {
 		return nil, nil
 	}

@@ -15,8 +15,10 @@
 package tigrisdb
 
 import (
+	"context"
 	"runtime"
 	"runtime/pprof"
+	"sync"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -30,15 +32,19 @@ import (
 var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb.queryIterator")
 
 type queryIterator struct {
+	ctx context.Context
+
 	iter   driver.Iterator
 	schema *tjson.Schema
 
+	m     sync.Mutex
 	stack []byte
 	n     int
 }
 
-func newQueryIterator(tigrisIter driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
+func newQueryIterator(ctx context.Context, tigrisIter driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
+		ctx:    ctx,
 		iter:   tigrisIter,
 		schema: schema,
 		stack:  debugbuild.Stack(),
@@ -60,6 +66,17 @@ func newQueryIterator(tigrisIter driver.Iterator, schema *tjson.Schema) iterator
 
 // Next implements iterator.Interface.
 func (iter *queryIterator) Next() (int, *types.Document, error) {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	if iter.iter == nil {
+		return 0, nil, iterator.ErrIteratorDone
+	}
+
+	if err := iter.ctx.Err(); err != nil {
+		return 0, nil, err
+	}
+
 	var document driver.Document
 
 	ok := iter.iter.Next(&document)
@@ -74,10 +91,15 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 
 	iter.n++
 
-	return iter.n, doc.(*types.Document), nil
+	return iter.n - 1, doc.(*types.Document), nil
 }
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
 	iter.iter.Close()
+
+	iter.iter = nil
 }
