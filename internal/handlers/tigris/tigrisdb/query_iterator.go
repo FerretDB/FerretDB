@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // queryIteratorProfiles keeps track on all query iterators.
@@ -102,6 +103,17 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 		iter.close()
 
 		return 0, nil, iterator.ErrIteratorDone
+	}
+
+	err := iter.iter.Err()
+
+	switch {
+	case err == nil:
+		fallthrough
+	case IsInvalidArgument(err):
+		// Skip errors from filtering invalid types
+	default:
+		return 0, nil, lazyerrors.Error(err)
 	}
 
 	doc, err := tjson.Unmarshal(document, iter.schema)

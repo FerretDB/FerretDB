@@ -17,6 +17,8 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
@@ -85,25 +87,29 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// filter only by _id for now
-		if k != "_id" {
+		// TODO https://github.com/FerretDB/FerretDB/issues/1940
+		if v == "" {
 			continue
+		}
+
+		if k != "" {
+			// don't pushdown $comment, it's attached to query in handlers
+			// TODO https://github.com/FerretDB/FerretDB/issues/1841
+			if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
+				continue
+			}
 		}
 
 		switch v.(type) {
-		case string:
-			// filtering by string values is complicated if the storage supports encodings, collations, etc,
-			// but Tigris does not support any of these
-		case types.ObjectID:
-			// filtering by ObjectID is always safe
-		default:
-			// skip other types for now
+		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
 			continue
+		case float64, string, types.ObjectID, int32, int64:
+			rawValue := must.NotFail(tjson.Marshal(v))
+			res[k] = json.RawMessage(rawValue)
+		default:
+			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
-
-		// filter by the exact _id value
-		id := must.NotFail(tjson.Marshal(v))
-		res["_id"] = json.RawMessage(id)
 	}
 
 	return must.NotFail(json.Marshal(res))
