@@ -52,10 +52,9 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DocumentDotNotationNoSuchField": {
-			filter:             bson.D{{"no-such-field.some", 42}},
-			resultType:         emptyResult,
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"no-such-field.some", 42}},
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},
