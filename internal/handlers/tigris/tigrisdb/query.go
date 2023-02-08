@@ -54,7 +54,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (ite
 				zap.String("db", param.DB), zap.String("collection", param.Collection),
 			)
 
-			return nil, nil
+			return newQueryIterator(ctx, nil, nil), nil
 		}
 
 		return nil, lazyerrors.Error(err)
