@@ -16,11 +16,13 @@ package pgdb
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -280,4 +282,92 @@ func TestGetDocuments(t *testing.T) {
 
 		require.NoError(t, err)
 	})
+}
+
+// WHERE clauses occurring frequently in test.
+var (
+	whereEq          string = " WHERE ((_jsonb->$1)::jsonb = $2)"
+	whereEqOrContain string = whereEq + " OR (_jsonb->$1)::jsonb @> $2"
+)
+
+func TestPrepareWhereClause(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		filter   *types.Document
+		expected string
+		skip     string
+	}{
+		"String": {
+			filter:   must.NotFail(types.NewDocument("v", "foo")),
+			expected: whereEqOrContain,
+		},
+		"EmptyString": {
+			filter:   must.NotFail(types.NewDocument("v", "")),
+			expected: whereEqOrContain,
+		},
+		"Int32": {
+			filter:   must.NotFail(types.NewDocument("v", int32(42))),
+			expected: whereEqOrContain,
+		},
+		"Int64": {
+			filter:   must.NotFail(types.NewDocument("v", int64(42))),
+			expected: whereEqOrContain,
+		},
+		"Float64": {
+			filter:   must.NotFail(types.NewDocument("v", float64(42.13))),
+			expected: whereEqOrContain,
+		},
+		"MaxFloat64": {
+			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
+			expected: whereEqOrContain,
+		},
+		"Bool": {
+			filter: must.NotFail(types.NewDocument("v", true)),
+		},
+		"Comment": {
+			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
+		},
+		"ObjectID": {
+			filter: must.NotFail(types.NewDocument("v",
+				types.ObjectID(must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))),
+			)),
+			expected: whereEqOrContain,
+		},
+		"IDObjectID": {
+			filter: must.NotFail(types.NewDocument("_id", types.ObjectID(
+				must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011")),
+			))),
+			expected: whereEq,
+		},
+		"IDString": {
+			filter:   must.NotFail(types.NewDocument("_id", "foo")),
+			expected: whereEq,
+		},
+		"IDDotNotation": {
+			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
+			expected: " WHERE ((_jsonb#>$1)::jsonb = $2)",
+		},
+		"DotNotation": {
+			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
+			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+		},
+		"DotNotationArrayIndex": {
+			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			actual, _ := prepareWhereClause(tc.filter)
+
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }

@@ -107,7 +107,6 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
-// TODO: unit test
 func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
@@ -127,11 +126,18 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 
 			// If the key is in dot notation translate it to a tigris dot notation
 			if path := types.NewPathFromString(k); path.Len() > 1 {
+				indexSearch := false
+
+				// TODO https://github.com/FerretDB/FerretDB/issues/1914
 				for _, k := range path.Slice() {
 					if _, err := strconv.Atoi(k); err == nil {
-						// TODO https://github.com/FerretDB/FerretDB/issues/1914
-						continue
+						indexSearch = true
+						break
 					}
+				}
+
+				if indexSearch {
+					continue
 				}
 
 				key = path.String() // '"v.foo"'
