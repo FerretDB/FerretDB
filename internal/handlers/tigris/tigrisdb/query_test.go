@@ -108,7 +108,12 @@ func TestQueryDocuments(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		require.Nil(t, iter)
+		require.NotNil(t, iter)
+
+		n, doc, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		require.Nil(t, doc)
+		require.Zero(t, n)
 	})
 
 	t.Run("CollectionEmpty", func(t *testing.T) {
