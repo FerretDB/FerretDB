@@ -98,22 +98,22 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 
 	ok := iter.iter.Next(&document)
 	if !ok {
+		err := iter.iter.Err()
+
+		switch {
+		case err == nil:
+			fallthrough
+		case IsInvalidArgument(err):
+			// Skip errors from filtering invalid types
+		default:
+			return 0, nil, lazyerrors.Error(err)
+		}
+
 		// to avoid context cancellation changing the next `Next()` error
 		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
 
 		return 0, nil, iterator.ErrIteratorDone
-	}
-
-	err := iter.iter.Err()
-
-	switch {
-	case err == nil:
-		fallthrough
-	case IsInvalidArgument(err):
-		// Skip errors from filtering invalid types
-	default:
-		return 0, nil, lazyerrors.Error(err)
 	}
 
 	doc, err := tjson.Unmarshal(document, iter.schema)
