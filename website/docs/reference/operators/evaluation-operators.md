@@ -21,12 +21,12 @@ db.catalog.insertMany([
       stock: 1,
    },
    {
-      product: "spOOn",
+      product: "spoonn",
       price: 500,
       stock: 0,
    },
    {
-      product: "cuP",
+      product: "cup",
       price: 100,
       stock: 14,
    },
@@ -65,13 +65,13 @@ The output:
 [
   {
     _id: ObjectId("63e3ac0184f488929a3f737a"),
-    product: 'spOOn',
+    product: 'spoon',
     price: 500,
     stock: 0
   },
   {
     _id: ObjectId("63e3ac0184f488929a3f737b"),
-    product: 'cuP',
+    product: 'cup',
     price: 100,
     stock: 14
   }
@@ -90,20 +90,13 @@ It also rounds down decimal input down to zero (e.g. `$mod: [ 3.5 , 2 ]` is exec
 Other syntaxes: `{ <field>: { $regex: /pattern/, $options: '<options>' } }` and `{ <field>: /pattern/<options> }`.
 
 The `$regex` operator matches documents where the value of a field matches a specified regular expression pattern.
-`$options` is an optional parameter that specifies the regular expression options to use, such as:
-
-* case-insensitivity (`i`)
-* multi-line matching (`m`)
-* dot character matching (`s`)
-* capability to ignore white spaces (`x`)
-
 
 The following query returns all the documents where the value of the "product" field starts with the letter "b":
 
 ```js
 db.catalog.find({
    product:{
-      $regex: /^b/
+      $regex: /bottle/
    }
 })
 ```
@@ -117,19 +110,22 @@ The output:
     product: 'bottle',
     price: 15,
     stock: 1
-  },
-  {
-    _id: ObjectId("63e3ac0184f488929a3f737d"),
-    product: 'boTtLe',
-    price: 20,
-    stock: 3
   }
 ]
 ```
 
-### Case-insensitive matching
+`$options` is an optional parameter that specifies the regular expression options to use, such as:
 
-To perform case-insensitive matching, use the `i` option.
+* case-insensitivity (`i`)
+* multi-line matching (`m`)
+* dot character matching (`s`)
+
+:::note
+The regex option for ignoring white spaces (`x`) is not currently supported.
+Follow [here](https://github.com/FerretDB/FerretDB/issues/592) for more updates.
+:::
+
+To perform case-insensitive matching, use the `i` option in the `regex` expression.
 The following query returns all the documents where the value of the "product" field is equal to "bottle" (case-insensitive):
 
 ```js
@@ -157,17 +153,4 @@ The output:
     stock: 3
   }
 ]
-```
-
-### Multi-line matching
-
-To perform multi-line matching, use the `m` option.
-The following query matches all documents where the `product` field contains "bottle" or "BOTTLE" at the beginning of a line:
-
-```js
-db.catalog.find({
-   product: {
-      $regex: /^bottle$/im
-   }
-})
 ```
