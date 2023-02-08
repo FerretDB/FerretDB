@@ -31,6 +31,7 @@ import (
 // queryIteratorProfiles keeps track on all query iterators.
 var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb.queryIterator")
 
+// queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
 	ctx context.Context
 
@@ -42,6 +43,11 @@ type queryIterator struct {
 	n     int
 }
 
+// newIterator returns a new queryIterator for the given driver.Iterator.
+//
+// Iterator's Close method closes driver.Iterator.
+//
+// No documents are possible and return already done iterator.
 func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
 		ctx:    ctx,
@@ -65,10 +71,20 @@ func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.
 }
 
 // Next implements iterator.Interface.
+//
+// Errors (possibly wrapped) are:
+//   - iterator.ErrIteratorDone;
+//   - context.Canceled;
+//   - context.DeadlineExceeded;
+//   - something else.
+//
+// Otherwise, as the first value it returns the number of the current iteration (starting from 0),
+// as the second value it returns the document.
 func (iter *queryIterator) Next() (int, *types.Document, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
+	// ignore context error, if any, if iterator is already closed
 	if iter.iter == nil {
 		return 0, nil, iterator.ErrIteratorDone
 	}
@@ -81,6 +97,10 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 
 	ok := iter.iter.Next(&document)
 	if !ok {
+		// to avoid context cancellation changing the next `Next()` error
+		// from `iterator.ErrIteratorDone` to `context.Canceled`
+		iter.close()
+
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
@@ -99,7 +119,23 @@ func (iter *queryIterator) Close() {
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
-	iter.iter.Close()
-
-	iter.iter = nil
+	iter.close()
 }
+
+// close closes iterator without holding mutex.
+func (iter *queryIterator) close() {
+	queryIteratorProfiles.Remove(iter)
+
+	runtime.SetFinalizer(iter, nil)
+
+	if iter.iter != nil {
+		iter.iter.Close()
+
+		iter.iter = nil
+	}
+}
+
+// check interfaces
+var (
+	_ iterator.Interface[int, *types.Document] = (*queryIterator)(nil)
+)
