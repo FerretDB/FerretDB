@@ -110,33 +110,17 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// don't pushdown empty strings yet
+		// TODO https://github.com/FerretDB/FerretDB/issues/1940
 		if v == "" {
 			continue
 		}
 
 		if k != "" {
-			// don't pushdown $comment and dot notation yet
+			// don't pushdown $comment, it's attached to query in handlers
+			// TODO https://github.com/FerretDB/FerretDB/issues/1841
 			if k[0] == '$' || types.NewPathFromString(k).Len() > 1 {
 				continue
 			}
-		}
-
-		// _id field supports only specific types
-		if k == "_id" {
-			switch v.(type) {
-			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-			// type not supported for pushdown
-
-			case float64, string, types.ObjectID, int32, int64:
-				// filter by the exact _id value
-				id := must.NotFail(tjson.Marshal(v))
-				res["_id"] = json.RawMessage(id)
-			default:
-				panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
-			}
-
-			continue
 		}
 
 		switch v.(type) {
