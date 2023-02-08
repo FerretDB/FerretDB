@@ -40,7 +40,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		dbName, collName, ctx, tdb := setup(t)
 
-		inserted := make([]*types.Document, 0)
+		var inserted []*types.Document
 		for i := 0; i < 10; i++ {
 			doc := must.NotFail(types.NewDocument("_id", int64(i)))
 			err := tdb.InsertDocument(ctx, dbName, collName, doc)
@@ -59,7 +59,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		defer iter.Close()
 
-		queried := make([]*types.Document, 0)
+		var queried []*types.Document
 
 		i := 0
 		for {
