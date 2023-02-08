@@ -147,17 +147,15 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setupTigris configures Tigris.
-func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
-	logger = logger.Named("tigris")
-
-	err := waitForPort(ctx, logger, 8081)
+// setupAnyTigris configures given Tigris.
+func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
+	err := waitForPort(ctx, logger, port)
 	if err != nil {
 		return err
 	}
 
 	cfg := &config.Driver{
-		URL: "127.0.0.1:8081",
+		URL: fmt.Sprintf("127.0.0.1:%d", port),
 	}
 
 	var db *tigrisdb.TigrisDB
@@ -177,6 +175,20 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	for _, name := range []string{"admin", "test"} {
 		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// setupTigris configures all Tigris containers.
+func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
+	logger = logger.Named("tigris")
+
+	// See docker-compose.yml.
+	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
+		if err := setupAnyTigris(ctx, logger.Named(strconv.Itoa(int(port))), port); err != nil {
 			return err
 		}
 	}

@@ -106,8 +106,9 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"StringEmpty": {
-			filter:         bson.D{{"v", ""}},
-			resultPushdown: true,
+			filter:             bson.D{{"v", ""}},
+			resultPushdown:     true,
+			skipTigrisPushdown: true,
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},

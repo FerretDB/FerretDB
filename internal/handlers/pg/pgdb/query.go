@@ -144,8 +144,8 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
 		schema:  sp.DB,
 		table:   table,
-		explain: sp.Explain,
 		comment: sp.Comment,
+		explain: sp.Explain,
 		filter:  sp.Filter,
 	})
 	if err != nil {
@@ -185,11 +185,11 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	filter  *types.Document
 	schema  string
 	table   string
 	comment string
 	explain bool
+	filter  *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -238,7 +238,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	for k, v := range sqlFilters.Map() {
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
-		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
+		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
 		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
 
 		if k != "" {

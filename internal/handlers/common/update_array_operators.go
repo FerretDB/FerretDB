@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -53,13 +54,15 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		path := types.NewPathFromString(key)
 
-		if !doc.HasByPath(path) {
-			continue
-		}
-
 		val, err := doc.GetByPath(path)
 		if err != nil {
-			return false, err
+			// If any sub path exists in the doc, $pop returns ErrUnsuitableValueType.
+			if err = checkUnsuitableValueError(doc, key, path); err != nil {
+				return false, err
+			}
+
+			// doc does not have a path, nothing to do.
+			continue
 		}
 
 		array, ok := val.(*types.Array)
@@ -89,6 +92,44 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 	}
 
 	return changed, nil
+}
+
+// checkUnsuitableValueError returns ErrUnsuitableValueType if path contains
+// a non-document value. If no element exists on path, it returns nil.
+// For example, if the path is "v.foo" and
+// - doc is {v: 42}, it returns ErrUnsuitableValueType, v is used by unsuitable value type;
+// - doc is {c: 10}, it returns no error since the path does not exist.
+func checkUnsuitableValueError(doc *types.Document, key string, path types.Path) error {
+	// return no error if path is suffix or key.
+	if path.Len() == 1 {
+		return nil
+	}
+
+	prefix := path.Prefix()
+
+	// check if part of the path exists in the document.
+	if doc.Has(prefix) {
+		val := must.NotFail(doc.Get(prefix))
+		if prefixDoc, ok := val.(*types.Document); ok {
+			// recursively check if document contains part of the part.
+			return checkUnsuitableValueError(prefixDoc, key, path.TrimPrefix())
+		}
+
+		// ErrUnsuitableValueType is returned if the document contains prefix.
+		return commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrUnsuitableValueType,
+			fmt.Sprintf(
+				"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
+				path.Slice()[1],
+				key,
+				prefix,
+				types.FormatAnyValue(val),
+			),
+		)
+	}
+
+	// no part of the path exists in the doc.
+	return nil
 }
 
 // processPushArrayUpdateExpression changes document according to $push array update operator.

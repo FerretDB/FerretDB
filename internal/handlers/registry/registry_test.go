@@ -55,7 +55,8 @@ func tagPackages(t *testing.T, tag string) []string {
 	return maps.Keys(packages)
 }
 
-// TestDeps ensures that some packages are imported only when the corresponding backend is enabled via Go build tag.
+// TestDeps ensures that some packages are imported
+// only when the corresponding backend handler is enabled via Go build tag.
 func TestDeps(t *testing.T) {
 	t.Parallel()
 

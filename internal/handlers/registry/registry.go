@@ -16,7 +16,6 @@
 package registry
 
 import (
-	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -42,7 +41,6 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all handlers
-	Ctx           context.Context
 	Logger        *zap.Logger
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
@@ -61,9 +59,6 @@ type NewHandlerOpts struct {
 func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 	if opts == nil {
 		return nil, fmt.Errorf("opts is nil")
-	}
-	if opts.Ctx == nil {
-		return nil, fmt.Errorf("opts.Ctx is nil")
 	}
 
 	newHandler := registry[name]

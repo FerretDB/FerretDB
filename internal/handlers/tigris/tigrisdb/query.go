@@ -95,6 +95,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	case err == nil:
 		fallthrough
 	case IsInvalidArgument(err):
+		// Skip errors from filtering invalid types
 		break
 	default:
 		return nil, lazyerrors.Error(err)
@@ -111,10 +112,15 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		var key string // key can be either a single key string '"v"' or dot notation '"v.foo"'
+		key := k // key can be either a single key string '"v"' or Tigris dot notation '"v.foo"'
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1940
+		if v == "" {
+			continue
+		}
 
 		if k != "" {
-			// skip $comment
+			// don't pushdown $comment, it's attached to query in handlers
 			if k[0] == '$' {
 				continue
 			}
@@ -130,22 +136,6 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 
 				key = path.String() // '"v.foo"'
 			}
-		}
-
-		// _id field supports only specific types
-		if k == "_id" {
-			switch v.(type) {
-			case *types.Document, *types.Array, float64, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-				// type not supported for pushdown
-			case string, types.ObjectID, int32, int64:
-				// filter by the exact _id value
-				id := must.NotFail(tjson.Marshal(v))
-				res["_id"] = json.RawMessage(id)
-			default:
-				panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
-			}
-
-			continue
 		}
 
 		switch v.(type) {

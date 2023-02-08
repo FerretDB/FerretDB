@@ -60,10 +60,10 @@ var cli struct {
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
-		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages."`
+		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
 	} `embed:"" prefix:"log-"`
 
-	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics."`
+	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
@@ -77,17 +77,21 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout and exit."`
 
 	Test struct {
-		RecordsDir string `default:""  help:"Testing flag: directory for record files."`
-		Telemetry  struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry URL."`
-			UndecidedDelay time.Duration `default:"1h"                          help:"Testing flag: delay for undecided state."`
-			ReportInterval time.Duration `default:"24h"                         help:"Testing flag: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                          help:"Testing flag: report timeout."`
+		RecordsDir string `default:"" help:"Testing flag: directory for record files."`
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1912
+		DisablePushdown bool `default:"false" help:"Testing flag: disable query pushdown."`
+
+		Telemetry struct {
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry: reporting URL."`
+			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
+			ReportInterval time.Duration `default:"24h" hidden:""               help:"Testing flag: telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"  hidden:""               help:"Testing flag: telemetry: report timeout."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
 
-// The tigrisFlags struct represents flags that are used specifically for a "tigris" handler.
+// The tigrisFlags struct represents flags that are used specifically by "tigris" handler.
 //
 // See main_tigris.go.
 var tigrisFlags struct {
@@ -96,6 +100,13 @@ var tigrisFlags struct {
 	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
 	TigrisToken        string `default:""               help:"Tigris token."`
 }
+
+// The hanaFlags struct represents flags that are used specifically by "hana" handler.
+//
+// See main_hana.go.
+//
+//nolint:unused // remove once it is used
+var hanaFlags struct{}
 
 // Additional variables for the kong parsers.
 var (
@@ -112,10 +123,11 @@ var (
 			"default_mode":           clientconn.AllModes[0],
 			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
 
-			"help_debug_addr": "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
-			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler":    fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"help_debug_addr":                "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
+			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"help_telemetry_undecided_delay": "Testing flag: telemetry: delay for undecided state.",
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
@@ -293,7 +305,6 @@ func run() {
 	}()
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Ctx:           ctx,
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: stateProvider,
