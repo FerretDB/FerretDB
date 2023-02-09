@@ -20,7 +20,7 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # `vars`, not a `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
+  # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
   CODECOV_TOKEN: ${{ vars.CODECOV_TOKEN }}
 
 jobs:
