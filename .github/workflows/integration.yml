@@ -13,6 +13,12 @@ on:
   schedule:
     - cron: "12 3 * * *" # after Docker workflow
 
+# Do not run this workflow in parallel for any PR change or branch/tag push
+# to save some resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
@@ -20,9 +26,8 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # Temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: 1e257034-a484-4a13-abdf-009e769b909b
-  # CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
+  CODECOV_TOKEN: ${{ vars.CODECOV_TOKEN }}
 
 jobs:
   test:
