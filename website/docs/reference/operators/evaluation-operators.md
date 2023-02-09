@@ -21,7 +21,7 @@ db.catalog.insertMany([
       stock: 1,
    },
    {
-      product: "spoonn",
+      product: "spoon",
       price: 500,
       stock: 0,
    },
