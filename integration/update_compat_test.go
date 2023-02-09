@@ -485,3 +485,37 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 
 	testUpdateCommandCompat(t, testCases)
 }
+
+func TestReplaceKeepOrderCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Schema violation")
+
+	t.Parallel()
+
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	targetCollection := targetCollections[0]
+	compatCollection := compatCollections[0]
+
+	replace := bson.D{{"_id", int32(1)}, {"c", int32(1)}, {"b", int32(2)}, {"a", int32(3)}}
+
+	_, err := targetCollection.InsertOne(ctx, bson.D{{"_id", 1}})
+	require.NoError(t, err)
+	_, err = compatCollection.InsertOne(ctx, bson.D{{"_id", 1}})
+	require.NoError(t, err)
+
+	_, err = targetCollection.ReplaceOne(ctx, bson.D{{"_id", 1}}, replace)
+	require.NoError(t, err)
+	_, err = compatCollection.ReplaceOne(ctx, bson.D{{"_id", 1}}, replace)
+	require.NoError(t, err)
+
+	targetResult := targetCollection.FindOne(ctx, bson.D{{"_id", 1}})
+	require.NoError(t, targetResult.Err())
+	compatResult := compatCollection.FindOne(ctx, bson.D{{"_id", 1}})
+	require.NoError(t, compatResult.Err())
+
+	var targetDoc, compatDoc bson.D
+	require.NoError(t, targetResult.Decode(&targetDoc))
+	require.NoError(t, compatResult.Decode(&compatDoc))
+
+	assert.Equal(t, compatDoc, targetDoc)
+}
