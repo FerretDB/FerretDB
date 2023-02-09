@@ -96,7 +96,7 @@ The following query returns all the documents where the value of the "product" f
 ```js
 db.catalog.find({
    product:{
-      $regex: /bottle/
+      $regex: /^b/
    }
 })
 ```
