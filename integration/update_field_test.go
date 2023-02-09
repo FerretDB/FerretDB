@@ -86,7 +86,7 @@ func TestUpdateFieldSet(t *testing.T) {
 }
 
 func TestReplaceKeepOrder(t *testing.T) {
-	setup.SkipForTigris(t)
+	setup.SkipForTigrisWithReason(t, "Schema violation")
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
