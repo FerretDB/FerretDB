@@ -106,10 +106,16 @@ The output:
 ```js
 [
   {
-    _id: ObjectId("63e3ac0184f488929a3f7379"),
+    _id: ObjectId("63e4ce469695494b86bf2b2d"),
     product: 'bottle',
     price: 15,
     stock: 1
+  },
+  {
+    _id: ObjectId("63e4ce469695494b86bf2b31"),
+    product: 'boTtLe',
+    price: 20,
+    stock: 3
   }
 ]
 ```
