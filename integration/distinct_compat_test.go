@@ -148,10 +148,9 @@ func TestDistinctCompat(t *testing.T) {
 			field:  "field-not-exists",
 			filter: bson.D{},
 		},
-		"DotNotation": {
+		"DotNotationArrayDocumentNoIndex": {
 			field:  "v.foo",
-			filter: bson.D{},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
+			filter: bson.D{{"_id", "array-documents-nested"}},
 		},
 		"DotNotationArray": {
 			field:  "v.array.0",

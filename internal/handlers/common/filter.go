@@ -136,6 +136,20 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	}
 }
 
+type matchesForFilter struct {
+	filterKey string
+	doc       *types.Document
+}
+
+// matchesForFilter finds all document's subdocuments that could be used to check
+// if the main document matches the filter. It returns a list of documents
+//
+// For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and the filterKey is foo.bar,
+// then the function will return [{bar: 2}].
+func findMatchesForFilter() []matchesForFilter {
+	return nil
+}
+
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
 func filterOperator(doc *types.Document, operator string, filterValue any) (bool, error) {
 	switch operator {
