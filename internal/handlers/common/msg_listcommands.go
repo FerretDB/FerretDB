@@ -204,6 +204,7 @@ var Commands = map[string]command{
 		Help:    "Returns peer information.",
 		Handler: handlers.Interface.MsgWhatsMyURI,
 	},
+	// please keep sorted alphabetically
 }
 
 // MsgListCommands is a common implementation of the listCommands command.

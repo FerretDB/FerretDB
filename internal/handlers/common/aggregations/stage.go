@@ -38,6 +38,7 @@ var stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$count": newCount,
 	"$match": newMatch,
+	// please keep sorted alphabetically
 }
 
 // NewStage creates a new aggregation stage.
