@@ -122,9 +122,9 @@ The output:
 
 `$options` is an optional parameter that specifies the regular expression options to use, such as:
 
-* case-insensitivity (`i`)
-* multi-line matching (`m`)
-* dot character matching (`s`)
+* Case-insensitivity (`i`)
+* Multi-line matching (`m`)
+* Dot character matching (`s`)
 
 :::note
 The regex option for ignoring white spaces (`x`) is not currently supported.
