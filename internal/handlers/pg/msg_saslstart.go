@@ -81,7 +81,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
-			"payload", types.Binary{},
+			"payload", emptyPayload,
 			"ok", float64(1),
 		))},
 	}))
