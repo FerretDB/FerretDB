@@ -129,6 +129,8 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 // GetDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
+//
+// Transaction is not closed by this function. Use iterator.WithClose if needed.
 func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[int, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
 

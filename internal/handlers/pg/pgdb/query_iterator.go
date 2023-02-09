@@ -38,7 +38,7 @@ type queryIterator struct {
 
 	m     sync.Mutex
 	rows  pgx.Rows
-	stack []byte
+	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
 	n     int
 }
 
@@ -92,6 +92,10 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 	}
 
 	if !iter.rows.Next() {
+		if err := iter.rows.Err(); err != nil {
+			return 0, nil, lazyerrors.Error(err)
+		}
+
 		// to avoid context cancellation changing the next `Next()` error
 		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
@@ -123,6 +127,8 @@ func (iter *queryIterator) Close() {
 }
 
 // close closes iterator without holding mutex.
+//
+// This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
 	queryIteratorProfiles.Remove(iter)
 
