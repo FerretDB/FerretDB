@@ -236,18 +236,18 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 	var p Placeholder
 
 	for k, v := range sqlFilters.Map() {
-		if len(k) != 0 && k[0] == '$' {
-			// skip $comment
-			continue
-		}
-
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
-		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
+		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
 		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
 
-		// If the key is in dot notation use path operator (#>)
-		if len(k) != 0 {
+		if k != "" {
+			// skip $comment
+			if k[0] == '$' {
+				continue
+			}
+
+			// If the key is in dot notation use path operator (#>)
 			if path := types.NewPathFromString(k); path.Len() > 1 {
 				keyOperator = "#>"
 				key = path.Slice()     // '{v,foo}'
