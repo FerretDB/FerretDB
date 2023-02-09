@@ -283,20 +283,17 @@ func TestGetDocuments(t *testing.T) {
 	})
 }
 
-// WHERE clauses occurring frequently in test.
-var (
-	whereEq          string = " WHERE ((_jsonb->$1)::jsonb = $2)"
-	whereEqOrContain string = whereEq + " OR (_jsonb->$1)::jsonb @> $2"
-)
-
 func TestPrepareWhereClause(t *testing.T) {
 	t.Parallel()
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
+	// WHERE clauses occurring frequently in tests
+	whereEq := " WHERE ((_jsonb->$1)::jsonb = $2)"
+	whereEqOrContain := whereEq + " OR (_jsonb->$1)::jsonb @> $2"
+
 	for name, tc := range map[string]struct {
 		filter   *types.Document
 		expected string
-		skip     string
 	}{
 		"String": {
 			filter:   must.NotFail(types.NewDocument("v", "foo")),
@@ -357,12 +354,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			actual, _ := prepareWhereClause(tc.filter)
-
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

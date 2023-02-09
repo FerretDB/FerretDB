@@ -33,7 +33,7 @@ func TestBuildFilter(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter   *types.Document
 		expected string
-		skip     string
+		skip     string // defaults to `{}`
 	}{
 		"String": {
 			filter:   must.NotFail(types.NewDocument("v", "foo")),
