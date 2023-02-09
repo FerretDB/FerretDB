@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -82,4 +83,26 @@ func TestUpdateFieldSet(t *testing.T) {
 			AssertEqualDocuments(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestReplaceKeepOrder(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	expected := bson.D{{"_id", int32(1)}, {"c", int32(1)}, {"b", int32(2)}, {"a", int32(3)}}
+
+	_, err := collection.InsertOne(ctx, bson.D{{"_id", 1}})
+	require.NoError(t, err)
+
+	_, err = collection.ReplaceOne(ctx, bson.D{{"_id", 1}}, expected)
+	require.NoError(t, err)
+
+	res := collection.FindOne(ctx, bson.D{{"_id", 1}})
+
+	var actual bson.D
+	require.NoError(t, res.Decode(&actual))
+
+	assert.Equal(t, expected, actual)
 }
