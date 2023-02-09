@@ -27,9 +27,11 @@ on:
     - cron: "42 2 * * *" # after Go workflow
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
-# to prevent concurrent pushes for the same Docker image tag.
+# to prevent concurrent pushes for the same Docker image tag
+# and save some resources.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 env:
   GOPATH: /home/runner/go
