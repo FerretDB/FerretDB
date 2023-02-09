@@ -21,7 +21,7 @@ require (
 	golang.org/x/crypto v0.5.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
 	golang.org/x/net v0.5.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/sys v0.5.0
 )
 
 require (
