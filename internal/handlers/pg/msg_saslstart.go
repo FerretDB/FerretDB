@@ -75,10 +75,13 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	var emptyPayload types.Binary
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
 			"done", true,
+			"payload", emptyPayload,
 			"ok", float64(1),
 		))},
 	}))
