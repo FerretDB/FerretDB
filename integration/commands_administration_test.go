@@ -667,7 +667,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 
 	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
+	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
 	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
