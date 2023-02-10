@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/url"
 	"runtime/trace"
 	"strings"
@@ -49,8 +50,8 @@ var (
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
-	compatPortF = flag.Int("compat-port", 37017, "compat system's (MongoDB) port for compatibility tests; if 0, they are skipped")
-	compatTLSF  = flag.Bool("compat-tls", false, "use TLS for compat system")
+	compatURLF     = flag.String("compat-url", "", "compat system's URL for compatibility tests; if empty, they are skipped")
+	compatBackendF = flag.String("compat-backend", "", fmt.Sprintf("compat system's backend: '%s'", strings.Join(allBackends, "', '")))
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -66,6 +67,8 @@ var (
 var (
 	// See docker-compose.yml.
 	tigrisURLsIndex atomic.Uint32
+
+	allBackends = []string{"pg", "tigris", "mongodb"}
 )
 
 // IsTigris returns if tests are running against the `tigris`handler.

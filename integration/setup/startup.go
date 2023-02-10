@@ -26,6 +26,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -47,10 +48,14 @@ func Startup() {
 		zap.S().Infof("Target system: port %d.", p)
 	}
 
-	if p := *compatPortF; p == 0 {
+	if u := *compatURLF; u == "" {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	} else {
-		zap.S().Infof("Compat system: port %d.", p)
+		if !slices.Contains(allBackends, *compatBackendF) {
+			zap.S().Fatalf("unexpected compat backend %q, expected one of %v", *compatBackendF, allBackends)
+		}
+
+		zap.S().Infof("Compat system: %s %s.", *compatBackendF, u)
 	}
 
 	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects

@@ -59,17 +59,16 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
+	if *compatURLF == "" {
+		tb.Skip("-compat-url is empty, skipping compatibility test")
+	}
+
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
 	defer span.End()
 
 	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
-
-	// skip tests for MongoDB as soon as possible
-	if *compatPortF == 0 {
-		tb.Skip("compatibility tests require second system")
-	}
 
 	if opts == nil {
 		opts = new(SetupCompatOpts)
@@ -103,21 +102,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	// When TLS is enabled, RootCAs and Certificates are fetched
-	// upon creating client. Compat leaves authMechanism empty which defaults to SCRAM.
-	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
-		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
-		tls:      *compatTLSF,
-		user:     getUser(*compatTLSF),
-	})
-
 	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")
 	defer span.End()
 	targetCollections := setupCompatCollections(tb, ctxT, targetClient, opts, true)
 
 	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
 	defer span.End()
-	compatClient := setupClient(tb, ctxC, compatURI, *compatTLSF)
+	compatClient := setupClient(tb, ctxC, *compatURLF, false)
 	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)

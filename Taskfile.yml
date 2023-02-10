@@ -178,6 +178,8 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
+        -compat-url=mongodb://username:password@host.docker.internal:37018/
+        -compat-backend=mongodb
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -189,18 +191,8 @@ tasks:
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
         -records-dir=../records
         -target-tls
-        -compat-port=37018
-        -compat-tls
-
-  test-integration-cockroach:
-    desc: "Run integration tests for CockroachDB with pg handler"
-    dir: integration
-    cmds:
-      - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-cockroach.txt .
-        -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1
-        -records-dir=../records
+        -compat-url=mongodb://username:password@host.docker.internal:37018/
+        -compat-backend=mongodb
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -209,7 +201,6 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
-        -compat-port=0
         -records-dir=../records
         -target-port=37017
 
@@ -293,20 +284,6 @@ tasks:
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls=:27018
         --mode=diff-normal
-        --proxy-addr=127.0.0.1:37017
-        --test-records-dir=records
-
-  run-cockroach:
-    deps: [build-testcover]
-    cmds:
-      - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
-        --listen-addr=:27017
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls=:27018
-        --mode=diff-normal
-        --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
         --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
 
