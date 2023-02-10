@@ -1,0 +1,8 @@
+{
+  "label": "Update Operators",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Update operators are a set of operators used to modify existing documents in a collection. "
+  }
+}
