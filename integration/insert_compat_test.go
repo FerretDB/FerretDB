@@ -66,8 +66,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							if targetErr != nil {
 								// Skip inserts that could not be performed due to Tigris schema validation.
 								var e mongo.WriteException
-								if errors.As(targetErr, &e) &&
-									e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
@@ -127,8 +126,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						if targetErr != nil {
 							// Skip inserts that could not be performed due to Tigris schema validation.
 							var e mongo.BulkWriteException
-							if errors.As(targetErr, &e) &&
-								e.HasErrorCodeWithMessage(121, "json schema validation failed for field") {
+							if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
 								setup.SkipForTigrisWithReason(t, targetErr.Error())
 							}
 

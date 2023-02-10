@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgdb
+package tigrisdb
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 	"runtime/pprof"
 	"sync"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/tigrisdata/tigris-client-go/driver"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -30,28 +30,30 @@ import (
 )
 
 // queryIteratorProfiles keeps track on all query iterators.
-var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb.queryIterator")
+var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb.queryIterator")
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx context.Context
+	ctx    context.Context
+	schema *tjson.Schema
 
 	m     sync.Mutex
-	rows  pgx.Rows
+	iter  driver.Iterator
 	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
 	n     int
 }
 
-// newIterator returns a new queryIterator for the given pgx.Rows.
+// newIterator returns a new queryIterator for the given driver.Iterator.
 //
-// Iterator's Close method closes rows.
+// Iterator's Close method closes driver.Iterator.
 //
-// Nil rows are possible and return already done iterator.
-func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *types.Document] {
+// No documents are possible and return already done iterator.
+func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
-		ctx:   ctx,
-		rows:  rows,
-		stack: debugbuild.Stack(),
+		ctx:    ctx,
+		schema: schema,
+		iter:   titer,
+		stack:  debugbuild.Stack(),
 	}
 
 	queryIteratorProfiles.Add(iter, 1)
@@ -83,16 +85,29 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 	defer iter.m.Unlock()
 
 	// ignore context error, if any, if iterator is already closed
-	if iter.rows == nil {
+	if iter.iter == nil {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
 	if err := iter.ctx.Err(); err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		return 0, nil, err
 	}
 
-	if !iter.rows.Next() {
-		if err := iter.rows.Err(); err != nil {
+	var document driver.Document
+
+	ok := iter.iter.Next(&document)
+	if !ok {
+		err := iter.iter.Err()
+
+		switch {
+		case err == nil:
+			// nothing
+		case IsInvalidArgument(err):
+			// Skip errors from filtering different types.
+			// For example, given document {v: 42} and filter {v: "42"},
+			// MongoDB would skip that document because the type is different.
+			// Tigris returns a schema error in such cases that we ignore.
+		default:
 			return 0, nil, lazyerrors.Error(err)
 		}
 
@@ -103,19 +118,14 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 		return 0, nil, iterator.ErrIteratorDone
 	}
 
-	var b []byte
-	if err := iter.rows.Scan(&b); err != nil {
-		return 0, nil, lazyerrors.Error(err)
-	}
-
-	doc, err := pjson.Unmarshal(b)
+	doc, err := tjson.Unmarshal(document, iter.schema)
 	if err != nil {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
 	iter.n++
 
-	return iter.n - 1, doc, nil
+	return iter.n - 1, doc.(*types.Document), nil
 }
 
 // Close implements iterator.Interface.
@@ -134,9 +144,10 @@ func (iter *queryIterator) close() {
 
 	runtime.SetFinalizer(iter, nil)
 
-	if iter.rows != nil {
-		iter.rows.Close()
-		iter.rows = nil
+	if iter.iter != nil {
+		iter.iter.Close()
+
+		iter.iter = nil
 	}
 }
 
