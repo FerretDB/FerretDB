@@ -131,7 +131,7 @@ func TestConnInfoCursor(t *testing.T) {
 
 	iter := newTestIterator(array)
 
-	id := connInfo.SetCursor(nil, iter, nil)
+	id := connInfo.SetCursor(iter, nil)
 
 	cursor = connInfo.Cursor(id)
 	require.NotNil(t, cursor)
@@ -183,7 +183,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 			iter := &testIterator{array: array}
 
-			id := connInfo.SetCursor(nil, iter, nil)
+			id := connInfo.SetCursor(iter, nil)
 			connInfo.Cursor(id)
 			cursorIDs[i] = id
 		}(i)
@@ -253,7 +253,7 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 
 			iter := &testIterator{array: array}
 
-			connInfo.SetCursor(nil, iter, nil)
+			connInfo.SetCursor(iter, nil)
 		}(i + 1000) // avoid setting the same cursor names.
 
 		go func(i int) {
