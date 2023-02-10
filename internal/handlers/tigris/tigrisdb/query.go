@@ -17,12 +17,16 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -37,7 +41,7 @@ type FetchParam struct {
 }
 
 // QueryDocuments fetches documents from the given collection.
-func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*types.Document, error) {
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (iterator.Interface[int, *types.Document], error) {
 	db := tdb.Driver.UseDatabase(param.DB)
 
 	collection, err := db.DescribeCollection(ctx, param.Collection)
@@ -51,7 +55,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 				zap.String("db", param.DB), zap.String("collection", param.Collection),
 			)
 
-			return []*types.Document{}, nil
+			return newQueryIterator(ctx, nil, nil), nil
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -67,25 +71,14 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) ([]*
 	filter := tdb.BuildFilter(param.Filter)
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
-	iter, err := db.Read(ctx, param.Collection, filter, nil)
+	tigrisIter, err := db.Read(ctx, param.Collection, filter, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer iter.Close()
 
-	var res []*types.Document
+	iter := newQueryIterator(ctx, tigrisIter, &schema)
 
-	var d driver.Document
-	for iter.Next(&d) {
-		doc, err := tjson.Unmarshal(d, &schema)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res = append(res, doc.(*types.Document))
-	}
-
-	return res, iter.Err()
+	return iter, nil
 }
 
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
@@ -95,25 +88,49 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// filter only by _id for now
-		if k != "_id" {
+		key := k // key can be either a single key string '"v"' or Tigris dot notation '"v.foo"'
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1940
+		if v == "" {
 			continue
+		}
+
+		if k != "" {
+			// don't pushdown $comment, it's attached to query in handlers
+			if k[0] == '$' {
+				continue
+			}
+
+			// If the key is in dot notation translate it to a tigris dot notation
+			if path := types.NewPathFromString(k); path.Len() > 1 {
+				indexSearch := false
+
+				// TODO https://github.com/FerretDB/FerretDB/issues/1914
+				for _, k := range path.Slice() {
+					if _, err := strconv.Atoi(k); err == nil {
+						indexSearch = true
+						break
+					}
+				}
+
+				if indexSearch {
+					continue
+				}
+
+				key = path.String() // '"v.foo"'
+			}
 		}
 
 		switch v.(type) {
-		case string:
-			// filtering by string values is complicated if the storage supports encodings, collations, etc,
-			// but Tigris does not support any of these
-		case types.ObjectID:
-			// filtering by ObjectID is always safe
-		default:
-			// skip other types for now
+		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
 			continue
+		case float64, string, types.ObjectID, int32, int64:
+			rawValue := must.NotFail(tjson.Marshal(v))
+			res[key] = json.RawMessage(rawValue)
+		default:
+			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
-
-		// filter by the exact _id value
-		id := must.NotFail(tjson.Marshal(v))
-		res["_id"] = json.RawMessage(id)
 	}
 
 	return must.NotFail(json.Marshal(res))

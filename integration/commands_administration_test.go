@@ -667,7 +667,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 
 	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
+	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
 	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
@@ -938,24 +938,14 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 				}
 			}`, collName, i,
 			)
-			opts := options.CreateCollectionOptions{
-				Validator: bson.D{{"$tigrisSchemaString", schema}},
+
+			// Set $tigrisSchemaString for tigris only.
+			var opts options.CreateCollectionOptions
+			if setup.IsTigris(t) {
+				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
 			}
 
-			// Attempt to create a collection for Tigris with a schema.
-			// If we get an error that support for "validator" is not implemented, that's Postgres.
-			// If we get an error that "$tigrisSchemaString" is unknown, that's MongoDB.
-			// In both cases, we create a collection without a schema.
 			err := db.CreateCollection(ctx, collName, &opts)
-			if err != nil {
-				if errorTextContains(err,
-					`support for field "validator" is not implemented yet`,
-					`unknown top level operator: $tigrisSchemaString`,
-				) {
-					err = db.CreateCollection(ctx, collName)
-				}
-			}
-
 			assert.NoError(t, err)
 
 			err = db.Drop(ctx)
