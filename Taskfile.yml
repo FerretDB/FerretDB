@@ -178,7 +178,7 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
-        -compat-url=mongodb://username:password@host.docker.internal:37018/?tls=true
+        -compat-url='mongodb://username:password@127.0.0.1:37018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -compat-backend=mongodb
 
   test-integration-tigris:
@@ -191,7 +191,7 @@ tasks:
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
         -records-dir=../records
         -target-tls
-        -compat-url=mongodb://username:password@host.docker.internal:37017/
+        -compat-url=mongodb://username:password@127.0.0.1:37017/
         -compat-backend=mongodb
 
   test-integration-mongodb:
@@ -267,7 +267,7 @@ tasks:
         --listen-addr=''
         --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls-ca-file=./build/certs/rootCA.pem
+        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
         --listen-tls=:27018
         --mode=normal
         --postgresql-url="postgres://127.0.0.1:5433/ferretdb"
@@ -358,7 +358,7 @@ tasks:
     cmds:
       - >
         docker compose exec mongodb mongosh
-        --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA.pem
+        --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA-cert.pem
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell
 
@@ -368,7 +368,7 @@ tasks:
       - >
         docker compose run --rm legacy-mongo-shell
         --tlsCertificateKeyFile /etc/certs/server.pem
-        --tlsCAFile /etc/certs/rootCA.pem
+        --tlsCAFile /etc/certs/rootCA-cert.pem
         --tls
         'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
         /legacy-mongo-shell/test.js

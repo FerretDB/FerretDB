@@ -60,7 +60,7 @@ func Startup() {
 
 		client, err := makeClient(ctx, u)
 		if err != nil {
-			zap.S().Fatalf("failed to create client: %v", err)
+			zap.S().Fatalf("failed to create client for %s: %s", u, err)
 		}
 		client.Disconnect(ctx)
 

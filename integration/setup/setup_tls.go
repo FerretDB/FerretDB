@@ -52,7 +52,7 @@ func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
 	_, err = os.Stat(keyPath)
 	require.NoError(t, err)
 
-	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
+	caPath := filepath.Join("..", "build", "certs", "rootCA-cert.pem")
 
 	_, err = os.Stat(keyPath)
 	require.NoError(t, err)
