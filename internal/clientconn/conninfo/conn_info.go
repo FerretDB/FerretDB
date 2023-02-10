@@ -18,7 +18,10 @@ package conninfo
 
 import (
 	"context"
+	"math"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -40,16 +43,14 @@ type ConnInfo struct {
 	username string
 	password string
 
-	curRW         sync.RWMutex
-	cursors       map[int64]Cursor
-	cursorCounter int64
+	curRW   sync.RWMutex
+	cursors map[int64]Cursor
 }
 
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	return &ConnInfo{
-		cursors:       map[int64]Cursor{},
-		cursorCounter: 1,
+		cursors: map[int64]Cursor{},
 	}
 }
 
@@ -96,14 +97,29 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[int, *typ
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
-	connInfo.cursorCounter++
-
-	id := connInfo.cursorCounter
+	id := connInfo.generateID()
 
 	connInfo.cursors[id] = Cursor{
 		Iter:   iter,
 		tx:     tx,
 		Filter: filter,
+	}
+
+	return id
+}
+
+// generateID generates a unique cursor ID.
+func (connInfo *ConnInfo) generateID() int64 {
+	rand.Seed(time.Now().UnixNano())
+
+	var id int64
+
+	for {
+		id = int64(math.Abs(float64(rand.Int63())))
+
+		if _, ok := connInfo.cursors[id]; !ok {
+			break
+		}
 	}
 
 	return id
