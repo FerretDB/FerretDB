@@ -141,10 +141,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				}
 			}
 
-			setDocKeys := setDoc.Keys()
-			sort.Strings(setDocKeys)
-
-			for _, setKey := range setDocKeys {
+			for _, setKey := range setDoc.Keys() {
 				setValue := must.NotFail(setDoc.Get(setKey))
 				doc.Set(setKey, setValue)
 			}
