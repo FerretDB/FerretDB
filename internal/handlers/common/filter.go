@@ -54,95 +54,185 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
-	if strings.ContainsRune(filterKey, '.') {
-		// {field1./.../.fieldN: filterValue}
-		path := types.NewPathFromString(filterKey)
-		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValue, err := doc.GetByPath(path.TrimSuffix())
-		if err != nil {
-			return false, nil // no error - the field is just not present
-		}
-
-		switch docValue := docValue.(type) {
-		case *types.Document:
-			doc = docValue
-			filterKey = path.Suffix()
-		case *types.Array:
-			index, err := strconv.Atoi(path.Suffix())
-			if err != nil {
-				return false, nil
-			}
-
-			if docValue.Len() == 0 || docValue.Len() <= index {
-				return false, nil
-			}
-
-			value, err := docValue.Get(index)
-			if err != nil {
-				return false, err
-			}
-
-			doc = must.NotFail(types.NewDocument(filterKey, value))
-		}
-	}
-
 	if strings.HasPrefix(filterKey, "$") {
 		// {$operator: filterValue}
 		return filterOperator(doc, filterKey, filterValue)
 	}
 
-	switch filterValue := filterValue.(type) {
-	case *types.Document:
-		// {field: {expr}} or {field: {document}}
-		return filterFieldExpr(doc, filterKey, filterValue)
+	docs := []*types.Document{doc}
 
-	case *types.Array:
-		// {field: [array]}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			return false, nil // no error - the field is just not present
-		}
-		result := types.Compare(docValue, filterValue)
+	if strings.ContainsRune(filterKey, '.') {
+		// {field1./.../.fieldN: filterValue}
+		filterKey, docs = findFilterLeaves(doc, filterKey)
+	}
 
-		return result == types.Equal, nil
+	for _, doc := range docs {
+		switch filterValue := filterValue.(type) {
+		case *types.Document:
+			// {field: {expr}} or {field: {document}}
+			ok, err := filterFieldExpr(doc, filterKey, filterValue)
+			if err != nil {
+				return false, err
+			}
 
-	case types.Regex:
-		// {field: /regex/}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			return false, nil // no error - the field is just not present
-		}
-		return filterFieldRegex(docValue, filterValue)
-
-	default:
-		// {field: value}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			// comparing not existent field with null should return true
-			if _, ok := filterValue.(types.NullType); ok {
+			if ok {
 				return true, nil
 			}
-			return false, nil // no error - the field is just not present
+
+		case *types.Array:
+			// {field: [array]}
+			docValue, err := doc.Get(filterKey)
+			if err != nil {
+				continue // no error - the field is just not present
+			}
+
+			if result := types.Compare(docValue, filterValue); result == types.Equal {
+				return true, nil
+			}
+
+		case types.Regex:
+			// {field: /regex/}
+			docValue, err := doc.Get(filterKey)
+			if err != nil {
+				continue // no error - the field is just not present
+			}
+
+			ok, err := filterFieldRegex(docValue, filterValue)
+			if err != nil {
+				return false, err
+			}
+
+			if ok {
+				return true, nil
+			}
+
+		default:
+			// {field: value}
+			docValue, err := doc.Get(filterKey)
+			if err != nil {
+				// comparing not existent field with null should return true
+				if _, ok := filterValue.(types.NullType); ok {
+					return true, nil
+				}
+				continue // no error - the field is just not present
+			}
+
+			if result := types.Compare(docValue, filterValue); result == types.Equal {
+				return true, nil
+			}
 		}
-
-		result := types.Compare(docValue, filterValue)
-
-		return result == types.Equal, nil
 	}
+
+	// If we got here, it means that none of the documents matched the filter.
+	return false, nil
 }
 
-type matchesForFilter struct {
-	filterKey string
-	doc       *types.Document
-}
-
-// matchesForFilter finds all document's subdocuments that could be used to check
-// if the main document matches the filter. It returns a list of documents
+// findFilterLeaves finds all "leaves" - document's subdocuments that could be used to check
+// if the main document matches the filter.
+//
+// It returns:
+// - filterKey's "suffix" - the final element of filterKey's path;
+// - a slice of "leaves" - subdocuments that contain "suffix" filter keys.
 //
 // For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and the filterKey is foo.bar,
-// then the function will return [{bar: 2}].
-func findMatchesForFilter() []matchesForFilter {
-	return nil
+// then the function will return the suffix "bar" and a slice with two leaves:
+// {bar: 1} and {bar: 2}.
+func findFilterLeaves(doc *types.Document, filterKey string) (suffix string, docs []*types.Document) {
+	path := types.NewPathFromString(filterKey)
+	suffix = path.Suffix()
+
+	current := []any{doc}
+	for _, p := range path.TrimSuffix().Slice() {
+		var next []any
+		for _, el := range current {
+			switch s := el.(type) {
+			case *types.Document:
+				val, err := s.Get(p)
+				if err != nil {
+					// element doesn't exist, do nothing
+					continue
+				}
+
+				_, isDoc := val.(*types.Document)
+				_, isArray := val.(*types.Array)
+
+				if isDoc || isArray {
+					// element is a document or an array, add it to the next iteration
+					next = append(next, val)
+				}
+
+			case *types.Array:
+				index, err := strconv.Atoi(p)
+
+				if err == nil {
+					// looking for an array element by index
+					val, err := s.Get(index)
+					if err != nil {
+						// element doesn't exist, do nothing
+						continue
+					}
+
+					if _, ok := val.(*types.Document); ok {
+						// element is a document, add it to the next iteration
+						// (nested arrays are not supported, no need to check if it's an array)
+						next = append(next, val)
+					}
+
+				} else {
+					// looking for an array element by field
+					for i := 0; i < s.Len(); i++ {
+						val := must.NotFail(s.Get(i))
+
+						if _, ok := val.(*types.Document); !ok {
+							// element is a document, add it to the next iteration
+							// (nested arrays are not supported, no need to check if it's an array)
+							next = append(next, val)
+						}
+					}
+				}
+
+			default:
+				// not a document or array, do nothing
+			}
+		}
+
+		current = next
+	}
+
+	docs = make([]*types.Document, 0, len(current))
+
+	// In the slice current we have all the documents and arrays that matched the part of the path without the suffix.
+	// Now we can filter out all the documents/arrays that don't have the suffix.
+	// Also, as filtering only works with documents, we need to make documents from arrays.
+	for _, el := range current {
+		switch s := el.(type) {
+		case *types.Document:
+			if s.Has(suffix) {
+				docs = append(docs, s)
+			}
+
+		case *types.Array:
+			index, err := strconv.Atoi(suffix)
+
+			if err == nil {
+				// looking for an array element by index
+				val, err := s.Get(index)
+				if err == nil {
+					docs = append(docs, must.NotFail(types.NewDocument(suffix, val)))
+				}
+			} else {
+				// looking for an array element by field
+				for i := 0; i < s.Len(); i++ {
+					val, err := s.Get(i)
+					if err == nil {
+						docs = append(docs, must.NotFail(types.NewDocument(suffix, val)))
+					}
+				}
+			}
+		}
+	}
+
+	return suffix, docs
 }
 
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
