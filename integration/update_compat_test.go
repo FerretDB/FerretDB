@@ -487,30 +487,32 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 }
 
 func TestReplaceKeepOrderCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Schema violation")
-
 	t.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: shareddata.Providers{shareddata.Int32s},
+	})
 
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
+	ctx := s.Ctx
+	targetCollection := s.TargetCollections[0]
+	compatCollection := s.CompatCollections[0]
 
-	replace := bson.D{{"_id", int32(1)}, {"c", int32(1)}, {"b", int32(2)}, {"a", int32(3)}}
+	replace := bson.D{{"_id", "arr"}, {"c", int32(1)}, {"b", int32(2)}, {"a", int32(3)}}
+	filter := bson.D{{"_id", "arr"}}
 
-	_, err := targetCollection.InsertOne(ctx, bson.D{{"_id", 1}})
+	_, err := targetCollection.InsertOne(ctx, filter)
 	require.NoError(t, err)
-	_, err = compatCollection.InsertOne(ctx, bson.D{{"_id", 1}})
+	_, err = compatCollection.InsertOne(ctx, filter)
 	require.NoError(t, err)
 
-	_, err = targetCollection.ReplaceOne(ctx, bson.D{{"_id", 1}}, replace)
+	_, err = targetCollection.ReplaceOne(ctx, filter, replace)
 	require.NoError(t, err)
-	_, err = compatCollection.ReplaceOne(ctx, bson.D{{"_id", 1}}, replace)
+	_, err = compatCollection.ReplaceOne(ctx, filter, replace)
 	require.NoError(t, err)
 
-	targetResult := targetCollection.FindOne(ctx, bson.D{{"_id", 1}})
+	targetResult := targetCollection.FindOne(ctx, filter)
 	require.NoError(t, targetResult.Err())
-	compatResult := compatCollection.FindOne(ctx, bson.D{{"_id", 1}})
+	compatResult := compatCollection.FindOne(ctx, filter)
 	require.NoError(t, compatResult.Err())
 
 	var targetDoc, compatDoc bson.D
