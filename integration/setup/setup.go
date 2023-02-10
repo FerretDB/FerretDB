@@ -103,7 +103,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 			tls:      *targetTLSF,
 			user:     getUser(*targetTLSF),
 		})
-		client = setupClient(tb, ctx, uri, *targetTLSF)
+		client = setupClient(tb, ctx, uri)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs

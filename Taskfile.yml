@@ -178,7 +178,7 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
-        -compat-url=mongodb://username:password@host.docker.internal:37018/
+        -compat-url=mongodb://username:password@host.docker.internal:37018/?tls=true
         -compat-backend=mongodb
 
   test-integration-tigris:
@@ -191,7 +191,7 @@ tasks:
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
         -records-dir=../records
         -target-tls
-        -compat-url=mongodb://username:password@host.docker.internal:37018/
+        -compat-url=mongodb://username:password@host.docker.internal:37017/
         -compat-backend=mongodb
 
   test-integration-mongodb:

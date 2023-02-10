@@ -96,7 +96,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 			tls:      *targetTLSF,
 			user:     getUser(*targetTLSF),
 		})
-		targetClient = setupClient(tb, setupCtx, targetURI, *targetTLSF)
+		targetClient = setupClient(tb, setupCtx, targetURI)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -108,7 +108,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
 	defer span.End()
-	compatClient := setupClient(tb, ctxC, *compatURLF, false)
+	compatClient := setupClient(tb, ctxC, *compatURLF)
 	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)

@@ -268,43 +268,50 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	}
 
 	uri := buildMongoDBURI(tb, &opts)
-	client := setupClient(tb, ctx, uri, *targetTLSF)
+	client := setupClient(tb, ctx, uri)
 
 	logger.Info("Listener started", zap.String("handler", getHandler()), zap.String("uri", uri))
 
 	return client, uri
 }
 
-// setupClient returns MongoDB client for database on given MongoDB URI.
-func setupClient(tb testing.TB, ctx context.Context, uri string, isTLS bool) *mongo.Client {
+// makeClient returns new client for the given MongoDB URI.
+func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
+	clientOpts := options.Client().ApplyURI(uri)
+
+	clientOpts.SetMonitor(otelmongo.NewMonitor())
+
+	client, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = client.ListDatabases(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+// setupClient returns test-specific client for the given MongoDB URI.
+//
+// It disconnects automatically when test ends.
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupClient").End()
-	trace.Log(ctx, "setupClient", uri)
 
-	tb.Logf("setupClient: %s", uri)
-
-	clientOpts := options.Client().ApplyURI(uri).SetMonitor(otelmongo.NewMonitor())
-
-	// set TLSConfig to the client option, this adds
-	// RootCAs and Certificates.
-	if isTLS {
-		clientOpts.SetTLSConfig(GetClientTLSConfig(tb))
-	}
-
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := makeClient(ctx, uri)
 	require.NoError(tb, err, "URI: %s", uri)
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
 		require.NoError(tb, err)
 	})
-
-	_, err = client.ListDatabases(ctx, bson.D{})
-	require.NoError(tb, err)
 
 	return client
 }

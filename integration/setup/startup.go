@@ -42,6 +42,9 @@ func Startup() {
 	// use any available port to allow running different configuration in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	if p := *targetPortF; p == 0 {
 		zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
 	} else {
@@ -54,6 +57,12 @@ func Startup() {
 		if !slices.Contains(allBackends, *compatBackendF) {
 			zap.S().Fatalf("unexpected compat backend %q, expected one of %v", *compatBackendF, allBackends)
 		}
+
+		client, err := makeClient(ctx, u)
+		if err != nil {
+			zap.S().Fatalf("failed to create client: %v", err)
+		}
+		client.Disconnect(ctx)
 
 		zap.S().Infof("Compat system: %s %s.", *compatBackendF, u)
 	}
