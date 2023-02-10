@@ -95,15 +95,11 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var client *mongo.Client
 	var uri string
 
-	if *targetPortF == 0 {
+	if *targetURLF == "" {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
-			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:      *targetTLSF,
-			user:     getUser(*targetTLSF),
-		})
-		client = setupClient(tb, ctx, uri)
+		client = setupClient(tb, ctx, *targetURLF)
+		uri = *targetURLF
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -164,7 +160,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	for _, provider := range opts.Providers {
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler()) {
+		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping it.",
 				provider.Name(), getHandler(),

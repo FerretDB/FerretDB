@@ -44,10 +44,16 @@ func Startup() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if p := *targetPortF; p == 0 {
+	if u := *targetURLF; u == "" {
 		zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
 	} else {
-		zap.S().Infof("Target system: port %d.", p)
+		client, err := makeClient(ctx, u)
+		if err != nil {
+			zap.S().Fatalf("Failed to create client for target system %s: %s", u, err)
+		}
+		client.Disconnect(ctx)
+
+		zap.S().Infof("Target system: %s.", u)
 	}
 
 	if u := *compatURLF; u == "" {
@@ -55,7 +61,7 @@ func Startup() {
 	} else {
 		client, err := makeClient(ctx, u)
 		if err != nil {
-			zap.S().Fatalf("Failed to create client for %s: %s", u, err)
+			zap.S().Fatalf("Failed to create client for compat system %s: %s", u, err)
 		}
 		client.Disconnect(ctx)
 

@@ -40,6 +40,7 @@ type TLSFilesPaths struct {
 	CA   string
 }
 
+// TODO
 // GetTLSFilesPaths returns paths to TLS files - cert, key, ca.
 func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
 	certPath := filepath.Join("..", "build", "certs", string(side)+"-cert.pem")
@@ -64,6 +65,7 @@ func GetTLSFilesPaths(t testing.TB, side TLSFileSide) *TLSFilesPaths {
 	}
 }
 
+// TODO
 // GetClientTLSConfig returns a test TLS config for a client.
 func GetClientTLSConfig(t testing.TB) *tls.Config {
 	tlsFiles := GetTLSFilesPaths(t, ClientSide)

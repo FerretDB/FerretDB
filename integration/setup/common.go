@@ -41,15 +41,15 @@ import (
 
 // Flags.
 var (
-	targetPortF = flag.Int("target-port", 0, "target system's port for tests; if 0, in-process FerretDB is used")
-	targetTLSF  = flag.Bool("target-tls", false, "use TLS for target system")
+	targetURLF = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
 
+	targetTLSF        = flag.Bool("target-tls", false, "use TLS for target system")
 	postgreSQLURLF    = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
 	tigrisURLSF       = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
 	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
 
-	compatURLF = flag.String("compat-url", "", "MongoDB URL for compatibility tests; if empty, they are skipped")
+	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -172,7 +172,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	defer trace.StartRegion(ctx, "setupListener").End()
 
-	require.Zero(tb, *targetPortF, "-target-port must be 0 for in-process FerretDB")
+	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
 	// only one of postgresql-url and tigris-urls should be set.
 	if *tigrisURLSF != "" && *postgreSQLURLF != "" {

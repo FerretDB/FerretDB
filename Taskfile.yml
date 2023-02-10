@@ -179,7 +179,6 @@ tasks:
         -records-dir=../records
         -target-unix-socket
         -compat-url='mongodb://username:password@127.0.0.1:37018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -compat-backend=mongodb
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -192,7 +191,6 @@ tasks:
         -records-dir=../records
         -target-tls
         -compat-url=mongodb://username:password@127.0.0.1:37017/
-        -compat-backend=mongodb
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -202,7 +200,7 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -records-dir=../records
-        -target-port=37017
+        -target-url=mongodb://username:password@127.0.0.1:37017/
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"

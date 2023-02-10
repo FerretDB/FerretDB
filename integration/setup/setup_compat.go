@@ -88,15 +88,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var targetClient *mongo.Client
-	if *targetPortF == 0 {
+	if *targetURLF == "" {
 		targetClient, _ = setupListener(tb, setupCtx, logger)
 	} else {
-		targetURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
-			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:      *targetTLSF,
-			user:     getUser(*targetTLSF),
-		})
-		targetClient = setupClient(tb, setupCtx, targetURI)
+		targetClient = setupClient(tb, setupCtx, *targetURLF)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -159,7 +154,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler()) {
+		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping creating %q.",
 				provider.Name(), getHandler(), fullName,
