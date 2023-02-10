@@ -485,3 +485,39 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 
 	testUpdateCommandCompat(t, testCases)
 }
+
+func TestReplaceKeepOrderCompat(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: shareddata.Providers{shareddata.Int32s},
+	})
+
+	ctx := s.Ctx
+	targetCollection := s.TargetCollections[0]
+	compatCollection := s.CompatCollections[0]
+
+	replace := bson.D{{"_id", "arr"}, {"c", int32(1)}, {"b", int32(2)}, {"a", int32(3)}}
+	filter := bson.D{{"_id", "arr"}}
+
+	_, err := targetCollection.InsertOne(ctx, filter)
+	require.NoError(t, err)
+	_, err = compatCollection.InsertOne(ctx, filter)
+	require.NoError(t, err)
+
+	_, err = targetCollection.ReplaceOne(ctx, filter, replace)
+	require.NoError(t, err)
+	_, err = compatCollection.ReplaceOne(ctx, filter, replace)
+	require.NoError(t, err)
+
+	targetResult := targetCollection.FindOne(ctx, filter)
+	require.NoError(t, targetResult.Err())
+	compatResult := compatCollection.FindOne(ctx, filter)
+	require.NoError(t, compatResult.Err())
+
+	var targetDoc, compatDoc bson.D
+	require.NoError(t, targetResult.Decode(&targetDoc))
+	require.NoError(t, compatResult.Decode(&compatDoc))
+
+	assert.Equal(t, compatDoc, targetDoc)
+}
