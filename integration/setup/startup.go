@@ -26,7 +26,6 @@ import (
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -54,17 +53,13 @@ func Startup() {
 	if u := *compatURLF; u == "" {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	} else {
-		if !slices.Contains(allBackends, *compatBackendF) {
-			zap.S().Fatalf("unexpected compat backend %q, expected one of %v", *compatBackendF, allBackends)
-		}
-
 		client, err := makeClient(ctx, u)
 		if err != nil {
-			zap.S().Fatalf("failed to create client for %s: %s", u, err)
+			zap.S().Fatalf("Failed to create client for %s: %s", u, err)
 		}
 		client.Disconnect(ctx)
 
-		zap.S().Infof("Compat system: %s %s.", *compatBackendF, u)
+		zap.S().Infof("Compat system: %s.", u)
 	}
 
 	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects
