@@ -230,7 +230,9 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows), nil
+	iter := newIterator(ctx, rows)
+
+	return iter, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.

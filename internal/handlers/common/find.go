@@ -180,8 +180,40 @@ func MakeFindReplyParameters(
 		firstBatch.Append(resDocs[i])
 	}
 
+	p = iterator.WithClose(p, func() {
+		var err error
+		var committed bool
+
+		defer func() {
+			if committed {
+				return
+			}
+
+			if rerr := tx.Rollback(context.Background()); rerr != nil {
+				tx.Conn().Config().Logger.Log(
+					context.Background(), pgx.LogLevelError, "failed to perform rollback",
+					map[string]any{"error": rerr},
+				)
+
+				if err == nil {
+					err = rerr
+				}
+			}
+		}()
+
+		err = tx.Commit(context.Background())
+		if err != nil {
+			tx.Conn().Config().Logger.Log(
+				context.Background(), pgx.LogLevelError, "failed to perform commit",
+				map[string]any{"error": err},
+			)
+		}
+
+		committed = true
+	})
+
 	if p != nil {
-		id = conninfo.Get(ctx).SetCursor(tx, p, filter)
+		id = conninfo.Get(ctx).SetCursor(p, filter)
 	}
 
 	return firstBatch, id

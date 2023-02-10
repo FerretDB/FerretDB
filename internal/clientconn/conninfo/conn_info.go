@@ -23,8 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v4"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
@@ -56,7 +54,6 @@ func NewConnInfo() *ConnInfo {
 
 // Cursor represents a cursor.
 type Cursor struct {
-	tx     pgx.Tx
 	Iter   iterator.Interface[int, *types.Document]
 	Filter *types.Document
 }
@@ -93,7 +90,7 @@ func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
-func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[int, *types.Document], filter *types.Document) int64 {
+func (connInfo *ConnInfo) SetCursor(iter iterator.Interface[int, *types.Document], filter *types.Document) int64 {
 	connInfo.curRW.Lock()
 	defer connInfo.curRW.Unlock()
 
@@ -101,7 +98,6 @@ func (connInfo *ConnInfo) SetCursor(tx pgx.Tx, iter iterator.Interface[int, *typ
 
 	connInfo.cursors[id] = Cursor{
 		Iter:   iter,
-		tx:     tx,
 		Filter: filter,
 	}
 
@@ -140,32 +136,6 @@ func (connInfo *ConnInfo) deleteCursor(id int64) (err error) {
 	cursor := connInfo.cursors[id]
 
 	cursor.Iter.Close()
-
-	var committed bool
-
-	defer func() {
-		if committed {
-			return
-		}
-
-		if rerr := cursor.tx.Rollback(context.Background()); rerr != nil {
-			cursor.tx.Conn().Config().Logger.Log(
-				context.Background(), pgx.LogLevelError, "failed to perform rollback",
-				map[string]any{"error": rerr},
-			)
-
-			if err == nil {
-				err = rerr
-			}
-		}
-	}()
-
-	err = cursor.tx.Commit(context.Background())
-	if err != nil {
-		return err
-	}
-
-	committed = true
 
 	delete(connInfo.cursors, id)
 
