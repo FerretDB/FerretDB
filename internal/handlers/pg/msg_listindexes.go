@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -26,31 +27,34 @@ import (
 
 // MsgListIndexes implements HandlerInterface.
 func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/278
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "comment", "cursor")
+	params, err := common.GetListIndexesParams(document, h.L)
+	if err != nil {
+		return nil, err
+	}
 
-	firstBatch := must.NotFail(types.NewArray(
-		must.NotFail(types.NewDocument(
-			"v", float64(2),
-			"key", must.NotFail(types.NewDocument(
-				"_id", float64(1),
-			)),
-			"name", "_id_",
-		)),
-	))
+	// TODO Uncomment this response when we support indexes for _id: https://github.com/FerretDB/FerretDB/issues/1384.
+	//firstBatch := must.NotFail(types.NewArray(
+	//	must.NotFail(types.NewDocument(
+	//		"v", float64(2),
+	//		"key", must.NotFail(types.NewDocument(
+	//			"_id", float64(1),
+	//		)),
+	//		"name", "_id_",
+	//	)),
+	//))
+	firstBatch := must.NotFail(types.NewArray())
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				// TODO "ns" field
 				"id", int64(0),
+				"ns", fmt.Sprintf("%s.%s", params.DB, params.Collection),
 				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),

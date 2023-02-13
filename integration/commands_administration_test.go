@@ -992,52 +992,69 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	// Test list of default indexes for the created collection.
-	t.Run("existing-collection-default", func(t *testing.T) {
-		var res bson.D
-		err := collection.Database().RunCommand(ctx,
-			bson.D{{"listIndexes", collection.Name()}},
-		).Decode(&res)
-
-		require.NoError(t, err)
-
-		expectedRes := bson.D{
-			{
-				"cursor", bson.D{
-					{"id", int64(0)},
-					{"ns", collection.Database().Name() + "." + collection.Name()},
-					{
-						"firstBatch", bson.A{
-							bson.D{
-								{"v", int32(2)},
-								{"key", bson.D{{"_id", int32(1)}}},
-								{"name", "_id_"},
+	for name, tc := range map[string]struct {
+		collectionName any
+		expectedResult bson.D
+		expectedError  *mongo.CommandError
+	}{
+		"existing-collection-default-indexes": {
+			collectionName: collection.Name(),
+			expectedResult: bson.D{
+				{
+					"cursor", bson.D{
+						{"id", int64(0)},
+						{"ns", collection.Database().Name() + "." + collection.Name()},
+						{
+							"firstBatch", bson.A{
+								bson.D{
+									{"v", int32(2)},
+									{"key", bson.D{{"_id", int32(1)}}},
+									{"name", "_id_"},
+								},
 							},
 						},
 					},
 				},
+				{"ok", float64(1)},
 			},
-			{"ok", float64(1)},
-		}
-		assert.Equal(t, expectedRes, res)
-	})
+			expectedError: nil,
+		},
+		"non-existent-collection": {
+			collectionName: "non-existent-collection",
+			expectedResult: nil,
+			expectedError: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: fmt.Sprintf("ns does not exist: %s.%s", collection.Database().Name(), "non-existent-collection"),
+			},
+		},
+		"invalid-collection-name": {
+			collectionName: 42,
+			expectedResult: nil,
+			expectedError: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type int",
+			},
+		},
+	} {
+		name, tc := name, tc
 
-	// Test list indexes on a non-existent collection.
-	t.Run("non-existent-collection", func(t *testing.T) {
-		collectionName := "non-existent-collection"
+		t.Run(name, func(t *testing.T) {
+			var res bson.D
+			err := collection.Database().RunCommand(ctx,
+				bson.D{{"listIndexes", tc.collectionName}},
+			).Decode(&res)
 
-		var res bson.D
-		err := collection.Database().RunCommand(ctx,
-			bson.D{{"listIndexes", collectionName}},
-		).Decode(&res)
+			if tc.expectedResult != nil {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expectedResult, res)
+			}
 
-		require.Nil(t, res)
-
-		expectedErr := mongo.CommandError{
-			Code:    26,
-			Name:    "NamespaceNotFound",
-			Message: fmt.Sprintf("ns does not exist: %s.%s", collection.Database().Name(), collectionName),
-		}
-		AssertEqualError(t, expectedErr, err)
-	})
+			if tc.expectedError != nil {
+				require.Nil(t, res)
+				AssertEqualError(t, *tc.expectedError, err)
+			}
+		})
+	}
 }
