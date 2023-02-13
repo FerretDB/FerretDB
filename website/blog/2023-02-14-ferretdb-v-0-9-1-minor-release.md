@@ -16,7 +16,7 @@ FerretDB v0.9.1 is a minor release with upgrades on previous versions, including
 
 We are pleased to announce the release of FerretDB v0.9.1, a minor release that builds on previous versions and implements new features and bug fixes based on some of the feedback from the community.
 
-Our goal at [FerretDB](https://www.ferretdb.io) is to provide an [open-source MongoDB alternative](blog.ferretdb.io/database-alternatives-mongodb-2023/) that’s compatible with real-world applications.
+Our goal at [FerretDB](https://www.ferretdb.io) is to provide an [open-source MongoDB alternative](https://blog.ferretdb.io/5-database-alternatives-mongodb-2023/) that’s compatible with real-world applications.
 We release a new version of FerretDB every two weeks, so be sure to stay up to date with the latest version.
 
 We express our sincere gratitude to our community for their continuous support, contributions, and valuable feedback.
