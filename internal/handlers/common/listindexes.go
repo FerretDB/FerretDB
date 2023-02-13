@@ -41,6 +41,7 @@ func GetListIndexesParams(document *types.Document, l *zap.Logger) (*ListIndexes
 	}
 
 	var collectionParam any
+
 	if collectionParam, err = document.Get(document.Command()); err != nil {
 		return nil, err
 	}

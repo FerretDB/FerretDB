@@ -18,13 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -49,7 +47,8 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	var exists bool
-	if err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		exists, err = pgdb.CollectionExists(ctx, tx, params.DB, params.Collection)
 		return err
 	}); err != nil {
