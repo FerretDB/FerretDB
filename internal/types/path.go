@@ -95,6 +95,7 @@ func newPathFromString(s string) (Path, error) {
 
 	res = Path{s: make([]string, len(path))}
 	copy(res.s, path)
+
 	return res, nil
 }
 
