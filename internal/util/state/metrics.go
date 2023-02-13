@@ -17,6 +17,7 @@ package state
 import (
 	"strconv"
 
+	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -60,21 +61,29 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"debug":   strconv.FormatBool(info.DebugBuild),
 	}
 
-	s := mc.p.Get()
+	state := mc.p.Get()
 
 	switch {
-	case s.Telemetry == nil:
+	case state.Telemetry == nil:
 		constLabels["telemetry"] = "undecided"
-	case *s.Telemetry:
+	case *state.Telemetry:
 		constLabels["telemetry"] = "enabled"
 	default:
 		constLabels["telemetry"] = "disabled"
 	}
 
-	constLabels["update_available"] = strconv.FormatBool(s.LatestVersion != "" && s.LatestVersion != info.Version)
+	var updateAvailable bool
+
+	if pointer.GetBool(state.Telemetry) {
+		if state.LatestVersion != "" && state.LatestVersion != info.Version {
+			updateAvailable = true
+		}
+	}
+
+	constLabels["update_available"] = strconv.FormatBool(updateAvailable)
 
 	if mc.addUUIDToMetric {
-		constLabels["uuid"] = s.UUID
+		constLabels["uuid"] = state.UUID
 	}
 
 	ch <- prometheus.MustNewConstMetric(

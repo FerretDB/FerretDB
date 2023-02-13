@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
@@ -111,7 +112,11 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided; the first report will be sent soon. "+
 					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
-		case state.LatestVersion != "" && state.LatestVersion != info.Version:
+		case pointer.GetBool(state.Telemetry):
+			if state.LatestVersion == "" || state.LatestVersion == info.Version {
+				break
+			}
+
 			startupWarnings = append(
 				startupWarnings,
 				fmt.Sprintf(
