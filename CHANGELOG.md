@@ -1,5 +1,40 @@
 # Changelog
 
+## [v0.9.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.1) (2023-01-13)
+
+### New Features 🎉
+* Support Tigris pushdowns for numbers by @noisersup in https://github.com/FerretDB/FerretDB/pull/1842
+* Pushdown Tigris queries with dot notation by @noisersup in https://github.com/FerretDB/FerretDB/pull/1908
+
+### Fixed Bugs 🐛
+* Fix `$pop` operator error handling of non-existent path by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1907
+* Fix SASL response for `PLAIN` authentication by @b1ron in https://github.com/FerretDB/FerretDB/pull/1942
+* Fix key ordering on document replacing by @noisersup in https://github.com/FerretDB/FerretDB/pull/1946
+
+### Documentation 📄
+* Add blog post on new FerretDB release by @Fashander in https://github.com/FerretDB/FerretDB/pull/1893
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1902
+* Fix broken link by @Fashander in https://github.com/FerretDB/FerretDB/pull/1918
+* Add blog post on "MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023" by @Fashander in https://github.com/FerretDB/FerretDB/pull/1911
+
+### Other Changes 🤖
+* Use multiple Tigris instances to run tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1878
+* Assorted internal tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1909
+* Bump Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1916
+* Add simple `otel` tracing to collect data from tests by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1863
+* Remove unused parameter by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1919
+* Rework on integration test setup by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1857
+* Add `iterator.WithClose` helper by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1947
+* Tweak CI settings by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1948
+* Rename function, add TODO by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1955
+* Remove `skipTigrisPushdown` from tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/1957
+* Implement Tigris query iterator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1924
+
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/30?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.0...v0.9.1).
+
+
 ## [v0.9.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.0) (2023-01-31)
 
 ## What's Changed
