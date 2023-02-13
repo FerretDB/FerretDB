@@ -1014,7 +1014,6 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 			assert.NotEmpty(t, targetRes)
 			assert.NotEmpty(t, compatRes)
 		})
-
 	}
 }
 
