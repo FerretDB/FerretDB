@@ -13,6 +13,7 @@ on:
 # to prevent concurrent pushes for the same Cloudflare domain alias.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
 
 env:
   GOPATH: /home/runner/go
