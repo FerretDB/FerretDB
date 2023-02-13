@@ -195,6 +195,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
+		// DisablePushdown:
 
 		PostgreSQLURL: *postgreSQLURLF,
 

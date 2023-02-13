@@ -41,9 +41,10 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all handlers
-	Logger        *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
-	StateProvider *state.Provider
+	Logger          *zap.Logger
+	Metrics         *connmetrics.ConnMetrics
+	StateProvider   *state.Provider
+	DisablePushdown bool // defaults to false
 
 	// for `pg` handler
 	PostgreSQLURL string

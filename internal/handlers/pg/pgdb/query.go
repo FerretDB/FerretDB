@@ -41,11 +41,12 @@ type FetchedDocs struct {
 
 // SQLParam represents options/parameters used for SQL query.
 type SQLParam struct {
-	DB         string
-	Collection string
-	Comment    string
-	Explain    bool
-	Filter     *types.Document
+	DB              string
+	Collection      string
+	Comment         string
+	Explain         bool
+	DisablePushdown bool
+	Filter          *types.Document
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
@@ -84,7 +85,7 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 
 	var args []any
 
-	if sp.Filter != nil {
+	if sp.Filter != nil && !sp.DisablePushdown {
 		var where string
 
 		where, args = prepareWhereClause(sp.Filter)
@@ -161,6 +162,8 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 // If the document is not found, it returns nil and no error.
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
+
+	// ?
 
 	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
 	query += where

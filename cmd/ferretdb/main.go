@@ -304,9 +304,10 @@ func run() {
 	}()
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
-		StateProvider: stateProvider,
+		Logger:          logger,
+		Metrics:         metrics.ConnMetrics,
+		StateProvider:   stateProvider,
+		DisablePushdown: cli.Test.DisablePushdown,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
