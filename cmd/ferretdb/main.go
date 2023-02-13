@@ -79,7 +79,6 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing flag: directory for record files."`
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1912
 		DisablePushdown bool `default:"false" help:"Testing flag: disable query pushdown."`
 
 		Telemetry struct {
