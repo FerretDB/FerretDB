@@ -525,7 +525,7 @@ db.aggregate()
 ## Administration commands
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                  |
-| --------------------------------- | ------------------------------ | ------------------------- | ------ |-----------------------------------------------------------|
+| --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                          |
 |                                   | `filter`                       |                           | ✅      |                                                           |
 |                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
