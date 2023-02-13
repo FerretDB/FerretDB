@@ -41,15 +41,33 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetListIndexesParams(document, h.L)
-	if err != nil {
+	common.Ignored(document, h.L, "comment", "cursor")
+
+	var db string
+
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
+	}
+
+	var collectionParam any
+
+	if collectionParam, err = document.Get(document.Command()); err != nil {
+		return nil, err
+	}
+
+	collection, ok := collectionParam.(string)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
+		)
 	}
 
 	var exists bool
 
 	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		exists, err = pgdb.CollectionExists(ctx, tx, params.DB, params.Collection)
+		exists, err = pgdb.CollectionExists(ctx, tx, db, collection)
 		return err
 	}); err != nil {
 		return nil, err
@@ -58,7 +76,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	if !exists {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrNamespaceNotFound,
-			fmt.Sprintf("ns does not exist: %s.%s", params.DB, params.Collection),
+			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
 		)
 	}
 
@@ -79,7 +97,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
-				"ns", fmt.Sprintf("%s.%s", params.DB, params.Collection),
+				"ns", fmt.Sprintf("%s.%s", db, collection),
 				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
