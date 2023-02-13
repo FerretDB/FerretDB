@@ -986,3 +986,38 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 	_, ok := must.NotFail(doc.Get("inprog")).(*types.Array)
 	assert.True(t, ok)
 }
+
+func TestCommandsAdministrationListIndexes(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	// Create a collection and test list of default indexes.
+	//t.Run("existing-collection-default", func(t *testing.T) {
+	//	var res bson.D
+	//	err := s.Collection.Database().RunCommand(s.Ctx,
+	//		bson.D{{"listIndexes", "test"}},
+	//	).Decode(&res)
+	//
+	//	require.NoError(t, err)
+	//})
+
+	// Test list indexes on a non-existent collection.
+	t.Run("non-existent-collection", func(t *testing.T) {
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx,
+			bson.D{{"listIndexes", "non-existent-collection"}},
+		).Decode(&res)
+
+		require.Nil(t, res)
+
+		expectedErr := mongo.CommandError{
+			Code:    26,
+			Name:    "NamespaceNotFound",
+			Message: "ns does not exist: admin.non-existent-collection",
+		}
+		AssertEqualError(t, expectedErr, err)
+	})
+}
