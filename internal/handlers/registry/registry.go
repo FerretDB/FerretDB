@@ -85,10 +85,11 @@ func init() {
 
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &pg.NewOpts{
-			PostgreSQLURL: opts.PostgreSQLURL,
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
+			PostgreSQLURL:   opts.PostgreSQLURL,
+			L:               opts.Logger,
+			Metrics:         opts.Metrics,
+			StateProvider:   opts.StateProvider,
+			DisablePushdown: opts.DisablePushdown,
 		}
 		return pg.New(handlerOpts)
 	}

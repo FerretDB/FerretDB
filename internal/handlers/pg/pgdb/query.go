@@ -190,11 +190,12 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema  string
-	table   string
-	comment string
-	explain bool
-	filter  *types.Document
+	schema          string
+	table           string
+	comment         string
+	explain         bool
+	disablePushdown bool
+	filter          *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -207,7 +208,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += `SELECT _jsonb `
 
-	if c := p.comment; c != "" {
+	if c := p.comment; c != "" && !p.disablePushdown {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -219,7 +220,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	var args []any
 
-	if p.filter != nil {
+	if p.filter != nil && !p.disablePushdown {
 		var where string
 
 		where, args = prepareWhereClause(p.filter)
