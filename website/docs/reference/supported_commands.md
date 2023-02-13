@@ -655,8 +655,8 @@ db.aggregate()
 |                                   | `authorizedDatabases`          |                           | ⚠️      | Ingored                                                   |
 |                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
 | `listIndexes`                     |                                |                           | ✅      |                                                           |
-|                                   | `cursor.batchSize`             |                           | ⚠️      | Ingored                                                   |
-|                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
+|                                   | `cursor.batchSize`             |                           | ⚠️      | Ignored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ignored                                                   |
 | `logRotate`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1959) |
 |                                   | `<target>`                     |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
