@@ -992,7 +992,7 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collectionName any
 		expectedResult bson.D
 		expectedError  *mongo.CommandError
