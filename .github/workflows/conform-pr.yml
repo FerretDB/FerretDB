@@ -49,6 +49,7 @@ on:
 # Do not run this workflow in parallel for any PR change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: false
 
 env:
   GOPATH: /home/runner/go

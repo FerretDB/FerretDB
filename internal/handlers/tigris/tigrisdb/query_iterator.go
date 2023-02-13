@@ -34,14 +34,13 @@ var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/inter
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx context.Context
-
-	iter   driver.Iterator
+	ctx    context.Context
 	schema *tjson.Schema
 
-	stack []byte     // formatted stack trace that is used to format finalizer error message
-	m     sync.Mutex // protects call to iter.Next(), iter.Close and n
-	n     int        // number of current iteration starting from 0
+	m     sync.Mutex
+	iter  driver.Iterator
+	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
+	n     int
 }
 
 // newIterator returns a new queryIterator for the given driver.Iterator.
@@ -52,8 +51,8 @@ type queryIterator struct {
 func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
 		ctx:    ctx,
-		iter:   titer,
 		schema: schema,
+		iter:   titer,
 		stack:  debugbuild.Stack(),
 	}
 
@@ -102,9 +101,12 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 
 		switch {
 		case err == nil:
-			fallthrough
+			// nothing
 		case IsInvalidArgument(err):
-			// Skip errors from filtering invalid types
+			// Skip errors from filtering different types.
+			// For example, given document {v: 42} and filter {v: "42"},
+			// MongoDB would skip that document because the type is different.
+			// Tigris returns a schema error in such cases that we ignore.
 		default:
 			return 0, nil, lazyerrors.Error(err)
 		}
