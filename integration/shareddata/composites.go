@@ -27,7 +27,7 @@ import (
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
 	name:     "Composites",
-	handlers: []string{"pg"},
+	backends: []string{"ferretdb-pg"},
 	data: map[string]any{
 		"document":                   bson.D{{"foo", int32(42)}},
 		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
@@ -64,7 +64,7 @@ var Composites = &Values[string]{
 // on pg handler.
 var PostgresEdgeCases = &Values[string]{
 	name:     "PostgresEdgeCases",
-	handlers: []string{"pg"},
+	backends: []string{"ferretdb-pg"},
 	data: map[string]any{
 		"document-notations": bson.D{
 			{"foo[0]", int32(42)},
@@ -79,7 +79,7 @@ var PostgresEdgeCases = &Values[string]{
 // DocumentsDoubles contains documents with double values for tests.
 var DocumentsDoubles = &Values[string]{
 	name:     "DocumentsDoubles",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "number"}}`),
@@ -100,7 +100,7 @@ var DocumentsDoubles = &Values[string]{
 // DocumentsStrings contains documents with string values for tests.
 var DocumentsStrings = &Values[string]{
 	name:     "DocumentsStrings",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "string"}}`),
@@ -119,7 +119,7 @@ var DocumentsStrings = &Values[string]{
 // DocumentsDocuments contains documents with documents for tests.
 var DocumentsDocuments = &Values[primitive.ObjectID]{
 	name:     "DocumentsDocuments",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
@@ -127,9 +127,9 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {
-						"type": "object", 
+						"type": "object",
 						"properties": {
-							"foo": {"type": "integer", "format": "int32"}, 
+							"foo": {"type": "integer", "format": "int32"},
 							"bar": {"type": "object", "properties":{}}
 						}
 					},
@@ -148,14 +148,14 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
 	name:     "ArrayStrings",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "array", "items": {"type": "string"}},
 					"_id": {"type": "string"}
@@ -176,7 +176,7 @@ var ArrayStrings = &Values[string]{
 // ArrayDoubles contains an array with float64 values for tests.
 var ArrayDoubles = &Values[string]{
 	name:     "ArrayDoubles",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
@@ -200,7 +200,7 @@ var ArrayDoubles = &Values[string]{
 // ArrayInt32s contains an array with int32 values for tests.
 var ArrayInt32s = &Values[string]{
 	name:     "ArrayInt32s",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
@@ -225,16 +225,16 @@ var ArrayInt32s = &Values[string]{
 // ArrayRegexes contains an array with regex values for tests.
 var ArrayRegexes = &Values[string]{
 	name:     "ArrayRegexes",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"v": {"type": "array", "items": 
+					"v": {"type": "array", "items":
 						{
-							"type": "object", 
+							"type": "object",
 							"properties": {
 								"$r": {"type": "string"},
 								"o": {"type": "string"}
@@ -255,7 +255,7 @@ var ArrayRegexes = &Values[string]{
 // This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
 	name:     "ArrayDocuments",
-	handlers: []string{"pg"}, // TODO Enable for Tigris when tests issues are fixed https://github.com/FerretDB/FerretDB/issues/1834
+	backends: []string{"pg"}, // TODO Enable for Tigris when tests issues are fixed https://github.com/FerretDB/FerretDB/issues/1834
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
@@ -264,8 +264,8 @@ var ArrayDocuments = &Values[string]{
 				"properties": {
 					"v": {
 						"type": "array", "items": {
-							"type": "object",	
-							"properties": {	
+							"type": "object",
+							"properties": {
 								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
 							}
 						}

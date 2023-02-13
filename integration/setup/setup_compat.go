@@ -76,8 +76,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
-	// Add the handler's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + getHandler()
+	// Add the target backend's name to prevent the usage of the same database.
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + *targetBackendF
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -97,14 +97,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")
-	defer span.End()
-	targetCollections := setupCompatCollections(tb, ctxT, targetClient, opts, true)
+	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, true)
 
-	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
-	defer span.End()
-	compatClient := setupClient(tb, ctxC, *compatURLF)
-	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
+	compatClient := setupClient(tb, setupCtx, *compatURLF)
+	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)
 

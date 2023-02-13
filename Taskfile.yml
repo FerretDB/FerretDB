@@ -175,7 +175,8 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -target-backend=pg
+        -target-backend-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
         -compat-url='mongodb://username:password@127.0.0.1:37018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'

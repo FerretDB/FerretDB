@@ -33,8 +33,8 @@ type Provider interface {
 	// Handlers returns handlers compatible with this provider.
 	Handlers() []string
 
-	// Validators returns validators for the given handler and collection.
-	// For example, for Tigris it should return a map with they key $tigrisSchemaString
+	// Validators returns validators for the given backend and collection.
+	// For example, for `ferretdb-tigris` it should return a map with they key $tigrisSchemaString
 	// and the value containing Tigris' JSON schema string.
 	Validators(handler, collection string) map[string]any
 
@@ -145,7 +145,7 @@ func IDs(providers ...Provider) []any {
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
 	name       string
-	handlers   []string
+	backends   []string
 	validators map[string]map[string]any // handler -> validator name -> validator
 	data       map[idType]any
 }
@@ -157,13 +157,13 @@ func (values *Values[idType]) Name() string {
 
 // Handlers implement Provider interface.
 func (values *Values[idType]) Handlers() []string {
-	return values.handlers
+	return values.backends
 }
 
 // Validators implement Provider interface.
 func (values *Values[idType]) Validators(handler, collection string) map[string]any {
 	switch handler {
-	case "tigris":
+	case "ferretdb-tigris":
 		validators := make(map[string]any, len(values.validators[handler]))
 		for key, value := range values.validators[handler] {
 			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)

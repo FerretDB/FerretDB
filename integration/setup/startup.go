@@ -26,6 +26,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -44,28 +45,34 @@ func Startup() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if u := *targetURLF; u == "" {
-		zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
-	} else {
-		client, err := makeClient(ctx, u)
-		if err != nil {
-			zap.S().Fatalf("Failed to create client for target system %s: %s", u, err)
-		}
-		client.Disconnect(ctx)
-
-		zap.S().Infof("Target system: %s.", u)
+	if *targetBackendF == "" {
+		zap.S().Fatal("-target-backend must be set.")
 	}
 
-	if u := *compatURLF; u == "" {
-		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
-	} else {
+	if !slices.Contains(allBackends, *targetBackendF) {
+		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
+	}
+
+	if u := *targetURLF; u != "" {
 		client, err := makeClient(ctx, u)
 		if err != nil {
-			zap.S().Fatalf("Failed to create client for compat system %s: %s", u, err)
+			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
+		}
+		client.Disconnect(ctx)
+	}
+
+	zap.S().Infof("Target system: %s (%s).", *targetURLF, *targetBackendF)
+
+	if u := *compatURLF; u != "" {
+		client, err := makeClient(ctx, u)
+		if err != nil {
+			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
 		}
 		client.Disconnect(ctx)
 
-		zap.S().Infof("Compat system: %s.", u)
+		zap.S().Infof("Compat system: %s (MongoDB).", u)
+	} else {
+		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
 	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects

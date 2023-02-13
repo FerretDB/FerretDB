@@ -41,13 +41,14 @@ import (
 
 // Flags.
 var (
-	targetURLF = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
+	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
+	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
 
-	targetTLSF        = flag.Bool("target-tls", false, "use TLS for target system")
-	postgreSQLURLF    = flag.String("postgresql-url", "", "PostgreSQL URL for 'pg' handler.")
-	tigrisURLSF       = flag.String("tigris-urls", "", "Tigris URLs for 'tigris' handler in comma separated list.")
-	targetUnixSocketF = flag.Bool("target-unix-socket", false, "use Unix socket for in-process FerretDB if possible")
-	proxyAddrF        = flag.String("proxy-addr", "", "proxy to use for in-process FerretDB")
+	postgreSQLURLF    = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
+	tigrisURLSF       = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
+	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket (if possible)")
+	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -65,15 +66,17 @@ var (
 var (
 	// See docker-compose.yml.
 	tigrisURLsIndex atomic.Uint32
+
+	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
 )
 
-// IsTigris returns if tests are running against the `tigris`handler.
+// IsTigris returns true if tests are running against FerretDB with `tigris` handler.
 //
 // This function should not be used lightly.
 func IsTigris(tb testing.TB) bool {
 	tb.Helper()
 
-	return getHandler() == "tigris"
+	return *targetBackendF == "ferretdb-tigris"
 }
 
 // SkipForTigris is deprecated.
@@ -83,28 +86,28 @@ func SkipForTigris(tb testing.TB) {
 	SkipForTigrisWithReason(tb, "")
 }
 
-// SkipForTigrisWithReason skips the current test for `tigris` handler.
+// SkipForTigrisWithReason skips the current test for FerretDB with `tigris` handler.
 //
 // This function should not be used lightly.
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if getHandler() == "tigris" {
+	if IsTigris(tb) {
 		if reason == "" {
 			tb.Skipf("Skipping for Tigris")
-		} else {
-			tb.Skipf("Skipping for Tigris: %s", reason)
 		}
+
+		tb.Skipf("Skipping for Tigris: %s", reason)
 	}
 }
 
-// TigrisOnlyWithReason skips the current test for handlers that are not `tigris`.
+// TigrisOnlyWithReason skips the current test except for FerretDB with `tigris` handler.
 //
 // This function should not be used lightly.
 func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if getHandler() != "tigris" {
+	if !IsTigris(tb) {
 		tb.Skipf("Skipping for non-tigris: %s", reason)
 	}
 }
@@ -154,7 +157,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	return u.String()
 }
 
-// nextTigrisUrl returns the next url for the Tigris handler.
+// nextTigrisUrl returns the next url for the `tigris` handler.
 func nextTigrisUrl() string {
 	i := int(tigrisURLsIndex.Add(1)) - 1
 	urls := strings.Split(*tigrisURLSF, ",")
@@ -174,14 +177,21 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
-	// only one of postgresql-url and tigris-urls should be set.
-	if *tigrisURLSF != "" && *postgreSQLURLF != "" {
-		tb.Fatalf("Both postgresql-url and tigris-urls are set, only one should be set.")
-	}
-
-	// one of postgresql-url or tigris-urls should be set.
-	if *tigrisURLSF == "" && *postgreSQLURLF == "" {
-		tb.Fatalf("Both postgresql-url and tigris-urls are empty, one should be set.")
+	var handler string
+	switch *targetBackendF {
+	case "ferretdb-pg":
+		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
+		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
+		handler = "pg"
+	case "ferretdb-tigris":
+		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
+		handler = "tigris"
+	case "mongodb":
+		tb.Fatal("can't start in-process MongoDB")
+	default:
+		// that should be caught by Startup function
+		panic("not reached")
 	}
 
 	p, err := state.NewProvider("")
@@ -198,11 +208,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		TigrisURL: nextTigrisUrl(),
 	}
-	h, err := registry.NewHandler(getHandler(), handlerOpts)
+	h, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
 
 	listenerOpts := &clientconn.NewListenerOpts{
-		ProxyAddr:      *proxyAddrF,
+		ProxyAddr:      *targetProxyAddrF,
 		Mode:           clientconn.NormalMode,
 		Metrics:        metrics,
 		Handler:        h,
@@ -210,7 +220,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		TestRecordsDir: *recordsDirF,
 	}
 
-	if *proxyAddrF != "" {
+	if *targetProxyAddrF != "" {
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
@@ -258,7 +268,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		opts.authMechanism = "PLAIN"
 		opts.tls = true
 	case *targetUnixSocketF:
-		opts.unixSocketPath = l.UnixAddr().String()
+		opts.unixSocketPath = l.UnixAddr().String() // TODO
 	default:
 		opts.hostPort = l.TCPAddr().String()
 	}
@@ -312,23 +322,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	return client
 }
 
-// getHandler returns the handler based on the URL.
-//
-//   - when `-postgresql-url` flag is set, it is `pg` handler;
-//   - when `tigris-urls` flag is set, it is `tigris` handler;
-//   - and the handler is empty for MongoDB.
-func getHandler() string {
-	if *postgreSQLURLF != "" {
-		return "pg"
-	}
-
-	if *tigrisURLSF != "" {
-		return "tigris"
-	}
-
-	return ""
-}
-
+// TODO
 // getUser returns test user credential if TLS is enabled, nil otherwise.
 func getUser(isTLS bool) *url.Userinfo {
 	if isTLS {
