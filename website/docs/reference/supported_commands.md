@@ -525,164 +525,164 @@ db.aggregate()
 ## Administration commands
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                  |
-| --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
-| `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                        |
-|                                   | `filter`                       |                           | ✅      |                                                         |
-|                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301) |
-|                                   | `comment`                      |                           | ⚠️      | Ignored                                                 |
-|                                   | `authorizedCollections`        |                           | ⚠️      | Ignored                                                 |
-| `cloneCollectionAsCapped`         |                                |                           | ❌      |                                                         |
-|                                   | `toCollection`                 |                           | ⚠️      |                                                         |
-|                                   | `size`                         |                           | ⚠️      |                                                         |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+| --------------------------------- | ------------------------------ | ------------------------- | ------ |-----------------------------------------------------------|
+| `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                          |
+|                                   | `filter`                       |                           | ✅      |                                                           |
+|                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                                   | `comment`                      |                           | ⚠️      | Ignored                                                   |
+|                                   | `authorizedCollections`        |                           | ⚠️      | Ignored                                                   |
+| `cloneCollectionAsCapped`         |                                |                           | ❌      |                                                           |
+|                                   | `toCollection`                 |                           | ⚠️      |                                                           |
+|                                   | `size`                         |                           | ⚠️      |                                                           |
+|                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `collMod`                         |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1510) |
-|                                   | `index`                        |                           | ⚠️      |                                                         |
-|                                   |                                | `keyPattern`              | ⚠️      |                                                         |
-|                                   |                                | `name`                    | ⚠️      |                                                         |
-|                                   |                                | `expireAfterSeconds`      | ⚠️      |                                                         |
-|                                   |                                | `hidden`                  | ⚠️      |                                                         |
-|                                   |                                | `prepareUnique`           | ⚠️      |                                                         |
-|                                   |                                | `unique`                  | ⚠️      |                                                         |
-|                                   | `validator`                    |                           | ⚠️      |                                                         |
-|                                   |                                | `validationLevel`         | ⚠️      |                                                         |
-|                                   |                                | `validationAction`        | ⚠️      |                                                         |
-|                                   | `viewOn` (Views)               |                           | ⚠️      |                                                         |
-|                                   | `pipeline` (Views)             |                           | ⚠️      |                                                         |
-|                                   | `cappedSize`                   |                           | ⚠️      |                                                         |
-|                                   | `cappedMax`                    |                           | ⚠️      |                                                         |
-|                                   | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                         |
-| `compact`                         |                                |                           | ❌      |                                                         |
-|                                   | `force`                        |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `compactStructuredEncryptionData` |                                |                           | ❌      |                                                         |
-|                                   | `compactionTokens`             |                           | ⚠️      |                                                         |
-| `convertToCapped`                 |                                |                           | ❌      |                                                         |
-|                                   | `size`                         |                           | ⚠️      |                                                         |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `create`                          |                                |                           | ✅      | Basic command is fully supported                        |
-|                                   | `capped`                       |                           | ⚠️      | Unimplemented                                           |
-|                                   | `timeseries`                   |                           | ⚠️      | Unimplemented                                           |
-|                                   |                                |                           | ⚠️      |                                                         |
-|                                   |                                | `timeField`               | ⚠️      |                                                         |
-|                                   |                                | `metaField`               | ⚠️      |                                                         |
-|                                   |                                | `granularity`             | ⚠️      |                                                         |
-|                                   | `expireAfterSeconds`           |                           | ⚠️      | Unimplemented                                           |
-|                                   | `clusteredIndex`               |                           | ⚠️      |                                                         |
-|                                   | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                         |
-|                                   | `autoIndexId`                  |                           | ⚠️      | Ingored                                                 |
-|                                   | `size`                         |                           | ⚠️      | Unimplemented                                           |
-|                                   | `max`                          |                           | ⚠️      | Unimplemented                                           |
-|                                   | `storageEngine`                |                           | ⚠️      | Ingored                                                 |
-|                                   | `validator`                    |                           | ⚠️      | Not implemented in PostgreSQL                           |
-|                                   | `validationLevel`              |                           | ⚠️      | Unimplemented                                           |
-|                                   | `validationAction`             |                           | ⚠️      | Unimplemented                                           |
-|                                   | `indexOptionDefaults`          |                           | ⚠️      | Ingored                                                 |
-|                                   | `viewOn`                       |                           | ⚠️      | Unimplemented                                           |
-|                                   | `pipeline`                     |                           | ⚠️      | Unimplemented                                           |
-|                                   | `collation`                    |                           | ⚠️      | Unimplemented                                           |
-|                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                 |
-|                                   | `encryptedFields`              |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      | Ingored                                                 |
+|                                   | `index`                        |                           | ⚠️      |                                                           |
+|                                   |                                | `keyPattern`              | ⚠️      |                                                           |
+|                                   |                                | `name`                    | ⚠️      |                                                           |
+|                                   |                                | `expireAfterSeconds`      | ⚠️      |                                                           |
+|                                   |                                | `hidden`                  | ⚠️      |                                                           |
+|                                   |                                | `prepareUnique`           | ⚠️      |                                                           |
+|                                   |                                | `unique`                  | ⚠️      |                                                           |
+|                                   | `validator`                    |                           | ⚠️      |                                                           |
+|                                   |                                | `validationLevel`         | ⚠️      |                                                           |
+|                                   |                                | `validationAction`        | ⚠️      |                                                           |
+|                                   | `viewOn` (Views)               |                           | ⚠️      |                                                           |
+|                                   | `pipeline` (Views)             |                           | ⚠️      |                                                           |
+|                                   | `cappedSize`                   |                           | ⚠️      |                                                           |
+|                                   | `cappedMax`                    |                           | ⚠️      |                                                           |
+|                                   | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                           |
+| `compact`                         |                                |                           | ❌      |                                                           |
+|                                   | `force`                        |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `compactStructuredEncryptionData` |                                |                           | ❌      |                                                           |
+|                                   | `compactionTokens`             |                           | ⚠️      |                                                           |
+| `convertToCapped`                 |                                |                           | ❌      |                                                           |
+|                                   | `size`                         |                           | ⚠️      |                                                           |
+|                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `create`                          |                                |                           | ✅      | Basic command is fully supported                          |
+|                                   | `capped`                       |                           | ⚠️      | Unimplemented                                             |
+|                                   | `timeseries`                   |                           | ⚠️      | Unimplemented                                             |
+|                                   |                                |                           | ⚠️      |                                                           |
+|                                   |                                | `timeField`               | ⚠️      |                                                           |
+|                                   |                                | `metaField`               | ⚠️      |                                                           |
+|                                   |                                | `granularity`             | ⚠️      |                                                           |
+|                                   | `expireAfterSeconds`           |                           | ⚠️      | Unimplemented                                             |
+|                                   | `clusteredIndex`               |                           | ⚠️      |                                                           |
+|                                   | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                           |
+|                                   | `autoIndexId`                  |                           | ⚠️      | Ingored                                                   |
+|                                   | `size`                         |                           | ⚠️      | Unimplemented                                             |
+|                                   | `max`                          |                           | ⚠️      | Unimplemented                                             |
+|                                   | `storageEngine`                |                           | ⚠️      | Ingored                                                   |
+|                                   | `validator`                    |                           | ⚠️      | Not implemented in PostgreSQL                             |
+|                                   | `validationLevel`              |                           | ⚠️      | Unimplemented                                             |
+|                                   | `validationAction`             |                           | ⚠️      | Unimplemented                                             |
+|                                   | `indexOptionDefaults`          |                           | ⚠️      | Ingored                                                   |
+|                                   | `viewOn`                       |                           | ⚠️      | Unimplemented                                             |
+|                                   | `pipeline`                     |                           | ⚠️      | Unimplemented                                             |
+|                                   | `collation`                    |                           | ⚠️      | Unimplemented                                             |
+|                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
+|                                   | `encryptedFields`              |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
 | `createIndexes`                   |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1509) |
-|                                   | `indexes`                      |                           | ⚠️      |                                                         |
-|                                   |                                | `key`                     | ⚠️      |                                                         |
-|                                   |                                | `name`                    | ⚠️      |                                                         |
-|                                   |                                | `background`              | ⚠️      |                                                         |
-|                                   |                                | `unique`                  | ⚠️      |                                                         |
-|                                   |                                | `partialFilterExpression` | ⚠️      |                                                         |
-|                                   |                                | `sparse`                  | ⚠️      |                                                         |
-|                                   |                                | `expireAfterSeconds`      | ⚠️      |                                                         |
-|                                   |                                | `hidden`                  | ⚠️      |                                                         |
-|                                   |                                | `storageEngine`           | ⚠️      |                                                         |
-|                                   |                                | `weights`                 | ⚠️      |                                                         |
-|                                   |                                | `default_language`        | ⚠️      |                                                         |
-|                                   |                                | `language_override`       | ⚠️      |                                                         |
-|                                   |                                | `textIndexVersion`        | ⚠️      |                                                         |
-|                                   |                                | `2dsphereIndexVersion`    | ⚠️      |                                                         |
-|                                   |                                | `bits`                    | ⚠️      |                                                         |
-|                                   |                                | `min`                     | ⚠️      |                                                         |
-|                                   |                                | `max`                     | ⚠️      |                                                         |
-|                                   |                                | `bucketSize`              | ⚠️      |                                                         |
-|                                   |                                | `collation`               | ⚠️      |                                                         |
-|                                   |                                | `wildcardProjection`      | ⚠️      |                                                         |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                         |
-|                                   | `commitQuorum`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `currentOp`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/161) |
-|                                   | `$ownOps`                      |                           | ⚠️      |                                                         |
-|                                   | `$all`                         |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `drop`                            |                                |                           | ✅      | Basic command is fully supported                        |
-|                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                 |
-|                                   | `comment`                      |                           | ⚠️      | Ingored                                                 |
-| `dropDatabase`                    |                                |                           | ✅      | Basic command is fully supported                        |
-|                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                 |
-|                                   | `comment`                      |                           | ⚠️      | Ingored                                                 |
+|                                   | `indexes`                      |                           | ⚠️      |                                                           |
+|                                   |                                | `key`                     | ⚠️      |                                                           |
+|                                   |                                | `name`                    | ⚠️      |                                                           |
+|                                   |                                | `background`              | ⚠️      |                                                           |
+|                                   |                                | `unique`                  | ⚠️      |                                                           |
+|                                   |                                | `partialFilterExpression` | ⚠️      |                                                           |
+|                                   |                                | `sparse`                  | ⚠️      |                                                           |
+|                                   |                                | `expireAfterSeconds`      | ⚠️      |                                                           |
+|                                   |                                | `hidden`                  | ⚠️      |                                                           |
+|                                   |                                | `storageEngine`           | ⚠️      |                                                           |
+|                                   |                                | `weights`                 | ⚠️      |                                                           |
+|                                   |                                | `default_language`        | ⚠️      |                                                           |
+|                                   |                                | `language_override`       | ⚠️      |                                                           |
+|                                   |                                | `textIndexVersion`        | ⚠️      |                                                           |
+|                                   |                                | `2dsphereIndexVersion`    | ⚠️      |                                                           |
+|                                   |                                | `bits`                    | ⚠️      |                                                           |
+|                                   |                                | `min`                     | ⚠️      |                                                           |
+|                                   |                                | `max`                     | ⚠️      |                                                           |
+|                                   |                                | `bucketSize`              | ⚠️      |                                                           |
+|                                   |                                | `collation`               | ⚠️      |                                                           |
+|                                   |                                | `wildcardProjection`      | ⚠️      |                                                           |
+|                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                   | `commitQuorum`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `currentOp`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/161)  |
+|                                   | `$ownOps`                      |                           | ⚠️      |                                                           |
+|                                   | `$all`                         |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `drop`                            |                                |                           | ✅      | Basic command is fully supported                          |
+|                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
+| `dropDatabase`                    |                                |                           | ✅      | Basic command is fully supported                          |
+|                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
 | `dropConnections`                 |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1511) |
-|                                   | `hostAndPort`                  |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+|                                   | `hostAndPort`                  |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `dropIndexes`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1512) |
-|                                   | `index`                        |                           | ⚠️      |                                                         |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `filemd5`                         |                                |                           | ❌      |                                                         |
-| `fsync`                           |                                |                           | ❌      |                                                         |
-| `fsyncUnlock`                     |                                |                           | ❌      |                                                         |
-|                                   | `lock`                         |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `getDefaultRWConcern`             |                                |                           | ❌      |                                                         |
-|                                   | `inMemory`                     |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `getClusterParameter`             |                                |                           | ❌      |                                                         |
-| `getParameter`                    |                                |                           | ❌      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+|                                   | `index`                        |                           | ⚠️      |                                                           |
+|                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `filemd5`                         |                                |                           | ❌      |                                                           |
+| `fsync`                           |                                |                           | ❌      |                                                           |
+| `fsyncUnlock`                     |                                |                           | ❌      |                                                           |
+|                                   | `lock`                         |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `getDefaultRWConcern`             |                                |                           | ❌      |                                                           |
+|                                   | `inMemory`                     |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `getClusterParameter`             |                                |                           | ❌      |                                                           |
+| `getParameter`                    |                                |                           | ❌      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `killCursors`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1514) |
-|                                   | `cursors`                      |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+|                                   | `cursors`                      |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `killOp`                          |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1515) |
-|                                   | `op`                           |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                        |
+|                                   | `op`                           |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                          |
 |                                   | `filter`                       |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
-|                                   | `nameOnly`                     |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/301) |
-|                                   | `authorizedCollections`        |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `listDatabases`                   |                                |                           | ✅      | Basic command is fully supported                        |
-|                                   | `filter`                       |                           | ✅      |                                                         |
-|                                   | `nameOnly`                     |                           | ✅      |                                                         |
-|                                   | `authorizedDatabases`          |                           | ⚠️      | Ingored                                                 |
-|                                   | `comment`                      |                           | ⚠️      | Ingored                                                 |
-| `listIndexes`                     |                                |                           | ✅      |                                                         |
-|                                   | `cursor.batchSize`             |                           | ⚠️      | Ingored                                                 |
-|                                   | `comment`                      |                           | ⚠️      | Ingored                                                 |
+|                                   | `nameOnly`                     |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                                   | `authorizedCollections`        |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `listDatabases`                   |                                |                           | ✅      | Basic command is fully supported                          |
+|                                   | `filter`                       |                           | ✅      |                                                           |
+|                                   | `nameOnly`                     |                           | ✅      |                                                           |
+|                                   | `authorizedDatabases`          |                           | ⚠️      | Ingored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
+| `listIndexes`                     |                                |                           | ✅      |                                                           |
+|                                   | `cursor.batchSize`             |                           | ⚠️      | Ingored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
 | `logRotate`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1959) |
-|                                   | `<target>`                     |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+|                                   | `<target>`                     |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `reIndex`                         |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1516) |
 | `renameCollection`                |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1517) |
-|                                   | `to`                           |                           | ⚠️      |                                                         |
-|                                   | `dropTarget`                   |                           | ⚠️      |                                                         |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
-| `rotateCertificates`              |                                |                           | ❌      |                                                         |
-| `setFeatureCompatibilityVersion`  |                                |                           | ❌      |                                                         |
-| `setIndexCommitQuorum`            |                                |                           | ❌      |                                                         |
-|                                   | `setIndexCommitQuorum`         |                           | ⚠️      |                                                         |
-|                                   | `indexNames`                   |                           | ⚠️      |                                                         |
-|                                   | `commitQuorum`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+|                                   | `to`                           |                           | ⚠️      |                                                           |
+|                                   | `dropTarget`                   |                           | ⚠️      |                                                           |
+|                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
+| `rotateCertificates`              |                                |                           | ❌      |                                                           |
+| `setFeatureCompatibilityVersion`  |                                |                           | ❌      |                                                           |
+| `setIndexCommitQuorum`            |                                |                           | ❌      |                                                           |
+|                                   | `setIndexCommitQuorum`         |                           | ⚠️      |                                                           |
+|                                   | `indexNames`                   |                           | ⚠️      |                                                           |
+|                                   | `commitQuorum`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `setParameter`                    |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1518) |
-| `setDefaultRWConcern`             |                                |                           | ❌      |                                                         |
-|                                   | `defaultReadConcern`           |                           | ⚠️      |                                                         |
-|                                   | `defaultWriteConcern`          |                           | ⚠️      |                                                         |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+| `setDefaultRWConcern`             |                                |                           | ❌      |                                                           |
+|                                   | `defaultReadConcern`           |                           | ⚠️      |                                                           |
+|                                   | `defaultWriteConcern`          |                           | ⚠️      |                                                           |
+|                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `shutdown`                        |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1519) |
-|                                   | `force`                        |                           | ⚠️      |                                                         |
-|                                   | `timeoutSecs`                  |                           | ⚠️      |                                                         |
-|                                   | `comment`                      |                           | ⚠️      |                                                         |
+|                                   | `force`                        |                           | ⚠️      |                                                           |
+|                                   | `timeoutSecs`                  |                           | ⚠️      |                                                           |
+|                                   | `comment`                      |                           | ⚠️      |                                                           |
 
 ## Diagnostic commands
 
