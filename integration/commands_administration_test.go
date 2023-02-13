@@ -1021,7 +1021,9 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	targetCollection := targetCollections[0]
+	compatCollection := compatCollections[0]
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collectionName any
@@ -1029,19 +1031,9 @@ func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
 	}{
 		"non-existent-collection": {
 			collectionName: "non-existent-collection",
-			expectedError: &mongo.CommandError{
-				Code:    26,
-				Name:    "NamespaceNotFound",
-				Message: fmt.Sprintf("ns does not exist: %s.%s", collection.Database().Name(), "non-existent-collection"),
-			},
 		},
 		"invalid-collection-name": {
 			collectionName: 42,
-			expectedError: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type int",
-			},
 		},
 	} {
 		name, tc := name, tc
@@ -1049,13 +1041,20 @@ func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var res bson.D
-			err := collection.Database().RunCommand(
+			var targetRes bson.D
+			targetErr := targetCollection.Database().RunCommand(
 				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&res)
+			).Decode(&targetRes)
 
-			require.Nil(t, res)
-			AssertEqualError(t, *tc.expectedError, err)
+			var compatRes bson.D
+			compatErr := compatCollection.Database().RunCommand(
+				ctx, bson.D{{"listIndexes", tc.collectionName}},
+			).Decode(&targetRes)
+
+			require.Nil(t, targetRes)
+			require.Nil(t, compatRes)
+
+			AssertMatchesCommandError(t, compatErr, targetErr)
 		})
 	}
 }
