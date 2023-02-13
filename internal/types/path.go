@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -69,26 +70,37 @@ type Path struct {
 	s []string
 }
 
-// NewPath returns Path from a strings slice.
-func NewPath(path ...string) Path {
+// NewStaticPath returns Path from a strings slice.
+//
+// It panics on invalid paths. For that reason, it should not be used with user-provided paths.
+func NewStaticPath(path ...string) Path {
+	return must.NotFail(newPathFromString(strings.Join(path, ".")))
+}
+
+// TODO merge into NewPathFromString
+// https://github.com/FerretDB/FerretDB/issues/1954
+func newPathFromString(s string) (Path, error) {
+	var res Path
+
+	path := strings.Split(s, ".")
 	if len(path) == 0 {
-		panic("empty path")
+		return res, lazyerrors.New("empty path")
 	}
+
 	for _, s := range path {
 		if s == "" {
-			panic("path element must not be empty")
+			return res, lazyerrors.New("path element must not be empty")
 		}
 	}
-	p := Path{s: make([]string, len(path))}
-	copy(p.s, path)
-	return p
+
+	res = Path{s: make([]string, len(path))}
+	copy(res.s, path)
+	return res, nil
 }
 
 // NewPathFromString returns Path from path string. Path string should contain fields separated with '.'.
 func NewPathFromString(s string) Path {
-	path := strings.Split(s, ".")
-
-	return NewPath(path...)
+	return must.NotFail(newPathFromString(s))
 }
 
 // String returns dot-separated path value.
@@ -130,7 +142,7 @@ func (p Path) TrimSuffix() Path {
 		panic("path should have more than 1 element")
 	}
 
-	return NewPath(p.s[:p.Len()-1]...)
+	return NewStaticPath(p.s[:p.Len()-1]...)
 }
 
 // TrimPrefix returns a copy of path without the first element.
@@ -139,7 +151,7 @@ func (p Path) TrimPrefix() Path {
 		panic("path should have more than 1 element")
 	}
 
-	return NewPath(p.s[1:]...)
+	return NewStaticPath(p.s[1:]...)
 }
 
 // Append returns new Path constructed from the current path and given element.
@@ -148,7 +160,7 @@ func (p Path) Append(elem string) Path {
 
 	elems = append(elems, elem)
 
-	return NewPath(elems...)
+	return NewStaticPath(elems...)
 }
 
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
