@@ -990,38 +990,47 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 func TestCommandsAdministrationListIndexes(t *testing.T) {
 	t.Parallel()
 
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	for i := range targetCollections {
+		targetCollection := targetCollections[i]
+		compatCollection := compatCollections[i]
+
+		t.Run(targetCollection.Name(), func(t *testing.T) {
+			t.Parallel()
+
+			targetCur, targetErr := targetCollection.Indexes().List(ctx)
+			compatCur, compatErr := compatCollection.Indexes().List(ctx)
+
+			require.NoError(t, compatErr)
+			assert.Equal(t, compatErr, targetErr)
+			assert.Equal(t, compatCur, targetCur)
+
+			targetRes := FetchAll(t, ctx, targetCur)
+			compatRes := FetchAll(t, ctx, compatCur)
+
+			// TODO Use simple assert.Equal after https://github.com/FerretDB/FerretDB/issues/1384
+			// assert.Equal(t, compatRes, targetRes)
+			assert.NotEmpty(t, targetRes)
+			assert.NotEmpty(t, compatRes)
+		})
+
+	}
+}
+
+// TestCommandsAdministrationRunCommandListIndexes tests the behavior when listIndexes is called through RunCommand.
+// It's handy to use it to test the correctness of errors.
+func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
+	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collectionName any
-		expectedResult bson.D
 		expectedError  *mongo.CommandError
 	}{
-		"existing-collection-default-indexes": {
-			collectionName: collection.Name(),
-			expectedResult: bson.D{
-				{
-					"cursor", bson.D{
-						{"id", int64(0)},
-						{"ns", collection.Database().Name() + "." + collection.Name()},
-						{
-							"firstBatch", bson.A{
-								bson.D{
-									{"v", int32(2)},
-									{"key", bson.D{{"_id", int32(1)}}},
-									{"name", "_id_"},
-								},
-							},
-						},
-					},
-				},
-				{"ok", float64(1)},
-			},
-			expectedError: nil,
-		},
 		"non-existent-collection": {
 			collectionName: "non-existent-collection",
-			expectedResult: nil,
 			expectedError: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
@@ -1030,7 +1039,6 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 		},
 		"invalid-collection-name": {
 			collectionName: 42,
-			expectedResult: nil,
 			expectedError: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -1041,30 +1049,15 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			var res bson.D
 			err := collection.Database().RunCommand(
 				ctx, bson.D{{"listIndexes", tc.collectionName}},
 			).Decode(&res)
 
-			if tc.expectedResult != nil {
-				require.NoError(t, err)
-
-				// TODO Use simple assert.Equal after https://github.com/FerretDB/FerretDB/issues/1384
-				// assert.Equal(t, tc.expectedResult, res)
-
-				expected := ConvertDocument(t, tc.expectedResult)
-				actual := ConvertDocument(t, res)
-
-				require.NoError(t, expected.SetByPath(types.NewStaticPath("cursor", "firstBatch"), nil))
-				require.NoError(t, actual.SetByPath(types.NewStaticPath("cursor", "firstBatch"), nil))
-
-				assert.Equal(t, expected, actual)
-			}
-
-			if tc.expectedError != nil {
-				require.Nil(t, res)
-				AssertEqualError(t, *tc.expectedError, err)
-			}
+			require.Nil(t, res)
+			AssertEqualError(t, *tc.expectedError, err)
 		})
 	}
 }
