@@ -990,25 +990,45 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 func TestCommandsAdministrationListIndexes(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName: "admin",
-	})
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	// Create a collection and test list of default indexes.
-	//t.Run("existing-collection-default", func(t *testing.T) {
-	//	var res bson.D
-	//	err := s.Collection.Database().RunCommand(s.Ctx,
-	//		bson.D{{"listIndexes", "test"}},
-	//	).Decode(&res)
-	//
-	//	require.NoError(t, err)
-	//})
+	// Test list of default indexes for the created collection.
+	t.Run("existing-collection-default", func(t *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx,
+			bson.D{{"listIndexes", collection.Name()}},
+		).Decode(&res)
+
+		require.NoError(t, err)
+
+		expectedRes := bson.D{
+			{
+				"cursor", bson.D{
+					{"id", int64(0)},
+					{"ns", collection.Database().Name() + "." + collection.Name()},
+					{
+						"firstBatch", bson.A{
+							bson.D{
+								{"v", int32(2)},
+								{"key", bson.D{{"_id", int32(1)}}},
+								{"name", "_id_"},
+							},
+						},
+					},
+				},
+			},
+			{"ok", float64(1)},
+		}
+		assert.Equal(t, expectedRes, res)
+	})
 
 	// Test list indexes on a non-existent collection.
 	t.Run("non-existent-collection", func(t *testing.T) {
+		collectionName := "non-existent-collection"
+
 		var res bson.D
-		err := s.Collection.Database().RunCommand(s.Ctx,
-			bson.D{{"listIndexes", "non-existent-collection"}},
+		err := collection.Database().RunCommand(ctx,
+			bson.D{{"listIndexes", collectionName}},
 		).Decode(&res)
 
 		require.Nil(t, res)
@@ -1016,7 +1036,7 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 		expectedErr := mongo.CommandError{
 			Code:    26,
 			Name:    "NamespaceNotFound",
-			Message: "ns does not exist: admin.non-existent-collection",
+			Message: fmt.Sprintf("ns does not exist: %s.%s", collection.Database().Name(), collectionName),
 		}
 		AssertEqualError(t, expectedErr, err)
 	})
