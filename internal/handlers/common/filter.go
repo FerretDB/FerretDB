@@ -63,7 +63,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	if strings.ContainsRune(filterKey, '.') {
 		// {field1./.../.fieldN: filterValue}
-		filterKey, docs = findFilterLeaves(doc, filterKey)
+		filterKey, docs = findLeavesForFilter(doc, filterKey)
 	}
 
 	for _, doc := range docs {
@@ -127,7 +127,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	return false, nil
 }
 
-// findFilterLeaves finds all "leaves" - document's subdocuments that could be used to check
+// findLeavesForFilter finds all "leaves" - document's subdocuments that could be used to check
 // if the main document matches the filter.
 //
 // It returns:
@@ -137,7 +137,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 // For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and the filterKey is foo.bar,
 // then the function will return the suffix "bar" and a slice with two leaves:
 // {bar: 1} and {bar: 2}.
-func findFilterLeaves(doc *types.Document, filterKey string) (suffix string, docs []*types.Document) {
+func findLeavesForFilter(doc *types.Document, filterKey string) (suffix string, docs []*types.Document) {
 	path := types.NewPathFromString(filterKey)
 	suffix = path.Suffix()
 
