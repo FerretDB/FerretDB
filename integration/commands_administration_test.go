@@ -1025,7 +1025,7 @@ func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
-	for name, tc := range map[string]struct { //nolint:vet // for readability
+	for name, tc := range map[string]struct {
 		collectionName any
 		expectedError  *mongo.CommandError
 	}{
