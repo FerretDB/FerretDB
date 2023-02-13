@@ -42,6 +42,7 @@ ensure that you update early to take advantage of recent bug fixes, new features
 
 ## Configure telemetry
 
+The telemetry service has three state settings: `enabled`, `disabled`, and `undecided` (default).
 The latter acts as if the telemetry reporter is `enabled` with two differences:
 
 * When `enabled`, the first report is sent right after FerretDB starts.
