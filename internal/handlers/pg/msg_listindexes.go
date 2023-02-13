@@ -18,6 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+
+	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -27,6 +33,11 @@ import (
 
 // MsgListIndexes implements HandlerInterface.
 func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -35,6 +46,21 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	params, err := common.GetListIndexesParams(document, h.L)
 	if err != nil {
 		return nil, err
+	}
+
+	var exists bool
+	if err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		exists, err = pgdb.CollectionExists(ctx, tx, params.DB, params.Collection)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrNamespaceNotFound,
+			fmt.Sprintf("ns does not exist: %s.%s", params.DB, params.Collection),
+		)
 	}
 
 	// TODO Uncomment this response when we support indexes for _id: https://github.com/FerretDB/FerretDB/issues/1384.
