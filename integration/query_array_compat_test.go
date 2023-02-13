@@ -107,7 +107,11 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DocumentDotNotationArrayDocumentNoIndex": {
-			filter: bson.D{{"v.foo.bar", "hello"}, {"_id", "array-documents-nested"}},
+			filter: bson.D{
+				{"v.foo.bar", bson.D{{"$nin", bson.A{"baz"}}}}, // $nin is used to avoid pushdown
+				{"_id", "array-documents-nested"},
+			},
+			resultPushdown: true,
 		},
 		"FieldArrayIndex": {
 			filter:         bson.D{{"v.foo[0]", int32(42)}},
