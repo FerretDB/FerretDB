@@ -1048,8 +1048,8 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 			}
 
 			var res bson.D
-			err := collection.Database().RunCommand(ctx,
-				bson.D{{"listIndexes", tc.collectionName}},
+			err := collection.Database().RunCommand(
+				ctx, bson.D{{"listIndexes", tc.collectionName}},
 			).Decode(&res)
 
 			if tc.expectedResult != nil {
