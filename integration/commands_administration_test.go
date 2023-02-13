@@ -996,7 +996,6 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 		collectionName any
 		expectedResult bson.D
 		expectedError  *mongo.CommandError
-		skip           string
 	}{
 		"existing-collection-default-indexes": {
 			collectionName: collection.Name(),
@@ -1019,7 +1018,6 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 				{"ok", float64(1)},
 			},
 			expectedError: nil,
-			skip:          "https://github.com/FerretDB/FerretDB/issues/1384",
 		},
 		"non-existent-collection": {
 			collectionName: "non-existent-collection",
@@ -1043,10 +1041,6 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			var res bson.D
 			err := collection.Database().RunCommand(
 				ctx, bson.D{{"listIndexes", tc.collectionName}},
@@ -1054,7 +1048,17 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 
 			if tc.expectedResult != nil {
 				require.NoError(t, err)
-				assert.Equal(t, tc.expectedResult, res)
+
+				// TODO Use simple assert.Equal after https://github.com/FerretDB/FerretDB/issues/1384
+				// assert.Equal(t, tc.expectedResult, res)
+
+				expected := ConvertDocument(t, tc.expectedResult)
+				actual := ConvertDocument(t, res)
+
+				require.NoError(t, expected.SetByPath(types.NewStaticPath("cursor", "firstBatch"), nil))
+				require.NoError(t, actual.SetByPath(types.NewStaticPath("cursor", "firstBatch"), nil))
+
+				assert.Equal(t, expected, actual)
 			}
 
 			if tc.expectedError != nil {
