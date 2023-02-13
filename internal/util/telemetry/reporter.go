@@ -120,13 +120,17 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	// do one last report before exiting if telemetry is explicitly enabled
 	if pointer.GetBool(r.P.Get().Telemetry) {
-		r.report(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		r.report(ctx)
 	}
 }
 
 // firstReportDelay waits until telemetry reporting state is decided,
 // main context is cancelled, or timeout is reached.
 func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
+	// no delay for decided state
 	if r.P.Get().Telemetry != nil {
 		return
 	}
@@ -260,19 +264,18 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if response.LatestVersion == s.LatestVersion {
-		r.L.Debug("The current version is up to date.")
-		return
+	if response.LatestVersion != s.LatestVersion {
+		err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
+		if err != nil {
+			r.L.Error("Failed to update state with latest version.", zap.Error(err))
+			return
+		}
 	}
 
-	r.L.Info(
-		"New version available.",
-		zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion),
-	)
-
-	err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
-	if err != nil {
-		r.L.Error("Failed to update state with latest version.", zap.Error(err))
-		return
+	if s = r.P.Get(); s.UpdateAvailable() {
+		r.L.Info(
+			"A new version available!",
+			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
+		)
 	}
 }
