@@ -32,8 +32,8 @@ type State struct {
 	// never persisted
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	LatestVersion   string    `json:"-"`
-	HandlerVersion  string    `json:"-"`
+	LatestVersion   string    `json:"-"` // may be empty
+	HandlerVersion  string    `json:"-"` // may be empty
 }
 
 // fill replaces all unset or invalid values with default.

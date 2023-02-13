@@ -187,16 +187,16 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		}
 	}
 
-	v := version.Get()
+	info := version.Get()
 
 	return &request{
-		Version:          v.Version,
-		Commit:           v.Commit,
-		Branch:           v.Branch,
-		Dirty:            v.Dirty,
-		Package:          v.Package,
-		Debug:            v.DebugBuild,
-		BuildEnvironment: v.BuildEnvironment.Map(),
+		Version:          info.Version,
+		Commit:           info.Commit,
+		Branch:           info.Branch,
+		Dirty:            info.Dirty,
+		Package:          info.Package,
+		Debug:            info.DebugBuild,
+		BuildEnvironment: info.BuildEnvironment.Map(),
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
@@ -261,7 +261,7 @@ func (r *Reporter) report(ctx context.Context) {
 	}
 
 	if response.LatestVersion == s.LatestVersion {
-		r.L.Debug("Latest version is up to date.")
+		r.L.Debug("The current version is up to date.")
 		return
 	}
 

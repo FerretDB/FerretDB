@@ -34,7 +34,7 @@ func TestMetrics(t *testing.T) {
 	p, err := NewProvider(filename)
 	require.NoError(t, err)
 
-	v := version.Get()
+	info := version.Get()
 
 	t.Run("WithUUID", func(t *testing.T) {
 		t.Parallel()
@@ -51,9 +51,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",update_available="false",uuid=%q,version=%q} 1
 			`,
-			v.Branch, v.Commit, v.DebugBuild, v.Dirty, uuid, v.Version,
+			info.Branch, info.Commit, info.DebugBuild, info.Dirty, uuid, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
@@ -70,9 +70,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",update_available="false",version=%q} 1
 			`,
-			v.Branch, v.Commit, v.DebugBuild, v.Dirty, v.Version,
+			info.Branch, info.Commit, info.DebugBuild, info.Dirty, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})

@@ -50,14 +50,14 @@ func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements prometheus.Collector.
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
-	v := version.Get()
+	info := version.Get()
 	constLabels := prometheus.Labels{
-		"version": v.Version,
-		"commit":  v.Commit,
-		"branch":  v.Branch,
-		"dirty":   strconv.FormatBool(v.Dirty),
-		"package": v.Package,
-		"debug":   strconv.FormatBool(v.DebugBuild),
+		"version": info.Version,
+		"commit":  info.Commit,
+		"branch":  info.Branch,
+		"dirty":   strconv.FormatBool(info.Dirty),
+		"package": info.Package,
+		"debug":   strconv.FormatBool(info.DebugBuild),
 	}
 
 	s := mc.p.Get()
@@ -67,12 +67,11 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		constLabels["telemetry"] = "undecided"
 	case *s.Telemetry:
 		constLabels["telemetry"] = "enabled"
-		if s.LatestVersion != v.Version {
-			constLabels["latest_version_available"] = s.LatestVersion
-		}
 	default:
 		constLabels["telemetry"] = "disabled"
 	}
+
+	constLabels["update_available"] = strconv.FormatBool(s.LatestVersion != "" && s.LatestVersion != info.Version)
 
 	if mc.addUUIDToMetric {
 		constLabels["uuid"] = s.UUID

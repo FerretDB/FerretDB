@@ -83,15 +83,19 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		pv, _, _ := strings.Cut(h.StateProvider.Get().HandlerVersion, " ")
-		mv := version.Get()
+		state := h.StateProvider.Get()
 
-		startupWarnings := []string{
-			"Powered by FerretDB " + mv.Version + " and PostgreSQL " + pv + ".",
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+		info := version.Get()
+
+		hv, _, _ := strings.Cut(state.HandlerVersion, " ")
+		if hv != "" {
+			hv = " " + hv
 		}
 
-		state := h.StateProvider.Get()
+		startupWarnings := []string{
+			"Powered by FerretDB " + info.Version + " and PostgreSQL" + hv + ".",
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+		}
 
 		switch {
 		case state.Telemetry == nil:
@@ -100,10 +104,13 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided; the first report will be sent soon. "+
 					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
-		case state.LatestVersion != mv.Version:
+		case state.LatestVersion != "" && state.LatestVersion != info.Version:
 			startupWarnings = append(
 				startupWarnings,
-				fmt.Sprintf("New version available! Latest version: %s; Current version: %s", state.LatestVersion, mv.Version),
+				fmt.Sprintf(
+					"A new version available! The latest version: %s. The current version: %s",
+					state.LatestVersion, info.Version,
+				),
 			)
 		}
 
