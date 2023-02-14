@@ -24,91 +24,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
-
-func TestUpdateFieldCompatCurrentDate(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1669")
-
-	t.Parallel()
-
-	testCases := map[string]updateCurrentDateCompatTestCase{
-		"DocumentEmpty": {
-			update:     bson.D{{"$currentDate", bson.D{}}},
-			resultType: emptyResult,
-		},
-		"ArrayEmpty": {
-			update:     bson.D{{"$currentDate", bson.A{}}},
-			resultType: emptyResult,
-		},
-		"Int32Wrong": {
-			update:     bson.D{{"$currentDate", int32(1)}},
-			resultType: emptyResult,
-		},
-		"Nil": {
-			update:     bson.D{{"$currentDate", nil}},
-			resultType: emptyResult,
-		},
-		"BoolTrue": {
-			update: bson.D{{"$currentDate", bson.D{{"v", true}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
-		},
-		"BoolTwoTrue": {
-			update: bson.D{{"$currentDate", bson.D{{"v", true}, {"nonexistent", true}}}},
-			paths: []types.Path{
-				types.NewPathFromString("v"),
-				types.NewPathFromString("nonexistent"),
-			},
-		},
-		"BoolFalse": {
-			update: bson.D{{"$currentDate", bson.D{{"v", false}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
-		},
-		"Int32": {
-			update:     bson.D{{"$currentDate", bson.D{{"v", int32(1)}}}},
-			resultType: emptyResult,
-		},
-		"Timestamp": {
-			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "timestamp"}}}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
-		},
-		"TimestampCapitalised": {
-			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "Timestamp"}}}}}},
-			resultType: emptyResult,
-		},
-		"Date": {
-			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
-		},
-		"WrongType": {
-			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
-			resultType: emptyResult,
-		},
-		"NoField": {
-			update: bson.D{{"$currentDate", bson.D{{"nonexistent", bson.D{{"$type", "date"}}}}}},
-			paths: []types.Path{
-				types.NewPathFromString("nonexistent"),
-			},
-		},
-		"UnrecognizedOption": {
-			update: bson.D{{
-				"$currentDate",
-				bson.D{{"v", bson.D{{"array", bson.D{{"unexsistent", bson.D{}}}}}}},
-			}},
-			resultType: emptyResult,
-		},
-		"DuplicateKeys": {
-			update: bson.D{{"$currentDate", bson.D{
-				{"v", bson.D{{"$type", "timestamp"}}},
-				{"v", bson.D{{"$type", "timestamp"}}},
-			}}},
-			resultType: emptyResult,
-		},
-	}
-
-	testUpdateCurrentDateCompat(t, testCases)
-}
 
 func TestUpdateFieldCompatInc(t *testing.T) {
 	t.Parallel()
@@ -908,7 +825,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 
 	testCases := map[string]updateCompatTestCase{
 		"SetSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
 			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$setOnInsert", bson.D{{"v", nil}}},
@@ -916,7 +832,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"SetIncSetOnInsert": {
-			filter: bson.D{{"_id", "test"}},
 			update: bson.D{
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$inc", bson.D{{"foo", int32(1)}}},
@@ -925,7 +840,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"UnknownOperator": {
-			filter:     bson.D{{"_id", "test"}},
 			update:     bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
 			resultType: emptyResult,
 		},

@@ -43,15 +43,12 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotation": {
-			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$pop", bson.D{{"v.0.foo", 1}}}},
 		},
 		"DotNotationPopFirst": {
-			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$pop", bson.D{{"v.0.foo", -1}}}},
 		},
 		"DotNotationNonArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
 			resultType: emptyResult,
 		},
@@ -109,11 +106,9 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			skipForTigris: "Tigris does not support adding new fields to documents",
 		},
 		"DotNotation": {
-			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"bar", "zoo"}}}}}},
 		},
 		"DotNotationNonArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
 			resultType: emptyResult, // attempt to push to non-array
 		},
