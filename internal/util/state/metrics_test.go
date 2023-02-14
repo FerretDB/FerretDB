@@ -16,10 +16,10 @@ package state
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,11 +30,13 @@ import (
 func TestMetrics(t *testing.T) {
 	t.Parallel()
 
-	filename := filepath.Join(t.TempDir(), "state.json")
-	p, err := NewProvider(filename)
+	p, err := NewProvider("")
 	require.NoError(t, err)
 
-	v := version.Get()
+	err = p.Update(func(s *State) { s.Telemetry = pointer.ToBool(true) })
+	require.NoError(t, err)
+
+	info := version.Get()
 
 	t.Run("WithUUID", func(t *testing.T) {
 		t.Parallel()
@@ -51,9 +53,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
 			`,
-			v.Branch, v.Commit, v.DebugBuild, v.Dirty, uuid, v.Version,
+			info.Branch, info.Commit, info.DebugBuild, info.Dirty, uuid, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
@@ -66,13 +68,14 @@ func TestMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, problems)
 
+		//nolint:lll // it is more readable this way
 		expected := fmt.Sprintf(
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="undecided",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",version=%q} 1
 			`,
-			v.Branch, v.Commit, v.DebugBuild, v.Dirty, v.Version,
+			info.Branch, info.Commit, info.DebugBuild, info.Dirty, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
