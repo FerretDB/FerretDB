@@ -97,7 +97,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				hasUpdateOperators: params.HasUpdateOperators,
 				query:              params.Query,
 				update:             params.Update,
-				fetchParam:         &qp,
+				queryParam:         &qp,
 			}
 
 			upsert, upserted, err = upsertDocuments(ctx, dbPool, resDocs, p)
@@ -203,8 +203,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 // upsertParams represent parameters for Handler.upsert method.
 type upsertParams struct {
 	hasUpdateOperators bool
-	query, update      *types.Document
-	fetchParam         *tigrisdb.QueryParam
+	query, update *types.Document
+	queryParam    *tigrisdb.QueryParam
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.
@@ -230,7 +230,7 @@ func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*typ
 			}
 		}
 
-		if err := insertDocument(ctx, dbPool, params.fetchParam, upsert); err != nil {
+		if err := insertDocument(ctx, dbPool, params.queryParam, upsert); err != nil {
 			return nil, false, err
 		}
 
@@ -250,7 +250,7 @@ func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*typ
 		}
 	}
 
-	if _, err := updateDocument(ctx, dbPool, params.fetchParam, upsert); err != nil {
+	if _, err := updateDocument(ctx, dbPool, params.queryParam, upsert); err != nil {
 		return nil, false, err
 	}
 
