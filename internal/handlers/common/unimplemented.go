@@ -27,8 +27,8 @@ func Unimplemented(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
 		if v, err := doc.Get(field); err == nil || v != nil {
 			msg := fmt.Sprintf(
-				"%s: support for field %q is not implemented yet",
-				doc.Command(), field,
+				"%s: support for field %q with value %v is not implemented yet",
+				doc.Command(), field, v,
 			)
 
 			return NewCommandErrorMsgWithArgument(ErrNotImplemented, msg, field)
