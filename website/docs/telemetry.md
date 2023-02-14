@@ -48,12 +48,12 @@ The latter acts as if the telemetry reporter is `enabled` with two differences:
 * When `enabled`, the first report is sent right after FerretDB starts.
   If `undecided`, the first report is delayed by one hour.
   That should give you enough time to disable it if you decide to do so.
-* Similarly, when `enabled`, the last report is sent right before FerretDB shutdowns.
+* Similarly, when `enabled`, the last report is sent right before FerretDB shuts down.
   That does not happen when `undecided`.
 
 :::info
-`undecided` state does not change itself into `enabled` after the first or any other report.
-Only explicit user action (see below) could change it to `enabled` or `disabled`.
+`undecided` state does not automatically change into `enabled` or `disabled` after the first or any other report.
+Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
 :::
 
 ### Disable telemetry
