@@ -4,6 +4,9 @@ go 1.19
 
 replace github.com/FerretDB/FerretDB => ../
 
+// TODO https://github.com/FerretDB/FerretDB/issues/1977
+replace go.mongodb.org/mongo-driver v1.11.2 => go.mongodb.org/mongo-driver v1.10.4
+
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
