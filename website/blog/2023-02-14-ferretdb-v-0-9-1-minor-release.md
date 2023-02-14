@@ -37,6 +37,7 @@ For instance, we’ve fixed the SASL response for PLAIN authentication, which no
 
 We addressed the issue of key ordering during document replacement in this release by fixing the behavior of upsert and non-upsert updates that did not have any operator specified.
 Prior to this release, FerretDB sorted data during these operations, which wasn’t the intended behavior.
+
 Additionally, we fixed the `$pop` operator error handling for non-existent path.
 
 All the changes in this release are part of our effort in building the ultimate open-source alternative to MongoDB.
