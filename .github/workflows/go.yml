@@ -20,9 +20,6 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: ${{ vars.CODECOV_TOKEN }}
-
 jobs:
   short-test:
     name: Short test
@@ -101,12 +98,16 @@ jobs:
         run: bin/task test-unit
 
       # The token is not required but should make uploads more stable.
-      # See https://github.com/codecov/codecov-action/issues/837.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true

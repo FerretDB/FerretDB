@@ -90,7 +90,7 @@ jobs:
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
 
-      - name: Extract Docker image name and tag
+      - name: Extract Docker image name and tags
         id: extract
         uses: FerretDB/github-actions/extract-docker-tag@main
 
@@ -101,8 +101,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image ${{ steps.extract.outputs.ghcr }}
-        run: bin/task docker-push DOCKER_IMAGES=${{ steps.extract.outputs.ghcr }}
+      - name: Build Docker images ${{ steps.extract.outputs.ghcr_images }}
+        run: bin/task docker-push DOCKER_IMAGES=${{ steps.extract.outputs.ghcr_images }}
 
       - name: Check dirty
         run: |
