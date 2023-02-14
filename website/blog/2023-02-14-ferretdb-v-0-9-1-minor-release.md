@@ -23,7 +23,7 @@ We express our sincere gratitude to our community for their continuous support, 
 In recent weeks, we’ve seen a marked increase in interest and feedback on FerretDB, which is exciting and will further drive our growth.
 
 This blog post only covers a few changes in this release.
-To learn even more, please check here for a [complete list of the changes](https://github.com/FerretDB/FerretDB/releases/) in FerretDB v0.9.1.
+To learn even more, please check here for a [complete list of the changes](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.1) in FerretDB v0.9.1.
 
 ## New Features
 
