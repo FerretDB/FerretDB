@@ -89,32 +89,35 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "startupWarnings":
-		var info *driver.InfoResponse
+		state := h.StateProvider.Get()
 
-		if info, err = dbPool.Driver.Info(ctx); err != nil {
+		info := version.Get()
+
+		var hv *driver.InfoResponse
+
+		if hv, err = dbPool.Driver.Info(ctx); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		mv := version.Get()
-
 		startupWarnings := []string{
-			"Powered by FerretDB " + version.Get().Version + " and Tigris " + info.ServerVersion + ".",
+			"Powered by FerretDB " + info.Version + " and Tigris " + hv.ServerVersion + ".",
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris.",
 		}
-
-		state := h.StateProvider.Get()
 
 		switch {
 		case state.Telemetry == nil:
 			startupWarnings = append(
 				startupWarnings,
-				"The telemetry state is undecided; the first report will be sent soon. "+
-					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+				"The telemetry state is undecided.",
+				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
-		case state.LatestVersion != mv.Version:
+		case state.UpdateAvailable():
 			startupWarnings = append(
 				startupWarnings,
-				fmt.Sprintf("New version available! Latest version: %s; Current version: %s", state.LatestVersion, mv.Version),
+				fmt.Sprintf(
+					"A new version available! The latest version: %s. The current version: %s.",
+					state.LatestVersion, info.Version,
+				),
 			)
 		}
 

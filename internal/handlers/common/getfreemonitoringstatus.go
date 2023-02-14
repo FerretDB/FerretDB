@@ -17,8 +17,6 @@ package common
 import (
 	"context"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -31,17 +29,8 @@ func GetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *state.
 		panic("state cannot be equal to nil")
 	}
 
-	telemetryState := "disabled"
-	telemetryMsg := "monitoring is not enabled"
-
-	switch {
-	case state.Telemetry == nil:
-		telemetryState = "undecided"
-		telemetryMsg = "monitoring is undecided"
-	case pointer.GetBool(state.Telemetry):
-		telemetryState = "enabled"
-		telemetryMsg = "monitoring is enabled"
-	}
+	telemetryState := state.TelemetryString()
+	telemetryMsg := "monitoring is " + telemetryState
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
