@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -29,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -193,6 +195,24 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 
 	info := version.Get()
 
+	buildEnvironment := make(map[string]any, info.BuildEnvironment.Len())
+
+	iter := info.BuildEnvironment.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			panic(err)
+		}
+
+		buildEnvironment[k] = v
+	}
+
 	return &request{
 		Version:          info.Version,
 		Commit:           info.Commit,
@@ -200,7 +220,7 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		Dirty:            info.Dirty,
 		Package:          info.Package,
 		Debug:            info.DebugBuild,
-		BuildEnvironment: info.BuildEnvironment.Map(),
+		BuildEnvironment: buildEnvironment,
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
