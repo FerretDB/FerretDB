@@ -183,7 +183,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, limit bool) (int32, error) {
 	var deleted int32
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err := pgdb.GetDocuments(ctx, tx, qp)
+		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
 			return err
 		}

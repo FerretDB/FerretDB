@@ -104,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var docs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.GetDocuments(ctx, tx, &qp)
+		iter, getErr := pgdb.QueryDocuments(ctx, tx, &qp)
 		if getErr != nil {
 			return getErr
 		}
