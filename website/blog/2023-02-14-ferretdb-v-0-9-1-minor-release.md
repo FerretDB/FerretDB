@@ -10,7 +10,7 @@ date: 2023-02-14
 
 FerretDB v0.9.1 is a minor release with upgrades on previous versions, including bug fixes, enhancements, and new features.
 
-![FerretDB v0.9.0 - Developer Preview](/img/blog/ferretdb-v0.9.1.jpg)
+![FerretDB v0.9.1 - Minor Release](/img/blog/ferretdb-v0.9.1.jpg)
 
 <!--truncate-->
 
