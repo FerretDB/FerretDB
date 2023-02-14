@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,11 +29,6 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -58,7 +54,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	queryFilter := string(dbPool.BuildFilter(filter))
+	queryFilter := string(tigrisdb.BuildFilter(filter))
 
 	queryPlanner := must.NotFail(types.NewDocument(
 		"Filter", queryFilter,

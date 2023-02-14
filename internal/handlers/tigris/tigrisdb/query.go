@@ -68,7 +68,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (ite
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter := tdb.BuildFilter(param.Filter)
+	filter := BuildFilter(param.Filter)
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
 	tigrisIter, err := db.Read(ctx, param.Collection, filter, nil)
@@ -84,7 +84,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (ite
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
-func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
+func BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
