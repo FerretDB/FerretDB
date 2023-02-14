@@ -654,10 +654,10 @@ db.aggregate()
 |                                   | `nameOnly`                     |                           | ✅      |                                                           |
 |                                   | `authorizedDatabases`          |                           | ⚠️      | Ingored                                                   |
 |                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
-| `listIndexes`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/278)  |
-|                                   | `cursor.batchSize`             |                           | ⚠️      |                                                           |
-|                                   | `comment`                      |                           | ⚠️      |                                                           |
-| `logRotate`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/278)  |
+| `listIndexes`                     |                                |                           | ✅      |                                                           |
+|                                   | `cursor.batchSize`             |                           | ⚠️      | Ignored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ignored                                                   |
+| `logRotate`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1959) |
 |                                   | `<target>`                     |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `reIndex`                         |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1516) |
