@@ -6,6 +6,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     labels: [deps]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -14,6 +15,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/"
     labels: [deps]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -21,6 +23,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/build/deps"
     labels: [deps]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -29,6 +32,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     labels: [deps]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -36,6 +40,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/integration"
     labels: [deps]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -43,6 +48,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/tools"
     labels: [deps]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"
