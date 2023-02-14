@@ -203,8 +203,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 // upsertParams represent parameters for Handler.upsert method.
 type upsertParams struct {
 	hasUpdateOperators bool
-	query, update *types.Document
-	queryParam    *tigrisdb.QueryParam
+	query, update      *types.Document
+	queryParam         *tigrisdb.QueryParam
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.

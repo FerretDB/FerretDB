@@ -42,6 +42,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var qp pgdb.QueryParam
+
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, lazyerrors.Error(err)
 	}

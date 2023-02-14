@@ -41,13 +41,12 @@ type FetchedDocs struct {
 
 // QueryParam represents options/parameters used for SQL query.
 type QueryParam struct {
-	DB         string
-	Collection string
-	Comment    string
-	Explain    bool
-
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter          *types.Document
+	DB              string
+	Collection      string
+	Comment         string
+	Explain         bool
 	DisablePushdown bool
 }
 
