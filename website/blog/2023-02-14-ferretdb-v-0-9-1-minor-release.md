@@ -41,7 +41,7 @@ Prior to this release, FerretDB sorted data during these operations, which wasnâ
 Additionally, we fixed the `$pop` operator error handling for non-existent path.
 
 All the changes in this release are part of our effort in building the ultimate open-source alternative to MongoDB.
-Please see the [release notes on FerretDB v0.9.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.1) for a detailed list of all the changes in this version.
+Please see the [release notes on FerretDB v0.9.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.1) for a detailed list of all the changes in this version.
 
 We're always here to help you get the most out of FerretDB.
 As a result, we encourage our users to share feedback, ask questions, and leave comments.
