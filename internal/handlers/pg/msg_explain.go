@@ -41,8 +41,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var sp pgdb.SQLParam
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	var qp pgdb.QueryParam
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -53,19 +53,19 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if sp.Collection, err = common.GetRequiredParam[string](command, command.Command()); err != nil {
+	if qp.Collection, err = common.GetRequiredParam[string](command, command.Command()); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	sp.Explain = true
-	sp.DisablePushdown = h.DisablePushdown
+	qp.Explain = true
+	qp.DisablePushdown = h.DisablePushdown
 
 	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	sp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
+	qp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -73,7 +73,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var queryPlanner *types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		queryPlanner, err = pgdb.Explain(ctx, tx, &sp)
+		queryPlanner, err = pgdb.Explain(ctx, tx, &qp)
 		return err
 	})
 	if err != nil {
@@ -96,7 +96,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	))
 
 	cmd := command.DeepCopy()
-	cmd.Set("$db", sp.DB)
+	cmd.Set("$db", qp.DB)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

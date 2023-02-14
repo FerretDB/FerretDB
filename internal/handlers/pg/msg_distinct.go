@@ -44,7 +44,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	sp := pgdb.SQLParam{
+	qp := pgdb.QueryParam{
 		DB:         dp.DB,
 		Collection: dp.Collection,
 		Filter:     dp.Filter,
@@ -53,7 +53,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &qp)
 		return err
 	})
 

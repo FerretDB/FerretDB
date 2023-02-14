@@ -56,7 +56,7 @@ func TestGetDocuments(t *testing.T) {
 				return err
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
 			if err != nil {
 				return err
@@ -111,7 +111,7 @@ func TestGetDocuments(t *testing.T) {
 				return err
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
 			if err != nil {
 				return err
@@ -156,7 +156,7 @@ func TestGetDocuments(t *testing.T) {
 				return err
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
 			if err != nil {
 				return err
@@ -207,7 +207,7 @@ func TestGetDocuments(t *testing.T) {
 				return err
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
 			if err != nil {
 				return err
@@ -248,7 +248,7 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
 			iter, err := GetDocuments(ctxGet, tx, sp)
 			if err != nil {
 				return err
