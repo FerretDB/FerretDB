@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,7 +29,8 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
+	// DBPool is unused here, and the connection is established just for health check
+	_, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -60,7 +62,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var queryFilter string
 	if !h.DisablePushdown {
-		queryFilter = string(dbPool.BuildFilter(filter))
+		queryFilter = string(tigrisdb.BuildFilter(filter))
 	}
 
 	queryPlanner := must.NotFail(types.NewDocument(

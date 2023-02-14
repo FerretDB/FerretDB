@@ -224,7 +224,6 @@ func TestQueryDocuments(t *testing.T) {
 
 func TestBuildFilter(t *testing.T) {
 	t.Parallel()
-	tdb := TigrisDB{}
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	for name, tc := range map[string]struct {
@@ -301,7 +300,7 @@ func TestBuildFilter(t *testing.T) {
 			}
 
 			expected := driver.Filter(tc.expected)
-			actual := tdb.BuildFilter(tc.filter)
+			actual := BuildFilter(tc.filter)
 
 			assert.Equal(t, expected, actual)
 		})

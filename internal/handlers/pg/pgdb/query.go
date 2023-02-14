@@ -163,8 +163,6 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	// ?
-
 	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
 	query += where
 
