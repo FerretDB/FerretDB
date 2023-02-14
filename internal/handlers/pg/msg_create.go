@@ -42,7 +42,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	unimplementedFields := []string{
-		"capped",
 		"timeseries",
 		"expireAfterSeconds",
 		"size",
@@ -55,6 +54,13 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"collation",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+
+	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
+		b, ok := v.(bool)
+		return ok && !b
+	}); err != nil {
 		return nil, err
 	}
 
