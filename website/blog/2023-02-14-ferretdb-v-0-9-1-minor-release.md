@@ -22,8 +22,8 @@ We release a new version of FerretDB every two weeks, so be sure to stay up to d
 We express our sincere gratitude to our community for their continuous support, contributions, and valuable feedback.
 In recent weeks, we’ve seen a marked increase in interest and feedback on FerretDB, which is exciting and will further drive our growth.
 
-This blog post does not cover all the changes in this release.
-Check here for a [complete list of the latest changes](https://github.com/FerretDB/FerretDB/releases/).
+This blog post only covers a few changes in this release.
+To learn even more, please check here for a [complete list of the changes](https://github.com/FerretDB/FerretDB/releases/) in FerretDB v0.9.1.
 
 ## New Features
 
