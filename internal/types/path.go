@@ -74,12 +74,13 @@ type Path struct {
 //
 // It panics on invalid paths. For that reason, it should not be used with user-provided paths.
 func NewStaticPath(path ...string) Path {
-	return must.NotFail(newPathFromString(strings.Join(path, ".")))
+	return must.NotFail(NewPathFromString(strings.Join(path, ".")))
 }
 
-// TODO merge into NewPathFromString
-// https://github.com/FerretDB/FerretDB/issues/1954
-func newPathFromString(s string) (Path, error) {
+// NewPathFromString returns Path from path string and error.
+// Path string should not be empty, path elements cannot be empty.
+// Path string should contain fields separated with '.'.
+func NewPathFromString(s string) (Path, error) {
 	var res Path
 
 	path := strings.Split(s, ".")
@@ -97,11 +98,6 @@ func newPathFromString(s string) (Path, error) {
 	copy(res.s, path)
 
 	return res, nil
-}
-
-// NewPathFromString returns Path from path string. Path string should contain fields separated with '.'.
-func NewPathFromString(s string) Path {
-	return must.NotFail(newPathFromString(s))
 }
 
 // String returns dot-separated path value.

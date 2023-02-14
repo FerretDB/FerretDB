@@ -102,7 +102,14 @@ func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
 			}
 
 			// If the key is in dot notation translate it to a tigris dot notation
-			if path := types.NewPathFromString(k); path.Len() > 1 {
+			var path types.Path
+			var err error
+
+			if path, err = types.NewPathFromString(k); err != nil {
+				tdb.l.Error("Failed to parse path", zap.String("path", k), zap.Error(err))
+			}
+
+			if path.Len() > 1 {
 				indexSearch := false
 
 				// TODO https://github.com/FerretDB/FerretDB/issues/1914

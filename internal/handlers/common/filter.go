@@ -56,7 +56,11 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
 	if strings.ContainsRune(filterKey, '.') {
 		// {field1./.../.fieldN: filterValue}
-		path := types.NewPathFromString(filterKey)
+		path, err := types.NewPathFromString(filterKey)
+		if err != nil {
+			return false, err
+		}
+
 		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
 		docValue, err := doc.GetByPath(path.TrimSuffix())
 		if err != nil {

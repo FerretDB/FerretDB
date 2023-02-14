@@ -249,8 +249,16 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				continue
 			}
 
+			var path types.Path
+			var err error
+
+			if path, err = types.NewPathFromString(k); err != nil {
+				// TODO: handle error
+				continue
+			}
+
 			// If the key is in dot notation use path operator (#>)
-			if path := types.NewPathFromString(k); path.Len() > 1 {
+			if path.Len() > 1 {
 				keyOperator = "#>"
 				key = path.Slice()     // '{v,foo}'
 				prefix = path.Prefix() // 'v'

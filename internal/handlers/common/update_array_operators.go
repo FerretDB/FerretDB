@@ -45,14 +45,23 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		popValue, err := GetWholeNumberParam(popValueRaw)
 		if err != nil {
-			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw))
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw),
+			)
 		}
 
 		if popValue != 1 && popValue != -1 {
-			return false, NewWriteErrorMsg(ErrFailedToParse, fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue))
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue),
+			)
 		}
 
-		path := types.NewPathFromString(key)
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		val, err := doc.GetByPath(path)
 		if err != nil {
@@ -150,13 +159,16 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			return false, lazyerrors.Error(err)
 		}
 
-		path := types.NewPathFromString(key)
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, NewWriteErrorMsg(
-					ErrUnsuitableValueType,
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
 					err.Error(),
 				)
 			}
@@ -169,8 +181,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, NewWriteErrorMsg(
-				ErrBadValue,
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
