@@ -20,9 +20,6 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: ${{ vars.CODECOV_TOKEN }}
-
 jobs:
   short-test:
     name: Short test
@@ -106,7 +103,7 @@ jobs:
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: ${{ vars.CODECOV_TOKEN }} # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true

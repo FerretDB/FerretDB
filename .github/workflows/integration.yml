@@ -26,9 +26,6 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: ${{ vars.CODECOV_TOKEN }}
-
 jobs:
   test:
     name: Test ${{ matrix.name }}
@@ -40,11 +37,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: "PostgreSQL", task: "pg"}
-          - {name: "Tigris", task: "tigris"}
-          - {name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main"}
+          - { name: "PostgreSQL", task: "pg" }
+          - { name: "Tigris", task: "tigris" }
+          - {
+              name: "Tigris main",
+              task: "tigris",
+              tigris_dockerfile: "tigris_main",
+            }
           # - {name: "CockroachDB", task: "cockroach"} TODO https://github.com/FerretDB/FerretDB/issues/1523
-          - {name: "MongoDB", task: "mongodb"}
+          - { name: "MongoDB", task: "mongodb" }
 
     steps:
       - name: Checkout code
@@ -82,7 +83,7 @@ jobs:
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: ${{ vars.CODECOV_TOKEN }} # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
           files: ./integration/integration-${{ matrix.task }}.txt
           flags: integration,${{ matrix.task }}
           fail_ci_if_error: true
