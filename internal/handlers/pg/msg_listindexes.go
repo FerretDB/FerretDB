@@ -16,8 +16,13 @@ package pg
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,7 +31,10 @@ import (
 
 // MsgListIndexes implements HandlerInterface.
 func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/278
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	document, err := msg.Document()
 	if err != nil {
@@ -35,22 +43,61 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	common.Ignored(document, h.L, "comment", "cursor")
 
-	firstBatch := must.NotFail(types.NewArray(
-		must.NotFail(types.NewDocument(
-			"v", float64(2),
-			"key", must.NotFail(types.NewDocument(
-				"_id", float64(1),
-			)),
-			"name", "_id_",
-		)),
-	))
+	var db string
+
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	var collectionParam any
+
+	if collectionParam, err = document.Get(document.Command()); err != nil {
+		return nil, err
+	}
+
+	collection, ok := collectionParam.(string)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			document.Command(),
+		)
+	}
+
+	var exists bool
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		exists, err = pgdb.CollectionExists(ctx, tx, db, collection)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrNamespaceNotFound,
+			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
+		)
+	}
+
+	// TODO Uncomment this response when we support indexes for _id: https://github.com/FerretDB/FerretDB/issues/1384.
+	//firstBatch := must.NotFail(types.NewArray(
+	//	must.NotFail(types.NewDocument(
+	//		"v", float64(2),
+	//		"key", must.NotFail(types.NewDocument(
+	//			"_id", float64(1),
+	//		)),
+	//		"name", "_id_",
+	//	)),
+	//))
+	firstBatch := must.NotFail(types.NewArray())
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
-				// TODO "ns" field
 				"id", int64(0),
+				"ns", fmt.Sprintf("%s.%s", db, collection),
 				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
