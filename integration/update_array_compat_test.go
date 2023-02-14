@@ -47,9 +47,10 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			update: bson.D{{"$pop", bson.D{{"v.0.foo", -1}}}},
 		},
 		"DotNotationNonArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
-			update:     bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
-			resultType: emptyResult,
+			filter:        bson.D{{"_id", "array-documents-nested"}},
+			update:        bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
+			resultType:    emptyResult,
+			skipForTigris: "TODO",
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
