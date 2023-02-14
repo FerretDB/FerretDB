@@ -43,7 +43,6 @@ jobs:
           - {name: "PostgreSQL", task: "pg"}
           - {name: "Tigris", task: "tigris"}
           - {name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main"}
-          # - {name: "CockroachDB", task: "cockroach"} TODO https://github.com/FerretDB/FerretDB/issues/1523
           - {name: "MongoDB", task: "mongodb"}
 
     steps:
