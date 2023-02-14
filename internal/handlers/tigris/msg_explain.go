@@ -58,7 +58,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	queryFilter := string(dbPool.BuildFilter(filter))
+	var queryFilter string
+	if !h.DisablePushdown {
+		queryFilter = string(dbPool.BuildFilter(filter))
+	}
 
 	queryPlanner := must.NotFail(types.NewDocument(
 		"Filter", queryFilter,
