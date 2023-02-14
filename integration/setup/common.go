@@ -60,8 +60,7 @@ var (
 
 	recordsDirF = flag.String("records-dir", "", "directory for record files")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1912
-	_ = flag.Bool("disable-pushdown", false, "disable query pushdown")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
 )
 
 // Other globals.
@@ -110,6 +109,11 @@ func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	if getHandler() != "tigris" {
 		tb.Skipf("Skipping for non-tigris: %s", reason)
 	}
+}
+
+// IsPushdownDisabled returns if FerretDB pushdowns are disabled.
+func IsPushdownDisabled() bool {
+	return *disablePushdownF
 }
 
 // buildMongoDBURIOpts represents buildMongoDBURI's options.
@@ -192,10 +196,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	metrics := connmetrics.NewListenerMetrics()
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
-		StateProvider: p,
-		// DisablePushdown:
+		Logger:          logger,
+		Metrics:         metrics.ConnMetrics,
+		StateProvider:   p,
+		DisablePushdown: *disablePushdownF,
 
 		PostgreSQLURL: *postgreSQLURLF,
 
