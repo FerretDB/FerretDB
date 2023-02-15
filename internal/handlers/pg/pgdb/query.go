@@ -89,7 +89,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 	if qp.Filter != nil && !qp.DisablePushdown {
 		var where string
 
-		where, args = prepareWhereClause(qp.Filter)
+		where, args, _ = prepareWhereClause(qp.Filter)
 		query += where
 	}
 
@@ -164,7 +164,7 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.In
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	where, args, _ := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
 	query += where
 
 	var b []byte
@@ -222,7 +222,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 	if p.filter != nil && !p.disablePushdown {
 		var where string
 
-		where, args = prepareWhereClause(p.filter)
+		where, args, _ = prepareWhereClause(p.filter)
 		query += where
 	}
 
@@ -235,12 +235,23 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
 	var p Placeholder
 
-	for k, v := range sqlFilters.Map() {
+	iter := sqlFilters.Iterator()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, err
+		}
+
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
 		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
@@ -252,12 +263,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				continue
 			}
 
-			var path types.Path
-			var err error
-
-			if path, err = types.NewPathFromString(k); err != nil {
-				// TODO: handle error
-				continue
+			path, err := types.NewPathFromString(k)
+			if err != nil {
+				return "", nil, err
 			}
 
 			// If the key is in dot notation use path operator (#>)
@@ -324,7 +332,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		query = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	return query, args
+	return query, args, nil
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.

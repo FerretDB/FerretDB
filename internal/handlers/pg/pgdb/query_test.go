@@ -355,7 +355,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, _ := prepareWhereClause(tc.filter)
+			actual, _, _ := prepareWhereClause(tc.filter)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
