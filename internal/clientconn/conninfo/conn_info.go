@@ -54,7 +54,7 @@ type ConnInfo struct {
 	PeerAddr string
 
 	rw       sync.RWMutex
-	cursors  map[int64]cursor
+	cursors  map[int64]Cursor
 	username string
 	password string
 
@@ -64,7 +64,7 @@ type ConnInfo struct {
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	connInfo := &ConnInfo{
-		cursors: map[int64]cursor{},
+		cursors: map[int64]Cursor{},
 		stack:   debugbuild.Stack(),
 	}
 
@@ -96,35 +96,23 @@ func (connInfo *ConnInfo) Close() {
 	}
 }
 
-// cursor allows clients to iterate over a result set.
-type cursor struct {
+// Cursor allows clients to iterate over a result set.
+type Cursor struct {
 	Iter   iterator.Interface[int, *types.Document]
 	Filter *types.Document
 }
 
-// nextCursorID returns next cursor ID.
-func (connInfo *ConnInfo) nextCursorID() int64 {
-	// use global, sequential, positive, short cursor IDs to make debugging easier
-
-	for {
-		id := int64(lastCursorID.Add(1))
-		if _, ok := connInfo.cursors[id]; id != 0 && !ok {
-			return id
-		}
-	}
-}
-
 // Cursor returns cursor by ID, or nil.
-func (connInfo *ConnInfo) Cursor(id int64) *cursor {
+func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	cursor, ok := connInfo.cursors[id]
+	c, ok := connInfo.cursors[id]
 	if !ok {
 		return nil
 	}
 
-	return &cursor
+	return &c
 }
 
 // StoreCursor stores cursor and return its ID.
@@ -132,9 +120,17 @@ func (connInfo *ConnInfo) StoreCursor(iter iterator.Interface[int, *types.Docume
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
-	id := connInfo.nextCursorID()
+	var id int64
 
-	connInfo.cursors[id] = cursor{
+	// use global, sequential, positive, short cursor IDs to make debugging easier
+	for {
+		id = int64(lastCursorID.Add(1))
+		if _, ok := connInfo.cursors[id]; id != 0 && !ok {
+			break
+		}
+	}
+
+	connInfo.cursors[id] = Cursor{
 		Iter:   iter,
 		Filter: filter,
 	}
@@ -147,9 +143,9 @@ func (connInfo *ConnInfo) DeleteCursor(id int64) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
-	cursor := connInfo.cursors[id]
+	c := connInfo.cursors[id]
 
-	cursor.Iter.Close()
+	c.Iter.Close()
 
 	delete(connInfo.cursors, id)
 }
