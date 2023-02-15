@@ -15,9 +15,8 @@
 package types
 
 import (
-	"crypto/rand"
 	"encoding/binary"
-	"io"
+	"math/rand"
 	"sync/atomic"
 	"time"
 
@@ -44,7 +43,7 @@ func newObjectIDTime(t time.Time) ObjectID {
 	binary.BigEndian.PutUint32(res[0:4], uint32(t.Unix()))
 	copy(res[4:9], objectIDProcess[:])
 
-	c := atomic.AddUint32(&objectIDCounter, 1)
+	c := objectIDCounter.Add(1)
 
 	// ignore the most significant byte for correct wraparound
 	res[9] = byte(c >> 16)
@@ -56,10 +55,13 @@ func newObjectIDTime(t time.Time) ObjectID {
 
 var (
 	objectIDProcess [5]byte
-	objectIDCounter uint32
+	objectIDCounter atomic.Uint32
 )
 
 func init() {
-	must.NotFail(io.ReadFull(rand.Reader, objectIDProcess[:]))
-	must.NoError(binary.Read(rand.Reader, binary.BigEndian, &objectIDCounter))
+	// TODO remove for Go 1.20
+	rand.Seed(time.Now().UnixNano())
+
+	must.NotFail(rand.Read(objectIDProcess[:]))
+	objectIDCounter.Store(rand.Uint32())
 }
