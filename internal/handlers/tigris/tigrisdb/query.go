@@ -33,8 +33,7 @@ import (
 
 // QueryParam represents options/parameters used by the fetch/query.
 type QueryParam struct {
-	// Query filter for possible pushdown; may be ignored in part or entirely.
-	Filter          *types.Document
+	Filter          *types.Document // Query filter for possible pushdown; may be ignored in part or entirely.
 	DB              string
 	Collection      string
 	DisablePushdown bool

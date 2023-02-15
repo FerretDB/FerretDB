@@ -53,9 +53,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	qp := tigrisdb.QueryParam{
-		DB:         params.DB,
-		Collection: params.Collection,
-		Filter:     params.Filter,
+		DB:              params.DB,
+		Collection:      params.Collection,
+		Filter:          params.Filter,
+		DisablePushdown: h.DisablePushdown,
 	}
 
 	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
