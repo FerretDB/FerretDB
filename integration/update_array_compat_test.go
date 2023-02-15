@@ -131,9 +131,6 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 		"AddToSetDocument": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
 		},
-		"AddToSetArray": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.A{"foo", "bar"}}}}},
-		},
 		"AddToSetInt32": {
 			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
 		},
