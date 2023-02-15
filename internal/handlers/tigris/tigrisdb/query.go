@@ -28,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // QueryParam represents options/parameters used by the fetch/query.
@@ -70,7 +69,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 
 	var filter driver.Filter
 	if !param.DisablePushdown {
-		filter = BuildFilter(param.Filter)
+		filter, _ = BuildFilter(param.Filter)
 	}
 
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
@@ -88,7 +87,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
-func BuildFilter(filter *types.Document) driver.Filter {
+func BuildFilter(filter *types.Document) (driver.Filter, error) {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
@@ -110,7 +109,7 @@ func BuildFilter(filter *types.Document) driver.Filter {
 			var err error
 
 			if path, err = types.NewPathFromString(k); err != nil {
-				tdb.l.Error("Failed to parse path", zap.String("path", k), zap.Error(err))
+				return nil, lazyerrors.Error(err)
 			}
 
 			if path.Len() > 1 {
@@ -137,12 +136,16 @@ func BuildFilter(filter *types.Document) driver.Filter {
 			// type not supported for pushdown
 			continue
 		case float64, string, types.ObjectID, int32, int64:
-			rawValue := must.NotFail(tjson.Marshal(v))
+			rawValue, err := tjson.Marshal(v)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			res[key] = json.RawMessage(rawValue)
 		default:
 			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
 	}
 
-	return must.NotFail(json.Marshal(res))
+	return json.Marshal(res)
 }
