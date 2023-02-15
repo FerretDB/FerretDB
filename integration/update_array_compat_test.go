@@ -143,6 +143,9 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 		"AddToSetNonExistentField": {
 			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
 		},
+		"AddToSetDotNotation": {
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", "42"}}}},
+		},
 	}
 
 	testUpdateCompat(t, testCases)
