@@ -253,6 +253,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	var p Placeholder
 
 	iter := sqlFilters.Iterator()
+	defer iter.Close()
 
 	for {
 		k, v, err := iter.Next()
