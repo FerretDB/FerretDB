@@ -37,9 +37,9 @@ type queryIterator struct {
 	ctx    context.Context
 	schema *tjson.Schema
 
+	m     sync.Mutex
 	iter  driver.Iterator
 	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
-	m     sync.Mutex
 	n     int
 }
 
