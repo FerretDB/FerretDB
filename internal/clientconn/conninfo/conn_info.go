@@ -40,9 +40,7 @@ type ConnInfo struct {
 	rw       sync.RWMutex
 	username string
 	password string
-
-	curRW   sync.RWMutex
-	cursors map[int64]Cursor
+	cursors  map[int64]Cursor
 }
 
 // NewConnInfo return a new ConnInfo.
@@ -77,8 +75,8 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 
 // Cursor returns the cursor value stored.
 func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
-	connInfo.curRW.RLock()
-	defer connInfo.curRW.RUnlock()
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
 
 	cursor, ok := connInfo.cursors[id]
 	if !ok {
@@ -91,8 +89,8 @@ func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 // SetCursor stores the cursor value.
 // We use "db.collection" as the key to store the cursor.
 func (connInfo *ConnInfo) SetCursor(iter iterator.Interface[int, *types.Document], filter *types.Document) int64 {
-	connInfo.curRW.Lock()
-	defer connInfo.curRW.Unlock()
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
 
 	id := connInfo.generateID()
 
@@ -122,30 +120,26 @@ func (connInfo *ConnInfo) generateID() int64 {
 }
 
 // DeleteCursor deletes the cursor from ConnInfo.
-func (connInfo *ConnInfo) DeleteCursor(id int64) error {
-	connInfo.curRW.Lock()
-	defer connInfo.curRW.Unlock()
+func (connInfo *ConnInfo) DeleteCursor(id int64) {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
 
-	err := connInfo.deleteCursor(id)
-
-	return err
+	connInfo.deleteCursor(id)
 }
 
 // deleteCursor deletes the cursor from ConnInfo without acquiring a lock.
-func (connInfo *ConnInfo) deleteCursor(id int64) (err error) {
+func (connInfo *ConnInfo) deleteCursor(id int64) {
 	cursor := connInfo.cursors[id]
 
 	cursor.Iter.Close()
 
 	delete(connInfo.cursors, id)
-
-	return nil
 }
 
 // Close frees all opened cursors.
 func (connInfo *ConnInfo) Close() {
-	connInfo.curRW.Lock()
-	defer connInfo.curRW.Unlock()
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
 
 	for id := range connInfo.cursors {
 		connInfo.deleteCursor(id)
