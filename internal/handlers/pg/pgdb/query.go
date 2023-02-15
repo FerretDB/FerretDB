@@ -207,7 +207,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += `SELECT _jsonb `
 
-	if c := p.comment; c != "" && !p.disablePushdown {
+	if c := p.comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
