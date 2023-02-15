@@ -300,7 +300,8 @@ func TestBuildFilter(t *testing.T) {
 			}
 
 			expected := driver.Filter(tc.expected)
-			actual, _ := BuildFilter(tc.filter)
+			actual, err := BuildFilter(tc.filter)
+			require.NoError(t, err)
 
 			assert.Equal(t, expected, actual)
 		})

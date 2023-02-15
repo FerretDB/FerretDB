@@ -69,7 +69,10 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 
 	var filter driver.Filter
 	if !param.DisablePushdown {
-		filter, _ = BuildFilter(param.Filter)
+		filter, err = BuildFilter(param.Filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)

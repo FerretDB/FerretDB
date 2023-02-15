@@ -18,6 +18,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/tigrisdata/tigris-client-go/driver"
+
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -60,9 +62,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var queryFilter string
+	var queryFilter driver.Filter
+
 	if !h.DisablePushdown {
-		queryFilter = string(tigrisdb.BuildFilter(filter))
+		queryFilter, err = tigrisdb.BuildFilter(filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	queryPlanner := must.NotFail(types.NewDocument(
@@ -70,7 +76,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	))
 
 	// if tigris query filter was set, it means, the pushdown was done
-	pushdown := queryFilter != "{}"
+	pushdown := string(queryFilter) != "{}"
 
 	hostname, err := os.Hostname()
 	if err != nil {

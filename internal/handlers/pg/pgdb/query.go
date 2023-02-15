@@ -88,7 +88,6 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 
 	if qp.Filter != nil && !qp.DisablePushdown {
 		var where string
-		var err error
 
 		where, args, err = prepareWhereClause(qp.Filter)
 		if err != nil {
