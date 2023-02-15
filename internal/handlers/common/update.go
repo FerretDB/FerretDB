@@ -127,6 +127,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$addToSet":
+			changed, err = processAddToSetArrayUpdateExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewCommandError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
@@ -722,7 +728,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			"$set", "$setOnInsert", "$unset",
 
 			// array update operators:
-			"$pop", "$push":
+			"$pop", "$push", "$addToSet":
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {

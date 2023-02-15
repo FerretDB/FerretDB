@@ -189,3 +189,58 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 	return changed, nil
 }
+
+func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, error) {
+	var changed bool
+
+	iter := update.Iterator()
+
+	for {
+		key, addToSetValueRaw, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		path := types.NewPathFromString(key)
+
+		// If the path does not exist, create a new array and set it.
+		if !doc.HasByPath(path) {
+			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, NewWriteErrorMsg(
+				ErrBadValue,
+				fmt.Sprintf(
+					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
+				),
+			)
+		}
+
+		array.Append(addToSetValueRaw)
+
+		if err = doc.SetByPath(path, array); err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		changed = true
+	}
+
+	return changed, nil
+}
