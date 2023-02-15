@@ -62,7 +62,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		batchSize = int(params.BatchSize)
 	}
 
-	sp := pgdb.SQLParam{
+	qp := pgdb.QueryParam{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -72,8 +72,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if sp.Filter != nil {
-		if sp.Comment, err = common.GetOptionalParam(sp.Filter, "$comment", sp.Comment); err != nil {
+	if qp.Filter != nil {
+		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 	}
@@ -88,7 +88,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return nil, err
 		}
 
-		resDocs, iter, err = h.getFirstBatchAndIterator(ctx, tx, &sp)
+		resDocs, iter, err = h.getFirstBatchAndIterator(ctx, tx, &qp)
 		if err != nil {
 			return nil, err
 		}
@@ -101,14 +101,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return nil, err
 		}
 
-		firstBatch, id := makeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, sp.Filter)
+		firstBatch, id := makeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, qp.Filter)
 
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"cursor", must.NotFail(types.NewDocument(
 					"id", id,
-					"ns", sp.DB+"."+sp.Collection,
+					"ns", qp.DB+"."+qp.Collection,
 					"firstBatch", firstBatch,
 				)),
 				"ok", float64(1),
@@ -121,8 +121,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var resDocs []*types.Document
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
-
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &qp)
 		return err
 	})
 
@@ -152,7 +151,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
-				"ns", sp.DB+"."+sp.Collection,
+				"ns", qp.DB+"."+qp.Collection,
 				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
@@ -227,8 +226,9 @@ func makeFindReplyParameters(
 	return firstBatch, id
 }
 
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
-	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParam) ([]*types.Document, error) {
+	iter, err := pgdb.QueryDocuments(ctx, tx, sqlParam)
 	if err != nil {
 		return nil, err
 	}
@@ -261,10 +261,10 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 }
 
 // getFirstBatchAndIterator fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) (
+func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParam) (
 	[]*types.Document, iterator.Interface[int, *types.Document], error,
 ) {
-	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
+	iter, err := pgdb.QueryDocuments(ctx, tx, sqlParam)
 	if err != nil {
 		return nil, nil, err
 	}

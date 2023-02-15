@@ -32,13 +32,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// SQLParam represents options/parameters used for SQL query.
-type SQLParam struct {
-	DB         string
-	Collection string
-	Comment    string
-	Explain    bool
-	Filter     *types.Document
+// QueryParam represents options/parameters used for SQL query.
+type QueryParam struct {
+	// Query filter for possible pushdown; may be ignored in part or entirely.
+	Filter          *types.Document
+	DB              string
+	Collection      string
+	Comment         string
+	Explain         bool
+	DisablePushdown bool
 
 	// TODO remove those fields because they are not used by that package
 	BatchSize int
@@ -46,8 +48,8 @@ type SQLParam struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, error) {
+	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -56,20 +58,20 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var query string
 
-	if sp.Explain {
+	if qp.Explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
 	query += `SELECT _jsonb `
 
-	if c := sp.Comment; c != "" {
+	if c := qp.Comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -77,14 +79,14 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		query += `/* ` + c + ` */ `
 	}
 
-	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
 	var args []any
 
-	if sp.Filter != nil {
+	if qp.Filter != nil && !qp.DisablePushdown {
 		var where string
 
-		where, args = prepareWhereClause(sp.Filter)
+		where, args = prepareWhereClause(qp.Filter)
 		query += where
 	}
 
@@ -123,13 +125,13 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 	return res, nil
 }
 
-// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
+// QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[int, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.Interface[int, *types.Document], error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
 	case err == nil:
@@ -141,11 +143,11 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:  sp.DB,
+		schema:  qp.DB,
 		table:   table,
-		comment: sp.Comment,
-		explain: sp.Explain,
-		filter:  sp.Filter,
+		comment: qp.Comment,
+		explain: qp.Explain,
+		filter:  qp.Filter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -184,11 +186,12 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema  string
-	table   string
-	comment string
-	explain bool
-	filter  *types.Document
+	schema          string
+	table           string
+	comment         string
+	explain         bool
+	disablePushdown bool
+	filter          *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -201,7 +204,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += `SELECT _jsonb `
 
-	if c := p.comment; c != "" {
+	if c := p.comment; c != "" && !p.disablePushdown {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -213,7 +216,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	var args []any
 
-	if p.filter != nil {
+	if p.filter != nil && !p.disablePushdown {
 		var where string
 
 		where, args = prepareWhereClause(p.filter)

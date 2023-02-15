@@ -99,7 +99,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"])
+					var msg string
+					if setup.IsPushdownDisabled() {
+						tc.resultPushdown = false
+						msg = "Query pushdown is disabled, but target resulted with pushdown"
+					}
+
+					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
