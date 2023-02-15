@@ -78,7 +78,7 @@ func NewStaticPath(path ...string) Path {
 }
 
 // NewPathFromString returns Path from path string and error.
-// Path string should not be empty, path elements cannot be empty.
+// Error return for empty path and empty path elements.
 // Path string should contain fields separated with '.'.
 func NewPathFromString(s string) (Path, error) {
 	var res Path
