@@ -15,7 +15,6 @@
 package types
 
 import (
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,7 +26,7 @@ func TestNewObjectID(t *testing.T) {
 	objectIDProcess = [5]byte{0x0b, 0xad, 0xc0, 0xff, 0xee}
 	ts := time.Date(2022, time.April, 13, 12, 44, 42, 0, time.UTC)
 
-	atomic.StoreUint32(&objectIDCounter, 0)
+	objectIDCounter.Store(0)
 	assert.Equal(
 		t,
 		ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0x00, 0x00, 0x01},
@@ -40,7 +39,7 @@ func TestNewObjectID(t *testing.T) {
 	)
 
 	// test wraparound
-	atomic.StoreUint32(&objectIDCounter, 1<<24-2)
+	objectIDCounter.Store(1<<24 - 2)
 	assert.Equal(
 		t,
 		ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff},

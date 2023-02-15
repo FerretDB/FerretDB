@@ -16,6 +16,7 @@ package shareddata
 
 import (
 	"math"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -171,7 +172,7 @@ var Strings = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "string"},
 					"_id": {"type": "string"}
@@ -230,7 +231,7 @@ var Bools = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"v": {"type": "boolean"},
 					"_id": {"type": "string"}
 				}
@@ -382,4 +383,31 @@ func tigrisSchema(typeString string) string {
 				}
 			}`
 	return strings.ReplaceAll(common, "%%type%%", typeString)
+}
+
+// generateBigMap generates `count` amount of key-value pairs for a map.
+// It can be used to generate a big map that is bigger than default batch size (101).
+func generateBigMap(count int) map[int32]any {
+	res := make(map[int32]any, count)
+
+	for i := 0; i < count; i++ {
+		res[int32(i)] = rand.Int31()
+	}
+
+	return res
+}
+
+// Int32BigAmounts contains int32 values for tests.
+// That data provider is not included by default
+// to avoid big amount of data and long execution time for compatibility tests.
+// It can be used when there is a need to test amount of data bigger than default batch size (101).
+var Int32BigAmounts = &Values[int32]{
+	name:     "Int32BigAmounts",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": tigrisSchema(`{"type": "number"}`),
+		},
+	},
+	data: generateBigMap(150),
 }
