@@ -17,6 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -233,7 +234,55 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			)
 		}
 
-		array.Append(addToSetValueRaw)
+		if array.Len() == 0 {
+			array.Append(addToSetValueRaw)
+
+			if err = doc.SetByPath(path, array); err != nil {
+				return false, lazyerrors.Error(err)
+			}
+
+			changed = true
+
+			continue
+		}
+
+		var appendValues []any
+
+		switch addToSetValueRaw := addToSetValueRaw.(type) {
+		case *types.Array:
+			// Nested arrays are not supported.
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(addToSetValueRaw)),
+			)
+		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
+			time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+			shouldAdd := true
+			for i := 0; i < array.Len(); i++ {
+				value, err := array.Get(i)
+				if err != nil {
+					return false, lazyerrors.Error(err)
+				}
+				compareResult := types.Compare(value, addToSetValueRaw)
+				if compareResult == types.Equal {
+					shouldAdd = false
+				}
+			}
+			if shouldAdd {
+				appendValues = append(appendValues, addToSetValueRaw)
+			}
+		default:
+			panic(fmt.Sprintf("unhandled type %T", addToSetValueRaw))
+		}
+
+		// No values to append to the array.
+		if len(appendValues) == 0 {
+			continue
+		}
+
+		for _, appendValue := range appendValues {
+			array.Append(appendValue)
+		}
 
 		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)

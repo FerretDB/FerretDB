@@ -126,13 +126,13 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 
 	testCases := map[string]updateCompatTestCase{
 		"AddToSet": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.A{"foo", "bar"}}}}},
+			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
 		},
 		"AddToSetDocument": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
 		},
-		"AddToSetString": {
-			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
+		"AddToSetArray": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.A{"foo", "bar"}}}}},
 		},
 		"AddToSetInt32": {
 			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
