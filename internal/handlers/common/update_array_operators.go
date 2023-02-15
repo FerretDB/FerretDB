@@ -249,28 +249,34 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		var appendValues []any
 
 		switch addToSetValueRaw := addToSetValueRaw.(type) {
+		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
+			time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+			shouldAdd := true
+
+			for i := 0; i < array.Len(); i++ {
+				var value any
+
+				value, err = array.Get(i)
+				if err != nil {
+					return false, lazyerrors.Error(err)
+				}
+
+				compareResult := types.Compare(value, addToSetValueRaw)
+
+				if compareResult == types.Equal {
+					shouldAdd = false
+				}
+			}
+
+			if shouldAdd {
+				appendValues = append(appendValues, addToSetValueRaw)
+			}
 		case *types.Array:
 			// Nested arrays are not supported.
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(addToSetValueRaw)),
 			)
-		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
-			time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
-			shouldAdd := true
-			for i := 0; i < array.Len(); i++ {
-				value, err := array.Get(i)
-				if err != nil {
-					return false, lazyerrors.Error(err)
-				}
-				compareResult := types.Compare(value, addToSetValueRaw)
-				if compareResult == types.Equal {
-					shouldAdd = false
-				}
-			}
-			if shouldAdd {
-				appendValues = append(appendValues, addToSetValueRaw)
-			}
 		default:
 			panic(fmt.Sprintf("unhandled type %T", addToSetValueRaw))
 		}
