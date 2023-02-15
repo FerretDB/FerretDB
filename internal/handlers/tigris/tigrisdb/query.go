@@ -31,17 +31,17 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// FetchParam represents options/parameters used by the fetch/query.
-type FetchParam struct {
-	DB         string
-	Collection string
-
+// QueryParam represents options/parameters used by the fetch/query.
+type QueryParam struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
-	Filter *types.Document
+	Filter          *types.Document
+	DB              string
+	Collection      string
+	DisablePushdown bool
 }
 
 // QueryDocuments fetches documents from the given collection.
-func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (iterator.Interface[int, *types.Document], error) {
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (iterator.Interface[int, *types.Document], error) {
 	db := tdb.Driver.UseDatabase(param.DB)
 
 	collection, err := db.DescribeCollection(ctx, param.Collection)
@@ -68,7 +68,11 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (ite
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter := tdb.BuildFilter(param.Filter)
+	var filter driver.Filter
+	if !param.DisablePushdown {
+		filter = BuildFilter(param.Filter)
+	}
+
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
 	tigrisIter, err := db.Read(ctx, param.Collection, filter, nil)
@@ -84,7 +88,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *FetchParam) (ite
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
-func (tdb *TigrisDB) BuildFilter(filter *types.Document) driver.Filter {
+func BuildFilter(filter *types.Document) driver.Filter {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {

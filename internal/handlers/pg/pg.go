@@ -42,10 +42,11 @@ type Handler struct {
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	PostgreSQLURL string
-	L             *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
-	StateProvider *state.Provider
+	PostgreSQLURL   string
+	DisablePushdown bool
+	L               *zap.Logger
+	Metrics         *connmetrics.ConnMetrics
+	StateProvider   *state.Provider
 }
 
 // New returns a new handler.

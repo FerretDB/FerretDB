@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -49,17 +50,17 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc2); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -108,13 +109,13 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -153,13 +154,13 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -204,13 +205,13 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := CreateCollection(ctx, tx, databaseName, collectionName); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -248,10 +249,10 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
