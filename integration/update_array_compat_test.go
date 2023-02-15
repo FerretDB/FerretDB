@@ -120,3 +120,33 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateArrayCompatAddToSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"AddToSet": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.A{"foo", "bar"}}}}},
+		},
+		"AddToSetDocument": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+		},
+		"AddToSetString": {
+			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
+		},
+		"AddToSetInt32": {
+			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
+		},
+		"AddToSetInt64": {
+			update: bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
+		},
+		"AddToSetFloat64": {
+			update: bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
+		},
+		"AddToSetNonExistentField": {
+			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
