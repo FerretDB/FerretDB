@@ -120,6 +120,7 @@ func TestConnInfoCursor(t *testing.T) {
 	t.Parallel()
 
 	connInfo := NewConnInfo()
+	defer connInfo.Close()
 
 	cursor := connInfo.Cursor(1)
 	require.Nil(t, cursor)
@@ -158,7 +159,9 @@ func TestConnInfoCursorParallelWork(t *testing.T) {
 	t.Parallel()
 
 	connInfo := NewConnInfo()
+	defer connInfo.Close()
 
+	// TODO use stress helper
 	runs := runtime.GOMAXPROCS(-1) * 10
 	wg := sync.WaitGroup{}
 	start := make(chan struct{})
