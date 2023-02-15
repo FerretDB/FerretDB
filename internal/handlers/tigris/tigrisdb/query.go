@@ -89,7 +89,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
-// FerretDB always filters data itself, so that should be a purely performance optimization.
+// FerretDB always filters data itself, so that should be a pure performance optimization.
 func BuildFilter(filter *types.Document) (string, error) {
 	res := map[string]any{}
 
