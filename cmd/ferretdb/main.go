@@ -201,7 +201,11 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 
 	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
 	if !cli.Log.UUID {
-		startupFields = append(startupFields, zap.String("uuid", logUUID))
+		startupFields = append(
+			startupFields,
+			zap.String("uuid", logUUID),
+			zap.Bool("disable-pushdown", cli.Test.DisablePushdown),
+		)
 		logUUID = ""
 	}
 

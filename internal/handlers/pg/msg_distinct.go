@@ -45,10 +45,11 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	qp := pgdb.QueryParam{
-		DB:         dp.DB,
-		Collection: dp.Collection,
-		Filter:     dp.Filter,
-		Comment:    dp.Comment,
+		DB:              dp.DB,
+		Collection:      dp.Collection,
+		Filter:          dp.Filter,
+		Comment:         dp.Comment,
+		DisablePushdown: h.DisablePushdown,
 	}
 
 	var resDocs []*types.Document

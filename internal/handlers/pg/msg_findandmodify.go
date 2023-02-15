@@ -70,10 +70,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	queryParam := pgdb.QueryParam{
-		DB:         params.DB,
-		Collection: params.Collection,
-		Comment:    params.Comment,
-		Filter:     params.Query,
+		DB:              params.DB,
+		Collection:      params.Collection,
+		Comment:         params.Comment,
+		Filter:          params.Query,
+		DisablePushdown: h.DisablePushdown,
 	}
 
 	// This is not very optimal as we need to fetch everything from the database to have a proper sort.
