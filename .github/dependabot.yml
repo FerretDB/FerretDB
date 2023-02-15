@@ -1,6 +1,6 @@
 ---
 # Runs on Wednesday after deps repo.
-# Apply "no ci" label to prevent cascaded of paid CI runs for each auto-merge.
+# Apply the "no ci" label to prevent cascaded CI runs on each auto-merge.
 
 version: 2
 updates:
