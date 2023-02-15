@@ -1,11 +1,12 @@
 ---
-# run on Wednesday after deps repo
+# Runs on Wednesday after deps repo.
+# Apply "no ci" label to prevent cascaded of paid CI runs for each auto-merge.
 
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    labels: [deps]
+    labels: ["deps", "no ci"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -13,14 +14,14 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "/"
-    labels: [deps]
+    labels: ["deps", "no ci"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "docker"
     directory: "/build/deps"
-    labels: [deps]
+    labels: ["deps", "no ci"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -28,21 +29,21 @@ updates:
 
   - package-ecosystem: "gomod"
     directory: "/"
-    labels: [deps]
+    labels: ["deps", "no ci"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/integration"
-    labels: [deps]
+    labels: ["deps", "no ci"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/tools"
-    labels: [deps]
+    labels: ["deps", "no ci"]
     schedule:
       interval: "weekly"
       day: "wednesday"
