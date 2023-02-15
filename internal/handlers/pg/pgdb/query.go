@@ -32,13 +32,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// FetchedDocs is a struct that contains a list of documents and an error.
-// It is used in the fetched channel returned by QueryDocuments.
-type FetchedDocs struct {
-	Docs []*types.Document
-	Err  error
-}
-
 // SQLParam represents options/parameters used for SQL query.
 type SQLParam struct {
 	DB         string
@@ -46,8 +39,10 @@ type SQLParam struct {
 	Comment    string
 	Explain    bool
 	Filter     *types.Document
-	BatchSize  int
-	Limit      int
+
+	// TODO remove those fields because they are not used by that package
+	BatchSize int
+	Limit     int
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.

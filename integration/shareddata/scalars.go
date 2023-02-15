@@ -172,7 +172,7 @@ var Strings = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "string"},
 					"_id": {"type": "string"}
@@ -231,7 +231,7 @@ var Bools = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"v": {"type": "boolean"},
 					"_id": {"type": "string"}
 				}
@@ -388,8 +388,6 @@ func tigrisSchema(typeString string) string {
 // generateBigMap generates `count` amount of key-value pairs for a map.
 // It can be used to generate a big map that is bigger than default batch size (101).
 func generateBigMap(count int) map[int32]any {
-	rand.Seed(time.Now().UnixNano())
-
 	res := make(map[int32]any, count)
 
 	for i := 0; i < count; i++ {

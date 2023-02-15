@@ -21,6 +21,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -100,7 +101,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return nil, err
 		}
 
-		firstBatch, id := common.MakeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, sp.Filter)
+		firstBatch, id := makeFindReplyParameters(ctx, resDocs, int(params.BatchSize), iter, tx, sp.Filter)
 
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -159,6 +160,71 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+// makeFindReplyParameters returns `find` command reply parameters.
+// If the amount of documents is more than the batch size, the rest of the documents will be saved in the cursor.
+func makeFindReplyParameters(
+	ctx context.Context,
+	resDocs []*types.Document, batch int,
+	p iterator.Interface[int, *types.Document],
+	tx pgx.Tx,
+	filter *types.Document,
+) (
+	*types.Array, int64,
+) {
+	id := int64(0)
+	firstBatch := types.MakeArray(len(resDocs))
+
+	if len(resDocs) == 0 {
+		return firstBatch, id
+	}
+
+	if batch > len(resDocs) {
+		batch = len(resDocs)
+	}
+
+	for i := 0; i < batch; i++ {
+		firstBatch.Append(resDocs[i])
+	}
+
+	p = iterator.WithClose(p, func() {
+		var err error
+		var committed bool
+
+		defer func() {
+			if committed {
+				return
+			}
+
+			if rerr := tx.Rollback(context.Background()); rerr != nil {
+				tx.Conn().Config().Logger.Log(
+					context.Background(), pgx.LogLevelError, "failed to perform rollback",
+					map[string]any{"error": rerr},
+				)
+
+				if err == nil {
+					err = rerr
+				}
+			}
+		}()
+
+		err = tx.Commit(context.Background())
+		if err != nil {
+			tx.Conn().Config().Logger.Log(
+				context.Background(), pgx.LogLevelError, "failed to perform commit",
+				map[string]any{"error": err},
+			)
+		}
+
+		committed = true
+	})
+
+	if p != nil {
+		id = conninfo.Get(ctx).StoreCursor(p, filter)
+	}
+
+	return firstBatch, id
 }
 
 func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {

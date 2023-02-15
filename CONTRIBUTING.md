@@ -203,7 +203,23 @@ Our code most of the standard Go conventions,
 documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
 Some of our idiosyncrasies:
 
-1. We use type switches over BSON types in many places in our code.
+1. We use `lll` linter to ensure that our code lines are relatively short.
+   Still, we should not work around this linter (and any linter, really) by making our code harder to read and understand.
+   For example, don't do that just because `lll` tells you that this function signature is too long:
+
+   ```go
+   func MakeFindReplyParameters(
+       ctx context.Context,
+       resDocs []*types.Document, batch int,
+       p iterator.Interface[int, *types.Document],
+       tx pgx.Tx,
+       filter *types.Document,
+   ) (
+       *types.Array, int64,
+   ) {
+   ```
+
+2. We use type switches over BSON types in many places in our code.
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 
