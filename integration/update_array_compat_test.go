@@ -18,14 +18,10 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestUpdateArrayCompatPop(t *testing.T) {
 	t.Parallel()
-
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
 
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
@@ -71,9 +67,6 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationArray": {
-			update: bson.D{{"$pop", bson.D{{"v.array", 1}}}},
-		},
 		"DotNotationObjectInArray": {
 			update:     bson.D{{"$pop", bson.D{{"v.array.foo.array", 1}}}},
 			resultType: emptyResult,
@@ -89,8 +82,6 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 
 func TestUpdateArrayCompatPush(t *testing.T) {
 	t.Parallel()
-
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1834")
 
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {

@@ -5,7 +5,7 @@ slug: /telemetry/
 
 # Telemetry reporting
 
-FerretDB collects anonymous usage data and sends them to our telemetry service ([FerretDB Beacon](https://beacon.ferretdb.io)),
+FerretDB collects basic anonymous usage data and sends them to our telemetry service ([FerretDB Beacon](https://beacon.ferretdb.io)),
 which helps us understand its usage, and how we can further increase compatibility and enhance our product.
 It also enables us to provide you information about available updates.
 
@@ -35,8 +35,7 @@ Argument values, data field names, successful responses, or error messages are n
 ## Version notification
 
 When a FerretDB update is available, the telemetry service sends periodic reports containing information about the latest FerretDB version.
-
-This information is logged in the server logs, `startupWarnings`, and `serverStatus` command output.
+This information is logged in the server logs and `startupWarnings` command output.
 
 While you may not upgrade to the latest release immediately,
 ensure that you update early to take advantage of recent bug fixes, new features, and performance improvements.
@@ -44,14 +43,22 @@ ensure that you update early to take advantage of recent bug fixes, new features
 ## Configure telemetry
 
 The telemetry service has three state settings: `enabled`, `disabled`, and `undecided` (default).
+The latter acts as if the telemetry reporter is `enabled` with two differences:
+
+* When `enabled`, the first report is sent right after FerretDB starts.
+  If `undecided`, the first report is delayed by one hour.
+  That should give you enough time to disable it if you decide to do so.
+* Similarly, when `enabled`, the last report is sent right before FerretDB shuts down.
+  That does not happen when `undecided`.
 
 :::info
-When the state setting is `undecided`, users have a delay period of one hour after startup before telemetry data is reported.
+`undecided` state does not automatically change into `enabled` or `disabled` after the first or any other report.
+Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
 :::
 
 ### Disable telemetry
 
-We urge you not to disable this service, as its insights will help us enhance our software.
+We urge you not to disable telemetry reporter, as its insights will help us enhance our software.
 
 While we are grateful for these usage insights, we understand that not everyone is comfortable with sending them.
 

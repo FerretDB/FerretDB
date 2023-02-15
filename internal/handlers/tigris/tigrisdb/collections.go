@@ -33,7 +33,7 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 		return false, lazyerrors.Error(err)
 	}
 
-	exists, err := tdb.collectionExists(ctx, db, collection)
+	exists, err := tdb.CollectionExists(ctx, db, collection)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -64,8 +64,8 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 	}
 }
 
-// collectionExists returns true if collection exists.
-func (tdb *TigrisDB) collectionExists(ctx context.Context, db, collection string) (bool, error) {
+// CollectionExists returns true if collection exists.
+func (tdb *TigrisDB) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
 	_, err := tdb.Driver.UseDatabase(db).DescribeCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
