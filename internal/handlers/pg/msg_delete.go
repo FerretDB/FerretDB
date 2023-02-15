@@ -58,9 +58,9 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var sp pgdb.SQLParam
+	var qp pgdb.QueryParam
 
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
+	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -79,7 +79,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	// get comment from options.Delete().SetComment() method
-	if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
+	if qp.Comment, err = common.GetOptionalParam(document, "comment", qp.Comment); err != nil {
 		return nil, err
 	}
 
@@ -100,18 +100,18 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
-		if sp.Comment, err = common.GetOptionalParam(filter, "$comment", sp.Comment); err != nil {
+		if qp.Comment, err = common.GetOptionalParam(filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 
-		sp.Filter = filter
+		qp.Filter = filter
 
 		var limited bool
 		if limit == 1 {
 			limited = true
 		}
 
-		del, err := execDelete(ctx, dbPool, &sp, limited)
+		del, err := execDelete(ctx, dbPool, &qp, limited)
 		if err == nil {
 			deleted += del
 			continue
@@ -180,10 +180,10 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, limit bool) (int32, error) {
+func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, limit bool) (int32, error) {
 	var deleted int32
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err := pgdb.GetDocuments(ctx, tx, sp)
+		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
 			return err
 		}
@@ -203,7 +203,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, limit
 			}
 
 			var matches bool
-			if matches, err = common.FilterDocument(doc, sp.Filter); err != nil {
+			if matches, err = common.FilterDocument(doc, qp.Filter); err != nil {
 				return err
 			}
 
@@ -224,7 +224,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, limit
 			return nil
 		}
 
-		rowsDeleted, err := deleteDocuments(ctx, dbPool, sp, resDocs)
+		rowsDeleted, err := deleteDocuments(ctx, dbPool, qp, resDocs)
 		if err != nil {
 			return err
 		}
@@ -241,7 +241,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, limit
 }
 
 // deleteDocuments deletes documents by _id.
-func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs []*types.Document) (int64, error) {
+func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
@@ -251,7 +251,7 @@ func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, 
 	var rowsDeleted int64
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		rowsDeleted, err = pgdb.DeleteDocumentsByID(ctx, tx, sp, ids)
+		rowsDeleted, err = pgdb.DeleteDocumentsByID(ctx, tx, qp, ids)
 		return err
 	})
 	if err != nil {
