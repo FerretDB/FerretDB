@@ -36,6 +36,7 @@
 // # Debug builds
 //
 // Debug builds of FerretDB behave differently in a few aspects:
+//   - Some values that are normally randomized are fixed or less randomized to make debugging easier.
 //   - Some internal errors cause crashes instead of being handled more gracefully.
 //   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.
