@@ -67,7 +67,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter driver.Filter
+	var filter string
 	if !param.DisablePushdown {
 		filter, err = BuildFilter(param.Filter)
 		if err != nil {
@@ -77,7 +77,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
-	tigrisIter, err := db.Read(ctx, param.Collection, filter, nil)
+	tigrisIter, err := db.Read(ctx, param.Collection, driver.Filter(filter), nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -90,7 +90,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 // BuildFilter returns Tigris filter expression that may cover a part of the given filter.
 //
 // FerretDB always filters data itself, so that should be a purely performance optimization.
-func BuildFilter(filter *types.Document) (driver.Filter, error) {
+func BuildFilter(filter *types.Document) (string, error) {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
@@ -112,7 +112,7 @@ func BuildFilter(filter *types.Document) (driver.Filter, error) {
 			var err error
 
 			if path, err = types.NewPathFromString(k); err != nil {
-				return nil, lazyerrors.Error(err)
+				return "", lazyerrors.Error(err)
 			}
 
 			if path.Len() > 1 {
@@ -141,7 +141,7 @@ func BuildFilter(filter *types.Document) (driver.Filter, error) {
 		case float64, string, types.ObjectID, int32, int64:
 			rawValue, err := tjson.Marshal(v)
 			if err != nil {
-				return nil, lazyerrors.Error(err)
+				return "", lazyerrors.Error(err)
 			}
 
 			res[key] = json.RawMessage(rawValue)
@@ -150,5 +150,10 @@ func BuildFilter(filter *types.Document) (driver.Filter, error) {
 		}
 	}
 
-	return json.Marshal(res)
+	result, err := json.Marshal(res)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return string(result), nil
 }
