@@ -89,19 +89,6 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
-  cockroach:
-    build:
-      context: ./build/deps
-      dockerfile: cockroach.Dockerfile
-    container_name: ferretdb_cockroach
-    command: start-single-node --insecure
-    ports:
-      - 26257:26257
-    environment:
-      - COCKROACH_USER=username
-      - COCKROACH_PASSWORD=password
-      - COCKROACH_DATABASE=ferretdb
-
   mongodb:
     build:
       context: ./build/deps
