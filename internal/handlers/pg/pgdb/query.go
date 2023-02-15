@@ -88,8 +88,13 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 
 	if qp.Filter != nil && !qp.DisablePushdown {
 		var where string
+		var err error
 
-		where, args, _ = prepareWhereClause(qp.Filter)
+		where, args, err = prepareWhereClause(qp.Filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		query += where
 	}
 
@@ -164,11 +169,15 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.In
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	where, args, _ := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	query += where
 
 	var b []byte
-	err := tx.QueryRow(ctx, query, args...).Scan(&b)
+	err = tx.QueryRow(ctx, query, args...).Scan(&b)
 
 	switch {
 	case err == nil:
@@ -221,8 +230,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	if p.filter != nil && !p.disablePushdown {
 		var where string
+		var err error
 
-		where, args, _ = prepareWhereClause(p.filter)
+		where, args, err = prepareWhereClause(p.filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 		query += where
 	}
 
