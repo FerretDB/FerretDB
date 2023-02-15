@@ -226,9 +226,9 @@ func makeFindReplyParameters(
 	return firstBatch, id
 }
 
-// fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParam) ([]*types.Document, error) {
-	iter, err := pgdb.QueryDocuments(ctx, tx, sqlParam)
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParam.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParam) ([]*types.Document, error) {
+	iter, err := pgdb.QueryDocuments(ctx, tx, qp)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 			return nil, err
 		}
 
-		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		matches, err := common.FilterDocument(doc, qp.Filter)
 		if err != nil {
 			return nil, err
 		}
@@ -260,11 +260,11 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 	}
 }
 
-// getFirstBatchAndIterator fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParam) (
+// getFirstBatchAndIterator fetches documents from the database and filters them using the provided QueryParam.Filter.
+func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParam) (
 	[]*types.Document, iterator.Interface[int, *types.Document], error,
 ) {
-	iter, err := pgdb.QueryDocuments(ctx, tx, sqlParam)
+	iter, err := pgdb.QueryDocuments(ctx, tx, qp)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -278,7 +278,7 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 
 	resDocs := make([]*types.Document, 0, 16)
 
-	for i := 0; i < sqlParam.BatchSize; {
+	for i := 0; i < qp.BatchSize; {
 		var doc *types.Document
 
 		_, doc, err = iter.Next()
@@ -292,7 +292,7 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 
 		var matches bool
 
-		matches, err = common.FilterDocument(doc, sqlParam.Filter)
+		matches, err = common.FilterDocument(doc, qp.Filter)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -305,8 +305,8 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 		i++
 	}
 
-	if sqlParam.Limit > 0 && sqlParam.BatchSize > sqlParam.Limit {
-		resDocs, err = common.LimitDocuments(resDocs, int64(sqlParam.Limit))
+	if qp.Limit > 0 && qp.BatchSize > qp.Limit {
+		resDocs, err = common.LimitDocuments(resDocs, int64(qp.Limit))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -314,7 +314,7 @@ func (h *Handler) getFirstBatchAndIterator(ctx context.Context, tx pgx.Tx, sqlPa
 		return resDocs, nil, nil
 	}
 
-	if len(resDocs) < sqlParam.BatchSize {
+	if len(resDocs) < qp.BatchSize {
 		return resDocs, nil, nil
 	}
 
