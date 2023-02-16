@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -58,7 +59,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		// {field1./.../.fieldN: filterValue}
 		path, err := types.NewPathFromString(filterKey)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 
 		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*

@@ -184,7 +184,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		path, err := types.NewPathFromString(setKey)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 
 		if doc.HasByPath(path) {
@@ -231,12 +231,12 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 		sourcePath, err := types.NewPathFromString(key)
 		if err != nil {
-			return changed, err
+			return changed, lazyerrors.Error(err)
 		}
 
 		targetPath, err := types.NewPathFromString(renameValue)
 		if err != nil {
-			return changed, err
+			return changed, lazyerrors.Error(err)
 		}
 
 		// Get value to move
@@ -251,7 +251,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 				continue
 			}
 
-			return changed, NewWriteErrorMsg(ErrUnsuitableValueType, dpe.Error())
+			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 		}
 
 		// Remove old document
@@ -284,7 +284,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(incKey)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 
 		if !doc.HasByPath(path) {

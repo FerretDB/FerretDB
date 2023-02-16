@@ -278,7 +278,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 			path, err := types.NewPathFromString(k)
 			if err != nil {
-				return "", nil, err
+				return "", nil, lazyerrors.Error(err)
 			}
 
 			// If the key is in dot notation use path operator (#>)
