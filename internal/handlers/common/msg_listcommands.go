@@ -137,6 +137,10 @@ var Commands = map[string]command{
 		Help:    "Returns the most recent logged events from memory.",
 		Handler: handlers.Interface.MsgGetLog,
 	},
+	"getMore": {
+		Help:    "Returns the next batch of documents from a cursor.",
+		Handler: handlers.Interface.MsgGetMore,
+	},
 	"getParameter": {
 		Help:    "Returns the value of the parameter.",
 		Handler: handlers.Interface.MsgGetParameter,
@@ -204,6 +208,7 @@ var Commands = map[string]command{
 		Help:    "Returns peer information.",
 		Handler: handlers.Interface.MsgWhatsMyURI,
 	},
+	// please keep sorted alphabetically
 }
 
 // MsgListCommands is a common implementation of the listCommands command.
