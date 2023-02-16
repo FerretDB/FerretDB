@@ -22,6 +22,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -118,7 +119,33 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 		return "", ErrTableNotExist
 	}
 
-	doc, err := queryById(ctx, tx, db, dbMetadataTableName, collection)
+	queryById := func() (*types.Document, error) {
+		query := `SELECT _jsonb FROM ` + pgx.Identifier{db, dbMetadataTableName}.Sanitize()
+
+		where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", collection)))
+		query += where
+
+		var b []byte
+		err := tx.QueryRow(ctx, query, args...).Scan(&b)
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, pgx.ErrNoRows):
+			return nil, nil
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := pjson.Unmarshal(b)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+	}
+
+	doc, err := queryById()
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}

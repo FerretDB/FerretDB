@@ -58,7 +58,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var qp pgdb.QueryParam
+	var qp pgdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, limit bool) (int32, error) {
+func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, limit bool) (int32, error) {
 	var deleted int32
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
@@ -241,7 +241,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, lim
 }
 
 // deleteDocuments deletes documents by _id.
-func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, docs []*types.Document) (int64, error) {
+func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))

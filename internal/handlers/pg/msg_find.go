@@ -54,7 +54,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	qp := pgdb.QueryParam{
+	qp := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -111,7 +111,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParam) ([]*types.Document, error) {
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParams) ([]*types.Document, error) {
 	iter, err := pgdb.QueryDocuments(ctx, tx, sqlParam)
 	if err != nil {
 		return nil, err

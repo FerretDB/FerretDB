@@ -52,7 +52,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	qp := tigrisdb.QueryParam{
+	qp := tigrisdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Filter:     params.Filter,
@@ -96,7 +96,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParam.Filter.
-func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam) ([]*types.Document, error) {
+func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams) ([]*types.Document, error) {
 	iter, err := dbPool.QueryDocuments(ctx, qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

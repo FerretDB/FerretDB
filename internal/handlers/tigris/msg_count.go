@@ -53,7 +53,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 	common.Ignored(document, h.L, ignoredFields...)
 
-	var qp tigrisdb.QueryParam
+	var qp tigrisdb.QueryParams
 
 	if qp.Filter, err = common.GetOptionalParam(document, "query", qp.Filter); err != nil {
 		return nil, err

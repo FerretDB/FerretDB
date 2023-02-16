@@ -67,7 +67,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	qp := tigrisdb.QueryParam{
+	qp := tigrisdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Filter:     params.Query,
@@ -204,7 +204,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	queryParam         *tigrisdb.QueryParam
+	queryParam         *tigrisdb.QueryParams
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.

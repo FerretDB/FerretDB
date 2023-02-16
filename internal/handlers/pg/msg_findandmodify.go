@@ -69,7 +69,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	queryParam := pgdb.QueryParam{
+	queryParam := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -214,7 +214,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	queryParam         *pgdb.QueryParam
+	queryParam         *pgdb.QueryParams
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.

@@ -67,7 +67,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	var qp pgdb.QueryParam
+	var qp pgdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err

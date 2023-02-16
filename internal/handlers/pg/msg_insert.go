@@ -43,7 +43,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
-	var qp pgdb.QueryParam
+	var qp pgdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
 //
 // It always returns the number of successfully inserted documents and a document with errors.
-func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
 	var insErrors common.WriteErrors
 
@@ -129,7 +129,7 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, doc
 }
 
 // insertDocument prepares and executes actual INSERT request to Postgres.
-func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, doc any) error {
+func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return common.NewCommandErrorMsg(

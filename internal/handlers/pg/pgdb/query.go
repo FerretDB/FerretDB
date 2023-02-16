@@ -32,26 +32,17 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// FetchedDocs is a struct that contains a list of documents and an error.
-// It is used in the fetched channel returned by QueryDocuments.
-type FetchedDocs struct {
-	Docs []*types.Document
-	Err  error
-}
-
-// QueryParam represents options/parameters used for SQL query.
-type QueryParam struct {
-	// Query filter for possible pushdown; may be ignored in part or entirely.
-	Filter          *types.Document
-	DB              string
-	Collection      string
-	Comment         string
-	Explain         bool
-	DisablePushdown bool
+// QueryParams represents QueryDocuments and Explain parameters.
+type QueryParams struct {
+	Filter     *types.Document // Query filter for possible pushdown; may be ignored in part or entirely.
+	DB         string
+	Collection string
+	Comment    string
+	Explain    bool
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, error) {
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
 	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -86,7 +77,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 
 	var args []any
 
-	if qp.Filter != nil && !qp.DisablePushdown {
+	if qp.Filter != nil {
 		var where string
 
 		where, args = prepareWhereClause(qp.Filter)
@@ -133,7 +124,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.Interface[int, *types.Document], error) {
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
@@ -159,42 +150,13 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.In
 	return iter, nil
 }
 
-// queryById returns the first found document by its ID from the given PostgreSQL schema and table.
-// If the document is not found, it returns nil and no error.
-func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
-	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
-
-	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
-	query += where
-
-	var b []byte
-	err := tx.QueryRow(ctx, query, args...).Scan(&b)
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, pgx.ErrNoRows):
-		return nil, nil
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := pjson.Unmarshal(b)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
-}
-
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema          string
-	table           string
-	comment         string
-	explain         bool
-	disablePushdown bool
-	filter          *types.Document
+	schema  string
+	table   string
+	comment string
+	explain bool
+	filter  *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -207,7 +169,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += `SELECT _jsonb `
 
-	if c := p.comment; c != "" && !p.disablePushdown {
+	if c := p.comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -217,14 +179,8 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	var args []any
-
-	if p.filter != nil && !p.disablePushdown {
-		var where string
-
-		where, args = prepareWhereClause(p.filter)
-		query += where
-	}
+	where, args := prepareWhereClause(p.filter)
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -235,12 +191,16 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+func prepareWhereClause(filter *types.Document) (string, []any) {
+	if filter.Len() == 0 {
+		return "", nil
+	}
+
 	var filters []string
 	var args []any
 	var p Placeholder
 
-	for k, v := range sqlFilters.Map() {
+	for k, v := range filter.Map() {
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
 		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'

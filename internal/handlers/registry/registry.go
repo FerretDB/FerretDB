@@ -44,7 +44,7 @@ type NewHandlerOpts struct {
 	Logger          *zap.Logger
 	Metrics         *connmetrics.ConnMetrics
 	StateProvider   *state.Provider
-	DisablePushdown bool // defaults to false
+	DisablePushdown bool
 
 	// for `pg` handler
 	PostgreSQLURL string
@@ -85,11 +85,10 @@ func init() {
 
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &pg.NewOpts{
-			PostgreSQLURL:   opts.PostgreSQLURL,
-			L:               opts.Logger,
-			Metrics:         opts.Metrics,
-			StateProvider:   opts.StateProvider,
-			DisablePushdown: opts.DisablePushdown,
+			PostgreSQLURL: opts.PostgreSQLURL,
+			L:             opts.Logger,
+			Metrics:       opts.Metrics,
+			StateProvider: opts.StateProvider,
 		}
 		return pg.New(handlerOpts)
 	}

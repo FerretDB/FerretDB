@@ -62,7 +62,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "comment")
 
-	var qp tigrisdb.QueryParam
+	var qp tigrisdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, filter *types.Document, limit int64) (int32, error) { //nolint:lll // argument list is too long
+func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, filter *types.Document, limit int64) (int32, error) { //nolint:lll // argument list is too long
 	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
@@ -229,7 +229,7 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp 
 }
 
 // deleteDocuments deletes documents by _id.
-func deleteDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, docs []*types.Document) (int, error) { //nolint:lll // argument list is too long
+func deleteDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, docs []*types.Document) (int, error) { //nolint:lll // argument list is too long
 	ids := make([]map[string]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(tjson.Marshal(must.NotFail(doc.Get("_id"))))
