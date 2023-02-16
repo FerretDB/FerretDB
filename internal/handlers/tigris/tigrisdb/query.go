@@ -34,10 +34,9 @@ import (
 // QueryParam represents options/parameters used by the fetch/query.
 type QueryParam struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
-	Filter          *types.Document
-	DB              string
-	Collection      string
-	DisablePushdown bool
+	Filter     *types.Document
+	DB         string
+	Collection string
 }
 
 // QueryDocuments fetches documents from the given collection.
@@ -68,10 +67,7 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter driver.Filter
-	if !param.DisablePushdown {
-		filter = BuildFilter(param.Filter)
-	}
+	filter := BuildFilter(param.Filter)
 
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 

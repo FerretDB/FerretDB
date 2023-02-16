@@ -35,12 +35,11 @@ import (
 // QueryParam represents options/parameters used for SQL query.
 type QueryParam struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
-	Filter          *types.Document
-	DB              string
-	Collection      string
-	Comment         string
-	Explain         bool
-	DisablePushdown bool
+	Filter     *types.Document
+	DB         string
+	Collection string
+	Comment    string
+	Explain    bool
 
 	// TODO remove those fields because they are not used by that package
 	BatchSize int
@@ -81,14 +80,8 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 
 	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
-	var args []any
-
-	if qp.Filter != nil && !qp.DisablePushdown {
-		var where string
-
-		where, args = prepareWhereClause(qp.Filter)
-		query += where
-	}
+	where, args := prepareWhereClause(qp.Filter)
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -186,12 +179,11 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema          string
-	table           string
-	comment         string
-	explain         bool
-	disablePushdown bool
-	filter          *types.Document
+	schema  string
+	table   string
+	comment string
+	explain bool
+	filter  *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -204,7 +196,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += `SELECT _jsonb `
 
-	if c := p.comment; c != "" && !p.disablePushdown {
+	if c := p.comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -214,14 +206,8 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	var args []any
-
-	if p.filter != nil && !p.disablePushdown {
-		var where string
-
-		where, args = prepareWhereClause(p.filter)
-		query += where
-	}
+	where, args := prepareWhereClause(p.filter)
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {

@@ -32,14 +32,15 @@ import (
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	ClientID        string
-	ClientSecret    string
-	Token           string
-	URL             string
-	DisablePushdown bool
+	ClientID     string
+	ClientSecret string
+	Token        string
+	URL          string
+
 	L               *zap.Logger
 	Metrics         *connmetrics.ConnMetrics
 	StateProvider   *state.Provider
+	DisablePushdown bool
 }
 
 // Handler implements handlers.Interface on top of Tigris.
