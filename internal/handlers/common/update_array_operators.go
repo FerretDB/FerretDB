@@ -191,6 +191,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 	return changed, nil
 }
 
+// processAddToSetArrayUpdateExpression changes document according to $addToSet array update operator.
+// If the document was changed it returns true.
 func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, error) {
 	var changed bool
 
