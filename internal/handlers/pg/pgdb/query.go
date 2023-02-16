@@ -190,11 +190,11 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema          string
-	table           string
-	comment         string
-	explain         bool
-	filter          *types.Document
+	schema  string
+	table   string
+	comment string
+	explain bool
+	filter  *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
