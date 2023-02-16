@@ -125,26 +125,40 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"AddToSet": {
+		"DuplicateKeys": {
+			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
+			resultType: emptyResult,
+		},
+		"String": {
 			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
 		},
-		"AddToSetDocument": {
+		"Document": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
 		},
-		"AddToSetInt32": {
+		"Int32": {
 			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
 		},
-		"AddToSetInt64": {
+		"Int64": {
 			update: bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
 		},
-		"AddToSetFloat64": {
+		"Float64": {
 			update: bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
 		},
-		"AddToSetNonExistentField": {
+		"NonExistentField": {
 			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
 		},
-		"AddToSetDotNotation": {
+		"DotNotation": {
 			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", "42"}}}},
+		},
+		"DotNotationNonArray": {
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", 1}}}},
+		},
+		"DotNotationNonExistentPath": {
+			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", 1}}}},
+		},
+		"EmptyValue": {
+			update:     bson.D{{"$addToSet", bson.D{}}},
+			resultType: emptyResult,
 		},
 	}
 
