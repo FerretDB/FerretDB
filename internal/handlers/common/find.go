@@ -23,9 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// defaultBatchSize is the default batch size for find operation.
-const defaultBatchSize = 101
-
 // FindParams contains `find` command parameters supported by at least one handler.
 //
 //nolint:vet // for readability
@@ -98,7 +95,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2005
 
-	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(defaultBatchSize)); err != nil {
+	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
 		return nil, err
 	}
 
@@ -109,11 +106,11 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		)
 	}
 
-	if res.SingleBatch, err = GetOptionalParam(doc, "singleBatch", res.SingleBatch); err != nil {
+	if res.SingleBatch, err = GetOptionalParam(doc, "singleBatch", false); err != nil {
 		return nil, err
 	}
 
-	if res.Comment, err = GetOptionalParam(doc, "comment", res.Comment); err != nil {
+	if res.Comment, err = GetOptionalParam(doc, "comment", ""); err != nil {
 		return nil, err
 	}
 
@@ -130,9 +127,9 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		"returnKey",
 		"showRecordId",
 		"tailable",
-		"awaitData",
 		"oplogReplay",
 		"noCursorTimeout",
+		"awaitData",
 		"allowPartialResults",
 	} {
 		if err = UnimplementedNonDefault(doc, k, func(v any) bool {
