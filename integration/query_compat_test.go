@@ -33,8 +33,8 @@ import (
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
 	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	projection     bson.D                   // nil for leaving projection unset
+	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}` for stable results
+	projection     bson.D                   // defaults to nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skipForTigris  string                   // skip test for Tigris
