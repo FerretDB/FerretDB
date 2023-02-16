@@ -284,7 +284,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 	actual.Remove("keysPerIndex")
 	actual.Remove("indexDetails")
-	testutil.CompareAndSetByPathNum(t, expected, actual, 18, must.NotFail(types.NewPathFromString("nrecords")))
+	testutil.CompareAndSetByPathNum(t, expected, actual, 18, types.NewStaticPath("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
 }
 
