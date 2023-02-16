@@ -42,13 +42,17 @@ func TestDocumentValidateData(t *testing.T) {
 				doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
 				reason: nil,
 			},
+			"ValidDollar": {
+				doc:    must.NotFail(NewDocument("_id", "1", "_$eq", "whatever")),
+				reason: nil,
+			},
 			"KeyIsNotUTF8": {
-				doc:    must.NotFail(NewDocument("\xf4\x90\x80\x80", "bar")), //  the key is out of range for UTF-8
+				doc:    must.NotFail(NewDocument("\xf4\x90\x80\x80", "bar")),
 				reason: errors.New(`invalid key: "\xf4\x90\x80\x80" (not a valid UTF-8 string)`),
 			},
 			"KeyContainsDollarSign": {
 				doc:    must.NotFail(NewDocument("$v", "bar")),
-				reason: errors.New(`invalid key: "$v" (key must not contain '$' sign)`),
+				reason: errors.New(`invalid key: "$v" (key must not start with '$' sign)`),
 			},
 			"KeyContainsDotSign": {
 				doc:    must.NotFail(NewDocument("v.foo", "bar")),
@@ -58,11 +62,11 @@ func TestDocumentValidateData(t *testing.T) {
 				doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar", "foo", "baz")),
 				reason: errors.New(`invalid key: "foo" (duplicate keys are not allowed)`),
 			},
-			"Inf+": {
+			"PositiveInf": {
 				doc:    must.NotFail(NewDocument("v", math.Inf(1))),
 				reason: errors.New(`invalid value: { "v": +Inf } (infinity values are not allowed)`),
 			},
-			"Inf-": {
+			"NegativeInf": {
 				doc:    must.NotFail(NewDocument("v", math.Inf(-1))),
 				reason: errors.New(`invalid value: { "v": -Inf } (infinity values are not allowed)`),
 			},
