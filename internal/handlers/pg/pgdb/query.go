@@ -262,7 +262,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				break
 			}
 
-			return "", nil, err
+			return "", nil, lazyerrors.Error(err)
 		}
 
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)

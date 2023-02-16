@@ -80,7 +80,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				path, err = types.NewPathFromString(key)
 				if err != nil {
-					return false, err
+					return false, lazyerrors.Error(err)
 				}
 
 				if doc.HasByPath(path) {
