@@ -59,7 +59,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	qp.Explain = true
-	qp.DisablePushdown = h.DisablePushdown
 
 	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
 	if err != nil {
@@ -69,6 +68,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	qp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if h.DisablePushdown {
+		qp.Filter = nil
 	}
 
 	var queryPlanner *types.Document
