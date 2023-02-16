@@ -97,6 +97,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
 							var targetErr, compatErr error
 
+							// TODO replace with UpdateMany? What about Replace?
+							// https://github.com/FerretDB/FerretDB/issues/1507
 							if update != nil {
 								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, bson.D{{"_id", id}}, update)
 								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, bson.D{{"_id", id}}, update)
