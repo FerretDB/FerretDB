@@ -37,7 +37,7 @@ type updateCompatTestCase struct {
 	skip          string                   // skips test if non-empty
 	skipForTigris string                   // skips test for Tigris if non-empty
 
-	// TODO remove
+	// TODO remove is possible: https://github.com/FerretDB/FerretDB/issues/1668
 	providers []shareddata.Provider // defaults to shareddata.AllProviders()
 }
 
@@ -57,6 +57,13 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
+			update, replace := tc.update, tc.replace
+			if update != nil {
+				require.Nil(t, replace, "`replace` must be nil if `update` is set")
+			} else {
+				require.NotNil(t, replace, "`replace` must be set if `update` is nil")
+			}
+
 			t.Parallel()
 
 			providers := shareddata.AllProviders()
@@ -69,13 +76,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
-
-			update, replace := tc.update, tc.replace
-			if update != nil {
-				require.Nil(t, replace, "`replace` must be nil if `update` is set")
-			} else {
-				require.NotNil(t, replace, "`replace` must be set if `update` is nil")
-			}
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
