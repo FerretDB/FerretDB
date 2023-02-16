@@ -42,12 +42,11 @@ type FetchedDocs struct {
 // QueryParam represents options/parameters used for SQL query.
 type QueryParam struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
-	Filter          *types.Document
-	DB              string
-	Collection      string
-	Comment         string
-	Explain         bool
-	DisablePushdown bool
+	Filter     *types.Document
+	DB         string
+	Collection string
+	Comment    string
+	Explain    bool
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
@@ -84,18 +83,12 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 
 	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
-	var args []any
-
-	if qp.Filter != nil && !qp.DisablePushdown {
-		var where string
-
-		where, args, err = prepareWhereClause(qp.Filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		query += where
+	where, args, err := prepareWhereClause(qp.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -201,7 +194,6 @@ type iteratorParams struct {
 	table           string
 	comment         string
 	explain         bool
-	disablePushdown bool
 	filter          *types.Document
 }
 
@@ -215,7 +207,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += `SELECT _jsonb `
 
-	if c := p.comment; c != "" && !p.disablePushdown {
+	if c := p.comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -225,18 +217,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	var args []any
-
-	if p.filter != nil && !p.disablePushdown {
-		var where string
-		var err error
-
-		where, args, err = prepareWhereClause(p.filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		query += where
+	where, args, err := prepareWhereClause(p.filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {

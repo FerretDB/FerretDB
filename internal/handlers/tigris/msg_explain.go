@@ -60,13 +60,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var queryFilter string
+	if h.DisablePushdown {
+		filter = nil
+	}
 
-	if !h.DisablePushdown {
-		queryFilter, err = tigrisdb.BuildFilter(filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	queryFilter, err := tigrisdb.BuildFilter(filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	queryPlanner := must.NotFail(types.NewDocument(
