@@ -111,7 +111,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			limited = true
 		}
 
-		del, err := execDelete(ctx, dbPool, &qp, limited)
+		del, err := h.execDelete(ctx, dbPool, &qp, limited)
 		if err == nil {
 			deleted += del
 			continue
@@ -180,8 +180,17 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, limit bool) (int32, error) {
+func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, limit bool) (int32, error) {
 	var deleted int32
+
+	// filter is used to filter documents on the FerretDB side,
+	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
+	filter := qp.Filter
+
+	if h.DisablePushdown {
+		qp.Filter = nil
+	}
+
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
@@ -203,7 +212,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, li
 			}
 
 			var matches bool
-			if matches, err = common.FilterDocument(doc, qp.Filter); err != nil {
+			if matches, err = common.FilterDocument(doc, filter); err != nil {
 				return err
 			}
 
