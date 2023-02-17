@@ -139,12 +139,11 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.In
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:          qp.DB,
-		table:           table,
-		comment:         qp.Comment,
-		explain:         qp.Explain,
-		filter:          qp.Filter,
-		disablePushdown: qp.DisablePushdown,
+		schema:  qp.DB,
+		table:   table,
+		comment: qp.Comment,
+		explain: qp.Explain,
+		filter:  qp.Filter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

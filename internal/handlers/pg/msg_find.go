@@ -55,11 +55,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	qp := pgdb.QueryParam{
-		DB:              params.DB,
-		Collection:      params.Collection,
-		Comment:         params.Comment,
-		Filter:          params.Filter,
-		DisablePushdown: h.DisablePushdown,
+		DB:         params.DB,
+		Collection: params.Collection,
+		Comment:    params.Comment,
+		Filter:     params.Filter,
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})

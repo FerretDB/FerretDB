@@ -43,10 +43,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	qp := tigrisdb.QueryParam{
-		DB:              dp.DB,
-		Collection:      dp.Collection,
-		Filter:          dp.Filter,
-		DisablePushdown: h.DisablePushdown,
+		DB:         dp.DB,
+		Collection: dp.Collection,
+		Filter:     dp.Filter,
 	}
 
 	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
