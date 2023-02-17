@@ -6,10 +6,10 @@ sidebar_position: 5
 
 Evaluation query operators return data based on the evaluation of a specified expression.
 
-| Operator           | Description                                                                                   |
-| ------------------ | --------------------------------------------------------------------------------------------- |
-| [`$mod`](#mod)     | Matches documents where the value of a field divided by a divisor has the specified remainder |
-| [`$regex`](#regex) | Matches documents where a specified field matches a specified regular expression pattern      |
+| Operator           | Description                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| [`$mod`](#mod)     | Matches documents where the field element modulo a given value equals the specified remainder. |
+| [`$regex`](#regex) | Matches documents where a field matches a specified regular expression query                   |
 
 For the examples in this section, insert the following documents into the `catalog` collection:
 
@@ -45,11 +45,11 @@ db.catalog.insertMany([
 
 ## $mod
 
-*Syntax*: `{ <field>: { $mod: [ <divisor>, <remainder> ] } }`
+*Syntax*: `{ <field>: { $mod: [ <divisor-value>, <modulus> ] } }`
 
-The `$mod` operator matches documents where the value of a field divided by a specified divisor has a specified remainder (i.e. the field value corresponds to `remainder` modulo `divisor`).
+The `$mod` operator matches documents where the field element modulo (`%`) a specified divisor returns a given modulus.
 
-For example, the following query returns all the documents where the value of the "stock" field is evenly divisible by 2:
+**Example:** The following query returns all the documents where the value of the "stock" field is evenly divisible by 2:
 
 ```js
 db.catalog.find({
@@ -85,13 +85,13 @@ It also rounds down decimal input down to zero (e.g. `$mod: [ 3.5 , 2 ]` is exec
 
 ## $regex
 
-*Syntax*: `{ <field>: { $regex: 'pattern', $options: '<options>' } }`
+*Syntax*: `{ <field>: { $regex: '<expression-string>', $options: '<flag>' } }`
 
-Other syntaxes: `{ <field>: { $regex: /pattern/, $options: '<options>' } }` and `{ <field>: /pattern/<options> }`.
+Other syntaxes: `{ <field>: { $regex: /<expression-string>/, $options: '<flag>' } }` and `{ <field>: /<expression-string>/<flag> }`.
 
 The `$regex` operator matches documents where the value of a field matches a specified regular expression pattern.
 
-The following query returns all the documents where the value of the "product" field starts with the letter "b":
+**Example:** The following query returns all the documents where the value of the "product" field starts with the letter "b":
 
 ```js
 db.catalog.find({
@@ -120,19 +120,20 @@ The output:
 ]
 ```
 
-`$options` is an optional parameter that specifies the regular expression options to use, such as:
+`$options` is an optional parameter that specifies the regular expression flags to use, such as:
 
 * Case-insensitivity (`i`)
 * Multi-line matching (`m`)
 * Dot character matching (`s`)
 
 :::note
-The regex option for ignoring white spaces (`x`) is not currently supported.
+The regex flag for ignoring white spaces (`x`) is not currently supported.
 Follow [here](https://github.com/FerretDB/FerretDB/issues/592) for more updates.
 :::
 
-To perform case-insensitive matching, use the `i` option in the `regex` expression.
-The following query returns all the documents where the value of the "product" field is equal to "bottle" (case-insensitive):
+To perform case-insensitive matching, use the `i` flag in the `regex` expression.
+
+**Example:** The following query returns all the documents where the value of the "product" field is equal to "bottle" (case-insensitive):
 
 ```js
 db.catalog.find({
