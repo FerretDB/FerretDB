@@ -31,15 +31,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// QueryParam represents options/parameters used by the fetch/query.
-type QueryParam struct {
+// QueryParams represents options/parameters used by the fetch/query.
+type QueryParams struct {
 	Filter     *types.Document
 	DB         string
 	Collection string
 }
 
 // QueryDocuments fetches documents from the given collection.
-func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (iterator.Interface[int, *types.Document], error) {
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParams) (iterator.Interface[int, *types.Document], error) {
 	db := tdb.Driver.UseDatabase(param.DB)
 
 	collection, err := db.DescribeCollection(ctx, param.Collection)

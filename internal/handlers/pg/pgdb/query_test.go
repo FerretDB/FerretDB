@@ -57,7 +57,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -112,7 +112,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -157,7 +157,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -208,7 +208,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -249,7 +249,7 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)

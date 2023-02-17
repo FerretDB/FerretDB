@@ -54,7 +54,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	qp := pgdb.QueryParam{
+	qp := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -111,8 +111,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.QueryParam) ([]*types.Document, error) {
-	iter, err := pgdb.QueryDocuments(ctx, tx, sqlParam)
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams) ([]*types.Document, error) {
+	// filter is used to filter documents on the FerretDB side,
+	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
+	filter := qp.Filter
+
+	if h.DisablePushdown {
+		qp.Filter = nil
+	}
+
+	iter, err := pgdb.QueryDocuments(ctx, tx, qp)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +139,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 			return nil, err
 		}
 
-		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		matches, err := common.FilterDocument(doc, filter)
 		if err != nil {
 			return nil, err
 		}

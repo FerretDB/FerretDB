@@ -51,7 +51,7 @@ func TestQueryDocuments(t *testing.T) {
 			inserted = append(inserted, doc)
 		}
 
-		iter, err := tdb.QueryDocuments(ctx, &QueryParam{
+		iter, err := tdb.QueryDocuments(ctx, &QueryParams{
 			DB:         dbName,
 			Collection: collName,
 		})
@@ -101,7 +101,7 @@ func TestQueryDocuments(t *testing.T) {
 		_, err := tdb.createDatabaseIfNotExists(ctx, dbName)
 		require.NoError(t, err)
 
-		iter, err := tdb.QueryDocuments(ctx, &QueryParam{
+		iter, err := tdb.QueryDocuments(ctx, &QueryParams{
 			DB:         dbName,
 			Collection: collName,
 		})
@@ -126,7 +126,7 @@ func TestQueryDocuments(t *testing.T) {
 		))))
 		require.NoError(t, err)
 
-		iter, err := tdb.QueryDocuments(ctx, &QueryParam{
+		iter, err := tdb.QueryDocuments(ctx, &QueryParams{
 			DB:         dbName,
 			Collection: collName,
 		})
@@ -151,7 +151,7 @@ func TestQueryDocuments(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		iter, err := tdb.QueryDocuments(ctx, &QueryParam{
+		iter, err := tdb.QueryDocuments(ctx, &QueryParams{
 			DB:         dbName,
 			Collection: collName,
 		})
@@ -185,7 +185,7 @@ func TestQueryDocuments(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		iter, err := tdb.QueryDocuments(ctx, &QueryParam{
+		iter, err := tdb.QueryDocuments(ctx, &QueryParams{
 			DB:         dbName,
 			Collection: collName,
 		})

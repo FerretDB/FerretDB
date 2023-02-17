@@ -52,7 +52,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	qp := tigrisdb.QueryParam{
+	qp := tigrisdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Filter:     params.Filter,
@@ -95,10 +95,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
-// fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam) ([]*types.Document, error) { //nolint:lll // for readability
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParams.Filter.
+func (h *Handler) fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams) ([]*types.Document, error) { //nolint:lll // for readability
 	// filter is used to filter documents on the FerretDB side,
-	// qp.Filter is used to filter documents on the Tigris side.
+	// qp.Filter is used to filter documents on the Tigris side (query pushdown).
 	filter := qp.Filter
 
 	if h.DisablePushdown {
