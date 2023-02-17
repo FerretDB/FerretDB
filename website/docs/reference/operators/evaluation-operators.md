@@ -6,10 +6,10 @@ sidebar_position: 5
 
 Evaluation query operators return data based on the evaluation of a specified expression.
 
-| Operator           | Description                                                                                    |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| [`$mod`](#mod)     | Matches documents where the field element modulo a given value equals the specified remainder. |
-| [`$regex`](#regex) | Matches documents where a field matches a specified regular expression query                   |
+| Operator           | Description                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| [`$mod`](#mod)     | Matches documents where the field element is divided by a given value and returns a the specified remainder value |
+| [`$regex`](#regex) | Matches documents where a field matches a specified regular expression query                                      |
 
 For the examples in this section, insert the following documents into the `catalog` collection:
 
