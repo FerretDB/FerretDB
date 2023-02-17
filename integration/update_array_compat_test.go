@@ -135,28 +135,37 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
 		},
 		"Document": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
+			skipForTigris: "Tigris does not support adding new array elements with different types",
 		},
 		"Int32": {
-			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
+			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
 		},
 		"Int64": {
-			update: bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
+			skipForTigris: "Some tests would fail because Tigris might convert int64 to float/int64 based on the schema",
 		},
 		"Float64": {
-			update: bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
+			skipForTigris: "Some tests would fail because of schema mismatch.",
 		},
 		"NonExistentField": {
-			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
+			skipForTigris: "Tigris does not support adding new fields to documents",
 		},
 		"DotNotation": {
-			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", "42"}}}},
+			filter: bson.D{{"_id", "array-documents-nested"}},
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"bar", "zoo"}}}}}},
 		},
 		"DotNotationNonArray": {
-			update: bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", 1}}}},
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", int32(1)}}}},
+			resultType: emptyResult,
 		},
 		"DotNotationNonExistentPath": {
-			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", 1}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"non.existent.path", int32(1)}}}},
+			skipForTigris: "Tigris does not support adding new fields to documents",
 		},
 		"EmptyValue": {
 			update:     bson.D{{"$addToSet", bson.D{}}},
