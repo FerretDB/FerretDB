@@ -47,9 +47,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var fp tigrisdb.FetchParam
+	var qp tigrisdb.QueryParam
 
-	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var ok bool
-	if fp.Collection, ok = collectionParam.(string); !ok {
+	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -97,7 +97,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		fp.Filter = q
+		qp.Filter = q
 
 		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 			// TODO check if u is an array of aggregation pipeline stages
@@ -117,7 +117,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
+		resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +141,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
-			if err = insertDocument(ctx, dbPool, &fp, doc); err != nil {
+			if err = insertDocument(ctx, dbPool, &qp, doc); err != nil {
 				return nil, err
 			}
 
@@ -165,7 +165,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			res, err := updateDocument(ctx, dbPool, &fp, doc)
+			res, err := updateDocument(ctx, dbPool, &qp, doc)
 			if err != nil {
 				return nil, err
 			}
@@ -193,8 +193,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // updateDocument replaces given document.
-func updateDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam, doc *types.Document) (int, error) {
-	err := dbPool.ReplaceDocument(ctx, fp.DB, fp.Collection, doc)
+func updateDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, doc *types.Document) (int, error) {
+	err := dbPool.ReplaceDocument(ctx, qp.DB, qp.Collection, doc)
 
 	var valErr *types.ValidationError
 	var driverErr *driver.Error

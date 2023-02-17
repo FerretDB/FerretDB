@@ -21,26 +21,27 @@ sidebar_position: 1
 | `find`          |                            | ✅      | Basic command is fully supported                           |
 |                 | `filter`                   | ✅      |                                                            |
 |                 | `sort`                     | ✅      |                                                            |
-|                 | `projection`               | ✅      | Basic projections with fields is supported                 |
+|                 | `projection`               | ✅      | Basic projections with fields are supported                |
 |                 | `hint`                     | ❌      | Ignored                                                    |
 |                 | `skip`                     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1445)  |
 |                 | `limit`                    | ✅      |                                                            |
-|                 | `batchSize`                | ⚠️      | Unimplemented                                              |
-|                 | `singleBatch`              | ⚠️      | Unimplemented                                              |
+|                 | `batchSize`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/2005)  |
+|                 | `singleBatch`              | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/2005)  |
 |                 | `comment`                  | ⚠️      | Not implemented in Tigris                                  |
 |                 | `maxTimeMS`                | ✅      |                                                            |
 |                 | `readConcern`              | ⚠️      | Ignored                                                    |
 |                 | `max`                      | ⚠️      | Ignored                                                    |
 |                 | `min`                      | ⚠️      | Ignored                                                    |
-|                 | `returnKey`                | ⚠️      | Unimplemented                                              |
-|                 | `showRecordId`             | ⚠️      | Unimplemented                                              |
+|                 | `returnKey`                | ❌      | Unimplemented                                              |
+|                 | `showRecordId`             | ❌      | Unimplemented                                              |
 |                 | `tailable`                 | ❌      | Unimplemented                                              |
-|                 | `awaitData`                | ⚠️      | Unimplemented                                              |
-|                 | `noCursorTimeout`          | ⚠️      | Unimplemented                                              |
-|                 | `allowPartialResults`      | ⚠️      | Unimplemented                                              |
-|                 | `collation`                | ⚠️      | Unimplemented                                              |
-|                 | `allowDiskUse`             | ⚠️      | Unimplemented                                              |
-|                 | `let`                      | ⚠️      | Unimplemented                                              |
+|                 | `oplogReplay`              | ❌      | Unimplemented                                              |
+|                 | `noCursorTimeout`          | ❌      | Unimplemented                                              |
+|                 | `awaitData`                | ❌      | Unimplemented                                              |
+|                 | `allowPartialResults`      | ❌      | Unimplemented                                              |
+|                 | `collation`                | ❌      | Unimplemented                                              |
+|                 | `allowDiskUse`             | ⚠️      | Ignored                                                    |
+|                 | `let`                      | ❌      | Unimplemented                                              |
 | `findAndModify` |                            | ✅      | Basic command is fully supported                           |
 |                 | `query`                    | ✅      |                                                            |
 |                 | `sort`                     | ✅      |                                                            |
@@ -56,7 +57,10 @@ sidebar_position: 1
 |                 | `hint`                     | ❌      | Ignored                                                    |
 |                 | `comment`                  | ⚠️      | Not implemented in Tigris                                  |
 |                 | `let`                      | ⚠️      | Unimplemented                                              |
-| `getMore`       |                            | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1733)  |
+| `getMore`       |                            | ✅      | Basic command is fully supported                           |
+|                 | `batchSize`                | ✅      |                                                            |
+|                 | `maxTimeMS`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1808)  |
+|                 | `comment`                  | ⚠️      | Unimplemented                                              |
 | `insert`        |                            | ✅      | Basic command is fully supported                           |
 |                 | `documents`                | ✅      |                                                            |
 |                 | `ordered`                  | ✅      |                                                            |
@@ -654,10 +658,10 @@ db.aggregate()
 |                                   | `nameOnly`                     |                           | ✅      |                                                           |
 |                                   | `authorizedDatabases`          |                           | ⚠️      | Ingored                                                   |
 |                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
-| `listIndexes`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/278)  |
-|                                   | `cursor.batchSize`             |                           | ⚠️      |                                                           |
-|                                   | `comment`                      |                           | ⚠️      |                                                           |
-| `logRotate`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/278)  |
+| `listIndexes`                     |                                |                           | ✅      |                                                           |
+|                                   | `cursor.batchSize`             |                           | ⚠️      | Ignored                                                   |
+|                                   | `comment`                      |                           | ⚠️      | Ignored                                                   |
+| `logRotate`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1959) |
 |                                   | `<target>`                     |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `reIndex`                         |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1516) |

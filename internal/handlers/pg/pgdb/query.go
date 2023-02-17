@@ -39,18 +39,19 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// SQLParam represents options/parameters used for SQL query.
-type SQLParam struct {
+// QueryParam represents options/parameters used for SQL query.
+type QueryParam struct {
+	// Query filter for possible pushdown; may be ignored in part or entirely.
+	Filter     *types.Document
 	DB         string
 	Collection string
 	Comment    string
 	Explain    bool
-	Filter     *types.Document
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, error) {
+	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -59,20 +60,20 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var query string
 
-	if sp.Explain {
+	if qp.Explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
 	query += `SELECT _jsonb `
 
-	if c := sp.Comment; c != "" {
+	if c := qp.Comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -80,16 +81,10 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		query += `/* ` + c + ` */ `
 	}
 
-	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
-	var args []any
-
-	if sp.Filter != nil {
-		var where string
-
-		where, args = prepareWhereClause(sp.Filter)
-		query += where
-	}
+	where, args := prepareWhereClause(qp.Filter)
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -126,13 +121,13 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 	return res, nil
 }
 
-// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
+// QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[int, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.Interface[int, *types.Document], error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
 	case err == nil:
@@ -144,11 +139,11 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:  sp.DB,
+		schema:  qp.DB,
 		table:   table,
-		comment: sp.Comment,
-		explain: sp.Explain,
-		filter:  sp.Filter,
+		comment: qp.Comment,
+		explain: qp.Explain,
+		filter:  qp.Filter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -214,14 +209,8 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	var args []any
-
-	if p.filter != nil {
-		var where string
-
-		where, args = prepareWhereClause(p.filter)
-		query += where
-	}
+	where, args := prepareWhereClause(p.filter)
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {

@@ -13,16 +13,18 @@ on:
   schedule:
     - cron: "12 3 * * *" # after Docker workflow
 
+# Do not run this workflow in parallel for any PR change or branch/tag push
+# to save some resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-
-  # Temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: 1e257034-a484-4a13-abdf-009e769b909b
-  # CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
   test:
@@ -35,11 +37,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: "PostgreSQL", task: "pg"}
-          - {name: "Tigris", task: "tigris"}
-          - {name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main"}
-          # - {name: "CockroachDB", task: "cockroach"} TODO https://github.com/FerretDB/FerretDB/issues/1523
-          - {name: "MongoDB", task: "mongodb"}
+          - { name: "PostgreSQL", task: "pg" }
+          - { name: "Tigris", task: "tigris" }
+          - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
+          - { name: "MongoDB", task: "mongodb" }
 
     steps:
       - name: Checkout code
@@ -72,12 +73,16 @@ jobs:
         run: bin/task test-integration-${{ matrix.task }}
 
       # The token is not required but should make uploads more stable.
-      # See https://github.com/codecov/codecov-action/issues/837.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ matrix.task }}.txt
           flags: integration,${{ matrix.task }}
           fail_ci_if_error: true
