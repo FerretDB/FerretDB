@@ -121,12 +121,14 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+// TestUpdateArrayCompatAddToSet tests the $addToSet update operator.
+// Test case "String" will cover the case where the value is already in set when ran against "array-two" document.
 func TestUpdateArrayCompatAddToSet(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
-			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
+			update:     bson.D{{"$addToSet", bson.D{{"v", int32(1)}, {"v", int32(1)}}}},
 			resultType: emptyResult,
 		},
 		"String": {

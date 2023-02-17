@@ -248,7 +248,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			continue
 		}
 
-		var appendValues []any
+		var appendValue any
 
 		switch addToSetValueRaw := addToSetValueRaw.(type) {
 		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
@@ -267,11 +267,12 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 				if compareResult == types.Equal {
 					shouldAdd = false
+					break
 				}
 			}
 
 			if shouldAdd {
-				appendValues = append(appendValues, addToSetValueRaw)
+				appendValue = addToSetValueRaw
 			}
 		case *types.Array:
 			// Nested arrays are not supported.
@@ -284,13 +285,11 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		}
 
 		// No values to append to the array.
-		if len(appendValues) == 0 {
+		if appendValue == nil {
 			continue
 		}
 
-		for _, appendValue := range appendValues {
-			array.Append(appendValue)
-		}
+		array.Append(appendValue)
 
 		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)
