@@ -17,6 +17,7 @@ package tigris
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -25,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -168,12 +170,43 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 // It returns the number of deleted documents or an error.
 func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, filter *types.Document, limit int64) (int32, error) { //nolint:lll // argument list is too long
 	var err error
-	var deleted int32
-	var resDocs []*types.Document
 
-	resDocs, err = h.fetchAndFilterDocs(ctx, dbPool, qp)
+	resDocs := make([]*types.Document, 0, 16)
+
+	var deleted int32
+
+	// fetch current items from collection
+	iter, err := dbPool.QueryDocuments(ctx, qp)
 	if err != nil {
 		return 0, err
+	}
+
+	defer iter.Close()
+
+	// iterate through every document and delete matching ones
+	for {
+		var doc *types.Document
+
+		_, doc, err = iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return 0, lazyerrors.Error(err)
+		}
+
+		// fetch current items from collection
+		matches, err := common.FilterDocument(doc, filter)
+		if err != nil {
+			return 0, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
