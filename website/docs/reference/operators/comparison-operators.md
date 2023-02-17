@@ -4,19 +4,20 @@ sidebar_position: 1
 
 # Comparison query operators
 
-Comparison query operators return data that matches specific query conditions.
+Comparison query operators allow you to compare the elements in a document to a given query value.
+
 Go to the comparison query operators:
 
-| Operator       | Description                                                                     |
-| -------------- | ------------------------------------------------------------------------------- |
-| [`$eq`](#eq)   | Matches documents equal to specified query                                      |
-| [`$gt`](#gt)   | Matches documents greater than specified query                                  |
-| [`$gte`](#gte) | Matches documents greater than or equal to specified query                      |
-| [`$lt`](#lt)   | Matches documents less than specified query                                     |
-| [`$lte`](#lte) | Matches documents less than or equal to specified query                         |
-| [`$in`](#in)   | Matches documents containing values in a specified array query                  |
-| [`$ne`](#ne)   | Matches documents that are not equal to specified query                         |
-| [`$nin`](#nin) | Matches documents that do not contain values present in a specified array query |
+| Operator       | Description                                                               |
+| -------------- | ------------------------------------------------------------------------- |
+| [`$eq`](#eq)   | Selects documents with elements that are equal to a given query value     |
+| [`$gt`](#gt)   | Selects documents with elements that are greater than a given query value |
+| [`$gte`](#gte) | Selects documents greater than or equal to specified query                |
+| [`$lt`](#lt)   | Selects documents with elements that are less than a given query value    |
+| [`$lte`](#lte) | Selects documents with elements less than or equal to given query value   |
+| [`$in`](#in)   | Selects documents that contain the elements in a given array query        |
+| [`$ne`](#ne)   | Selects documents with elements that are not equal to given query value   |
+| [`$nin`](#nin) | Selects documents that do not contain the elements in a given array query |
 
 For the examples in this section, insert the following documents into the `employees` collection:
 
@@ -72,10 +73,12 @@ db.employees.insertMany([
 
 ## $eq
 
-*Syntax*: `{ field: { $eq: value } }`
+*Syntax*: `{ field: { $eq: <query-value> } }`
 
-The equality operator `$eq` selects documents that matches the specified query.
-The following operation queries the `employees` collection for all documents where the field `age` equals `21`.
+The `$eq` operator selects the documents containing the element that is equal to the given query value.
+This operator can be used to match values of different types, including documents, array, embedded documents, etc.
+
+**Example:** The following operation queries the `employees` collection for all documents where the field `age` equals `21`.
 
 ```js
 db.employees.find({
@@ -100,7 +103,7 @@ The response returns a single document that matches the query:
 ]
 ```
 
-To query values in an embedded document, use [dot notation](../../understanding_ferretdb.md#dot-notation).
+**Example:** To query values in an embedded document, use [dot notation](../../understanding_ferretdb.md#dot-notation).
 The following operation queries the `employees` collection for documents that match the field `first` in the embedded document `name`.
 
 ```js
@@ -128,11 +131,11 @@ The response returns a single document that matches the query:
 
 ## $gt
 
-*Syntax*: `{ field: { $gt: value } }`
+*Syntax*: `{ field: { $gt: <query-value> } }`
 
-The greater than operator `$gt` selects documents that are greater than the specified query.
+The greater than operator `$gt` selects documents containing elements that are greater than the given query value.
 
-Use the following operation to query for all the documents in the `employees` collection where the field `age` is greater than `21`.
+**Example:** Use the following operation to query for all the documents in the `employees` collection where the field `age` is greater than `21`.
 
 ```js
 db.employees.find({
@@ -167,10 +170,11 @@ The output:
 
 ## $gte
 
-*Syntax*: `{ field: { $gte: value } }`
+*Syntax*: `{ field: { $gte: <query-value> } }`
 
-The greater than or equal operator `$gte` selects document with values that are greater than or equal to the specified query.
-The following operation selects documents based on the specified query, where the field `age` is greater than or equal to `21`.
+The greater than or equal operator `$gte` selects document with values greater than or equal to the given query value.
+
+**Example:** The following operation selects documents based on the specified query, where the field `age` is greater than or equal to `21`.
 
 ```js
 db.employees.find({
@@ -213,10 +217,11 @@ The output:
 
 ## $lt
 
-*Syntax*: `{ field: { $lt: value } }`
+*Syntax*: `{ field: { $lt: <query-value> } }`
 
-The less than operator `$lt` selects document with values that are less than the specified query.
-The following operation queries for documents where the field `age` is less than `25`.
+The less than operator `$lt` selects document with elements that are less than the given query value.
+
+**Example:** The following operation queries for documents where the field `age` is less than `25`.
 
 ```js
 db.employees.find({
@@ -251,9 +256,9 @@ The output:
 
 ## $lte
 
-*Syntax*: `{ field: { $lte: value } }`
+*Syntax*: `{ field: { $lte: <query-value> } }`
 
-The less than or equal operator `$lte` selects document with values that are less than or equal to the specified query.
+The less than or equal operator `$lte` selects documents with elements that are less than or equal to the specified query value.
 The following operation queries for documents where the field `age` is less than or equal to `21`.
 
 ```js
@@ -281,12 +286,12 @@ The output:
 
 ## $in
 
-*Syntax*: `{ field: { $in: [<value1>, <value2>, ... <valueN> ] } }`
+*Syntax*: `{ field: { $in: [<array-value1>, <array-value2>, ... <array-valueN> ] } }`
 
-The `$in` operator selects documents that contain any of the values in a specified array.
-For a document to be returned, the field must contain at least one of the values in the specified array query.
+The `$in` operator selects documents that contain any of the values in a given query array.
+To match a document, the field must contain at least one of the elements in the specified array query.
 
-The following operation queries the `employees` collection for documents where the value of the field `age` is either `21` or `35`.
+**Example:** The following operation queries the `employees` collection for documents where the value of the field `age` is either `21` or `35`.
 
 ```js
 db.employees.find({
@@ -321,10 +326,11 @@ The output:
 
 ## $ne
 
-*Syntax*: `{ field: { $ne: value } }`
+*Syntax*: `{ field: { $ne: <query-value> } }`
 
-The `$ne` operator selects all the documents that are not equal to the specified query.
-The following operation queries the `employees` collection for documents where the field `age` is not equal to `21`.
+The `$ne` operator selects all the documents with elements that are not equal to a given query.
+
+**Example:** The following operation queries the `employees` collection for documents where the field `age` is not equal to `21`.
 
 ```js
 db.employees.find({
@@ -359,10 +365,11 @@ The output:
 
 ## $nin
 
-*Syntax*: `{ field: { $nin: [ <value1>, <value2> ... <valueN> ] } }`
+*Syntax*: `{ field: { $nin: [ <array-value1>, <array-value2> ... <array-valueN> ] } }`
 
-The `$nin` operator selects documents that does not contain any of the values in a specified array.
-The following operation queries the `employees` collection for documents where the value of the field `age` is not `21` or `35`.
+The `$nin` operator selects documents that does not contain any of the values in a given array.
+
+**Example:** The following operation queries the `employees` collection for documents where the value of the field `age` is not `21` or `35`.
 
 ```js
 db.employees.find({
