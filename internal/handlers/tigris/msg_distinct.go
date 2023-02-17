@@ -48,7 +48,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		Filter:     dp.Filter,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, dbPool, &qp)
 	if err != nil {
 		return nil, err
 	}

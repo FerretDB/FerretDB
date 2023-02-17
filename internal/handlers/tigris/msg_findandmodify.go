@@ -73,7 +73,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		Filter:     params.Query,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, dbPool, &qp)
 	if err != nil {
 		return nil, err
 	}

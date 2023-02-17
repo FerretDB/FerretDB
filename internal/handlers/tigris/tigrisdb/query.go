@@ -33,7 +33,6 @@ import (
 
 // QueryParam represents options/parameters used by the fetch/query.
 type QueryParam struct {
-	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
 	DB         string
 	Collection string
@@ -81,10 +80,14 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParam) (ite
 	return iter, nil
 }
 
-// BuildFilter returns Tigris filter expression that may cover a part of the given filter.
+// BuildFilter returns Tigris filter expression (JSON object) for the given filter document.
 //
-// FerretDB always filters data itself, so that should be a purely performance optimization.
+// If the given filter is nil, it returns empty JSON object {}.
 func BuildFilter(filter *types.Document) driver.Filter {
+	if filter == nil {
+		return driver.Filter(`{}`)
+	}
+
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {

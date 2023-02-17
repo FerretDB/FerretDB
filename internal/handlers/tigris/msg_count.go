@@ -84,7 +84,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
+	resDocs, err := h.fetchAndFilterDocs(ctx, dbPool, &qp)
 	if err != nil {
 		return nil, err
 	}
