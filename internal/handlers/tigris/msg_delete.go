@@ -93,12 +93,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		filter, limit, err := h.prepareDeleteParams(deleteDoc)
+		var limit int64
+		qp.Filter, limit, err = h.prepareDeleteParams(deleteDoc)
 		if err != nil {
 			return nil, err
 		}
 
-		del, err := h.execDelete(ctx, dbPool, &qp, filter, limit)
+		del, err := h.execDelete(ctx, dbPool, &qp, limit)
 		if err == nil {
 			deleted += del
 			continue
@@ -168,12 +169,20 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, filter *types.Document, limit int64) (int32, error) { //nolint:lll // argument list is too long
+func (h *Handler) execDelete(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, limit int64) (int32, error) { //nolint:lll // argument list is too long
 	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
 
 	var deleted int32
+
+	// filter is used to filter documents on the FerretDB side,
+	// qp.Filter is used to filter documents on the Tigris side (query pushdown).
+	filter := qp.Filter
+
+	if h.DisablePushdown {
+		qp.Filter = nil
+	}
 
 	// fetch current items from collection
 	iter, err := dbPool.QueryDocuments(ctx, qp)
