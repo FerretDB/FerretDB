@@ -98,7 +98,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParam.Filter.
 func (h *Handler) fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam) ([]*types.Document, error) { //nolint:lll // for readability
 	// filter is used to filter documents on the FerretDB side,
-	// qp.Filter is used to filter documents on the TigrisDB side.
+	// qp.Filter is used to filter documents on the Tigris side.
 	filter := qp.Filter
 
 	if h.DisablePushdown {
