@@ -47,7 +47,8 @@ db.catalog.insertMany([
 
 *Syntax*: `{ <field>: { $mod: [ <divisor-value>, <modulus> ] } }`
 
-The `$mod` operator matches documents where the field element modulo (`%`) a specified divisor returns a given modulus.
+The `$mod` operator matches documents where the field element divided by a given value returns a specified remainder (otherwise known as a modulus).
+The mathematical operation for this is `field-value % divisor-value = modulus`.
 
 **Example:** The following query returns all the documents where the value of the "stock" field is evenly divisible by 2:
 
