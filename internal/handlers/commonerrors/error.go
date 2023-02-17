@@ -53,6 +53,9 @@ const (
 	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
 	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
 
+	// ErrCursorNotFound indicates that cursor is not found.
+	ErrCursorNotFound = ErrorCode(43) // CursorNotFound
+
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
@@ -118,6 +121,9 @@ const (
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
+
+	// ErrBatchSizeNegative indicates that batch size is negative.
+	ErrBatchSizeNegative = ErrorCode(51024) // Location51024
 
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075
