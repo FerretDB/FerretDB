@@ -105,7 +105,7 @@ db.electronics.insertMany([
 
 ## $exists
 
-*Syntax*: `{ <field>: { $exists: <boolean-value> } }`
+*Syntax*: `{ <field>: { $exists: <value> } }`
 
 The `$exists` operator returns documents where a field exists or does not exist.
 
