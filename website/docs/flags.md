@@ -13,8 +13,8 @@ There is no configuration file.
 Some default values are overridden in [our Docker image](quickstart_guide/docker.md).
 :::
 
-| Flag                    | Description                                                              | Env Variable                     | Default Value                          |
-| ----------------------- | ------------------------------------------------------------------------ | -------------------------------- | -------------------------------------- |
+| Flag                   | Description                                                               | Env Variable                    | Default Value                           |
+| ---------------------- | ------------------------------------------------------------------------- | ------------------------------- | --------------------------------------- |
 | `version`               | Print version to stdout and exit                                         | `FERRETDB_VERSION`               |                                        |
 | `log-level`             | Log level: `debug`, `info`, `warn`, `error`                              | `FERRETDB_LOG_LEVEL`             | `info`                                 |
 | `log-uuid`              | Add instance UUID to all log messages                                    | `FERRETDB_LOG_UUID`              |                                        |
