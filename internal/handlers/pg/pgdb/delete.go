@@ -25,16 +25,16 @@ import (
 )
 
 // DeleteDocumentsByID deletes documents by given IDs.
-func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any) (int64, error) {
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, qp *QueryParam, ids []any) (int64, error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return 0, err
 	}
 
 	return deleteByIDs(ctx, tx, deleteParams{
-		schema:  sp.DB,
+		schema:  qp.DB,
 		table:   table,
-		comment: sp.Comment,
+		comment: qp.Comment,
 	}, ids,
 	)
 }
