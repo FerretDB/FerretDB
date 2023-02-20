@@ -141,7 +141,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			qp.Filter = q
 
-			resDocs, err := h.fetchAndFilterDocs(ctx, tx, &qp)
+			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
 			if err != nil {
 				return err
 			}

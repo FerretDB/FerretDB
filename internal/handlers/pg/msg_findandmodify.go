@@ -81,7 +81,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var reply wire.OpMsg
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var resDocs []*types.Document
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &queryParams)
+		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &queryParams, h.DisablePushdown})
 		if err != nil {
 			return err
 		}
