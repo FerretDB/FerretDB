@@ -218,8 +218,9 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 			return nil, fmt.Errorf("TLS CA file: %w", err)
 		}
 
-		rootCA, err := os.ReadFile(opts.caFile)
-		if err != nil {
+		var rootCA []byte
+
+		if rootCA, err = os.ReadFile(opts.caFile); err != nil {
 			return nil, err
 		}
 

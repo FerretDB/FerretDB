@@ -24,14 +24,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // See docker-compose.yml.
@@ -89,6 +90,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
 	var handler string
+
 	switch *targetBackendF {
 	case "ferretdb-pg":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
@@ -155,6 +157,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	l := clientconn.NewListener(&listenerOpts)
 
 	done := make(chan struct{})
+
 	go func() {
 		defer close(done)
 

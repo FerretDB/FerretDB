@@ -40,16 +40,17 @@ type mongoDBURIOpts struct {
 func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 	tb.Helper()
 
-	var user *url.Userinfo
-	q := make(url.Values)
-
 	var host string
+
 	if opts.hostPort != "" {
 		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
 		host = opts.hostPort
 	} else {
 		host = opts.unixSocketPath
 	}
+
+	var user *url.Userinfo
+	q := make(url.Values)
 
 	if opts.tlsAndAuth {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")

@@ -60,6 +60,7 @@ func Startup() {
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
 		}
+
 		client.Disconnect(ctx)
 
 		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
@@ -72,6 +73,7 @@ func Startup() {
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
 		}
+
 		client.Disconnect(ctx)
 
 		zap.S().Infof("Compat system: MongoDB (%s).", u)
