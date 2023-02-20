@@ -55,6 +55,11 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+	if strings.HasPrefix(filterKey, "$") {
+		// {$operator: filterValue}
+		return filterOperator(doc, filterKey, filterValue)
+	}
+
 	if strings.ContainsRune(filterKey, '.') {
 		// {field1./.../.fieldN: filterValue}
 		path, err := types.NewPathFromString(filterKey)
@@ -89,11 +94,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 			doc = must.NotFail(types.NewDocument(filterKey, value))
 		}
-	}
-
-	if strings.HasPrefix(filterKey, "$") {
-		// {$operator: filterValue}
-		return filterOperator(doc, filterKey, filterValue)
 	}
 
 	switch filterValue := filterValue.(type) {

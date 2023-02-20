@@ -178,6 +178,7 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
         -records-dir=../records
         -target-unix-socket
+        -disable-pushdown=true
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
