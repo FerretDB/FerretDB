@@ -20,6 +20,8 @@ import (
 	"errors"
 	"flag"
 	"net/url"
+	"os"
+	"path/filepath"
 	"runtime/trace"
 	"strings"
 	"sync/atomic"
@@ -44,11 +46,12 @@ var (
 	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
 	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
 
-	postgreSQLURLF    = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
-	tigrisURLSF       = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
-	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
-	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket (if possible)")
 	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
+	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
+
+	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
+	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -67,6 +70,10 @@ var (
 	tigrisURLsIndex atomic.Uint32
 
 	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+
+	tlsClientFile = filepath.Join("..", "build", "certs", "client.pem")
+	tlsServerFile = filepath.Join("..", "build", "certs", "server.pem")
+	tlsRootCAFile = filepath.Join("..", "build", "certs", "rootCA-cert.pem")
 )
 
 // IsTigris returns true if tests are running against FerretDB with `tigris` handler.
@@ -82,7 +89,7 @@ func IsTigris(tb testing.TB) bool {
 //
 // Deprecated: use SkipForTigrisWithReason instead if you must.
 func SkipForTigris(tb testing.TB) {
-	SkipForTigrisWithReason(tb, "")
+	SkipForTigrisWithReason(tb, "empty, please update this test")
 }
 
 // SkipForTigrisWithReason skips the current test for FerretDB with `tigris` handler.
@@ -91,13 +98,9 @@ func SkipForTigris(tb testing.TB) {
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if IsTigris(tb) {
-		if reason == "" {
-			tb.Skipf("Skipping for Tigris")
-		}
+	require.NotEmpty(tb, reason, "reason must not be empty")
 
-		tb.Skipf("Skipping for Tigris: %s", reason)
-	}
+	tb.Skipf("Skipping for Tigris: %s.", reason)
 }
 
 // TigrisOnlyWithReason skips the current test except for FerretDB with `tigris` handler.
@@ -105,6 +108,8 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 // This function should not be used lightly.
 func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	tb.Helper()
+
+	require.NotEmpty(tb, reason, "reason must not be empty")
 
 	if !IsTigris(tb) {
 		tb.Skipf("Skipping for non-tigris: %s", reason)
@@ -120,22 +125,15 @@ func IsPushdownDisabled() bool {
 type buildMongoDBURIOpts struct {
 	hostPort       string // for TCP and TLS
 	unixSocketPath string
-	tls            bool
-	authMechanism  string
-	user           *url.Userinfo
+	tlsAndAuth     bool
 }
 
 // buildMongoDBURI builds MongoDB URI with given URI options.
 func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 	tb.Helper()
 
+	var user *url.Userinfo
 	q := make(url.Values)
-
-	if opts.tls {
-		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
-		q.Set("tls", "true")
-		// certificates are set by setupClient
-	}
 
 	var host string
 	if opts.hostPort != "" {
@@ -145,8 +143,17 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		host = opts.unixSocketPath
 	}
 
-	if opts.authMechanism != "" {
-		q.Set("authMechanism", opts.authMechanism)
+	if opts.tlsAndAuth {
+		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
+
+		q.Set("tls", "true")
+		q.Set("tlsCertificateKeyFile", tlsClientFile)
+		// FIXME q.Set("tlsCaFile", filepath.Join("..", "build", "certs", "rootCA-cert.pem"))
+
+		// use two combinations (no TLS, no auth) and (TLS, auth)
+		// instead of four just for simplicity
+		q.Set("authMechanism", "PLAIN")
+		user = url.UserPassword("username", "password")
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
@@ -154,7 +161,7 @@ func buildMongoDBURI(tb testing.TB, opts *buildMongoDBURIOpts) string {
 		Scheme:   "mongodb",
 		Host:     host,
 		Path:     "/",
-		User:     opts.user,
+		User:     user,
 		RawQuery: q.Encode(),
 	}
 
@@ -167,6 +174,23 @@ func nextTigrisUrl() string {
 	urls := strings.Split(*tigrisURLSF, ",")
 
 	return urls[i%len(urls)]
+}
+
+// unixSocketPath returns temporary Unix domain socket path for that test.
+func unixSocketPath(tb testing.TB) string {
+	tb.Helper()
+
+	// do not use tb.TempDir() because generated path is too long on macOS
+	f, err := os.CreateTemp("", "ferretdb-*.sock")
+	require.NoError(tb, err)
+
+	// remove file so listener could create it (and remove it itself on stop)
+	err = f.Close()
+	require.NoError(tb, err)
+	err = os.Remove(f.Name())
+	require.NoError(tb, err)
+
+	return f.Name()
 }
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
@@ -216,7 +240,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	h, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
 
-	listenerOpts := &clientconn.NewListenerOpts{
+	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
 		Mode:           clientconn.NormalMode,
 		Metrics:        metrics,
@@ -229,21 +253,23 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
-	if *targetUnixSocketF {
+	if *targetTLSF && *targetUnixSocketF {
+		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
+	}
+
+	switch {
+	case *targetTLSF:
+		listenerOpts.TLS = "127.0.0.1:0"
+		listenerOpts.TLSCertFile = filepath.Join("..", "build", "certs", "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join("..", "build", "certs", "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join("..", "build", "certs", "rootCA-cert.pem")
+	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
+	default:
+		listenerOpts.TCP = "127.0.0.1:0"
 	}
 
-	addr := "127.0.0.1:0"
-
-	if *targetTLSF {
-		listenerOpts.TLS = addr
-		fp := GetTLSFilesPaths(tb, ServerSide)
-		listenerOpts.TLSCertFile, listenerOpts.TLSKeyFile, listenerOpts.TLSCAFile = fp.Cert, fp.Key, fp.CA
-	} else {
-		listenerOpts.TCP = addr
-	}
-
-	l := clientconn.NewListener(listenerOpts)
+	l := clientconn.NewListener(&listenerOpts)
 
 	done := make(chan struct{})
 	go func() {
@@ -263,25 +289,22 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		h.Close()
 	})
 
-	opts := buildMongoDBURIOpts{
-		user: getUser(*targetTLSF),
-	}
+	var clientOpts buildMongoDBURIOpts
 
 	switch {
 	case *targetTLSF:
-		opts.hostPort = l.TLSAddr().String()
-		opts.authMechanism = "PLAIN"
-		opts.tls = true
+		clientOpts.hostPort = l.TLSAddr().String()
+		clientOpts.tlsAndAuth = true
 	case *targetUnixSocketF:
-		opts.unixSocketPath = l.UnixAddr().String() // TODO
+		clientOpts.unixSocketPath = l.UnixAddr().String()
 	default:
-		opts.hostPort = l.TCPAddr().String()
+		clientOpts.hostPort = l.TCPAddr().String()
 	}
 
-	uri := buildMongoDBURI(tb, &opts)
+	uri := buildMongoDBURI(tb, &clientOpts)
 	client := setupClient(tb, ctx, uri)
 
-	logger.Info("Listener started", zap.String("handler", getHandler()), zap.String("uri", uri))
+	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
 	return client, uri
 }
@@ -325,14 +348,4 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	})
 
 	return client
-}
-
-// TODO
-// getUser returns test user credential if TLS is enabled, nil otherwise.
-func getUser(isTLS bool) *url.Userinfo {
-	if isTLS {
-		return url.UserPassword("username", "password")
-	}
-
-	return nil
 }

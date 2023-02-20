@@ -155,7 +155,7 @@ You can run them with:
 
 * `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB on port 37017 (as in our development environment);
 * `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB on port 37017;
-* `task test-integration-mongodb` for MongoDB running on port 37017 only;
+* `task test-integration-mongodb` for MongoDB running on port 37017 only, skipping compat tests;
 * or `task test-integration` to run all in parallel.
 
 You may run all tests in parallel with `task test`.
@@ -168,9 +168,11 @@ you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-* to run a single test case for `pg` handler with all subtests running sequentially,
+* to run a single test case for in-process FerretDB with `pg` handler
+  with all subtests running sequentially,
   you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
-* to run all tests for `tigris` handler with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
+* to run all tests for in-process FerretDB with `tigris` handler
+  with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
 (It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
@@ -218,6 +220,8 @@ If that's impossible without some branching, use helpers exported from the `setu
 such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
 Writing separate tests might be much better than making a single test that checks error text.
+
+Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
 
 ### Submitting code changes
 
