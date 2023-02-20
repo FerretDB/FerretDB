@@ -149,7 +149,10 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 		case tigrisdb.IsInvalidArgument(err):
 			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
 		case tigrisdb.IsAlreadyExists(err):
-			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDuplicateKey, err.Error())
+			return commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrDuplicateKey,
+				fmt.Sprintf("duplicate key error collection: %s.%s", qp.DB, qp.Collection),
+			)
 		default:
 			return lazyerrors.Error(err)
 		}
