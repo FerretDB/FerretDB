@@ -83,7 +83,11 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 
 	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
-	where, args := prepareWhereClause(qp.Filter)
+	where, args, err := prepareWhereClause(qp.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
@@ -157,11 +161,15 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	query += where
 
 	var b []byte
-	err := tx.QueryRow(ctx, query, args...).Scan(&b)
+	err = tx.QueryRow(ctx, query, args...).Scan(&b)
 
 	switch {
 	case err == nil:
@@ -209,7 +217,11 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	where, args := prepareWhereClause(p.filter)
+	where, args, err := prepareWhereClause(p.filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
@@ -221,12 +233,24 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
 	var p Placeholder
 
-	for k, v := range sqlFilters.Map() {
+	iter := sqlFilters.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, lazyerrors.Error(err)
+		}
+
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
 		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
@@ -238,8 +262,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				continue
 			}
 
+			path, err := types.NewPathFromString(k)
+			if err != nil {
+				return "", nil, lazyerrors.Error(err)
+			}
+
 			// If the key is in dot notation use path operator (#>)
-			if path := types.NewPathFromString(k); path.Len() > 1 {
+			if path.Len() > 1 {
 				keyOperator = "#>"
 				key = path.Slice()     // '{v,foo}'
 				prefix = path.Prefix() // 'v'
@@ -302,7 +331,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		query = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	return query, args
+	return query, args, nil
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.

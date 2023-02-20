@@ -28,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // QueryParams represents options/parameters used by the fetch/query.
@@ -66,11 +65,14 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParams) (it
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter := BuildFilter(param.Filter)
+	filter, err := BuildFilter(param.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
-	tigrisIter, err := db.Read(ctx, param.Collection, filter, nil)
+	tigrisIter, err := db.Read(ctx, param.Collection, driver.Filter(filter), nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -83,9 +85,9 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, param *QueryParams) (it
 // BuildFilter returns Tigris filter expression (JSON object) for the given filter document.
 //
 // If the given filter is nil, it returns empty JSON object {}.
-func BuildFilter(filter *types.Document) driver.Filter {
+func BuildFilter(filter *types.Document) (string, error) {
 	if filter == nil {
-		return driver.Filter(`{}`)
+		return "{}", nil
 	}
 
 	res := map[string]any{}
@@ -105,7 +107,14 @@ func BuildFilter(filter *types.Document) driver.Filter {
 			}
 
 			// If the key is in dot notation translate it to a tigris dot notation
-			if path := types.NewPathFromString(k); path.Len() > 1 {
+			var path types.Path
+			var err error
+
+			if path, err = types.NewPathFromString(k); err != nil {
+				return "", lazyerrors.Error(err)
+			}
+
+			if path.Len() > 1 {
 				indexSearch := false
 
 				// TODO https://github.com/FerretDB/FerretDB/issues/1914
@@ -129,12 +138,21 @@ func BuildFilter(filter *types.Document) driver.Filter {
 			// type not supported for pushdown
 			continue
 		case float64, string, types.ObjectID, int32, int64:
-			rawValue := must.NotFail(tjson.Marshal(v))
+			rawValue, err := tjson.Marshal(v)
+			if err != nil {
+				return "", lazyerrors.Error(err)
+			}
+
 			res[key] = json.RawMessage(rawValue)
 		default:
 			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
 	}
 
-	return must.NotFail(json.Marshal(res))
+	result, err := json.Marshal(res)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return string(result), nil
 }

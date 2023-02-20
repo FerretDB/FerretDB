@@ -299,10 +299,10 @@ func TestBuildFilter(t *testing.T) {
 				tc.expected = "{}"
 			}
 
-			expected := driver.Filter(tc.expected)
-			actual := BuildFilter(tc.filter)
+			actual, err := BuildFilter(tc.filter)
+			require.NoError(t, err)
 
-			assert.Equal(t, expected, actual)
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }
