@@ -64,7 +64,7 @@ func Example_tcp() {
 func Example_unix() {
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
-			Unix: "/tmp/ferretdb-27017.sock",
+			Unix: "/tmp/ferretdb.sock",
 		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
@@ -90,7 +90,7 @@ func Example_unix() {
 	cancel()
 	<-done
 
-	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock/
+	// Output: mongodb://%2Ftmp%2Fferretdb.sock/
 }
 
 func Example_tls() {

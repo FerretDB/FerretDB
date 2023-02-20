@@ -45,6 +45,8 @@ func Startup() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// do basic flags validation earlier, before all tests
+
 	if *targetBackendF == "" {
 		zap.S().Fatal("-target-backend must be set.")
 	}
@@ -59,9 +61,11 @@ func Startup() {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
 		}
 		client.Disconnect(ctx)
-	}
 
-	zap.S().Infof("Target system: %s (%s).", *targetURLF, *targetBackendF)
+		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
+	} else {
+		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
+	}
 
 	if u := *compatURLF; u != "" {
 		client, err := makeClient(ctx, u)
@@ -70,7 +74,7 @@ func Startup() {
 		}
 		client.Disconnect(ctx)
 
-		zap.S().Infof("Compat system: %s (MongoDB).", u)
+		zap.S().Infof("Compat system: MongoDB (%s).", u)
 	} else {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}

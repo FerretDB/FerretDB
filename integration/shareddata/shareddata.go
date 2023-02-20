@@ -145,7 +145,7 @@ func IDs(providers ...Provider) []any {
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
 	name       string
-	backends   []string
+	handlers   []string
 	validators map[string]map[string]any // handler -> validator name -> validator
 	data       map[idType]any
 }
@@ -157,7 +157,7 @@ func (values *Values[idType]) Name() string {
 
 // Handlers implement Provider interface.
 func (values *Values[idType]) Handlers() []string {
-	return values.backends
+	return values.handlers
 }
 
 // Validators implement Provider interface.
