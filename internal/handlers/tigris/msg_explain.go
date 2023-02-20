@@ -64,7 +64,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		filter = nil
 	}
 
-	queryFilter := string(tigrisdb.BuildFilter(filter))
+	queryFilter, err := tigrisdb.BuildFilter(filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	queryPlanner := must.NotFail(types.NewDocument(
 		"Filter", queryFilter,
