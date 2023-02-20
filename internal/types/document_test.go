@@ -176,7 +176,10 @@ func TestDocument(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 
-				err := tc.document.SetByPath(NewPathFromString(tc.key), tc.value)
+				path, err := NewPathFromString(tc.key)
+				require.NoError(t, err)
+
+				err = tc.document.SetByPath(path, tc.value)
 
 				if tc.err != nil {
 					assert.Equal(t, tc.err, err)
