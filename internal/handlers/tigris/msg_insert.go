@@ -153,7 +153,7 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 			return commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrDuplicateKey,
 				fmt.Sprintf(
-					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: "1"}`,
+					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: "1" }`,
 					qp.DB, qp.Collection,
 				),
 			)
