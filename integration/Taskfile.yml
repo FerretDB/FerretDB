@@ -8,7 +8,7 @@ vars:
 tasks:
   env-data:
     cmds:
-      # TODO
+      # TODO https://github.com/FerretDB/FerretDB/issues/1568
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata .
