@@ -9,6 +9,7 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
+  UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
 
@@ -176,9 +177,9 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
-        -target-unix-socket
+        {{.UNIXSOCKETFLAG}}
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
-        -compat-url=mongodb://username:password@127.0.0.1:37017/
+        -compat-url=mongodb://127.0.0.1:37017/
         -records-dir=../records
 
   test-integration-tigris:
@@ -201,7 +202,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
-        -target-url=mongodb://username:password@127.0.0.1:37017/
+        -target-url=mongodb://127.0.0.1:37017/
         -target-backend=mongodb
         -records-dir=../records
 
