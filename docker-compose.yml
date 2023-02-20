@@ -1,8 +1,6 @@
 ---
 # This file is used for the development of FerretDB, not for actually running it.
 
-version: "3.8"
-
 services:
   postgres:
     build:
