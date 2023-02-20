@@ -209,7 +209,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
-				bson.D{{"_id", "1"}}, // to check duplicate key error
+				bson.D{{"_id", "1"}}, // checks duplicate key error
 			},
 			ordered: false,
 		},

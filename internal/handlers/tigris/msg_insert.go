@@ -149,9 +149,13 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 		case tigrisdb.IsInvalidArgument(err):
 			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
 		case tigrisdb.IsAlreadyExists(err):
+			// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/1509
 			return commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrDuplicateKey,
-				fmt.Sprintf("duplicate key error collection: %s.%s", qp.DB, qp.Collection),
+				fmt.Sprintf(
+					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: "1"}`,
+					qp.DB, qp.Collection,
+				),
 			)
 		default:
 			return lazyerrors.Error(err)

@@ -100,6 +100,7 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 
 // CreateCollection creates a new FerretDB collection with the given name in the given database.
 // If the database does not exist, it will be created.
+// It also creates a unique index on the _id field.
 //
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
@@ -144,29 +145,14 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	if !validateCollectionNameRe.MatchString(collection) ||
-		strings.HasPrefix(collection, reservedPrefix) {
-		return ErrInvalidCollectionName
-	}
+	err := CreateCollection(ctx, tx, db, collection)
 
-	var err error
-
-	table, created, err := ensureMetadata(ctx, tx, db, collection)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !created {
-		// table already exists.
+	switch err {
+	case nil, ErrAlreadyExist:
 		return nil
-	}
-
-	err = createTableIfNotExists(ctx, tx, db, table)
-	if err != nil {
+	default:
 		return lazyerrors.Error(err)
 	}
-
-	return nil
 }
 
 // DropCollection drops FerretDB collection.
