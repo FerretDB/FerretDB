@@ -73,17 +73,15 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	// TODO Uncomment this response when we support indexes for _id: https://github.com/FerretDB/FerretDB/issues/1384.
-	//firstBatch := must.NotFail(types.NewArray(
-	//	must.NotFail(types.NewDocument(
-	//		"v", float64(2),
-	//		"key", must.NotFail(types.NewDocument(
-	//			"_id", float64(1),
-	//		)),
-	//		"name", "_id_",
-	//	)),
-	//))
-	firstBatch := must.NotFail(types.NewArray())
+	firstBatch := must.NotFail(types.NewArray(
+		must.NotFail(types.NewDocument(
+			"v", int32(2),
+			"key", must.NotFail(types.NewDocument(
+				"_id", int32(1),
+			)),
+			"name", "_id_",
+		)),
+	))
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
