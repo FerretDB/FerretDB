@@ -220,7 +220,10 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			return false, lazyerrors.Error(err)
 		}
 
-		path := types.NewPathFromString(key)
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
@@ -239,8 +242,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, NewWriteErrorMsg(
-				ErrBadValue,
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
