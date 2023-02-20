@@ -67,7 +67,7 @@ db.team.insertMany([
 
 *Syntax*: `{ <field>: { $all: [ <element1>, <element2>, ... <elementN> ] } }`
 
-The `$all` operator matches documents where a particular field is an array containing all the elements given in the query.
+Use the `all` operator when you want to select documents that contain every single element in a specified array.
 
 :::note
 When using an `$all` operator, the order of the elements and array size does not matter, as long as the array contains all the elements in the query.
@@ -103,7 +103,7 @@ The output:
 
 *Syntax*: `{ <field>: { $elemMatch: { <condition1>, <condition2>, ... <conditionN>} } }`
 
-The `$elemMatch` operator matches documents where the field value is an array that contains at least one element that matches the given query conditions.
+To select documents in a specified array field that matches at least one of several listed query conditions, use the `$elemMatch` operator.
 
 **Example:** Find documents in the `team` collection where the `skills` field is an array that contains the element "Java", and array does not contain the element `communication`.
 Use the following query operation:
@@ -137,9 +137,9 @@ The output:
 
 ## $size
 
-*Syntax*: `{ <field>: { $size: <number> } }`
+*Syntax*: `{ <field>: { $size: <number-of-elements> } }`
 
-The `$size` operator matches arrays with a specified number of elements.
+The `$size` operator is ideal for selecting array fields containing a specified number of elements.
 
 **Example:** Select the documents in the `team` collection where the `skills` array contains only three elements.
 

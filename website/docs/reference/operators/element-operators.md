@@ -105,16 +105,16 @@ db.electronics.insertMany([
 
 ## $exists
 
-*Syntax*: `{ <field>: { $exists: <value> } }`
+*Syntax*: `{ <field>: { $exists: <boolean> } }`
 
-The `$exists` operator returns documents where a field exists or does not exist.
+To find out if a particular field exists in a document, use the `$exists` operator.
 
 :::tip
 If the `<boolean>` value is `true`, the query returns documents where the specified field exists, even if the value is `null` or an empty array.
 If the `<boolean>` value is `false`, the query returns documents where the specified field does not exist.
 :::
 
-**Example:** To find documents in the `electronics` collection where the `specifications` field exists, use the `$exists` operator in the following query statement:
+**Example:** Find documents in the `electronics` collection where the `specifications` field exists using the `$exists` operator:
 
 ```js
 db.electronics.find({
@@ -181,8 +181,9 @@ The output:
 
 In the above output, the query returns all documents where the `specifications` field exists, even when the `field` has an empty value.
 
-**Example:** If you want to find documents where the `specifications` field exists and has a specific value, use the `$exists` operator in conjunction with other operators.
-The following query returns all documents where the `specifications` field exists and its value is an array:
+If you want to find documents where the `specifications` field exists and has a specific value, use the `$exists` operator in conjunction with other operators.
+
+**Example:** The following query returns all documents where the `specifications` field exists and its value is an array:
 
 ```js
 db.electronics.find({
@@ -252,7 +253,8 @@ The output:
 
 *Syntax*: `{ <field>: { $type: <datatype> } }`
 
-The `$type` operator returns documents where the value of a field is of the specified BSON type.
+Use the `$type` operator to select documents where the data type of a field matches the specified BSON type
+
 The `<datatype>` parameter can be the type code or alias of the particular data type.
 
 The following table lists the available BSON type codes and their corresponding aliases:

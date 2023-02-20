@@ -109,9 +109,9 @@ db.catalog.insertMany([
 
 ## $and
 
-*Syntax*: `{ $and: [ { <query-expression1> }, { <query-expression2> } , ... , { <query-expressionN> } ] }`
+*Syntax*: `{ $and: [ { <condition1> }, { <condition2> } , ... , { <condition3> } ] }`
 
-The `$and` operator joins one or more query expressions, and returns data that matches all the expressions.
+To satisfy more than one query condition when selecting documents, use the `$and` operator.
 
 **Example:** Select documents that satisfy both of these expressions in the `catalog` collection:
 
@@ -166,9 +166,9 @@ The output:
 
 ## $or
 
-*Syntax*: `{ $or: [ { <query-expression1> }, { <query-expression2> } , ... , { <query-ExpressionN> } ] }`
+*Syntax*: `{ $or: [ { <condition1> }, { <condition2> } , ... , { <conditionN> } ] }`
 
-The `$or` operator joins one or more query expressions, and returns data that matches at least one of the expressions.
+To satisfy either one or more conditions in a query, use the `$or` operator to join the conditions.
 
 **Example:** Select the documents that match these expressions:
 
@@ -241,9 +241,9 @@ The output:
 
 ## $not
 
-*Syntax*: `{ field: { $not: { <query-expression> } } }`
+*Syntax*: `{ field: { $not: { <condition> } } }`
 
-The `$not` operator selects documents that fail to match the specified query expression.
+To select documents that fail to match a particular query condition, use the `$not` operator.
 
 **Example:** The following operation selects documents that do not satisfy the specified expression, where the `stock` field is not less than `5`.
 
@@ -288,11 +288,11 @@ The output:
 
 ## $nor
 
-*Syntax*: `{ $nor: [ { <query-expression1> }, { <query-expression2> }, ...  { <query-expressionN> } ] }`
+*Syntax*: `{ $nor: [ { <condition1> }, { <condition2> }, ...  { <conditionN> } ] }`
 
-The `$nor` operator selects documents that fail to match any of the specified query expressions in the array.
+To select documents that fail to match any of the conditions in a specified query, use the `$nor` operator.
 
-**Example:** Select the documents that fail to match any of these expressions:
+**Example:** Select the documents that fail to match any of these conditions:
 
 * `discount` field is `true` *and* `stock` field is not `0`
 * `price` field is less than or equal to `60`
