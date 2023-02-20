@@ -41,8 +41,6 @@ For more configuration options check [Configuration flags and variables](https:/
 1. Store the following in the `docker-compose.yml` file:
 
    ```yaml
-   version: "3"
-
    services:
      postgres:
        image: postgres
