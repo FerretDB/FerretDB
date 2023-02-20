@@ -22,6 +22,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -144,10 +145,14 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 	case err == nil:
 		return nil
 	case errors.As(err, &driverErr):
-		if tigrisdb.IsInvalidArgument(err) {
-			return common.NewCommandErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+		switch {
+		case tigrisdb.IsInvalidArgument(err):
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
+		case tigrisdb.IsAlreadyExists(err):
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDuplicateKey, err.Error())
+		default:
+			return lazyerrors.Error(err)
 		}
-		return lazyerrors.Error(err)
 	default:
 		return common.CheckError(err)
 	}

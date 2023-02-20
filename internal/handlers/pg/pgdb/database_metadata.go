@@ -80,7 +80,7 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	}
 
 	// Index to ensure that collection name is unique
-	if err := createIndexIfNotExists(ctx, tx, indexParams{
+	if err := createIndexIfNotExists(ctx, tx, &indexParams{
 		schema:   db,
 		table:    dbMetadataTableName,
 		isUnique: true,

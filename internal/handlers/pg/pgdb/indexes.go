@@ -30,7 +30,7 @@ type indexParams struct {
 }
 
 // createIndexIfNotExists creates a new index for the given params if it does not exist.
-func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error {
+func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p *indexParams) error {
 	var err error
 
 	unique := ""

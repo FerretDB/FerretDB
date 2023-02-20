@@ -121,8 +121,15 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrAlreadyExist
 	}
 
-	err = createTableIfNotExists(ctx, tx, db, table)
-	if err != nil {
+	if err = createTableIfNotExists(ctx, tx, db, table); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = createIndexIfNotExists(ctx, tx, &indexParams{
+		schema:   db,
+		table:    table,
+		isUnique: true,
+	}); err != nil {
 		return lazyerrors.Error(err)
 	}
 
