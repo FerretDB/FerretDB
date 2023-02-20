@@ -256,7 +256,6 @@ tasks:
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
         --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
-        --test-disable-pushdown=true
 
   run-secured:
     desc: "Run secured FerretDB with TLS and authentication"
