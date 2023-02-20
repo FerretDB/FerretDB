@@ -179,7 +179,7 @@ tasks:
         -target-backend=ferretdb-pg
         {{.UNIXSOCKETFLAG}}
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
-        -compat-url=mongodb://127.0.0.1:37017/
+        -compat-url=mongodb://127.0.0.1:47017/
         -records-dir=../records
 
   test-integration-tigris:
@@ -192,7 +192,7 @@ tasks:
         -target-backend=ferretdb-tigris
         -target-tls
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
-        -compat-url='mongodb://username:password@127.0.0.1:37018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -records-dir=../records
 
   test-integration-mongodb:
@@ -202,7 +202,7 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
-        -target-url=mongodb://127.0.0.1:37017/
+        -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
         -records-dir=../records
 
@@ -257,7 +257,7 @@ tasks:
         --listen-addr=:27017
         --mode=diff-normal
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
-        --proxy-addr=127.0.0.1:37017
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   run-secured:
@@ -286,7 +286,7 @@ tasks:
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls=:27018
         --mode=diff-normal
-        --proxy-addr=127.0.0.1:37017
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   run-proxy:
@@ -301,7 +301,7 @@ tasks:
         --listen-tls=:27018
         --mode=diff-proxy
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
-        --proxy-addr=127.0.0.1:37017
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   lint:

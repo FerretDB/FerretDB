@@ -153,9 +153,9 @@ Finally, some tests (so-called compatibility or "compat" tests) connect to two s
 send the same queries to both, and compare results.
 You can run them with:
 
-* `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB on port 37017 (as in our development environment);
-* `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB on port 37017;
-* `task test-integration-mongodb` for MongoDB running on port 37017 only, skipping compat tests;
+* `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
+* `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
+* `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 * or `task test-integration` to run all in parallel.
 
 You may run all tests in parallel with `task test`.

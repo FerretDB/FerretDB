@@ -32,13 +32,13 @@ tasks:
       #   -tags=ferretdb_testenvdata .
       #   -records-dir=../records
         # -compat-port=0
-      #   -target-port=37017
+      #   -target-port=47017
       # - >
       #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
       #   -tags=ferretdb_testenvdata .
       #   -compat-port=0
       #   -records-dir=../records
-      #   -target-port=37018
+      #   -target-port=47018
 
   integration-gen:
     cmds:
