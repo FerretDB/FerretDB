@@ -60,9 +60,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(document, h.L, "allowDiskUse", "maxTimeMS", "collation", "comment")
 
-	var sp pgdb.SQLParam
+	var qp pgdb.QueryParam
 
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -74,7 +74,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// TODO handle collection-agnostic pipelines ({aggregate: 1})
 	// https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
-	if sp.Collection, ok = collection.(string); !ok {
+	if qp.Collection, ok = collection.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collection)),
@@ -104,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var docs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.GetDocuments(ctx, tx, &sp)
+		iter, getErr := pgdb.QueryDocuments(ctx, tx, &qp)
 		if getErr != nil {
 			return getErr
 		}
@@ -135,7 +135,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0),
-				"ns", sp.DB+"."+sp.Collection,
+				"ns", qp.DB+"."+qp.Collection,
 			)),
 			"ok", float64(1),
 		))},

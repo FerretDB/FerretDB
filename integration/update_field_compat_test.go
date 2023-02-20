@@ -52,18 +52,18 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 		"BoolTrue": {
 			update: bson.D{{"$currentDate", bson.D{{"v", true}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
+			paths:  []types.Path{types.NewStaticPath("v")},
 		},
 		"BoolTwoTrue": {
 			update: bson.D{{"$currentDate", bson.D{{"v", true}, {"nonexistent", true}}}},
 			paths: []types.Path{
-				types.NewPathFromString("v"),
-				types.NewPathFromString("nonexistent"),
+				types.NewStaticPath("v"),
+				types.NewStaticPath("nonexistent"),
 			},
 		},
 		"BoolFalse": {
 			update: bson.D{{"$currentDate", bson.D{{"v", false}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
+			paths:  []types.Path{types.NewStaticPath("v")},
 		},
 		"Int32": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", int32(1)}}}},
@@ -71,7 +71,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 		"Timestamp": {
 			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "timestamp"}}}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
+			paths:  []types.Path{types.NewStaticPath("v")},
 		},
 		"TimestampCapitalised": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "Timestamp"}}}}}},
@@ -79,7 +79,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 		"Date": {
 			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}}},
-			paths:  []types.Path{types.NewPathFromString("v")},
+			paths:  []types.Path{types.NewStaticPath("v")},
 		},
 		"WrongType": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
@@ -88,7 +88,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		"NoField": {
 			update: bson.D{{"$currentDate", bson.D{{"nonexistent", bson.D{{"$type", "date"}}}}}},
 			paths: []types.Path{
-				types.NewPathFromString("nonexistent"),
+				types.NewStaticPath("nonexistent"),
 			},
 		},
 		"UnrecognizedOption": {

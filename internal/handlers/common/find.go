@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -26,14 +27,16 @@ import (
 //
 //nolint:vet // for readability
 type FindParams struct {
-	DB         string
-	Collection string
-	Filter     *types.Document
-	Sort       *types.Document
-	Projection *types.Document
-	Limit      int64
-	Comment    string
-	MaxTimeMS  int32
+	DB          string
+	Collection  string
+	Filter      *types.Document
+	Sort        *types.Document
+	Projection  *types.Document
+	Limit       int64
+	BatchSize   int32
+	SingleBatch bool
+	Comment     string
+	MaxTimeMS   int32
 }
 
 // GetFindParams returns `find` command parameters.
@@ -90,9 +93,24 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		}
 	}
 
-	Ignored(doc, l, "batchSize", "singleBatch")
+	// TODO https://github.com/FerretDB/FerretDB/issues/2005
 
-	if res.Comment, err = GetOptionalParam(doc, "comment", res.Comment); err != nil {
+	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
+		return nil, err
+	}
+
+	if res.BatchSize < 0 {
+		return nil, NewCommandError(
+			commonerrors.ErrBatchSizeNegative,
+			fmt.Errorf("BSON field 'batchSize' value must be >= 0, actual value '%d'", res.BatchSize),
+		)
+	}
+
+	if res.SingleBatch, err = GetOptionalParam(doc, "singleBatch", false); err != nil {
+		return nil, err
+	}
+
+	if res.Comment, err = GetOptionalParam(doc, "comment", ""); err != nil {
 		return nil, err
 	}
 
@@ -109,9 +127,9 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		"returnKey",
 		"showRecordId",
 		"tailable",
-		"awaitData",
 		"oplogReplay",
 		"noCursorTimeout",
+		"awaitData",
 		"allowPartialResults",
 	} {
 		if err = UnimplementedNonDefault(doc, k, func(v any) bool {

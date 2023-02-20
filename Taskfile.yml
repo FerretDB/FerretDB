@@ -318,7 +318,10 @@ tasks:
 
   security:
     desc: "Run security scanners"
-    deps: [security-trivy, security-govulncheck]
+    cmds:
+      # don't run them in parallel via `deps` because that breaks terminal output
+      - task: security-trivy
+      - task: security-govulncheck
 
   security-trivy:
     cmds:

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -29,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -120,13 +122,17 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	// do one last report before exiting if telemetry is explicitly enabled
 	if pointer.GetBool(r.P.Get().Telemetry) {
-		r.report(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		r.report(ctx)
 	}
 }
 
 // firstReportDelay waits until telemetry reporting state is decided,
 // main context is cancelled, or timeout is reached.
 func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
+	// no delay for decided state
 	if r.P.Get().Telemetry != nil {
 		return
 	}
@@ -187,16 +193,34 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		}
 	}
 
-	v := version.Get()
+	info := version.Get()
+
+	buildEnvironment := make(map[string]any, info.BuildEnvironment.Len())
+
+	iter := info.BuildEnvironment.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			panic(err)
+		}
+
+		buildEnvironment[k] = v
+	}
 
 	return &request{
-		Version:          v.Version,
-		Commit:           v.Commit,
-		Branch:           v.Branch,
-		Dirty:            v.Dirty,
-		Package:          v.Package,
-		Debug:            v.DebugBuild,
-		BuildEnvironment: v.BuildEnvironment.Map(),
+		Version:          info.Version,
+		Commit:           info.Commit,
+		Branch:           info.Branch,
+		Dirty:            info.Dirty,
+		Package:          info.Package,
+		Debug:            info.DebugBuild,
+		BuildEnvironment: buildEnvironment,
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
@@ -260,19 +284,18 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if response.LatestVersion == s.LatestVersion {
-		r.L.Debug("Latest version is up to date.")
-		return
+	if response.LatestVersion != s.LatestVersion {
+		err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
+		if err != nil {
+			r.L.Error("Failed to update state with latest version.", zap.Error(err))
+			return
+		}
 	}
 
-	r.L.Info(
-		"New version available.",
-		zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion),
-	)
-
-	err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
-	if err != nil {
-		r.L.Error("Failed to update state with latest version.", zap.Error(err))
-		return
+	if s = r.P.Get(); s.UpdateAvailable() {
+		r.L.Info(
+			"A new version available!",
+			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
+		)
 	}
 }
