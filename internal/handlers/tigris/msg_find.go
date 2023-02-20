@@ -58,7 +58,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Filter:     params.Filter,
 	}
 
-	resDocs, err := h.fetchAndFilterDocs(ctx, dbPool, &qp)
+	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 	if err != nil {
 		return nil, err
 	}
@@ -95,17 +95,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
+// fetchParams is used to pass parameters to fetchAndFilterDocs.
+type fetchParams struct {
+	dbPool          *tigrisdb.TigrisDB
+	qp              *tigrisdb.QueryParams
+	disablePushdown bool
+}
+
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParams.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams) ([]*types.Document, error) { //nolint:lll // argument list is too long
+func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document, error) {
 	// filter is used to filter documents on the FerretDB side,
 	// qp.Filter is used to filter documents on the Tigris side (query pushdown).
-	filter := qp.Filter
+	filter := fp.qp.Filter
 
-	if h.DisablePushdown {
-		qp.Filter = nil
+	if fp.disablePushdown {
+		fp.qp.Filter = nil
 	}
 
-	iter, err := dbPool.QueryDocuments(ctx, qp)
+	iter, err := fp.dbPool.QueryDocuments(ctx, fp.qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
