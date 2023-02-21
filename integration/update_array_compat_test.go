@@ -186,7 +186,7 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"StringValue": {
-			update:     bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
+			update:     bson.D{{"$pullAll", bson.D{{"v", "foo"}}}},
 			resultType: emptyResult,
 		},
 		"String": {
@@ -210,11 +210,12 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
-			update: bson.D{{"$pullAll", bson.D{{"v.0.foo", bson.A{bson.D{{"bar", "zoo"}}}}}}},
+			update: bson.D{{"$pullAll", bson.D{{"v.0.foo", bson.A{bson.D{{"bar", "hello"}}}}}}},
 		},
 		"DotNotationNonArray": {
-			filter: bson.D{{"_id", "array-documents-nested"}},
-			update: bson.D{{"$pullAll", bson.D{{"v.0.foo.0.bar", bson.A{int32(42)}}}}},
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pullAll", bson.D{{"v.0.foo.0.bar", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pullAll", bson.D{{"non.existent.path", bson.A{int32(42)}}}}},

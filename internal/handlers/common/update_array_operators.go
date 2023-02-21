@@ -374,7 +374,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			)
 		}
 
-		for i := 0; i < array.Len(); i++ {
+		for i := 0; i < array.Len(); {
 			var value any
 
 			value, err = array.Get(i)
@@ -393,10 +393,15 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 				compareResult := types.Compare(value, valueToPull)
 
 				if compareResult == types.Equal {
-					array.Remove(j)
+					array.Remove(i)
 
 					changed = true
+
+					continue
 				}
+
+				// Increment i only if the value was not removed.
+				i++
 			}
 		}
 
