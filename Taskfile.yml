@@ -9,6 +9,7 @@ vars:
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
+  UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
 
@@ -175,9 +176,11 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
+        -target-backend=ferretdb-pg
+        {{.UNIXSOCKETFLAG}}
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -compat-url=mongodb://127.0.0.1:47017/
         -records-dir=../records
-        -target-unix-socket
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
@@ -186,11 +189,11 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
-        -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
-        -records-dir=../records
+        -target-backend=ferretdb-tigris
         -target-tls
-        -compat-port=37018
-        -compat-tls
+        -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -records-dir=../records
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -199,9 +202,9 @@ tasks:
       - >
         go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
-        -compat-port=0
+        -target-url=mongodb://127.0.0.1:47017/
+        -target-backend=mongodb
         -records-dir=../records
-        -target-port=37017
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -254,7 +257,7 @@ tasks:
         --listen-addr=:27017
         --mode=diff-normal
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
-        --proxy-addr=127.0.0.1:37017
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   run-secured:
@@ -266,7 +269,7 @@ tasks:
         --listen-addr=''
         --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls-ca-file=./build/certs/rootCA.pem
+        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
         --listen-tls=:27018
         --mode=normal
         --postgresql-url="postgres://127.0.0.1:5433/ferretdb"
@@ -283,7 +286,7 @@ tasks:
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls=:27018
         --mode=diff-normal
-        --proxy-addr=127.0.0.1:37017
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   run-proxy:
@@ -298,7 +301,7 @@ tasks:
         --listen-tls=:27018
         --mode=diff-proxy
         --postgresql-url="postgres://username@127.0.0.1:5432/ferretdb"
-        --proxy-addr=127.0.0.1:37017
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   lint:
@@ -360,7 +363,7 @@ tasks:
     cmds:
       - >
         docker compose exec mongodb mongosh
-        --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA.pem
+        --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA-cert.pem
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell
 
@@ -370,7 +373,7 @@ tasks:
       - >
         docker compose run --rm legacy-mongo-shell
         --tlsCertificateKeyFile /etc/certs/server.pem
-        --tlsCAFile /etc/certs/rootCA.pem
+        --tlsCAFile /etc/certs/rootCA-cert.pem
         --tls
         'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
         /legacy-mongo-shell/test.js
