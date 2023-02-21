@@ -237,10 +237,22 @@ func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, d
 			} else {
 				// looking for an array element by field
 				for i := 0; i < s.Len(); i++ {
-					val, err := s.Get(i)
-					if err == nil {
-						docs = append(docs, must.NotFail(types.NewDocument(suffix, val)))
+					val := must.NotFail(s.Get(i))
+
+					embeddedDoc, ok := val.(*types.Document)
+					if !ok {
+						// not a document, so it cannot contain the key.
+						continue
 					}
+
+					embeddedVal, err := embeddedDoc.Get(suffix)
+					if err != nil {
+						// element does not contain the key.
+						continue
+					}
+
+					// key exists in the document.
+					docs = append(docs, must.NotFail(types.NewDocument(suffix, embeddedVal)))
 				}
 			}
 		}
