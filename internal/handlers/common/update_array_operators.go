@@ -17,6 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -191,6 +192,119 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 		}
 
 		array.Append(pushValueRaw)
+
+		if err = doc.SetByPath(path, array); err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		changed = true
+	}
+
+	return changed, nil
+}
+
+// processAddToSetArrayUpdateExpression changes document according to $addToSet array update operator.
+// If the document was changed it returns true.
+func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, error) {
+	var changed bool
+
+	iter := update.Iterator()
+
+	for {
+		key, addToSetValueRaw, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		// If the path does not exist, create a new array and set it.
+		if !doc.HasByPath(path) {
+			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf(
+					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
+				),
+			)
+		}
+
+		if array.Len() == 0 {
+			array.Append(addToSetValueRaw)
+
+			if err = doc.SetByPath(path, array); err != nil {
+				return false, lazyerrors.Error(err)
+			}
+
+			changed = true
+
+			continue
+		}
+
+		var appendValue any
+
+		switch addToSetValueRaw := addToSetValueRaw.(type) {
+		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
+			time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+			shouldAdd := true
+
+			for i := 0; i < array.Len(); i++ {
+				var value any
+
+				value, err = array.Get(i)
+				if err != nil {
+					return false, lazyerrors.Error(err)
+				}
+
+				compareResult := types.Compare(value, addToSetValueRaw)
+
+				if compareResult == types.Equal {
+					shouldAdd = false
+					break
+				}
+			}
+
+			if shouldAdd {
+				appendValue = addToSetValueRaw
+			}
+		case *types.Array:
+			// Nested arrays are not supported.
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(addToSetValueRaw)),
+			)
+		default:
+			panic(fmt.Sprintf("unhandled type %T", addToSetValueRaw))
+		}
+
+		// No values to append to the array.
+		if appendValue == nil {
+			continue
+		}
+
+		array.Append(appendValue)
 
 		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)
