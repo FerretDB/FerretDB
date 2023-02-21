@@ -94,24 +94,18 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		filter, limit, err := h.prepareDeleteParams(deleteDoc)
+		var limited bool
+		qp.Filter, limited, err = h.prepareDeleteParams(deleteDoc)
 		if err != nil {
 			return nil, err
 		}
 
 		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
-		if qp.Comment, err = common.GetOptionalParam(filter, "$comment", qp.Comment); err != nil {
+		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 
-		qp.Filter = filter
-
-		var limited bool
-		if limit == 1 {
-			limited = true
-		}
-
-		del, err := h.execDelete(ctx, dbPool, &qp, limited)
+		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisablePushdown, limited})
 		if err == nil {
 			deleted += del
 			continue
@@ -143,22 +137,22 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // prepareDeleteParams extracts query filter and limit from delete document.
-func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
+func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
 	var err error
 
 	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
-		return nil, 0, err
+		return nil, false, err
 	}
 
 	// get filter from document
 	var filter *types.Document
 	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
-		return nil, 0, err
+		return nil, false, err
 	}
 
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return nil, 0, common.NewCommandErrorMsgWithArgument(
+		return nil, false, common.NewCommandErrorMsgWithArgument(
 			common.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 			"limit",
@@ -167,32 +161,40 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, 0, common.NewCommandErrorMsgWithArgument(
+		return nil, false, common.NewCommandErrorMsgWithArgument(
 			common.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 			"limit",
 		)
 	}
 
-	return filter, limit, nil
+	return filter, limit == 1, nil
+}
+
+// deleteParams contains parameters for execDelete function.
+type deleteParams struct {
+	dbPool          *pgdb.Pool
+	qp              *pgdb.QueryParams
+	disablePushdown bool
+	limited         bool
 }
 
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, limit bool) (int32, error) {
+func execDelete(ctx context.Context, dp *deleteParams) (int32, error) {
 	var deleted int32
 
 	// filter is used to filter documents on the FerretDB side,
 	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
-	filter := qp.Filter
+	filter := dp.qp.Filter
 
-	if h.DisablePushdown {
-		qp.Filter = nil
+	if dp.disablePushdown {
+		dp.qp.Filter = nil
 	}
 
-	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
+	err := dp.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		iter, err := pgdb.QueryDocuments(ctx, tx, dp.qp)
 		if err != nil {
 			return err
 		}
@@ -223,7 +225,7 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.Qu
 			resDocs = append(resDocs, doc)
 
 			// if limit is set, no need to fetch all the documents
-			if limit {
+			if dp.limited {
 				break
 			}
 		}
@@ -233,7 +235,7 @@ func (h *Handler) execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.Qu
 			return nil
 		}
 
-		rowsDeleted, err := deleteDocuments(ctx, dbPool, qp, resDocs)
+		rowsDeleted, err := deleteDocuments(ctx, dp.dbPool, dp.qp, resDocs)
 		if err != nil {
 			return err
 		}
