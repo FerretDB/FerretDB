@@ -185,6 +185,10 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update:     bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(1)}}, {"v", bson.A{int32(1)}}}}},
 			resultType: emptyResult,
 		},
+		"StringValue": {
+			update:     bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
+			resultType: emptyResult,
+		},
 		"String": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
 		},
