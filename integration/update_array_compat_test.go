@@ -193,7 +193,8 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
 		},
 		"Document": {
-			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
+			update:        bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
+			skipForTigris: "We don't have such documents for Tigris.",
 		},
 		"Int32": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(42)}}}}},
