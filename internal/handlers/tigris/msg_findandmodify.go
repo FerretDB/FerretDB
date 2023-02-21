@@ -67,13 +67,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	fp := tigrisdb.FetchParam{
+	qp := tigrisdb.QueryParam{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Filter:     params.Query,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				hasUpdateOperators: params.HasUpdateOperators,
 				query:              params.Query,
 				update:             params.Update,
-				fetchParam:         &fp,
+				queryParam:         &qp,
 			}
 
 			upsert, upserted, err = upsertDocuments(ctx, dbPool, resDocs, p)
@@ -124,7 +124,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, err
 				}
 
-				if _, err = updateDocument(ctx, dbPool, &fp, upsert); err != nil {
+				if _, err = updateDocument(ctx, dbPool, &qp, upsert); err != nil {
 					return nil, err
 				}
 			} else {
@@ -134,7 +134,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 				}
 
-				if _, err = updateDocument(ctx, dbPool, &fp, upsert); err != nil {
+				if _, err = updateDocument(ctx, dbPool, &qp, upsert); err != nil {
 					return nil, err
 				}
 			}
@@ -181,7 +181,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return &reply, nil
 		}
 
-		if _, err = deleteDocuments(ctx, dbPool, &fp, resDocs); err != nil {
+		if _, err = deleteDocuments(ctx, dbPool, &qp, resDocs); err != nil {
 			return nil, err
 		}
 
@@ -204,7 +204,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	fetchParam         *tigrisdb.FetchParam
+	queryParam         *tigrisdb.QueryParam
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.
@@ -230,7 +230,7 @@ func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*typ
 			}
 		}
 
-		if err := insertDocument(ctx, dbPool, params.fetchParam, upsert); err != nil {
+		if err := insertDocument(ctx, dbPool, params.queryParam, upsert); err != nil {
 			return nil, false, err
 		}
 
@@ -250,7 +250,7 @@ func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*typ
 		}
 	}
 
-	if _, err := updateDocument(ctx, dbPool, params.fetchParam, upsert); err != nil {
+	if _, err := updateDocument(ctx, dbPool, params.queryParam, upsert); err != nil {
 		return nil, false, err
 	}
 

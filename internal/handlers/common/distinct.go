@@ -101,7 +101,12 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 	for _, doc := range docs {
 		var val any
 
-		val, err := doc.GetByPath(types.NewPathFromString(key))
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		val, err = doc.GetByPath(path)
 		if err != nil {
 			continue
 		}

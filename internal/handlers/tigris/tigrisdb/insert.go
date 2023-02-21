@@ -37,7 +37,7 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 		return nil
 	}
 
-	if ok, _ := tdb.collectionExists(ctx, db, collection); !ok {
+	if ok, _ := tdb.CollectionExists(ctx, db, collection); !ok {
 		doc := must.NotFail(docs.Get(0)).(*types.Document)
 
 		schema, err := tjson.DocumentSchema(doc)

@@ -45,7 +45,7 @@ func TestSetByPath(t *testing.T) {
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path:  types.NewPath("compression", "0"),
+		path:  types.NewStaticPath("compression", "0"),
 		value: "zstd",
 		res: must.NotFail(types.NewDocument(
 			"client", must.NotFail(types.NewDocument(
@@ -56,7 +56,7 @@ func TestSetByPath(t *testing.T) {
 			"compression", must.NotFail(types.NewArray("zstd")),
 		)),
 	}, {
-		path:  types.NewPath("client"),
+		path:  types.NewStaticPath("client"),
 		value: "foo",
 		res: must.NotFail(types.NewDocument(
 			"client", "foo",

@@ -50,6 +50,7 @@ jobs:
           labelName: use-git-lfs
           exclusionPatterns: |
             **/*.js
+            **/*.md
             **/go.sum
 
       - name: Setup Go

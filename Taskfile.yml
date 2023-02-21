@@ -192,16 +192,6 @@ tasks:
         -compat-port=37018
         -compat-tls
 
-  test-integration-cockroach:
-    desc: "Run integration tests for CockroachDB with pg handler"
-    dir: integration
-    cmds:
-      - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-cockroach.txt .
-        -postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb?pool_min_conns=1
-        -records-dir=../records
-
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
@@ -296,20 +286,6 @@ tasks:
         --proxy-addr=127.0.0.1:37017
         --test-records-dir=records
 
-  run-cockroach:
-    deps: [build-testcover]
-    cmds:
-      - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
-        --listen-addr=:27017
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls=:27018
-        --mode=diff-normal
-        --postgresql-url=postgres://username:password@127.0.0.1:26257/ferretdb
-        --proxy-addr=127.0.0.1:37017
-        --test-records-dir=records
-
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-testcover]
@@ -342,7 +318,10 @@ tasks:
 
   security:
     desc: "Run security scanners"
-    deps: [security-trivy, security-govulncheck]
+    cmds:
+      # don't run them in parallel via `deps` because that breaks terminal output
+      - task: security-trivy
+      - task: security-govulncheck
 
   security-trivy:
     cmds:

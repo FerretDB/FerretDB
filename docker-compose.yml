@@ -1,8 +1,6 @@
 ---
 # This file is used for the development of FerretDB, not for actually running it.
 
-version: "3.8"
-
 services:
   postgres:
     build:
@@ -88,19 +86,6 @@ services:
       - 8094:8081
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
-
-  cockroach:
-    build:
-      context: ./build/deps
-      dockerfile: cockroach.Dockerfile
-    container_name: ferretdb_cockroach
-    command: start-single-node --insecure
-    ports:
-      - 26257:26257
-    environment:
-      - COCKROACH_USER=username
-      - COCKROACH_PASSWORD=password
-      - COCKROACH_DATABASE=ferretdb
 
   mongodb:
     build:
