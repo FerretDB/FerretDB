@@ -58,8 +58,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -155,14 +155,13 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam,
 	case errors.Is(err, pgdb.ErrUniqueViolation):
 		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/1509
 		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
-		return commonerrors.NewWriteErrorMsgWithKey(
+
+		return commonerrors.NewWriteErrorMsg(
 			commonerrors.ErrDuplicateKey,
 			fmt.Sprintf(
 				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
 				qp.DB, qp.Collection, idMasrshaled,
 			),
-			must.NotFail(types.NewDocument("_id", idMasrshaled)),
-			must.NotFail(types.NewDocument("_id", idMasrshaled)),
 		)
 
 	default:

@@ -16,6 +16,7 @@ package tigris
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -57,8 +58,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -102,7 +103,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // It always returns the number of successfully inserted documents and a document with errors.
 func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
-	var insErrors common.WriteErrors
+	var insErrors commonerrors.WriteErrors
 
 	// Attempt to insert all the documents in the same request to make insert faster.
 	if err := dbPool.InsertManyDocuments(ctx, qp.DB, qp.Collection, docs); err == nil {
@@ -115,7 +116,7 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.Que
 
 		err := insertDocument(ctx, dbPool, qp, doc.(*types.Document))
 
-		var we *common.WriteErrors
+		var we *commonerrors.WriteErrors
 
 		switch {
 		case err == nil:
@@ -144,23 +145,29 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 	switch {
 	case err == nil:
 		return nil
+
 	case errors.As(err, &driverErr):
 		switch {
 		case tigrisdb.IsInvalidArgument(err):
 			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
+
 		case tigrisdb.IsAlreadyExists(err):
 			// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/1509
-			return commonerrors.NewCommandErrorMsg(
+			idMasrshaled := must.NotFail(json.Marshal(must.NotFail(doc.Get("_id"))))
+
+			return commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrDuplicateKey,
 				fmt.Sprintf(
-					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: "1" }`,
-					qp.DB, qp.Collection,
+					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
+					qp.DB, qp.Collection, idMasrshaled,
 				),
 			)
+
 		default:
 			return lazyerrors.Error(err)
 		}
+
 	default:
-		return common.CheckError(err)
+		return commonerrors.CheckError(err)
 	}
 }
