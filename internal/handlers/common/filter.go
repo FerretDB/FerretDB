@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -62,8 +63,13 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	docs := []*types.Document{doc}
 
 	if strings.ContainsRune(filterKey, '.') {
+		path, err := types.NewPathFromString(filterKey)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
 		// {field1./.../.fieldN: filterValue}
-		filterKey, docs = findLeavesForFilter(doc, filterKey)
+		filterKey, docs = findLeavesForFilter(doc, path)
 	}
 
 	for _, doc := range docs {
@@ -137,8 +143,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 // For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and the filterKey is foo.bar,
 // then the function will return the suffix "bar" and a slice with two leaves:
 // {bar: 1} and {bar: 2}.
-func findLeavesForFilter(doc *types.Document, filterKey string) (suffix string, docs []*types.Document) {
-	path := types.NewPathFromString(filterKey)
+func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, docs []*types.Document) {
 	suffix = path.Suffix()
 
 	current := []any{doc}
