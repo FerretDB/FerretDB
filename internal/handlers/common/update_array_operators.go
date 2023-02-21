@@ -318,5 +318,92 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 // processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
 func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
-	return false, nil
+	var changed bool
+
+	iter := update.Iterator()
+
+	for {
+		key, pullAllValueRaw, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		// If the path does not exist, create a new array and set it.
+		if !doc.HasByPath(path) {
+			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf(
+					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
+				),
+			)
+		}
+
+		pullAllArray, ok := pullAllValueRaw.(*types.Array)
+		if !ok {
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf(
+					"The field '%s' must be an array but is of type '%s'",
+					key, AliasFromType(pullAllValueRaw),
+				),
+			)
+		}
+
+		for i := 0; i < array.Len(); i++ {
+			var value any
+
+			value, err = array.Get(i)
+			if err != nil {
+				return false, lazyerrors.Error(err)
+			}
+
+			for j := 0; j < pullAllArray.Len(); j++ {
+				var valueToPull any
+
+				valueToPull, err = pullAllArray.Get(j)
+				if err != nil {
+					return false, lazyerrors.Error(err)
+				}
+
+				compareResult := types.Compare(value, valueToPull)
+
+				if compareResult == types.Equal {
+					array.Remove(j)
+
+					changed = true
+				}
+			}
+		}
+
+		if err = doc.SetByPath(path, array); err != nil {
+			return false, lazyerrors.Error(err)
+		}
+	}
+
+	return changed, nil
 }

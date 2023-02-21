@@ -193,7 +193,7 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
 		},
 		"Document": {
-			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"foo", "bar"}}}}}}},
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
 		},
 		"Int32": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(42)}}}}},
@@ -205,7 +205,8 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{float64(42)}}}}},
 		},
 		"NonExistentField": {
-			update: bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
+			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -216,7 +217,8 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update: bson.D{{"$pullAll", bson.D{{"v.0.foo.0.bar", bson.A{int32(42)}}}}},
 		},
 		"DotNotationNonExistentPath": {
-			update: bson.D{{"$pullAll", bson.D{{"non.existent.path", bson.A{int32(42)}}}}},
+			update:     bson.D{{"$pullAll", bson.D{{"non.existent.path", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
 		},
 		"EmptyValue": {
 			update:     bson.D{{"$pullAll", bson.D{}}},
