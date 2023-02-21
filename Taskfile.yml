@@ -355,19 +355,18 @@ tasks:
     cmds:
       - >
         docker compose exec mongodb mongosh
-        'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell
+        'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
 
   mongosh-secured:
     desc: "Run MongoDB shell (`mongosh`) for secured FerretDB"
     cmds:
       - >
         docker compose exec mongodb mongosh
-        --tlsCertificateKeyFile=/etc/certs/client.pem --tlsCAFile=/etc/certs/rootCA-cert.pem
-        'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&heartbeatFrequencyMS=300000'
         --verbose --eval 'disableTelemetry()' --shell
+        'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem'
 
-  mongo-test:
+  test-script:
     desc: "Run legacy MongoDB shell (`mongo`) with test script"
     cmds:
       - >
