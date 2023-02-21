@@ -188,11 +188,20 @@ func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, d
 					for i := 0; i < s.Len(); i++ {
 						val := must.NotFail(s.Get(i))
 
-						if _, ok := val.(*types.Document); !ok {
-							// element is a document, add it to the next iteration
-							// (nested arrays are not supported, no need to check if it's an array)
-							next = append(next, val)
+						embeddedDoc, ok := val.(*types.Document)
+						if !ok {
+							// not a document, so it cannot contain the key.
+							continue
 						}
+
+						embeddedVal, err := embeddedDoc.Get(p)
+						if err != nil {
+							// element does not contain the key.
+							continue
+						}
+
+						// key exists in the document.
+						next = append(next, embeddedVal)
 					}
 				}
 

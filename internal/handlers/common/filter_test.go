@@ -50,8 +50,10 @@ func TestFindLeavesForFilter(t *testing.T) {
 			wantDocs:   []*types.Document{},
 		},
 	} {
+		path, err := types.NewPathFromString("a.b")
+		assert.NoError(t, err)
 
-		suffix, docs := findLeavesForFilter(doc, tc.filterKey)
+		suffix, docs := findLeavesForFilter(doc, path)
 
 		assert.Equal(t, tc.wantSuffix, suffix)
 		assert.Equal(t, tc.wantDocs, docs)
