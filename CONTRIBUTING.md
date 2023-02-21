@@ -145,16 +145,17 @@ you can run those with `task test-unit` after starting the environment as descri
 
 We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
-They could test target any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP port.
-They also could test target in-process FerretDB instances
+They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
+They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given handler.
-Some tests (so-called compatibility or "compat" tests) connect to two systems ("target" and "compat") at the same time,
+Finally, some tests (so-called compatibility or "compat" tests) connect to two systems
+("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
 
-* `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB on port 37017 (as in our development environment);
-* `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB on port 37017;
-* `task test-integration-mongodb` for MongoDB running on port 37017 only;
+* `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
+* `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
+* `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 * or `task test-integration` to run all in parallel.
 
 You may run all tests in parallel with `task test`.
@@ -167,9 +168,11 @@ you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-* to run a single test case for `pg` handler with all subtests running sequentially,
+* to run a single test case for in-process FerretDB with `pg` handler
+  with all subtests running sequentially,
   you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
-* to run all tests for `tigris` handler with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
+* to run all tests for in-process FerretDB with `tigris` handler
+  with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
 (It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
@@ -206,6 +209,19 @@ Some of our idiosyncrasies:
 1. We use type switches over BSON types in many places in our code.
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+
+#### Integration tests conventions
+
+We prefer our integration tests to be straightforward,
+branchless (with a few, if any, `if` and `switch` statements),
+and backend-independent.
+Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
+If that's impossible without some branching, use helpers exported from the `setup` package,
+such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
+The bar for using other ways of branching, such as checking error codes and messages, is very high.
+Writing separate tests might be much better than making a single test that checks error text.
+
+Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
 
 ### Submitting code changes
 

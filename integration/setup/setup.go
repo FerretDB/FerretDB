@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package setup provides integration tests setup helpers.
 package setup
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"path/filepath"
 	"runtime/trace"
 	"strings"
 	"testing"
@@ -31,6 +34,35 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+)
+
+// Flags.
+var (
+	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
+	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
+
+	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
+	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
+
+	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
+	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
+
+	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
+
+	// Disable noisy setup logs by default.
+	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
+	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+
+	recordsDirF      = flag.String("records-dir", "", "directory for record files")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
+)
+
+// Other globals.
+var (
+	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+
+	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
 
 // SetupOpts represents setup options.
@@ -95,17 +127,11 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var client *mongo.Client
 	var uri string
 
-	if *targetPortF == 0 {
+	if *targetURLF == "" {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		// When TLS is enabled, RootCAs and Certificates are fetched
-		// upon creating client. Target uses PLAIN for authMechanism.
-		uri = buildMongoDBURI(tb, &buildMongoDBURIOpts{
-			host: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:  *targetTLSF,
-			user: getUser(*targetTLSF),
-		})
-		client = setupClient(tb, ctx, uri, *targetTLSF)
+		client = setupClient(tb, ctx, *targetURLF)
+		uri = *targetURLF
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -166,7 +192,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	for _, provider := range opts.Providers {
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler()) {
+		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping it.",
 				provider.Name(), getHandler(),
