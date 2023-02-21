@@ -61,6 +61,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	}
 
 	docs := []*types.Document{doc}
+	filterSuffix := filterKey
 
 	if strings.ContainsRune(filterKey, '.') {
 		path, err := types.NewPathFromString(filterKey)
@@ -69,14 +70,14 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		}
 
 		// {field1./.../.fieldN: filterValue}
-		filterKey, docs = findLeavesForFilter(doc, path)
+		filterSuffix, docs = findLeavesForFilter(doc, path)
 	}
 
 	for _, doc := range docs {
 		switch filterValue := filterValue.(type) {
 		case *types.Document:
 			// {field: {expr}} or {field: {document}}
-			ok, err := filterFieldExpr(doc, filterKey, filterValue)
+			ok, err := filterFieldExpr(doc, filterKey, filterSuffix, filterValue)
 			if err != nil {
 				return false, err
 			}
@@ -87,7 +88,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 		case *types.Array:
 			// {field: [array]}
-			docValue, err := doc.Get(filterKey)
+			docValue, err := doc.Get(filterSuffix)
 			if err != nil {
 				continue // no error - the field is just not present
 			}
@@ -98,7 +99,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 		case types.Regex:
 			// {field: /regex/}
-			docValue, err := doc.Get(filterKey)
+			docValue, err := doc.Get(filterSuffix)
 			if err != nil {
 				continue // no error - the field is just not present
 			}
@@ -114,12 +115,13 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 		default:
 			// {field: value}
-			docValue, err := doc.Get(filterKey)
+			docValue, err := doc.Get(filterSuffix)
 			if err != nil {
 				// comparing not existent field with null should return true
 				if _, ok := filterValue.(types.NullType); ok {
 					return true, nil
 				}
+
 				continue // no error - the field is just not present
 			}
 
@@ -147,8 +149,10 @@ func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, d
 	suffix = path.Suffix()
 
 	current := []any{doc}
+
 	for _, p := range path.TrimSuffix().Slice() {
 		var next []any
+
 		for _, el := range current {
 			switch s := el.(type) {
 			case *types.Document:
@@ -182,7 +186,6 @@ func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, d
 						// (nested arrays are not supported, no need to check if it's an array)
 						next = append(next, val)
 					}
-
 				} else {
 					// looking for an array element by field
 					for i := 0; i < s.Len(); i++ {
@@ -387,10 +390,10 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 }
 
 // filterFieldExpr handles {field: {expr}} or {field: {document}} filter.
-func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document) (bool, error) {
+func filterFieldExpr(doc *types.Document, filterKey, filterSuffix string, expr *types.Document) (bool, error) {
 	// check if both documents are empty
 	if expr.Len() == 0 {
-		fieldValue, err := doc.Get(filterKey)
+		fieldValue, err := doc.Get(filterSuffix)
 		if err != nil {
 			return false, nil
 		}
@@ -408,7 +411,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		exprValue := must.NotFail(expr.Get(exprKey))
 
-		fieldValue, err := doc.Get(filterKey)
+		fieldValue, err := doc.Get(filterSuffix)
 		if err != nil {
 			switch exprKey {
 			case "$exists", "$not", "$elemMatch":
@@ -664,7 +667,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$not: {expr}}}
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
-				res, err := filterFieldExpr(doc, filterKey, exprValue)
+				res, err := filterFieldExpr(doc, filterKey, filterSuffix, exprValue)
 				if res || err != nil {
 					return false, err
 				}
@@ -688,7 +691,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$elemMatch":
 			// {field: {$elemMatch: value}}
-			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
+			res, err := filterFieldExprElemMatch(doc, filterKey, filterSuffix, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -1465,7 +1468,7 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 // filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
 // Returns false if doc value is not an array.
 // TODO: https://github.com/FerretDB/FerretDB/issues/364
-func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
+func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
@@ -1503,7 +1506,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		}
 	}
 
-	value, err := doc.Get(filterKey)
+	value, err := doc.Get(filterSuffix)
 	if err != nil {
 		return false, nil
 	}
@@ -1512,7 +1515,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		return false, nil
 	}
 
-	return filterFieldExpr(doc, filterKey, expr)
+	return filterFieldExpr(doc, filterKey, filterSuffix, expr)
 }
 
 // formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
