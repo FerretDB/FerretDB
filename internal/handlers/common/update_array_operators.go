@@ -315,3 +315,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 	return changed, nil
 }
+
+// processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
+func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
+	return false, nil
+}
