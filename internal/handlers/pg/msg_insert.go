@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -102,14 +103,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // It always returns the number of successfully inserted documents and a document with errors.
 func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
-	var insErrors common.WriteErrors
+	var insErrors commonerrors.WriteErrors
 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
 		err := insertDocument(ctx, dbPool, qp, doc)
 
-		var we *common.WriteErrors
+		var we *commonerrors.WriteErrors
 
 		switch {
 		case err == nil:
@@ -153,12 +154,15 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam,
 
 	case errors.Is(err, pgdb.ErrUniqueViolation):
 		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/1509
-		return commonerrors.NewCommandErrorMsg(
+		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
+		return commonerrors.NewWriteErrorMsgWithKey(
 			commonerrors.ErrDuplicateKey,
 			fmt.Sprintf(
-				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: "1" }`,
-				qp.DB, qp.Collection,
+				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
+				qp.DB, qp.Collection, idMasrshaled,
 			),
+			must.NotFail(types.NewDocument("_id", idMasrshaled)),
+			must.NotFail(types.NewDocument("_id", idMasrshaled)),
 		)
 
 	default:

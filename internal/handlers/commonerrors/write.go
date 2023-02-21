@@ -37,6 +37,17 @@ func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	}
 }
 
+func NewWriteErrorMsgWithKey(code ErrorCode, msg string, keyValue, keyPattern *types.Document) error {
+	return &WriteErrors{
+		errs: []writeError{{
+			code:       code,
+			err:        msg,
+			keyPattern: keyPattern,
+			keyValue:   keyValue,
+		}},
+	}
+}
+
 // Error implements error interface.
 func (we *WriteErrors) Error() string {
 	var err string
@@ -141,9 +152,11 @@ func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
 // It required to build the correct write error result.
 // The index field is optional and won't be used if it's nil.
 type writeError struct {
-	code  ErrorCode
-	err   string
-	index *int32
+	code       ErrorCode
+	err        string
+	index      *int32
+	keyPattern *types.Document
+	keyValue   *types.Document
 }
 
 // Error returns the string that contains
