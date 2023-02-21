@@ -147,8 +147,8 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	err := CreateCollection(ctx, tx, db, collection)
 
-	switch err {
-	case nil, ErrAlreadyExist:
+	switch {
+	case err == nil, errors.Is(err, ErrAlreadyExist):
 		return nil
 	default:
 		return lazyerrors.Error(err)

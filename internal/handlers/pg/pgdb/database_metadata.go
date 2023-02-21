@@ -80,7 +80,7 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	}
 
 	// Index to ensure that collection name is unique
-	if err := createIndexIfNotExists(ctx, tx, &indexParams{
+	if err = createIndexIfNotExists(ctx, tx, &indexParams{
 		schema:   db,
 		table:    dbMetadataTableName,
 		isUnique: true,
@@ -94,15 +94,22 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 		"table", tableName,
 	))
 
-	if err := insert(ctx, tx, insertParams{
+	err = insert(ctx, tx, insertParams{
 		schema: db,
 		table:  dbMetadataTableName,
 		doc:    metadata,
-	}); err != nil {
+	})
+
+	switch {
+	case err == nil:
+		return tableName, true, nil
+	case errors.Is(err, ErrUniqueViolation):
+		// If metadata were created by another transaction we consider it transaction conflict error
+		// to mark that transaction should be retried.
+		return "", false, lazyerrors.Error(newTransactionConflictError(err))
+	default:
 		return "", false, lazyerrors.Error(err)
 	}
-
-	return tableName, true, nil
 }
 
 // getMetadata returns PostgreSQL table name for the given FerretDB database and collection.
