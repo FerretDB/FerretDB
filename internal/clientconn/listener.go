@@ -188,7 +188,10 @@ func (l *Listener) Run(ctx context.Context) error {
 
 // setupTLSListenerOpts represents TLS listener setup options.
 type setupTLSListenerOpts struct {
-	addr, certFile, keyFile, caFile string
+	addr     string
+	certFile string
+	keyFile  string
+	caFile   string // may be empty to skip client's certificate validation
 }
 
 // setupTLSListener returns a new TLS listener or and error.
@@ -217,16 +220,13 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 
 		var rootCA []byte
 
-		rootCA, err = os.ReadFile(opts.caFile)
-		if err != nil {
+		if rootCA, err = os.ReadFile(opts.caFile); err != nil {
 			return nil, err
 		}
 
 		roots := x509.NewCertPool()
-
-		ok := roots.AppendCertsFromPEM(rootCA)
-		if !ok {
-			return nil, fmt.Errorf("Failed to parse root certificate")
+		if ok := roots.AppendCertsFromPEM(rootCA); !ok {
+			return nil, fmt.Errorf("failed to parse root certificate")
 		}
 
 		config.ClientAuth = tls.RequireAndVerifyClientCert

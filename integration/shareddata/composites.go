@@ -127,9 +127,9 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {
-						"type": "object", 
+						"type": "object",
 						"properties": {
-							"foo": {"type": "integer", "format": "int32"}, 
+							"foo": {"type": "integer", "format": "int32"},
 							"bar": {"type": "object", "properties":{}}
 						}
 					},
@@ -155,7 +155,7 @@ var ArrayStrings = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "array", "items": {"type": "string"}},
 					"_id": {"type": "string"}
@@ -232,9 +232,9 @@ var ArrayRegexes = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"v": {"type": "array", "items": 
+					"v": {"type": "array", "items":
 						{
-							"type": "object", 
+							"type": "object",
 							"properties": {
 								"$r": {"type": "string"},
 								"o": {"type": "string"}
@@ -264,8 +264,8 @@ var ArrayDocuments = &Values[string]{
 				"properties": {
 					"v": {
 						"type": "array", "items": {
-							"type": "object",	
-							"properties": {	
+							"type": "object",
+							"properties": {
 								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
 							}
 						}
