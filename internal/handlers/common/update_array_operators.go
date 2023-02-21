@@ -349,7 +349,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 		val, err := doc.GetByPath(path)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 
 		array, ok := val.(*types.Array)

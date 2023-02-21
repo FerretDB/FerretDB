@@ -209,6 +209,11 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
 			resultType: emptyResult,
 		},
+		"NotSuitableField": {
+			filter:     bson.D{{"_id", "int32"}},
+			update:     bson.D{{"$pullAll", bson.D{{"v.foo", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
 			update: bson.D{{"$pullAll", bson.D{{"v.0.foo", bson.A{bson.D{{"bar", "hello"}}}}}}},
