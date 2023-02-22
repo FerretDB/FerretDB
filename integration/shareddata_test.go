@@ -18,7 +18,7 @@
 // because all needed functionality is already available in setup helpers.
 // This file is skipped by default; we pass the build tag only in the `task env-data` command.
 
-// go:build ferretdb_testenvdata
+//go:build ferretdb_testenvdata
 
 package integration
 

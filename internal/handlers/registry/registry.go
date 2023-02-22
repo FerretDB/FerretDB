@@ -50,10 +50,9 @@ type NewHandlerOpts struct {
 	PostgreSQLURL string
 
 	// for `tigris` handler
+	TigrisURL          string
 	TigrisClientID     string
 	TigrisClientSecret string
-	TigrisToken        string
-	TigrisURL          string
 }
 
 // NewHandler constructs a new handler.
