@@ -48,7 +48,8 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      # do not trim paths to make debugging with delve easier
+      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
