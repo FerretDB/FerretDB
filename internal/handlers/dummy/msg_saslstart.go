@@ -17,11 +17,20 @@ package dummy
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSASLStart implements HandlerInterface.
 func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgSASLStart(ctx, msg)
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"done", true,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
