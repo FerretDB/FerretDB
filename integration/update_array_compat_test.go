@@ -175,3 +175,63 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+// TestUpdateArrayCompatPullAll tests the $pullAll update operator.
+func TestUpdateArrayCompatPullAll(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"DuplicateKeys": {
+			update:     bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(1)}}, {"v", bson.A{int32(1)}}}}},
+			resultType: emptyResult,
+		},
+		"StringValue": {
+			update:     bson.D{{"$pullAll", bson.D{{"v", "foo"}}}},
+			resultType: emptyResult,
+		},
+		"String": {
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
+		},
+		"Document": {
+			update:        bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
+			skipForTigris: "We don't have such documents for Tigris.",
+		},
+		"Int32": {
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(42)}}}}},
+		},
+		"Int64": {
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int64(42)}}}}},
+		},
+		"Float64": {
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{float64(42)}}}}},
+		},
+		"NonExistentField": {
+			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
+		"NotSuitableField": {
+			filter:     bson.D{{"_id", "int32"}},
+			update:     bson.D{{"$pullAll", bson.D{{"v.foo", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
+		"DotNotation": {
+			filter: bson.D{{"_id", "array-documents-nested"}},
+			update: bson.D{{"$pullAll", bson.D{{"v.0.foo", bson.A{bson.D{{"bar", "hello"}}}}}}},
+		},
+		"DotNotationNonArray": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pullAll", bson.D{{"v.0.foo.0.bar", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNonExistentPath": {
+			update:     bson.D{{"$pullAll", bson.D{{"non.existent.path", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
+		"EmptyValue": {
+			update:     bson.D{{"$pullAll", bson.D{}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
