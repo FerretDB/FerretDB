@@ -16,7 +16,7 @@ package integration
 
 import (
 	"context"
-	"crypto/tls"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,17 +36,13 @@ func TestEmbedded(t *testing.T) {
 
 	t.Parallel()
 
-	serverTLSFiles := setup.GetTLSFilesPaths(t, setup.ServerSide)
-
 	for name, tc := range map[string]struct {
-		config    *ferretdb.Config
-		tlsConfig *tls.Config
-		embedErr  error
+		config *ferretdb.Config
 	}{
 		"TCP": {
 			config: &ferretdb.Config{
 				Listener: ferretdb.ListenerConfig{
-					TCP: "127.0.0.1:65432",
+					TCP: "127.0.0.1:37027",
 				},
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
@@ -55,15 +51,14 @@ func TestEmbedded(t *testing.T) {
 		"TLS": {
 			config: &ferretdb.Config{
 				Listener: ferretdb.ListenerConfig{
-					TLS:         "127.0.0.1:65433",
-					TLSCertFile: serverTLSFiles.Cert,
-					TLSKeyFile:  serverTLSFiles.Key,
-					TLSCAFile:   serverTLSFiles.CA,
+					TLS:         "127.0.0.1:37028",
+					TLSCertFile: filepath.Join(setup.CertsRoot, "server-cert.pem"),
+					TLSKeyFile:  filepath.Join(setup.CertsRoot, "server-key.pem"),
+					TLSCAFile:   filepath.Join(setup.CertsRoot, "rootCA-cert.pem"),
 				},
 				Handler:       "pg",
 				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
 			},
-			tlsConfig: setup.GetClientTLSConfig(t),
 		},
 	} {
 		name, tc := name, tc
@@ -85,7 +80,7 @@ func TestEmbedded(t *testing.T) {
 				close(done)
 			}()
 
-			client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()).SetTLSConfig(tc.tlsConfig))
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(f.MongoDBURI()))
 			require.NoError(t, err)
 
 			filter := bson.D{{
