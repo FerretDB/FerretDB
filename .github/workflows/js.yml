@@ -8,7 +8,7 @@ on:
       - reopened
       - synchronize
     paths:
-      - build/legacy-mongo-shell/
+      - build/legacy-mongo-shell/*.js
   push:
     branches:
       - main
