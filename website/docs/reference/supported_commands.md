@@ -104,7 +104,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 | `$pop`            |             | ✅      |                                                          |
 | `$pull`           |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/826) |
 | `$push`           |             | ✅️      |                                                          |
-| `$pullAll`        |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/827) |
+| `$pullAll`        |             | ✅️      |                                                          |
 |                   | `$each`     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/828) |
 |                   | `$position` | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/829) |
 |                   | `$slice`    | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/830) |
