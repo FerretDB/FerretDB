@@ -153,7 +153,7 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam,
 		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
 	case errors.Is(err, pgdb.ErrUniqueViolation):
-		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/1509
+		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
 		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
 
 		return commonerrors.NewWriteErrorMsg(
