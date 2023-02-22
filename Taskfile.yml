@@ -256,10 +256,6 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
-        --listen-tls=:27018
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
@@ -273,10 +269,6 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
-        --listen-tls=:27018
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=tigris
@@ -284,7 +276,7 @@ tasks:
         --test-records-dir=records
 
   run-secured:
-    desc: "Run FerretDB with `pg` handler (TLS only, auth required)"
+    desc: "Run FerretDB with `pg` handler (TLS, auth required)"
     deps: [build-testcover]
     cmds:
       - >
@@ -297,12 +289,12 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
-        --postgresql-url="postgres://127.0.0.1:5432/ferretdb"
+        --postgresql-url=postgres://127.0.0.1:5433/ferretdb
         --test-records-dir=records
 
   # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
   run-tigris-secured:
-    desc: "Run FerretDB with `tigris` handler (TLS only, auth required, SaaS)"
+    desc: "Run FerretDB with `tigris` handler (TLS, auth required; SaaS)"
     deps: [build-testcover]
     cmds:
       - >
@@ -325,10 +317,6 @@ tasks:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
-        --listen-tls=:27018
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
         --handler=pg
