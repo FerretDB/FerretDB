@@ -124,9 +124,9 @@ func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
 	defer cancel()
 
 	cfg := &config.Driver{
-		URL:          h.URL,
-		ClientID:     h.ClientID,
-		ClientSecret: h.ClientSecret,
+		URL:          ap.URL,
+		ClientID:     ap.ClientID,
+		ClientSecret: ap.ClientSecret,
 	}
 	p, err := tigrisdb.New(ctx, cfg, h.L)
 	if err != nil {
