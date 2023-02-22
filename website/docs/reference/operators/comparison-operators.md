@@ -171,7 +171,7 @@ The output:
 
 ## $gte
 
-*Syntax*: `{ field: { $gte: <element> } }`
+*Syntax*: `{ <field>: { $gte: <element> } }`
 
 Use the `$gte` to select document with elements that are greater than or equal to a specified value.
 
