@@ -328,7 +328,7 @@ The output:
 
 ## $ne
 
-*Syntax*: `{ field: { $ne: <element> } }`
+*Syntax*: `{ <field>: { $ne: <element> } }`
 
 When selecting documents that do not match a specified query, use the `$ne` operator.
 
