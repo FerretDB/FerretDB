@@ -1,8 +1,6 @@
 ---
 # This file is used for the development of FerretDB, not for actually running it.
 
-version: "3.8"
-
 services:
   postgres:
     build:
@@ -89,19 +87,6 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
-  cockroach:
-    build:
-      context: ./build/deps
-      dockerfile: cockroach.Dockerfile
-    container_name: ferretdb_cockroach
-    command: start-single-node --insecure
-    ports:
-      - 26257:26257
-    environment:
-      - COCKROACH_USER=username
-      - COCKROACH_PASSWORD=password
-      - COCKROACH_DATABASE=ferretdb
-
   mongodb:
     build:
       context: ./build/deps
@@ -109,7 +94,7 @@ services:
     container_name: ferretdb_mongodb
     command: --config /etc/mongod.conf
     ports:
-      - 37017:27017
+      - 47017:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -126,7 +111,7 @@ services:
     container_name: ferretdb_mongodb_secured
     command: --config /etc/mongod.conf
     ports:
-      - 37018:27017
+      - 47018:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:

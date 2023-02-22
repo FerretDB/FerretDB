@@ -79,7 +79,6 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing flag: directory for record files."`
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1912
 		DisablePushdown bool `default:"false" help:"Testing flag: disable query pushdown."`
 
 		Telemetry struct {
@@ -98,7 +97,6 @@ var tigrisFlags struct {
 	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
 	TigrisClientID     string `default:""               help:"Tigris Client ID."`
 	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
-	TigrisToken        string `default:""               help:"Tigris token."`
 }
 
 // The hanaFlags struct represents flags that are used specifically by "hana" handler.
@@ -305,16 +303,16 @@ func run() {
 	}()
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
-		StateProvider: stateProvider,
+		Logger:          logger,
+		Metrics:         metrics.ConnMetrics,
+		StateProvider:   stateProvider,
+		DisablePushdown: cli.Test.DisablePushdown,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
+		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
-		TigrisToken:        tigrisFlags.TigrisToken,
-		TigrisURL:          tigrisFlags.TigrisURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

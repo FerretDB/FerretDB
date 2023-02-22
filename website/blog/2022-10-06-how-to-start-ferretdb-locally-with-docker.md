@@ -40,9 +40,6 @@ Ensure to specify the `POSTGRES_DB` env variable with the same database name for
 It will be used to store all MongoDB collections.
 
 ```js
-version: "3"
-
-services:
 services:
   postgres:
     image: postgres:14

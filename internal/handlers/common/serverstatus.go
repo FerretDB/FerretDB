@@ -19,8 +19,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -62,15 +60,6 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 		}
 	}
 
-	telemetryState := "disabled"
-
-	switch {
-	case state.Telemetry == nil:
-		telemetryState = "undecided"
-	case pointer.GetBool(state.Telemetry):
-		telemetryState = "enabled"
-	}
-
 	res := must.NotFail(types.NewDocument(
 		"host", host,
 		"version", version.Get().MongoDBVersion,
@@ -81,7 +70,7 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 		"uptimeEstimate", int64(uptime.Seconds()),
 		"localTime", time.Now(),
 		"freeMonitoring", must.NotFail(types.NewDocument(
-			"state", telemetryState,
+			"state", state.TelemetryString(),
 		)),
 		"metrics", must.NotFail(types.NewDocument(
 			"commands", metricsDoc,

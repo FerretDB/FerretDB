@@ -127,9 +127,9 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {
-						"type": "object", 
+						"type": "object",
 						"properties": {
-							"foo": {"type": "integer", "format": "int32"}, 
+							"foo": {"type": "integer", "format": "int32"},
 							"bar": {"type": "object", "properties":{}}
 						}
 					},
@@ -155,7 +155,7 @@ var ArrayStrings = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "array", "items": {"type": "string"}},
 					"_id": {"type": "string"}
@@ -232,9 +232,9 @@ var ArrayRegexes = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"v": {"type": "array", "items": 
+					"v": {"type": "array", "items":
 						{
-							"type": "object", 
+							"type": "object",
 							"properties": {
 								"$r": {"type": "string"},
 								"o": {"type": "string"}
@@ -255,7 +255,7 @@ var ArrayRegexes = &Values[string]{
 // This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
 	name:     "ArrayDocuments",
-	handlers: []string{"pg"}, // TODO Enable for Tigris when tests issues are fixed https://github.com/FerretDB/FerretDB/issues/1834
+	handlers: []string{"pg", "tigris"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
@@ -264,8 +264,8 @@ var ArrayDocuments = &Values[string]{
 				"properties": {
 					"v": {
 						"type": "array", "items": {
-							"type": "object",	
-							"properties": {	
+							"type": "object",
+							"properties": {
 								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
 							}
 						}

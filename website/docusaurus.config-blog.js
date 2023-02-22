@@ -23,6 +23,8 @@ const config = {
     locales: ['en'],
   },
 
+  scripts: [{src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"}],
+
   plugins: [
     [
       require.resolve("@cmfcmf/docusaurus-search-local"),

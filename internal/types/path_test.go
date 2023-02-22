@@ -70,7 +70,7 @@ func TestRemoveByPath(t *testing.T) {
 		res  *Document
 	}{
 		"test deep removal ok": {
-			path: NewPath("client", "0", "foo", "baz", "baz", "baz"),
+			path: NewStaticPath("client", "0", "foo", "baz", "baz", "baz"),
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"client", must.NotFail(NewArray(
@@ -106,18 +106,18 @@ func TestRemoveByPath(t *testing.T) {
 			)),
 		},
 		"not found no error": {
-			path: NewPath("ismaster", "0"),
+			path: NewStaticPath("ismaster", "0"),
 			res:  sourceDoc.DeepCopy(),
 		},
 		"removed entire client field": {
-			path: NewPath("client"),
+			path: NewStaticPath("client"),
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"value", must.NotFail(NewArray("none")),
 			)),
 		},
 		"only 1d array element of client field is removed": {
-			path: NewPath("client", "1"),
+			path: NewStaticPath("client", "1"),
 			res: must.NotFail(NewDocument(
 				"ismaster", true,
 				"client", must.NotFail(NewArray(
@@ -137,7 +137,7 @@ func TestRemoveByPath(t *testing.T) {
 			)),
 		},
 		"not found, no error doc is same": {
-			path: NewPath("compression", "invalid"),
+			path: NewStaticPath("compression", "invalid"),
 			res:  sourceDoc.DeepCopy(),
 		},
 	} {
@@ -185,15 +185,15 @@ func TestRemoveByPathArray(t *testing.T) {
 		expected *Array
 	}{
 		"array: remove by path": {
-			path:     NewPath("4"),
+			path:     NewStaticPath("4"),
 			expected: must.NotFail(NewArray("0", float64(42.13), int32(1000), "2", must.NotFail(NewArray("1", "2", "3")))),
 		},
 		"array: index exceeded": {
-			path:     NewPath("11"),
+			path:     NewStaticPath("11"),
 			expected: src.DeepCopy(),
 		},
 		"array: index is not number": {
-			path:     NewPath("abcd"),
+			path:     NewStaticPath("abcd"),
 			expected: src.DeepCopy(),
 		},
 	} {
@@ -240,31 +240,31 @@ func TestGetByPath(t *testing.T) {
 	}
 
 	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
-		path: NewPath("compression", "0"),
+		path: NewStaticPath("compression", "0"),
 		res:  "none",
 	}, {
-		path: NewPath("compression"),
+		path: NewStaticPath("compression"),
 		res:  must.NotFail(NewArray("none")),
 	}, {
-		path: NewPath("client", "driver"),
+		path: NewStaticPath("client", "driver"),
 		res: must.NotFail(NewDocument(
 			"name", "nodejs",
 			"version", "4.0.0-beta.6",
 		)),
 	}, {
-		path: NewPath("client", "0"),
+		path: NewStaticPath("client", "0"),
 		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
 	}, {
-		path: NewPath("compression", "invalid"),
+		path: NewStaticPath("compression", "invalid"),
 		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
-		path: NewPath("client", "missing"),
+		path: NewStaticPath("client", "missing"),
 		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
 	}, {
-		path: NewPath("compression", "1"),
+		path: NewStaticPath("compression", "1"),
 		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,
 	}, {
-		path: NewPath("compression", "0", "invalid"),
+		path: NewStaticPath("compression", "0", "invalid"),
 		err:  `types.getByPath: can't access string by path "invalid"`,
 	}} {
 		tc := tc
@@ -286,7 +286,7 @@ func TestGetByPath(t *testing.T) {
 func TestPathTrimSuffixPrefix(t *testing.T) {
 	t.Parallel()
 
-	pathOneElement := NewPath("1")
+	pathOneElement := NewStaticPath("1")
 	pathZeroElement := Path{s: []string{}}
 
 	type testCase struct {
@@ -321,7 +321,7 @@ func TestPathTrimSuffixPrefix(t *testing.T) {
 func TestPathSuffixPrefix(t *testing.T) {
 	t.Parallel()
 
-	pathOneElement := NewPath("1")
+	pathOneElement := NewStaticPath("1")
 	pathZeroElement := Path{s: []string{}}
 
 	type testCase struct {

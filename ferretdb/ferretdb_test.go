@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ferretdb
+package ferretdb_test
 
 import (
 	"context"
 	"fmt"
 	"log"
 	"path/filepath"
+
+	"github.com/FerretDB/FerretDB/ferretdb"
 )
 
 func Example_tcp() {
-	f, err := New(&Config{
-		Listener: ListenerConfig{
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:17027",
 		},
 		Handler:       "pg",
@@ -60,9 +62,9 @@ func Example_tcp() {
 }
 
 func Example_unix() {
-	f, err := New(&Config{
-		Listener: ListenerConfig{
-			Unix: "/tmp/ferretdb-27017.sock",
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
+			Unix: "/tmp/ferretdb.sock",
 		},
 		Handler:       "pg",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
@@ -88,16 +90,16 @@ func Example_unix() {
 	cancel()
 	<-done
 
-	// Output: mongodb://%2Ftmp%2Fferretdb-27017.sock/
+	// Output: mongodb://%2Ftmp%2Fferretdb.sock/
 }
 
 func Example_tls() {
 	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
 	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
-	caPath := filepath.Join("..", "build", "certs", "rootCA.pem")
+	caPath := filepath.Join("..", "build", "certs", "rootCA-cert.pem")
 
-	f, err := New(&Config{
-		Listener: ListenerConfig{
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
 			TLS:         "127.0.0.1:17028",
 			TLSCertFile: certPath,
 			TLSKeyFile:  keyPath,

@@ -108,6 +108,9 @@ type Interface interface {
 	// MsgGetLog returns the most recent logged events from memory.
 	MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgGetMore returns the next batch of documents from a cursor.
+	MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgGetParameter returns the value of the parameter.
 	MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
