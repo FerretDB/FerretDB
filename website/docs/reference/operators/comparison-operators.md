@@ -73,7 +73,7 @@ db.employees.insertMany([
 
 ## $eq
 
-*Syntax*: `{ field: { $eq: <element> } }`
+*Syntax*: `{ <field>: { $eq: <element> } }`
 
 To select documents that exactly match a given query value, use the `$eq` operator.
 
