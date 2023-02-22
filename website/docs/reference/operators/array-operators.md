@@ -103,7 +103,7 @@ The output:
 
 *Syntax*: `{ <field>: { $elemMatch: { <condition1>, <condition2>, ... <conditionN>} } }`
 
-To select documents in a specified array field that matches at least one of several listed query conditions, use the `$elemMatch` operator.
+To select documents in a specified array field where one or more elements match all listed query conditions, use the `$elemMatch` operator.
 
 **Example:** Find documents in the `team` collection where the `skills` field is an array that contains the element "Java", and array does not contain the element `communication`.
 Use the following query operation:
