@@ -132,7 +132,7 @@ The response returns a single document that matches the query:
 
 ## $gt
 
-*Syntax*: `{ field: { $gt: <element> } }`
+*Syntax*: `{ <field>: { $gt: <element> } }`
 
 To identify documents containing elements that have a greater value than the specified one in the query, use the `$gt` operator.
 
