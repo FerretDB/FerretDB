@@ -1,0 +1,61 @@
+---
+name: JS
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  test-script:
+    name: Test script
+    runs-on: ubuntu-22.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: test-script
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run test-script
+        run: bin/task test-script
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
