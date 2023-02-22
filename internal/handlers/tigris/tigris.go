@@ -18,11 +18,12 @@ package tigris
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -30,12 +31,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
+// Handler implements handlers.Interface on top of Tigris.
+//
+//nolint:vet // for readability
+type Handler struct {
+	*NewOpts
+
+	// accessed by DBPool(ctx)
+	rw    sync.RWMutex
+	pools map[AuthParams]*tigrisdb.TigrisDB
+}
+
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	ClientID     string
-	ClientSecret string
-	Token        string
-	URL          string
+	AuthParams
 
 	L               *zap.Logger
 	Metrics         *connmetrics.ConnMetrics
@@ -43,15 +52,11 @@ type NewOpts struct {
 	DisablePushdown bool
 }
 
-// Handler implements handlers.Interface on top of Tigris.
-type Handler struct {
-	*NewOpts
-
-	// accessed by DB(ctx)
-	// TODO replace with map
-	// https://github.com/FerretDB/FerretDB/issues/1789
-	rw sync.RWMutex
-	db *tigrisdb.TigrisDB
+// AuthParams represents authentication parameters.
+type AuthParams struct {
+	URL          string
+	ClientID     string
+	ClientSecret string
 }
 
 // New returns a new handler.
@@ -62,46 +67,77 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 	return &Handler{
 		NewOpts: opts,
+		pools:   make(map[AuthParams]*tigrisdb.TigrisDB, 1),
 	}, nil
+}
+
+// Close implements HandlerInterface.
+func (h *Handler) Close() {
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	for k, p := range h.pools {
+		p.Driver.Close()
+		delete(h.pools, k)
+	}
 }
 
 // DBPool returns database connection pool for the given client connection.
 //
 // Pool is not closed when ctx is canceled.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/1789
 func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
+	connInfo := conninfo.Get(ctx)
+	username, password := connInfo.Auth()
+
+	// do not log client secret
+
+	// replace authentication info only if it is present in the connection
+	ap := h.AuthParams
+	if username != "" && password != "" {
+		ap.ClientID = username
+		ap.ClientSecret = password
+	}
+
+	// fast path
+
 	h.rw.RLock()
-	db := h.db
+	p := h.pools[ap]
 	h.rw.RUnlock()
 
-	if db != nil {
-		return db, nil
+	if p != nil {
+		h.L.Debug("DBPool: found existing pool", zap.String("username", username))
+		return p, nil
 	}
+
+	// slow path
 
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	cfg := &config.Driver{
-		ClientID:     h.ClientID,
-		ClientSecret: h.ClientSecret,
-		Token:        h.Token,
-		URL:          h.URL,
-		Protocol:     driver.GRPC,
+	// a concurrent connection might have created a pool already; check again
+	if p = h.pools[ap]; p != nil {
+		h.L.Debug("DBPool: found existing pool (after acquiring lock)", zap.String("username", username))
+		return p, nil
 	}
-	db, err := tigrisdb.New(ctx, cfg, h.L)
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	cfg := &config.Driver{
+		URL:          ap.URL,
+		ClientID:     ap.ClientID,
+		ClientSecret: ap.ClientSecret,
+	}
+	p, err := tigrisdb.New(ctx, cfg, h.L)
 	if err != nil {
+		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.db = db
+	h.L.Info("DBPool: authentication succeed", zap.String("username", username))
+	h.pools[ap] = p
 
-	return h.db, nil
-}
-
-// Close implements handlers.Interface.
-func (h *Handler) Close() {
-	h.db.Driver.Close()
+	return p, nil
 }
 
 // check interfaces

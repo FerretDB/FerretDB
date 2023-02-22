@@ -97,7 +97,6 @@ var tigrisFlags struct {
 	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
 	TigrisClientID     string `default:""               help:"Tigris Client ID."`
 	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
-	TigrisToken        string `default:""               help:"Tigris token."`
 }
 
 // The hanaFlags struct represents flags that are used specifically by "hana" handler.
@@ -311,10 +310,9 @@ func run() {
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
+		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
-		TigrisToken:        tigrisFlags.TigrisToken,
-		TigrisURL:          tigrisFlags.TigrisURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
