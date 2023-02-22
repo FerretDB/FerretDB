@@ -37,7 +37,7 @@ func TestFindLeavesForFilter(t *testing.T) {
 			)))),
 		))))
 
-	for _, tc := range map[string]struct {
+	for name, tc := range map[string]struct {
 		filterKey  string
 		wantSuffix string
 		wantDocs   []*types.Document
@@ -64,12 +64,14 @@ func TestFindLeavesForFilter(t *testing.T) {
 			wantDocs:   []*types.Document{},
 		},
 	} {
-		path, err := types.NewPathFromString("a.b")
-		assert.NoError(t, err)
+		t.Run(name, func(t *testing.T) {
+			path, err := types.NewPathFromString(tc.filterKey)
+			assert.NoError(t, err)
 
-		suffix, docs := findLeavesForFilter(doc, path)
+			suffix, docs := findLeavesForFilter(doc, path)
 
-		assert.Equal(t, tc.wantSuffix, suffix)
-		assert.Equal(t, tc.wantDocs, docs)
+			assert.Equal(t, tc.wantSuffix, suffix)
+			assert.Equal(t, tc.wantDocs, docs)
+		})
 	}
 }
