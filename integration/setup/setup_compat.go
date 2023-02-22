@@ -59,17 +59,16 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
+	if *compatURLF == "" {
+		tb.Skip("-compat-url is empty, skipping compatibility test")
+	}
+
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
 	defer span.End()
 
 	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
-
-	// skip tests for MongoDB as soon as possible
-	if *compatPortF == 0 {
-		tb.Skip("compatibility tests require second system")
-	}
 
 	if opts == nil {
 		opts = new(SetupCompatOpts)
@@ -89,38 +88,19 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	logger := testutil.Logger(tb, level)
 
 	var targetClient *mongo.Client
-	if *targetPortF == 0 {
+	if *targetURLF == "" {
 		targetClient, _ = setupListener(tb, setupCtx, logger)
 	} else {
-		// When TLS is enabled, RootCAs and Certificates are fetched
-		// upon creating client. Target uses PLAIN for authMechanism.
-		targetURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
-			host: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:  *targetTLSF,
-			user: getUser(*targetTLSF),
-		})
-		targetClient = setupClient(tb, setupCtx, targetURI, *targetTLSF)
+		targetClient = setupClient(tb, setupCtx, *targetURLF)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	// When TLS is enabled, RootCAs and Certificates are fetched
-	// upon creating client. Compat leaves authMechanism empty which defaults to SCRAM.
-	compatURI := buildMongoDBURI(tb, &buildMongoDBURIOpts{
-		host: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
-		tls:  *compatTLSF,
-		user: getUser(*compatTLSF),
-	})
+	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, true)
 
-	ctxT, span := otel.Tracer("").Start(setupCtx, "targetCollections")
-	defer span.End()
-	targetCollections := setupCompatCollections(tb, ctxT, targetClient, opts, true)
-
-	ctxC, span := otel.Tracer("").Start(setupCtx, "compatCollections")
-	defer span.End()
-	compatClient := setupClient(tb, ctxC, compatURI, *compatTLSF)
-	compatCollections := setupCompatCollections(tb, ctxC, compatClient, opts, false)
+	compatClient := setupClient(tb, setupCtx, *compatURLF)
+	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)
 
@@ -170,7 +150,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), getHandler()) {
+		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping creating %q.",
 				provider.Name(), getHandler(), fullName,
