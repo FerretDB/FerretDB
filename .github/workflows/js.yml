@@ -60,13 +60,13 @@ jobs:
           --mode=diff-normal
           --handler=pg
           --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-          2>&1 > ferretdb.log &
-
-      - name: Run testjs for FerretDB
-        run: bin/task testjs
+          2> ferretdb.log &
 
       - name: Run testjs for MongoDB
         run: bin/task testjs PORT=47017
+
+      - name: Run testjs for FerretDB
+        run: bin/task testjs
 
       - name: Upload FerretDB log
         if: failure()
