@@ -241,7 +241,7 @@ The output:
 
 ## $not
 
-*Syntax*: `{ field: { $not: { <condition> } } }`
+*Syntax*: `{ <field>: { $not: { <condition> } } }`
 
 To select documents that fail to match a particular query condition, use the `$not` operator.
 
