@@ -221,12 +221,12 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 // processRenameFieldExpression changes document according to $rename operator.
 // If the document was changed it returns true.
 func processRenameFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
-	renameExpression := update.SortFieldsByKey()
+	update.SortFieldsByKey()
 
 	var changed bool
 
-	for _, key := range renameExpression.Keys() {
-		renameRawValue := must.NotFail(renameExpression.Get(key))
+	for _, key := range update.Keys() {
+		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
@@ -402,7 +402,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
-	maxExpression = maxExpression.SortFieldsByKey()
+	maxExpression.SortFieldsByKey()
 
 	var changed bool
 
@@ -445,7 +445,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	minExpression := updateV.(*types.Document)
-	minExpression = minExpression.SortFieldsByKey()
+	minExpression.SortFieldsByKey()
 
 	var changed bool
 
