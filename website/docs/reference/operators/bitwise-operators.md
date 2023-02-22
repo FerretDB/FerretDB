@@ -101,7 +101,7 @@ The output:
 ]
 ```
 
-See the [$BitsallClear query operators](#bitsallclear) section for more usage examples.
+See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.
 
 ## $bitsAnyClear
 
