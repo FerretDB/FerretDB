@@ -18,11 +18,10 @@ import (
 	"errors"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -218,57 +217,4 @@ func TestInsertCompat(t *testing.T) {
 	}
 
 	testInsertCompat(t, testCases)
-}
-
-func TestInsertTemporary(t *testing.T) {
-	t.Helper()
-	t.Parallel()
-
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-
-	insert := []any{
-		bson.D{{"_id", "1"}},
-		bson.D{{"_id", "1"}},
-	}
-	require.NotNil(t, insert, "insert should be set")
-
-	for i := range targetCollections {
-		targetCollection := targetCollections[i]
-		compatCollection := compatCollections[i]
-		t.Run(targetCollection.Name(), func(t *testing.T) {
-			t.Helper()
-
-			opts := options.InsertMany().SetOrdered(false)
-			targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, opts)
-			compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert, opts)
-
-			if targetErr != nil {
-				// Skip inserts that could not be performed due to Tigris schema validation.
-				var e mongo.WriteException
-				if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-					setup.SkipForTigrisWithReason(t, targetErr.Error())
-				}
-
-				t.Logf("Target error: %v", targetErr)
-				require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				assert.Equal(t, compatErr, targetErr)
-			} else {
-				require.NoError(t, compatErr, "compat error; target returned no error")
-			}
-
-			require.Equal(t, compatInsertRes, targetInsertRes)
-
-			targetFindRes := FindAll(t, ctx, targetCollection)
-			compatFindRes := FindAll(t, ctx, compatCollection)
-
-			require.Equal(t, len(compatFindRes), len(targetFindRes))
-
-			for i := range compatFindRes {
-				AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
-			}
-		})
-	}
 }
