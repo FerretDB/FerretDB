@@ -257,7 +257,7 @@ The output:
 
 ## $lte
 
-*Syntax*: `{ field: { $lte: <element> } }`
+*Syntax*: `{ <field>: { $lte: <element> } }`
 
 The `$lte` operator is the opposite of the `$gte` operator.
 Use the `$lte` operator to select documents with elements that are less than or equal to the specified query value.
