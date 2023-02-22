@@ -208,6 +208,8 @@ func TestInsertCompat(t *testing.T) {
 		"InsertUnorderedOneError": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
+				// TODO After implementing https://github.com/FerretDB/FerretDB/issues/2044 we can use duplicate here
+				// bson.D{{"_id", "1"}}, // to test duplicate key error
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
