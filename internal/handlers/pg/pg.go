@@ -98,6 +98,8 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 
 	url := u.String()
 
+	// fast path
+
 	h.rw.RLock()
 	p, ok := h.pools[url]
 	h.rw.RUnlock()
@@ -107,8 +109,17 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 		return p, nil
 	}
 
+	// slow path
+
 	h.rw.Lock()
 	defer h.rw.Unlock()
+
+	// a concurrent connection might have created a pool already; check again
+	p, ok = h.pools[url]
+	if ok {
+		h.L.Debug("DBPool: found existing pool (after acquiring lock)", zap.String("username", username))
+		return p, nil
+	}
 
 	p, err := pgdb.NewPool(ctx, url, h.L, h.StateProvider)
 	if err != nil {

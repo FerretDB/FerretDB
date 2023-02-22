@@ -32,10 +32,9 @@ import (
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
+	URL          string
 	ClientID     string
 	ClientSecret string
-	Token        string
-	URL          string
 
 	L               *zap.Logger
 	Metrics         *connmetrics.ConnMetrics
@@ -71,6 +70,8 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/1789
 func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
+	// fast path
+
 	h.rw.RLock()
 	db := h.db
 	h.rw.RUnlock()
@@ -79,14 +80,22 @@ func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
 		return db, nil
 	}
 
+	// slow path
+
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
+	// a concurrent connection might have created a pool already; check again
+	db = h.db
+
+	if db != nil {
+		return db, nil
+	}
+
 	cfg := &config.Driver{
+		URL:          h.URL,
 		ClientID:     h.ClientID,
 		ClientSecret: h.ClientSecret,
-		Token:        h.Token,
-		URL:          h.URL,
 		Protocol:     driver.GRPC,
 	}
 	db, err := tigrisdb.New(ctx, cfg, h.L)

@@ -115,7 +115,6 @@ Flags:
       --test-conn-timeout=0                    Test: set connection timeout.
       --tigris-client-id=""                    Tigris Client ID.
       --tigris-client-secret=""                Tigris Client secret.
-      --tigris-token=""                        Tigris token.
       --tigris-url="http://127.0.0.1:8081/"    Tigris URL.
 
 ```
