@@ -212,11 +212,11 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger.Named("mongodb"), 37017); err != nil {
+	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 37018); err != nil {
+	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 47018); err != nil {
 		return err
 	}
 

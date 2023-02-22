@@ -10,8 +10,8 @@ require (
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20230113213139-801c7ef9e5c5
-	golang.org/x/tools v0.6.0
-	golang.org/x/vuln v0.0.0-20230213165600-1a019b0c7f30
+	golang.org/x/tools v0.6.1-0.20230217175706-3102dad5faf9
+	golang.org/x/vuln v0.0.0-20230217204342-b91abcc5ae3c
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -243,7 +243,7 @@ require (
 	golang.org/x/exp v0.0.0-20220930202632-ec3f01382ef9 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect

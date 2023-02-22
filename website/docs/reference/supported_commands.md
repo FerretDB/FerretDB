@@ -100,11 +100,11 @@ The following operators and modifiers are available in the `update` and `findAnd
 | `$`               |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/822) |
 | `$[]`             |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/823) |
 | `$[<identifier>]` |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/824) |
-| `$addToSet`       |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/825) |
+| `$addToSet`       |             | ✅️      |                                                          |
 | `$pop`            |             | ✅      |                                                          |
 | `$pull`           |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/826) |
 | `$push`           |             | ✅️      |                                                          |
-| `$pullAll`        |             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/827) |
+| `$pullAll`        |             | ✅️      |                                                          |
 |                   | `$each`     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/828) |
 |                   | `$position` | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/829) |
 |                   | `$slice`    | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/830) |
