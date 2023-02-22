@@ -25,9 +25,11 @@ import (
 func init() {
 	registry["tigris"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &tigris.NewOpts{
-			URL:          opts.TigrisURL,
-			ClientID:     opts.TigrisClientID,
-			ClientSecret: opts.TigrisClientSecret,
+			AuthParams: tigris.AuthParams{
+				URL:          opts.TigrisURL,
+				ClientID:     opts.TigrisClientID,
+				ClientSecret: opts.TigrisClientSecret,
+			},
 
 			L:               opts.Logger,
 			Metrics:         opts.Metrics,
