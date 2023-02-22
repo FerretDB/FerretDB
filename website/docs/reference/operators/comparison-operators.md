@@ -330,7 +330,6 @@ The output:
 
 *Syntax*: `{ <field>: { $ne: <element> } }`
 
-When selecting documents that do not match a specified query, use the `$ne` operator.
 
 Use the `$ne` operator to select all the documents with elements that are not equal to a given query.
 
