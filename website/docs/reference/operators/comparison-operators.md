@@ -369,7 +369,7 @@ The output:
 
 ## $nin
 
-*Syntax*: `{ field: { $nin: [ <element1>, <element2> ... <elementN> ] } }`
+*Syntax*: `{ <field>: { $nin: [ <element1>, <element2> ... <elementN> ] } }`
 
 The `$nin` does exactly the opposite of the `$in` operator.
 Use the `$nin` operator when selecting documents that do match or contain any of the elements listed in an array query.
