@@ -7,6 +7,8 @@ on:
       - opened
       - reopened
       - synchronize
+    paths:
+      - build/legacy-mongo-shell/test.js
 
 env:
   GOPATH: /home/runner/go
