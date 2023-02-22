@@ -67,7 +67,7 @@ db.team.insertMany([
 
 *Syntax*: `{ <field>: { $all: [ <element1>, <element2>, ... <elementN> ] } }`
 
-Use the `all` operator when you want to select documents that contain every single element in a specified array.
+Use the `$all` operator when you want to select documents that contain every single element in a specified array.
 
 :::note
 When using an `$all` operator, the order of the elements and array size does not matter, as long as the array contains all the elements in the query.
