@@ -218,7 +218,7 @@ The output:
 
 ## $lt
 
-*Syntax*: `{ field: { $lt: <element> } }`
+*Syntax*: `{ <field>: { $lt: <element> } }`
 
 Contrary to the `$gt` operator, the `$lt` operator is ideal for selecting documents with elements that are of a lesser value than that of the specified query.
 
