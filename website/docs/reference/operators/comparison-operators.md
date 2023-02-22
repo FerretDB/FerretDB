@@ -289,7 +289,7 @@ The output:
 
 ## $in
 
-*Syntax*: `{ field: { $in: [<element1>, <element2>, ... <elementN> ] } }`
+*Syntax*: `{ <field>: { $in: [<element1>, <element2>, ... <elementN> ] } }`
 
 To select documents containing any of the listed elements in a specified array field, use the `$in` operator.
 
