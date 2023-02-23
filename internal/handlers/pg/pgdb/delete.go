@@ -31,7 +31,7 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, ids []
 		return 0, err
 	}
 
-	return deleteByIDs(ctx, tx, deleteParams{
+	return deleteByIDs(ctx, tx, execDeleteParams{
 		schema:  qp.DB,
 		table:   table,
 		comment: qp.Comment,
@@ -39,15 +39,15 @@ func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, ids []
 	)
 }
 
-// deleteParams describes the parameters for deleting from a table.
-type deleteParams struct {
+// execDeleteParams describes the parameters for deleting from a table.
+type execDeleteParams struct {
 	schema  string // pg schema name
 	table   string // pg table name
 	comment string // comment to add to the query
 }
 
 // deleteByIDs deletes documents by given IDs.
-func deleteByIDs(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
+func deleteByIDs(ctx context.Context, tx pgx.Tx, d execDeleteParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))

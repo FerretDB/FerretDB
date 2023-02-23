@@ -105,7 +105,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisablePushdown, limited})
+		del, err := execDelete(ctx, &execDeleteParams{dbPool, &qp, h.DisablePushdown, limited})
 		if err == nil {
 			deleted += del
 			continue
@@ -171,8 +171,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit == 1, nil
 }
 
-// deleteParams contains parameters for execDelete function.
-type deleteParams struct {
+// execDeleteParams contains parameters for execDelete function.
+type execDeleteParams struct {
 	dbPool          *pgdb.Pool
 	qp              *pgdb.QueryParams
 	disablePushdown bool
@@ -182,7 +182,7 @@ type deleteParams struct {
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dp *deleteParams) (int32, error) {
+func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	var deleted int32
 
 	// filter is used to filter documents on the FerretDB side,
