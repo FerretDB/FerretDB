@@ -1062,6 +1062,10 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter:         bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
 			resultPushdown: true,
 		},
+		"DoubleBigInt64": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 61)}}}},
+			resultPushdown: true,
+		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},
 			resultType: emptyResult,

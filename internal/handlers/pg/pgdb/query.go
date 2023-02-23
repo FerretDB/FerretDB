@@ -300,20 +300,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				case "$ne":
 					switch docVal := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-					case string:
-						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb @> %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"string"')`
+
+					case float64, string, types.ObjectID, int32, int64:
+						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb @> %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"')`
 
 						if idPresent {
-							sql = `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb = %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"string"')`
-						}
-
-						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
-					case float64, types.ObjectID, int32, int64:
-						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb @> %[3]s)`
-
-						if idPresent {
-							sql = `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`
+							sql = `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb = %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"')`
 						}
 
 						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
