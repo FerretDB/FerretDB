@@ -30,7 +30,7 @@ type indexParams struct {
 }
 
 // createIndexIfNotExists creates a new index for the given params if it does not exist.
-func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error {
+func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p *indexParams) error {
 	var err error
 
 	unique := ""
@@ -43,7 +43,7 @@ func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p indexParams) error
 		` ((_jsonb->>'_id'))`
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
-		lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
 	return nil
