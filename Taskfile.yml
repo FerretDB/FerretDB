@@ -264,7 +264,7 @@ tasks:
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
-        --mode=normal
+        --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         --test-records-dir=records
