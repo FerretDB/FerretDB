@@ -12,11 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_debug || ferretdb_testcover || race
+package integration
 
-package version
+import (
+	"flag"
+	"os"
+	"testing"
 
-// debugBuild is true if that's a debug build.
-//
-// See package documentation for more details.
-const debugBuild = true
+	"github.com/FerretDB/FerretDB/integration/setup"
+)
+
+// TestMain is the entry point for all integration tests.
+func TestMain(m *testing.M) {
+	flag.Parse()
+
+	var code int
+
+	// ensure that Shutdown runs for any exit code or panic
+	func() {
+		setup.Startup()
+		defer setup.Shutdown()
+
+		code = m.Run()
+	}()
+
+	os.Exit(code)
+}

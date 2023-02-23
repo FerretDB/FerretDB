@@ -17,6 +17,7 @@ on:
 # to prevent concurrent deployments to GitHub Pages.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
 
 env:
   GOPATH: /home/runner/go
@@ -49,11 +50,13 @@ jobs:
           labelName: use-git-lfs
           exclusionPatterns: |
             **/*.js
+            **/*.md
+            **/go.sum
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: build
+          cache-key: docs
 
       - name: Install Task
         run: go generate -x
@@ -66,12 +69,12 @@ jobs:
         run: bin/task docs
 
       - name: Archive docs
-        run: |
-          tar --directory website/build \
-            --file docs.tar \
-            --create \
-            --verbose \
-            .
+        run: >
+          tar --directory website/build
+          --file docs.tar
+          --create
+          --verbose
+          .
 
       - name: Upload archive artifact
         uses: actions/upload-artifact@v3

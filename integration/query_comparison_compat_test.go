@@ -52,10 +52,9 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DocumentDotNotationNoSuchField": {
-			filter:             bson.D{{"no-such-field.some", 42}},
-			resultType:         emptyResult,
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"no-such-field.some", 42}},
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},
@@ -70,29 +69,24 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"Int32": {
-			filter:             bson.D{{"v", int32(42)}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", int32(42)}},
+			resultPushdown: true,
 		},
 		"Int64": {
-			filter:             bson.D{{"v", int64(42)}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", int64(42)}},
+			resultPushdown: true,
 		},
 		"Double": {
-			filter:             bson.D{{"v", 42.13}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", 42.13}},
+			resultPushdown: true,
 		},
 		"DoubleMax": {
-			filter:             bson.D{{"v", math.MaxFloat64}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", math.MaxFloat64}},
+			resultPushdown: true,
 		},
 		"DoubleSmallest": {
-			filter:             bson.D{{"v", math.SmallestNonzeroFloat64}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", math.SmallestNonzeroFloat64}},
+			resultPushdown: true,
 		},
 
 		// all of these fails while comparing int to doubles
@@ -118,29 +112,25 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		},
 
 		"DoubleBig": {
-			filter:             bson.D{{"v", float64(2 << 60)}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", float64(2 << 60)}},
+			resultPushdown: true,
 		},
 		"String": {
-			filter:             bson.D{{"v", "foo"}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", "foo"}},
+			resultPushdown: true,
 		},
 		"StringInt": {
-			filter:             bson.D{{"v", "42"}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", "42"}},
+			resultPushdown: true,
 		},
 		"StringDouble": {
-			filter:             bson.D{{"v", "42.13"}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", "42.13"}},
+			resultPushdown: true,
 		},
 		"StringEmpty": {
-			filter:             bson.D{{"v", ""}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", ""}},
+			resultPushdown: true,
+			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/1940",
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
@@ -159,22 +149,19 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"IDInt32": {
-			filter:             bson.D{{"_id", int32(1)}},
-			resultType:         emptyResult,
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"_id", int32(1)}},
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"IDInt64": {
-			filter:             bson.D{{"_id", int64(1)}},
-			resultType:         emptyResult,
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"_id", int64(1)}},
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"IDDouble": {
-			filter:             bson.D{{"_id", 4.2}},
-			resultType:         emptyResult,
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"_id", 4.2}},
+			resultType:     emptyResult,
+			resultPushdown: true,
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
@@ -191,9 +178,8 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			filter: bson.D{{"no-such-field", nil}},
 		},
 		"ValueNumber": {
-			filter:             bson.D{{"v", 42}},
-			resultPushdown:     true,
-			skipTigrisPushdown: true,
+			filter:         bson.D{{"v", 42}},
+			resultPushdown: true,
 		},
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
@@ -436,6 +422,7 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 				}},
 				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
+			resultType:    emptyResult,
 			skipForTigris: "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentNull": {

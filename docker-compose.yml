@@ -1,8 +1,6 @@
 ---
 # This file is used for the development of FerretDB, not for actually running it.
 
-version: "3.8"
-
 services:
   postgres:
     build:
@@ -39,6 +37,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
+  # The main Tigris instance that is used by `task run-tigris`, etc.
   tigris:
     build:
       context: ./build/deps
@@ -49,18 +48,44 @@ services:
     environment:
       - TIGRIS_SERVER_LOG_LEVEL=info
 
-  cockroach:
+  # Additional instances for faster integration tests.
+  # Due to the single-core nature of FoundationDB, that's the easiest way to speed up them.
+  tigris1:
     build:
       context: ./build/deps
-      dockerfile: cockroach.Dockerfile
-    container_name: ferretdb_cockroach
-    command: start-single-node --insecure
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_tigris1
     ports:
-      - 26257:26257
+      - 8091:8081
     environment:
-      - COCKROACH_USER=username
-      - COCKROACH_PASSWORD=password
-      - COCKROACH_DATABASE=ferretdb
+      - TIGRIS_SERVER_LOG_LEVEL=info
+  tigris2:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_tigris2
+    ports:
+      - 8092:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
+  tigris3:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_tigris3
+    ports:
+      - 8093:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
+  tigris4:
+    build:
+      context: ./build/deps
+      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
+    container_name: ferretdb_tigris4
+    ports:
+      - 8094:8081
+    environment:
+      - TIGRIS_SERVER_LOG_LEVEL=info
 
   mongodb:
     build:
@@ -69,7 +94,7 @@ services:
     container_name: ferretdb_mongodb
     command: --config /etc/mongod.conf
     ports:
-      - 37017:27017
+      - 47017:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -86,7 +111,7 @@ services:
     container_name: ferretdb_mongodb_secured
     command: --config /etc/mongod.conf
     ports:
-      - 37018:27017
+      - 47018:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -112,6 +137,15 @@ services:
     volumes:
       - ./build/certs:/etc/certs
       - ./build/legacy-mongo-shell/test.js:/legacy-mongo-shell/test.js
+
+  jaeger:
+    build:
+      context: ./build/deps
+      dockerfile: jaeger.Dockerfile
+    container_name: ferretdb_jaeger
+    ports:
+      - 16686:16686 # UI on http://127.0.0.1:16686/
+      - 14268:14268 # to receive spans from clients
 
   trivy:
     build:

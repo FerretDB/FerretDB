@@ -42,13 +42,13 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	fp := tigrisdb.FetchParam{
+	qp := tigrisdb.QueryParam{
 		DB:         dp.DB,
 		Collection: dp.Collection,
 		Filter:     dp.Filter,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
 	if err != nil {
 		return nil, err
 	}
@@ -59,16 +59,12 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"values", distinct,
 			"ok", float64(1),
 		))},
-	})
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

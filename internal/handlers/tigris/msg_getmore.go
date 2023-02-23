@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package setup
+package tigris
 
 import (
-	"testing"
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// unixSocketPath returns empty string on Windows because Unix domain sockets are not available.
-func unixSocketPath(tb testing.TB) string {
-	return ""
+// MsgGetMore implements handlers.Interface.
+func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgGetMore(ctx, msg)
 }

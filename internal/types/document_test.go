@@ -70,9 +70,48 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, a, b)
 		assert.NotSame(t, a, b)
 
-		a.Set("foo", []any{"bar"})
+		a.Set("foo", "bar")
 		assert.NotEqual(t, a, b)
 		assert.Equal(t, int32(42), must.NotFail(b.Get("foo")))
+	})
+
+	t.Run("SortFieldsByKey", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("Lexicographic", func(t *testing.T) {
+			t.Parallel()
+
+			doc := must.NotFail(NewDocument(
+				"foo", false,
+				"bar", true,
+			))
+
+			doc.SortFieldsByKey()
+
+			expected := must.NotFail(NewDocument(
+				"bar", true,
+				"foo", false,
+			))
+			assert.Equal(t, expected, doc)
+		})
+
+		t.Run("Numeric", func(t *testing.T) {
+			t.Parallel()
+
+			doc := must.NotFail(NewDocument(
+				"42", false,
+				"7", true,
+			))
+
+			doc.SortFieldsByKey()
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/2038
+			expected := must.NotFail(NewDocument(
+				"42", false,
+				"7", true,
+			))
+			assert.Equal(t, expected, doc)
+		})
 	})
 
 	t.Run("moveIDToTheFirstIndex", func(t *testing.T) {
@@ -176,7 +215,10 @@ func TestDocument(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 
-				err := tc.document.SetByPath(NewPathFromString(tc.key), tc.value)
+				path, err := NewPathFromString(tc.key)
+				require.NoError(t, err)
+
+				err = tc.document.SetByPath(path, tc.value)
 
 				if tc.err != nil {
 					assert.Equal(t, tc.err, err)

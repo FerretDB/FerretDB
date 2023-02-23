@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,7 +29,8 @@ import (
 
 // MsgExplain implements HandlerInterface.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
+	// DBPool is unused here, and the connection is established just for health check
+	_, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -58,7 +60,14 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	queryFilter := string(dbPool.BuildFilter(filter))
+	if h.DisablePushdown {
+		filter = nil
+	}
+
+	queryFilter, err := tigrisdb.BuildFilter(filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	queryPlanner := must.NotFail(types.NewDocument(
 		"Filter", queryFilter,
@@ -84,7 +93,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var reply wire.OpMsg
 
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
@@ -93,10 +102,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	}))
 
 	return &reply, nil
 }

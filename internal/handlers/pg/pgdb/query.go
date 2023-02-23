@@ -32,13 +32,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-const (
-	// FetchedChannelBufSize is the size of the buffer of the channel that is used in QueryDocuments.
-	FetchedChannelBufSize = 3
-	// FetchedSliceCapacity is the capacity of the slice in FetchedDocs.
-	FetchedSliceCapacity = 2
-)
-
 // FetchedDocs is a struct that contains a list of documents and an error.
 // It is used in the fetched channel returned by QueryDocuments.
 type FetchedDocs struct {
@@ -46,18 +39,19 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// SQLParam represents options/parameters used for SQL query.
-type SQLParam struct {
+// QueryParam represents options/parameters used for SQL query.
+type QueryParam struct {
+	// Query filter for possible pushdown; may be ignored in part or entirely.
+	Filter     *types.Document
 	DB         string
 	Collection string
 	Comment    string
 	Explain    bool
-	Filter     *types.Document
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, error) {
+	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -66,20 +60,20 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var query string
 
-	if sp.Explain {
+	if qp.Explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
 	query += `SELECT _jsonb `
 
-	if c := sp.Comment; c != "" {
+	if c := qp.Comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -87,20 +81,14 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 		query += `/* ` + c + ` */ `
 	}
 
-	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
-	var args []any
-
-	if sp.Filter != nil {
-		var where string
-
-		where, args = prepareWhereClause(sp.Filter)
-		query += where
-	}
-
+	where, args, err := prepareWhereClause(qp.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -137,11 +125,13 @@ func Explain(ctx context.Context, tx pgx.Tx, sp SQLParam) (*types.Document, erro
 	return res, nil
 }
 
-// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
+// QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[uint32, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+//
+// Transaction is not closed by this function. Use iterator.WithClose if needed.
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.Interface[int, *types.Document], error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
 	case err == nil:
@@ -153,11 +143,11 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:  sp.DB,
+		schema:  qp.DB,
 		table:   table,
-		explain: sp.Explain,
-		comment: sp.Comment,
-		filter:  sp.Filter,
+		comment: qp.Comment,
+		explain: qp.Explain,
+		filter:  qp.Filter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -171,11 +161,15 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	query += where
 
 	var b []byte
-	err := tx.QueryRow(ctx, query, args...).Scan(&b)
+	err = tx.QueryRow(ctx, query, args...).Scan(&b)
 
 	switch {
 	case err == nil:
@@ -196,15 +190,15 @@ func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*t
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	filter  *types.Document
 	schema  string
 	table   string
 	comment string
 	explain bool
+	filter  *types.Document
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[uint32, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[int, *types.Document], error) {
 	var query string
 
 	if p.explain {
@@ -223,14 +217,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	var args []any
-
-	if p.filter != nil {
-		var where string
-
-		where, args = prepareWhereClause(p.filter)
-		query += where
+	where, args, err := prepareWhereClause(p.filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -241,25 +233,42 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
 	var p Placeholder
 
-	for k, v := range sqlFilters.Map() {
-		if len(k) != 0 && k[0] == '$' {
-			// skip $comment
-			continue
+	iter := sqlFilters.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, lazyerrors.Error(err)
 		}
 
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
-		var key any = k   // key can be either a string '"v"' or path '{v,foo}'
+		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
 		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
 
-		// If the key is in dot notation use path operator (#>)
-		if len(k) != 0 {
-			if path := types.NewPathFromString(k); path.Len() > 1 {
+		if k != "" {
+			// skip $comment
+			if k[0] == '$' {
+				continue
+			}
+
+			path, err := types.NewPathFromString(k)
+			if err != nil {
+				return "", nil, lazyerrors.Error(err)
+			}
+
+			// If the key is in dot notation use path operator (#>)
+			if path.Len() > 1 {
 				keyOperator = "#>"
 				key = path.Slice()     // '{v,foo}'
 				prefix = path.Prefix() // 'v'
@@ -319,10 +328,17 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			f, a := equalWhereArray(key, v, keyOperator, p)
+			// Select if value under the key is equal to provided value.
+			// If the value under the key is not equal to v,
+			// but the value under the key k is an array - select if it contains the value equal to v.
+			sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
 
-			filters = append(filters, f)
-			args = append(args, a...)
+			// operator is -> for non-array, and #> for array
+			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
+			// placeholder $1 is used for field key or it's path,
+			// placeholder $2 is used for field value v.
+			filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
+			args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -335,7 +351,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		query = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	return query, args
+	return query, args, nil
 }
 
 func equalWhereArray(k any, v any, keyOperator string, p Placeholder) (string, []any) {

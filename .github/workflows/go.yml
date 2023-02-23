@@ -20,10 +20,6 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # Temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: 1e257034-a484-4a13-abdf-009e769b909b
-  # CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
 jobs:
   short-test:
     name: Short test
@@ -41,7 +37,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: test
+          cache-key: short-test
 
       - name: Install Task
         run: go generate -x
@@ -56,8 +52,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -102,12 +97,16 @@ jobs:
         run: bin/task test-unit
 
       # The token is not required but should make uploads more stable.
-      # See https://github.com/codecov/codecov-action/issues/837.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
@@ -116,8 +115,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -253,8 +251,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |

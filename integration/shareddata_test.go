@@ -18,7 +18,7 @@
 // because all needed functionality is already available in setup helpers.
 // This file is skipped by default; we pass the build tag only in the `task env-data` command.
 
-// go:build ferretdb_testenvdata
+//go:build ferretdb_testenvdata
 
 package integration
 
@@ -31,7 +31,13 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
-	notForTigris := []shareddata.Provider{shareddata.Scalars, shareddata.Composites, shareddata.Nulls, shareddata.ArrayDocuments}
+	notForTigris := []shareddata.Provider{
+		shareddata.Scalars,
+		shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+		shareddata.Nulls,
+		shareddata.ArrayDocuments,
+	}
 
 	// Setups one collection for each data set for all handlers and MongoDB.
 	t.Run("All", func(t *testing.T) {

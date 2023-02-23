@@ -64,6 +64,7 @@ func AllProviders() Providers {
 		ObjectIDKeys,
 
 		Composites,
+		PostgresEdgeCases,
 
 		DocumentsDoubles,
 		DocumentsStrings,

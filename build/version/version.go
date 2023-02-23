@@ -30,13 +30,15 @@
 //
 //	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
 //	ferretdb_testcover - enables test coverage instrumentation
-//	ferretdb_tigris    - enables Tigris backend
-//	ferretdb_hana      - enables Hana backend
+//	ferretdb_tigris    - enables Tigris backend handler
+//	ferretdb_hana      - enables Hana backend handler
 //
 // # Debug builds
 //
 // Debug builds of FerretDB behave differently in a few aspects:
+//   - Some values that are normally randomized are fixed or less randomized to make debugging easier.
 //   - Some internal errors cause crashes instead of being handled more gracefully.
+//   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.
 //   - The default logging level is set to debug.
 package version
@@ -50,6 +52,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -111,7 +114,7 @@ func init() {
 		Branch:              unknown,
 		Dirty:               false,
 		Package:             unknown, // TODO https://github.com/FerretDB/FerretDB/issues/1805
-		DebugBuild:          debugBuild,
+		DebugBuild:          debugbuild.Enabled,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
 		MongoDBVersionArray: mongoDBVersionArray,

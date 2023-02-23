@@ -17,34 +17,22 @@ package common
 import (
 	"context"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// GetFreeMonitoringStatus is a common implementation of the getFreeMonitoringStatus command.
+// GetFreeMonitoringStatus is a part of common implementation of the getFreeMonitoringStatus command.
 func GetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg, state *state.State) (*wire.OpMsg, error) {
 	if state == nil {
 		panic("state cannot be equal to nil")
 	}
 
-	telemetryState := "disabled"
-	telemetryMsg := "monitoring is not enabled"
-
-	switch {
-	case state.Telemetry == nil:
-		telemetryState = "undecided"
-		telemetryMsg = "monitoring is undecided"
-	case pointer.GetBool(state.Telemetry):
-		telemetryState = "enabled"
-		telemetryMsg = "monitoring is enabled"
-	}
+	telemetryState := state.TelemetryString()
+	telemetryMsg := "monitoring is " + telemetryState
 
 	var reply wire.OpMsg
-
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"state", telemetryState,

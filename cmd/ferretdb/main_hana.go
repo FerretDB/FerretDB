@@ -12,30 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build unix
+//go:build ferretdb_hana
 
-package setup
+package main
 
 import (
-	"os"
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"github.com/alecthomas/kong"
 )
 
-// unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testing.TB) string {
-	tb.Helper()
-
-	// do not use tb.TempDir() because generated path is too long on macOS
-	f, err := os.CreateTemp("", "ferretdb-*.sock")
-	require.NoError(tb, err)
-
-	// remove file so listener could create it (and remove it itself on stop)
-	err = f.Close()
-	require.NoError(tb, err)
-	err = os.Remove(f.Name())
-	require.NoError(tb, err)
-
-	return f.Name()
+// init adds "hana" handler flags when "ferretdb_hana" build tag is provided.
+func init() {
+	cli.Plugins = kong.Plugins{&hanaFlags}
 }

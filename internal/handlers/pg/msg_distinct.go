@@ -44,16 +44,16 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	sp := pgdb.SQLParam{
+	qp := pgdb.QueryParam{
 		DB:         dp.DB,
 		Collection: dp.Collection,
 		Filter:     dp.Filter,
 		Comment:    dp.Comment,
 	}
 
-	resDocs := make([]*types.Document, 0, 16)
+	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &qp)
 		return err
 	})
 
@@ -67,12 +67,12 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	var reply wire.OpMsg
-	err = reply.SetSections(wire.OpMsgSection{
+	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"values", distinct,
 			"ok", float64(1),
 		))},
-	})
+	}))
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
