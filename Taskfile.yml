@@ -12,6 +12,7 @@ vars:
   UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
+  REPLSET: postgres mongodb_replset init_mongodb_replset
 
 tasks:
   # invoked when `task` is run without arguments
@@ -132,7 +133,13 @@ tasks:
     desc: "Fill `test` database with data for experiments"
     cmds:
       - bin/task{{exeExt}} -d integration env-data
-
+  
+  env-repl:
+    desc: "A minimal environment for testing a single-node replica set"
+    cmds:
+      - >
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach --build --pull=always {{.REPLSET}}
+      - task: env-logs
   gen:
     desc: "Generate (and format) code"
     cmds:
@@ -257,7 +264,7 @@ tasks:
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
-        --mode=diff-normal
+        --mode=normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         --test-records-dir=records

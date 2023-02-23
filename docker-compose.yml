@@ -103,6 +103,32 @@ services:
     volumes:
       - ./build/certs:/etc/certs
       - ./build/mongod.conf:/etc/mongod.conf
+  
+  # used to testing the oplog
+  mongodb_replset:
+    build:
+      context: ./build/deps
+      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
+    container_name: mongodb_replset
+    command: mongod --port 27017 --bind_ip_all --replSet rs0
+    ports:
+      - 47017:27017
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+    environment:
+      # Always UTC+05:45. Set to catch timezone problems.
+      - TZ=Asia/Kathmandu
+  
+  # initiates the replica set
+  init_mongodb_replset:
+    build:
+      context: ./build/deps
+      dockerfile: legacy-mongo-shell.Dockerfile
+    container_name: init_mongodb_replset
+    depends_on:
+      - mongodb_replset
+    restart: "no"
+    entrypoint: ["bash", "-c", "sleep 10 && mongo --host mongodb_replset:27017 --eval 'rs.initiate();'"]  
 
   mongodb_secured:
     build:
