@@ -126,14 +126,13 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return lazyerrors.Error(err)
 	}
 
-	// TODO Uncomment in https://github.com/FerretDB/FerretDB/issues/2044 when we have a way to store metadata
-	//if err = createIndexIfNotExists(ctx, tx, &indexParams{
-	//	schema:   db,
-	//	table:    table,
-	//	isUnique: true,
-	//}); err != nil {
-	//	return lazyerrors.Error(err)
-	//}
+	if err = createIndexIfNotExists(ctx, tx, &indexParams{
+		schema:   db,
+		table:    table,
+		isUnique: true,
+	}); err != nil {
+		return lazyerrors.Error(err)
+	}
 
 	return nil
 }
