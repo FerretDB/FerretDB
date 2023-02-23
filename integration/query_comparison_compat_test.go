@@ -966,25 +966,32 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
-			filter: bson.D{{"v", bson.D{{"$ne", 41.13}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", 41.13}}}},
+			resultPushdown: true,
 		},
 		"DoubleMax": {
-			filter: bson.D{{"v", bson.D{{"$ne", math.MaxFloat64}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", math.MaxFloat64}}}},
+			resultPushdown: true,
 		},
 		"DoubleSmallest": {
-			filter: bson.D{{"v", bson.D{{"$ne", math.SmallestNonzeroFloat64}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", math.SmallestNonzeroFloat64}}}},
+			resultPushdown: true,
 		},
 		"DoubleZero": {
-			filter: bson.D{{"v", bson.D{{"$ne", 0.0}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", 0.0}}}},
+			resultPushdown: true,
 		},
 		"DoubleBig": {
-			filter: bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
+			resultPushdown: true,
 		},
 		"String": {
-			filter: bson.D{{"v", bson.D{{"$ne", "foo"}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", "foo"}}}},
+			resultPushdown: true,
 		},
 		"StringEmpty": {
-			filter: bson.D{{"v", bson.D{{"$ne", ""}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", ""}}}},
+			resultPushdown: true,
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
@@ -1020,31 +1027,40 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", nil}}}},
 		},
 		"Int32": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(42)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(42)}}}},
+			resultPushdown: true,
 		},
 		"Int32Zero": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(0)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(0)}}}},
+			resultPushdown: true,
 		},
 		"Int32Max": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(math.MaxInt32)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(math.MaxInt32)}}}},
+			resultPushdown: true,
 		},
 		"Int32Min": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(math.MinInt32)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(math.MinInt32)}}}},
+			resultPushdown: true,
 		},
 		"Int64": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(42)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(42)}}}},
+			resultPushdown: true,
 		},
 		"Int64Zero": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(0)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(0)}}}},
+			resultPushdown: true,
 		},
 		"Int64Max": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(math.MaxInt64)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(math.MaxInt64)}}}},
+			resultPushdown: true,
 		},
 		"Int64Min": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(math.MinInt64)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(math.MinInt64)}}}},
+			resultPushdown: true,
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
+			resultPushdown: true,
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},

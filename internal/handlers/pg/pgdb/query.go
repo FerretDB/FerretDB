@@ -287,6 +287,25 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case float64, string, types.ObjectID, int32, int64:
 						sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
 
+						if idPresent {
+							sql = `(_jsonb%[1]s%[2]s)::jsonb = %[3]s`
+						}
+
+						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
+						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+				case "$ne":
+					switch docVal := docVal.(type) {
+					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+					case float64, string, types.ObjectID, int32, int64:
+						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb @> %[3]s)`
+
+						if idPresent {
+							sql = `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`
+						}
+
 						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
 						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
 					default:
@@ -308,6 +327,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
 			sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+
+			if idPresent {
+				sql = `(_jsonb%[1]s%[2]s)::jsonb = %[3]s`
+			}
 
 			// operator is -> for non-array, and #> for array
 			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
@@ -346,40 +369,40 @@ func equalWhereArray(k any, v any, keyOperator string, p Placeholder) (string, [
 	return filter, args
 }
 
-func generateWhereForOperator(doc *types.Document) {
-	for k, v := range doc.Map() {
-		switch k {
-		case "$eq":
-			switch docVal := v.(type) {
-			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-			case float64, string, types.ObjectID, int32, int64:
-				sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-
-				filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
-			default:
-				panic(fmt.Sprintf("Unexpected type of value: %v", v))
-			}
-
-		default:
-			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			continue
-		}
-	}
-	//for k, v := range doc.Map() {
-	//	switch k {
-	//	case "$eq":
-
-	//		//switch v := v.(type) {
-	//		//case *types.Document:
-	//		//default:
-	//		//}
-	//	default:
-	//		// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-	//		continue
-	//	}
-	//}
-}
+//func generateWhereForOperator(doc *types.Document) {
+//	for k, v := range doc.Map() {
+//		switch k {
+//		case "$eq":
+//			switch docVal := v.(type) {
+//			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+//			case float64, string, types.ObjectID, int32, int64:
+//				sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+//
+//				filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
+//				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+//			default:
+//				panic(fmt.Sprintf("Unexpected type of value: %v", v))
+//			}
+//
+//		default:
+//			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+//			continue
+//		}
+//	}
+//	//for k, v := range doc.Map() {
+//	//	switch k {
+//	//	case "$eq":
+//
+//	//		//switch v := v.(type) {
+//	//		//case *types.Document:
+//	//		//default:
+//	//		//}
+//	//	default:
+//	//		// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+//	//		continue
+//	//	}
+//	//}
+//}
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
 func convertJSON(value any) any {
