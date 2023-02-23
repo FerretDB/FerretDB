@@ -53,7 +53,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 	common.Ignored(document, h.L, ignoredFields...)
 
-	var qp tigrisdb.QueryParam
+	var qp tigrisdb.QueryParams
 
 	if qp.Filter, err = common.GetOptionalParam(document, "query", qp.Filter); err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
+	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 	if err != nil {
 		return nil, err
 	}
