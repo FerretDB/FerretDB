@@ -307,6 +307,18 @@ func UnsetRaw(t testing.TB, err error) error {
 		err.Raw = nil
 		return err
 
+	case mongo.BulkWriteException:
+		if err.WriteConcernError != nil {
+			err.WriteConcernError.Raw = nil
+		}
+
+		for i, we := range err.WriteErrors {
+			we.Raw = nil
+			err.WriteErrors[i] = we
+		}
+
+		return err
+
 	default:
 		return err
 	}

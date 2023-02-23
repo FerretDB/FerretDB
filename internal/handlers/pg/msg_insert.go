@@ -16,12 +16,14 @@ package pg
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,8 +58,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -101,14 +103,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // It always returns the number of successfully inserted documents and a document with errors.
 func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
-	var insErrors common.WriteErrors
+	var insErrors commonerrors.WriteErrors
 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
 		err := insertDocument(ctx, dbPool, qp, doc)
 
-		var we *common.WriteErrors
+		var we *commonerrors.WriteErrors
 
 		switch {
 		case err == nil:
@@ -132,8 +134,8 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, doc
 func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
-		return common.NewCommandErrorMsg(
-			common.ErrBadValue,
+		return commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
 		)
 	}
@@ -141,14 +143,28 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam,
 	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
 	})
-	if err == nil {
+
+	switch {
+	case err == nil:
 		return nil
-	}
 
-	if errors.Is(err, pgdb.ErrInvalidCollectionName) || errors.Is(err, pgdb.ErrInvalidDatabaseName) {
+	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
-		return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-	}
+		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
-	return common.CheckError(err)
+	case errors.Is(err, pgdb.ErrUniqueViolation):
+		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
+		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
+
+		return commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrDuplicateKey,
+			fmt.Sprintf(
+				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
+				qp.DB, qp.Collection, idMasrshaled,
+			),
+		)
+
+	default:
+		return commonerrors.CheckError(err)
+	}
 }
