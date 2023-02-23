@@ -1,4 +1,4 @@
-// Move to test.js and run with `task mongo-test`.
+// Copy to test.js and run with `task testjs`.
 
 (function() {
   'use strict';

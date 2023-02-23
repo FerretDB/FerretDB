@@ -392,15 +392,12 @@ tasks:
         --verbose --eval 'disableTelemetry()' --shell
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem'
 
-  mongo-test:
-    desc: "Run legacy MongoDB shell (`mongo`) with test script"
+  testjs:
+    desc: "Run legacy MongoDB shell (`mongo`) with test.js script"
     cmds:
       - >
         docker compose run --rm legacy-mongo-shell
-        --tlsCertificateKeyFile /etc/certs/server.pem
-        --tlsCAFile /etc/certs/rootCA-cert.pem
-        --tls
-        'mongodb://username:password@host.docker.internal:27017/?authMechanism=PLAIN'
+        'mongodb://host.docker.internal:{{.PORT | default 27017}}/'
         /legacy-mongo-shell/test.js
 
   docker-init:
