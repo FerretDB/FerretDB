@@ -104,7 +104,7 @@ services:
       - ./build/certs:/etc/certs
       - ./build/mongod.conf:/etc/mongod.conf
   
-  # used to testing the oplog
+  # used for testing a replica set
   mongodb_replset:
     build:
       context: ./build/deps
