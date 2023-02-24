@@ -123,12 +123,12 @@ services:
   init_mongodb_replset:
     build:
       context: ./build/deps
-      dockerfile: legacy-mongo-shell.Dockerfile
+      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: init_mongodb_replset
     depends_on:
       - mongodb_replset
     restart: "no"
-    entrypoint: ["bash", "-c", "sleep 10 && mongo --host mongodb_replset:27017 --eval 'rs.initiate();'"]  
+    entrypoint: ["bash", "-c", "mongosh --host mongodb_replset:27017 --eval 'rs.initiate();'"]  
 
   mongodb_secured:
     build:
