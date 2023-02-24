@@ -122,6 +122,7 @@ services:
       - ./build/mongod_repl.conf:/etc/mongod.conf
   
   # initiates the replica set
+  # we need a seperate container to run rs.initiate()
   init_mongodb_replset:
     build:
       context: ./build/deps
