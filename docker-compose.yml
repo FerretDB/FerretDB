@@ -110,7 +110,7 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: mongodb_replset
-    command: mongod --port 27017 --bind_ip_all --replSet rs0
+    command: --config /etc/mongod.conf
     ports:
       - 47017:27017
     extra_hosts:
@@ -118,6 +118,8 @@ services:
     environment:
       # Always UTC+05:45. Set to catch timezone problems.
       - TZ=Asia/Kathmandu
+    volumes:
+      - ./build/mongod_repl.conf:/etc/mongod.conf
   
   # initiates the replica set
   init_mongodb_replset:
