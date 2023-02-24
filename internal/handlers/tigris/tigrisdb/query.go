@@ -130,8 +130,41 @@ func BuildFilter(filter *types.Document) (string, error) {
 			}
 		}
 
-		switch v.(type) {
-		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+		switch v := v.(type) {
+		case *types.Document:
+			for docKey, docVal := range v.Map() {
+				switch docKey {
+				case "$eq":
+					switch docVal := docVal.(type) {
+					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+					case float64, string, types.ObjectID, int32, int64:
+						rawValue, err := tjson.Marshal(docVal)
+						if err != nil {
+							return "", lazyerrors.Error(err)
+						}
+
+						res[key] = json.RawMessage(rawValue)
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
+				case "$ne":
+					switch docVal.(type) {
+					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+
+					case float64, string, types.ObjectID, int32, int64:
+						// TODO
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
+				default:
+					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					continue
+				}
+			}
+		case *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
 		case float64, string, types.ObjectID, int32, int64:

@@ -279,6 +279,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		switch v := v.(type) {
 		case *types.Document:
+			// TODO is it possible to {$eq:f,$ne:a}
 			for docKey, docVal := range v.Map() {
 				switch docKey {
 				case "$eq":
