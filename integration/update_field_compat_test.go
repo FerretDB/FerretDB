@@ -374,6 +374,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
