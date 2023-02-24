@@ -128,7 +128,7 @@ services:
     depends_on:
       - mongodb_replset
     restart: "no"
-    entrypoint: ["bash", "-c", "mongosh --host mongodb_replset:27017 --eval 'rs.initiate();'"]  
+    entrypoint: ["bash", "-c", "sleep 10 && mongosh --host mongodb_replset:27017 --eval 'rs.initiate();'"]  
 
   mongodb_secured:
     build:

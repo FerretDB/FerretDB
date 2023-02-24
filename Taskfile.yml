@@ -138,7 +138,7 @@ tasks:
     desc: "A minimal environment for testing a single-node replica set"
     cmds:
       - >
-        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach --build --pull=always {{.REPLSET}}
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach --build {{.REPLSET}}
       - task: env-logs
   gen:
     desc: "Generate (and format) code"
