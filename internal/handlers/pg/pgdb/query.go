@@ -311,7 +311,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 
 					case float64, string, types.ObjectID, int32, int64:
-						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"')`
+						sql := `NOT ( ` +
+							`(_jsonb ? %[2]s) AND ` + // does document contain the key
+							`((_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s AND ` + // does the value under the key is equal to the filter
+							`(_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"'))` // does the value type is equal to the filter's one
 
 						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
 						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
