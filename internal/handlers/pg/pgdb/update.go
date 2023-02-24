@@ -27,7 +27,7 @@ import (
 
 // SetDocumentByID sets a document by its ID.
 // If the document is not valid, it returns *types.ValidationError.
-func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParam, id any, doc *types.Document) (int64, error) {
+func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, id any, doc *types.Document) (int64, error) {
 	if err := doc.ValidateData(); err != nil {
 		return 0, err
 	}
