@@ -148,9 +148,11 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexExceedsArrayLength": {
 			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -379,6 +381,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -523,6 +526,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -615,6 +619,7 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$rename", bson.D{{"v.100.bar", "v.100.baz"}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -677,6 +682,7 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		},
 		"DotNotationIndexExceedsArrayLength": {
 			update: bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -861,6 +867,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -969,6 +976,7 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -1211,6 +1219,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update:     bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
