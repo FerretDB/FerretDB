@@ -758,33 +758,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int64(42)}}}}}},
 			skipForTigris: "Tigris cannot set different number type",
 		},
-		"DocFieldExist": {
-			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
-		},
-		"DocumentFieldNotExist": {
-			update:        bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
-		},
-		"ArrayFieldExist": {
-			update:        bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
-		},
-		"ArrayFieldNotExist": {
-			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
-		},
-		"DocArrFieldNotExists_0": {
-			update:        bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
-			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
-		},
-		"DocArrFieldNotExists_1": {
-			update:        bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
-			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
-		},
-		"DocArrFieldNotExists_2": {
-			update:        bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
-			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
-		},
+
 		"DocumentField": {
 			update:        bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
@@ -838,6 +812,45 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"TimestampNoT": {
 			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{I: 12}}}}},
+		},
+		"DocFieldExist": {
+			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
+		},
+		"DocumentFieldNotExist": {
+			update:        bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
+		},
+		"ArrayFieldExist": {
+			update:        bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+		},
+		"ArrayFieldNotExist": {
+			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
+		},
+		"DocArrFieldNotExists_0": {
+			update:        bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
+		},
+		"DocArrFieldNotExists_1": {
+			update:        bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
+		},
+		"DocArrFieldNotExists_2": {
+			update:        bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$set", bson.D{{"v..", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
+			resultType: emptyResult,
 		},
 	}
 
@@ -910,6 +923,10 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", nil}},
 			resultType: emptyResult,
 		},
+		"DuplicateKeys": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
+			resultType: emptyResult,
+		},
 		"DocumentFieldExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.foo", int32(1)}}}},
 			resultType: emptyResult,
@@ -930,8 +947,16 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.0.foo", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DuplicateKeys": {
-			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v..", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
 	}
@@ -1069,21 +1094,6 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		"FieldNotExist": {
 			update: bson.D{{"$mul", bson.D{{"foo", int32(45)}}}},
 		},
-		"DocFieldExist": {
-			update: bson.D{{"$mul", bson.D{{"v.foo", int32(45)}}}},
-		},
-		"DocFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"foo.bar", int32(45)}}}},
-		},
-		"ArrayFieldExist": {
-			update: bson.D{{"$mul", bson.D{{"v.array.0", int32(45)}}}},
-		},
-		"ArrayFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"v.array.foo", int32(45)}}}},
-		},
-		"DocArrayFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"foo.0.baz", int32(45)}}}},
-		},
 		"TwoFields": {
 			update: bson.D{{"$mul", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
 		},
@@ -1164,6 +1174,33 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}},
 			},
 			providers:  providers,
+			resultType: emptyResult,
+		},
+		"DotNotation": {
+			update: bson.D{{"$mul", bson.D{{"v.foo", int32(45)}}}},
+		},
+		"DotNotationNotExistentPath": {
+			update: bson.D{{"$mul", bson.D{{"not.existent.path", int32(45)}}}},
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.0", int32(45)}}}},
+		},
+		"ArrayFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.foo", int32(45)}}}},
+		},
+		"DocArrayFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"foo.0.baz", int32(45)}}}},
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$mul", bson.D{{"v.-1.bar", int32(45)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 			resultType: emptyResult,
 		},
 	}
