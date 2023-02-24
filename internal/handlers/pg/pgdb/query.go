@@ -282,14 +282,17 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			for docKey, docVal := range v.Map() {
 				switch docKey {
 				case "$eq":
+					eqOperator := "@>"
+
+					if idPresent {
+						eqOperator = "="
+					}
+
 					switch docVal := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
-						sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-
-						if idPresent {
-							sql = `(_jsonb%[1]s%[2]s)::jsonb = %[3]s`
-						}
+						sql := `(_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s`
 
 						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
 						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
@@ -298,15 +301,17 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					}
 
 				case "$ne":
+					eqOperator := "@>"
+
+					if idPresent {
+						eqOperator = "="
+					}
+
 					switch docVal := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 
 					case float64, string, types.ObjectID, int32, int64:
-						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb @> %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"')`
-
-						if idPresent {
-							sql = `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb = %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"')`
-						}
+						sql := `NOT ((_jsonb ? %[2]s)) OR NOT ((_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s AND (_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + `"')`
 
 						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
 						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
@@ -325,14 +330,15 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
+			eqOperator := "@>"
+
+			if idPresent {
+				eqOperator = "="
+			}
 			// Select if value under the key is equal to provided value.
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
-			sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-
-			if idPresent {
-				sql = `(_jsonb%[1]s%[2]s)::jsonb = %[3]s`
-			}
+			sql := `(_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s`
 
 			// operator is -> for non-array, and #> for array
 			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
