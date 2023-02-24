@@ -1185,11 +1185,8 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		"DotNotationArrayFieldExist": {
 			update: bson.D{{"$mul", bson.D{{"v.array.0", int32(45)}}}},
 		},
-		"ArrayFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"v.array.foo", int32(45)}}}},
-		},
-		"DocArrayFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"foo.0.baz", int32(45)}}}},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.0.foo", int32(45)}}}},
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
