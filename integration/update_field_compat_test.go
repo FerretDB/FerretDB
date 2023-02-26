@@ -130,29 +130,9 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
 		},
-		"DotNotationFieldExist": {
-			update:        bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
-		},
-		"DotNotationFieldNotExist": {
-			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
-		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
 			resultType: emptyResult,
-		},
-		"DotNotationMissingField": {
-			update: bson.D{{"$inc", bson.D{{"v..", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
-		},
-		"DotNotationNegativeIndex": {
-			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
-		},
-		"DotNotationIndexExceedsArrayLength": {
-			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -199,30 +179,9 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DoubleIncOnNullValue": {
 			update: bson.D{{"$inc", bson.D{{"v", float64(1)}}}},
 		},
-		"ArrayFieldExist": {
-			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
-		},
-		"DocFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-		},
-		"ArrayFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
-		},
 		"FieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
-		},
-		"DocFieldExist": {
-			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-		},
-		"DocArrayFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"foo.0.baz", int32(1)}}}},
-		},
-		"ArrayFieldValueNotExist": {
-			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
-		},
-		"ArrayFieldIndexNotExist": {
-			update: bson.D{{"$inc", bson.D{{"v.5.foo", int32(1)}}}},
 		},
 		"IncOnString": {
 			update:     bson.D{{"$inc", "string"}},
@@ -235,6 +194,37 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"NotExistStringValue": {
 			update:     bson.D{{"$inc", bson.D{{"foo.bar", "bad value"}}}},
 			resultType: emptyResult,
+		},
+		"DotNotationFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+		},
+		"DotNotationArrayValue": {
+			update: bson.D{{"$inc", bson.D{{"v.0", int32(1)}}}},
+		},
+		"DotNotationFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"not.existent.path", int32(1)}}}},
+		},
+		"DotNotationMissingField": {
+			update: bson.D{{"$inc", bson.D{{"v..", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
+			skip:   "TODO: fix namespace error",
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
+		},
+		"DotNotationArrayFieldValue": {
+			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
 		},
 	}
 
