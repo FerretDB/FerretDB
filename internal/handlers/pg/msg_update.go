@@ -47,7 +47,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation")
 
-	var qp pgdb.QueryParam
+	var qp pgdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			qp.Filter = q
 
-			resDocs, err := h.fetchAndFilterDocs(ctx, tx, &qp)
+			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
 			if err != nil {
 				return err
 			}
@@ -224,7 +224,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // updateDocument updates documents by _id.
-func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParam, doc *types.Document) (int64, error) {
+func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
 	res, err := pgdb.SetDocumentByID(ctx, tx, qp, id, doc)

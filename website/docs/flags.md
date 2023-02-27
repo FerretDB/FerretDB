@@ -29,8 +29,7 @@ Some default values are overridden in [our Docker image](quickstart_guide/docker
 | `postgresql-url`       | PostgreSQL URL for `pg` handler                                           | `FERRETDB_POSTGRESQL_URL`       | `postgres://127.0.0.1:5432/ferretdb`    |
 | `tigris-url`           | Tigris URL for 'tigris' handler                                           | `FERRETDB_TIGRIS_URL`           | `127.0.0.1:8081`                        |
 | `tigris-client-id`     | [Tigris Client ID][tigris-docs-auth]                                      | `FERRETDB_TIGRIS_CLIENT_ID`     |                                         |
-| `tigris-client-secret` | [Tigris Client secret][tigris-docs-auth]                                  | `ferretdb_tigris_client_secret` |                                         |
-| `tigris-token`         | [Tigris token][tigris-docs-auth]                                          | `FERRETDB_TIGRIS_TOKEN`         |                                         |
+| `tigris-client-secret` | [Tigris Client secret][tigris-docs-auth]                                  | `FERRETDB_TIGRIS_CLIENT_SECRET` |                                         |
 | **TLS**                |                                                                           |                                 |                                         |
 | `listen-tls`           | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS`           |                                         |
 | `listen-tls-cert-file` | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                         |
@@ -41,6 +40,8 @@ Some default values are overridden in [our Docker image](quickstart_guide/docker
 | `proxy-addr`           | See [Operation modes/Proxy](operation_modes.md#proxy)                     | `FERRETDB_PROXY_ADDR`           |                                         |
 | **Telemetry**          |                                                                           |                                 |                                         |
 | `telemetry`            | See [Configure telemetry](telemetry.md#configure-telemetry)               | `FERRETDB_TELEMETRY`            | `undecided`                             |
+| **Testing**            |                                                                           |                                 |                                         |
+| `test-disable-pushdown` | Disable pushing down queries to the backend (to only filter on FerretDB)  | `FERRETDB_TEST_DISABLE_PUSHDOWN` | `false`                                 |
 
-[tigris-docs-auth]: https://docs.tigrisdata.com/apidocs/#tag/Authentication/operation/Auth_GetAccessToken
+[tigris-docs-auth]: https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
 [securing-with-tls]: /security#securing-connections-with-tls

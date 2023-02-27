@@ -90,7 +90,7 @@ It also rounds down decimal input down to zero (e.g. `$mod: [ 3.5 , 2 ]` is exec
 
 Other syntaxes: `{ <field>: { $regex: /<expression-string>/, $options: '<flag>' } }` and `{ <field>: /<expression-string>/<flag> }`.
 
-The `$regex` operator matches documents where the value of a field matches a specified regular expression pattern.
+To use regular expression for queries on particular fields, use the `$regex` operator.
 
 **Example:** The following query returns all the documents where the value of the "product" field starts with the letter "b":
 
