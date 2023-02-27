@@ -58,7 +58,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	var qp pgdb.QueryParam
+	var qp pgdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -94,24 +94,18 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		filter, limit, err := h.prepareDeleteParams(deleteDoc)
+		var limited bool
+		qp.Filter, limited, err = h.prepareDeleteParams(deleteDoc)
 		if err != nil {
 			return nil, err
 		}
 
 		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
-		if qp.Comment, err = common.GetOptionalParam(filter, "$comment", qp.Comment); err != nil {
+		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 
-		qp.Filter = filter
-
-		var limited bool
-		if limit == 1 {
-			limited = true
-		}
-
-		del, err := execDelete(ctx, dbPool, &qp, limited)
+		del, err := execDelete(ctx, &execDeleteParams{dbPool, &qp, h.DisablePushdown, limited})
 		if err == nil {
 			deleted += del
 			continue
@@ -143,22 +137,22 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // prepareDeleteParams extracts query filter and limit from delete document.
-func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, int64, error) {
+func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
 	var err error
 
 	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
-		return nil, 0, err
+		return nil, false, err
 	}
 
 	// get filter from document
 	var filter *types.Document
 	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
-		return nil, 0, err
+		return nil, false, err
 	}
 
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return nil, 0, common.NewCommandErrorMsgWithArgument(
+		return nil, false, common.NewCommandErrorMsgWithArgument(
 			common.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 			"limit",
@@ -167,23 +161,40 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, 0, common.NewCommandErrorMsgWithArgument(
+		return nil, false, common.NewCommandErrorMsgWithArgument(
 			common.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 			"limit",
 		)
 	}
 
-	return filter, limit, nil
+	return filter, limit == 1, nil
+}
+
+// execDeleteParams contains parameters for execDelete function.
+type execDeleteParams struct {
+	dbPool          *pgdb.Pool
+	qp              *pgdb.QueryParams
+	disablePushdown bool
+	limited         bool
 }
 
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, limit bool) (int32, error) {
+func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	var deleted int32
-	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
+
+	// filter is used to filter documents on the FerretDB side,
+	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
+	filter := dp.qp.Filter
+
+	if dp.disablePushdown {
+		dp.qp.Filter = nil
+	}
+
+	err := dp.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		iter, err := pgdb.QueryDocuments(ctx, tx, dp.qp)
 		if err != nil {
 			return err
 		}
@@ -203,7 +214,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, lim
 			}
 
 			var matches bool
-			if matches, err = common.FilterDocument(doc, qp.Filter); err != nil {
+			if matches, err = common.FilterDocument(doc, filter); err != nil {
 				return err
 			}
 
@@ -214,7 +225,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, lim
 			resDocs = append(resDocs, doc)
 
 			// if limit is set, no need to fetch all the documents
-			if limit {
+			if dp.limited {
 				break
 			}
 		}
@@ -224,7 +235,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, lim
 			return nil
 		}
 
-		rowsDeleted, err := deleteDocuments(ctx, dbPool, qp, resDocs)
+		rowsDeleted, err := deleteDocuments(ctx, dp.dbPool, dp.qp, resDocs)
 		if err != nil {
 			return err
 		}
@@ -241,7 +252,7 @@ func execDelete(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, lim
 }
 
 // deleteDocuments deletes documents by _id.
-func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam, docs []*types.Document) (int64, error) {
+func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
