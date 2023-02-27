@@ -23,9 +23,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// TestFindLeavesForFilter demonstrates how findLeavesForFilter works.
+// TestGetDocumentsAtSuffix demonstrates how getDocumentsAtSuffix works.
 // The actual cases must be covered by integration tests to ensure compatibility.
-func TestFindLeavesForFilter(t *testing.T) {
+func TestGetDocumentsAtSuffix(t *testing.T) {
 	doc := must.NotFail(types.NewDocument(
 		"v", must.NotFail(types.NewArray(
 			must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(
@@ -68,7 +68,7 @@ func TestFindLeavesForFilter(t *testing.T) {
 			path, err := types.NewPathFromString(tc.filterKey)
 			assert.NoError(t, err)
 
-			suffix, docs := findLeavesForFilter(doc, path)
+			suffix, docs := getDocumentsAtSuffix(doc, path)
 
 			assert.Equal(t, tc.wantSuffix, suffix)
 			assert.Equal(t, tc.wantDocs, docs)

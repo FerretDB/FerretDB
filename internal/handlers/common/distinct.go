@@ -110,7 +110,7 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 			}
 
 			// {field1./.../.fieldN: filterValue}
-			suffix, leavesDoc = findLeavesForFilter(doc, path)
+			suffix, leavesDoc = getDocumentsAtSuffix(doc, path)
 		}
 
 		for _, d := range leavesDoc {

@@ -69,8 +69,11 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, lazyerrors.Error(err)
 		}
 
-		// {field1./.../.fieldN: filterValue}
-		filterSuffix, docs = findLeavesForFilter(doc, path)
+		if filterSuffix, docs = getDocumentsAtSuffix(doc, path); len(docs) == 0 {
+			// When no document is found at suffix, add an empty one.
+			// So operators such as $nin is applied to the empty document.
+			docs = append(docs, types.MakeDocument(0))
+		}
 	}
 
 	for _, doc := range docs {
@@ -135,77 +138,94 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	return false, nil
 }
 
-// findLeavesForFilter finds all "leaves" - document's subdocuments that could be used to check
-// if the main document matches the filter.
+// getDocumentsAtSuffix finds documents at the suffix of the given path.
 //
 // It returns:
-// - filterKey's "suffix" - the final element of filterKey's path;
-// - a slice of "leaves" - subdocuments that contain "suffix" filter keys.
+// - filterKey's "suffix" - the final key of path;
+// - a slice of documents at suffix - multiple documents are possible because of array dot notation;
 //
 // For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and the filterKey is foo.bar,
-// then the function will return the suffix "bar" and a slice with two leaves:
+// then the function will return the suffix "bar" and a slice with two documents:
 // {bar: 1} and {bar: 2}.
-func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, docs []*types.Document) {
+func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, docsAtSuffix []*types.Document) {
 	suffix = path.Suffix()
 
-	current := []any{doc}
+	// docsAtSuffix are the document found at the suffix.
+	docsAtSuffix = make([]*types.Document, 0)
 
-	for _, p := range path.TrimSuffix().Slice() {
-		var next []any
+	// keys are the individual part of the path.
+	keys := path.Slice()
 
-		for _, el := range current {
-			switch s := el.(type) {
+	// vals are the field values found at each key of the path.
+	vals := []any{doc}
+
+	for i, key := range keys {
+		var embeddedVals []any
+
+		// suffix key is used during the last iteration of the keys.
+		isSuffixKey := i == len(keys)-1
+
+		for _, valAtKey := range vals {
+			switch val := valAtKey.(type) {
 			case *types.Document:
-				val, err := s.Get(p)
+				embeddedVal, err := val.Get(key)
 				if err != nil {
-					// element doesn't exist, do nothing
+					// document does not contain key, so no embedded value was found.
 					continue
 				}
 
-				_, isDoc := val.(*types.Document)
-				_, isArray := val.(*types.Array)
-
-				if isDoc || isArray {
-					// element is a document or an array, add it to the next iteration
-					next = append(next, val)
+				if isSuffixKey {
+					// a suffix element was found.
+					docsAtSuffix = append(docsAtSuffix, val)
+					continue
 				}
 
+				// key exists in the document, add embedded value to next iteration.
+				embeddedVals = append(embeddedVals, embeddedVal)
 			case *types.Array:
-				index, err := strconv.Atoi(p)
-
-				if err == nil {
-					// looking for an array element by index
-					val, err := s.Get(index)
+				if index, err := strconv.Atoi(key); err == nil {
+					// key is an integer, check that index of the array.
+					embeddedVal, err := val.Get(index)
 					if err != nil {
-						// element doesn't exist, do nothing
+						// index does not exist.
 						continue
 					}
 
-					if _, ok := val.(*types.Document); ok {
-						// element is a document, add it to the next iteration
-						// (nested arrays are not supported, no need to check if it's an array)
-						next = append(next, val)
+					if isSuffixKey {
+						// a suffix element was found.
+						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
+						continue
 					}
-				} else {
-					// looking for an array element by field
-					for i := 0; i < s.Len(); i++ {
-						val := must.NotFail(s.Get(i))
 
-						embeddedDoc, ok := val.(*types.Document)
-						if !ok {
-							// not a document, so it cannot contain the key.
-							continue
-						}
+					// key is the index of the array, add embedded value to the next iteration.
+					embeddedVals = append(embeddedVals, embeddedVal)
+					continue
+				}
 
-						embeddedVal, err := embeddedDoc.Get(p)
-						if err != nil {
-							// element does not contain the key.
-							continue
-						}
+				// key was not an index, iterate array to get all documents that contain the key.
+				for j := 0; j < val.Len(); j++ {
+					valAtIndex := must.NotFail(val.Get(j))
 
-						// key exists in the document.
-						next = append(next, embeddedVal)
+					embeddedDoc, isDoc := valAtIndex.(*types.Document)
+					if !isDoc {
+						// the value is not a document, so it cannot contain the key.
+						continue
 					}
+
+					embeddedVal, err := embeddedDoc.Get(key)
+					if err != nil {
+						// the document does not contain key, so no embedded value was found.
+						continue
+					}
+
+					if isSuffixKey {
+						// a suffix element was found.
+						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
+						continue
+					}
+
+					// key exists in the document, add embedded value to next iteration.
+					embeddedVals = append(embeddedVals, embeddedVal)
 				}
 
 			default:
@@ -213,55 +233,10 @@ func findLeavesForFilter(doc *types.Document, path types.Path) (suffix string, d
 			}
 		}
 
-		current = next
+		vals = embeddedVals
 	}
 
-	docs = make([]*types.Document, 0, len(current))
-
-	// In the slice current we have all the documents and arrays that matched the part of the path without the suffix.
-	// Now we can filter out all the documents/arrays that don't have the suffix.
-	// Also, as filtering only works with documents, we need to make documents from arrays.
-	for _, el := range current {
-		switch s := el.(type) {
-		case *types.Document:
-			if s.Has(suffix) {
-				docs = append(docs, s)
-			}
-
-		case *types.Array:
-			index, err := strconv.Atoi(suffix)
-
-			if err == nil {
-				// looking for an array element by index
-				val, err := s.Get(index)
-				if err == nil {
-					docs = append(docs, must.NotFail(types.NewDocument(suffix, val)))
-				}
-			} else {
-				// looking for an array element by field
-				for i := 0; i < s.Len(); i++ {
-					val := must.NotFail(s.Get(i))
-
-					embeddedDoc, ok := val.(*types.Document)
-					if !ok {
-						// not a document, so it cannot contain the key.
-						continue
-					}
-
-					embeddedVal, err := embeddedDoc.Get(suffix)
-					if err != nil {
-						// element does not contain the key.
-						continue
-					}
-
-					// key exists in the document.
-					docs = append(docs, must.NotFail(types.NewDocument(suffix, embeddedVal)))
-				}
-			}
-		}
-	}
-
-	return suffix, docs
+	return suffix, docsAtSuffix
 }
 
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
