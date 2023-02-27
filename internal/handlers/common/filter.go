@@ -166,9 +166,6 @@ func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, 
 	for i, key := range keys {
 		var embeddedVals []any
 
-		// suffix key is used during the last iteration of the keys.
-		isSuffixKey := i == len(keys)-1
-
 		for _, valAtKey := range vals {
 			switch val := valAtKey.(type) {
 			case *types.Document:
@@ -178,8 +175,8 @@ func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, 
 					continue
 				}
 
-				if isSuffixKey {
-					// a suffix element was found.
+				if i == len(keys)-1 {
+					// a value was found at suffix.
 					docsAtSuffix = append(docsAtSuffix, val)
 					continue
 				}
@@ -188,15 +185,15 @@ func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, 
 				embeddedVals = append(embeddedVals, embeddedVal)
 			case *types.Array:
 				if index, err := strconv.Atoi(key); err == nil {
-					// key is an integer, check that index of the array.
+					// key is an integer, check if that integer is an index of the array.
 					embeddedVal, err := val.Get(index)
 					if err != nil {
 						// index does not exist.
 						continue
 					}
 
-					if isSuffixKey {
-						// a suffix element was found.
+					if i == len(keys)-1 {
+						// a value was found at suffix.
 						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
 						continue
 					}
@@ -223,8 +220,8 @@ func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, 
 						continue
 					}
 
-					if isSuffixKey {
-						// a suffix element was found.
+					if i == len(keys)-1 {
+						// a value was found at suffix.
 						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
 						continue
 					}

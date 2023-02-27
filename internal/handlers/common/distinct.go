@@ -100,7 +100,7 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 	distinct := types.MakeArray(len(docs))
 
 	for _, doc := range docs {
-		// docsAtSuffix contains document exists at suffix key.
+		// docsAtSuffix contains all documents exist at the suffix key.
 		docsAtSuffix := []*types.Document{doc}
 		suffix := key
 
