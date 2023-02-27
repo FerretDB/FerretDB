@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 
@@ -291,10 +292,12 @@ func TestPrepareWhereClause(t *testing.T) {
 	// WHERE clauses occurring frequently in tests
 	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
 	whereContain := " WHERE (_jsonb->$1)::jsonb @> $2"
+	whereNotEq := ` WHERE NOT ( (_jsonb ? $1) AND ((_jsonb->$1)::jsonb @> $2 AND (_jsonb->'$s'->'p'->$1->'t')::jsonb = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
 		expected string
+		args     []any // if empty, check is disabled
 	}{
 		"IDObjectID": {
 			filter:   must.NotFail(types.NewDocument("_id", objectID)),
@@ -358,36 +361,49 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", "foo")),
 			)),
+			args:     []any{`v`, `"foo"`},
 			expected: whereContain,
 		},
 		"EqEmptyString": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", "")),
 			)),
+			//args:     []any{`v`, `"foo"`},
 			expected: whereContain,
 		},
 		"EqInt32": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", int32(42))),
 			)),
+			//args:     []any{`v`, `"foo"`},
 			expected: whereContain,
 		},
 		"EqInt64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", int64(42))),
 			)),
+			//args:     []any{`v`, `"foo"`},
 			expected: whereContain,
 		},
 		"EqFloat64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", float64(42.13))),
 			)),
+			//args:     []any{`v`, `"foo"`},
 			expected: whereContain,
 		},
 		"EqMaxFloat64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
 			)),
+			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
+			expected: whereContain,
+		},
+		"EqBigFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
+			)),
+			args:     []any{`v`, fmt.Sprint(float64(2 << 61))},
 			expected: whereContain,
 		},
 		"EqBool": {
@@ -399,17 +415,78 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", objectID)),
 			)),
+			//args:     []any{`v`, `"foo"`},
 			expected: whereContain,
+		},
+
+		"NeString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", "foo")),
+			)),
+			args:     []any{`v`, `"foo"`},
+			expected: whereNotEq + `'"string"'))`,
+		},
+		"NeEmptyString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", "")),
+			)),
+			//args:     []any{`v`, `"foo"`},
+			expected: whereNotEq + `'"string"'))`,
+		},
+		"NeInt32": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", int32(42))),
+			)),
+			//args:     []any{`v`, `"foo"`},
+			expected: whereNotEq + `'"int"'))`,
+		},
+		"NeInt64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", int64(42))),
+			)),
+			//args:     []any{`v`, `"foo"`},
+			expected: whereNotEq + `'"long"'))`,
+		},
+		"NeFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", float64(42.13))),
+			)),
+			//args:     []any{`v`, `"foo"`},
+			expected: whereNotEq + `'"double"'))`,
+		},
+		"NeMaxFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
+			)),
+			//args:     []any{`v`, math.MaxFloat64},
+			expected: whereNotEq + `'"double"'))`,
+		},
+		"NeBool": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", true)),
+			)),
+		},
+		"NeObjectID": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", objectID)),
+			)),
+			expected: whereNotEq + `'"objectId"'))`,
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, _, err := prepareWhereClause(tc.filter)
+			actual, args, err := prepareWhereClause(tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
+
+			if len(tc.args) == 0 {
+				return
+			}
+
+			assert.Equal(t, tc.args, args)
 		})
 	}
 }
