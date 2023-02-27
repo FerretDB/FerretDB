@@ -44,10 +44,6 @@ func SkipForTigris(tb testing.TB) {
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Helper()
 
-	if !IsTigris(tb) {
-		return
-	}
-
 	require.NotEmpty(tb, reason, "reason must not be empty")
 
 	tb.Skipf("Skipping for Tigris: %s.", reason)
