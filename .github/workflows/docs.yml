@@ -56,7 +56,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: build
+          cache-key: docs
 
       - name: Install Task
         run: go generate -x
@@ -69,12 +69,12 @@ jobs:
         run: bin/task docs
 
       - name: Archive docs
-        run: |
-          tar --directory website/build \
-            --file docs.tar \
-            --create \
-            --verbose \
-            .
+        run: >
+          tar --directory website/build
+          --file docs.tar
+          --create
+          --verbose
+          .
 
       - name: Upload archive artifact
         uses: actions/upload-artifact@v3

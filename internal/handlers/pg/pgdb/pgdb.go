@@ -35,4 +35,7 @@ var (
 
 	// ErrInvalidDatabaseName indicates that a database didn't pass name checks.
 	ErrInvalidDatabaseName = fmt.Errorf("invalid FerretDB database name")
+
+	// ErrUniqueViolation indicates that operations violates a unique constraint.
+	ErrUniqueViolation = fmt.Errorf("unique constraint violation")
 )
