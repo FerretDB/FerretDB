@@ -154,7 +154,7 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdat
 
 // setMetadata sets metadata for the given database and collection.
 //
-// To avoid data race, setMetadata should be called only after getMetadata with forUpdate = true,
+// To avoid data race, setMetadata should be called only after getMetadata with forUpdate = true is called,
 // so that the metadata table is locked correctly.
 func setMetadata(ctx context.Context, tx pgx.Tx, db, collection string, metadata *types.Document) error {
 	if _, err := setById(ctx, tx, db, dbMetadataTableName, "", collection, metadata); err != nil {
