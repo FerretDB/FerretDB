@@ -55,3 +55,28 @@ func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParam, id any, doc
 
 	return tag.RowsAffected(), nil
 }
+
+func addToSetByID(ctx context.Context, tx pgx.Tx, qp *QueryParam, id any, field string, doc *types.Document) (int64, error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	if err != nil {
+		return 0, err
+	}
+
+	sql := "UPDATE "
+
+	if qp.Comment != "" {
+		qp.Comment = strings.ReplaceAll(qp.Comment, "/*", "/ *")
+		qp.Comment = strings.ReplaceAll(qp.Comment, "*/", "* /")
+
+		sql += `/* ` + qp.Comment + ` */ `
+	}
+
+	sql += pgx.Identifier{qp.DB, table}.Sanitize() + " SET _jsonb.indexes = _jsonb.indexes || $1 WHERE _jsonb->'_id' = $2"
+
+	tag, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)), must.NotFail(pjson.MarshalSingleValue(id)))
+	if err != nil {
+		return 0, err
+	}
+
+	return tag.RowsAffected(), nil
+}
