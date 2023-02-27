@@ -93,10 +93,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"DoubleBigInt64": {
 			filter:         bson.D{{"v", float64(2 << 61)}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"DoubleBigInt64PlusOne": {
 			filter:         bson.D{{"v", float64(2<<61 + 1)}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"Int64Max": {
 			filter:         bson.D{{"v", int64(math.MaxInt64)}},
@@ -105,10 +107,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"Int64Min": {
 			filter:         bson.D{{"v", int64(math.MinInt64)}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"Int64DoubleBig": {
 			filter:         bson.D{{"v", int64(2 << 60)}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 
 		"DoubleBig": {
@@ -269,10 +273,12 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 		"DoubleBigInt64": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(2 << 61)}}}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"DoubleBigInt64PlusOne": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<61 + 1)}}}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"String": {
 			filter:         bson.D{{"v", bson.D{{"$eq", "foo"}}}},
@@ -372,10 +378,12 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 		"Int64Min": {
 			filter:         bson.D{{"v", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"Int64DoubleBig": {
 			filter:         bson.D{{"v", bson.D{{"$eq", int64(2 << 60)}}}},
 			resultPushdown: true,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"Int64DoubleBigPlusOne": {
 			filter:         bson.D{{"v", bson.D{{"$eq", int64(2<<60 + 1)}}}},
@@ -1076,6 +1084,10 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 		"DocumentShuffledKeys": {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.D{{"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}}}},
 		},
+	}
+
+	for _, tc := range testCases {
+		tc.skipForTigris = "https://github.com/FerretDB/FerretDB/issues/2052"
 	}
 
 	return testCases

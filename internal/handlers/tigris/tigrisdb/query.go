@@ -149,16 +149,6 @@ func BuildFilter(filter *types.Document) (string, error) {
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
 
-				case "$ne":
-					switch docVal.(type) {
-					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-
-					case float64, string, types.ObjectID, int32, int64:
-						// TODO
-					default:
-						panic(fmt.Sprintf("Unexpected type of value: %v", v))
-					}
-
 				default:
 					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 					continue
