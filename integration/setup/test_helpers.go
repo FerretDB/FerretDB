@@ -46,7 +46,9 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 
 	require.NotEmpty(tb, reason, "reason must not be empty")
 
-	tb.Skipf("Skipping for Tigris: %s.", reason)
+	if IsTigris(tb) {
+		tb.Skipf("Skipping for Tigris: %s.", reason)
+	}
 }
 
 // TigrisOnlyWithReason skips the current test except for FerretDB with `tigris` handler.
