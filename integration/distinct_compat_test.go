@@ -148,7 +148,7 @@ func TestDistinctCompat(t *testing.T) {
 			field:  "field-not-exists",
 			filter: bson.D{},
 		},
-		"DotNotationArrayDocumentNoIndex": {
+		"DotNotation": {
 			field:  "v.foo",
 			filter: bson.D{},
 		},

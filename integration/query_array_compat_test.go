@@ -102,16 +102,20 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotationArrayDocument": {
-			filter:         bson.D{{"v.0.foo.0.bar", "hello"}}, // {"_id", "array-documents-nested"}},
+			filter:         bson.D{{"v.0.foo.0.bar", "hello"}},
 			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
 			resultPushdown: true,
 		},
-		"DocumentDotNotationArrayDocumentNoIndex": {
+		"DocumentDotNotationArrayDocumentNoIndexNin": {
 			filter: bson.D{
 				// $nin is used to ensure resultPushdown is false.
 				{"v.foo.bar", bson.D{{"$nin", bson.A{"baz"}}}},
 			},
 			resultPushdown: false,
+		},
+		"DocumentDotNotationArrayDocumentNoIndex": {
+			filter:              bson.D{{"v.foo.bar", "hello"}},
+			doNotAssertPushDown: true,
 		},
 		"FieldArrayIndex": {
 			filter:         bson.D{{"v.foo[0]", int32(42)}},
