@@ -959,6 +959,7 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 		"DotNotationMissingField": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v..", int32(1)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
