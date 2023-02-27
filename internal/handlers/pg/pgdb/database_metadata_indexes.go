@@ -56,7 +56,7 @@ func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTa
 	}
 
 	pgTable = must.NotFail(metadata.Get("table")).(string)
-	pgIndex = formatIndexName(pgTable, params.index)
+	pgIndex = formatIndexName(params.collection, params.index)
 
 	newIndex := must.NotFail(types.NewDocument(
 		"pgindex", pgIndex,
@@ -104,8 +104,8 @@ func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTa
 
 // formatIndexName returns index name in form <shortened_name>_<name_hash>_idx.
 // Changing this logic will break compatibility with existing databases.
-func formatIndexName(table, index string) string {
-	name := table + "_" + index
+func formatIndexName(collection, index string) string {
+	name := collection + "_" + index
 
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))
