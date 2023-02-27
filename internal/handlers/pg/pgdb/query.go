@@ -161,16 +161,16 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any, forUpdate bool) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	if forUpdate {
-		query += ` FOR UPDATE`
-	}
-
 	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	query += where
+
+	if forUpdate {
+		query += ` FOR UPDATE`
+	}
 
 	var b []byte
 	err = tx.QueryRow(ctx, query, args...).Scan(&b)

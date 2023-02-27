@@ -131,7 +131,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		db:         db,
 		collection: collection,
 		index:      "_id_",
-		key:        must.NotFail(types.NewDocument("_id", 1)),
+		key:        must.NotFail(types.NewDocument("_id", int32(1))),
 		unique:     true,
 	}
 
