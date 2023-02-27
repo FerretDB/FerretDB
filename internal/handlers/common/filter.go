@@ -55,11 +55,6 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
-	if strings.HasPrefix(filterKey, "$") {
-		// {$operator: filterValue}
-		return filterOperator(doc, filterKey, filterValue)
-	}
-
 	docs := []*types.Document{doc}
 	filterSuffix := filterKey
 
@@ -70,10 +65,15 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		}
 
 		if filterSuffix, docs = getDocumentsAtSuffix(doc, path); len(docs) == 0 {
-			// When no document is found at suffix, add an empty one.
+			// When no document is found at suffix, use an empty one.
 			// So operators such as $nin is applied to the empty document.
 			docs = append(docs, types.MakeDocument(0))
 		}
+	}
+
+	if strings.HasPrefix(filterKey, "$") {
+		// {$operator: filterValue}
+		return filterOperator(doc, filterKey, filterValue)
 	}
 
 	for _, doc := range docs {
@@ -89,6 +89,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 				return true, nil
 			}
 
+			// doc did not match filter, continue next iteration.
 		case *types.Array:
 			// {field: [array]}
 			docValue, err := doc.Get(filterSuffix)
@@ -100,6 +101,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 				return true, nil
 			}
 
+			// doc did not match filter, continue next iteration.
 		case types.Regex:
 			// {field: /regex/}
 			docValue, err := doc.Get(filterSuffix)
@@ -116,6 +118,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 				return true, nil
 			}
 
+			// doc did not match filter, continue next iteration.
 		default:
 			// {field: value}
 			docValue, err := doc.Get(filterSuffix)
@@ -141,17 +144,18 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 // getDocumentsAtSuffix finds documents at the suffix of the given path.
 //
 // It returns:
-// - filterKey's "suffix" - the final key of path;
-// - a slice of documents at suffix - multiple documents are possible because of array dot notation;
+// - path's "suffix" - the final key of path;
+// - a slice of documents at suffix - array dot notation may return multiple documents;
 //
-// For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and the filterKey is foo.bar,
-// then the function will return the suffix "bar" and a slice with two documents:
+// For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and
+// the filterKey is foo.bar, then the function will return the suffix "bar"
+// and a slice with two documents:
 // {bar: 1} and {bar: 2}.
 func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, docsAtSuffix []*types.Document) {
 	suffix = path.Suffix()
 
 	// docsAtSuffix are the document found at the suffix.
-	docsAtSuffix = make([]*types.Document, 0)
+	docsAtSuffix = []*types.Document{}
 
 	// keys are the individual part of the path.
 	keys := path.Slice()
@@ -199,6 +203,7 @@ func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, 
 
 					// key is the index of the array, add embedded value to the next iteration.
 					embeddedVals = append(embeddedVals, embeddedVal)
+
 					continue
 				}
 

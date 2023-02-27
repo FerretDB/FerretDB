@@ -100,7 +100,8 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 	distinct := types.MakeArray(len(docs))
 
 	for _, doc := range docs {
-		leavesDoc := []*types.Document{doc}
+		// docsAtSuffix contains document exists at suffix key.
+		docsAtSuffix := []*types.Document{doc}
 		suffix := key
 
 		if strings.ContainsRune(key, '.') {
@@ -110,11 +111,11 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 			}
 
 			// {field1./.../.fieldN: filterValue}
-			suffix, leavesDoc = getDocumentsAtSuffix(doc, path)
+			suffix, docsAtSuffix = getDocumentsAtSuffix(doc, path)
 		}
 
-		for _, d := range leavesDoc {
-			val, err := d.Get(suffix)
+		for _, doc := range docsAtSuffix {
+			val, err := doc.Get(suffix)
 			if err != nil {
 				continue
 			}

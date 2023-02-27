@@ -150,7 +150,7 @@ func TestDistinctCompat(t *testing.T) {
 		},
 		"DotNotationArrayDocumentNoIndex": {
 			field:  "v.foo",
-			filter: bson.D{{"_id", "array-documents-nested"}},
+			filter: bson.D{},
 		},
 		"DotNotationArray": {
 			field:  "v.array.0",
