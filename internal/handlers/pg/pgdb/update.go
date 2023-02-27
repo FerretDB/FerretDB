@@ -40,6 +40,7 @@ func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, id any, do
 	return setById(ctx, tx, qp.DB, table, qp.Comment, id, doc)
 }
 
+// setById sets the document by its ID from the given PostgreSQL schema and table.
 func setById(ctx context.Context, tx pgx.Tx, schema, table, comment string, id any, doc *types.Document) (int64, error) {
 	sql := "UPDATE "
 

@@ -50,7 +50,13 @@ const (
 func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTable string, pgIndex string, err error) {
 	// TODO Validate index key: https://github.com/FerretDB/FerretDB/issues/1509
 
-	pgIndex = formatIndexName(params.index)
+	metadata, err := getMetadata(ctx, tx, params.db, params.collection, true)
+	if err != nil {
+		return "", "", err
+	}
+
+	pgTable = must.NotFail(metadata.Get("table")).(string)
+	pgIndex = formatIndexName(pgTable, params.index)
 
 	newIndex := must.NotFail(types.NewDocument(
 		"pgindex", pgIndex,
@@ -58,13 +64,6 @@ func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTa
 		"key", params.key,
 		"unique", params.unique,
 	))
-
-	metadata, err := getMetadata(ctx, tx, params.db, params.collection, true)
-	if err != nil {
-		return "", "", err
-	}
-
-	pgTable = must.NotFail(metadata.Get("table")).(string)
 
 	var indexes *types.Array
 	if metadata.Has("indexes") {
@@ -105,7 +104,9 @@ func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTa
 
 // formatIndexName returns index name in form <shortened_name>_<name_hash>_idx.
 // Changing this logic will break compatibility with existing databases.
-func formatIndexName(name string) string {
+func formatIndexName(table, index string) string {
+	name := table + "_" + index
+
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))
 
