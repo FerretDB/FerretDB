@@ -317,7 +317,6 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 }
 
 // processpulAllUpdateExpression changes document according to $pullAll array update operator.
-// It should remove all instances of value from the array.
 func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
 	var changed bool
 
