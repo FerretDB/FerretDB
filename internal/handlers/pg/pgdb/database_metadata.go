@@ -35,7 +35,7 @@ const (
 	dbMetadataTableName = reservedPrefix + "database_metadata"
 
 	// Database metadata table unique _id index name.
-	dbMetadataIndexName = dbMetadataTableName + "_id_idx"
+	dbMetadataIndexName = dbMetadataTableName + "_id"
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63

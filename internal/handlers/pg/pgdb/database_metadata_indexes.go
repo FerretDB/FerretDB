@@ -95,18 +95,18 @@ func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTa
 	return
 }
 
-// formatIndexName returns index name in form <shortened_name>_<name_hash>.
+// formatIndexName returns index name in form <shortened_name>_<name_hash>_idx.
 // Changing this logic will break compatibility with existing databases.
 func formatIndexName(name string) string {
 	hash32 := fnv.New32a()
 	_ = must.NotFail(hash32.Write([]byte(name)))
 
-	nameSymbolsLeft := maxIndexNameLength - hash32.Size()*2 - 1
+	nameSymbolsLeft := maxIndexNameLength - hash32.Size()*2 - 5 // 5 is for "_" delimiter and "_idx" suffix
 	truncateTo := len(name)
 
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
+	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{})) + "_idx"
 }
