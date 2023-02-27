@@ -30,7 +30,7 @@ import (
 
 const (
 	// PostgreSQL max index name length.
-	maxIndexNameLength = 59
+	maxIndexNameLength = 63
 )
 
 // setMetadataIndex sets the index info in the metadata table.
