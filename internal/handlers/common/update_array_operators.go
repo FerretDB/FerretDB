@@ -316,7 +316,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	return changed, nil
 }
 
-// processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
+// processpulAllUpdateExpression changes document according to $pullAll array update operator.
+// It should remove all instances of value from the array.
 func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
 	var changed bool
 
@@ -374,34 +375,25 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			)
 		}
 
-		for i := 0; i < array.Len(); {
-			var value any
-
-			value, err = array.Get(i)
+		for j := 0; j < pullAllArray.Len(); j++ {
+			valueToPull, err := pullAllArray.Get(j)
 			if err != nil {
 				return false, lazyerrors.Error(err)
 			}
 
-			for j := 0; j < pullAllArray.Len(); j++ {
-				var valueToPull any
-
-				valueToPull, err = pullAllArray.Get(j)
+			i := array.Len() - 1
+			for i >= 0 {
+				value, err := array.Get(i)
 				if err != nil {
 					return false, lazyerrors.Error(err)
 				}
 
-				compareResult := types.Compare(value, valueToPull)
-
-				if compareResult == types.Equal {
+				if types.Compare(value, valueToPull) == types.Equal {
 					array.Remove(i)
 
 					changed = true
-
-					continue
 				}
-
-				// Increment i only if the value was not removed.
-				i++
+				i--
 			}
 		}
 
