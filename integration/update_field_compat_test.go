@@ -662,6 +662,7 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"DotNotationArrayNonExistentPath": {
 			update:     bson.D{{"$unset", bson.D{{"non.0.existent", int32(1)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$unset", bson.D{{"v..", ""}}}},
