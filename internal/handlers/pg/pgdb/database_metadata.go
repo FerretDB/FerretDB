@@ -35,7 +35,7 @@ const (
 	dbMetadataTableName = reservedPrefix + "database_metadata"
 
 	// Database metadata table unique _id index name.
-	dbMetadataIndexName = dbMetadataTableName + "_id"
+	dbMetadataIndexName = dbMetadataTableName + "_id_idx"
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
@@ -86,9 +86,6 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	if err = createIndexIfNotExists(ctx, tx, db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
-
-	// Index to ensure that index names are unique within a collection
-	// TODO
 
 	tableName = formatCollectionName(collection)
 	metadata := must.NotFail(types.NewDocument(

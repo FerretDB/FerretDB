@@ -17,10 +17,9 @@ package pgdb
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 

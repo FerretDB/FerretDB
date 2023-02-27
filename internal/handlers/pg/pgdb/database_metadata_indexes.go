@@ -16,16 +16,16 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-
-	"github.com/jackc/pgx/v4"
 )
 
 const (
@@ -70,10 +70,18 @@ func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTa
 	if metadata.Has("indexes") {
 		indexes = must.NotFail(metadata.Get("indexes")).(*types.Array)
 
-		it := indexes.Iterator()
+		iter := indexes.Iterator()
+		defer iter.Close()
+
 		for {
-			_, idx, err := it.Next()
-			if err != nil {
+			var idx any
+
+			if _, idx, err = iter.Next(); err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return "", "", lazyerrors.Error(err)
 			}
 
 			idxData := idx.(*types.Document)

@@ -48,7 +48,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	it, err := buildIterator(ctx, tx, &iteratorParams{
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
 		schema: db,
 		table:  dbMetadataTableName,
 	})
@@ -58,11 +58,11 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 	var collections []string
 
-	defer it.Close()
+	defer iter.Close()
 
 	for {
 		var doc *types.Document
-		_, doc, err = it.Next()
+		_, doc, err = iter.Next()
 
 		// if the context is canceled, we don't need to continue processing documents
 		if ctx.Err() != nil {
