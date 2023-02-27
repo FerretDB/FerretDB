@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/url"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -75,8 +76,8 @@ func (h *Handler) Close() {
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	for k, pgPool := range h.pools {
-		pgPool.Close()
+	for k, p := range h.pools {
+		p.Close()
 		delete(h.pools, k)
 	}
 }
@@ -98,17 +99,30 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 
 	url := u.String()
 
+	// fast path
+
 	h.rw.RLock()
-	p, ok := h.pools[url]
+	p := h.pools[url]
 	h.rw.RUnlock()
 
-	if ok {
+	if p != nil {
 		h.L.Debug("DBPool: found existing pool", zap.String("username", username))
 		return p, nil
 	}
 
+	// slow path
+
 	h.rw.Lock()
 	defer h.rw.Unlock()
+
+	// a concurrent connection might have created a pool already; check again
+	if p = h.pools[url]; p != nil {
+		h.L.Debug("DBPool: found existing pool (after acquiring lock)", zap.String("username", username))
+		return p, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
 	p, err := pgdb.NewPool(ctx, url, h.L, h.StateProvider)
 	if err != nil {

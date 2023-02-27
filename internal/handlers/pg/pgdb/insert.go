@@ -30,7 +30,13 @@ import (
 
 // InsertDocument inserts a document into FerretDB database and collection.
 // If database or collection does not exist, it will be created.
-// If the document is not valid, it returns *types.ValidationError.
+//
+// It returns possibly wrapped error:
+//   - *types.ValidationError - if the document is not valid.
+//   - ErrUniqueViolation - if pgerrcode.UniqueViolation error is caught (e.g. due to unique index constraint).
+//   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document) error {
 	if err := doc.ValidateData(); err != nil {
 		return err
@@ -72,8 +78,9 @@ type insertParams struct {
 
 // insert marshals and inserts a document with the given params.
 //
-// If a PostgreSQL conflict occurs (the caller could retry the transaction) it returns
-// possibly wrapped *transactionConflictError.
+// It returns possibly wrapped error:
+//   - ErrUniqueViolation - if the pgerrcode.UniqueViolation error is caught (e.g. due to unique index constraint).
+//   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
@@ -89,8 +96,10 @@ func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
 	}
 
 	switch pgErr.Code {
-	case pgerrcode.UniqueViolation, pgerrcode.DeadlockDetected:
-		// insert failed because such entry already exists or is being created.
+	case pgerrcode.UniqueViolation:
+		// unique violation due to index constraint or database conflict
+		return ErrUniqueViolation
+	case pgerrcode.DeadlockDetected:
 		return newTransactionConflictError(err)
 	default:
 		return lazyerrors.Error(err)
