@@ -60,7 +60,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := getTableNameFromMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -131,7 +131,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
 func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := getTableNameFromMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
 	case err == nil:
@@ -158,8 +158,12 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 
 // queryById returns the first found document by its ID from the given PostgreSQL schema and table.
 // If the document is not found, it returns nil and no error.
-func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
+func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any, forUpdate bool) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
+
+	if forUpdate {
+		query += ` FOR UPDATE`
+	}
 
 	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
 	if err != nil {

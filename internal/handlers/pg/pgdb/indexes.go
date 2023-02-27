@@ -17,30 +17,49 @@ package pgdb
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// indexParams describes the parameters for creating an index.
+// indexParams contains parameters for creating an index.
 type indexParams struct {
-	schema   string // pg schema name
-	table    string // pg table name
-	isUnique bool   // whether the index is unique
+	db         string          // FerretDB database name
+	collection string          // FerretDB collection name
+	index      string          // FerretDB index name
+	key        *types.Document // Index specification (pairs of field names and sort orders)
+	unique     bool            // Whether the index is unique
+}
+
+// createIndex creates a new index for the given params.
+// TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
+func createIndex(ctx context.Context, tx pgx.Tx, params *indexParams) error {
+	pgTable, pgIndex, err := setIndexMetadata(ctx, tx, params)
+	if err != nil {
+		return err
+	}
+
+	if err := createIndexIfNotExists(ctx, tx, params.db, pgTable, pgIndex, true); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // createIndexIfNotExists creates a new index for the given params if it does not exist.
-func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, p *indexParams) error {
+func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
 	var err error
 
 	unique := ""
-	if p.isUnique {
+	if isUnique {
 		unique = " UNIQUE"
 	}
 
-	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{p.table + "_id"}.Sanitize() +
-		` ON ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
-		` ((_jsonb->>'_id'))`
+	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
+		` ON ` + pgx.Identifier{schema, table}.Sanitize() +
+		` ((_jsonb->>'_id'))` // TODO Provide ability to set fields https://github.com/FerretDB/FerretDB/issues/1509
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)

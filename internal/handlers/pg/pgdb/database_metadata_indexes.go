@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,27 +30,69 @@ import (
 
 const (
 	// PostgreSQL max index name length.
-	maxIndexNameLength = 63
+	maxIndexNameLength = 59
 )
 
 // setMetadataIndex sets the index info in the metadata table.
+// It returns a PostgreSQL table name and index name that can be used to create index.
 //
-// Indexes are stored in the `indexes` object.
-// The FerretDB index name is stored as a key.
-// Index settings are stored as a value object:
-//   - the corresponding formatted PostgreSQL index name is stored in the pgindex field.
-func setIndexMetadata(ctx context.Context, tx pgx.Tx, db, collection, index string) (string, error) {
-	var err error
+// Indexes are stored in the `indexes` array of metadata entry.
+//
+// Index settings are stored as an object:
+//   - the corresponding formatted PostgreSQL index name is stored in the pgindex field;
+//   - the corresponding FerretDB index name is stored in the name field;
+//   - the index specification (field-order pairs) is stored in the key field;
+//   - the unique flag is stored in the unique field.
+//
+// It returns a possibly wrapped error:
+//   - ErrTableNotExist - if the metadata table doesn't exist.
+//   - ErrIndexAlreadyExist - if the given index already exists.
+func setIndexMetadata(ctx context.Context, tx pgx.Tx, params *indexParams) (pgTable string, pgIndex string, err error) {
+	// TODO Validate index key: https://github.com/FerretDB/FerretDB/issues/1509
 
-	pgIndex := formatIndexName(index)
+	pgIndex = formatIndexName(params.index)
 
-	indexMetadata := must.NotFail(types.NewDocument(
+	newIndex := must.NotFail(types.NewDocument(
 		"pgindex", pgIndex,
+		"name", params.index,
+		"key", params.key,
+		"unique", params.unique,
 	))
 
-	addToSetByID(ctx, tx, db, collection, "indexes", index, collection)
+	metadata, err := getMetadata(ctx, tx, params.db, params.collection, true)
+	if err != nil {
+		return "", "", err
+	}
 
-	return indexName, nil
+	pgTable = must.NotFail(metadata.Get("table")).(string)
+
+	var indexes *types.Array
+	if metadata.Has("indexes") {
+		indexes = must.NotFail(metadata.Get("indexes")).(*types.Array)
+
+		it := indexes.Iterator()
+		for {
+			_, idx, err := it.Next()
+			if err != nil {
+			}
+
+			idxData := idx.(*types.Document)
+			idxName := must.NotFail(idxData.Get("name")).(string)
+
+			if idxName == params.index {
+				return "", "", ErrIndexAlreadyExist
+			}
+		}
+	}
+
+	indexes.Append(newIndex)
+	metadata.Set("indexes", indexes)
+
+	if err = setMetadata(ctx, tx, params.db, params.collection, metadata); err != nil {
+		return "", "", lazyerrors.Error(err)
+	}
+
+	return
 }
 
 // formatIndexName returns index name in form <shortened_name>_<name_hash>.

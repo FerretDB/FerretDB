@@ -45,7 +45,7 @@ func TestDatabaseMetadata(t *testing.T) {
 
 		var nameFound string
 
-		nameFound, err = getMetadata(ctx, tx, databaseName, collectionName)
+		nameFound, err = getTableNameFromMetadata(ctx, tx, databaseName, collectionName)
 		require.NoError(t, err)
 
 		assert.Equal(t, nameCreated, nameFound)

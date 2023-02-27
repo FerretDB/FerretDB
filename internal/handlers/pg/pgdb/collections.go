@@ -86,7 +86,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	_, err := getMetadata(ctx, tx, db, collection)
+	_, err := getTableNameFromMetadata(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
@@ -126,11 +126,16 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return lazyerrors.Error(err)
 	}
 
-	if err = createIndexIfNotExists(ctx, tx, &indexParams{
-		schema:   db,
-		table:    table,
-		isUnique: true,
-	}); err != nil {
+	// Create default index on _id field.
+	indexParams := indexParams{
+		db:         db,
+		collection: collection,
+		index:      "_id_",
+		key:        must.NotFail(types.NewDocument("_id", 1)),
+		unique:     true,
+	}
+
+	if err := createIndex(ctx, tx, &indexParams); err != nil {
 		return lazyerrors.Error(err)
 	}
 

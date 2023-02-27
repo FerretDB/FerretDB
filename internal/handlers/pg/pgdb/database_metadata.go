@@ -34,6 +34,9 @@ const (
 	// Database metadata table name.
 	dbMetadataTableName = reservedPrefix + "database_metadata"
 
+	// Database metadata table unique _id index name.
+	dbMetadataIndexName = dbMetadataTableName + "_id_idx"
+
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
 )
@@ -51,7 +54,7 @@ const (
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
-	tableName, err = getMetadata(ctx, tx, db, collection)
+	tableName, err = getTableNameFromMetadata(ctx, tx, db, collection)
 
 	switch {
 	case err == nil:
@@ -80,11 +83,7 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	}
 
 	// Index to ensure that collection name is unique
-	if err = createIndexIfNotExists(ctx, tx, &indexParams{
-		schema:   db,
-		table:    dbMetadataTableName,
-		isUnique: true,
-	}); err != nil {
+	if err = createIndexIfNotExists(ctx, tx, db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
@@ -95,7 +94,7 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	metadata := must.NotFail(types.NewDocument(
 		"_id", collection,
 		"table", tableName,
-		"indexes", must.NotFail(types.NewDocument()),
+		"indexes", must.NotFail(types.NewArray()),
 	))
 
 	err = insert(ctx, tx, insertParams{
@@ -116,32 +115,56 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 	}
 }
 
-// getMetadata returns PostgreSQL table name for the given FerretDB database and collection.
+// getTableNameFromMetadata returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
-	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
+func getTableNameFromMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
+	doc, err := getMetadata(ctx, tx, db, collection, false)
 	if err != nil {
 		return "", lazyerrors.Error(err)
-	}
-
-	if !metadataExist {
-		return "", ErrTableNotExist
-	}
-
-	doc, err := queryById(ctx, tx, db, dbMetadataTableName, collection)
-	if err != nil {
-		return "", lazyerrors.Error(err)
-	}
-
-	if doc == nil {
-		// no metadata found for the given collection name
-		return "", ErrTableNotExist
 	}
 
 	table := must.NotFail(doc.Get("table"))
 
 	return table.(string), nil
+}
+
+// getMetadata returns metadata for the given database and collection.
+//
+// If such metadata don't exist, it returns ErrTableNotExist.
+func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdate bool) (*types.Document, error) {
+	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !metadataExist {
+		return nil, ErrTableNotExist
+	}
+
+	doc, err := queryById(ctx, tx, db, dbMetadataTableName, collection, forUpdate)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if doc == nil {
+		// no metadata found for the given collection name
+		return nil, ErrTableNotExist
+	}
+
+	return doc, nil
+}
+
+// setMetadata sets metadata for the given database and collection.
+//
+// To avoid data race, setMetadata should be called only after getMetadata with forUpdate = true,
+// so that the metadata table is locked correctly.
+func setMetadata(ctx context.Context, tx pgx.Tx, db, collection string, metadata *types.Document) error {
+	if _, err := setById(ctx, tx, db, dbMetadataTableName, "", collection, metadata); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // removeMetadata removes metadata for the given database and collection.
