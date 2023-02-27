@@ -195,6 +195,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("package", info.Package),
 		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
+		zap.Bool("disablePushdown", cli.Test.DisablePushdown),
 	}
 	logUUID := stateProvider.Get().UUID
 

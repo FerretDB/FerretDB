@@ -45,7 +45,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
-	var qp tigrisdb.QueryParam
+	var qp tigrisdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
 //
 // It always returns the number of successfully inserted documents and a document with errors.
-func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
 	var insErrors commonerrors.WriteErrors
 
@@ -137,7 +137,7 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.Que
 }
 
 // insertDocument checks if database and collection exist, create them if needed and attempts to insertDocument the given doc.
-func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, doc *types.Document) error {
+func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, doc *types.Document) error {
 	err := dbPool.InsertDocument(ctx, qp.DB, qp.Collection, doc)
 
 	var driverErr *driver.Error

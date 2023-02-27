@@ -148,7 +148,7 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (string,
 //
 // If such metadata don't exist, it doesn't return an error.
 func removeMetadata(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	_, err := deleteByIDs(ctx, tx, deleteParams{
+	_, err := deleteByIDs(ctx, tx, execDeleteParams{
 		schema: db,
 		table:  dbMetadataTableName,
 	}, []any{collection},
