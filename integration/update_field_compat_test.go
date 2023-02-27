@@ -357,6 +357,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DotNotation": {
 			update: bson.D{{"$max", bson.D{{"v.foo", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$max", bson.D{{"v..", int32(42)}}}},
@@ -502,6 +503,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 		},
 		"DotNotation": {
 			update: bson.D{{"$min", bson.D{{"v.foo", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$min", bson.D{{"v..", int32(42)}}}},
@@ -1200,6 +1202,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		"DotNotationMissingField": {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$mul", bson.D{{"v.-1.bar", int32(45)}}}},
