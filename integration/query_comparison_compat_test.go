@@ -89,7 +89,6 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 
-		// all of these fails while comparing int to doubles
 		"DoubleBigInt64": {
 			filter:         bson.D{{"v", float64(2 << 61)}},
 			resultPushdown: true,
@@ -201,8 +200,8 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 					{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}},
 				}},
 			}}},
-			//resultPushdown: true,
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			resultPushdown: true,
+			skipForTigris:  "Tigris does not support mixed types in arrays",
 		},
 		"DocumentShuffledKeys": {
 			filter: bson.D{{"v", bson.D{
