@@ -582,9 +582,10 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
 		},
-		"DotNotationDocumentNonExisting": {
+		"DotNotationDocumentNotExistentPath": {
 			update:     bson.D{{"$rename", bson.D{{"not.existent.path", ""}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
 		},
 		"DotNotationArrayField": {
 			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
