@@ -374,7 +374,6 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			)
 		}
 
-		// .
 		for j := 0; j < pullAllArray.Len(); j++ {
 			var valueToPull any
 
