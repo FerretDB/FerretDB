@@ -199,6 +199,9 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 		"Int32": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(42)}}}}},
 		},
+		"Int32-Six-Elements": {
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(0), int32(5)}}}}},
+		},
 		"Int64": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int64(42)}}}}},
 		},
