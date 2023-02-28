@@ -296,7 +296,13 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(incKey)
 		if err != nil {
-			return false, lazyerrors.Error(err)
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrEmptyName,
+				fmt.Sprintf(
+					"The update path '%s' contains an empty field name, which is not allowed.",
+					incKey,
+				),
+			)
 		}
 
 		if !doc.HasByPath(path) {

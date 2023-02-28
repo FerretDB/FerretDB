@@ -205,8 +205,8 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"not.existent.path", int32(1)}}}},
 		},
 		"DotNotationMissingField": {
-			update: bson.D{{"$inc", bson.D{{"v..", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+			update:     bson.D{{"$inc", bson.D{{"v..", int32(42)}}}},
+			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
@@ -362,7 +362,6 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		"DotNotationMissingField": {
 			update:     bson.D{{"$max", bson.D{{"v..", int32(42)}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
