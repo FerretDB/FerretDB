@@ -6,6 +6,14 @@
   const t = db.pullall;
   t.drop();
 
+  t.insert({_id: 1, a: [0, 2, 5, 5, 1, 0]});
+  t.updateOne({_id: 1}, {$pullAll: {a: [0, 5]}});
+  const res = t.findOne().a;
+  res.sort();
+  assert.eq([1, 2], res);
+
+  t.drop();
+
   t.insert({a: [1, 2, 3]});
   t.update({}, {$pullAll: {a: [3]}});
   assert.eq([1, 2], t.findOne().a);
