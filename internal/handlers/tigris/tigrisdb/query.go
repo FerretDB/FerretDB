@@ -111,6 +111,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 			}
 
 			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
+			// TODO https://github.com/FerretDB/FerretDB/issues/1914
 			if path.Len() > 1 {
 				continue
 			}
