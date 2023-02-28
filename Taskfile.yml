@@ -112,7 +112,7 @@ tasks:
     deps: [env-up-detach, env-setup]
     cmds:
       - task: env-logs
-
+      
   env-up-offline:
     deps: [env-up-detach-offline, env-setup]
     cmds:
@@ -175,7 +175,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -timeout {{.TIMEOUT}} -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
@@ -188,7 +188,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -timeout {{.TIMEOUT}} -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
@@ -201,7 +201,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -timeout {{.TIMEOUT}} -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
