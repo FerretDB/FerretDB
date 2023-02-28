@@ -275,6 +275,18 @@ tasks:
         --tigris-url=127.0.0.1:8081
         --test-records-dir=records
 
+   run-hana:
+    deps: [build-testcover]
+    cmds:
+      - >
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --handler=hana
+        --listen-addr=:27017
+        --mode=diff-normal
+        --hanainstance-url=not-given
+        --proxy-addr=127.0.0.1:37017
+        --test-records-dir=records
+
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
     deps: [build-testcover]
