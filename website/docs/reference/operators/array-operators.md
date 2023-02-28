@@ -8,7 +8,7 @@ Array query operators allow you to search for specific elements within an array 
 
 | Operator                   | Description                                                                                                             |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`$all`](#all)             | Matches an array that contains all the elements in the specified query                                                  |
+| [`$all`](#all)             | Selects an array that contains all elements from a given query.                                                        |
 | [`$elemMatch`](#elemmatch) | Matches a document that contains an array field with at least one element that matches all the specified query criteria |
 | [`$size`](#size)           | Matches an array with a specified number of elements                                                                    |
 
@@ -65,11 +65,15 @@ db.team.insertMany([
 
 ## $all
 
-*Syntax*: `{ <field>: { $all: [ <value1>, <value2>, ... ] } }`
+*Syntax*: `{ <field>: { $all: [ <element1>, <element2>, ... <elementN> ] } }`
 
-The `$all` operator matches documents where the field value is an array that contains all the specified elements.
+Use the `$all` operator when you want to select documents that contain every single element in a specified array.
 
-For example, find all documents in the `team` collection where the `skills` field contains both `communication` and `content creation` as elements using the following query operation:
+:::note
+When using an `$all` operator, the order of the elements and array size does not matter, as long as the array contains all the elements in the query.
+:::
+
+**Example:** Find all documents in the `team` collection where the `skills` field contains both `communication` and `content creation` as elements using the following query operation:
 
 ```js
 db.team.find({
@@ -97,11 +101,12 @@ The output:
 
 ## $elemMatch
 
-*Syntax*: `{ <field>: { $elemMatch: { <query1>, <query2>, ... } } }`
+*Syntax*: `{ <field>: { $elemMatch: { <condition1>, <condition2>, ... <conditionN>} } }`
 
-The `$elemMatch` operator matches documents where the field value is an array that contains at least one element that matches the given condition.
+To select documents in a specified array field where one or more elements match all listed query conditions, use the `$elemMatch` operator.
 
-For example, to find documents in the `team` collection where the `skills` field is an array that contains the element "Java", use the following query with the `$elemMatch` operator:
+**Example:** Find documents in the `team` collection where the `skills` field is an array that contains the element "Java", and array does not contain the element `communication`.
+Use the following query operation:
 
 ```js
 db.team.find({
@@ -132,11 +137,11 @@ The output:
 
 ## $size
 
-*Syntax*: `{ <field>: { $size: <number> } }`
+*Syntax*: `{ <field>: { $size: <number-of-elements> } }`
 
-The `$size` operator matches arrays with a specified number of elements.
+The `$size` operator is ideal for selecting array fields containing a specified number of elements.
 
-Select the documents in the `team` collection where the `skills` array contains only three elements.
+**Example:** Select the documents in the `team` collection where the `skills` array contains only three elements.
 
 ```js
 db.team.find({
