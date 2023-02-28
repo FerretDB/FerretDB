@@ -227,6 +227,11 @@ var ArrayInt32s = &Values[string]{
 		"array-int32-three": bson.A{int32(42), int32(43), int32(42)},
 		// "array-int32-nil": nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-int32-empty": bson.A{},
+
+		// https://www.mongodb.com/docs/v6.0/reference/operator/update/pullAll/#examples
+		"array-int32-six": bson.A{
+			int32(0), int32(2), int32(5), int32(5), int32(1), int32(0),
+		},
 	},
 }
 
