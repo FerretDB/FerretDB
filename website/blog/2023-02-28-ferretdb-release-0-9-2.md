@@ -14,12 +14,14 @@ We are delighted to announce the release of FerretDB version 0.9.2, which includ
 
 <!--truncate-->
 
-It’s been an intense and thrilling process toward bringing you the open-source alternative to FerretDB.
+The past few weeks were exciting: our cooperation with the open source community is stronger than ever.
+The feedback of developers and service providers makes us confident that we are on the right track with creating truly open source alternative to MongoDB.
 
 Before we go into all the exciting new features in this release, let’s recap FerretDB and what we’re striving to achieve.
 [FerretDB](https://www.ferretdb.io/) is an [open-source alternative to MongoDB](https://blog.ferretdb.io/5-database-alternatives-mongodb-2023/) that converts MongoDB drivers and protocols into SQL with a backend on PostgreSQL.
 
-While our aim is not to be compatible with all the features in MongoDB, we hope to provide all the necessary features you need for real-life use cases, and so far, we’ve added some pretty cool features.
+We are gradually increasing compatibility with MongoDB– including tools, drivers, and the entire ecosystem, so FerretDB can act as a fully open source drop-in replacement for it.
+Be sure to try it out!
 
 Here are some of the notable changes in our previous releases:
 
