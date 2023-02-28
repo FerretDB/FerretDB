@@ -71,6 +71,8 @@ var cli struct {
 
 	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
 
+	SapHANAURL string `name:"saphana-url" help:"SAP HANA URL for 'saphana' handler"`
+
 	// Put flags for other handlers there, between --postgresql-url and --version in the help output.
 	kong.Plugins
 
@@ -314,6 +316,8 @@ func run() {
 		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
+
+		SapHANAURL: cli.SapHANAURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

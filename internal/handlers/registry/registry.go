@@ -53,6 +53,9 @@ type NewHandlerOpts struct {
 	TigrisURL          string
 	TigrisClientID     string
 	TigrisClientSecret string
+
+	// for 'hana' handler
+	SapHANAURL string
 }
 
 // NewHandler constructs a new handler.
