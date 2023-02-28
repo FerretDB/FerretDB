@@ -23,20 +23,17 @@
    * `env GOPROXY=https://proxy.golang.org go mod download -x github.com/FerretDB/FerretDB@<tag>`
    * `https://pkg.go.dev/github.com/FerretDB/FerretDB@<tag>` from <https://pkg.go.dev/github.com/FerretDB/FerretDB?tab=versions>
 
-## Docker
-
-1. Check `task gen-version; git status` output.
-2. `task docker-push-release`.
-3. Check <https://hub.docker.com/r/ferretdb/ferretdb/tags>, <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>.
-
 ## Release
 
-1. Upload the binary and .deb and .rpm packages
-   [from the CI build for the tag](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
-   to the draft release.
-2. Close milestone in issues.
-3. Publish release on GitHub.
-4. Announce it on Slack.
+1. Wait for the [packages CI build](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
+   to finish.
+2. Upload the binary and `.deb` and `.rpm` packages to the draft release.
+3. Wait for the [Docker CI build](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml?query=event%3Apush)
+   to finish.
+4. Check <https://hub.docker.com/r/ferretdb/ferretdb/tags>, <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>.
+5. Close milestone in issues.
+6. Publish release on GitHub.
+7. Announce it on Slack.
 
 ## Soon after
 
