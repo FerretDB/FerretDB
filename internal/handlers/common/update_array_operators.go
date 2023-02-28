@@ -374,7 +374,6 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			)
 		}
 
-		// remove all instances
 		for j := 0; j < pullAllArray.Len(); j++ {
 			valueToPull, indexErr := pullAllArray.Get(j)
 			if err != nil {
