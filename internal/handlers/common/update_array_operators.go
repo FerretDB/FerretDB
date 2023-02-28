@@ -316,7 +316,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	return changed, nil
 }
 
-// processpulAllUpdateExpression changes document according to $pullAll array update operator.
+// processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
 func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
 	var changed bool
 
@@ -380,6 +380,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 				return false, lazyerrors.Error(indexErr)
 			}
 
+			// we remove all instances of valueToPull in array
 			i := array.Len() - 1
 			for i >= 0 {
 				value, indexErr := array.Get(i)
