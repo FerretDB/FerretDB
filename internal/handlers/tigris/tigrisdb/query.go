@@ -103,7 +103,6 @@ func BuildFilter(filter *types.Document) (string, error) {
 				continue
 			}
 
-			// If the key is in dot notation translate it to a tigris dot notation
 			var path types.Path
 			var err error
 
@@ -111,8 +110,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 				return "", lazyerrors.Error(err)
 			}
 
-			// don't pushdown dotnotation filters
-			// TODO reenable them
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
 			}

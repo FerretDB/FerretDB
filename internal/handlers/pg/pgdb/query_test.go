@@ -339,16 +339,13 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereEq,
 		},
 		"IDDotNotation": {
-			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2)",
+			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
 		"DotNotation": {
-			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
-			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
 		},
 	} {
 		name, tc := name, tc

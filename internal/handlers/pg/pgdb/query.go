@@ -262,8 +262,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				return "", nil, lazyerrors.Error(err)
 			}
 
-			// don't pushdown dotnotation filters
-			// TODO reenable them
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
 			}
@@ -278,7 +277,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 			case float64, string, types.ObjectID, int32, int64:
 				// Select if value under the key is equal to provided value.
-				sql := `((_jsonb->%[1]s)::jsonb = %[2]s)`
+				sql := `(_jsonb->%[1]s)::jsonb = %[2]s`
 
 				// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
 				// placeholder $1 is used for field key,
@@ -304,10 +303,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// Select if value under the key is equal to provided value.
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
-			sql := `((_jsonb->%[1]s)::jsonb = %[2]s) OR (_jsonb->%[1]s)::jsonb @> %[2]s`
+			sql := `(_jsonb->%[1]s)::jsonb = %[2]s OR (_jsonb->%[1]s)::jsonb @> %[2]s`
 
 			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-			// placeholder $1 is used for field key or it's path,
+			// placeholder $1 is used for field key,
 			// placeholder $2 is used for field value v.
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
