@@ -1118,6 +1118,18 @@ func testQueryComparisonCompatMultipleOperators() map[string]queryCompatTestCase
 			},
 			resultPushdown: true,
 		},
+		"EqNe": {
+			filter: bson.D{
+				{"v", bson.D{{"$eq", int32(42)}, {"$ne", int32(0)}}},
+			},
+			resultPushdown: true,
+		},
+		"NeDuplicate": {
+			filter: bson.D{
+				{"v", bson.D{{"$ne", int32(42)}, {"$ne", int32(0)}}},
+			},
+			resultPushdown: true,
+		},
 	}
 
 	return testCases

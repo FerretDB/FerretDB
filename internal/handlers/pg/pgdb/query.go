@@ -252,9 +252,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		}
 
 		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
-
-		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
-		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
+		var key any = k     // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
+		var prefix string   // prefix is the first key in path, if the filter key is not a path - the prefix is empty
 
 		if k != "" {
 			// skip $comment
@@ -279,7 +278,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		switch v := v.(type) {
 		case *types.Document:
-			// TODO is it possible to {$eq:f,$ne:a}
 			for docKey, docVal := range v.Map() {
 				switch docKey {
 				case "$eq":
@@ -381,41 +379,6 @@ func equalWhereArray(k any, v any, keyOperator string, p Placeholder) (string, [
 
 	return filter, args
 }
-
-//func generateWhereForOperator(doc *types.Document) {
-//	for k, v := range doc.Map() {
-//		switch k {
-//		case "$eq":
-//			switch docVal := v.(type) {
-//			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-//			case float64, string, types.ObjectID, int32, int64:
-//				sql := `(_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-//
-//				filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-//				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
-//			default:
-//				panic(fmt.Sprintf("Unexpected type of value: %v", v))
-//			}
-//
-//		default:
-//			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-//			continue
-//		}
-//	}
-//	//for k, v := range doc.Map() {
-//	//	switch k {
-//	//	case "$eq":
-//
-//	//		//switch v := v.(type) {
-//	//		//case *types.Document:
-//	//		//default:
-//	//		//}
-//	//	default:
-//	//		// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-//	//		continue
-//	//	}
-//	//}
-//}
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
 func convertJSON(value any) any {
