@@ -476,7 +476,11 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			}
 		}
 
-		doc.SetByPath(path, maxVal)
+		err = doc.SetByPath(path, maxVal)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
 		changed = true
 	}
 
@@ -491,14 +495,44 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 	var changed bool
 
-	for _, field := range minExpression.Keys() {
-		minVal, err := minExpression.Get(field)
+	iter := minExpression.Iterator()
+	for {
+		minKey, minVal, err := iter.Next()
 		if err != nil {
-			// if min field does not exist, don't change anything
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		var path types.Path
+
+		path, err = types.NewPathFromString(minKey)
+		if err != nil {
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrEmptyName,
+				fmt.Sprintf(
+					"The update path '%s' contains an empty field name, which is not allowed.",
+					minKey,
+				),
+			)
+		}
+
+		if !doc.HasByPath(path) {
+			err = doc.SetByPath(path, minVal)
+			if err != nil {
+				return false, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, err.Error())
+			}
+
+			changed = true
 			continue
 		}
 
-		val, _ := doc.Get(field)
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		// if the document value was found, compare it with min value
 		if val != nil {
@@ -512,7 +546,10 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			}
 		}
 
-		doc.Set(field, minVal)
+		err = doc.SetByPath(path, minVal)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		changed = true
 	}
