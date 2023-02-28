@@ -47,7 +47,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
 
-	var qp tigrisdb.QueryParam
+	var qp tigrisdb.QueryParams
 
 	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		resDocs, err := fetchAndFilterDocs(ctx, dbPool, &qp)
+		resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 		if err != nil {
 			return nil, err
 		}
@@ -193,7 +193,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // updateDocument replaces given document.
-func updateDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParam, doc *types.Document) (int, error) {
+func updateDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, doc *types.Document) (int, error) {
 	err := dbPool.ReplaceDocument(ctx, qp.DB, qp.Collection, doc)
 
 	var valErr *types.ValidationError

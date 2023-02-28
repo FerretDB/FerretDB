@@ -1008,10 +1008,7 @@ func TestCommandsAdministrationListIndexes(t *testing.T) {
 			targetRes := FetchAll(t, ctx, targetCur)
 			compatRes := FetchAll(t, ctx, compatCur)
 
-			// TODO Use simple assert.Equal after https://github.com/FerretDB/FerretDB/issues/1384
-			// assert.Equal(t, compatRes, targetRes)
-			assert.Empty(t, targetRes)
-			assert.NotEmpty(t, compatRes)
+			assert.Equal(t, compatRes, targetRes)
 		})
 	}
 }

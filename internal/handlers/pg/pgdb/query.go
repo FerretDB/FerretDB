@@ -39,8 +39,8 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// QueryParam represents options/parameters used for SQL query.
-type QueryParam struct {
+// QueryParams represents options/parameters used for SQL query.
+type QueryParams struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
 	DB         string
@@ -50,7 +50,7 @@ type QueryParam struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, error) {
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
 	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -130,7 +130,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParam) (*types.Document, e
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParam) (iterator.Interface[int, *types.Document], error) {
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
 	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
