@@ -29,16 +29,16 @@ var Composites = &Values[string]{
 	name:     "Composites",
 	handlers: []string{"pg"},
 	data: map[string]any{
-		"document":                   bson.D{{"foo", int32(42)}},
-		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
-		"document-array-document":    bson.D{{"array", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", int32(41)}}}}},
-		"document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
-		"document-notations": bson.D{
-			{"foo[0]", int32(42)},
-			{"*", int32(42)},
-			{"foo[*]", int32(42)},
-			{"@", int32(42)},
-			{"f,oo", int32(42)},
+		"document": bson.D{{"foo", int32(42)}},
+		"document-composite": bson.D{
+			{"foo", int32(42)},
+			{"42", "foo"},
+			{"array", bson.A{int32(42), "foo", nil}},
+		},
+		"document-composite-reverse": bson.D{
+			{"array", bson.A{int32(42), "foo", nil}},
+			{"42", "foo"},
+			{"foo", int32(42)},
 		},
 		"document-null":  bson.D{{"foo", nil}},
 		"document-empty": bson.D{},
@@ -284,9 +284,14 @@ var ArrayDocuments = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"array-documents-nested": bson.A{bson.D{{"foo", bson.A{
-			bson.D{{"bar", "hello"}},
-			bson.D{{"bar", "world"}},
-		}}}},
+		"array-documents-nested": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{
+					bson.D{{"bar", "hello"}},
+					bson.D{{"bar", "world"}},
+				},
+			}},
+		},
 	},
 }

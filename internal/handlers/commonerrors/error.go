@@ -83,6 +83,9 @@ const (
 	// ErrMechanismUnavailable indicates unsupported authentication mechanism.
 	ErrMechanismUnavailable = ErrorCode(334) // MechanismUnavailable
 
+	// ErrDuplicateKey indicates duplicate key violation.
+	ErrDuplicateKey = ErrorCode(11000) // Location11000
+
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
 
