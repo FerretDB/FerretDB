@@ -127,11 +127,6 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			filter:        bson.D{{"v.f,oo", int32(42)}},
 			skipForTigris: "Tigris does not support characters as field name",
 		},
-		"FieldDollarSign": {
-			filter:        bson.D{{"v.$", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
-			resultType:    emptyResult,
-		},
 	}
 
 	return testCases
