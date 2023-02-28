@@ -229,6 +229,21 @@ func testQueryCompatBasic() map[string]queryCompatTestCase {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
 			resultType: emptyResult,
 		},
+		"DollarSignField": {
+			filter:     bson.D{},
+			sort:       bson.D{{"$v.foo", 42}},
+			resultType: emptyResult,
+		},
+		"DollarSignMid": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v.$foo.bar", 42}},
+			resultType: emptyResult,
+		},
+		"DollarSignEnd": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v.$foo", 42}},
+			resultType: emptyResult,
+		},
 	}
 
 	return testCases

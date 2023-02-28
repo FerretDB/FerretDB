@@ -40,6 +40,8 @@ Some default values are overridden in [our Docker image](quickstart_guide/docker
 | `proxy-addr`           | See [Operation modes/Proxy](operation_modes.md#proxy)                     | `FERRETDB_PROXY_ADDR`           |                                         |
 | **Telemetry**          |                                                                           |                                 |                                         |
 | `telemetry`            | See [Configure telemetry](telemetry.md#configure-telemetry)               | `FERRETDB_TELEMETRY`            | `undecided`                             |
+| **Testing**            |                                                                           |                                 |                                         |
+| `test-disable-pushdown` | Disable pushing down queries to the backend (to only filter on FerretDB)  | `FERRETDB_TEST_DISABLE_PUSHDOWN` | `false`                                 |
 
 [tigris-docs-auth]: https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
 [securing-with-tls]: /security#securing-connections-with-tls

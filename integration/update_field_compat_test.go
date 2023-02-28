@@ -130,14 +130,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
 		},
-		"DotNotationFieldExist": {
-			update:        bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
-		},
-		"DotNotationFieldNotExist": {
-			update:        bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1088",
-		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
 			resultType: emptyResult,
@@ -187,30 +179,9 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DoubleIncOnNullValue": {
 			update: bson.D{{"$inc", bson.D{{"v", float64(1)}}}},
 		},
-		"ArrayFieldExist": {
-			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
-		},
-		"DocFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"foo.bar", int32(1)}}}},
-		},
-		"ArrayFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
-		},
 		"FieldNotExist": {
 			update:        bson.D{{"$inc", bson.D{{"foo", int32(1)}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
-		},
-		"DocFieldExist": {
-			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
-		},
-		"DocArrayFieldNotExist": {
-			update: bson.D{{"$inc", bson.D{{"foo.0.baz", int32(1)}}}},
-		},
-		"ArrayFieldValueNotExist": {
-			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
-		},
-		"ArrayFieldIndexNotExist": {
-			update: bson.D{{"$inc", bson.D{{"v.5.foo", int32(1)}}}},
 		},
 		"IncOnString": {
 			update:     bson.D{{"$inc", "string"}},
@@ -223,6 +194,37 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"NotExistStringValue": {
 			update:     bson.D{{"$inc", bson.D{{"foo.bar", "bad value"}}}},
 			resultType: emptyResult,
+		},
+		"DotNotationFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
+		},
+		"DotNotationArrayValue": {
+			update: bson.D{{"$inc", bson.D{{"v.0", int32(1)}}}},
+		},
+		"DotNotationFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"not.existent.path", int32(1)}}}},
+		},
+		"DotNotationMissingField": {
+			update: bson.D{{"$inc", bson.D{{"v..", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
+			skip:   "TODO: fix namespace error",
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
+		},
+		"DotNotationArrayFieldValue": {
+			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
 		},
 	}
 
@@ -353,6 +355,25 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			update:        bson.D{{"$max", bson.D{{"v", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", nil}}}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
+		"DotNotation": {
+			update: bson.D{{"$max", bson.D{{"v.foo", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$max", bson.D{{"v..", int32(42)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -480,6 +501,25 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			update:        bson.D{{"$min", bson.D{{"v", bson.A{bson.D{{"foo", int32(42)}}, bson.D{{"foo", nil}}}}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
 		},
+		"DotNotation": {
+			update: bson.D{{"$min", bson.D{{"v.foo", int32(42)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$min", bson.D{{"v..", int32(42)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$min", bson.D{{"v.-1", int32(42)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -505,30 +545,6 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		"EmptyDest": {
 			update:     bson.D{{"$rename", bson.D{{"v", ""}}}},
 			resultType: emptyResult,
-		},
-		"DotDocumentMove": {
-			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
-		},
-		"DotDocumentDuplicate": {
-			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
-		},
-		"DotDocumentNonExisting": {
-			update:     bson.D{{"$rename", bson.D{{"foo.bar", ""}}}},
-			resultType: emptyResult,
-		},
-		"DotArrayField": {
-			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
-			resultType: emptyResult,
-		},
-		"DotArrayNonExisting": {
-			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
-			resultType: emptyResult,
-		},
-		"Multiple": {
-			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
 		},
 		"MultipleConflictDestSource": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
@@ -558,6 +574,46 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:     bson.D{{"$rename", primitive.D{}}},
 			resultType: emptyResult,
 		},
+		"DotNotationDocumentMove": {
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
+		},
+		"DotNotationDocumentDuplicate": {
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
+		},
+		"DotNotationDocumentNotExistentPath": {
+			update:     bson.D{{"$rename", bson.D{{"not.existent.path", ""}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
+		},
+		"DotNotationArrayField": {
+			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationArrayNonExisting": {
+			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationMultipleFields": {
+			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$rename", bson.D{{"v..", "v.bar"}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$rename", bson.D{{"v.-1.bar", "v.-1.baz"}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$rename", bson.D{{"v.100.bar", "v.100.baz"}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -577,21 +633,6 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		"Nested": {
 			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		},
-		"DotDocument": {
-			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
-		},
-		"DotDocumentNonExisting": {
-			update:     bson.D{{"$unset", bson.D{{"foo.bar", ""}}}},
-			resultType: emptyResult,
-		},
-		"DotArrayField": {
-			update: bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
-		},
-		"DotArrayNonExisting": {
-			update:     bson.D{{"$unset", bson.D{{"foo.0.baz", int32(1)}}}},
-			resultType: emptyResult,
-		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$unset", bson.D{{"v", ""}, {"v", ""}}}},
 			resultType: emptyResult,
@@ -604,18 +645,38 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},
 			resultType: emptyResult,
 		},
-	}
-
-	testUpdateCompat(t, testCases)
-}
-
-func TestUpdateFieldCompatUnsetArray(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]updateCompatTestCase{
 		"EmptyArray": {
 			update:     bson.D{{"$unset", bson.A{}}},
 			resultType: emptyResult,
+		},
+		"DotNotation": {
+			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
+		},
+		"DotNotationNonExistentPath": {
+			update:     bson.D{{"$unset", bson.D{{"not.existent.path", ""}}}},
+			resultType: emptyResult,
+		},
+		"DotArrayField": {
+			update: bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
+		},
+		"DotNotationArrayNonExistentPath": {
+			update:     bson.D{{"$unset", bson.D{{"non.0.existent", int32(1)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$unset", bson.D{{"v..", ""}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update: bson.D{{"$unset", bson.D{{"v.-1.bar", ""}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update: bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -705,33 +766,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"v", bson.D{{"foo", int64(42)}}}}}},
 			skipForTigris: "Tigris cannot set different number type",
 		},
-		"DocFieldExist": {
-			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
-		},
-		"DocumentFieldNotExist": {
-			update:        bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
-		},
-		"ArrayFieldExist": {
-			update:        bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
-		},
-		"ArrayFieldNotExist": {
-			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
-		},
-		"DocArrFieldNotExists_0": {
-			update:        bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
-			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
-		},
-		"DocArrFieldNotExists_1": {
-			update:        bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
-			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
-		},
-		"DocArrFieldNotExists_2": {
-			update:        bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
-			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
-		},
+
 		"DocumentField": {
 			update:        bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
@@ -785,6 +820,48 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"TimestampNoT": {
 			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{I: 12}}}}},
+		},
+		"DocFieldExist": {
+			update: bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
+		},
+		"DocumentFieldNotExist": {
+			update:        bson.D{{"$set", bson.D{{"foo.bar", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
+		},
+		"ArrayFieldExist": {
+			update:        bson.D{{"$set", bson.D{{"v.array.0", int32(1)}}}},
+			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+		},
+		"ArrayFieldNotExist": {
+			update:        bson.D{{"$set", bson.D{{"foo.0.baz", int32(1)}}}},
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1676",
+		},
+		"DocArrFieldNotExists_0": {
+			update:        bson.D{{"$set", bson.D{{"v.0.foo", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
+		},
+		"DocArrFieldNotExists_1": {
+			update:        bson.D{{"$set", bson.D{{"v.1.foo", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
+		},
+		"DocArrFieldNotExists_2": {
+			update:        bson.D{{"$set", bson.D{{"v.2", int32(1)}}}},
+			skipForTigris: "Tigris needs a special data set: https://github.com/FerretDB/FerretDB/issues/1507",
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$set", bson.D{{"v..", int32(1)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -857,6 +934,10 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", nil}},
 			resultType: emptyResult,
 		},
+		"DuplicateKeys": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
+			resultType: emptyResult,
+		},
 		"DocumentFieldExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.foo", int32(1)}}}},
 			resultType: emptyResult,
@@ -877,9 +958,20 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.0.foo", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DuplicateKeys": {
-			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v..", int32(1)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
@@ -1016,21 +1108,6 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		"FieldNotExist": {
 			update: bson.D{{"$mul", bson.D{{"foo", int32(45)}}}},
 		},
-		"DocFieldExist": {
-			update: bson.D{{"$mul", bson.D{{"v.foo", int32(45)}}}},
-		},
-		"DocFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"foo.bar", int32(45)}}}},
-		},
-		"ArrayFieldExist": {
-			update: bson.D{{"$mul", bson.D{{"v.array.0", int32(45)}}}},
-		},
-		"ArrayFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"v.array.foo", int32(45)}}}},
-		},
-		"DocArrayFieldNotExist": {
-			update: bson.D{{"$mul", bson.D{{"foo.0.baz", int32(45)}}}},
-		},
 		"TwoFields": {
 			update: bson.D{{"$mul", bson.D{{"foo", int32(12)}, {"v", int32(1)}}}},
 		},
@@ -1112,6 +1189,33 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			},
 			providers:  providers,
 			resultType: emptyResult,
+		},
+		"DotNotation": {
+			update: bson.D{{"$mul", bson.D{{"v.foo", int32(45)}}}},
+		},
+		"DotNotationNotExistentPath": {
+			update: bson.D{{"$mul", bson.D{{"not.existent.path", int32(45)}}}},
+		},
+		"DotNotationArrayFieldExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.0", int32(45)}}}},
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$mul", bson.D{{"v.array.0.foo", int32(45)}}}},
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+		},
+		"DotNotationNegativeIndex": {
+			update:     bson.D{{"$mul", bson.D{{"v.-1.bar", int32(45)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+		},
+		"DotNotationIndexExceedsArrayLength": {
+			update:     bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
 		},
 	}
 
