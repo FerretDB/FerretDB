@@ -62,6 +62,7 @@ const (
 	elemTypeLong      elemType = "long"
 )
 
+// GetTypeOfValue returns pjson type of supported value.
 func GetTypeOfValue(v any) string {
 	switch v.(type) {
 	case *types.Document:
