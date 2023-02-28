@@ -80,7 +80,7 @@ db.tested.updateOne(
 )
 ```
 
-The document is subsequently purged of all existing instances of the elements in the specified array.
+The document is subsequently purged of all instances of the specified values from the existing array.
 
 Another great addition to our release party is the implementation of authentication for Tigris.
 All the newly added features showcase FerretDB’s dedication to creating a database that’s compatible with a wide variety of use cases.
