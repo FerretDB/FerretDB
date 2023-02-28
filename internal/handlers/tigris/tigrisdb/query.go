@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -90,8 +89,6 @@ func BuildFilter(filter *types.Document) (string, error) {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		key := k // key can be either a single key string '"v"' or Tigris dot notation '"v.foo"'
-
 		// TODO https://github.com/FerretDB/FerretDB/issues/1940
 		if v == "" {
 			continue
@@ -111,22 +108,10 @@ func BuildFilter(filter *types.Document) (string, error) {
 				return "", lazyerrors.Error(err)
 			}
 
+			// don't pushdown dotnotation filters
+			// TODO reenable them
 			if path.Len() > 1 {
-				indexSearch := false
-
-				// TODO https://github.com/FerretDB/FerretDB/issues/1914
-				for _, k := range path.Slice() {
-					if _, err := strconv.Atoi(k); err == nil {
-						indexSearch = true
-						break
-					}
-				}
-
-				if indexSearch {
-					continue
-				}
-
-				key = path.String() // '"v.foo"'
+				continue
 			}
 		}
 
@@ -140,7 +125,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 				return "", lazyerrors.Error(err)
 			}
 
-			res[key] = json.RawMessage(rawValue)
+			res[k] = json.RawMessage(rawValue)
 		default:
 			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
