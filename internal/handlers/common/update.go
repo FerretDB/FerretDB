@@ -140,6 +140,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$pullAll":
+			changed, err = processPullAllArrayUpdateExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, NewCommandError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
@@ -221,12 +227,12 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 // processRenameFieldExpression changes document according to $rename operator.
 // If the document was changed it returns true.
 func processRenameFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
-	renameExpression := update.SortFieldsByKey()
+	update.SortFieldsByKey()
 
 	var changed bool
 
-	for _, key := range renameExpression.Keys() {
-		renameRawValue := must.NotFail(renameExpression.Get(key))
+	for _, key := range update.Keys() {
+		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
 			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
@@ -402,7 +408,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
-	maxExpression = maxExpression.SortFieldsByKey()
+	maxExpression.SortFieldsByKey()
 
 	var changed bool
 
@@ -445,7 +451,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 // If the document was changed it returns true.
 func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	minExpression := updateV.(*types.Document)
-	minExpression = minExpression.SortFieldsByKey()
+	minExpression.SortFieldsByKey()
 
 	var changed bool
 
@@ -731,12 +737,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	pullAll, err := extractValueFromUpdateOperator("$pullAll", update)
+	if err != nil {
+		return err
+	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
 
 	if err = checkConflictingOperators(
-		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet,
+		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll,
 	); err != nil {
 		return err
 	}
@@ -765,7 +776,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			"$set", "$setOnInsert", "$unset",
 
 			// array update operators:
-			"$pop", "$push", "$addToSet":
+			"$pop", "$push", "$addToSet", "$pullAll":
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {

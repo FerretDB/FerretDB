@@ -32,7 +32,7 @@ import (
 )
 
 func TestEmbedded(t *testing.T) {
-	setup.SkipForTigris(t)
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2062")
 
 	t.Parallel()
 

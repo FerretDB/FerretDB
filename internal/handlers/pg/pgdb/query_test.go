@@ -40,7 +40,7 @@ func TestGetDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
-	doc2 := must.NotFail(types.NewDocument("_id", int32(1)))
+	doc2 := must.NotFail(types.NewDocument("_id", int32(2)))
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
@@ -57,7 +57,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -112,7 +112,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -157,7 +157,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -208,7 +208,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -249,7 +249,7 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)

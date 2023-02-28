@@ -360,40 +360,8 @@ func (d *Document) RemoveByPath(path Path) {
 }
 
 // SortFieldsByKey sorts the document fields by ascending order of the key.
-func (d *Document) SortFieldsByKey() *Document {
-	if d.Len() == 0 {
-		return d
-	}
-
-	sorter := &fieldSorter{fields: d.fields}
-	sorter.Sort()
-
-	return d
-}
-
-// fieldSorter sorts the document fields by the key.
-type fieldSorter struct {
-	fields []field
-}
-
-// Sort the document field by key name.
-func (ds *fieldSorter) Sort() {
-	sort.Sort(ds)
-}
-
-// Len returns the length of the fields.
-func (ds *fieldSorter) Len() int {
-	return len(ds.fields)
-}
-
-// Swap changes position of elements i and j.
-func (ds *fieldSorter) Swap(i, j int) {
-	ds.fields[i], ds.fields[j] = ds.fields[j], ds.fields[i]
-}
-
-// Less returns true if the name of i-th key is less than j-th key.
-func (ds *fieldSorter) Less(i, j int) bool {
-	return Compare(ds.fields[i].key, ds.fields[j].key) == Less
+func (d *Document) SortFieldsByKey() {
+	sort.Slice(d.fields, func(i, j int) bool { return d.fields[i].key < d.fields[j].key })
 }
 
 // isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
