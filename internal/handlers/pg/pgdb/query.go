@@ -365,22 +365,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	return query, args, nil
 }
 
-func equalWhereArray(k any, v any, keyOperator string, p Placeholder) (string, []any) {
-	// Select if value under the key is equal to provided value.
-	// If the value under the key is not equal to v,
-	// but the value under the key k is an array - select if it contains the value equal to v.
-	sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
-
-	// operator is -> for non-array, and #> for array
-	// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-	// placeholder $1 is used for field key or it's path,
-	// placeholder $2 is used for field value v.
-	filter := fmt.Sprintf(sql, keyOperator, p.Next(), p.Next())
-	args := []any{k, string(must.NotFail(pjson.MarshalSingleValue(v)))}
-
-	return filter, args
-}
-
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
 func convertJSON(value any) any {
 	switch value := value.(type) {
