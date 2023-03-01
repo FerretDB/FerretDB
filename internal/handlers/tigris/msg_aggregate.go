@@ -102,11 +102,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// TODO pushdown `$match` https://github.com/FerretDB/FerretDB/issues/1894
 
 	var docs []*types.Document
-	iter, err := dbPool.QueryDocuments(ctx, &qp)
 
+	iter, err := dbPool.QueryDocuments(ctx, &qp)
 	if err != nil {
 		return nil, err
 	}
+
 	defer iter.Close()
 
 	docs, err = iterator.Values(iter)
