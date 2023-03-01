@@ -62,11 +62,11 @@ func TestDocumentValidateData(t *testing.T) {
 				doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar", "foo", "baz")),
 				reason: errors.New(`invalid key: "foo" (duplicate keys are not allowed)`),
 			},
-			"PositiveInf": {
+			"PositiveInfinity": {
 				doc:    must.NotFail(NewDocument("v", math.Inf(1))),
 				reason: errors.New(`invalid value: { "v": +Inf } (infinity values are not allowed)`),
 			},
-			"NegativeInf": {
+			"NegativeInfinity": {
 				doc:    must.NotFail(NewDocument("v", math.Inf(-1))),
 				reason: errors.New(`invalid value: { "v": -Inf } (infinity values are not allowed)`),
 			},
