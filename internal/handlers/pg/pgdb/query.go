@@ -256,10 +256,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		switch {
 		case k == "":
 			// do nothing
-		case k[0] == '$':
-			// skip $comment
 		case k == "_id":
 			// simplify _id filters
+		case k[0] == '$':
+			// skip $comment
 			eqOperator = "="
 		default:
 			path, err := types.NewPathFromString(k)
@@ -342,6 +342,25 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	}
 
 	return query, args, nil
+}
+
+type filterOperation int
+
+const (
+	ne filterOperation = iota
+	eq
+	lt
+	gt
+	typeEq
+)
+
+type filtersBuilder struct {
+}
+
+func filter(key string, op filterOperation, val any) {
+	switch op {
+	case eq:
+	}
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
