@@ -131,7 +131,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 							return "", lazyerrors.Error(err)
 						}
 
-						res[key] = json.RawMessage(rawValue)
+						res[k] = json.RawMessage(rawValue)
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}

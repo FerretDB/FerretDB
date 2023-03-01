@@ -210,8 +210,7 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultType:    emptyResult,
 		},
 		"DocumentDotNotation": {
-			filter:         bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
 		},
 		"DocumentReverse": {
 			filter: bson.D{{"v", bson.D{
@@ -426,8 +425,9 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 				}},
 				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
-			resultType:    emptyResult,
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			resultType:     emptyResult,
+			resultPushdown: true,
+			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", nil}}}}}},
