@@ -290,7 +290,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						builder.addFilter(k, eq, docVal)
-
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -302,7 +301,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						builder.addFilter(k, ne, docVal)
-
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -380,6 +378,7 @@ func (fb *filtersBuilder) addFilter(key string, op builderOperator, val any) {
 
 		fb.filters = append(fb.filters, fmt.Sprintf(sql, fb.p.Next(), fb.p.Next()))
 		fb.args = append(fb.args, key, string(must.NotFail(pjson.MarshalSingleValue(val))))
+
 	default:
 		panic(fmt.Sprintf("Unexpected builder operator: %v", op))
 	}

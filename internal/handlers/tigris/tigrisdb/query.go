@@ -152,7 +152,6 @@ func BuildFilter(filter *types.Document) (string, error) {
 						if err != nil {
 							return "", lazyerrors.Error(err)
 						}
-
 						res[k] = json.RawMessage(rawValue)
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -160,12 +159,15 @@ func BuildFilter(filter *types.Document) (string, error) {
 
 				default:
 					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					// TODO $ne https://github.com/FerretDB/FerretDB/issues/2052
 					continue
 				}
 			}
+
 		case *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
+
 		case float64, string, types.ObjectID, int32, int64:
 			rawValue, err := tjson.Marshal(v)
 			if err != nil {
@@ -173,6 +175,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 			}
 
 			res[k] = json.RawMessage(rawValue)
+
 		default:
 			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
 		}
