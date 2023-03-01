@@ -34,6 +34,7 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     on:
+      push:
       pull_request:
         paths:
           - 'docs/**'
