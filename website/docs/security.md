@@ -1,5 +1,7 @@
 ---
 sidebar_position: 10
+description: >
+  TLS and authentication.
 ---
 
 # Security

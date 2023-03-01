@@ -414,6 +414,8 @@ tasks:
       COMMIT:
         sh: cat build/version/commit.txt
 
+  # TODO set annotations,
+  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
   docker-push:
     deps: [gen-version]
     cmds:
