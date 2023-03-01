@@ -419,6 +419,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	var changed bool
 
 	iter := maxExpression.Iterator()
+	defer iter.Close()
 
 	for {
 		maxKey, maxVal, err := iter.Next()
@@ -496,6 +497,7 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	var changed bool
 
 	iter := minExpression.Iterator()
+	defer iter.Close()
 
 	for {
 		minKey, minVal, err := iter.Next()
