@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -79,6 +80,9 @@ func NewStaticPath(path ...string) Path {
 	return must.NotFail(NewPathFromString(strings.Join(path, ".")))
 }
 
+// indexRe validates array index value.
+var indexRe = regexp.MustCompile(`^-?\d+$`)
+
 // NewPathFromString returns Path from path string and error.
 // It returns an error if the path is empty or contains empty elements.
 // Path string should contain fields separated with '.'.
@@ -92,7 +96,7 @@ func NewPathFromString(s string) (Path, error) {
 			return res, newDocumentPathError(ErrDocumentPathEmptyKey, errors.New("path element must not be empty"))
 		}
 
-		if strings.ContainsAny(s, "1234567890") {
+		if indexRe.MatchString(s) {
 			index, err := strconv.Atoi(s)
 			if err != nil {
 				return res, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, err)
