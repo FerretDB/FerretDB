@@ -17,6 +17,7 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -91,7 +92,19 @@ func BuildFilter(filter *types.Document) (string, error) {
 
 	res := map[string]any{}
 
-	for k, v := range filter.Map() {
+	iter := filter.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", lazyerrors.Error(err)
+		}
+
 		// TODO https://github.com/FerretDB/FerretDB/issues/1940
 		if v == "" {
 			continue
@@ -119,11 +132,24 @@ func BuildFilter(filter *types.Document) (string, error) {
 
 		switch v := v.(type) {
 		case *types.Document:
-			for docKey, docVal := range v.Map() {
+			iter := v.Iterator()
+			defer iter.Close()
+
+			for {
+				docKey, docVal, err := iter.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					return "", lazyerrors.Error(err)
+				}
+
 				switch docKey {
 				case "$eq":
 					switch docVal := docVal.(type) {
-					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+					case *types.Document, *types.Array, types.Binary, bool,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						rawValue, err := tjson.Marshal(docVal)

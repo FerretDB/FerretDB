@@ -269,11 +269,24 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		switch v := v.(type) {
 		case *types.Document:
-			for docKey, docVal := range v.Map() {
+			iter := v.Iterator()
+			defer iter.Close()
+
+			for {
+				docKey, docVal, err := iter.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					return "", nil, lazyerrors.Error(err)
+				}
+
 				switch docKey {
 				case "$eq":
 					switch docVal := docVal.(type) {
-					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+					case *types.Document, *types.Array, types.Binary, bool,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						builder.addFilter(k, eq, docVal)
@@ -284,7 +297,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				case "$ne":
 					switch docVal := docVal.(type) {
-					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+					case *types.Document, *types.Array, types.Binary, bool,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						builder.addFilter(k, ne, docVal)
@@ -312,6 +326,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	}
 
 	query, args := builder.generateWhereClause()
+
 	return query, args, nil
 }
 
@@ -351,11 +366,16 @@ func (fb *filtersBuilder) addFilter(key string, op builderOperator, val any) {
 		fb.args = append(fb.args, key, string(must.NotFail(pjson.MarshalSingleValue(val))))
 
 	case ne:
-		// The check for key containment is necessary, as NOT won't work correctly if the key does not exist.
 		sql := `NOT ( ` +
-			`_jsonb ? %[1]s AND ` + // does document contain the key,
-			`(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s AND ` + // does the value under the key is equal to the filter
-			`(_jsonb->'$s'->'p'->%[1]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(val) + // does the value type is equal to the filter's one
+			// does document contain the key,
+			// it is necessary, as NOT won't work correctly if the key does not exist.
+			`_jsonb ? %[1]s AND ` +
+
+			// does the value under the key is equal to the filter
+			`(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s AND ` +
+
+			// does the value type is equal to the filter's one
+			`(_jsonb->'$s'->'p'->%[1]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(val) +
 			`"')`
 
 		fb.filters = append(fb.filters, fmt.Sprintf(sql, fb.p.Next(), fb.p.Next()))
@@ -373,6 +393,7 @@ func (fb *filtersBuilder) generateWhereClause() (string, []any) {
 	if len(fb.filters) > 0 {
 		clause = ` WHERE ` + strings.Join(fb.filters, " AND ")
 	}
+
 	return clause, fb.args
 }
 
