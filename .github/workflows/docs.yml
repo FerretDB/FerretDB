@@ -33,6 +33,14 @@ jobs:
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
+    on:
+      pull_request:
+        paths:
+          - 'docs/**'
+          - 'website/**'
+          - 'build/deps/docusaurus-docs.Dockerfile'
+          - '*.md'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
