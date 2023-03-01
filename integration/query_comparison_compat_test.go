@@ -1082,8 +1082,9 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 		},
 	}
 
-	for _, tc := range testCases {
+	for k, tc := range testCases {
 		tc.skipForTigris = "https://github.com/FerretDB/FerretDB/issues/2052"
+		testCases[k] = tc
 	}
 
 	return testCases
