@@ -477,8 +477,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			}
 		}
 
-		err = doc.SetByPath(path, maxVal)
-		if err != nil {
+		if err = doc.SetByPath(path, maxVal); err != nil {
 			return false, lazyerrors.Error(err)
 		}
 
