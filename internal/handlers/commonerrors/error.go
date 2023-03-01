@@ -86,6 +86,12 @@ const (
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
 
+	// ErrMatchBadExpression indicates match filter is not object.
+	ErrMatchBadExpression = ErrorCode(15959)
+
+	// ErrSortBadExpression indicates sort field is not object.
+	ErrSortBadExpression = ErrorCode(15973)
+
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
 

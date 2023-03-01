@@ -32,7 +32,7 @@ func newSort(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageInvalid,
+			commonerrors.ErrSortBadExpression,
 			"the $sort key specification must be an object",
 			"aggregate",
 		)
