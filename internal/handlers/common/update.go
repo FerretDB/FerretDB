@@ -549,8 +549,7 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			}
 		}
 
-		err = doc.SetByPath(path, minVal)
-		if err != nil {
+		if err = doc.SetByPath(path, minVal); err != nil {
 			return false, lazyerrors.Error(err)
 		}
 
