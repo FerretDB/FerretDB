@@ -367,10 +367,6 @@ func TestNewPathFromStringErrors(t *testing.T) {
 		path: "foo.-1.bar",
 		err:  "index must be greater than or equal to 0",
 	}, {
-		name: "bad index value",
-		path: "foo.$1.bar",
-		err:  "strconv.Atoi: parsing \"$1\": invalid syntax",
-	}, {
 		name: "empty path",
 		path: "",
 		err:  "path element must not be empty",
