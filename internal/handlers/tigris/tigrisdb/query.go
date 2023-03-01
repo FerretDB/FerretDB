@@ -173,7 +173,6 @@ func BuildFilter(filter *types.Document) (string, error) {
 			if err != nil {
 				return "", lazyerrors.Error(err)
 			}
-
 			res[k] = json.RawMessage(rawValue)
 
 		default:
