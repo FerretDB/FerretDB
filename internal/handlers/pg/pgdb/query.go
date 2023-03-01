@@ -251,12 +251,17 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		if k != "" {
-			// skip $comment
-			if k[0] == '$' {
-				continue
-			}
+		eqOperator := "@>"
 
+		switch {
+		case k == "":
+			// do nothing
+		case k[0] == '$':
+			// skip $comment
+		case k == "_id":
+			// simplify _id filters
+			eqOperator = "="
+		default:
 			path, err := types.NewPathFromString(k)
 			if err != nil {
 				return "", nil, lazyerrors.Error(err)
@@ -268,19 +273,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			}
 		}
 
-		idPresent := k == "_id"
-
 		switch v := v.(type) {
 		case *types.Document:
 			for docKey, docVal := range v.Map() {
 				switch docKey {
 				case "$eq":
-					eqOperator := "@>"
-
-					if idPresent {
-						eqOperator = "="
-					}
-
 					switch docVal := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
@@ -294,19 +291,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					}
 
 				case "$ne":
-					eqOperator := "@>"
-
-					if idPresent {
-						eqOperator = "="
-					}
-
 					switch docVal := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 
 					case float64, string, types.ObjectID, int32, int64:
-						// The check for key containment is neccessary, as NOT won't work correctly if the path does not exist.
+						// The check for key containment is necessary, as NOT won't work correctly if the path does not exist.
 						sql := `NOT ( ` +
-							`_jsonb ? %[1]s AND ` + // does document contain the key, TODO test for dotnotation
+							`_jsonb ? %[1]s AND ` + // does document contain the key,
 							`(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s AND ` + // does the value under the key is equal to the filter
 							`(_jsonb->'$s'->'p'->%[1]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + // does the value type is equal to the filter's one
 							`"')`
@@ -328,11 +319,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			eqOperator := "@>"
-
-			if idPresent {
-				eqOperator = "="
-			}
 			// Select if value under the key is equal to provided value.
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
