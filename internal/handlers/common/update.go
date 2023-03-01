@@ -514,7 +514,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				switch pathErr.Code() {
 				case types.ErrDocumentPathEmptyKey:
 					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrTypeMismatch,
+						commonerrors.ErrEmptyName,
 						fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
 							"{_id: %s} has the field '%s' of non-numeric type object",
 							must.NotFail(doc.Get("_id")),
