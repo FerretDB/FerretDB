@@ -15,6 +15,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -23,7 +24,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -41,6 +41,8 @@ const (
 	ErrDocumentPathIndexOutOfBound
 	// ErrDocumentPathCannotCreateField indicates that it's impossible to create a specific field.
 	ErrDocumentPathCannotCreateField
+	// ErrDocumentPathEmptyKey indicates that provided path contains empty key.
+	ErrDocumentPathEmptyKey
 )
 
 // DocumentPathError describes an error that could occur on document path related operations.
@@ -84,13 +86,24 @@ func NewPathFromString(s string) (Path, error) {
 	var res Path
 
 	path := strings.Split(s, ".")
-	if len(path) == 0 {
-		return res, lazyerrors.New("empty path")
-	}
 
 	for _, s := range path {
 		if s == "" {
-			return res, lazyerrors.New("path element must not be empty")
+			return res, newDocumentPathError(ErrDocumentPathEmptyKey, errors.New("path element must not be empty"))
+		}
+
+		if strings.ContainsAny(s, "1234567890") {
+			index, err := strconv.Atoi(s)
+			if err != nil {
+				return res, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, err)
+			}
+
+			if index < 0 {
+				return res, newDocumentPathError(
+					ErrDocumentPathIndexOutOfBound,
+					errors.New("index must be greater than or equal to 0"),
+				)
+			}
 		}
 	}
 

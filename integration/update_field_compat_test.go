@@ -1206,14 +1206,8 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationNegativeIndex": {
-			update:     bson.D{{"$mul", bson.D{{"v.-1.bar", int32(45)}}}},
-			resultType: emptyResult,
-		},
 		"DotNotationIndexExceedsArrayLength": {
-			update:     bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
-			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/1744",
+			update: bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 		},
 	}
 

@@ -508,10 +508,26 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(mulKey)
 		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf("The update path '%s' contains an empty field name, which is not allowed.", mulKey),
-			)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				switch pathErr.Code() {
+				case types.ErrDocumentPathEmptyKey:
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrTypeMismatch,
+						fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
+							"{_id: %s} has the field '%s' of non-numeric type object",
+							must.NotFail(doc.Get("_id")),
+							mulKey,
+						),
+					)
+				case types.ErrDocumentPathIndexOutOfBound:
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrUnsuitableValueType,
+						fmt.Sprintf("The update path '%s' contains a negative array index, which is not supported", mulKey),
+					)
+				}
+			}
 		}
 
 		if !doc.HasByPath(path) {
