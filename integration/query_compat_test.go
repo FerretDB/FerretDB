@@ -29,14 +29,13 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter              bson.D                   // required
-	sort                bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	projection          bson.D                   // nil for leaving projection unset
-	resultType          compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown      bool                     // defaults to false
-	doNotAssertPushDown bool                     // used to prevent tests failing due to only some dataset using pushed down
-	skipForTigris       string                   // skip test for Tigris
-	skip                string                   // skip test for all handlers, must have issue number mentioned
+	filter         bson.D                   // required
+	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	projection     bson.D                   // nil for leaving projection unset
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown bool                     // defaults to false
+	skipForTigris  string                   // skip test for Tigris
+	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -98,9 +97,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					if !tc.doNotAssertPushDown {
-						assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
-					}
+					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)

@@ -110,7 +110,7 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 				return nil, lazyerrors.Error(err)
 			}
 
-			// {field1./.../.fieldN: filterValue}
+			// Multiple documents may be found at suffix by array dot notation.
 			suffix, docsAtSuffix = getDocumentsAtSuffix(doc, path)
 		}
 

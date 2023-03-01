@@ -157,13 +157,14 @@ func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, 
 	// docsAtSuffix are the document found at the suffix.
 	docsAtSuffix = []*types.Document{}
 
-	// keys are the individual part of the path.
+	// keys are each part of the path.
 	keys := path.Slice()
 
 	// vals are the field values found at each key of the path.
 	vals := []any{doc}
 
 	for i, key := range keys {
+		// embeddedVals are the values found at current key.
 		var embeddedVals []any
 
 		for _, valAtKey := range vals {
