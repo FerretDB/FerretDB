@@ -76,11 +76,13 @@ jobs:
           --verbose
           .
 
+      # it has to be exactly "docs.tar" for actions/deploy-pages below
       - name: Upload archive artifact
         uses: actions/upload-artifact@v3
         with:
           name: docs
           path: docs.tar
+          retention-days: 1
           if-no-files-found: error
 
       - name: Check dirty
