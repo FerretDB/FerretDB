@@ -105,26 +105,22 @@ func BuildFilter(filter *types.Document) (string, error) {
 			return "", lazyerrors.Error(err)
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1940
-		if v == "" {
+		switch {
+		case k == "":
+			// do nothing
+		case k[0] == '$':
+			// skip $comment
 			continue
-		}
-
-		if k != "" {
-			// don't pushdown $comment, it's attached to query in handlers
-			if k[0] == '$' {
-				continue
-			}
-
-			var path types.Path
-			var err error
-
-			if path, err = types.NewPathFromString(k); err != nil {
+		case v == "":
+			// TODO https://github.com/FerretDB/FerretDB/issues/1940
+			continue
+		default:
+			path, err := types.NewPathFromString(k)
+			if err != nil {
 				return "", lazyerrors.Error(err)
 			}
 
 			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
-			// TODO https://github.com/FerretDB/FerretDB/issues/1914
 			if path.Len() > 1 {
 				continue
 			}
