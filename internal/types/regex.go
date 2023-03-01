@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"regexp"
 	"regexp/syntax"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 var (
@@ -87,6 +89,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 	}
 
 	if err, ok := err.(*syntax.Error); ok {
+		//nolint:exhaustive // we don't need to handle all possible errors there
 		switch err.Code {
 		case syntax.ErrInvalidCharRange:
 			return nil, ErrInvalidClassRange
@@ -110,9 +113,10 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 			return nil, ErrTrailingBackslash
 		case syntax.ErrUnexpectedParen:
 			return nil, ErrUnmatchedParentheses
-		case syntax.ErrInternalError, syntax.ErrInvalidCharClass, syntax.ErrInvalidUTF8, syntax.ErrNestingDepth:
-			return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+		default:
+			return nil, lazyerrors.Error(err)
 		}
 	}
-	return nil, fmt.Errorf("types.Regex.Compile: %w", err)
+
+	return nil, lazyerrors.Error(err)
 }
