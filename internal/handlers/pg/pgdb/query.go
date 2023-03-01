@@ -251,10 +251,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
-		var key any = k     // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
-		var prefix string   // prefix is the first key in path, if the filter key is not a path - the prefix is empty
-
 		if k != "" {
 			// skip $comment
 			if k[0] == '$' {
@@ -266,15 +262,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				return "", nil, lazyerrors.Error(err)
 			}
 
-			// If the key is in dot notation use path operator (#>)
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
-				keyOperator = "#>"
-				key = path.Slice()     // '{v,foo}'
-				prefix = path.Prefix() // 'v'
+				continue
 			}
 		}
 
-		idPresent := k == "_id" || prefix == "_id"
+		idPresent := k == "_id"
 
 		switch v := v.(type) {
 		case *types.Document:
@@ -293,8 +287,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case float64, string, types.ObjectID, int32, int64:
 						sql := `(_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s`
 
-						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+						filters = append(filters, fmt.Sprintf(sql, k, p.Next(), p.Next()))
+						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -317,8 +311,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 							`(_jsonb->'$s'->'p'->%[2]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(docVal) + // does the value type is equal to the filter's one
 							`"')`
 
-						filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-						args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
+						filters = append(filters, fmt.Sprintf(sql, k, p.Next(), p.Next()))
+						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(docVal))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -344,12 +338,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// but the value under the key k is an array - select if it contains the value equal to v.
 			sql := `(_jsonb%[1]s%[2]s)::jsonb ` + eqOperator + ` %[3]s`
 
-			// operator is -> for non-array, and #> for array
 			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-			// placeholder $1 is used for field key or it's path,
+			// placeholder $1 is used for field key,
 			// placeholder $2 is used for field value v.
-			filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-			args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))

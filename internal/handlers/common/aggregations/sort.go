@@ -22,46 +22,39 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// match represents $match stage.
-type match struct {
-	filter *types.Document
+// sort represents $sort stage.
+type sort struct {
+	fields *types.Document
 }
 
-// newMatch creates a new $match stage.
-func newMatch(stage *types.Document) (Stage, error) {
-	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
+// newSort creates a new $sort stage.
+func newSort(stage *types.Document) (Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMatchBadExpression,
-			"the match filter must be an expression in an object",
+			commonerrors.ErrSortBadExpression,
+			"the $sort key specification must be an object",
 			"aggregate",
 		)
 	}
 
-	return &match{
-		filter: filter,
+	// TODO: https://github.com/FerretDB/FerretDB/issues/2090
+
+	return &sort{
+		fields: fields,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	var res []*types.Document
-
-	for _, doc := range in {
-		matches, err := common.FilterDocument(doc, m.filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if matches {
-			res = append(res, doc)
-		}
+func (m *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	if err := common.SortDocuments(in, m.fields); err != nil {
+		return nil, err
 	}
 
-	return res, nil
+	return in, nil
 }
 
 // check interfaces
 var (
-	_ Stage = (*match)(nil)
+	_ Stage = (*sort)(nil)
 )

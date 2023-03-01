@@ -26,10 +26,10 @@ import (
 type newStageFunc func(stage *types.Document) (Stage, error)
 
 // Stage is a common interface for all aggregation stages.
-//
 // TODO use iterators instead of slices of documents
 // https://github.com/FerretDB/FerretDB/issues/1889.
 type Stage interface {
+	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
 }
 
@@ -38,6 +38,7 @@ var stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$count": newCount,
 	"$match": newMatch,
+	"$sort":  newSort,
 }
 
 // NewStage creates a new aggregation stage.
