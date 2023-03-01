@@ -36,11 +36,12 @@ jobs:
     on:
       push:
       pull_request:
-        paths:
-          - 'docs/**'
-          - 'website/**'
-          - 'build/deps/docusaurus-docs.Dockerfile'
-          - '*.md'
+        paths_ignore:
+          - 'cmd/**'
+          - 'ferretdb/**'
+          - 'integration/**'
+          - 'internal/**'
+          - 'tools/**'
 
     steps:
       - name: Checkout code
