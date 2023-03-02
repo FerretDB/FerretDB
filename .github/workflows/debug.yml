@@ -43,9 +43,9 @@ jobs:
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.head_ref }} # checkout named branch, not detached HEAD
+          # ref: ${{ github.head_ref }} # checkout named branch, not detached HEAD
 
-      - name: Check dirty
+      - name: Check git
         run: |
+          git branch -a
           git status
-          git diff --exit-code
