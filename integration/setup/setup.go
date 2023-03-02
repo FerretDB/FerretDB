@@ -54,7 +54,6 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	recordsDirF      = flag.String("records-dir", "", "directory for record files")
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
 )
 

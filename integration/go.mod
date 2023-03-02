@@ -1,6 +1,6 @@
 module github.com/FerretDB/FerretDB/integration
 
-go 1.19
+go 1.20
 
 replace github.com/FerretDB/FerretDB => ../
 
@@ -24,7 +24,7 @@ require (
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/SAP/go-hdb v1.1.0 // indirect
+	github.com/SAP/go-hdb v1.1.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.41.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.23 // indirect
+	github.com/tigrisdata/tigris-client-go v1.0.0-beta.24 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
