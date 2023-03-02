@@ -1206,6 +1206,12 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		"DotNotationIndexExceedsArrayLength": {
 			update: bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 		},
+		"DotNotationFieldNumericName": {
+			update: bson.D{{"$mul", bson.D{{"v.array.42", int32(42)}}}},
+		},
+		"DotNotationNegativeIndex": {
+			update: bson.D{{"$mul", bson.D{{"v.array.-1", int32(42)}}}},
+		},
 	}
 
 	testUpdateCompat(t, testCases)

@@ -596,11 +596,6 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 							mulKey,
 						),
 					)
-				case types.ErrDocumentPathIndexOutOfBound:
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrUnsuitableValueType,
-						fmt.Sprintf("The update path '%s' contains a negative array index, which is not supported", mulKey),
-					)
 				}
 			}
 		}

@@ -95,20 +95,6 @@ func NewPathFromString(s string) (Path, error) {
 		if s == "" {
 			return res, newDocumentPathError(ErrDocumentPathEmptyKey, errors.New("path element must not be empty"))
 		}
-
-		if indexRe.MatchString(s) {
-			index, err := strconv.Atoi(s)
-			if err != nil {
-				return res, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, err)
-			}
-
-			if index < 0 {
-				return res, newDocumentPathError(
-					ErrDocumentPathIndexOutOfBound,
-					errors.New("index must be greater than or equal to 0"),
-				)
-			}
-		}
 	}
 
 	res = Path{s: make([]string, len(path))}

@@ -352,33 +352,3 @@ func TestPathSuffixPrefix(t *testing.T) {
 		})
 	}
 }
-
-func TestNewPathFromStringErrors(t *testing.T) {
-	t.Parallel()
-
-	type testCase struct {
-		name string
-		path string
-		err  string
-	}
-
-	for _, tc := range []testCase{{
-		name: "negative index",
-		path: "foo.-1.bar",
-		err:  "index must be greater than or equal to 0",
-	}, {
-		name: "empty path",
-		path: "",
-		err:  "path element must not be empty",
-	}} {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewPathFromString(tc.path)
-
-			require.EqualError(t, err, tc.err)
-		})
-	}
-}
