@@ -47,14 +47,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
-			filter:         bson.D{{"v.foo", int32(42)}},
-			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
-			resultPushdown: true,
+			filter:        bson.D{{"v.foo", int32(42)}},
+			skipForTigris: "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentDotNotationNoSuchField": {
-			filter:         bson.D{{"no-such-field.some", 42}},
-			resultType:     emptyResult,
-			resultPushdown: true,
+			filter:     bson.D{{"no-such-field.some", 42}},
+			resultType: emptyResult,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},

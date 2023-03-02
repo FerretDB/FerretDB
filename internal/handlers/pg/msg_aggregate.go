@@ -75,7 +75,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
 	if qp.Collection, ok = collection.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collection)),
 			document.Command(),
@@ -91,9 +91,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	stages := make([]aggregations.Stage, len(stagesDocs))
 
 	for i, d := range stagesDocs {
+		d, ok := d.(*types.Document)
+		if !ok {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"Each element of the 'pipeline' array must be an object",
+				document.Command(),
+			)
+		}
+
 		var s aggregations.Stage
 
-		if s, err = aggregations.NewStage(d.(*types.Document)); err != nil {
+		if s, err = aggregations.NewStage(d); err != nil {
 			return nil, err
 		}
 

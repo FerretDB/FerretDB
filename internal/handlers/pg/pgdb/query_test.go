@@ -289,7 +289,7 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereEq := " WHERE ((_jsonb->$1)::jsonb = $2)"
+	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
 	whereEqOrContain := whereEq + " OR (_jsonb->$1)::jsonb @> $2"
 
 	for name, tc := range map[string]struct {
@@ -339,16 +339,13 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereEq,
 		},
 		"IDDotNotation": {
-			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2)",
+			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
 		"DotNotation": {
-			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
-			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
 		},
 	} {
 		name, tc := name, tc

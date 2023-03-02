@@ -51,15 +51,15 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Run build-testcover
-        run: bin/task build-testcover
+      - name: Run build-local
+        run: bin/task build-local
 
       - name: Wait for and setup environment
         run: bin/task env-setup
 
       - name: Start FerretDB in the background
         run: >
-          bin/ferretdb-testcover
+          bin/ferretdb-local
           --listen-addr=:27017
           --proxy-addr=127.0.0.1:47017
           --mode=diff-normal
@@ -73,13 +73,14 @@ jobs:
       - name: Run testjs for FerretDB
         run: bin/task testjs
 
+      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload FerretDB log
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: ferretdb.log
           path: ferretdb.log
-          retention-days: 14
+          retention-days: 1
           if-no-files-found: error
 
       - name: Show FerretDB log

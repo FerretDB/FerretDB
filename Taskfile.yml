@@ -5,6 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
+  INTEGRATIONTIME: 11m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -22,7 +23,7 @@ tasks:
     desc: "Generate, format, build, test and lint code and documentation"
     cmds:
       - task: gen
-      - task: build-testcover
+      - task: build-local
       - task: test
       - task: lint
       - task: security
@@ -43,13 +44,13 @@ tasks:
     env:
       CGO_ENABLED: 0
 
-  build-testcover:
-    desc: "Build bin/ferretdb-testcover{{exeExt}}"
+  build-local:
+    desc: "Build bin/ferretdb-local{{exeExt}} on the host"
     run: once
     deps: [gen-version]
     cmds:
       # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-local{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
@@ -80,7 +81,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - rm -fr .cache .task tools/.task integration/.task records tmp
+      - rm -fr .cache .task tools/.task integration/.task tmp
       - task: env-pull
       - task: init
 
@@ -175,37 +176,34 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -records-dir=../records
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
         -compat-url=mongodb://127.0.0.1:47017/
-        -records-dir=../records
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
-        -records-dir=../records
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -251,36 +249,36 @@ tasks:
 
   run:
     desc: "Run FerretDB with `pg` handler"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        --test-records-dir=records
+        --test-records-dir=tmp/records
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=tigris
         --tigris-url=127.0.0.1:8081
-        --test-records-dir=records
+        --test-records-dir=tmp/records
 
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -290,15 +288,15 @@ tasks:
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://127.0.0.1:5433/ferretdb
-        --test-records-dir=records
+        --test-records-dir=tmp/records
 
   # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
   run-tigris-secured:
     desc: "Run FerretDB with `tigris` handler (TLS, auth required; SaaS)"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -308,20 +306,20 @@ tasks:
         --mode=diff-normal
         --handler=tigris
         --tigris-url=api.preview.tigrisdata.cloud
-        --test-records-dir=records
+        --test-records-dir=tmp/records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        --test-records-dir=records
+        --test-records-dir=tmp/records
 
   lint:
     desc: "Run linters"
@@ -416,6 +414,8 @@ tasks:
       COMMIT:
         sh: cat build/version/commit.txt
 
+  # TODO set annotations,
+  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
   docker-push:
     deps: [gen-version]
     cmds:
