@@ -35,8 +35,8 @@ func TestCover(t *testing.T) {
 // TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
 func TestMain(m *testing.M) {
 	// Split flags for kong and for `go test` by "--". For example:
-	// bin/ferretdb-local -test.coverprofile=cover.txt -- --test-records-dir=records --mode=diff-normal --listen-addr=:27017
-	// forKong: --test-records-dir=records --mode=diff-normal --listen-addr=:27017
+	// bin/ferretdb-local -test.coverprofile=cover.txt -- --test-records-dir=tmp/records --mode=diff-normal --listen-addr=:27017
+	// forKong: --test-records-dir=tmp/records --mode=diff-normal --listen-addr=:27017
 	// forTest: -test.coverprofile=cover.txt
 	forKong := os.Args[1:]
 	forTest := []string{}
