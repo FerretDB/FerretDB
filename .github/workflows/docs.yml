@@ -7,7 +7,7 @@ on:
       - opened
       - reopened
       - synchronize
-    paths_ignore:
+    paths-ignore:
       - 'cmd/**'
       - 'ferretdb/**'
       - 'integration/**'
