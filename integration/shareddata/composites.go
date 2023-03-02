@@ -228,7 +228,7 @@ var ArrayInt32s = &Values[string]{
 		// "array-int32-nil": nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-int32-empty": bson.A{},
 		"array-int32-six": bson.A{
-			int32(0), int32(2), int32(5), int32(5), int32(1), int32(0),
+			int32(42), int32(43), int32(44), int32(45), int32(42), int32(43),
 		},
 	},
 }
