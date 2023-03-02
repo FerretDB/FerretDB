@@ -60,8 +60,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var qp tigrisdb.QueryParams
 
-	qp.DB, err = common.GetRequiredParam[string](document, "$db")
-	if err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
