@@ -28,7 +28,7 @@ type indexParams struct {
 	db         string          // FerretDB database name
 	collection string          // FerretDB collection name
 	index      string          // FerretDB index name
-	key        *types.Document // Index specification (pairs of field names and sort orders)
+	key        *types.Document // Index specification (pairs of field names and sort orders) // TODO
 	unique     bool            // Whether the index is unique
 }
 
@@ -58,7 +58,7 @@ func createIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index
 
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
 		` ON ` + pgx.Identifier{schema, table}.Sanitize() +
-		` ((_jsonb->>'_id'))` // TODO Provide ability to set fields https://github.com/FerretDB/FerretDB/issues/1509
+		` ((_jsonb->'_id'))` // TODO Provide ability to set fields https://github.com/FerretDB/FerretDB/issues/1509
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)

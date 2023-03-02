@@ -156,9 +156,10 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 	return iter, nil
 }
 
+// TODO remove this func
 // queryById returns the first found document by its ID from the given PostgreSQL schema and table.
 // If the document is not found, it returns nil and no error.
-func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any, forUpdate bool) (*types.Document, error) {
+func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id string, forUpdate bool) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
 	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))

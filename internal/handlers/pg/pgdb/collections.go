@@ -127,7 +127,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	}
 
 	// Create default index on _id field.
-	indexParams := indexParams{
+	indexParams := &indexParams{
 		db:         db,
 		collection: collection,
 		index:      "_id_",
@@ -135,7 +135,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		unique:     true,
 	}
 
-	if err := createIndex(ctx, tx, &indexParams); err != nil {
+	if err := createIndex(ctx, tx, indexParams); err != nil {
 		return lazyerrors.Error(err)
 	}
 
