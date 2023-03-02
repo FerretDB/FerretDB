@@ -21,19 +21,19 @@ jobs:
 
     steps:
       - name: Dump github context
-        run: echo "$CONTEXT"
+        run: echo "$GITHUB_CONTEXT"
         env:
-          CONTEXT: ${{ toJSON(github) }}
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
 
       - name: Dump env context
-        run: echo "$CONTEXT"
+        run: echo "$ENV_CONTEXT"
         env:
-          CONTEXT: ${{ toJSON(env) }}
+          ENV_CONTEXT: ${{ toJSON(env) }}
 
       - name: Dump vars context
-        run: echo "$CONTEXT"
+        run: echo "$VARS_CONTEXT"
         env:
-          CONTEXT: ${{ toJSON(vars) }}
+          VARS_CONTEXT: ${{ toJSON(vars) }}
 
       - name: Dump environment variables
         run: env
