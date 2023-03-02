@@ -14,30 +14,25 @@ tasks:
         -tags=ferretdb_testenvdata .
         -compat-port=0
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
-        -records-dir=../records
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata .
         -compat-port=0
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
-        -records-dir=../records
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -compat-port=0
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083,127.0.0.1:8085,127.0.0.1:8086
-        -records-dir=../records
       # - >
       #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
       #   -tags=ferretdb_testenvdata .
-      #   -records-dir=../records
         # -compat-port=0
       #   -target-port=47017
       # - >
       #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
       #   -tags=ferretdb_testenvdata .
       #   -compat-port=0
-      #   -records-dir=../records
       #   -target-port=47018
 
   integration-gen:

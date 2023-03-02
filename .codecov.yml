@@ -3,7 +3,7 @@
 codecov:
   require_ci_to_pass: true
   notify:
-    after_n_builds: 4 # 1 for unit tests + 3 for integration tests with different handlers
+    after_n_builds: 4 # 1 for unit tests + at least 3 for integration tests with different handlers
     wait_for_ci: true
 
 # https://docs.codecov.com/docs/coverage-configuration
@@ -23,6 +23,11 @@ coverage:
 # https://docs.codecov.com/docs/ignoring-paths
 ignore:
   - cmd
+
+# https://docs.codecov.com/docs/flags#recommended-automatic-flag-management
+flag_management:
+  default_rules:
+    carryforward: false
 
 # https://docs.codecov.com/docs/pull-request-comments
 comment:
