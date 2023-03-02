@@ -7,6 +7,12 @@ on:
       - opened
       - reopened
       - synchronize
+    paths-ignore:
+      - 'cmd/**'
+      - 'ferretdb/**'
+      - 'integration/**'
+      - 'internal/**'
+      - 'tools/**'
   push:
     branches:
       - main
