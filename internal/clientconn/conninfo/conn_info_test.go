@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConnInfo(t *testing.T) {
+func TestGet(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {

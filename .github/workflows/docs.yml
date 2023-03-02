@@ -50,12 +50,13 @@ jobs:
           labelName: use-git-lfs
           exclusionPatterns: |
             **/*.js
+            **/*.md
             **/go.sum
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: build
+          cache-key: docs
 
       - name: Install Task
         run: go generate -x
@@ -68,18 +69,20 @@ jobs:
         run: bin/task docs
 
       - name: Archive docs
-        run: |
-          tar --directory website/build \
-            --file docs.tar \
-            --create \
-            --verbose \
-            .
+        run: >
+          tar --directory website/build
+          --file docs.tar
+          --create
+          --verbose
+          .
 
+      # it has to be exactly "docs.tar" for actions/deploy-pages below
       - name: Upload archive artifact
         uses: actions/upload-artifact@v3
         with:
           name: docs
           path: docs.tar
+          retention-days: 1
           if-no-files-found: error
 
       - name: Check dirty

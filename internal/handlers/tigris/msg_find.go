@@ -52,13 +52,13 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	fp := tigrisdb.FetchParam{
+	qp := tigrisdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Filter:     params.Filter,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0), // TODO
-				"ns", fp.DB+"."+fp.Collection,
+				"ns", qp.DB+"."+qp.Collection,
 			)),
 			"ok", float64(1),
 		))},
@@ -95,9 +95,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
-// fetchAndFilterDocs fetches documents from the database and filters them using the provided FetchParam.Filter.
-func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam) ([]*types.Document, error) {
-	iter, err := dbPool.QueryDocuments(ctx, fp)
+// fetchParams is used to pass parameters to fetchAndFilterDocs.
+type fetchParams struct {
+	dbPool          *tigrisdb.TigrisDB
+	qp              *tigrisdb.QueryParams
+	disablePushdown bool
+}
+
+// fetchAndFilterDocs fetches documents from the database and filters them using the provided QueryParams.Filter.
+func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document, error) {
+	// filter is used to filter documents on the FerretDB side,
+	// qp.Filter is used to filter documents on the Tigris side (query pushdown).
+	filter := fp.qp.Filter
+
+	if fp.disablePushdown {
+		fp.qp.Filter = nil
+	}
+
+	iter, err := fp.dbPool.QueryDocuments(ctx, fp.qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -118,7 +133,7 @@ func fetchAndFilterDocs(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigr
 
 		var matches bool
 
-		if matches, err = common.FilterDocument(doc, fp.Filter); err != nil {
+		if matches, err = common.FilterDocument(doc, filter); err != nil {
 			return nil, err
 		}
 

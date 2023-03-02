@@ -73,17 +73,16 @@ func (d *Document) ValidateData() error {
 	var idPresent bool
 
 	for i, key := range keys {
-		// Tests for this case are in `dance`.
+		// integration tests for those cases are in the `dance` repo
+
 		if !utf8.ValidString(key) {
 			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
 		}
 
-		// Tests for this case are in `dance`.
-		if strings.Contains(key, "$") {
-			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (key must not contain '$' sign)", key))
+		if strings.HasPrefix(key, "$") {
+			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (key must not start with '$' sign)", key))
 		}
 
-		// Tests for this case are in `dance`.
 		if strings.Contains(key, ".") {
 			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (key must not contain '.' sign)", key))
 		}

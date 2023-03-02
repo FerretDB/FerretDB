@@ -21,6 +21,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -32,8 +33,36 @@ type State struct {
 	// never persisted
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	LatestVersion   string    `json:"-"`
-	HandlerVersion  string    `json:"-"`
+	LatestVersion   string    `json:"-"` // may be empty
+	HandlerVersion  string    `json:"-"` // may be empty
+}
+
+// TelemetryString returns "enabled", "disabled" or "undecided".
+func (s *State) TelemetryString() string {
+	if s.Telemetry == nil {
+		return "undecided"
+	}
+
+	if *s.Telemetry {
+		return "enabled"
+	}
+
+	return "disabled"
+}
+
+// UpdateAvailable returns true if there is a newer version available.
+func (s *State) UpdateAvailable() bool {
+	// if telemetry was enabled and then disabled, then LatestVersion will never be updated
+	if s.Telemetry != nil && !*s.Telemetry {
+		return false
+	}
+
+	// if we don't know yet
+	if s.LatestVersion == "" {
+		return false
+	}
+
+	return s.LatestVersion != version.Get().Version
 }
 
 // fill replaces all unset or invalid values with default.

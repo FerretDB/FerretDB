@@ -16,12 +16,14 @@ package tigris
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,9 +45,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
-	var fp tigrisdb.FetchParam
+	var qp tigrisdb.QueryParams
 
-	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -55,9 +57,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var ok bool
-	if fp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+	if qp.Collection, ok = collectionParam.(string); !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -73,7 +75,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	inserted, insErrors := insertMany(ctx, dbPool, &fp, docs, ordered)
+	inserted, insErrors := insertMany(ctx, dbPool, &qp, docs, ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
 		"ok", float64(1),
@@ -99,12 +101,12 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
 //
 // It always returns the number of successfully inserted documents and a document with errors.
-func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
-	var insErrors common.WriteErrors
+	var insErrors commonerrors.WriteErrors
 
 	// Attempt to insert all the documents in the same request to make insert faster.
-	if err := dbPool.InsertManyDocuments(ctx, fp.DB, fp.Collection, docs); err == nil {
+	if err := dbPool.InsertManyDocuments(ctx, qp.DB, qp.Collection, docs); err == nil {
 		return int32(docs.Len()), &insErrors
 	}
 
@@ -112,9 +114,9 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.Fet
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
-		err := insertDocument(ctx, dbPool, fp, doc.(*types.Document))
+		err := insertDocument(ctx, dbPool, qp, doc.(*types.Document))
 
-		var we *common.WriteErrors
+		var we *commonerrors.WriteErrors
 
 		switch {
 		case err == nil:
@@ -135,20 +137,37 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.Fet
 }
 
 // insertDocument checks if database and collection exist, create them if needed and attempts to insertDocument the given doc.
-func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, fp *tigrisdb.FetchParam, doc *types.Document) error {
-	err := dbPool.InsertDocument(ctx, fp.DB, fp.Collection, doc)
+func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, doc *types.Document) error {
+	err := dbPool.InsertDocument(ctx, qp.DB, qp.Collection, doc)
 
 	var driverErr *driver.Error
 
 	switch {
 	case err == nil:
 		return nil
+
 	case errors.As(err, &driverErr):
-		if tigrisdb.IsInvalidArgument(err) {
-			return common.NewCommandErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+		switch {
+		case tigrisdb.IsInvalidArgument(err):
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
+
+		case tigrisdb.IsAlreadyExists(err):
+			// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
+			idMasrshaled := must.NotFail(json.Marshal(must.NotFail(doc.Get("_id"))))
+
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrDuplicateKey,
+				fmt.Sprintf(
+					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
+					qp.DB, qp.Collection, idMasrshaled,
+				),
+			)
+
+		default:
+			return lazyerrors.Error(err)
 		}
-		return lazyerrors.Error(err)
+
 	default:
-		return common.CheckError(err)
+		return commonerrors.CheckError(err)
 	}
 }

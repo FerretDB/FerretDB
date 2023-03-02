@@ -20,9 +20,6 @@ env:
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
 
-  # `vars`, not `secrets` as a temporary workaround for https://github.com/codecov/codecov-action/issues/837
-  CODECOV_TOKEN: ${{ vars.CODECOV_TOKEN }}
-
 jobs:
   short-test:
     name: Short test
@@ -40,7 +37,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: test
+          cache-key: short-test
 
       - name: Install Task
         run: go generate -x
@@ -55,8 +52,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -101,12 +97,16 @@ jobs:
         run: bin/task test-unit
 
       # The token is not required but should make uploads more stable.
-      # See https://github.com/codecov/codecov-action/issues/837.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ env.CODECOV_TOKEN }}
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
@@ -115,8 +115,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -240,20 +239,20 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
         working-directory: source
 
+      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: linux-logs
           path: /tmp/logs
-          retention-days: 14
+          retention-days: 1
           if-no-files-found: error
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |

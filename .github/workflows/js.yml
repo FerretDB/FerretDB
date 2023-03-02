@@ -1,0 +1,100 @@
+---
+name: JS
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - build/legacy-mongo-shell/*.js
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "12 2 * * *"
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  testjs:
+    name: Test script
+    runs-on: ubuntu-22.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: testjs
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Run build-local
+        run: bin/task build-local
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Start FerretDB in the background
+        run: >
+          bin/ferretdb-local
+          --listen-addr=:27017
+          --proxy-addr=127.0.0.1:47017
+          --mode=diff-normal
+          --handler=pg
+          --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+          2> ferretdb.log &
+
+      - name: Run testjs for MongoDB
+        run: bin/task testjs PORT=47017
+
+      - name: Run testjs for FerretDB
+        run: bin/task testjs
+
+      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
+      - name: Upload FerretDB log
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ferretdb.log
+          path: ferretdb.log
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Show FerretDB log
+        if: always()
+        run: |
+          cat ferretdb.log
+          rm ferretdb.log
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

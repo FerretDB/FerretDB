@@ -109,11 +109,11 @@ db.catalog.insertMany([
 
 ## $and
 
-*Syntax*: `{ $and: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }`
+*Syntax*: `{ $and: [ { <condition1> }, { <condition2> } , ... , { <condition3> } ] }`
 
-The `$and` operator joins one or more query expressions, and returns data that matches all the expressions.
+To satisfy more than one query condition when selecting documents, use the `$and` operator.
 
-Select documents that satisfy both of these expressions in the `catalog` collection:
+**Example:** Select documents that satisfy both of these expressions in the `catalog` collection:
 
 * `price` field is less than `100` **AND**
 * `stock` field is not `0`
@@ -166,11 +166,11 @@ The output:
 
 ## $or
 
-*Syntax*: `{ $or: [ { <expression1> }, { <expression2> } , ... , { <expressionN> } ] }`
+*Syntax*: `{ $or: [ { <condition1> }, { <condition2> } , ... , { <conditionN> } ] }`
 
-The `$or` operator joins one or more query expressions, and returns data that matches at least one of the expressions.
+To satisfy either one or more conditions in a query, use the `$or` operator to join the conditions.
 
-Select the documents that match these expressions:
+**Example:** Select the documents that match these expressions:
 
 * `discount` field is `true` *and* `stock` field is not `0` **OR**
 * `price` field is less than or equal to `60`
@@ -241,11 +241,11 @@ The output:
 
 ## $not
 
-*Syntax*: `{ field: { $not: { <expression> } } }`
+*Syntax*: `{ <field>: { $not: { <condition> } } }`
 
-The `$not` operator selects documents that do not match the specified expression.
+To select documents that fail to match a particular query condition, use the `$not` operator.
 
-The following operation selects documents that do not satisfy the specified expression, where the `stock` field is not less than `5`.
+**Example:** The following operation selects documents that do not satisfy the specified expression, where the `stock` field is not less than `5`.
 
 ```js
 db.catalog.find({
@@ -288,11 +288,11 @@ The output:
 
 ## $nor
 
-*Syntax*: `{ $nor: [ { <expression1> }, { <expression2> }, ...  { <expressionN> } ] }`
+*Syntax*: `{ $nor: [ { <condition1> }, { <condition2> }, ...  { <conditionN> } ] }`
 
-The `$nor` operator selects documents that do not match any of the specified expressions.
+To select documents that fail to match any of the conditions in a specified query, use the `$nor` operator.
 
-Select the documents that fail to match any of these expressions:
+**Example:** Select the documents that fail to match any of these conditions:
 
 * `discount` field is `true` *and* `stock` field is not `0`
 * `price` field is less than or equal to `60`

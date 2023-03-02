@@ -39,18 +39,19 @@ type FetchedDocs struct {
 	Err  error
 }
 
-// SQLParam represents options/parameters used for SQL query.
-type SQLParam struct {
+// QueryParams represents options/parameters used for SQL query.
+type QueryParams struct {
+	// Query filter for possible pushdown; may be ignored in part or entirely.
+	Filter     *types.Document
 	DB         string
 	Collection string
 	Comment    string
 	Explain    bool
-	Filter     *types.Document
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, sp.DB, sp.Collection)
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
+	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -59,20 +60,20 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var query string
 
-	if sp.Explain {
+	if qp.Explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
 	}
 
 	query += `SELECT _jsonb `
 
-	if c := sp.Comment; c != "" {
+	if c := qp.Comment; c != "" {
 		// prevent SQL injections
 		c = strings.ReplaceAll(c, "/*", "/ *")
 		c = strings.ReplaceAll(c, "*/", "* /")
@@ -80,16 +81,14 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 		query += `/* ` + c + ` */ `
 	}
 
-	query += ` FROM ` + pgx.Identifier{sp.DB, table}.Sanitize()
+	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
 
-	var args []any
-
-	if sp.Filter != nil {
-		var where string
-
-		where, args = prepareWhereClause(sp.Filter)
-		query += where
+	where, args, err := prepareWhereClause(qp.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -126,13 +125,13 @@ func Explain(ctx context.Context, tx pgx.Tx, sp *SQLParam) (*types.Document, err
 	return res, nil
 }
 
-// GetDocuments returns an queryIterator to fetch documents for given SQLParams.
+// QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interface[int, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 
 	switch {
 	case err == nil:
@@ -144,11 +143,11 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:  sp.DB,
+		schema:  qp.DB,
 		table:   table,
-		comment: sp.Comment,
-		explain: sp.Explain,
-		filter:  sp.Filter,
+		comment: qp.Comment,
+		explain: qp.Explain,
+		filter:  qp.Filter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -162,11 +161,15 @@ func GetDocuments(ctx context.Context, tx pgx.Tx, sp *SQLParam) (iterator.Interf
 func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
 	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
 
-	where, args := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	query += where
 
 	var b []byte
-	err := tx.QueryRow(ctx, query, args...).Scan(&b)
+	err = tx.QueryRow(ctx, query, args...).Scan(&b)
 
 	switch {
 	case err == nil:
@@ -214,14 +217,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	var args []any
-
-	if p.filter != nil {
-		var where string
-
-		where, args = prepareWhereClause(p.filter)
-		query += where
+	where, args, err := prepareWhereClause(p.filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	query += where
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
@@ -232,16 +233,23 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
+func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
 	var p Placeholder
 
-	for k, v := range sqlFilters.Map() {
-		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
+	iter := sqlFilters.Iterator()
+	defer iter.Close()
 
-		var key any = k   // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
-		var prefix string // prefix is the first key in path, if the filter key is not a path - the prefix is empty
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, lazyerrors.Error(err)
+		}
 
 		if k != "" {
 			// skip $comment
@@ -249,16 +257,19 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				continue
 			}
 
-			// If the key is in dot notation use path operator (#>)
-			if path := types.NewPathFromString(k); path.Len() > 1 {
-				keyOperator = "#>"
-				key = path.Slice()     // '{v,foo}'
-				prefix = path.Prefix() // 'v'
+			path, err := types.NewPathFromString(k)
+			if err != nil {
+				return "", nil, lazyerrors.Error(err)
+			}
+
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
+			if path.Len() > 1 {
+				continue
 			}
 		}
 
 		// Handle _id with a simpler query, as it can't be an array
-		if k == "_id" || prefix == "_id" {
+		if k == "_id" {
 			switch v := v.(type) {
 			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
@@ -266,14 +277,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 			case float64, string, types.ObjectID, int32, int64:
 				// Select if value under the key is equal to provided value.
-				sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s)`
+				sql := `(_jsonb->%[1]s)::jsonb = %[2]s`
 
-				// operator is -> for non-array, and #> for array
 				// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-				// placeholder $1 is used for field key or it's path,
+				// placeholder $1 is used for field key,
 				// placeholder $2 is used for field value v.
-				filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-				args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
+				filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+				args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 			default:
 				panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -293,14 +303,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 			// Select if value under the key is equal to provided value.
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
-			sql := `((_jsonb%[1]s%[2]s)::jsonb = %[3]s) OR (_jsonb%[1]s%[2]s)::jsonb @> %[3]s`
+			sql := `(_jsonb->%[1]s)::jsonb = %[2]s OR (_jsonb->%[1]s)::jsonb @> %[2]s`
 
-			// operator is -> for non-array, and #> for array
 			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-			// placeholder $1 is used for field key or it's path,
+			// placeholder $1 is used for field key,
 			// placeholder $2 is used for field value v.
-			filters = append(filters, fmt.Sprintf(sql, keyOperator, p.Next(), p.Next()))
-			args = append(args, key, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -313,7 +322,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any) {
 		query = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	return query, args
+	return query, args, nil
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.

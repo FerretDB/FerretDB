@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -39,7 +40,7 @@ func TestGetDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
-	doc2 := must.NotFail(types.NewDocument("_id", int32(1)))
+	doc2 := must.NotFail(types.NewDocument("_id", int32(2)))
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
@@ -49,17 +50,17 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc2); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -108,13 +109,13 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -153,13 +154,13 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -204,13 +205,13 @@ func TestGetDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			if err := CreateCollection(ctx, tx, databaseName, collectionName); err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -248,10 +249,10 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
-				return err
+				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
@@ -288,7 +289,7 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereEq := " WHERE ((_jsonb->$1)::jsonb = $2)"
+	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
 	whereEqOrContain := whereEq + " OR (_jsonb->$1)::jsonb @> $2"
 
 	for name, tc := range map[string]struct {
@@ -338,23 +339,22 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereEq,
 		},
 		"IDDotNotation": {
-			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2)",
+			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
 		"DotNotation": {
-			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
-			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, _ := prepareWhereClause(tc.filter)
+			actual, _, err := prepareWhereClause(tc.filter)
+			require.NoError(t, err)
+
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
