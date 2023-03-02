@@ -42,6 +42,10 @@ func testAggregateCompat(t *testing.T, testCases map[string]aggregateCompatTestC
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
 			pipeline := tc.pipeline
@@ -53,10 +57,6 @@ func testAggregateCompat(t *testing.T, testCases map[string]aggregateCompatTestC
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
-
-					if tc.skip != "" {
-						t.Skip(tc.skip)
-					}
 
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline)
@@ -108,7 +108,11 @@ func TestAggregateCompatSort(t *testing.T) {
 		"DescendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", -1}}}}},
 		},
-		"InvalidSortOrder": {
+		"Location15973": {
+			pipeline:   bson.A{bson.D{{"$sort", 1}}},
+			resultType: emptyResult,
+		},
+		"Location15975": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
 			resultType: emptyResult,
 		},
@@ -116,13 +120,30 @@ func TestAggregateCompatSort(t *testing.T) {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
 			resultType: emptyResult,
 		},
-		"Location15973": {
-			pipeline:   bson.A{bson.D{{"$sort", 1}}},
-			resultType: emptyResult,
+		"AscendingValue": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v", 1},
+				{"_id", 1}, // always sort by _id because natural order is different
+			}}}},
 		},
-		"Sort": {
-			pipeline:   bson.A{bson.D{{"$sort", bson.A{}}}},
-			resultType: emptyResult,
+		"DescendingValue": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v", -1},
+				{"_id", 1}, // always sort by _id because natural order is different
+			}}}},
+		},
+		"DotNotation": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v.foo", 1},
+				{"_id", 1}, // always sort by _id because natural order is different
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2101",
+		},
+		"DotNotationNonExistent": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"invalid.foo", 1},
+				{"_id", 1}, // always sort by _id because natural order is different
+			}}}},
 		},
 	}
 
