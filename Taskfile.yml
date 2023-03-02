@@ -12,7 +12,6 @@ vars:
   UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
-  TIMEOUT: 1m
 
 tasks:
   # invoked when `task` is run without arguments
@@ -176,7 +175,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -timeout {{.TIMEOUT}} -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
@@ -189,7 +188,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -timeout {{.TIMEOUT}} -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
@@ -202,7 +201,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -timeout {{.TIMEOUT}} -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
@@ -415,8 +414,6 @@ tasks:
       COMMIT:
         sh: cat build/version/commit.txt
 
-  # TODO set annotations,
-  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
   docker-push:
     deps: [gen-version]
     cmds:
