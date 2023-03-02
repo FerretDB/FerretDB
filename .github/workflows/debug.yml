@@ -37,3 +37,15 @@ jobs:
 
       - name: Dump environment variables
         run: env
+
+      - name: Checkout pull request code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.head_ref }} # checkout named branch, not detached HEAD
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
