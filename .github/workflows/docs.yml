@@ -7,6 +7,12 @@ on:
       - opened
       - reopened
       - synchronize
+    paths_ignore:
+      - 'cmd/**'
+      - 'ferretdb/**'
+      - 'integration/**'
+      - 'internal/**'
+      - 'tools/**'
   push:
     branches:
       - main
@@ -32,16 +38,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
-
-    on:
-      push:
-      pull_request:
-        paths_ignore:
-          - 'cmd/**'
-          - 'ferretdb/**'
-          - 'integration/**'
-          - 'internal/**'
-          - 'tools/**'
 
     steps:
       - name: Checkout code
