@@ -127,7 +127,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	}
 
 	if !testing.Short() {
-		records, err := loadRecords(filepath.Join("..", "..", "records"))
+		records, err := loadRecords(filepath.Join("..", "..", "tmp", "records"))
 		require.NoError(f, err)
 
 		f.Logf("%d recorded messages were added to the seed corpus", len(records))
