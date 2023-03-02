@@ -86,8 +86,8 @@ const (
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
 
-	// ErrGroupID indicates a group's _id can only be specified once.
-	ErrGroupID = ErrorCode(15948) // Location15948
+	// ErrStageGroupID indicates _id for a group can only be specified once.
+	ErrStageGroupID = ErrorCode(15948) // Location15948
 
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959

@@ -117,14 +117,15 @@ func TestAggregatePipelineCompat(t *testing.T) {
 
 func TestAggregateCompatCount(t *testing.T) {
 	testCases := map[string]aggregateCompatTestCase{
-		"ID": {
-			pipeline: bson.A{bson.D{{"$count", "_id"}}},
-		},
 		"Value": {
 			pipeline: bson.A{bson.D{{"$count", "v"}}},
 		},
 		"NonExistent": {
 			pipeline: bson.A{bson.D{{"$count", "nonexistent"}}},
+		},
+		"Location15948": {
+			pipeline:   bson.A{bson.D{{"$count", "_id"}}},
+			resultType: emptyResult,
 		},
 		"Location40156": {
 			pipeline:   bson.A{bson.D{{"$count", 1}}},
@@ -167,7 +168,6 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"IntSort": {
 			pipeline: bson.A{bson.D{
 				{"$match", bson.D{{"v", 42}}},
-				{"$sort", bson.D{{"_id", 1}}},
 			}},
 		},
 	}

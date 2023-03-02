@@ -64,6 +64,14 @@ func newCount(stage *types.Document) (Stage, error) {
 		)
 	}
 
+	if field == "_id" {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupID,
+			"a group's _id may only be specified once",
+			"$count",
+		)
+	}
+
 	//ErrStageCountBadValue
 	return &count{
 		field: field,

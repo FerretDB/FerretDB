@@ -63,9 +63,7 @@ func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document
 
 		bField, err := b.Get(sortKey)
 		if err != nil {
-			// sort order treats null and non-existent field equivalent,
-			// hence use null for sorting.
-			bField = types.Null
+			return false
 		}
 
 		result := types.CompareOrderForSort(aField, bField, sortType)

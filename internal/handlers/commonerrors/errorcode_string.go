@@ -27,7 +27,7 @@ func _() {
 	_ = x[ErrNotImplemented-238]
 	_ = x[ErrMechanismUnavailable-334]
 	_ = x[ErrDuplicateKey-11000]
-	_ = x[ErrGroupID-15948]
+	_ = x[ErrStageGroupID-15948]
 	_ = x[ErrMatchBadExpression-15959]
 	_ = x[ErrSortBadExpression-15973]
 	_ = x[ErrSortBadValue-15974]
