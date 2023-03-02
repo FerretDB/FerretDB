@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -79,9 +78,6 @@ type Path struct {
 func NewStaticPath(path ...string) Path {
 	return must.NotFail(NewPathFromString(strings.Join(path, ".")))
 }
-
-// indexRe validates array index value.
-var indexRe = regexp.MustCompile(`^-?\d+$`)
 
 // NewPathFromString returns Path from path string and error.
 // It returns an error if the path is empty or contains empty elements.
