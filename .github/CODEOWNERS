@@ -8,6 +8,8 @@
 /integration/               @FerretDB/leads
 /internal/                  @FerretDB/leads
 
+/internal/handlers/hana/    @AlekSi
+
 /website/                   @FerretDB/doc
 
 /build/                     @AlekSi
