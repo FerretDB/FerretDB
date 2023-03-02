@@ -234,7 +234,9 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
 func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
-	var builder filtersBuilder
+	var filters []string
+	var args []any
+	var p Placeholder
 
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
@@ -267,6 +269,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			}
 		}
 
+		// check if values are equal or if the left value contains the right one
+		eqOperator := "@>"
+
+		if k == "_id" {
+			// check if values are equal
+			eqOperator = "="
+		}
+
 		switch v := v.(type) {
 		case *types.Document:
 			iter := v.Iterator()
@@ -284,23 +294,38 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch docKey {
 				case "$eq":
-					switch docVal := docVal.(type) {
+					switch v := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
-						builder.addFilter(k, eq, docVal)
+						// Select if value under the key is equal to provided value.
+						sql := `(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
 
 				case "$ne":
-					switch docVal := docVal.(type) {
+					switch v := docVal.(type) {
 					case *types.Document, *types.Array, types.Binary, bool,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
-						builder.addFilter(k, ne, docVal)
+						sql := `NOT ( ` +
+							// does document contain the key,
+							// it is necessary, as NOT won't work correctly if the key does not exist.
+							`_jsonb ? %[1]s AND ` +
+							// does the value under the key is equal to the filter
+							`(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s AND ` +
+							// does the value type is equal to the filter's one
+							`(_jsonb->'$s'->'p'->%[1]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(v) +
+							`"')`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -316,84 +341,23 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			continue
 
 		case float64, string, types.ObjectID, int32, int64:
-			builder.addFilter(k, eq, v)
+			// Select if value under the key is equal to provided value.
+			sql := `(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s`
+
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
 	}
 
-	query, args := builder.generateWhereClause()
-
-	return query, args, nil
-}
-
-// builderOperator represents available filtersBuilder operators.
-type builderOperator uint8
-
-const (
-	eq builderOperator = iota
-	ne
-)
-
-// filtersBuilder is responsible for building SQL filters.
-// It allows to procedurally add simple key-value comparisons,
-// and translate them to the single SQL WHERE clause.
-type filtersBuilder struct {
-	filters []string
-	args    []any
-	p       Placeholder
-}
-
-// addFilter creates SQL filter based on provided key, value and operator.
-func (fb *filtersBuilder) addFilter(key string, op builderOperator, val any) {
-	// check if values are equal or if the left value contains the right one
-	eqOperator := "@>"
-
-	if key == "_id" {
-		// check if values are equal
-		eqOperator = "="
+	var filter string
+	if len(filters) > 0 {
+		filter = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	switch op {
-	case eq:
-		// Select if value under the key is equal to provided value.
-		sql := `(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s`
-
-		fb.filters = append(fb.filters, fmt.Sprintf(sql, fb.p.Next(), fb.p.Next()))
-		fb.args = append(fb.args, key, string(must.NotFail(pjson.MarshalSingleValue(val))))
-
-	case ne:
-		sql := `NOT ( ` +
-			// does document contain the key,
-			// it is necessary, as NOT won't work correctly if the key does not exist.
-			`_jsonb ? %[1]s AND ` +
-
-			// does the value under the key is equal to the filter
-			`(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s AND ` +
-
-			// does the value type is equal to the filter's one
-			`(_jsonb->'$s'->'p'->%[1]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(val) +
-			`"')`
-
-		fb.filters = append(fb.filters, fmt.Sprintf(sql, fb.p.Next(), fb.p.Next()))
-		fb.args = append(fb.args, key, string(must.NotFail(pjson.MarshalSingleValue(val))))
-
-	default:
-		panic(fmt.Sprintf("Unexpected builder operator: %v", op))
-	}
-}
-
-// generateWhereClause generates SQL WHERE clause from created filters.
-// It returns sanitized clause and arguments.
-func (fb *filtersBuilder) generateWhereClause() (string, []any) {
-	var clause string
-
-	if len(fb.filters) > 0 {
-		clause = ` WHERE ` + strings.Join(fb.filters, " AND ")
-	}
-
-	return clause, fb.args
+	return filter, args, nil
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
