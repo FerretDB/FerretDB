@@ -1,8 +1,10 @@
+# for development releases (`ferret-dev` image)
+
 ARG VERSION
 ARG COMMIT
 ARG RACEFLAG
 
-FROM ghcr.io/ferretdb/golang:1.20.1-1 AS build
+FROM ghcr.io/ferretdb/golang:1.20.1-1 AS development-build
 
 WORKDIR /src
 ADD . .
@@ -11,14 +13,12 @@ ENV GORACE=halt_on_error=1,history_size=2
 
 # split into several commands for better logging on GitHub Actions
 RUN go mod download
-
-# TODO add ferretdb_hana
-RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG}                 ./cmd/ferretdb
-RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris ${RACEFLAG} -coverpkg=./... ./cmd/ferretdb
+RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ${RACEFLAG}                 ./cmd/ferretdb
+RUN go test  -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ${RACEFLAG} -coverpkg=./... ./cmd/ferretdb
 
 FROM ghcr.io/ferretdb/golang:1.20.1-1
 
-COPY --from=build /src/bin/ferretdb /ferretdb
+COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]

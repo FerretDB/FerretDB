@@ -1,5 +1,5 @@
 ---
-# This file is used for the development of FerretDB, not for actually running it.
+# This file is used for the development environment, not for running FerretDB in production.
 
 services:
   postgres:

@@ -23,7 +23,7 @@ tasks:
     desc: "Generate, format, build, test and lint code and documentation"
     cmds:
       - task: gen
-      - task: build-local
+      - task: build-host
       - task: test
       - task: lint
       - task: security
@@ -39,18 +39,17 @@ tasks:
     desc: "Build bin/ferretdb{{exeExt}} (release build)"
     deps: [gen-version]
     cmds:
-      # TODO add ferretdb_hana
-      - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
+      - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
     env:
       CGO_ENABLED: 0
 
-  build-local:
-    desc: "Build bin/ferretdb-local{{exeExt}} on the host"
+  build-host:
+    desc: "Build bin/ferretdb{{exeExt}} on the host for development"
     run: once
     deps: [gen-version]
     cmds:
       # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb-local{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
@@ -249,10 +248,10 @@ tasks:
 
   run:
     desc: "Run FerretDB with `pg` handler"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -262,10 +261,10 @@ tasks:
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -275,10 +274,10 @@ tasks:
 
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -293,10 +292,10 @@ tasks:
   # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
   run-tigris-secured:
     desc: "Run FerretDB with `tigris` handler (TLS, auth required; SaaS)"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -310,10 +309,10 @@ tasks:
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
@@ -401,11 +400,13 @@ tasks:
     cmds:
       - >
         docker buildx build --builder=ferretdb
+        --file=build/docker/development.Dockerfile
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --build-arg RACEFLAG={{.RACEFLAG}}
         --tag=ferretdb-local
-        --load .
+        --output=type=docker
+        .
     vars:
       VERSION:
         sh: cat build/version/version.txt
@@ -419,30 +420,19 @@ tasks:
     cmds:
       - >
         docker buildx build --builder=ferretdb
+        --file=build/docker/development.Dockerfile
         --build-arg VERSION={{.VERSION}}
         --build-arg COMMIT={{.COMMIT}}
         --build-arg RACEFLAG={{.RACEFLAG}}
         --platform=linux/arm/v7,linux/arm64,linux/amd64
         {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
-        --push .
+        --output=type=registry
+        .
     vars:
       VERSION:
         sh: cat build/version/version.txt
       COMMIT:
         sh: cat build/version/commit.txt
-
-  docker-push-release:
-    cmds:
-      - task: docker-push
-        vars:
-          DOCKER_IMAGES: >
-            ferretdb/ferretdb:latest,
-            ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
-            ghcr.io/ferretdb/ferretdb:latest,
-            ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
-    vars:
-      VERSION:
-        sh: cat build/version/version.txt
 
   packages:
     cmds:

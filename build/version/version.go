@@ -41,6 +41,10 @@
 //   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.
 //   - The default logging level is set to debug.
+//
+// Debug builds are orthogonal to production releases, development releases, and local/host builds.
+// For example, the host build could be made non-debug, and the production release could be a debug build,
+// although that's not common.
 package version
 
 import (
