@@ -131,7 +131,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		Metrics:        metrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: *recordsDirF,
+		TestRecordsDir: filepath.Join("..", "tmp", "records"),
 	}
 
 	if *targetProxyAddrF != "" {
