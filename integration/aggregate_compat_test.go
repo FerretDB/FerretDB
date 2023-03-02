@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -100,6 +101,80 @@ func testAggregateCompat(t *testing.T, testCases map[string]aggregateCompatTestC
 	}
 }
 
+func TestAggregatePipelineCompat(t *testing.T) {
+	testCases := map[string]aggregateCompatTestCase{
+		"EmptyPipeline": {
+			pipeline: bson.A{},
+		},
+		"DocumentPipeline": {
+			pipeline:   bson.D{},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateCompat(t, testCases)
+}
+
+func TestAggregateCompatCount(t *testing.T) {
+	testCases := map[string]aggregateCompatTestCase{
+		"ID": {
+			pipeline: bson.A{bson.D{{"$count", "_id"}}},
+		},
+		"Value": {
+			pipeline: bson.A{bson.D{{"$count", "v"}}},
+		},
+		"NonExistent": {
+			pipeline: bson.A{bson.D{{"$count", "nonexistent"}}},
+		},
+		"Location40156": {
+			pipeline:   bson.A{bson.D{{"$count", 1}}},
+			resultType: emptyResult,
+		},
+		"Location40157": {
+			pipeline:   bson.A{bson.D{{"$count", ""}}},
+			resultType: emptyResult,
+		},
+		"Location40160": {
+			pipeline:   bson.A{bson.D{{"$count", "v.foo"}}},
+			resultType: emptyResult,
+		},
+		"Location40158": {
+			pipeline:   bson.A{bson.D{{"$count", "$foo"}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateCompat(t, testCases)
+}
+
+func TestAggregateCompatMatch(t *testing.T) {
+	testCases := map[string]aggregateCompatTestCase{
+		"ID": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
+		},
+		"Int": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", 42}}}}},
+		},
+		"Document": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
+		},
+		"Array": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.A{int32(42)}}}}}},
+		},
+		"Regex": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}}},
+		},
+		"IntSort": {
+			pipeline: bson.A{bson.D{
+				{"$match", bson.D{{"v", 42}}},
+				{"$sort", bson.D{{"_id", 1}}},
+			}},
+		},
+	}
+
+	testAggregateCompat(t, testCases)
+}
+
 func TestAggregateCompatSort(t *testing.T) {
 	testCases := map[string]aggregateCompatTestCase{
 		"AscendingID": {
@@ -107,18 +182,6 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 		"DescendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", -1}}}}},
-		},
-		"Location15973": {
-			pipeline:   bson.A{bson.D{{"$sort", 1}}},
-			resultType: emptyResult,
-		},
-		"Location15975": {
-			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
-			resultType: emptyResult,
-		},
-		"Location15976": {
-			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
-			resultType: emptyResult,
 		},
 		"AscendingValue": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
@@ -144,6 +207,18 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"invalid.foo", 1},
 				{"_id", 1}, // always sort by _id because natural order is different
 			}}}},
+		},
+		"Location15973": {
+			pipeline:   bson.A{bson.D{{"$sort", 1}}},
+			resultType: emptyResult,
+		},
+		"Location15975": {
+			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
+			resultType: emptyResult,
+		},
+		"Location15976": {
+			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
+			resultType: emptyResult,
 		},
 	}
 

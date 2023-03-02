@@ -86,8 +86,11 @@ const (
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
 
+	// ErrGroupID indicates a group's _id can only be specified once.
+	ErrGroupID = ErrorCode(15948) // Location15948
+
 	// ErrMatchBadExpression indicates match filter is not object.
-	ErrMatchBadExpression = ErrorCode(15959)
+	ErrMatchBadExpression = ErrorCode(15959) // Location15959
 
 	// ErrSortBadExpression indicates sort expression is not object.
 	ErrSortBadExpression = ErrorCode(15973) // Location15973
@@ -108,15 +111,24 @@ const (
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
 	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
-	// while projection document already marked as exlusion.
+	// while projection document already marked as exclusion.
 	ErrProjectionInEx = ErrorCode(31253) // Location31253
 
-	// ErrProjectionExIn for $elemMatch indicates that exlusion statement found
+	// ErrProjectionExIn for $elemMatch indicates that exclusion statement found
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrStageCountNonString indicates that $count aggregation stage expected string.
+	ErrStageCountNonString = ErrorCode(40156) // Location40156
+
 	// ErrStageCountNonEmptyString indicates that $count aggregation stage expected non-empty string.
-	ErrStageCountNonEmptyString = ErrorCode(40156) // Location40156
+	ErrStageCountNonEmptyString = ErrorCode(40157) // Location40157
+
+	// ErrStageCountBadPrefix indicates that $count stage cannot have invalid prefix.
+	ErrStageCountBadPrefix = ErrorCode(40158) // Location40158
+
+	// ErrStageCountBadValue indicates that $count stage contains invalid value.
+	ErrStageCountBadValue = ErrorCode(40160) // Location40160
 
 	// ErrStageInvalid indicates invalid aggregation pipeline stage.
 	ErrStageInvalid = ErrorCode(40323) // Location40323

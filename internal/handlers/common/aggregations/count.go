@@ -16,6 +16,7 @@ package aggregations
 
 import (
 	"context"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -33,12 +34,37 @@ func newCount(stage *types.Document) (Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountNonString,
+			"the count field must be a non-empty string",
+			"$count",
+		)
+	}
+
+	if len(field) == 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonEmptyString,
 			"the count field must be a non-empty string",
 			"$count",
 		)
 	}
 
+	if strings.Contains(field, ".") {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountBadValue,
+			"the count field cannot contain '.'",
+			"$count",
+		)
+	}
+
+	if strings.HasPrefix(field, "$") {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountBadPrefix,
+			"the count field cannot be a $-prefixed path",
+			"$count",
+		)
+	}
+
+	//ErrStageCountBadValue
 	return &count{
 		field: field,
 	}, nil
