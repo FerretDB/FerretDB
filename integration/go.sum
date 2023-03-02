@@ -10,8 +10,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
-github.com/SAP/go-hdb v1.1.0 h1:mjnjpDVabcqRh4KUfgPkeB/+qgFHe/LyfP0nJQsb0gg=
-github.com/SAP/go-hdb v1.1.0/go.mod h1:sjKmhTZTaYCKhJElq1fjwDKInPtLC9VhDtkDWcn9CVg=
+github.com/SAP/go-hdb v1.1.1 h1:C2wAjcQxzStJmDXlFdNYgqvDATHmgh00yDpTcTgZwJU=
+github.com/SAP/go-hdb v1.1.1/go.mod h1:9SUyBwe2Iyp3MigpVZvooq3G7B9kJEe+YfKNDhC2VZE=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0 h1:axGnT1gRIfimI7gJifB699GoE/oq+F2MU7Dml6nw9rQ=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0/go.mod h1:lvDnEdqiQrp0O42VQGgmlKpxL1AP2+08jFMw88y4klk=
@@ -270,8 +270,8 @@ github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/tidwall/pretty v1.0.0 h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.23 h1:rbC/ivyEa2a+5fawx8BiY9Xfvt4vqfCYmP1opri82dc=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.23/go.mod h1:sT5YZVA9AwI31vIKv0WHqOQYE9pi41HDQ2GDHBo4i3s=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.24 h1:lPR3MiP+RqNdNbjRU2JDXoj/j8v2ZFWpjCSVyaA+OA8=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.24/go.mod h1:sT5YZVA9AwI31vIKv0WHqOQYE9pi41HDQ2GDHBo4i3s=
 github.com/ugorji/go v1.2.7 h1:qYhyWUUd6WbiM+C6JZAUkIJt/1WrjzNHY9+KCIjVqTo=
 github.com/ugorji/go v1.2.7/go.mod h1:nF9osbDWLy6bDVv/Rtoh6QgnvNDpmCalQV5urGCCS6M=
 github.com/ugorji/go/codec v1.2.7 h1:YPXUKf7fYbp/y8xloBqZOw2qaVggbfwMlI8WM3wZUJ0=

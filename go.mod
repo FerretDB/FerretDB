@@ -1,10 +1,10 @@
 module github.com/FerretDB/FerretDB
 
-go 1.19
+go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.1.0
+	github.com/SAP/go-hdb v1.1.1
 	github.com/alecthomas/kong v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgconn v1.14.0
@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.41.0
 	github.com/stretchr/testify v1.8.2
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.23
+	github.com/tigrisdata/tigris-client-go v1.0.0-beta.24
 	go.opentelemetry.io/otel v1.14.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.6.0 // indirect; always use @latest
