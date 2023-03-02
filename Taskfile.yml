@@ -112,7 +112,7 @@ tasks:
     deps: [env-up-detach, env-setup]
     cmds:
       - task: env-logs
-      
+
   env-up-offline:
     deps: [env-up-detach-offline, env-setup]
     cmds:
