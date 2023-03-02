@@ -38,6 +38,14 @@ func newSort(stage *types.Document) (Stage, error) {
 		)
 	}
 
+	if fields.Len() == 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrSortMissingKey,
+			"$sort stage must have at least one sort key",
+			"aggregate",
+		)
+	}
+
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2090
 
 	return &sort{

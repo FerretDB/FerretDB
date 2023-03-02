@@ -90,13 +90,16 @@ const (
 	ErrMatchBadExpression = ErrorCode(15959)
 
 	// ErrSortBadExpression indicates sort expression is not object.
-	ErrSortBadExpression = ErrorCode(15973)
+	ErrSortBadExpression = ErrorCode(15973) // Location15973
 
 	// ErrSortBadValue indicates bad value in sort input.
 	ErrSortBadValue = ErrorCode(15974) // Location15974
 
 	// ErrSortBadOrder indicates bad sort order input.
 	ErrSortBadOrder = ErrorCode(15975) // Location15975
+
+	// ErrSortMissingKey indicates sort stage is missing sort key.
+	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
