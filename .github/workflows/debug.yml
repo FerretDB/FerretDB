@@ -1,23 +1,24 @@
 ---
+# Temporary workflow to debug GitHub Actions.
+
 name: Debug
 on:
   pull_request:
     types:
-      - labeled # for `trusted` label
-      - unlabeled
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "12 2 * * *"
 
 jobs:
   contexts:
     name: Contexts
     runs-on: ubuntu-22.04
-
-    # FIXME
-    # if: >
-    #   contains(github.event.pull_request.labels.*.name, 'trust') &&
-    #   !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Dump github context
@@ -37,15 +38,3 @@ jobs:
 
       - name: Dump environment variables
         run: env
-
-      - name: Checkout pull request code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          lfs: false
-          # ref: ${{ github.head_ref }} # checkout named branch, not detached HEAD
-
-      - name: Check git
-        run: |
-          git branch -a
-          git status

@@ -46,7 +46,11 @@ jobs:
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head_ref }} # checkout named branch, not detached HEAD
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for Wrangler / Cloudflare Pages
+      - name: Name branch
+        run: git checkout -b ${{ github.head_ref }}
 
       # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
 
