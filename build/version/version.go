@@ -30,12 +30,13 @@
 //
 //	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
 //	ferretdb_testcover - enables test coverage instrumentation
-//	ferretdb_tigris    - enables Tigris backend handler
-//	ferretdb_hana      - enables Hana backend handler
+//	ferretdb_tigris    - enables Tigris backend handler (beta)
+//	ferretdb_hana      - enables Hana backend handler (alpha)
 //
 // # Debug builds
 //
 // Debug builds of FerretDB behave differently in a few aspects:
+//   - Some values that are normally randomized are fixed or less randomized to make debugging easier.
 //   - Some internal errors cause crashes instead of being handled more gracefully.
 //   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.

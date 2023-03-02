@@ -27,26 +27,26 @@ import (
 
 // SetDocumentByID sets a document by its ID.
 // If the document is not valid, it returns *types.ValidationError.
-func SetDocumentByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, id any, doc *types.Document) (int64, error) {
+func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, id any, doc *types.Document) (int64, error) {
 	if err := doc.ValidateData(); err != nil {
 		return 0, err
 	}
 
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return 0, err
 	}
 
 	sql := "UPDATE "
 
-	if sp.Comment != "" {
-		sp.Comment = strings.ReplaceAll(sp.Comment, "/*", "/ *")
-		sp.Comment = strings.ReplaceAll(sp.Comment, "*/", "* /")
+	if qp.Comment != "" {
+		qp.Comment = strings.ReplaceAll(qp.Comment, "/*", "/ *")
+		qp.Comment = strings.ReplaceAll(qp.Comment, "*/", "* /")
 
-		sql += `/* ` + sp.Comment + ` */ `
+		sql += `/* ` + qp.Comment + ` */ `
 	}
 
-	sql += pgx.Identifier{sp.DB, table}.Sanitize() + " SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+	sql += pgx.Identifier{qp.DB, table}.Sanitize() + " SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
 	tag, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)), must.NotFail(pjson.MarshalSingleValue(id)))
 	if err != nil {

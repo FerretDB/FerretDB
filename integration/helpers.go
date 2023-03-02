@@ -18,7 +18,6 @@ package integration
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +33,9 @@ import (
 )
 
 //go:generate ../bin/stringer  -type compatTestCaseResultType
+
+// documentValidationFailureCode is returned by Tigris schema validation code.
+const documentValidationFailureCode = 121
 
 // compatTestCaseResultType represents compatibility test case result type.
 //
@@ -305,6 +307,18 @@ func UnsetRaw(t testing.TB, err error) error {
 		err.Raw = nil
 		return err
 
+	case mongo.BulkWriteException:
+		if err.WriteConcernError != nil {
+			err.WriteConcernError.Raw = nil
+		}
+
+		for i, we := range err.WriteErrors {
+			we.Raw = nil
+			err.WriteErrors[i] = we
+		}
+
+		return err
+
 	default:
 		return err
 	}
@@ -356,17 +370,4 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
-}
-
-// errorTextContains returns true if the error message contains at least one element of the given text slice.
-// This function should be used to highlight the places where we do not have proper error checks yet
-// but compare texts instead.
-func errorTextContains(err error, texts ...string) bool {
-	for _, text := range texts {
-		if strings.Contains(err.Error(), text) {
-			return true
-		}
-	}
-
-	return false
 }

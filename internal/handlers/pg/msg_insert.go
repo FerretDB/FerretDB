@@ -16,12 +16,14 @@ package pg
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,9 +45,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
 
-	var sp pgdb.SQLParam
+	var qp pgdb.QueryParams
 
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -55,9 +57,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+	if qp.Collection, ok = collectionParam.(string); !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -73,7 +75,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	inserted, insErrors := insertMany(ctx, dbPool, &sp, docs, ordered)
+	inserted, insErrors := insertMany(ctx, dbPool, &qp, docs, ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
 		"ok", float64(1),
@@ -99,16 +101,16 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
 //
 // It always returns the number of successfully inserted documents and a document with errors.
-func insertMany(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
-	var insErrors common.WriteErrors
+	var insErrors commonerrors.WriteErrors
 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
-		err := insertDocument(ctx, dbPool, sp, doc)
+		err := insertDocument(ctx, dbPool, qp, doc)
 
-		var we *common.WriteErrors
+		var we *commonerrors.WriteErrors
 
 		switch {
 		case err == nil:
@@ -129,26 +131,40 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, docs 
 }
 
 // insertDocument prepares and executes actual INSERT request to Postgres.
-func insertDocument(ctx context.Context, dbPool *pgdb.Pool, sp *pgdb.SQLParam, doc any) error {
+func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
-		return common.NewCommandErrorMsg(
-			common.ErrBadValue,
+		return commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
 		)
 	}
 
 	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.InsertDocument(ctx, tx, sp.DB, sp.Collection, d)
+		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
 	})
-	if err == nil {
+
+	switch {
+	case err == nil:
 		return nil
-	}
 
-	if errors.Is(err, pgdb.ErrInvalidCollectionName) || errors.Is(err, pgdb.ErrInvalidDatabaseName) {
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
-		return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-	}
+	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
-	return common.CheckError(err)
+	case errors.Is(err, pgdb.ErrUniqueViolation):
+		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
+		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
+
+		return commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrDuplicateKey,
+			fmt.Sprintf(
+				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
+				qp.DB, qp.Collection, idMasrshaled,
+			),
+		)
+
+	default:
+		return commonerrors.CheckError(err)
+	}
 }

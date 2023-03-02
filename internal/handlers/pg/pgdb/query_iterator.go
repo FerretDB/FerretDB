@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"runtime"
+	"runtime/pprof"
 	"sync"
 
 	"github.com/jackc/pgx/v4"
@@ -28,13 +29,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// queryIteratorProfiles keeps track on all query iterators.
+var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb.queryIterator")
+
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
 	ctx context.Context
 
 	m     sync.Mutex
 	rows  pgx.Rows
-	stack []byte
+	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
 	n     int
 }
 
@@ -49,6 +53,8 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *ty
 		rows:  rows,
 		stack: debugbuild.Stack(),
 	}
+
+	queryIteratorProfiles.Add(iter, 1)
 
 	runtime.SetFinalizer(iter, func(iter *queryIterator) {
 		msg := "queryIterator.Close() has not been called"
@@ -86,6 +92,10 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 	}
 
 	if !iter.rows.Next() {
+		if err := iter.rows.Err(); err != nil {
+			return 0, nil, lazyerrors.Error(err)
+		}
+
 		// to avoid context cancellation changing the next `Next()` error
 		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
@@ -117,7 +127,11 @@ func (iter *queryIterator) Close() {
 }
 
 // close closes iterator without holding mutex.
+//
+// This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
+	queryIteratorProfiles.Remove(iter)
+
 	runtime.SetFinalizer(iter, nil)
 
 	if iter.rows != nil {

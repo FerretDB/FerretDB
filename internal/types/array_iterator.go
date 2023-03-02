@@ -16,11 +16,15 @@ package types
 
 import (
 	"runtime"
+	"runtime/pprof"
 	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
+
+// arrayIteratorProfiles keeps track on all array iterators.
+var arrayIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/types.arrayIterator")
 
 // arrayIterator represents an iterator for an Array.
 type arrayIterator struct {
@@ -35,6 +39,8 @@ func newArrayIterator(array *Array) iterator.Interface[int, any] {
 		arr:   array,
 		stack: debugbuild.Stack(),
 	}
+
+	arrayIteratorProfiles.Add(iter, 1)
 
 	runtime.SetFinalizer(iter, func(iter *arrayIterator) {
 		msg := "arrayIterator.Close() has not been called"
@@ -62,6 +68,9 @@ func (iter *arrayIterator) Next() (int, any, error) {
 // Close implements iterator.Interface.
 func (iter *arrayIterator) Close() {
 	iter.n.Store(uint32(iter.arr.Len()))
+
+	arrayIteratorProfiles.Remove(iter)
+
 	runtime.SetFinalizer(iter, nil)
 }
 

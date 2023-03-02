@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -38,7 +40,7 @@ func TestGetDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
-	doc2 := must.NotFail(types.NewDocument("_id", int32(1)))
+	doc2 := must.NotFail(types.NewDocument("_id", int32(2)))
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
@@ -47,15 +49,19 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
+				return lazyerrors.Error(err)
+			}
 
-			err = InsertDocument(ctx, tx, databaseName, collectionName, doc2)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc2); err != nil {
+				return lazyerrors.Error(err)
+			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
@@ -102,12 +108,15 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
+				return lazyerrors.Error(err)
+			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 			require.NotNil(t, iter)
 
 			iter.Close()
@@ -144,12 +153,15 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := InsertDocument(ctx, tx, databaseName, collectionName, doc1)
-			require.NoError(t, err)
+			if err := InsertDocument(ctx, tx, databaseName, collectionName, doc1); err != nil {
+				return lazyerrors.Error(err)
+			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 			require.NotNil(t, iter)
 
 			cancelGet()
@@ -192,12 +204,15 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			err := CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
+			if err := CreateCollection(ctx, tx, databaseName, collectionName); err != nil {
+				return lazyerrors.Error(err)
+			}
 
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
@@ -234,9 +249,11 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			sp := &SQLParam{DB: databaseName, Collection: collectionName}
-			iter, err := GetDocuments(ctxGet, tx, sp)
-			require.NoError(t, err)
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
+			iter, err := QueryDocuments(ctxGet, tx, qp)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
@@ -265,4 +282,80 @@ func TestGetDocuments(t *testing.T) {
 
 		require.NoError(t, err)
 	})
+}
+
+func TestPrepareWhereClause(t *testing.T) {
+	t.Parallel()
+	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
+
+	// WHERE clauses occurring frequently in tests
+	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
+	whereEqOrContain := whereEq + " OR (_jsonb->$1)::jsonb @> $2"
+
+	for name, tc := range map[string]struct {
+		filter   *types.Document
+		expected string
+	}{
+		"String": {
+			filter:   must.NotFail(types.NewDocument("v", "foo")),
+			expected: whereEqOrContain,
+		},
+		"EmptyString": {
+			filter:   must.NotFail(types.NewDocument("v", "")),
+			expected: whereEqOrContain,
+		},
+		"Int32": {
+			filter:   must.NotFail(types.NewDocument("v", int32(42))),
+			expected: whereEqOrContain,
+		},
+		"Int64": {
+			filter:   must.NotFail(types.NewDocument("v", int64(42))),
+			expected: whereEqOrContain,
+		},
+		"Float64": {
+			filter:   must.NotFail(types.NewDocument("v", float64(42.13))),
+			expected: whereEqOrContain,
+		},
+		"MaxFloat64": {
+			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
+			expected: whereEqOrContain,
+		},
+		"Bool": {
+			filter: must.NotFail(types.NewDocument("v", true)),
+		},
+		"Comment": {
+			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
+		},
+		"ObjectID": {
+			filter:   must.NotFail(types.NewDocument("v", objectID)),
+			expected: whereEqOrContain,
+		},
+		"IDObjectID": {
+			filter:   must.NotFail(types.NewDocument("_id", objectID)),
+			expected: whereEq,
+		},
+		"IDString": {
+			filter:   must.NotFail(types.NewDocument("_id", "foo")),
+			expected: whereEq,
+		},
+		"IDDotNotation": {
+			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
+		},
+		"DotNotation": {
+			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
+		},
+		"DotNotationArrayIndex": {
+			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			actual, _, err := prepareWhereClause(tc.filter)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }

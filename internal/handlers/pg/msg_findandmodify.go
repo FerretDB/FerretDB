@@ -69,7 +69,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	sqlParam := pgdb.SQLParam{
+	queryParams := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -81,7 +81,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var reply wire.OpMsg
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var resDocs []*types.Document
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sqlParam)
+		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &queryParams, h.DisablePushdown})
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					hasUpdateOperators: params.HasUpdateOperators,
 					query:              params.Query,
 					update:             params.Update,
-					sqlParam:           &sqlParam,
+					queryParams:        &queryParams,
 				}
 				upsert, upserted, err = upsertDocuments(ctx, dbPool, tx, resDocs, p)
 				if err != nil {
@@ -131,7 +131,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						return err
 					}
 
-					if _, err = updateDocument(ctx, tx, &sqlParam, upsert); err != nil {
+					if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
 						return err
 					}
 				} else {
@@ -141,7 +141,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 						upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 					}
 
-					if _, err = updateDocument(ctx, tx, &sqlParam, upsert); err != nil {
+					if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
 						return err
 					}
 				}
@@ -186,7 +186,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil
 			}
 
-			if _, err = deleteDocuments(ctx, dbPool, &sqlParam, resDocs); err != nil {
+			if _, err = deleteDocuments(ctx, dbPool, &queryParams, resDocs); err != nil {
 				return err
 			}
 
@@ -214,7 +214,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 type upsertParams struct {
 	hasUpdateOperators bool
 	query, update      *types.Document
-	sqlParam           *pgdb.SQLParam
+	queryParams        *pgdb.QueryParams
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.
@@ -242,7 +242,7 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 			}
 		}
 
-		if err := insertDocument(ctx, dbPool, params.sqlParam, upsert); err != nil {
+		if err := insertDocument(ctx, dbPool, params.queryParams, upsert); err != nil {
 			return nil, false, err
 		}
 
@@ -262,7 +262,7 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 		}
 	}
 
-	_, err := updateDocument(ctx, tx, params.sqlParam, upsert)
+	_, err := updateDocument(ctx, tx, params.queryParams, upsert)
 	if err != nil {
 		return nil, false, err
 	}

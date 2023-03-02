@@ -147,40 +147,49 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setupTigris configures Tigris.
+// setupAnyTigris configures given Tigris.
+func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
+	err := waitForPort(ctx, logger, port)
+	if err != nil {
+		return err
+	}
+
+	cfg := &config.Driver{
+		URL: fmt.Sprintf("127.0.0.1:%d", port),
+	}
+
+	var db *tigrisdb.TigrisDB
+
+	for ctx.Err() == nil {
+		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
+			break
+		}
+
+		logger.Infof("%s: %s", cfg.URL, err)
+		ctxutil.Sleep(ctx, time.Second)
+	}
+
+	defer db.Driver.Close()
+
+	logger.Info("Creating databases...")
+
+	for _, name := range []string{"admin", "test"} {
+		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// setupTigris configures all Tigris containers.
 func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 	logger = logger.Named("tigris")
 
 	// See docker-compose.yml.
 	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
-		err := waitForPort(ctx, logger, port)
-		if err != nil {
+		if err := setupAnyTigris(ctx, logger.Named(strconv.Itoa(int(port))), port); err != nil {
 			return err
-		}
-
-		cfg := &config.Driver{
-			URL: fmt.Sprintf("127.0.0.1:%d", port),
-		}
-
-		var db *tigrisdb.TigrisDB
-
-		for ctx.Err() == nil {
-			if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
-				break
-			}
-
-			logger.Infof("%s: %s", cfg.URL, err)
-			ctxutil.Sleep(ctx, time.Second)
-		}
-
-		defer db.Driver.Close()
-
-		logger.Info("Creating databases...")
-
-		for _, name := range []string{"admin", "test"} {
-			if _, err = db.Driver.CreateProject(ctx, name); err != nil {
-				return err
-			}
 		}
 	}
 
@@ -203,11 +212,11 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger.Named("mongodb"), 37017); err != nil {
+	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 37018); err != nil {
+	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 47018); err != nil {
 		return err
 	}
 

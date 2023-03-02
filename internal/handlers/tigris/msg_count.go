@@ -53,9 +53,9 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 	common.Ignored(document, h.L, ignoredFields...)
 
-	var fp tigrisdb.FetchParam
+	var qp tigrisdb.QueryParams
 
-	if fp.Filter, err = common.GetOptionalParam(document, "query", fp.Filter); err != nil {
+	if qp.Filter, err = common.GetOptionalParam(document, "query", qp.Filter); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +66,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	if fp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +76,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	var ok bool
-	if fp.Collection, ok = collectionParam.(string); !ok {
+	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrInvalidNamespace,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -84,7 +84,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 	if err != nil {
 		return nil, err
 	}

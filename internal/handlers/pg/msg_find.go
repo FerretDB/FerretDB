@@ -54,7 +54,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	sp := pgdb.SQLParam{
+	qp := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -62,15 +62,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if sp.Filter != nil {
-		if sp.Comment, err = common.GetOptionalParam(sp.Filter, "$comment", sp.Comment); err != nil {
+	if qp.Filter != nil {
+		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 	}
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = h.fetchAndFilterDocs(ctx, tx, &sp)
+		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
 		return err
 	})
 
@@ -101,7 +101,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0), // TODO
-				"ns", sp.DB+"."+sp.Collection,
+				"ns", qp.DB+"."+qp.Collection,
 			)),
 			"ok", float64(1),
 		))},
@@ -110,9 +110,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	return &reply, nil
 }
 
+// fetchParams is used to pass parameters to fetchAndFilterDocs.
+type fetchParams struct {
+	tx              pgx.Tx
+	qp              *pgdb.QueryParams
+	disablePushdown bool
+}
+
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *pgdb.SQLParam) ([]*types.Document, error) {
-	iter, err := pgdb.GetDocuments(ctx, tx, sqlParam)
+func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document, error) {
+	// filter is used to filter documents on the FerretDB side,
+	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
+	filter := fp.qp.Filter
+
+	if fp.disablePushdown {
+		fp.qp.Filter = nil
+	}
+
+	iter, err := pgdb.QueryDocuments(ctx, fp.tx, fp.qp)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +146,7 @@ func (h *Handler) fetchAndFilterDocs(ctx context.Context, tx pgx.Tx, sqlParam *p
 			return nil, err
 		}
 
-		matches, err := common.FilterDocument(doc, sqlParam.Filter)
+		matches, err := common.FilterDocument(doc, filter)
 		if err != nil {
 			return nil, err
 		}

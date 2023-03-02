@@ -12,8 +12,6 @@ For more configuration options check [Configuration flags and variables](../flag
 1. Store the following in the `docker-compose.yml` file:
 
    ```yaml
-   version: "3"
-
    services:
      postgres:
        image: postgres
@@ -52,10 +50,10 @@ For more configuration options check [Configuration flags and variables](../flag
    The example URI would look like:
 
    ```text
-   mongodb://username:password@localhost/ferretdb?authMechanism=PLAIN
+   mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
-   See [Security#Authentication](../security.md#authentication) for more details.
+   See [Security Authentication](../security.md#authentication) for more details.
 
    If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container, attaching to the same Docker network:
 

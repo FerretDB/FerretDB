@@ -43,15 +43,17 @@ type Config struct {
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
+	// See:
+	// * https://pkg.go.dev/github.com/jackc/pgx/v4/pgxpool#ParseConfig
+	// * https://pkg.go.dev/github.com/jackc/pgx/v4#ParseConfig
+	// * https://pkg.go.dev/github.com/jackc/pgconn#ParseConfig
 	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
 	// Tigris parameters for `tigris` handler.
-	// See https://docs.tigrisdata.com/overview/authentication
-	// and https://docs.tigrisdata.com/golang/getting-started.
+	// See https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
+	TigrisURL          string
 	TigrisClientID     string
 	TigrisClientSecret string
-	TigrisToken        string
-	TigrisURL          string
 }
 
 // ListenerConfig represents listener configuration.
@@ -101,17 +103,15 @@ func New(config *Config) (*FerretDB, error) {
 	metrics := connmetrics.NewListenerMetrics()
 
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Ctx:           context.Background(),
 		Logger:        logger,
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: p,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
+		TigrisURL:          config.TigrisURL,
 		TigrisClientID:     config.TigrisClientID,
 		TigrisClientSecret: config.TigrisClientSecret,
-		TigrisToken:        config.TigrisToken,
-		TigrisURL:          config.TigrisURL,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)

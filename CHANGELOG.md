@@ -1,5 +1,88 @@
 # Changelog
 
+## [v0.9.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.2) (2023-02-27)
+
+### New Features 🎉
+* Support `listIndexes` command by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1960
+* Add support for `$addToSet` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2004
+* Add `$pullAll` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2032
+* Add Tigris authentication support by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2040
+
+### Fixed Bugs 🐛
+* Add support for `create` with `capped: false` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1978
+* Do not log the latest version if it's unknown by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1967
+
+### Enhancements 🛠
+* Add a flag for disabling query pushdown by @noisersup in https://github.com/FerretDB/FerretDB/pull/1963
+* Disable query pushdown if the corresponding flag is set by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2003
+
+### Documentation 📄
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1976
+* Add blog post on FerretDB v0.9.1 by @Fashander in https://github.com/FerretDB/FerretDB/pull/1965
+* Set up analytics for documentation and blog by @Fashander in https://github.com/FerretDB/FerretDB/pull/2010
+* Add section for evaluation query operators - `$mod` and `$regex` by @Fashander in https://github.com/FerretDB/FerretDB/pull/1941
+* Embedded FerretDB documentation - examples improvements by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2017
+* Do not specify Docker Compose version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2023
+* Document bitwise query operators by @Fashander in https://github.com/FerretDB/FerretDB/pull/2042
+* Update documentation definitions for operators by @Fashander in https://github.com/FerretDB/FerretDB/pull/2016
+
+### Other Changes 🤖
+* Build multiple Docker images for git tags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1991
+* Enable array tests for Tigris by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1966
+* Store cursors in `ConnInfo` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1998
+* Bump Go to 1.19.6 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1999
+* Bump more dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1981
+* Bump more deps, update Dependabot config by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2002
+* Simplify pushdown disabling logic by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2008
+* Extract more `find` command parameters by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2006
+* Bump Tigris version to `1.0.0-beta.38` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2011
+* Refactor `types.NewPathFromString` to return `(Path, error)` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1994
+* Bump `golang.org/x/net` version to 0.7.0 in `tools/go.mod` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2018
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2022
+* Refactor integration tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1925
+* Simplify fields sorting, add TODO by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2039
+* Run `task testjs` on CI by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2031
+* Return a proper error when a document with duplicate `_id`  is sent for `insert` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2024
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/31?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.1...v0.9.2).
+
+
+## [v0.9.1](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.1) (2023-02-13)
+
+### New Features 🎉
+* Support Tigris pushdowns for numbers by @noisersup in https://github.com/FerretDB/FerretDB/pull/1842
+* Pushdown Tigris queries with dot notation by @noisersup in https://github.com/FerretDB/FerretDB/pull/1908
+
+### Fixed Bugs 🐛
+* Fix `$pop` operator error handling of non-existent path by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1907
+* Fix SASL response for `PLAIN` authentication by @b1ron in https://github.com/FerretDB/FerretDB/pull/1942
+* Fix key ordering on document replacing by @noisersup in https://github.com/FerretDB/FerretDB/pull/1946
+
+### Documentation 📄
+* Add blog post on new FerretDB release by @Fashander in https://github.com/FerretDB/FerretDB/pull/1893
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1902
+* Fix broken link by @Fashander in https://github.com/FerretDB/FerretDB/pull/1918
+* Add blog post on "MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023" by @Fashander in https://github.com/FerretDB/FerretDB/pull/1911
+
+### Other Changes 🤖
+* Use multiple Tigris instances to run tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1878
+* Assorted internal tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1909
+* Bump Tigris by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1916
+* Add simple `otel` tracing to collect data from tests by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/1863
+* Remove unused parameter by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1919
+* Rework on integration test setup by @chilagrow in https://github.com/FerretDB/FerretDB/pull/1857
+* Add `iterator.WithClose` helper by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1947
+* Tweak CI settings by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1948
+* Rename function, add TODO by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1955
+* Remove `skipTigrisPushdown` from tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/1957
+* Implement Tigris query iterator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/1924
+
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/30?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.0...v0.9.1).
+
+
 ## [v0.9.0](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.0) (2023-01-31)
 
 ## What's Changed

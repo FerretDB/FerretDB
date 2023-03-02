@@ -42,13 +42,13 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	fp := tigrisdb.FetchParam{
+	qp := tigrisdb.QueryParams{
 		DB:         dp.DB,
 		Collection: dp.Collection,
 		Filter:     dp.Filter,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, dbPool, &fp)
+	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 	if err != nil {
 		return nil, err
 	}

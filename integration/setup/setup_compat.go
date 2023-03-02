@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime/trace"
 	"testing"
@@ -25,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
@@ -59,16 +59,16 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	s := startup()
+	if *compatURLF == "" {
+		tb.Skip("-compat-url is empty, skipping compatibility test")
+	}
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	defer trace.StartRegion(ctx, "SetupCompatWithOpts").End()
+	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
+	defer span.End()
 
-	// skip tests for MongoDB as soon as possible
-	if *compatPortF == 0 {
-		tb.Skip("compatibility tests require second system")
-	}
+	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
 
 	if opts == nil {
 		opts = new(SetupCompatOpts)
@@ -77,7 +77,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the handler's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + *handlerF
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + getHandler()
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -87,26 +87,20 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	}
 	logger := testutil.Logger(tb, level)
 
-	var targetURI string
-	if *targetPortF == 0 {
-		targetURI = setupListener(tb, ctx, logger, s)
+	var targetClient *mongo.Client
+	if *targetURLF == "" {
+		targetClient, _ = setupListener(tb, setupCtx, logger)
 	} else {
-		targetURI = buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
-			hostPort: fmt.Sprintf("127.0.0.1:%d", *targetPortF),
-			tls:      *targetTLSF,
-		})
+		targetClient = setupClient(tb, setupCtx, *targetURLF)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	compatURI := buildMongoDBURI(tb, ctx, &buildMongoDBURIOpts{
-		hostPort: fmt.Sprintf("127.0.0.1:%d", *compatPortF),
-		tls:      *compatTLSF,
-	})
+	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, true)
 
-	targetCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, targetURI), opts)
-	compatCollections := setupCompatCollections(tb, ctx, setupClient(tb, ctx, compatURI), opts)
+	compatClient := setupClient(tb, setupCtx, *compatURLF)
+	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, false)
 
 	level.SetLevel(*logLevelF)
 
@@ -128,8 +122,11 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts) []*mongo.Collection {
+func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, isTarget bool) []*mongo.Collection {
 	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	defer span.End()
 
 	defer trace.StartRegion(ctx, "setupCompatCollections").End()
 
@@ -153,43 +150,42 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetPortF == 0 && !slices.Contains(provider.Handlers(), *handlerF) {
+		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
 			tb.Logf(
 				"Provider %q is not compatible with handler %q, skipping creating %q.",
-				provider.Name(), *handlerF, fullName,
+				provider.Name(), getHandler(), fullName,
 			)
 			continue
 		}
 
-		region := trace.StartRegion(ctx, fmt.Sprintf("setupCompatCollections/%s", collectionName))
+		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
+		collCtx, span := otel.Tracer("").Start(ctx, spanName)
+		region := trace.StartRegion(collCtx, spanName)
 
 		collection := database.Collection(collectionName)
 
 		// drop remnants of the previous failed run
-		_ = collection.Drop(ctx)
+		_ = collection.Drop(collCtx)
 
-		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*handlerF, collectionName); len(validators) > 0 {
-			var opts options.CreateCollectionOptions
-			for key, value := range validators {
-				opts.SetValidator(bson.D{{key, value}})
-			}
-
-			err := database.CreateCollection(ctx, collectionName, &opts)
-			if err != nil {
-				var cmdErr *mongo.CommandError
-				if errors.As(err, &cmdErr) {
-					// If collection can't be created in MongoDB because MongoDB has a different validator format, it's ok:
-					require.Contains(tb, cmdErr.Message, `unknown top level operator: $tigrisSchemaString`)
+		// Validators are only applied to target. Compat is compatible with all provider.
+		if isTarget {
+			// if validators are set, create collection with them (otherwise collection will be created on first insert)
+			if validators := provider.Validators(getHandler(), collectionName); len(validators) > 0 {
+				var opts options.CreateCollectionOptions
+				for key, value := range validators {
+					opts.SetValidator(bson.D{{key, value}})
 				}
+
+				err := database.CreateCollection(ctx, collectionName, &opts)
+				require.NoError(tb, err)
 			}
 		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(ctx, docs)
-		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), *handlerF, fullName)
+		res, err := collection.InsertMany(collCtx, docs)
+		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), getHandler(), fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		// delete collection unless test failed
@@ -199,13 +195,14 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 				return
 			}
 
-			err := collection.Drop(ctx)
+			err := collection.Drop(collCtx)
 			require.NoError(tb, err)
 		})
 
 		collections = append(collections, collection)
 
 		region.End()
+		span.End()
 	}
 
 	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection

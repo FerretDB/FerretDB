@@ -67,20 +67,23 @@ func TestProvider(t *testing.T) {
 	t.Run("Subscribe", func(t *testing.T) {
 		t.Parallel()
 
-		p, err := NewProvider(filepath.Join(t.TempDir(), "state.json"))
+		filename := filepath.Join(t.TempDir(), "state.json")
+		p, err := NewProvider(filename)
 		require.NoError(t, err)
 
 		ch := p.Subscribe()
 
 		require.Len(t, ch, cap(ch), "channel should be full")
 
-		p.Update(func(s *State) { *s = State{UUID: "00000000-0000-0000-0000-000000000000"} })
+		err = p.Update(func(s *State) { *s = State{UUID: "00000000-0000-0000-0000-000000000000"} })
+		require.NoError(t, err)
 
 		expected := &State{
 			UUID:  "11111111-1111-1111-1111-111111111111",
 			Start: time.Now(),
 		}
-		p.Update(func(s *State) { *s = *expected })
+		err = p.Update(func(s *State) { *s = *expected })
+		require.NoError(t, err)
 
 		assert.Equal(t, expected, p.Get())
 		require.Len(t, ch, cap(ch), "channel should be full")
@@ -98,7 +101,8 @@ func TestProvider(t *testing.T) {
 			close(got)
 		}()
 
-		p.Update(func(s *State) { *s = *expected })
+		err = p.Update(func(s *State) { *s = *expected })
+		require.NoError(t, err)
 
 		<-got
 	})

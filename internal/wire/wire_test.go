@@ -126,13 +126,15 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		f.Add(tc.expectedB)
 	}
 
-	records, err := loadRecords(filepath.Join("..", "..", "records"))
-	require.NoError(f, err)
+	if !testing.Short() {
+		records, err := loadRecords(filepath.Join("..", "..", "tmp", "records"))
+		require.NoError(f, err)
 
-	f.Logf("%d recorded messages were added to the seed corpus", len(records))
+		f.Logf("%d recorded messages were added to the seed corpus", len(records))
 
-	for _, rec := range records {
-		f.Add(rec.bodyB)
+		for _, rec := range records {
+			f.Add(rec.bodyB)
+		}
 	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {

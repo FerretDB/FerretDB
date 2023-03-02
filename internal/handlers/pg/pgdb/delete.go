@@ -25,29 +25,29 @@ import (
 )
 
 // DeleteDocumentsByID deletes documents by given IDs.
-func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, sp *SQLParam, ids []any) (int64, error) {
-	table, err := getMetadata(ctx, tx, sp.DB, sp.Collection)
+func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, ids []any) (int64, error) {
+	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
 	if err != nil {
 		return 0, err
 	}
 
-	return deleteByIDs(ctx, tx, deleteParams{
-		schema:  sp.DB,
+	return deleteByIDs(ctx, tx, execDeleteParams{
+		schema:  qp.DB,
 		table:   table,
-		comment: sp.Comment,
+		comment: qp.Comment,
 	}, ids,
 	)
 }
 
-// deleteParams describes the parameters for deleting from a table.
-type deleteParams struct {
+// execDeleteParams describes the parameters for deleting from a table.
+type execDeleteParams struct {
 	schema  string // pg schema name
 	table   string // pg table name
 	comment string // comment to add to the query
 }
 
 // deleteByIDs deletes documents by given IDs.
-func deleteByIDs(ctx context.Context, tx pgx.Tx, d deleteParams, ids []any) (int64, error) {
+func deleteByIDs(ctx context.Context, tx pgx.Tx, d execDeleteParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))

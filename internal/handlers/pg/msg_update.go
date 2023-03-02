@@ -47,9 +47,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation")
 
-	var sp pgdb.SQLParam
+	var qp pgdb.QueryParams
 
-	if sp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var ok bool
-	if sp.Collection, ok = collectionParam.(string); !ok {
+	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
@@ -73,12 +73,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.CreateCollectionIfNotExists(ctx, tx, sp.DB, sp.Collection)
+		return pgdb.CreateCollectionIfNotExists(ctx, tx, qp.DB, qp.Collection)
 	})
 	if err != nil {
 		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
 			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
-			msg := fmt.Sprintf("Invalid namespace: %s.%s", sp.DB, sp.Collection)
+			msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
 			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 		}
 		return nil, err
@@ -116,12 +116,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			// get comment from options.Update().SetComment() method
-			if sp.Comment, err = common.GetOptionalParam(document, "comment", sp.Comment); err != nil {
+			if qp.Comment, err = common.GetOptionalParam(document, "comment", qp.Comment); err != nil {
 				return err
 			}
 
 			// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-			if sp.Comment, err = common.GetOptionalParam(q, "$comment", sp.Comment); err != nil {
+			if qp.Comment, err = common.GetOptionalParam(q, "$comment", qp.Comment); err != nil {
 				return err
 			}
 
@@ -139,9 +139,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return err
 			}
 
-			sp.Filter = q
+			qp.Filter = q
 
-			resDocs, err := h.fetchAndFilterDocs(ctx, tx, &sp)
+			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
 			if err != nil {
 				return err
 			}
@@ -165,7 +165,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				)))
 
-				if err = insertDocument(ctx, dbPool, &sp, doc); err != nil {
+				if err = insertDocument(ctx, dbPool, &qp, doc); err != nil {
 					return err
 				}
 
@@ -189,7 +189,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				rowsChanged, err := updateDocument(ctx, tx, &sp, doc)
+				rowsChanged, err := updateDocument(ctx, tx, &qp, doc)
 				if err != nil {
 					return err
 				}
@@ -224,10 +224,10 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // updateDocument updates documents by _id.
-func updateDocument(ctx context.Context, tx pgx.Tx, sp *pgdb.SQLParam, doc *types.Document) (int64, error) {
+func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *types.Document) (int64, error) {
 	id := must.NotFail(doc.Get("_id"))
 
-	res, err := pgdb.SetDocumentByID(ctx, tx, sp, id, doc)
+	res, err := pgdb.SetDocumentByID(ctx, tx, qp, id, doc)
 	if err == nil {
 		return res, nil
 	}
