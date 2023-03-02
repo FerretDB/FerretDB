@@ -383,8 +383,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			}
 
 			// we remove all instances of valueToPull in array
-			i := array.Len() - 1
-			for i >= 0 {
+			for i := array.Len() - 1; i >= 0; i-- {
 				var value any
 
 				value, err = array.Get(i)
@@ -397,7 +396,6 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 					changed = true
 				}
-				i--
 			}
 		}
 
