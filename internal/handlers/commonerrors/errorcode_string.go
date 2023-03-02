@@ -27,6 +27,8 @@ func _() {
 	_ = x[ErrNotImplemented-238]
 	_ = x[ErrMechanismUnavailable-334]
 	_ = x[ErrDuplicateKey-11000]
+	_ = x[ErrMatchBadExpression-15959]
+	_ = x[ErrSortBadExpression-15973]
 	_ = x[ErrSortBadValue-15974]
 	_ = x[ErrSortBadOrder-15975]
 	_ = x[ErrInvalidArg-28667]
@@ -45,7 +47,7 @@ func _() {
 	_ = x[ErrBadRegexOption-51108]
 }
 
-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundUnsuitableValueTypeConflictingUpdateOperatorsCursorNotFoundNamespaceExistsInvalidIDEmptyNameCommandNotFoundInvalidNamespaceOperationFailedDocumentValidationFailureNotImplementedMechanismUnavailableLocation11000Location15974Location15975Location28667Location28724Location31253Location31254Location40156Location40323Location40352Location40414Location40415Location50840Location51024Location51075Location51091Location51108"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundUnsuitableValueTypeConflictingUpdateOperatorsCursorNotFoundNamespaceExistsInvalidIDEmptyNameCommandNotFoundInvalidNamespaceOperationFailedDocumentValidationFailureNotImplementedMechanismUnavailableLocation11000ErrMatchBadExpressionErrSortBadExpressionLocation15974Location15975Location28667Location28724Location31253Location31254Location40156Location40323Location40352Location40414Location40415Location50840Location51024Location51075Location51091Location51108"
 
 var _ErrorCode_map = map[ErrorCode]string{
 	0:     _ErrorCode_name[0:5],
@@ -67,22 +69,24 @@ var _ErrorCode_map = map[ErrorCode]string{
 	238:   _ErrorCode_name[231:245],
 	334:   _ErrorCode_name[245:265],
 	11000: _ErrorCode_name[265:278],
-	15974: _ErrorCode_name[278:291],
-	15975: _ErrorCode_name[291:304],
-	28667: _ErrorCode_name[304:317],
-	28724: _ErrorCode_name[317:330],
-	31253: _ErrorCode_name[330:343],
-	31254: _ErrorCode_name[343:356],
-	40156: _ErrorCode_name[356:369],
-	40323: _ErrorCode_name[369:382],
-	40352: _ErrorCode_name[382:395],
-	40414: _ErrorCode_name[395:408],
-	40415: _ErrorCode_name[408:421],
-	50840: _ErrorCode_name[421:434],
-	51024: _ErrorCode_name[434:447],
-	51075: _ErrorCode_name[447:460],
-	51091: _ErrorCode_name[460:473],
-	51108: _ErrorCode_name[473:486],
+	15959: _ErrorCode_name[278:299],
+	15973: _ErrorCode_name[299:319],
+	15974: _ErrorCode_name[319:332],
+	15975: _ErrorCode_name[332:345],
+	28667: _ErrorCode_name[345:358],
+	28724: _ErrorCode_name[358:371],
+	31253: _ErrorCode_name[371:384],
+	31254: _ErrorCode_name[384:397],
+	40156: _ErrorCode_name[397:410],
+	40323: _ErrorCode_name[410:423],
+	40352: _ErrorCode_name[423:436],
+	40414: _ErrorCode_name[436:449],
+	40415: _ErrorCode_name[449:462],
+	50840: _ErrorCode_name[462:475],
+	51024: _ErrorCode_name[475:488],
+	51075: _ErrorCode_name[488:501],
+	51091: _ErrorCode_name[501:514],
+	51108: _ErrorCode_name[514:527],
 }
 
 func (i ErrorCode) String() string {

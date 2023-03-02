@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if *oldF {
-		log.Fatalf("FerretDB requires Go 1.19 or later.")
+		log.Fatalf("FerretDB requires Go 1.20 or later.")
 	}
 
 	v := runtime.Version()
@@ -51,6 +51,6 @@ func main() {
 	}
 
 	if minor < 18 {
-		log.Fatalf("FerretDB requires Go 1.19 or later. The version of `go` binary in $PATH is %q.", v)
+		log.Fatalf("FerretDB requires Go 1.20 or later. The version of `go` binary in $PATH is %q.", v)
 	}
 }

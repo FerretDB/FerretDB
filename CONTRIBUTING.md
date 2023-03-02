@@ -26,7 +26,7 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.19 or later on the host.
+You will need Go 1.20 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
