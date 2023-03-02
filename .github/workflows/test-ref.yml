@@ -1,0 +1,28 @@
+---
+name: Test Ref
+on:
+  pull_request:
+    types:
+      - labeled # for `trusted` label
+      - unlabeled
+      - opened
+      - reopened
+      - synchronize
+
+jobs:
+  preview:
+    name: Test Ref
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.event.pull_request.head_ref }} # checkout named branch, not detached HEAD
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

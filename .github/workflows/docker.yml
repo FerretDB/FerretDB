@@ -70,7 +70,7 @@ jobs:
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
+          ref: ${{ github.event.pull_request.head_ref }} # checkout named branch, not detached HEAD
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
