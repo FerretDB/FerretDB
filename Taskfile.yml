@@ -22,7 +22,7 @@ tasks:
     desc: "Generate, format, build, test and lint code and documentation"
     cmds:
       - task: gen
-      - task: build-testcover
+      - task: build-local
       - task: test
       - task: lint
       - task: security
@@ -43,13 +43,13 @@ tasks:
     env:
       CGO_ENABLED: 0
 
-  build-testcover:
-    desc: "Build bin/ferretdb-testcover{{exeExt}}"
+  build-local:
+    desc: "Build bin/ferretdb-local{{exeExt}} on the host"
     run: once
     deps: [gen-version]
     cmds:
       # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb-testcover{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb-local{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
@@ -251,10 +251,10 @@ tasks:
 
   run:
     desc: "Run FerretDB with `pg` handler"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -264,10 +264,10 @@ tasks:
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -277,10 +277,10 @@ tasks:
 
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -295,10 +295,10 @@ tasks:
   # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
   run-tigris-secured:
     desc: "Run FerretDB with `tigris` handler (TLS, auth required; SaaS)"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -312,10 +312,10 @@ tasks:
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
-    deps: [build-testcover]
+    deps: [build-local]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
