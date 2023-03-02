@@ -275,16 +275,17 @@ tasks:
         --tigris-url=127.0.0.1:8081
         --test-records-dir=records
 
-   run-hana:
+  run-hana:
     deps: [build-testcover]
+    dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env'] # Create a .env file in root folder with: export hana_url=”insert-url-here”
     cmds:
       - >
         bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
         --handler=hana
         --listen-addr=:27017
         --mode=diff-normal
-        --hanainstance-url=not-given
-        --proxy-addr=127.0.0.1:37017
+        --hana-url=$hana_url
+        --proxy-addr=127.0.0.1:47017
         --test-records-dir=records
 
   run-secured:

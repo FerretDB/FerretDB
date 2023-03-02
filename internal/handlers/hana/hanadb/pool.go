@@ -30,13 +30,13 @@ type Pool struct {
 func NewPool(ctx context.Context, url string, logger *zap.Logger) (*Pool, error) {
 	pool, err := sql.Open("hdb", url)
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect to HANA instance with given connection string")
+		return nil, fmt.Errorf("hanadb.NewPool: %w", err)
 	}
 
 	// Check connection
 	err = pool.PingContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("connection to HANA instance was not established")
+		return nil, fmt.Errorf("hanadb.NewPool: %w", err)
 	}
 
 	res := &Pool{

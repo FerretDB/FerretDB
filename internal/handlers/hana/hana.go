@@ -23,36 +23,43 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/saphana/hanadb"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
+
+// notImplemented returns error for stub command handlers.
+func notImplemented(command string) error {
+	return commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
+}
 
 // / Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
 
 	// accessed by DBPool(ctx)
-	rw   sync.RWMutex
-	pool *hanadb.Pool
+	rw    sync.RWMutex
+	pools map[string]*hanadb.Pool
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	HANAInstanceURL string
-	L               *zap.Logger
-	Metrics         *connmetrics.ConnMetrics
-	StateProvider   *state.Provider
+	HANAURL       string
+	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	if opts.HANAInstanceURL == "" {
+	if opts.HANAURL == "" {
 		return nil, lazyerrors.New("HANA instance URL is not provided")
 	}
 
 	h := &Handler{
 		NewOpts: opts,
+		pools:   make(map[string]*hanadb.Pool, 1),
 	}
 
 	return h, nil
@@ -60,34 +67,41 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 // Close implements HandlerInterface.
 func (h *Handler) Close() {
-	h.pool.Close()
+	h.rw.Lock()
+	defer h.rw.Unlock()
+
+	for k, p := range h.pools {
+		p.Close()
+		delete(h.pools, k)
+	}
 }
 
 // DBPool returns database connection pool for the given client connection.
 //
 // Pool is not closed when ctx is canceled.
 func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
-	url := h.HANAInstanceURL
+	// TODO make real implementation; the current one is a stub.
+	// Used for the basic setup for connecting to HANA
 
 	h.rw.RLock()
-	pool := h.pool
+	p, ok := h.pools[h.HANAURL]
 	h.rw.RUnlock()
 
-	if pool != nil {
-		return pool, nil
+	if ok {
+		return p, nil
 	}
 
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	pool, err := hanadb.NewPool(ctx, url, h.L)
+	p, err := hanadb.NewPool(ctx, h.HANAURL, h.L)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.pool = pool
+	h.pools[h.HANAURL] = p
 
-	return pool, nil
+	return p, nil
 }
 
 // check interfaces

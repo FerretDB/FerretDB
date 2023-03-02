@@ -25,10 +25,10 @@ import (
 func init() {
 	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &hana.NewOpts{
-			HANAInstanceURL: opts.HANAInstanceURL,
-			L:               opts.Logger,
-			Metrics:         opts.Metrics,
-			StateProvider:   opts.StateProvider,
+			HANAURL:       opts.HANAURL,
+			L:             opts.Logger,
+			Metrics:       opts.Metrics,
+			StateProvider: opts.StateProvider,
 		}
 		return hana.New(handlerOpts)
 	}

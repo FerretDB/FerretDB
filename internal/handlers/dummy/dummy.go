@@ -18,79 +18,41 @@
 package dummy
 
 import (
-	"context"
-	"sync"
-
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/saphana/hanadb"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
 
-// / Handler implements handlers.Interface on top of PostgreSQL.
-type Handler struct {
-	*NewOpts
-
-	// accessed by DBPool(ctx)
-	rw   sync.RWMutex
-	pool *hanadb.Pool
+// notImplemented returns error for stub command handlers.
+func notImplemented(command string) error {
+	return common.NewCommandErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
 }
 
-// NewOpts represents handler configuration.
-type NewOpts struct {
-	HANAInstanceURL string
-	L               *zap.Logger
-	Metrics         *connmetrics.ConnMetrics
-	StateProvider   *state.Provider
+// Handler implements handlers.Interface by stubbing all methods except the following handler-independent commands:
+//
+//   - buildInfo;
+//   - connectionStatus;
+//   - debugError;
+//   - getCmdLineOpts;
+//   - getFreeMonitoringStatus;
+//   - hostInfo;
+//   - listCommands;
+//   - setFreeMonitoringStatus;
+//   - whatsmyuri.
+type Handler struct {
+	L *zap.Logger
 }
 
 // New returns a new handler.
-func New(opts *NewOpts) (handlers.Interface, error) {
-	if opts.HANAInstanceURL == "" {
-		return nil, lazyerrors.New("HANA instance URL is not provided")
-	}
-
-	h := &Handler{
-		NewOpts: opts,
-	}
-
-	return h, nil
+func New(l *zap.Logger) (handlers.Interface, error) {
+	return &Handler{
+		L: l,
+	}, nil
 }
 
-// Close implements HandlerInterface.
-func (h *Handler) Close() {
-	h.pool.Close()
-}
-
-// DBPool returns database connection pool for the given client connection.
-//
-// Pool is not closed when ctx is canceled.
-func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
-	url := h.HANAInstanceURL
-
-	h.rw.RLock()
-	pool := h.pool
-	h.rw.RUnlock()
-
-	if pool != nil {
-		return pool, nil
-	}
-
-	h.rw.Lock()
-	defer h.rw.Unlock()
-
-	pool, err := hanadb.NewPool(ctx, url, h.L)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	h.pool = pool
-
-	return pool, nil
-}
+// Close implements handlers.Interface.
+func (h *Handler) Close() {}
 
 // check interfaces
 var (
