@@ -116,7 +116,8 @@ func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePip
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers: []shareddata.Provider{shareddata.Nulls},
+		// Use a provider that works for all handlers.
+		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 
 	ctx := s.Ctx

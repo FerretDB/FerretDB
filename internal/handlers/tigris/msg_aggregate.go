@@ -16,8 +16,6 @@ package tigris
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -74,15 +72,19 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var ok bool
 	if qp.Collection, ok = collection.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collection)),
+			commonerrors.ErrFailedToParse,
+			"Invalid command format: the 'aggregate' field must specify a collection name or 1",
 			document.Command(),
 		)
 	}
 
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			"'pipeline' option must be specified as an array",
+			document.Command(),
+		)
 	}
 
 	stagesDocs := must.NotFail(iterator.Values(pipeline.Iterator()))
@@ -92,7 +94,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+				commonerrors.ErrTypeMismatch,
 				"Each element of the 'pipeline' array must be an object",
 				document.Command(),
 			)
