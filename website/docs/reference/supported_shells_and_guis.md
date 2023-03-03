@@ -21,6 +21,7 @@ slug: /supported_shells_and_guis/
 | Import/Export BSON    | ✅        |
 | Import/Export [`archive`](https://www.mongodb.com/docs/database-tools/mongodump/#output-to-an-archive-file) file    | ✅        |
 | Import/Export with BSON options    | ✅        |
+| Show Collection Statistics    | ❌ [Issue](https://github.com/FerretDB/FerretDB/issues/1346)        |
 
 
 ### [Compass](https://www.mongodb.com/products/compass)
