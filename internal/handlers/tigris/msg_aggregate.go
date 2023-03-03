@@ -102,7 +102,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		var s aggregations.Stage
-
 		if s, err = aggregations.NewStage(d); err != nil {
 			return nil, err
 		}
