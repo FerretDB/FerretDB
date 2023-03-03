@@ -290,9 +290,8 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
-	whereContain := " WHERE (_jsonb->$1)::jsonb @> $2"
-	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND (_jsonb->$1)::jsonb @> $2 AND (_jsonb->'$s'->'p'->$1->'t')::jsonb = `
+	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
@@ -302,11 +301,11 @@ func TestPrepareWhereClause(t *testing.T) {
 	}{
 		"IDObjectID": {
 			filter:   must.NotFail(types.NewDocument("_id", objectID)),
-			expected: whereEq,
+			expected: whereContain,
 		},
 		"IDString": {
 			filter:   must.NotFail(types.NewDocument("_id", "foo")),
-			expected: whereEq,
+			expected: whereContain,
 		},
 		"IDDotNotation": {
 			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
@@ -413,38 +412,38 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", "foo")),
 			)),
-			expected: whereNotEq + `'"string"')`,
+			expected: whereNotEq + `'"string"' )`,
 		},
 		"NeEmptyString": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", "")),
 			)),
-			expected: whereNotEq + `'"string"')`,
+			expected: whereNotEq + `'"string"' )`,
 		},
 		"NeInt32": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", int32(42))),
 			)),
-			expected: whereNotEq + `'"int"')`,
+			expected: whereNotEq + `'"int"' )`,
 		},
 		"NeInt64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", int64(42))),
 			)),
-			expected: whereNotEq + `'"long"')`,
+			expected: whereNotEq + `'"long"' )`,
 		},
 		"NeFloat64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", float64(42.13))),
 			)),
-			expected: whereNotEq + `'"double"')`,
+			expected: whereNotEq + `'"double"' )`,
 		},
 		"NeMaxFloat64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
 			)),
 			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
-			expected: whereNotEq + `'"double"')`,
+			expected: whereNotEq + `'"double"' )`,
 		},
 		"NeBool": {
 			filter: must.NotFail(types.NewDocument(
@@ -455,7 +454,7 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", objectID)),
 			)),
-			expected: whereNotEq + `'"objectId"')`,
+			expected: whereNotEq + `'"objectId"' )`,
 		},
 
 		"Comment": {

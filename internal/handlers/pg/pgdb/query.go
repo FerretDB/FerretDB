@@ -270,14 +270,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			}
 		}
 
-		// check if values are equal or if the left value contains the right one
-		eqOperator := "@>"
-
-		if rootKey == "_id" {
-			// check if values are equal
-			eqOperator = "="
-		}
-
 		switch v := rootVal.(type) {
 		case *types.Document:
 			iter := v.Iterator()
@@ -302,7 +294,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s ` + eqOperator + ` %[2]s`
+						sql := `_jsonb->%[1]s @> %[2]s`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
@@ -320,13 +312,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 							// does document contain the key,
 							// it is necessary, as NOT won't work correctly if the key does not exist.
 							`_jsonb ? %[1]s AND ` +
-							// does the value under the key is equal to the filter
-							`_jsonb->%[1]s ` + eqOperator + ` %[2]s AND ` +
+							// does the value under the key is equal to filter value
+							`_jsonb->%[1]s @> %[2]s AND ` +
 							// does the value type is equal to the filter's one
-							`_jsonb->'$s'->'p'->%[1]s->'t' = '"` + pjson.GetTypeOfValue(v) +
-							`"')`
+							`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
 
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -344,7 +335,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		case float64, string, types.ObjectID, int32, int64:
 			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s ` + eqOperator + ` %[2]s`
+			sql := `_jsonb->%[1]s @> %[2]s`
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
