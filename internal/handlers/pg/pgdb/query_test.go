@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 
@@ -289,73 +290,195 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
-	whereEqOrContain := whereEq + " OR (_jsonb->$1)::jsonb @> $2"
+	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
 		expected string
+		skip     string
+		args     []any // if empty, check is disabled
 	}{
-		"String": {
-			filter:   must.NotFail(types.NewDocument("v", "foo")),
-			expected: whereEqOrContain,
-		},
-		"EmptyString": {
-			filter:   must.NotFail(types.NewDocument("v", "")),
-			expected: whereEqOrContain,
-		},
-		"Int32": {
-			filter:   must.NotFail(types.NewDocument("v", int32(42))),
-			expected: whereEqOrContain,
-		},
-		"Int64": {
-			filter:   must.NotFail(types.NewDocument("v", int64(42))),
-			expected: whereEqOrContain,
-		},
-		"Float64": {
-			filter:   must.NotFail(types.NewDocument("v", float64(42.13))),
-			expected: whereEqOrContain,
-		},
-		"MaxFloat64": {
-			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
-			expected: whereEqOrContain,
-		},
-		"Bool": {
-			filter: must.NotFail(types.NewDocument("v", true)),
-		},
-		"Comment": {
-			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
-		},
-		"ObjectID": {
-			filter:   must.NotFail(types.NewDocument("v", objectID)),
-			expected: whereEqOrContain,
-		},
 		"IDObjectID": {
 			filter:   must.NotFail(types.NewDocument("_id", objectID)),
-			expected: whereEq,
+			expected: whereContain,
 		},
 		"IDString": {
 			filter:   must.NotFail(types.NewDocument("_id", "foo")),
-			expected: whereEq,
+			expected: whereContain,
 		},
 		"IDDotNotation": {
 			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
+
 		"DotNotation": {
 			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
 			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
 		},
+
+		"ImplicitString": {
+			filter:   must.NotFail(types.NewDocument("v", "foo")),
+			expected: whereContain,
+		},
+		"ImplicitEmptyString": {
+			filter:   must.NotFail(types.NewDocument("v", "")),
+			expected: whereContain,
+		},
+		"ImplicitInt32": {
+			filter:   must.NotFail(types.NewDocument("v", int32(42))),
+			expected: whereContain,
+		},
+		"ImplicitInt64": {
+			filter:   must.NotFail(types.NewDocument("v", int64(42))),
+			expected: whereContain,
+		},
+		"ImplicitFloat64": {
+			filter:   must.NotFail(types.NewDocument("v", float64(42.13))),
+			expected: whereContain,
+		},
+		"ImplicitMaxFloat64": {
+			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
+			expected: whereContain,
+		},
+		"ImplicitBool": {
+			filter: must.NotFail(types.NewDocument("v", true)),
+		},
+		"ImplicitObjectID": {
+			filter:   must.NotFail(types.NewDocument("v", objectID)),
+			expected: whereContain,
+		},
+
+		"EqString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", "foo")),
+			)),
+			args:     []any{`v`, `"foo"`},
+			expected: whereContain,
+		},
+		"EqEmptyString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", "")),
+			)),
+			expected: whereContain,
+		},
+		"EqInt32": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", int32(42))),
+			)),
+			expected: whereContain,
+		},
+		"EqInt64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", int64(42))),
+			)),
+			expected: whereContain,
+		},
+		"EqFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", float64(42.13))),
+			)),
+			expected: whereContain,
+		},
+		"EqMaxFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
+			)),
+			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
+			expected: whereContain,
+		},
+		"EqDoubleBigInt64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
+			)),
+			args:     []any{`v`, fmt.Sprint(float64(2 << 61))},
+			expected: whereContain,
+			skip:     "https://github.com/FerretDB/FerretDB/issues/2057",
+		},
+		"EqBool": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", true)),
+			)),
+		},
+		"EqObjectID": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", objectID)),
+			)),
+			expected: whereContain,
+		},
+
+		"NeString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", "foo")),
+			)),
+			expected: whereNotEq + `'"string"' )`,
+		},
+		"NeEmptyString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", "")),
+			)),
+			expected: whereNotEq + `'"string"' )`,
+		},
+		"NeInt32": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", int32(42))),
+			)),
+			expected: whereNotEq + `'"int"' )`,
+		},
+		"NeInt64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", int64(42))),
+			)),
+			expected: whereNotEq + `'"long"' )`,
+		},
+		"NeFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", float64(42.13))),
+			)),
+			expected: whereNotEq + `'"double"' )`,
+		},
+		"NeMaxFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
+			)),
+			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
+			expected: whereNotEq + `'"double"' )`,
+		},
+		"NeBool": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", true)),
+			)),
+		},
+		"NeObjectID": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", objectID)),
+			)),
+			expected: whereNotEq + `'"objectId"' )`,
+		},
+
+		"Comment": {
+			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, _, err := prepareWhereClause(tc.filter)
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			actual, args, err := prepareWhereClause(tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
+
+			if len(tc.args) == 0 {
+				return
+			}
+
+			assert.Equal(t, tc.args, args)
 		})
 	}
 }
