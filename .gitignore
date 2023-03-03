@@ -16,7 +16,6 @@ vendor/
 *.txt
 *.out
 **/testdata/fuzz/
-records/
 state.json
 tmp/
 website/build/
