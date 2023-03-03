@@ -26,15 +26,15 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// aggregateCompatTestCase describes aggregate compatibility test case.
-type aggregateCompatTestCase struct {
-	pipeline   bson.A                   // required
+// aggregateStageCompatTestCase describes aggregate compatibility test case.
+type aggregateStageCompatTestCase struct {
 	skip       string                   // skip test for all handlers, must have issue number mentioned
+	pipeline   bson.A                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testAggregateStageCompat tests aggregate stage compatibility test cases.
-func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateCompatTestCase) {
+func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateStageCompatTestCase) {
 	t.Helper()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -209,7 +209,7 @@ func TestAggregatePipelineCompat(t *testing.T) {
 }
 
 func TestAggregateCompatCount(t *testing.T) {
-	testCases := map[string]aggregateCompatTestCase{
+	testCases := map[string]aggregateStageCompatTestCase{
 		"Value": {
 			pipeline: bson.A{bson.D{{"$count", "v"}}},
 		},
@@ -242,21 +242,21 @@ func TestAggregateCompatCount(t *testing.T) {
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
-	testCases := map[string]aggregateCompatTestCase{
+	testCases := map[string]aggregateStageCompatTestCase{
 		"ID": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
-				// sort by _id because mongoDB does not have deterministic natural order.
+				// sort by _id because compat does not have deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
-				// sort by _id because mongoDB does not have deterministic natural order.
+				// sort by _id because compat does not have deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
@@ -269,13 +269,38 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"Regex": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}}},
 		},
+		"Empty": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{}}},
+				// sort by _id because compat does not have deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"DotNotationDocument": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v.foo", int32(42)}}}},
+				// sort by _id because compat does not have deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"DotNotationArray": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v.0", int32(42)}}}},
+				// sort by _id because compat does not have deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"Location15959": {
+			pipeline:   bson.A{bson.D{{"$match", 1}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStageCompat(t, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
-	testCases := map[string]aggregateCompatTestCase{
+	testCases := map[string]aggregateStageCompatTestCase{
 		"AscendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", 1}}}}},
 		},
