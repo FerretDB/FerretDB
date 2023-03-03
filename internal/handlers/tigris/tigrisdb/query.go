@@ -92,11 +92,6 @@ func BuildFilter(filter *types.Document) (string, error) {
 	res := map[string]any{}
 
 	for k, v := range filter.Map() {
-		// TODO https://github.com/FerretDB/FerretDB/issues/1940
-		if v == "" {
-			continue
-		}
-
 		if k != "" {
 			// don't pushdown $comment, it's attached to query in handlers
 			if k[0] == '$' {
