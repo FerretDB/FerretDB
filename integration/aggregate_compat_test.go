@@ -28,7 +28,7 @@ import (
 
 // aggregateCompatTestCase describes aggregate compatibility test case.
 type aggregateCompatTestCase struct {
-	pipeline   any                      // required
+	pipeline   bson.A                   // required
 	skip       string                   // skip test for all handlers, must have issue number mentioned
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
