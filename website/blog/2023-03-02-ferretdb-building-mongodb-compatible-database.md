@@ -77,7 +77,7 @@ See [our guide on how to get started.](https://docs.ferretdb.io/category/quickst
 ## What features are you focusing on?
 
 We think that building out support for aggregation pipelines is our most important task, as the vast majority of MongoDB applications naturally expect this feature.
-Also, implementing support for indexes as any real database should have that feature, even if performance is not our number one priority for now.
+Also, implementing support for indexes as any real database should have that feature.
 
 ## How can I help?
 
