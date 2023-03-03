@@ -367,7 +367,8 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutsideArray": {
-			update: bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
+			update:        bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
+			skipForTigris: "Will fail because of type conversion.",
 		},
 	}
 
@@ -509,7 +510,8 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
-			update: bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
+			update:        bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
+			skipForTigris: "Will fail because of type conversion.",
 		},
 	}
 
