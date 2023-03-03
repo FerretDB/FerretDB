@@ -72,7 +72,6 @@ func newCount(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	//ErrStageCountBadValue
 	return &count{
 		field: field,
 	}, nil

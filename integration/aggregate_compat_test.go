@@ -105,12 +105,12 @@ func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateCompat
 
 // aggregatePipelineCompatTestCase describes aggregate compatibility test case.
 type aggregatePipelineCompatTestCase struct {
-	command    bson.D                   // required
 	skip       string                   // skip test for all handlers, must have issue number mentioned
+	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-// testAggregatePipelineCompat tests aggregate pipeline compatibility test cases.
+// testAggregatePipelineCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStageCompat for testing a stage of aggregation.
 func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePipelineCompatTestCase) {
 	t.Helper()
@@ -118,7 +118,10 @@ func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePip
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: []shareddata.Provider{shareddata.Nulls},
 	})
-	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+	ctx := s.Ctx
+	targetCollection := s.TargetCollections[0]
+	compatCollection := s.CompatCollections[0]
 
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -135,32 +138,29 @@ func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePip
 			require.NotNil(t, command, "command should be set")
 
 			var nonEmptyResults bool
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
 
-					var targetRes, compatRes []bson.D
-					targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
-					compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
+			t.Run(targetCollection.Name(), func(t *testing.T) {
+				t.Helper()
 
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						t.Logf("Compat error: %v", compatErr)
-						AssertMatchesCommandError(t, compatErr, targetErr)
+				var targetRes, compatRes []bson.D
+				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+				compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
 
-						return
-					}
-					require.NoError(t, compatErr, "compat error; target returned no error")
+				if targetErr != nil {
+					t.Logf("Target error: %v", targetErr)
+					t.Logf("Compat error: %v", compatErr)
+					AssertMatchesCommandError(t, compatErr, targetErr)
 
-					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+					return
+				}
+				require.NoError(t, compatErr, "compat error; target returned no error")
 
-					if len(targetRes) > 0 || len(compatRes) > 0 {
-						nonEmptyResults = true
-					}
-				})
-			}
+				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+				if len(targetRes) > 0 || len(compatRes) > 0 {
+					nonEmptyResults = true
+				}
+			})
 
 			switch tc.resultType {
 			case nonEmptyResult:
