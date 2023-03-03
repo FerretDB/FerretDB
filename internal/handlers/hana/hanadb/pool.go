@@ -15,18 +15,21 @@
 package hanadb
 
 import (
-	_ "SAP/go-hdb/driver"
 	"context"
 	"database/sql"
 	"fmt"
 
+	_ "SAP/go-hdb/driver" //nolint:goimports // goimports and gci are conflicting
+
 	"go.uber.org/zap"
 )
 
+// Pool represents SAP HANA concurrency-safe connection pool.
 type Pool struct {
 	*sql.DB
 }
 
+// NewPool returns a new concurrency-safe connection pool.
 func NewPool(ctx context.Context, url string, logger *zap.Logger) (*Pool, error) {
 	pool, err := sql.Open("hdb", url)
 	if err != nil {

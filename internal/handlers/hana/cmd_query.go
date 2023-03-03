@@ -48,6 +48,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 					"ok", float64(1),
 				))},
 			}
+
 			return reply, nil
 
 		default:

@@ -34,21 +34,21 @@ func notImplemented(command string) error {
 	return commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
 }
 
-// / Handler implements handlers.Interface on top of PostgreSQL.
+// Handler implements handlers.Interface on top of SAP HANA.
 type Handler struct {
+	pools map[string]*hanadb.Pool
 	*NewOpts
 
 	// accessed by DBPool(ctx)
-	rw    sync.RWMutex
-	pools map[string]*hanadb.Pool
+	rw sync.RWMutex
 }
 
 // NewOpts represents handler configuration.
 type NewOpts struct {
-	HANAURL       string
 	L             *zap.Logger
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
+	HANAURL       string
 }
 
 // New returns a new handler.
@@ -82,9 +82,10 @@ func (h *Handler) Close() {
 func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
 	// TODO make real implementation; the current one is a stub.
 	// Used for the basic setup for connecting to HANA
+	url := h.HANAURL
 
 	h.rw.RLock()
-	p, ok := h.pools[h.HANAURL]
+	p, ok := h.pools[url]
 	h.rw.RUnlock()
 
 	if ok {
@@ -94,12 +95,17 @@ func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
 	h.rw.Lock()
 	defer h.rw.Unlock()
 
-	p, err := hanadb.NewPool(ctx, h.HANAURL, h.L)
+	// a concurrent connection might have created a pool already; check again
+	if p = h.pools[url]; p != nil {
+		return p, nil
+	}
+
+	p, err := hanadb.NewPool(ctx, url, h.L)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.pools[h.HANAURL] = p
+	h.pools[url] = p
 
 	return p, nil
 }
