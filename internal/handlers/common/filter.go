@@ -141,16 +141,49 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	return false, nil
 }
 
-// getDocumentsAtSuffix finds documents at the suffix of the given path.
+// getDocumentsAtSuffix go through each key of the path iteratively to
+// find all values that exist at suffix.
+// An array dot notation may return multiple documents.
+// At each key of the path, it checks:
+//
+//	if the document has the key,
+//	if the array contains an index that is equal to the key, and
+//	if the array contains documents which have the key.
 //
 // It returns:
-// - path's "suffix" - the final key of path;
-// - a slice of documents at suffix - array dot notation may return multiple documents;
 //
-// For example, if the document is {foo: [{bar: 1}, {bar: 2}]} and
-// the filterKey is foo.bar, then the function will return the suffix "bar"
-// and a slice with two documents:
-// {bar: 1} and {bar: 2}.
+//	the suffix key of path;
+//	a slice of documents at suffix with suffix value document pairs.
+//
+// Document path example:
+//
+//	docs: 	{foo: {bar: 1}}
+//	path:		`foo.bar`
+//
+// returns
+//
+//	suffix:			`bar`
+//	docsAtSuffix:	[{bar: 1}]
+//
+// Array index path example:
+//
+//	docs: 			{foo: [{bar: 1}]}
+//	path: 			`foo.0.bar`
+//
+// returns
+//
+//	suffix:			`bar`
+//	docsAtSuffix:	[{bar: 1}]
+//
+// Array document example:
+//
+//	docs: 			{foo: [{bar: 1}, {bar: 2}]}
+//	path: 			`foo.bar`
+//
+// returns
+//
+//	suffix:			`bar`
+//	docsAtSuffix:	[{bar: 1}, {bar: 2}]
 func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, docsAtSuffix []*types.Document) {
 	suffix = path.Suffix()
 
