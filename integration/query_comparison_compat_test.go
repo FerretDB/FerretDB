@@ -187,6 +187,7 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 
 		"EmptyKey": {
 			filter:         bson.D{{"", "foo"}},
+			resultType:     emptyResult,
 			resultPushdown: true,
 			skipForTigris:  "Tigris field name cannot be empty",
 		},
