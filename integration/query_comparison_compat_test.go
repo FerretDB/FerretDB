@@ -184,6 +184,11 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
 		},
+
+		"EmptyKey": {
+			filter:         bson.D{{"", "foo"}},
+			resultPushdown: true,
+		},
 	}
 
 	return testCases
