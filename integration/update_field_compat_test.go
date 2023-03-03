@@ -953,8 +953,9 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
-			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
-			resultType: emptyResult,
+			update:        bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
+			resultType:    emptyResult,
+			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/2065",
 		},
 	}
 
