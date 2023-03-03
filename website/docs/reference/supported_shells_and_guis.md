@@ -14,6 +14,8 @@ slug: /supported_shells_and_guis/
 | Feature      | Status      |
 | ------------ | ----------- |
 | Connecting Studio 3T to FerretDB       | 	✅       |
+| Connecting Studio 3T to FerretDB with PLAIN authentication mechanism       | 	✅       |
+| Connecting Studio 3T to FerretDB with SCRAM authentication mechanisms       | 	❌ [Issue](https://github.com/FerretDB/FerretDB/issues/2012)
 | Connecting Studio 3T to FerretDB with TLS    | ✅        |
 | Import/Export JSON    | ✅        |
 | Import/Export CSV    | ✅        |
