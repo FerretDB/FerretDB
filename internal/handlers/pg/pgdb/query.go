@@ -241,8 +241,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
 
+	// iterate through root document
 	for {
-		k, v, err := iter.Next()
+		rootKey, rootVal, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -252,13 +253,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		}
 
 		switch {
-		case k == "":
+		case rootKey == "":
 			// do nothing
-		case k[0] == '$':
+		case rootKey[0] == '$':
 			// skip $comment
 			continue
 		default:
-			path, err := types.NewPathFromString(k)
+			path, err := types.NewPathFromString(rootKey)
 			if err != nil {
 				return "", nil, lazyerrors.Error(err)
 			}
@@ -272,18 +273,19 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		// check if values are equal or if the left value contains the right one
 		eqOperator := "@>"
 
-		if k == "_id" {
+		if rootKey == "_id" {
 			// check if values are equal
 			eqOperator = "="
 		}
 
-		switch v := v.(type) {
+		switch v := rootVal.(type) {
 		case *types.Document:
 			iter := v.Iterator()
 			defer iter.Close()
 
+			// iterate through subdocument, as it may contain operators
 			for {
-				docKey, docVal, err := iter.Next()
+				k, v, err := iter.Next()
 				if err != nil {
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
@@ -292,9 +294,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					return "", nil, lazyerrors.Error(err)
 				}
 
-				switch docKey {
+				switch k {
 				case "$eq":
-					switch v := docVal.(type) {
+					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary, bool,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
@@ -303,13 +305,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						sql := `_jsonb->%[1]s ` + eqOperator + ` %[2]s`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
 
 				case "$ne":
-					switch v := docVal.(type) {
+					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary, bool,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
@@ -325,7 +327,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 							`"')`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -345,7 +347,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			sql := `_jsonb->%[1]s ` + eqOperator + ` %[2]s`
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))

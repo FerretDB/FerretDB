@@ -95,8 +95,9 @@ func BuildFilter(filter *types.Document) (string, error) {
 	iter := filter.Iterator()
 	defer iter.Close()
 
+	// iterate through root document
 	for {
-		k, v, err := iter.Next()
+		rootKey, rootVal, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -106,13 +107,13 @@ func BuildFilter(filter *types.Document) (string, error) {
 		}
 
 		switch {
-		case k == "":
+		case rootKey == "":
 			// do nothing
-		case k[0] == '$':
+		case rootKey[0] == '$':
 			// don't pushdown $comment, it's attached to query in handlers
 			continue
 		default:
-			path, err := types.NewPathFromString(k)
+			path, err := types.NewPathFromString(rootKey)
 			if err != nil {
 				return "", lazyerrors.Error(err)
 			}
@@ -123,13 +124,14 @@ func BuildFilter(filter *types.Document) (string, error) {
 			}
 		}
 
-		switch v := v.(type) {
+		switch v := rootVal.(type) {
 		case *types.Document:
 			iter := v.Iterator()
 			defer iter.Close()
 
+			// iterate through subdocument, as it may contain operators
 			for {
-				docKey, docVal, err := iter.Next()
+				k, v, err := iter.Next()
 				if err != nil {
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
@@ -138,9 +140,9 @@ func BuildFilter(filter *types.Document) (string, error) {
 					return "", lazyerrors.Error(err)
 				}
 
-				switch docKey {
+				switch k {
 				case "$eq":
-					switch docVal := docVal.(type) {
+					switch docVal := v.(type) {
 					case *types.Document, *types.Array, types.Binary, bool,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
@@ -149,7 +151,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 						if err != nil {
 							return "", lazyerrors.Error(err)
 						}
-						res[k] = json.RawMessage(rawValue)
+						res[rootKey] = json.RawMessage(rawValue)
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -170,10 +172,10 @@ func BuildFilter(filter *types.Document) (string, error) {
 			if err != nil {
 				return "", lazyerrors.Error(err)
 			}
-			res[k] = json.RawMessage(rawValue)
+			res[rootKey] = json.RawMessage(rawValue)
 
 		default:
-			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
+			panic(fmt.Sprintf("Unexpected type of field %s: %T", rootKey, v))
 		}
 	}
 
