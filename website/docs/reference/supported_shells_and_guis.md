@@ -1,6 +1,6 @@
 ---
 sidebar_position: 6
-slug: /supported_shells_guis/
+slug: /supported_shells_and_guis/
 ---
 
 # Supported Shells and GUIs
@@ -10,6 +10,14 @@ slug: /supported_shells_guis/
 -->
 
 ### [Studio 3T](https://studio3t.com/)
+
+| Feature      | Status      |
+| ------------ | ----------- |
+| Connecting Studio 3T to FerretDB       | 	✅       |
+| Connecting Studio 3T to FerretDB with TLS    | ✅        |
+| Import/Export JSON    | ✅        |
+| Import/Export BSON format    | ✅        |
+| Import/Export `archive` format    | ✅        |
 
 ### [Compass](https://www.mongodb.com/products/compass)
 
