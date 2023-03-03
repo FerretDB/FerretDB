@@ -40,7 +40,7 @@ func TestGetDocuments(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
-	doc2 := must.NotFail(types.NewDocument("_id", int32(1)))
+	doc2 := must.NotFail(types.NewDocument("_id", int32(2)))
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
@@ -57,7 +57,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -112,7 +112,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -157,7 +157,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -208,7 +208,7 @@ func TestGetDocuments(t *testing.T) {
 				return lazyerrors.Error(err)
 			}
 
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -249,7 +249,7 @@ func TestGetDocuments(t *testing.T) {
 		collectionName := testutil.CollectionName(t)
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			qp := &QueryParam{DB: databaseName, Collection: collectionName}
+			qp := &QueryParams{DB: databaseName, Collection: collectionName}
 			iter, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
@@ -289,7 +289,7 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereEq := " WHERE ((_jsonb->$1)::jsonb = $2)"
+	whereEq := " WHERE (_jsonb->$1)::jsonb = $2"
 	whereEqOrContain := whereEq + " OR (_jsonb->$1)::jsonb @> $2"
 
 	for name, tc := range map[string]struct {
@@ -339,16 +339,13 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereEq,
 		},
 		"IDDotNotation": {
-			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2)",
+			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
 		"DotNotation": {
-			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
-			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
-			expected: " WHERE ((_jsonb#>$1)::jsonb = $2) OR (_jsonb#>$1)::jsonb @> $2",
+			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
 		},
 	} {
 		name, tc := name, tc

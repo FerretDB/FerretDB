@@ -37,7 +37,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: test
+          cache-key: short-test
 
       - name: Install Task
         run: go generate -x
@@ -52,8 +52,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -116,8 +115,7 @@ jobs:
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |
@@ -241,20 +239,20 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
         working-directory: source
 
+      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: linux-logs
           path: /tmp/logs
-          retention-days: 14
+          retention-days: 1
           if-no-files-found: error
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
-        run: |
-          go clean -testcache -fuzzcache
+        run: go clean -testcache -fuzzcache
 
       - name: Check dirty
         run: |

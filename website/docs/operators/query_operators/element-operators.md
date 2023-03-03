@@ -6,10 +6,10 @@ sidebar_position: 4
 
 Element query operators return data based on the existence of a specified field or the data type of a particular value.
 
-| Operator             | Description                                                           |
-| -------------------- | --------------------------------------------------------------------- |
-| [`$exists`](#exists) | returns documents where a field exists or does not exist              |
-| [`$type`](#type)     | returns documents where the value of a field is of the specified type |
+| Operator             | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| [`$exists`](#exists) | returns documents where a field exists or does not exist     |
+| [`$type`](#type)     | matches document containing elements with the specified type |
 
 For the examples in this section, insert the following documents into the `electronics` collection:
 
@@ -107,14 +107,14 @@ db.electronics.insertMany([
 
 *Syntax*: `{ <field>: { $exists: <boolean> } }`
 
-The `$exists` operator returns documents where a field exists or does not exist.
+To find out if a particular field exists in a document, use the `$exists` operator.
 
 :::tip
 If the `<boolean>` value is `true`, the query returns documents where the specified field exists, even if the value is `null` or an empty array.
 If the `<boolean>` value is `false`, the query returns documents where the specified field does not exist.
 :::
 
-To find documents in the `electronics` collection where the `specifications` field exists, use the `$exists` operator in the following query statement:
+**Example:** Find documents in the `electronics` collection where the `specifications` field exists using the `$exists` operator:
 
 ```js
 db.electronics.find({
@@ -182,7 +182,8 @@ The output:
 In the above output, the query returns all documents where the `specifications` field exists, even when the `field` has an empty value.
 
 If you want to find documents where the `specifications` field exists and has a specific value, use the `$exists` operator in conjunction with other operators.
-For example, the following query returns all documents where the `specifications` field exists and its value is an array:
+
+**Example:** The following query returns all documents where the `specifications` field exists and its value is an array:
 
 ```js
 db.electronics.find({
@@ -252,7 +253,8 @@ The output:
 
 *Syntax*: `{ <field>: { $type: <datatype> } }`
 
-The `$type` operator returns documents where the value of a field is of the specified BSON type.
+Use the `$type` operator to select documents where the data type of a field matches the specified BSON type
+
 The `<datatype>` parameter can be the type code or alias of the particular data type.
 
 The following table lists the available BSON type codes and their corresponding aliases:
@@ -286,7 +288,7 @@ FerretDB supports the alias `number` which matches the following BSON types: `Do
 FerretDB supports the alias `number` which matches the following BSON types: `Double`, `32-bit integer`, and `64-bit integer` type values.
 :::
 
-The following operation query returns all documents in the `electronics` collection where the `discount` field has a boolean data type, which can be represented with the data code `8`:
+**Example:** The following operation query returns all documents in the `electronics` collection where the `discount` field has a boolean data type, which can be represented with the data code `8`:
 
 ```js
 db.electronics.find({

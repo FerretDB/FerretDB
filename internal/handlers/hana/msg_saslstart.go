@@ -12,49 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package hana
 
 import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgSASLStart is a common implementation of the SASLStart command.
-func MsgSASLStart(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, err = GetRequiredParam[string](doc, "$db")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, err = GetRequiredParam[int32](doc, "saslStart")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, err = GetRequiredParam[string](doc, "mechanism")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, err = GetRequiredParam[types.Binary](doc, "payload")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, err = GetOptionalParam(doc, "autoAuthorize", int32(0))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+// MsgSASLStart implements HandlerInterface.
+func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

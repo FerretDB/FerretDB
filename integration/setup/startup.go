@@ -26,6 +26,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -41,16 +42,43 @@ func Startup() {
 	// use any available port to allow running different configuration in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
-	if p := *targetPortF; p == 0 {
-		zap.S().Infof("Target system: in-process FerretDB with %q handler.", getHandler())
-	} else {
-		zap.S().Infof("Target system: port %d.", p)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// do basic flags validation earlier, before all tests
+
+	if *targetBackendF == "" {
+		zap.S().Fatal("-target-backend must be set.")
 	}
 
-	if p := *compatPortF; p == 0 {
-		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
+	if !slices.Contains(allBackends, *targetBackendF) {
+		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
+	}
+
+	if u := *targetURLF; u != "" {
+		client, err := makeClient(ctx, u)
+		if err != nil {
+			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
+		}
+
+		client.Disconnect(ctx)
+
+		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
 	} else {
-		zap.S().Infof("Compat system: port %d.", p)
+		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
+	}
+
+	if u := *compatURLF; u != "" {
+		client, err := makeClient(ctx, u)
+		if err != nil {
+			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
+		}
+
+		client.Disconnect(ctx)
+
+		zap.S().Infof("Compat system: MongoDB (%s).", u)
+	} else {
+		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
 	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects

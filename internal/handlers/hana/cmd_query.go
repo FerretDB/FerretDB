@@ -12,30 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build unix
-
-package setup
+package hana
 
 import (
-	"os"
-	"testing"
+	"context"
 
-	"github.com/stretchr/testify/require"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testing.TB) string {
-	tb.Helper()
-
-	// do not use tb.TempDir() because generated path is too long on macOS
-	f, err := os.CreateTemp("", "ferretdb-*.sock")
-	require.NoError(tb, err)
-
-	// remove file so listener could create it (and remove it itself on stop)
-	err = f.Close()
-	require.NoError(tb, err)
-	err = os.Remove(f.Name())
-	require.NoError(tb, err)
-
-	return f.Name()
+// CmdQuery implements HandlerInterface.
+func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+	return nil, notImplemented(query.Query.Command())
 }

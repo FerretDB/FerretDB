@@ -47,14 +47,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
-			filter:         bson.D{{"v.foo", int32(42)}},
-			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
-			resultPushdown: true,
+			filter:        bson.D{{"v.foo", int32(42)}},
+			skipForTigris: "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentDotNotationNoSuchField": {
-			filter:         bson.D{{"no-such-field.some", 42}},
-			resultType:     emptyResult,
-			resultPushdown: true,
+			filter:     bson.D{{"no-such-field.some", 42}},
+			resultType: emptyResult,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},
@@ -107,7 +105,6 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"StringEmpty": {
 			filter:         bson.D{{"v", ""}},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/1940",
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},

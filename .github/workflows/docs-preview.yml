@@ -46,14 +46,18 @@ jobs:
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for Wrangler / Cloudflare Pages on pull_request_target
+      - name: Name branch
+        run: git checkout -b ${{ github.head_ref }}
 
       # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: build
+          cache-key: docs-preview
 
       - name: Install Task
         run: go generate -x

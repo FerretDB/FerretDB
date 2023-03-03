@@ -29,11 +29,19 @@ var Composites = &Values[string]{
 	name:     "Composites",
 	handlers: []string{"pg"},
 	data: map[string]any{
-		"document":                   bson.D{{"foo", int32(42)}},
-		"document-composite":         bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}},
-		"document-composite-reverse": bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}},
-		"document-null":              bson.D{{"foo", nil}},
-		"document-empty":             bson.D{},
+		"document": bson.D{{"foo", int32(42)}},
+		"document-composite": bson.D{
+			{"foo", int32(42)},
+			{"42", "foo"},
+			{"array", bson.A{int32(42), "foo", nil}},
+		},
+		"document-composite-reverse": bson.D{
+			{"array", bson.A{int32(42), "foo", nil}},
+			{"42", "foo"},
+			{"foo", int32(42)},
+		},
+		"document-null":  bson.D{{"foo", nil}},
+		"document-empty": bson.D{},
 
 		"array":               bson.A{int32(42)},
 		"array-two":           bson.A{42.13, "foo"},
@@ -127,9 +135,9 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 				"primary_key": ["_id"],
 				"properties": {
 					"v": {
-						"type": "object", 
+						"type": "object",
 						"properties": {
-							"foo": {"type": "integer", "format": "int32"}, 
+							"foo": {"type": "integer", "format": "int32"},
 							"bar": {"type": "object", "properties":{}}
 						}
 					},
@@ -155,7 +163,7 @@ var ArrayStrings = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"foo": {"type": "integer", "format": "int32"}, 
+					"foo": {"type": "integer", "format": "int32"},
 					"bar": {"type": "array", "items": {"type": "string"}},
 					"v": {"type": "array", "items": {"type": "string"}},
 					"_id": {"type": "string"}
@@ -232,9 +240,9 @@ var ArrayRegexes = &Values[string]{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
 				"properties": {
-					"v": {"type": "array", "items": 
+					"v": {"type": "array", "items":
 						{
-							"type": "object", 
+							"type": "object",
 							"properties": {
 								"$r": {"type": "string"},
 								"o": {"type": "string"}
@@ -264,8 +272,8 @@ var ArrayDocuments = &Values[string]{
 				"properties": {
 					"v": {
 						"type": "array", "items": {
-							"type": "object",	
-							"properties": {	
+							"type": "object",
+							"properties": {
 								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
 							}
 						}
@@ -276,9 +284,14 @@ var ArrayDocuments = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"array-documents-nested": bson.A{bson.D{{"foo", bson.A{
-			bson.D{{"bar", "hello"}},
-			bson.D{{"bar", "world"}},
-		}}}},
+		"array-documents-nested": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{
+					bson.D{{"bar", "hello"}},
+					bson.D{{"bar", "world"}},
+				},
+			}},
+		},
 	},
 }

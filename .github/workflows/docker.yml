@@ -70,12 +70,17 @@ jobs:
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        run: git checkout -b ${{ github.head_ref }}
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: build
+          cache-key: docker
 
       - name: Install Task
         run: go generate -x
@@ -93,6 +98,12 @@ jobs:
       - name: Extract Docker image name and tags
         id: extract
         uses: FerretDB/github-actions/extract-docker-tag@main
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ferretdbbot
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2

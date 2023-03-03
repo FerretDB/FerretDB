@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package setup
+package hana
 
 import (
-	"testing"
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// unixSocketPath returns empty string on Windows because Unix domain sockets are not available.
-func unixSocketPath(tb testing.TB) string {
-	return ""
+// MsgCreateIndexes implements HandlerInterface.
+func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

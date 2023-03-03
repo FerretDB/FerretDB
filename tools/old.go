@@ -14,8 +14,8 @@
 
 // Keep both old and new styles of build tags.
 
-//go:build !go1.19
-// +build !go1.19
+//go:build !go1.20
+// +build !go1.20
 
 package tools
 
