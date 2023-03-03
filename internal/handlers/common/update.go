@@ -80,7 +80,23 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				path, err = types.NewPathFromString(key)
 				if err != nil {
-					return false, lazyerrors.Error(err)
+					if err != nil {
+						var pathErr *types.DocumentPathError
+
+						if errors.As(err, &pathErr) {
+							switch pathErr.Code() {
+							case types.ErrDocumentPathEmptyKey:
+								return false, commonerrors.NewWriteErrorMsg(
+									commonerrors.ErrEmptyName,
+									fmt.Sprintf("Cannot apply $unset to a value of non-numeric type. "+
+										"{_id: %s} has the field '%s' of non-numeric type object",
+										must.NotFail(doc.Get("_id")),
+										key,
+									),
+								)
+							}
+						}
+					}
 				}
 
 				if doc.HasByPath(path) {
@@ -196,7 +212,13 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		path, err := types.NewPathFromString(setKey)
 		if err != nil {
-			return false, lazyerrors.Error(err)
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrEmptyName,
+				fmt.Sprintf(
+					"The update path '%s' contains an empty field name, which is not allowed.",
+					setKey,
+				),
+			)
 		}
 
 		if doc.HasByPath(path) {
@@ -243,7 +265,21 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 		sourcePath, err := types.NewPathFromString(key)
 		if err != nil {
-			return changed, lazyerrors.Error(err)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				switch pathErr.Code() {
+				case types.ErrDocumentPathEmptyKey:
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrEmptyName,
+						fmt.Sprintf("Cannot apply $rename to a value of non-numeric type. "+
+							"{_id: %s} has the field '%s' of non-numeric type object",
+							must.NotFail(doc.Get("_id")),
+							key,
+						),
+					)
+				}
+			}
 		}
 
 		targetPath, err := types.NewPathFromString(renameValue)
