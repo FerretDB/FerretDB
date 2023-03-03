@@ -40,6 +40,11 @@ var Composites = &Values[string]{
 			{"42", "foo"},
 			{"foo", int32(42)},
 		},
+		"document-composite-numerical-field-name": bson.D{
+			{"foo", int32(42)},
+			{"42", "foo"},
+			{"array", bson.D{{"42", int32(42)}}},
+		},
 		"document-null":  bson.D{{"foo", nil}},
 		"document-empty": bson.D{},
 
