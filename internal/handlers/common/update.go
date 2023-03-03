@@ -583,7 +583,21 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(mulKey)
 		if err != nil {
-			return false, lazyerrors.Error(err)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				switch pathErr.Code() {
+				case types.ErrDocumentPathEmptyKey:
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrEmptyName,
+						fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
+							"{_id: %s} has the field '%s' of non-numeric type object",
+							must.NotFail(doc.Get("_id")),
+							mulKey,
+						),
+					)
+				}
+			}
 		}
 
 		if !doc.HasByPath(path) {
