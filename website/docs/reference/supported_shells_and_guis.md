@@ -16,8 +16,11 @@ slug: /supported_shells_and_guis/
 | Connecting Studio 3T to FerretDB       | 	✅       |
 | Connecting Studio 3T to FerretDB with TLS    | ✅        |
 | Import/Export JSON    | ✅        |
-| Import/Export BSON format    | ✅        |
-| Import/Export `archive` format    | ✅        |
+| Import/Export CSV    | ✅        |
+| Import/Export BSON    | ✅        |
+| Import/Export [`archive`](https://www.mongodb.com/docs/database-tools/mongodump/#output-to-an-archive-file) file    | ✅        |
+| BSON options    | ✅        |
+
 
 ### [Compass](https://www.mongodb.com/products/compass)
 
