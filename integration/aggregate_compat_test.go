@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // aggregateCompatTestCase describes aggregate compatibility test case.
@@ -32,8 +33,8 @@ type aggregateCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-// testAggregateCompat tests aggregate pipeline compatibility test cases.
-func testAggregateCompat(t *testing.T, testCases map[string]aggregateCompatTestCase) {
+// testAggregateStageCompat tests aggregate stage compatibility test cases.
+func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateCompatTestCase) {
 	t.Helper()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -71,6 +72,7 @@ func testAggregateCompat(t *testing.T, testCases map[string]aggregateCompatTestC
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
@@ -101,18 +103,108 @@ func testAggregateCompat(t *testing.T, testCases map[string]aggregateCompatTestC
 	}
 }
 
+// aggregatePipelineCompatTestCase describes aggregate compatibility test case.
+type aggregatePipelineCompatTestCase struct {
+	command    bson.D                   // required
+	skip       string                   // skip test for all handlers, must have issue number mentioned
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
+}
+
+// testAggregatePipelineCompat tests aggregate pipeline compatibility test cases.
+// Use testAggregateStageCompat for testing a stage of aggregation.
+func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePipelineCompatTestCase) {
+	t.Helper()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: []shareddata.Provider{shareddata.Nulls},
+	})
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			command := tc.command
+			require.NotNil(t, command, "command should be set")
+
+			var nonEmptyResults bool
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+
+					var targetRes, compatRes []bson.D
+					targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+					compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
+
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
+					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+					if len(targetRes) > 0 || len(compatRes) > 0 {
+						nonEmptyResults = true
+					}
+				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
+			}
+		})
+	}
+}
+
 func TestAggregatePipelineCompat(t *testing.T) {
-	testCases := map[string]aggregateCompatTestCase{
-		"EmptyPipeline": {
-			pipeline: bson.A{},
+	testCases := map[string]aggregatePipelineCompatTestCase{
+		"CollectionAgnostic": {
+			command: bson.D{
+				{"aggregate", 1},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1890",
 		},
-		"DocumentPipeline": {
-			pipeline:   bson.D{},
+		"FailedToParse": {
+			command: bson.D{
+				{"aggregate", 2},
+			},
+			resultType: emptyResult,
+		},
+		"PipelineTypeMismatch": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", 1},
+			},
+			resultType: emptyResult,
+		},
+		"StageTypeMismatch": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{1}},
+			},
 			resultType: emptyResult,
 		},
 	}
 
-	testAggregateCompat(t, testCases)
+	testAggregatePipelineCompat(t, testCases)
 }
 
 func TestAggregateCompatCount(t *testing.T) {
@@ -145,7 +237,7 @@ func TestAggregateCompatCount(t *testing.T) {
 		},
 	}
 
-	testAggregateCompat(t, testCases)
+	testAggregateStageCompat(t, testCases)
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
@@ -154,7 +246,18 @@ func TestAggregateCompatMatch(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
 		},
 		"Int": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", 42}}}}},
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", 42}}}},
+				// sort by _id because mongoDB does not have deterministic natural order.
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"String": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				// sort by _id because mongoDB does not have deterministic natural order.
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -165,14 +268,9 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"Regex": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}}},
 		},
-		"IntSort": {
-			pipeline: bson.A{bson.D{
-				{"$match", bson.D{{"v", 42}}},
-			}},
-		},
 	}
 
-	testAggregateCompat(t, testCases)
+	testAggregateStageCompat(t, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
@@ -186,26 +284,26 @@ func TestAggregateCompatSort(t *testing.T) {
 		"AscendingValue": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v", 1},
-				{"_id", 1}, // always sort by _id because natural order is different
+				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
 		"DescendingValue": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v", -1},
-				{"_id", 1}, // always sort by _id because natural order is different
+				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
 		"DotNotation": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v.foo", 1},
-				{"_id", 1}, // always sort by _id because natural order is different
+				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2101",
 		},
 		"DotNotationNonExistent": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"invalid.foo", 1},
-				{"_id", 1}, // always sort by _id because natural order is different
+				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
 		"Location15973": {
@@ -222,5 +320,5 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 	}
 
-	testAggregateCompat(t, testCases)
+	testAggregateStageCompat(t, testCases)
 }
