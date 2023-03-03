@@ -91,7 +91,6 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgDBStats,
 	},
 	"dbstats": { // old lowercase variant
-		Help:    "Returns the statistics of the database.",
 		Handler: handlers.Interface.MsgDBStats,
 	},
 	"debugError": {
