@@ -1,6 +1,6 @@
 ---
 sidebar_position: 6
-slug: /supported_guis/
+slug: /supported_shells_guis/
 ---
 
 # Supported Shells and GUIs
