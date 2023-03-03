@@ -404,6 +404,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			if path.Len() > 1 {
 				k = path.Suffix()
 			}
+
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
