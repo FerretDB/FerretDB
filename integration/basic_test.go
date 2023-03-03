@@ -235,18 +235,29 @@ func TestEmptyKey(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	doc := bson.D{{"_id", "empty-key"}, {"", "foo"}}
+	filter := bson.D{{"", "foo"}}
+
+	explainQuery := bson.D{{"explain", bson.D{
+		{"find", collection.Name()},
+		{"filter", filter},
+	}}}
 
 	_, err := collection.InsertOne(ctx, doc)
 	require.NoError(t, err)
 
-	res, err := collection.Find(ctx, bson.D{{"", "foo"}})
+	var explainRes bson.D
+	require.NoError(t, collection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
+
+	expectedPushdown := !setup.IsPushdownDisabled()
+	assert.Equal(t, expectedPushdown, explainRes.Map()["pushdown"], "Unexpected pushdown result")
+
+	res, err := collection.Find(ctx, filter)
 	require.NoError(t, err)
 
 	var actual []bson.D
 	require.NoError(t, res.All(ctx, &actual))
 
 	expected := []bson.D{doc}
-
 	assert.Equal(t, expected, actual)
 }
 
