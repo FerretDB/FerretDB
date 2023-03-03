@@ -65,7 +65,7 @@ BSON type, but it does not use the BSON comparison order for `$lt` filter result
 
 This is also the case for the `$gt` operator which only selects the same BSON type.
 
-**Example:** Array Value Comparison
+**Example:** Array value comparison
 
 To compare an array filter argument with array values, the elements of the array are iterated.
 At each index, the BSON comparison order is used to compare the values.
@@ -92,6 +92,36 @@ So `[3, 1, 'b']` is less than `[3, 'b', 'a']`.
 If an array has no more element to compare, the one with no more element is less.
 For the same reason, an empty array is less than arrays with elements.
 :::
+
+**Example:** Array element comparison
+
+When using a filter argument to compare with an array, an element from the array is selected for comparison.
+This is true for both implicit operators and the `$eq` operator.
+
+When using the `$lt` and `$lte` operators, the smallest element from the array in the collection is used to compare against the filter argument.
+
+When comparing a filter argument with an array in the collection using the `$lt` filter, the smallest element from the array is used for the comparison.
+The following steps show how the `$lt` filter is used to compare the filter argument `2` with the document `{v: [3, null, 'a', 1]}` in the collection:
+
+![Array element comparison](/img/blog/number-array.jpg)
+
+1. Identify the BSON comparison order element of the filter argument, which is a number.
+2. Choose the array elements that are numbers from the array field, which are `[3, 1]`.
+3. Get the smallest element from the array field, which is `1`.
+4. Compare `1` with filter argument `2`.
+Since `1` is less than `2`, the operation result is true.
+5. Therefore, when using `{v: {$lt: 2}}`, the document `{v: [3, null, 'a', 1]}` is selected.
+
+For the `$gt` and `$gte` operators, the largest element is used for comparison instead.
+The following steps show the `$gt` operator being used to compare the filter argument `2` with the array field `[3, 1]` in the collection:
+
+1. Get the largest element of the array field `[3, 1]`, which is `3`.
+2. Compare `3` with filter argument `2`.
+Since `3` is greater than `2`, the operation result is true.
+3. Therefore, when using the `$gt` filter, `[3, 1]` is greater than `2`.
+
+It may seem confusing at first, but note that `$lt` uses the smallest element from the array, while `$gt` uses the largest element.
+Additionally, `$lt`, `$gt`, `$lte`, and `$gte` only select elements of the same BSON comparison order as the filter argument by using BSON comparison order.
 
 ## Filter operator comparison
 
@@ -120,7 +150,7 @@ db.ltexample.insertMany([
 ])
 ```
 
-**Example:** `$lt` Operator with Scalar Argument
+**Example:** `$lt` operator with scalar argument
 
 When the filter argument is a string, documents with string records
 that has less value would be selected.
@@ -147,7 +177,7 @@ less than the filter argument `c`.
 
 If a document does not contain the same BSON type as the filter argument such as `array-null`, no selection is made.
 
-**Example:** `$lt` Operator with Array Argument
+**Example:** `$lt` operator with array argument
 
 When an array is used as the filter argument, documents with array fields containing values that are less than the values in the filter array are selected.
 It also selects nested arrays if the inner array is less than the filter argument.
@@ -187,7 +217,7 @@ For the selected `nested-mixed`, the smallest inner array `[ 1, 'z', 'b' ]` is u
 Using the same logic, `nested-string` was not selected because
 it does not contain an inner array smaller than the argument filter.
 
-**Example:** `$lt` Operator with Nested Array Argument
+**Example:** `$lt` operator with nested array argument
 
 The following example shows how to apply `$lt` operator with a nested array argument `[['c']]`.
 
@@ -253,7 +283,7 @@ db.gtexample.insertMany([
 ])
 ```
 
-**Example:** `$gt` Operator with Scalar Argument
+**Example:** `$gt` Operator with scalar argument
 
 The following uses `$gt` to select records that are greater than `'c'`.
 
@@ -313,7 +343,7 @@ When dealing with nested arrays, using the `$gt` operator on an array filter arg
 
 Instead, the `$gt` operator compares the array filter argument and the nested array in the collection index to index, using the BSON comparison order.
 
-If the BSON type of the array in the collection is greater than the BSON type of the filter argument (which is a string), then all nested arrays are selected.
+Because the BSON type of the array in the collection is greater than the BSON type of the filter argument (which is a string), all nested arrays are selected.
 This is a significant difference from how the `$lt` filter works with an array argument.
 `$lt` selects the smallest element from a nested array, while `$gt` compares index to index.
 
@@ -344,7 +374,6 @@ The output:
 No scalar values from the collection were selected since the scalar values are not array type.
 
 The selected array `array-bool` contains a boolean value, which has a greater BSON comparison order than that of an array type.
-Therefore, when comparing `['c']` with the items in the array, the largest item from the array (`false`) was used for the comparison.
 
 Using the BSON comparison order, the boolean value is considered greater than an array, hence the entire `array-bool` array was selected.
 
@@ -371,7 +400,7 @@ Since then, we’ve taken time to understand the inner workings of comparison fo
 
 After investigating the behaviour of the `$lt` and `$gt` operators with array and nested array filter arguments, we discovered that the comparison process is different between the two cases.
 
-However, given an array argument filter and nested array collection, `$lt` uses the smallest element from the nested array and `$gt` on the other hand compares index to index of nested array collection.
+However, given an array argument filter and array collection, `$lt` uses the smallest element from the array and `$gt` on the other hand compares index to index of array collection.
 
 Perhaps using comparison operators like `$lt` and `$gt` for nested array is
 not a common usage and the result we found was a corner case.
