@@ -48,7 +48,7 @@ jobs:
           lfs: true
           ref: ${{ github.event.pull_request.head.sha }}
 
-      # for Wrangler / Cloudflare Pages
+      # for Wrangler / Cloudflare Pages on pull_request_target
       - name: Name branch
         run: git checkout -b ${{ github.head_ref }}
 

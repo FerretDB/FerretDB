@@ -131,7 +131,6 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"StringEmpty": {
 			filter:         bson.D{{"v", ""}},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/1940",
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},

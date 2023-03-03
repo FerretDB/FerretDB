@@ -109,10 +109,7 @@ func BuildFilter(filter *types.Document) (string, error) {
 		case k == "":
 			// do nothing
 		case k[0] == '$':
-			// skip $comment
-			continue
-		case v == "":
-			// TODO https://github.com/FerretDB/FerretDB/issues/1940
+			// don't pushdown $comment, it's attached to query in handlers
 			continue
 		default:
 			path, err := types.NewPathFromString(k)
