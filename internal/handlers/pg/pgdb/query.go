@@ -300,7 +300,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, int32, int64:
 						// Select if value under the key is equal to provided value.
-						sql := `(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s`
+						sql := `_jsonb->%[1]s ` + eqOperator + ` %[2]s`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
@@ -319,9 +319,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 							// it is necessary, as NOT won't work correctly if the key does not exist.
 							`_jsonb ? %[1]s AND ` +
 							// does the value under the key is equal to the filter
-							`(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s AND ` +
+							`_jsonb->%[1]s ` + eqOperator + ` %[2]s AND ` +
 							// does the value type is equal to the filter's one
-							`(_jsonb->'$s'->'p'->%[1]s->'t')::jsonb = '"` + pjson.GetTypeOfValue(v) +
+							`_jsonb->'$s'->'p'->%[1]s->'t' = '"` + pjson.GetTypeOfValue(v) +
 							`"')`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
@@ -342,7 +342,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		case float64, string, types.ObjectID, int32, int64:
 			// Select if value under the key is equal to provided value.
-			sql := `(_jsonb->%[1]s)::jsonb ` + eqOperator + ` %[2]s`
+			sql := `_jsonb->%[1]s ` + eqOperator + ` %[2]s`
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
