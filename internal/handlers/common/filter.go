@@ -157,8 +157,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 //
 // Document path example:
 //
-//	docs: 	{foo: {bar: 1}}
-//	path:	`foo.bar`
+//	docs:		{foo: {bar: 1}}
+//	path:		`foo.bar`
 //
 // returns
 //
@@ -167,8 +167,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 //
 // Array index path example:
 //
-//	docs:	{foo: [{bar: 1}]}
-//	path:	`foo.0.bar`
+//	docs:		{foo: [{bar: 1}]}
+//	path:		`foo.0.bar`
 //
 // returns
 //
@@ -177,8 +177,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 //
 // Array document example:
 //
-//	docs:	{foo: [{bar: 1}, {bar: 2}]}
-//	path:	`foo.bar`
+//	docs:		{foo: [{bar: 1}, {bar: 2}]}
+//	path:		`foo.bar`
 //
 // returns
 //
