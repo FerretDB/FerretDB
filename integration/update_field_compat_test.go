@@ -366,7 +366,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
-		"DotNotationIndexExceedsArrayLength": {
+		"DotNotationIndexOutsideArray": {
 			update: bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
 		},
 	}
@@ -508,7 +508,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
-		"DotNotationIndexExceedsArrayLength": {
+		"DotNotationIndexOutOfArray": {
 			update: bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
 		},
 	}
@@ -599,10 +599,9 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
-		"DotNotationIndexExceedsArrayLength": {
+		"DotNotationIndexOutOfArray": {
 			update:     bson.D{{"$rename", bson.D{{"v.100.bar", "v.100.baz"}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
 		},
 	}
 
@@ -663,9 +662,9 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update: bson.D{{"$unset", bson.D{{"v.-1.bar", ""}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
-		"DotNotationIndexExceedsArrayLength": {
-			update: bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/2065",
+		"DotNotationIndexOutOfArray": {
+			update:     bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
+			resultType: emptyResult,
 		},
 	}
 
@@ -846,7 +845,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
-		"DotNotationIndexExceedsArrayLength": {
+		"DotNotationIndexOutOfArray": {
 			update: bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
 		},
 	}
@@ -953,8 +952,9 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
-		"DotNotationIndexOutsideArray": {
-			update: bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
+		"DotNotationIndexOutOfArray": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
+			resultType: emptyResult,
 		},
 	}
 

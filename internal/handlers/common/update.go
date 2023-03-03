@@ -289,11 +289,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 				panic("getByPath returned error with invalid type")
 			}
 
-			if dpe.Code() == types.ErrDocumentPathKeyNotFound {
+			switch dpe.Code() {
+			case types.ErrDocumentPathKeyNotFound,
+				types.ErrDocumentPathIndexOutOfBound:
 				continue
+			default:
+				return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 			}
-
-			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 		}
 
 		// Remove old document
