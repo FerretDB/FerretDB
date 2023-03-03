@@ -319,12 +319,44 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+					}
+
+				case "$gt":
+					switch v := v.(type) {
+					case *types.Document, *types.Array, types.Binary, bool,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+					case float64, string, types.ObjectID, int32, int64:
+						// TODO: types?
+						// TODO: what if value under the key in database is array or document?
+						// Select if value under the key is greater than provided value.
+						sql := `_jsonb->%[1]s > %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
+				case "$lt":
+					switch v := v.(type) {
+					case *types.Document, *types.Array, types.Binary, bool,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+					case float64, string, types.ObjectID, int32, int64:
+						// TODO: types?
+						// TODO: what if value under the key in database is array or document?
+						// Select if value under the key is greater than provided value.
+						sql := `_jsonb->%[1]s < %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
 
 				default:
-					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					// TODO $lt https://github.com/FerretDB/FerretDB/issues/1875
 					continue
 				}
 			}
