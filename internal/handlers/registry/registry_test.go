@@ -16,6 +16,7 @@ package registry
 
 import (
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"testing"
 
@@ -72,6 +73,7 @@ func TestDeps(t *testing.T) {
 		t.Parallel()
 
 		diff := tagPackages(t, "ferretdb_hana")
-		assert.Contains(t, diff, "github.com/SAP/go-hdb/driver")
+		fmt.Println(diff)
+		assert.Contains(t, diff, "SAP/go-hdb/driver")
 	})
 }

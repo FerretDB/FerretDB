@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	_ "SAP/go-hdb/driver" //nolint:goimports // goimports and gci are conflicting
-
 	"go.uber.org/zap"
 )
 
