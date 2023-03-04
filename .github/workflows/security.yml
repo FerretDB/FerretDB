@@ -43,6 +43,20 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      - name: Set enviroment variables
+        run: |
+          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
+          echo "GO111MODULE=auto" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
+          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
+          
+      - name: Install HANA Go driver
+        run: |
+          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
+          chmod +x install-go-hdb.sh
+          ./install-HANA-driver.sh "install"
+        shell: bash
+
       - name: Scan
         run: bin/task --exit-code security
 
