@@ -15,9 +15,9 @@ gorootStr="$(go env | grep GOROOT)"
 goroot=${gorootStr#"$prefix"}
 goroot=${goroot%"$suffix"}
 
-# Get work directory and navigate to it
-work_dir=$(dirname $(dirname "$(pwd)"))
-cd "${work_dir}"
+# Get home directory and navigate to it
+home_dir=$HOME
+cd "${home_dir}"
 
 # Create folder for downloading and installing the HANA Go driver
 mkdir hanaDriver
@@ -29,18 +29,15 @@ tar -xzvf hanaDriver/hanaclient.tar.gz -C hanaDriver
 # Install HANA client
 hanaDriver/client/./hdbinst --batch --ignore=check_diskspace
 
-# Get folder where installation installed to
-install_dir=$(dirname "${work_dir}")
-
 # Move driver to GOROOT
-sudo mv "${install_dir}"/sap/hdbclient/golang/src/SAP "${goroot}"/src/
+sudo mv sap/hdbclient/golang/src/SAP "${goroot}"/src/
 
-cd "${install_dir}"/sap/hdbclient/golang/src
+cd sap/hdbclient/golang/src
 
 # Install Go driver
 go install SAP/go-hdb/driver
 
 # Remove folder for download and installation
-cd "${work_dir}"
+cd "${home_dir}"
 
 rm -rf hanaDriver

@@ -208,21 +208,6 @@ jobs:
         run: go generate -x
         working-directory: source/tools
 
-      - name: Set enviroment variables
-        run: |
-          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
-          echo "GO111MODULE=auto" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          
-      - name: Install HANA Go driver
-        run: |
-          cd ..
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-HANA-driver.sh
-          ./install-HANA-driver.sh "install"
-        shell: bash
-
       # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
       # If secrets are not available (for example, for a pull request from a fork), GITHUB_TOKEN PAT is used automatically.
       - name: Checkout collected fuzz corpus
@@ -247,6 +232,21 @@ jobs:
 
       - name: Wait for and setup environment
         run: bin/task env-setup
+        working-directory: source
+
+      - name: Set enviroment variables
+        run: |
+          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
+          echo "GO111MODULE=auto" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
+          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
+
+      - name: Install HANA Go driver
+        run: |
+          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
+          chmod +x install-go-hdb.sh
+          ./install-go-hdb.sh "install"
+        shell: bash
         working-directory: source
 
       # precompile tests with unset GOMAXPROCS
