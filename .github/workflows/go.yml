@@ -217,6 +217,7 @@ jobs:
           
       - name: Install HANA Go driver
         run: |
+          cd ..
           echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
           chmod +x install-HANA-driver.sh
           ./install-HANA-driver.sh "install"
