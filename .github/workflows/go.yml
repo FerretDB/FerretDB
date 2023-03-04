@@ -53,7 +53,7 @@ jobs:
       - name: Install HANA Go driver
         run: |
           echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-go-hdb.sh
+          chmod +x install-HANA-driver.sh
           ./install-HANA-driver.sh "install"
         shell: bash
 
@@ -105,7 +105,7 @@ jobs:
       - name: Install HANA Go driver
         run: |
           echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-go-hdb.sh
+          chmod +x install-HANA-driver.sh
           ./install-HANA-driver.sh "install"
         shell: bash
 
@@ -178,7 +178,7 @@ jobs:
       - name: Install HANA Go driver
         run: |
           echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-go-hdb.sh
+          chmod +x install-HANA-driver.sh
           ./install-HANA-driver.sh "install"
         shell: bash
 
@@ -218,7 +218,7 @@ jobs:
       - name: Install HANA Go driver
         run: |
           echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-go-hdb.sh
+          chmod +x install-HANA-driver.sh
           ./install-HANA-driver.sh "install"
         shell: bash
 
