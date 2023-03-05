@@ -848,7 +848,8 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
-			update: bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
+			skipForTigris: "Schema validation would fail for this case. ",
 		},
 	}
 
