@@ -238,7 +238,6 @@ func TestBuildFilter(t *testing.T) {
 		"EmptyString": {
 			filter:   must.NotFail(types.NewDocument("v", "")),
 			expected: `{"v":""}`,
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1940",
 		},
 		"Int32": {
 			filter:   must.NotFail(types.NewDocument("v", int32(42))),
