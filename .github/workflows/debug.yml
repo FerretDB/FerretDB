@@ -20,6 +20,9 @@ jobs:
     name: Contexts
     runs-on: ubuntu-22.04
 
+    # comment out to enable this job
+    if: false
+
     steps:
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
