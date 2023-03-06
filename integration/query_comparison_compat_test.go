@@ -976,32 +976,25 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
-			filter:         bson.D{{"v", bson.D{{"$ne", 41.13}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", 41.13}}}},
 		},
 		"DoubleMax": {
-			filter:         bson.D{{"v", bson.D{{"$ne", math.MaxFloat64}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", math.MaxFloat64}}}},
 		},
 		"DoubleSmallest": {
-			filter:         bson.D{{"v", bson.D{{"$ne", math.SmallestNonzeroFloat64}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", math.SmallestNonzeroFloat64}}}},
 		},
 		"DoubleZero": {
-			filter:         bson.D{{"v", bson.D{{"$ne", 0.0}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", 0.0}}}},
 		},
 		"DoubleBig": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
 		},
 		"String": {
-			filter:         bson.D{{"v", bson.D{{"$ne", "foo"}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", "foo"}}}},
 		},
 		"StringEmpty": {
-			filter:         bson.D{{"v", bson.D{{"$ne", ""}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", ""}}}},
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
@@ -1037,44 +1030,34 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", nil}}}},
 		},
 		"Int32": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int32(42)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int32(42)}}}},
 		},
 		"Int32Zero": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int32(0)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int32(0)}}}},
 		},
 		"Int32Max": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int32(math.MaxInt32)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int32(math.MaxInt32)}}}},
 		},
 		"Int32Min": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int32(math.MinInt32)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int32(math.MinInt32)}}}},
 		},
 		"Int64": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(42)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int64(42)}}}},
 		},
 		"Int64Zero": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(0)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int64(0)}}}},
 		},
 		"Int64Max": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(math.MaxInt64)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int64(math.MaxInt64)}}}},
 		},
 		"Int64Min": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(math.MinInt64)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int64(math.MinInt64)}}}},
 		},
 		"Int64Big": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
 		},
 		"DoubleBigInt64": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 61)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$ne", float64(2 << 61)}}}},
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},
@@ -1086,11 +1069,6 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 		"DocumentShuffledKeys": {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.D{{"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}}}}}},
 		},
-	}
-
-	for k, tc := range testCases {
-		tc.skipForTigris = "https://github.com/FerretDB/FerretDB/issues/2052"
-		testCases[k] = tc
 	}
 
 	return testCases
@@ -1118,12 +1096,6 @@ func testQueryComparisonCompatMultipleOperators() map[string]queryCompatTestCase
 			filter: bson.D{
 				{"_id", bson.D{{"$nin", bson.A{"int64"}}, {"$ne", "int32"}}},
 				{"v", bson.D{{"$eq", int32(42)}}},
-			},
-			resultPushdown: true,
-		},
-		"EqNe": {
-			filter: bson.D{
-				{"v", bson.D{{"$eq", int32(42)}, {"$ne", int32(0)}}},
 			},
 			resultPushdown: true,
 		},

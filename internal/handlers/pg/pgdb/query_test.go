@@ -408,55 +408,6 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereContain,
 		},
 
-		"NeString": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", "foo")),
-			)),
-			expected: whereNotEq + `'"string"' )`,
-		},
-		"NeEmptyString": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", "")),
-			)),
-			expected: whereNotEq + `'"string"' )`,
-		},
-		"NeInt32": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", int32(42))),
-			)),
-			expected: whereNotEq + `'"int"' )`,
-		},
-		"NeInt64": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", int64(42))),
-			)),
-			expected: whereNotEq + `'"long"' )`,
-		},
-		"NeFloat64": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", float64(42.13))),
-			)),
-			expected: whereNotEq + `'"double"' )`,
-		},
-		"NeMaxFloat64": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
-			)),
-			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
-			expected: whereNotEq + `'"double"' )`,
-		},
-		"NeBool": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", true)),
-			)),
-		},
-		"NeObjectID": {
-			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$ne", objectID)),
-			)),
-			expected: whereNotEq + `'"objectId"' )`,
-		},
-
 		"Comment": {
 			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
 		},
