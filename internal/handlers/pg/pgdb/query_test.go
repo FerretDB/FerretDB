@@ -291,7 +291,6 @@ func TestPrepareWhereClause(t *testing.T) {
 
 	// WHERE clauses occurring frequently in tests
 	whereContain := " WHERE _jsonb->$1 @> $2"
-	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
