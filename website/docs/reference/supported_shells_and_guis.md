@@ -9,24 +9,30 @@ slug: /supported_shells_and_guis/
     blah blah blah
 -->
 
-### [Studio 3T](https://studio3t.com/)
-
-| Feature      | Status      |
-| ------------ | ----------- |
-| Connecting Studio 3T to FerretDB       | 	✅       |
-| Connecting Studio 3T to FerretDB with PLAIN authentication mechanism       | 	✅       |
-| Connecting Studio 3T to FerretDB with SCRAM authentication mechanisms       | 	❌ [Issue](https://github.com/FerretDB/FerretDB/issues/2012)
-| Connecting Studio 3T to FerretDB with TLS    | ✅        |
-| Import/Export JSON    | ✅        |
-| Import/Export CSV    | ✅        |
-| Export SQL statements to a `.sql` file    | ✅        |
-| Import/Export BSON    | ✅        |
-| Import/Export [`archive`](https://www.mongodb.com/docs/database-tools/mongodump/#output-to-an-archive-file) file    | ✅        |
-| Import/Export with BSON options    | ✅        |
-| Show Collection Statistics    | ❌ [Issue](https://github.com/FerretDB/FerretDB/issues/1346)        |
-
-
-### [Compass](https://www.mongodb.com/products/compass)
+| Shell / GUI                            | Feature                                 | Status      | Comments                                                   |
+| -------------------------------------- | --------------------------------------- | ----------- | ---------------------------------------------------------- |
+| [Studio 3T](https://studio3t.com/)     |                                         | ✅          | Basic tool is fully supported                              |
+|                                        | Connecting to FerretDB                  | ✅          |                                                            |
+|                                        | IntelliShell                            | ✅          | [Limited to supported commands](/website/docs/reference/supported_commands.md)                              |
+|                                        | PLAIN authentication mechanism          | ✅          |                                                            |
+|                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
+|                                        | TLS Support                             | ✅          |                                                            |
+|                                        | Import/Export JSON                      | ✅          |                                                            |
+|                                        | Import/Export CSV                       | ✅          |                                                            |
+|                                        | Import/Export BSON                      | ✅          |                                                            |
+|                                        | Import/Export archive files             | ✅          |                                                            |
+|                                        | Export SQL statements to a `.sql` file  | ✅          |                                                            |
+|                                        | `collStats`                             | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/1346)  |
+| [MongoDB Compass](https://www.mongodb.com/products/compass) | Feature            | ✅          | Basic tool is fully supported                              |
+|                                        | Connecting to FerretDB                  | ✅          |                                                            |
+|                                        | PLAIN authentication mechanism          | ✅          |                                                            |
+|                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
+|                                        | TLS Support                             | ✅          |                                                            |
+|                                        | [View Documents](https://www.mongodb.com/docs/compass/current/documents/view/)        | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
+|                                        | [Insert Documents](https://www.mongodb.com/docs/compass/current/documents/insert/)    | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |                                                                   |
+|                                        | [Clone Documents](https://www.mongodb.com/docs/compass/current/documents/clone/)      | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
+|                                        | [Delete Documents](https://www.mongodb.com/docs/compass/current/documents/delete/)         | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
+|                                        | [Query Your Data](https://www.mongodb.com/docs/compass/current/query/filter/)         | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
 
 ### [MongoDB for VS Code](https://www.mongodb.com/products/vs-code)
 
