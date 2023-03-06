@@ -43,8 +43,10 @@ slug: /supported_shells_and_guis/
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
 |                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
 |                                        | TLS Support                             | ✅          |                                                            |
-
-### [MongoDB for VS Code](https://www.mongodb.com/products/vs-code)
+| [MongoDB for VS Code](https://www.mongodb.com/products/vs-code) |          | ✅    | [Supported commands](/website/docs/reference/supported_commands.md) |
+|                                        | PLAIN authentication mechanism          | ✅          |                                                            |
+|                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
+|                                        | TLS Support                             | ✅          |
 
 ### [DBeaver](https://dbeaver.com/docs/wiki/MongoDB/)
 
