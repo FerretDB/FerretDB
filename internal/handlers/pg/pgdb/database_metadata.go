@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -139,17 +141,32 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdat
 		return nil, ErrTableNotExist
 	}
 
-	doc, err := queryById(ctx, tx, db, dbMetadataTableName, collection, forUpdate)
+	iterParams := &iteratorParams{
+		schema:    db,
+		table:     dbMetadataTableName,
+		filter:    must.NotFail(types.NewDocument("_id", collection)),
+		forUpdate: true,
+	}
+
+	iter, err := buildIterator(ctx, tx, iterParams)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if doc == nil {
+	defer iter.Close()
+
+	// call iterator only once as only one document is expected.
+	_, doc, err := iter.Next()
+
+	switch err {
+	case nil:
+		return doc, nil
+	case iterator.ErrIteratorDone:
 		// no metadata found for the given collection name
 		return nil, ErrTableNotExist
+	default:
+		return nil, lazyerrors.Error(err)
 	}
-
-	return doc, nil
 }
 
 // setMetadata sets metadata for the given database and collection.
