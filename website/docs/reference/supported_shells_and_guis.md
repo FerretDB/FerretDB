@@ -13,7 +13,7 @@ slug: /supported_shells_and_guis/
 | -------------------------------------- | --------------------------------------- | ----------- | ---------------------------------------------------------- |
 | [Studio 3T](https://studio3t.com/)     |                                         | ✅          | Basic tool is fully supported                              |
 |                                        | Connecting to FerretDB                  | ✅          |                                                            |
-|                                        | IntelliShell                            | ✅          | [Available commands](/website/docs/reference/supported_commands.md)                              |
+|                                        | IntelliShell                            | ✅          | [Supported commands](/website/docs/reference/supported_commands.md)                              |
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
 |                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
 |                                        | TLS Support                             | ✅          |                                                            |
@@ -35,13 +35,16 @@ slug: /supported_shells_and_guis/
 |                                        | [Query Your Data](https://www.mongodb.com/docs/compass/current/query/filter/)         | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
 |                                        | [Import and Export Data](https://www.mongodb.com/docs/compass/current/import-export/) | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
 |                                        | [Embedded MongoDB Shell](https://www.mongodb.com/docs/compass/current/embedded-shell/)| ✅    |                                                           |
-|                                        | [Aggregation Pipeline Builder](https://www.mongodb.com/docs/compass/current/aggregation-pipeline-builder/)| ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/9) |
+| [MongoDB Shell (`mongosh`)](https://www.mongodb.com/docs/mongodb-shell/)|          | ✅    | [Supported commands](/website/docs/reference/supported_commands.md) |
+|                                        | PLAIN authentication mechanism          | ✅          |                                                            |
+|                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
+|                                        | TLS Support                             | ✅          |                                                            |
+| [Legacy `mongo` Shell](https://www.mongodb.com/docs/v5.0/reference/program/mongo/)|          | ✅    | [Supported commands](/website/docs/reference/supported_commands.md) |
+|                                        | PLAIN authentication mechanism          | ✅          |                                                            |
+|                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
+|                                        | TLS Support                             | ✅          |                                                            |
 
 ### [MongoDB for VS Code](https://www.mongodb.com/products/vs-code)
-
-### [MongoDB Shell (`mongosh`)](https://www.mongodb.com/docs/mongodb-shell/)
-
-### [Legacy `mongo` Shell](https://www.mongodb.com/docs/v5.0/reference/program/mongo/)
 
 ### [DBeaver](https://dbeaver.com/docs/wiki/MongoDB/)
 
