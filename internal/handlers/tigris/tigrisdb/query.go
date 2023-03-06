@@ -113,13 +113,21 @@ func BuildFilter(filter *types.Document) (string, error) {
 		}
 
 		path, err := types.NewPathFromString(rootKey)
-		if err != nil {
-			return "", lazyerrors.Error(err)
-		}
 
-		// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
-		if path.Len() > 1 {
-			continue
+		var pe *types.DocumentPathError
+		switch {
+		case err == nil:
+			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
+			if path.Len() > 1 {
+				continue
+			}
+		case errors.As(err, &pe):
+			if pe.Code() == types.ErrDocumentPathEmptyKey {
+				break
+			}
+			return "", lazyerrors.Error(err)
+		default:
+			panic("DocumentPathError expected ")
 		}
 
 		switch v := rootVal.(type) {
