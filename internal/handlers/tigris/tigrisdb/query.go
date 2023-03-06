@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -106,22 +107,19 @@ func BuildFilter(filter *types.Document) (string, error) {
 			return "", lazyerrors.Error(err)
 		}
 
-		switch {
-		case rootKey == "":
-			// do nothing
-		case rootKey[0] == '$':
-			// don't pushdown $comment, it's attached to query in handlers
+		// don't pushdown $comment, it's attached to query in handlers
+		if strings.HasPrefix(rootKey, "$") {
 			continue
-		default:
-			path, err := types.NewPathFromString(rootKey)
-			if err != nil {
-				return "", lazyerrors.Error(err)
-			}
+		}
 
-			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
-			if path.Len() > 1 {
-				continue
-			}
+		path, err := types.NewPathFromString(rootKey)
+		if err != nil {
+			return "", lazyerrors.Error(err)
+		}
+
+		// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
+		if path.Len() > 1 {
+			continue
 		}
 
 		switch v := rootVal.(type) {
