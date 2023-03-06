@@ -123,13 +123,12 @@ func BuildFilter(filter *types.Document) (string, error) {
 				continue
 			}
 		case errors.As(err, &pe):
-			if pe.Code() == types.ErrDocumentPathEmptyKey {
-				break
+			// ignore empty key error, otherwise return error
+			if pe.Code() != types.ErrDocumentPathEmptyKey {
+				return "", lazyerrors.Error(err)
 			}
-
-			return "", lazyerrors.Error(err)
 		default:
-			panic("DocumentPathError expected ")
+			panic("Invalid error type: DocumentPathError expected ")
 		}
 
 		switch v := rootVal.(type) {
