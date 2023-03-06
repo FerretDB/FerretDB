@@ -41,8 +41,10 @@ type indexKeyPair struct {
 	order indexOrder
 }
 
+// indexOrder defines a type for index sort order.
 type indexOrder int8
 
+// indexOrder constants.
 const (
 	indexOrderAsc  indexOrder = 1
 	indexOrderDesc indexOrder = -1
