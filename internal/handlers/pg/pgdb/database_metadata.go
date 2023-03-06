@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -41,7 +40,26 @@ const (
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
+
+	// PostgreSQL max index name length.
+	maxIndexNameLength = 63
 )
+
+// metadata is a type to structure methods that work with metadata storing and getting.
+// Metadata consists of collections and indexes settings.
+type metadata struct {
+	tx         pgx.Tx
+	db         string
+	collection string
+}
+
+func newMetadata(tx pgx.Tx, db, collection string) *metadata {
+	return &metadata{
+		tx:         tx,
+		db:         db,
+		collection: collection,
+	}
+}
 
 // ensureMetadata returns PostgreSQL table name for the given FerretDB database and collection names.
 // If such metadata don't exist, it creates them, including the creation of the PostgreSQL schema if needed.
@@ -55,8 +73,8 @@ const (
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tableName string, created bool, err error) {
-	tableName, err = getTableNameFromMetadata(ctx, tx, db, collection)
+func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, err error) {
+	tableName, err = m.getTableName(ctx)
 
 	switch {
 	case err == nil:
@@ -69,7 +87,7 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 		return "", false, lazyerrors.Error(err)
 	}
 
-	err = CreateDatabaseIfNotExists(ctx, tx, db)
+	err = CreateDatabaseIfNotExists(ctx, m.tx, m.db)
 
 	switch {
 	case err == nil:
@@ -80,24 +98,24 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 		return "", false, lazyerrors.Error(err)
 	}
 
-	if err := createTableIfNotExists(ctx, tx, db, dbMetadataTableName); err != nil {
+	if err = createTableIfNotExists(ctx, m.tx, m.db, dbMetadataTableName); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
 	// Index to ensure that collection name is unique
-	if err = createIndexIfNotExists(ctx, tx, db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
+	if err = createIndexIfNotExists(ctx, m.tx, m.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
-	tableName = formatCollectionName(collection)
+	tableName = formatCollectionName(m.collection)
 	metadata := must.NotFail(types.NewDocument(
-		"_id", collection,
+		"_id", m.collection,
 		"table", tableName,
 		"indexes", must.NotFail(types.NewArray()),
 	))
 
-	err = insert(ctx, tx, insertParams{
-		schema: db,
+	err = insert(ctx, m.tx, insertParams{
+		schema: m.db,
 		table:  dbMetadataTableName,
 		doc:    metadata,
 	})
@@ -117,8 +135,8 @@ func ensureMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (tabl
 // getTableNameFromMetadata returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func getTableNameFromMetadata(ctx context.Context, tx pgx.Tx, db, collection string) (string, error) {
-	doc, err := getMetadata(ctx, tx, db, collection, false)
+func (m *metadata) getTableName(ctx context.Context) (string, error) {
+	doc, err := m.get(ctx, false)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -131,8 +149,8 @@ func getTableNameFromMetadata(ctx context.Context, tx pgx.Tx, db, collection str
 // getMetadata returns metadata for the given database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdate bool) (*types.Document, error) {
-	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
+func (m *metadata) get(ctx context.Context, forUpdate bool) (*types.Document, error) {
+	metadataExist, err := tableExists(ctx, m.tx, m.db, dbMetadataTableName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -142,13 +160,13 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdat
 	}
 
 	iterParams := &iteratorParams{
-		schema:    db,
+		schema:    m.db,
 		table:     dbMetadataTableName,
-		filter:    must.NotFail(types.NewDocument("_id", collection)),
-		forUpdate: true,
+		filter:    must.NotFail(types.NewDocument("_id", m.collection)),
+		forUpdate: forUpdate,
 	}
 
-	iter, err := buildIterator(ctx, tx, iterParams)
+	iter, err := buildIterator(ctx, m.tx, iterParams)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -158,10 +176,10 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdat
 	// call iterator only once as only one document is expected.
 	_, doc, err := iter.Next()
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		return doc, nil
-	case iterator.ErrIteratorDone:
+	case errors.Is(err, iterator.ErrIteratorDone):
 		// no metadata found for the given collection name
 		return nil, ErrTableNotExist
 	default:
@@ -173,8 +191,8 @@ func getMetadata(ctx context.Context, tx pgx.Tx, db, collection string, forUpdat
 //
 // To avoid data race, setMetadata should be called only after getMetadata with forUpdate = true is called,
 // so that the metadata table is locked correctly.
-func setMetadata(ctx context.Context, tx pgx.Tx, db, collection string, metadata *types.Document) error {
-	if _, err := setById(ctx, tx, db, dbMetadataTableName, "", collection, metadata); err != nil {
+func (m *metadata) set(ctx context.Context, doc *types.Document) error {
+	if _, err := setById(ctx, m.tx, m.db, dbMetadataTableName, "", m.collection, doc); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -184,11 +202,11 @@ func setMetadata(ctx context.Context, tx pgx.Tx, db, collection string, metadata
 // removeMetadata removes metadata for the given database and collection.
 //
 // If such metadata don't exist, it doesn't return an error.
-func removeMetadata(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	_, err := deleteByIDs(ctx, tx, execDeleteParams{
-		schema: db,
+func (m *metadata) remove(ctx context.Context) error {
+	_, err := deleteByIDs(ctx, m.tx, execDeleteParams{
+		schema: m.db,
 		table:  dbMetadataTableName,
-	}, []any{collection},
+	}, []any{m.collection},
 	)
 
 	if err == nil {
@@ -212,4 +230,94 @@ func formatCollectionName(name string) string {
 	}
 
 	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
+}
+
+// setMetadataIndex sets the index info in the metadata table.
+// It returns a PostgreSQL table name and index name that can be used to create index.
+//
+// Indexes are stored in the `indexes` array of metadata entry.
+//
+// Index settings are stored as an object:
+//   - the corresponding formatted PostgreSQL index name is stored in the pgindex field;
+//   - the corresponding FerretDB index name is stored in the name field;
+//   - the index specification (field-order pairs) is stored in the key field;
+//   - the unique flag is stored in the unique field.
+//
+// It returns a possibly wrapped error:
+//   - ErrTableNotExist - if the metadata table doesn't exist.
+//   - ErrIndexAlreadyExist - if the given index already exists.
+func (m *metadata) setIndex(ctx context.Context, index string, key indexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
+	metadata, err := m.get(ctx, true)
+	if err != nil {
+		return "", "", err
+	}
+
+	pgTable = must.NotFail(metadata.Get("table")).(string)
+	pgIndex = formatIndexName(m.collection, index)
+
+	indKey := types.MakeDocument(len(key))
+	for _, pair := range key {
+		indKey.Set(pair.field, int32(pair.order)) // order is set as int32 to be pjson-marshaled correctly
+	}
+
+	newIndex := must.NotFail(types.NewDocument(
+		"pgindex", pgIndex,
+		"name", index,
+		"key", indKey,
+		"unique", unique,
+	))
+
+	var indexes *types.Array
+	if metadata.Has("indexes") {
+		indexes = must.NotFail(metadata.Get("indexes")).(*types.Array)
+
+		iter := indexes.Iterator()
+		defer iter.Close()
+
+		for {
+			var idx any
+
+			if _, idx, err = iter.Next(); err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return "", "", lazyerrors.Error(err)
+			}
+
+			idxData := idx.(*types.Document)
+			idxName := must.NotFail(idxData.Get("name")).(string)
+
+			if idxName == index {
+				return "", "", ErrIndexAlreadyExist
+			}
+		}
+	}
+
+	indexes.Append(newIndex)
+	metadata.Set("indexes", indexes)
+
+	if err = m.set(ctx, metadata); err != nil {
+		return "", "", lazyerrors.Error(err)
+	}
+
+	return
+}
+
+// formatIndexName returns index name in form <shortened_name>_<name_hash>_idx.
+// Changing this logic will break compatibility with existing databases.
+func formatIndexName(collection, index string) string {
+	name := collection + "_" + index
+
+	hash32 := fnv.New32a()
+	must.NotFail(hash32.Write([]byte(name)))
+
+	nameSymbolsLeft := maxIndexNameLength - hash32.Size()*2 - 5 // 5 is for "_" delimiter and "_idx" suffix
+	truncateTo := len(name)
+
+	if truncateTo > nameSymbolsLeft {
+		truncateTo = nameSymbolsLeft
+	}
+
+	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{})) + "_idx"
 }

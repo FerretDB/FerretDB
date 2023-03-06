@@ -50,7 +50,7 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 	}
 
 	var table string
-	table, err = getTableNameFromMetadata(ctx, tx, db, collection)
+	table, err = newMetadata(tx, db, collection).getTableName(ctx)
 
 	if err != nil {
 		return lazyerrors.Error(err)

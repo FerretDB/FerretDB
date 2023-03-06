@@ -19,28 +19,44 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // indexParams contains parameters for creating an index.
+// TODO This type will become exported in https://github.com/FerretDB/FerretDB/issues/1509 (similar to QueryParams).
 type indexParams struct {
-	db         string          // FerretDB database name
-	collection string          // FerretDB collection name
-	index      string          // FerretDB index name
-	key        *types.Document // Index specification (pairs of field names and sort orders) // TODO
-	unique     bool            // Whether the index is unique
+	db         string   // FerretDB database name
+	collection string   // FerretDB collection name
+	index      string   // FerretDB index name
+	key        indexKey // Index specification (pairs of field names and sort orders) // TODO
+	unique     bool     // Whether the index is unique
 }
+
+// indexKey defines a type for index key - pairs of field names and sort orders.
+type indexKey []indexKeyPair
+
+// indexKeyPair consists of a field name and a sort order that are part of the index.
+type indexKeyPair struct {
+	field string
+	order indexOrder
+}
+
+type indexOrder int8
+
+const (
+	indexOrderAsc  indexOrder = 1
+	indexOrderDesc indexOrder = -1
+)
 
 // createIndex creates a new index for the given params.
 // TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
-func createIndex(ctx context.Context, tx pgx.Tx, params *indexParams) error {
-	pgTable, pgIndex, err := setIndexMetadata(ctx, tx, params)
+func createIndex(ctx context.Context, tx pgx.Tx, ip *indexParams) error {
+	pgTable, pgIndex, err := newMetadata(tx, ip.db, ip.collection).setIndex(ctx, ip.index, ip.key, ip.unique)
 	if err != nil {
 		return err
 	}
 
-	if err := createIndexIfNotExists(ctx, tx, params.db, pgTable, pgIndex, true); err != nil {
+	if err := createIndexIfNotExists(ctx, tx, ip.db, pgTable, pgIndex, true); err != nil {
 		return err
 	}
 

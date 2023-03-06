@@ -60,7 +60,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getTableNameFromMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -131,7 +131,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
 func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
-	table, err := getTableNameFromMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
 
 	switch {
 	case err == nil:

@@ -86,7 +86,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	_, err := getTableNameFromMetadata(ctx, tx, db, collection)
+	_, err := newMetadata(tx, db, collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
@@ -113,7 +113,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, created, err := ensureMetadata(ctx, tx, db, collection)
+	table, created, err := newMetadata(tx, db, collection).ensure(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -131,7 +131,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		db:         db,
 		collection: collection,
 		index:      "_id_",
-		key:        must.NotFail(types.NewDocument("_id", int32(1))),
+		key:        indexKey{{field: "_id", order: indexOrderAsc}},
 		unique:     true,
 	}
 
@@ -185,7 +185,7 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrTableNotExist
 	}
 
-	err = removeMetadata(ctx, tx, db, collection)
+	err = newMetadata(tx, db, collection).remove(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
