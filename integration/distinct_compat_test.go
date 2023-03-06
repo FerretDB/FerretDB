@@ -151,7 +151,6 @@ func TestDistinctCompat(t *testing.T) {
 		"DotNotation": {
 			field:  "v.foo",
 			filter: bson.D{},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
 		},
 		"DotNotationArray": {
 			field:  "v.array.0",
