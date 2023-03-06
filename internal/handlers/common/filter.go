@@ -55,39 +55,19 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+	docs := []*types.Document{doc}
+	filterSuffix := filterKey
+
 	if strings.ContainsRune(filterKey, '.') {
-		// {field1./.../.fieldN: filterValue}
 		path, err := types.NewPathFromString(filterKey)
 		if err != nil {
 			return false, lazyerrors.Error(err)
 		}
 
-		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValue, err := doc.GetByPath(path.TrimSuffix())
-		if err != nil {
-			return false, nil // no error - the field is just not present
-		}
-
-		switch docValue := docValue.(type) {
-		case *types.Document:
-			doc = docValue
-			filterKey = path.Suffix()
-		case *types.Array:
-			index, err := strconv.Atoi(path.Suffix())
-			if err != nil {
-				return false, nil
-			}
-
-			if docValue.Len() == 0 || docValue.Len() <= index {
-				return false, nil
-			}
-
-			value, err := docValue.Get(index)
-			if err != nil {
-				return false, err
-			}
-
-			doc = must.NotFail(types.NewDocument(filterKey, value))
+		if filterSuffix, docs = getDocumentsAtSuffix(doc, path); len(docs) == 0 {
+			// When no document is found at suffix, use an empty one.
+			// So operators such as $nin is applied to the empty document.
+			docs = append(docs, types.MakeDocument(0))
 		}
 	}
 
@@ -96,44 +76,203 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		return filterOperator(doc, filterKey, filterValue)
 	}
 
-	switch filterValue := filterValue.(type) {
-	case *types.Document:
-		// {field: {expr}} or {field: {document}}
-		return filterFieldExpr(doc, filterKey, filterValue)
+	for _, doc := range docs {
+		switch filterValue := filterValue.(type) {
+		case *types.Document:
+			// {field: {expr}} or {field: {document}}
+			ok, err := filterFieldExpr(doc, filterKey, filterSuffix, filterValue)
+			if err != nil {
+				return false, err
+			}
 
-	case *types.Array:
-		// {field: [array]}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			return false, nil // no error - the field is just not present
-		}
-		result := types.Compare(docValue, filterValue)
-
-		return result == types.Equal, nil
-
-	case types.Regex:
-		// {field: /regex/}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			return false, nil // no error - the field is just not present
-		}
-		return filterFieldRegex(docValue, filterValue)
-
-	default:
-		// {field: value}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			// comparing not existent field with null should return true
-			if _, ok := filterValue.(types.NullType); ok {
+			if ok {
 				return true, nil
 			}
-			return false, nil // no error - the field is just not present
+
+			// doc did not match filter, continue next iteration.
+		case *types.Array:
+			// {field: [array]}
+			docValue, err := doc.Get(filterSuffix)
+			if err != nil {
+				continue // no error - the field is just not present
+			}
+
+			if result := types.Compare(docValue, filterValue); result == types.Equal {
+				return true, nil
+			}
+
+			// doc did not match filter, continue next iteration.
+		case types.Regex:
+			// {field: /regex/}
+			docValue, err := doc.Get(filterSuffix)
+			if err != nil {
+				continue // no error - the field is just not present
+			}
+
+			ok, err := filterFieldRegex(docValue, filterValue)
+			if err != nil {
+				return false, err
+			}
+
+			if ok {
+				return true, nil
+			}
+
+			// doc did not match filter, continue next iteration.
+		default:
+			// {field: value}
+			docValue, err := doc.Get(filterSuffix)
+			if err != nil {
+				// comparing not existent field with null should return true
+				if _, ok := filterValue.(types.NullType); ok {
+					return true, nil
+				}
+
+				continue // no error - the field is just not present
+			}
+
+			if result := types.Compare(docValue, filterValue); result == types.Equal {
+				return true, nil
+			}
+		}
+	}
+
+	// If we got here, it means that none of the documents matched the filter.
+	return false, nil
+}
+
+// getDocumentsAtSuffix go through each key of the path iteratively to
+// find all values that exist at suffix.
+// An array dot notation may return multiple documents.
+// At each key of the path, it checks:
+//
+//	if the document has the key,
+//	if the array contains an index that is equal to the key, and
+//	if the array contains documents which have the key.
+//
+// It returns:
+//
+//	the suffix key of path;
+//	a slice of documents at suffix with suffix value document pairs.
+//
+// Document path example:
+//
+//	docs:		{foo: {bar: 1}}
+//	path:		`foo.bar`
+//
+// returns
+//
+//	suffix:		`bar`
+//	docsAtSuffix:	[{bar: 1}]
+//
+// Array index path example:
+//
+//	docs:		{foo: [{bar: 1}]}
+//	path:		`foo.0.bar`
+//
+// returns
+//
+//	suffix:		`bar`
+//	docsAtSuffix:	[{bar: 1}]
+//
+// Array document example:
+//
+//	docs:		{foo: [{bar: 1}, {bar: 2}]}
+//	path:		`foo.bar`
+//
+// returns
+//
+//	suffix:		`bar`
+//	docsAtSuffix:	[{bar: 1}, {bar: 2}]
+func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, docsAtSuffix []*types.Document) {
+	suffix = path.Suffix()
+
+	// docsAtSuffix are the document found at the suffix.
+	docsAtSuffix = []*types.Document{}
+
+	// keys are each part of the path.
+	keys := path.Slice()
+
+	// vals are the field values found at each key of the path.
+	vals := []any{doc}
+
+	for i, key := range keys {
+		// embeddedVals are the values found at current key.
+		var embeddedVals []any
+
+		for _, valAtKey := range vals {
+			switch val := valAtKey.(type) {
+			case *types.Document:
+				embeddedVal, err := val.Get(key)
+				if err != nil {
+					// document does not contain key, so no embedded value was found.
+					continue
+				}
+
+				if i == len(keys)-1 {
+					// a value was found at suffix.
+					docsAtSuffix = append(docsAtSuffix, val)
+					continue
+				}
+
+				// key exists in the document, add embedded value to next iteration.
+				embeddedVals = append(embeddedVals, embeddedVal)
+			case *types.Array:
+				if index, err := strconv.Atoi(key); err == nil {
+					// key is an integer, check if that integer is an index of the array.
+					embeddedVal, err := val.Get(index)
+					if err != nil {
+						// index does not exist.
+						continue
+					}
+
+					if i == len(keys)-1 {
+						// a value was found at suffix.
+						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
+						continue
+					}
+
+					// key is the index of the array, add embedded value to the next iteration.
+					embeddedVals = append(embeddedVals, embeddedVal)
+
+					continue
+				}
+
+				// key was not an index, iterate array to get all documents that contain the key.
+				for j := 0; j < val.Len(); j++ {
+					valAtIndex := must.NotFail(val.Get(j))
+
+					embeddedDoc, isDoc := valAtIndex.(*types.Document)
+					if !isDoc {
+						// the value is not a document, so it cannot contain the key.
+						continue
+					}
+
+					embeddedVal, err := embeddedDoc.Get(key)
+					if err != nil {
+						// the document does not contain key, so no embedded value was found.
+						continue
+					}
+
+					if i == len(keys)-1 {
+						// a value was found at suffix.
+						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
+						continue
+					}
+
+					// key exists in the document, add embedded value to next iteration.
+					embeddedVals = append(embeddedVals, embeddedVal)
+				}
+
+			default:
+				// not a document or array, do nothing
+			}
 		}
 
-		result := types.Compare(docValue, filterValue)
-
-		return result == types.Equal, nil
+		vals = embeddedVals
 	}
+
+	return suffix, docsAtSuffix
 }
 
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
@@ -262,10 +401,10 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 }
 
 // filterFieldExpr handles {field: {expr}} or {field: {document}} filter.
-func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document) (bool, error) {
+func filterFieldExpr(doc *types.Document, filterKey, filterSuffix string, expr *types.Document) (bool, error) {
 	// check if both documents are empty
 	if expr.Len() == 0 {
-		fieldValue, err := doc.Get(filterKey)
+		fieldValue, err := doc.Get(filterSuffix)
 		if err != nil {
 			return false, nil
 		}
@@ -283,7 +422,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		exprValue := must.NotFail(expr.Get(exprKey))
 
-		fieldValue, err := doc.Get(filterKey)
+		fieldValue, err := doc.Get(filterSuffix)
 		if err != nil {
 			switch exprKey {
 			case "$exists", "$not", "$elemMatch":
@@ -539,7 +678,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$not: {expr}}}
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
-				res, err := filterFieldExpr(doc, filterKey, exprValue)
+				res, err := filterFieldExpr(doc, filterKey, filterSuffix, exprValue)
 				if res || err != nil {
 					return false, err
 				}
@@ -563,7 +702,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$elemMatch":
 			// {field: {$elemMatch: value}}
-			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
+			res, err := filterFieldExprElemMatch(doc, filterKey, filterSuffix, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -1340,7 +1479,7 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 // filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
 // Returns false if doc value is not an array.
 // TODO: https://github.com/FerretDB/FerretDB/issues/364
-func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
+func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
 		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
@@ -1378,7 +1517,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		}
 	}
 
-	value, err := doc.Get(filterKey)
+	value, err := doc.Get(filterSuffix)
 	if err != nil {
 		return false, nil
 	}
@@ -1387,7 +1526,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		return false, nil
 	}
 
-	return filterFieldExpr(doc, filterKey, expr)
+	return filterFieldExpr(doc, filterKey, filterSuffix, expr)
 }
 
 // formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
