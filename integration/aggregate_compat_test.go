@@ -219,7 +219,21 @@ func TestAggregateCommandCompat(t *testing.T) {
 		},
 	}
 
-	testAggregatePipelineCompat(t, testCases)
+	testAggregateCommandCompat(t, testCases)
+}
+
+func TestAggregateCompatStages(t *testing.T) {
+	testCases := map[string]aggregateStageCompatTestCase{
+		"Value": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", 42}}}},
+				bson.D{{"$count", "v"}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+	}
+
+	testAggregateStageCompat(t, testCases)
 }
 
 func TestAggregateCompatCount(t *testing.T) {

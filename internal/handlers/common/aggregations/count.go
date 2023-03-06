@@ -79,7 +79,12 @@ func newCount(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+
 	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
+
 	return []*types.Document{res}, nil
 }
 
