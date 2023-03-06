@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -99,34 +100,43 @@ func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, err
 	distinct := types.MakeArray(len(docs))
 
 	for _, doc := range docs {
-		var val any
+		// docsAtSuffix contains all documents exist at the suffix key.
+		docsAtSuffix := []*types.Document{doc}
+		suffix := key
 
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		val, err = doc.GetByPath(path)
-		if err != nil {
-			continue
-		}
-
-		switch v := val.(type) {
-		case *types.Array:
-			for i := 0; i < v.Len(); i++ {
-				el, err := v.Get(i)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				if !distinct.Contains(el) {
-					distinct.Append(el)
-				}
+		if strings.ContainsRune(key, '.') {
+			path, err := types.NewPathFromString(key)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
 			}
 
-		default:
-			if !distinct.Contains(v) {
-				distinct.Append(v)
+			// Multiple documents may be found at suffix by array dot notation.
+			suffix, docsAtSuffix = getDocumentsAtSuffix(doc, path)
+		}
+
+		for _, doc := range docsAtSuffix {
+			val, err := doc.Get(suffix)
+			if err != nil {
+				continue
+			}
+
+			switch v := val.(type) {
+			case *types.Array:
+				for i := 0; i < v.Len(); i++ {
+					el, err := v.Get(i)
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+
+					if !distinct.Contains(el) {
+						distinct.Append(el)
+					}
+				}
+
+			default:
+				if !distinct.Contains(v) {
+					distinct.Append(v)
+				}
 			}
 		}
 	}
