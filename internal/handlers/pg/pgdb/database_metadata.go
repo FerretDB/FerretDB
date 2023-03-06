@@ -53,6 +53,7 @@ type metadata struct {
 	collection string
 }
 
+// returns a new instance of metadata for the given transaction, database and collection names.
 func newMetadata(tx pgx.Tx, db, collection string) *metadata {
 	return &metadata{
 		tx:         tx,
@@ -61,7 +62,7 @@ func newMetadata(tx pgx.Tx, db, collection string) *metadata {
 	}
 }
 
-// ensureMetadata returns PostgreSQL table name for the given FerretDB database and collection names.
+// ensure returns PostgreSQL table name for the given FerretDB database and collection names.
 // If such metadata don't exist, it creates them, including the creation of the PostgreSQL schema if needed.
 // If metadata were created, it returns true as the second return value. If metadata already existed, it returns false.
 //
@@ -132,7 +133,7 @@ func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, 
 	}
 }
 
-// getTableNameFromMetadata returns PostgreSQL table name for the given FerretDB database and collection.
+// getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
 func (m *metadata) getTableName(ctx context.Context) (string, error) {
@@ -146,7 +147,7 @@ func (m *metadata) getTableName(ctx context.Context) (string, error) {
 	return table.(string), nil
 }
 
-// getMetadata returns metadata for the given database and collection.
+// get returns metadata stored in the metadata table.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
 func (m *metadata) get(ctx context.Context, forUpdate bool) (*types.Document, error) {
@@ -187,9 +188,9 @@ func (m *metadata) get(ctx context.Context, forUpdate bool) (*types.Document, er
 	}
 }
 
-// setMetadata sets metadata for the given database and collection.
+// set sets metadata for the given database and collection.
 //
-// To avoid data race, setMetadata should be called only after getMetadata with forUpdate = true is called,
+// To avoid data race, set should be called only after getMetadata with forUpdate = true is called,
 // so that the metadata table is locked correctly.
 func (m *metadata) set(ctx context.Context, doc *types.Document) error {
 	if _, err := setById(ctx, m.tx, m.db, dbMetadataTableName, "", m.collection, doc); err != nil {
@@ -199,7 +200,7 @@ func (m *metadata) set(ctx context.Context, doc *types.Document) error {
 	return nil
 }
 
-// removeMetadata removes metadata for the given database and collection.
+// remove removes metadata.
 //
 // If such metadata don't exist, it doesn't return an error.
 func (m *metadata) remove(ctx context.Context) error {
@@ -232,16 +233,10 @@ func formatCollectionName(name string) string {
 	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
 }
 
-// setMetadataIndex sets the index info in the metadata table.
+// setIndex sets the index info in the metadata table.
 // It returns a PostgreSQL table name and index name that can be used to create index.
 //
 // Indexes are stored in the `indexes` array of metadata entry.
-//
-// Index settings are stored as an object:
-//   - the corresponding formatted PostgreSQL index name is stored in the pgindex field;
-//   - the corresponding FerretDB index name is stored in the name field;
-//   - the index specification (field-order pairs) is stored in the key field;
-//   - the unique flag is stored in the unique field.
 //
 // It returns a possibly wrapped error:
 //   - ErrTableNotExist - if the metadata table doesn't exist.
