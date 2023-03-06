@@ -46,6 +46,7 @@ const (
 )
 
 // metadata is a type to structure methods that work with metadata storing and getting.
+//
 // Metadata consists of collections and indexes settings.
 type metadata struct {
 	tx         pgx.Tx
@@ -53,7 +54,7 @@ type metadata struct {
 	collection string
 }
 
-// returns a new instance of metadata for the given transaction, database and collection names.
+// newMetadata returns a new instance of metadata for the given transaction, database and collection names.
 func newMetadata(tx pgx.Tx, db, collection string) *metadata {
 	return &metadata{
 		tx:         tx,
