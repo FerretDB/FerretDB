@@ -29,7 +29,7 @@ import (
 // aggregateStageCompatTestCase describes aggregate compatibility test case.
 type aggregateStageCompatTestCase struct {
 	skip       string                   // skip test for all handlers, must have issue number mentioned
-	pipeline   bson.A                   // required
+	pipeline   bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -51,7 +51,21 @@ func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateStageC
 			t.Parallel()
 
 			pipeline := tc.pipeline
-			require.NotNil(t, pipeline, "pipeline should be set")
+
+			var hasSortStage bool
+			for _, stage := range pipeline {
+				stage, ok := stage.(bson.D)
+				require.True(t, ok, "stage needs to be bson.D type")
+
+				if _, hasSortStage = stage.Map()["$sort"]; hasSortStage {
+					break
+				}
+			}
+
+			if !hasSortStage {
+				// add sort stage to sort by _id because compat does not have deterministic order.
+				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
+			}
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
@@ -103,16 +117,16 @@ func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateStageC
 	}
 }
 
-// aggregatePipelineCompatTestCase describes aggregate compatibility test case.
-type aggregatePipelineCompatTestCase struct {
+// aggregateCommandCompatTestCase describes aggregate compatibility test case.
+type aggregateCommandCompatTestCase struct {
 	skip       string                   // skip test for all handlers, must have issue number mentioned
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-// testAggregatePipelineCompat tests aggregate pipeline compatibility test cases using one collection.
+// testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStageCompat for testing a stage of aggregation.
-func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePipelineCompatTestCase) {
+func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -175,8 +189,8 @@ func testAggregatePipelineCompat(t *testing.T, testCases map[string]aggregatePip
 	}
 }
 
-func TestAggregatePipelineCompat(t *testing.T) {
-	testCases := map[string]aggregatePipelineCompatTestCase{
+func TestAggregateCommandCompat(t *testing.T) {
+	testCases := map[string]aggregateCommandCompatTestCase{
 		"CollectionAgnostic": {
 			command: bson.D{
 				{"aggregate", 1},
@@ -249,15 +263,11 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
-				// sort by _id because compat does not have deterministic order.
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
-				// sort by _id because compat does not have deterministic order.
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
 		"Document": {
@@ -272,22 +282,16 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"Empty": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{}}},
-				// sort by _id because compat does not have deterministic order.
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
 		"DotNotationDocument": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v.foo", int32(42)}}}},
-				// sort by _id because compat does not have deterministic order.
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
 		"DotNotationArray": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v.0", int32(42)}}}},
-				// sort by _id because compat does not have deterministic order.
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
 		"Location15959": {
