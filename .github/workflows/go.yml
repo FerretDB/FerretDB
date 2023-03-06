@@ -43,20 +43,6 @@ jobs:
         run: go generate -x
         working-directory: tools
 
-      - name: Set enviroment variables
-        run: |
-          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
-          echo "GO111MODULE=auto" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-
-      - name: Install HANA Go driver
-        run: |
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-HANA-driver.sh
-          ./install-HANA-driver.sh "install"
-        shell: bash
-
       - name: Run init
         run: bin/task init
 
@@ -94,20 +80,6 @@ jobs:
       - name: Install Task
         run: go generate -x
         working-directory: tools
-
-      - name: Set enviroment variables
-        run: |
-          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
-          echo "GO111MODULE=auto" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-
-      - name: Install HANA Go driver
-        run: |
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-HANA-driver.sh
-          ./install-HANA-driver.sh "install"
-        shell: bash
 
       - name: Start environment
         run: bin/task env-up-detach
@@ -168,20 +140,6 @@ jobs:
         with:
           cache-key: lint
 
-      - name: Set enviroment variables
-        run: |
-          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
-          echo "GO111MODULE=auto" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          
-      - name: Install HANA Go driver
-        run: |
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-HANA-driver.sh
-          ./install-HANA-driver.sh "install"
-        shell: bash
-
       - name: Run linters
         uses: FerretDB/github-actions/linters@main
 
@@ -234,20 +192,7 @@ jobs:
         run: bin/task env-setup
         working-directory: source
 
-      - name: Set enviroment variables
-        run: |
-          echo "CGO_LDFLAGS=/home/runner/sap/hdbclient/libdbcapiHDB.so" >> $GITHUB_ENV
-          echo "GO111MODULE=auto" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/runner/sap/hdbclient" >> $GITHUB_ENV
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
 
-      - name: Install HANA Go driver
-        run: |
-          echo "/home/runner/sap/hdbclient" >> $GITHUB_PATH
-          chmod +x install-HANA-driver.sh
-          ./install-HANA-driver.sh "install"
-        shell: bash
-        working-directory: source
 
       # precompile tests with unset GOMAXPROCS
       - name: Init fuzzers

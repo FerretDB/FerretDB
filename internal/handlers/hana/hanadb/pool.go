@@ -19,8 +19,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "SAP/go-hdb/driver"
-	//nolint:gci // conflicts between gci and goimports
+	_ "github.com/SAP/go-hdb/driver"
 
 	"go.uber.org/zap"
 )

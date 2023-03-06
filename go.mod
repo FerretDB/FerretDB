@@ -23,6 +23,8 @@ require (
 	golang.org/x/sys v0.5.0
 )
 
+require github.com/SAP/go-hdb v1.1.1
+
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect

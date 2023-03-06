@@ -274,7 +274,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-hana:
-    deps: [build-testcover]
+    deps: [build-local]
     dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env'] # Create a .env file in root folder with: export hana_url=”insert-url-here”
     cmds:
       - >
