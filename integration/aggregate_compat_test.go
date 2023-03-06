@@ -48,9 +48,10 @@ func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateStageC
 				t.Skip(tc.skip)
 			}
 
-			t.Parallel()
-
 			pipeline := tc.pipeline
+			require.NotNil(t, pipeline, "pipeline should be set")
+
+			t.Parallel()
 
 			var hasSortStage bool
 			for _, stage := range pipeline {
