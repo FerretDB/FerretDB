@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	_ "github.com/SAP/go-hdb/driver"
-
 	"go.uber.org/zap"
 )
 
