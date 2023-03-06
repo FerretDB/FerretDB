@@ -108,7 +108,7 @@ func formatIndexName(collection, index string) string {
 	name := collection + "_" + index
 
 	hash32 := fnv.New32a()
-	_ = must.NotFail(hash32.Write([]byte(name)))
+	must.NotFail(hash32.Write([]byte(name)))
 
 	nameSymbolsLeft := maxIndexNameLength - hash32.Size()*2 - 5 // 5 is for "_" delimiter and "_idx" suffix
 	truncateTo := len(name)

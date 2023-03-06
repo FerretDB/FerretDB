@@ -185,7 +185,7 @@ func removeMetadata(ctx context.Context, tx pgx.Tx, db, collection string) error
 // Changing this logic will break compatibility with existing databases.
 func formatCollectionName(name string) string {
 	hash32 := fnv.New32a()
-	_ = must.NotFail(hash32.Write([]byte(name)))
+	must.NotFail(hash32.Write([]byte(name)))
 
 	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
 	truncateTo := len(name)

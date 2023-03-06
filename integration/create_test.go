@@ -408,13 +408,13 @@ func TestCreateTigris(t *testing.T) {
 
 // TestCreateShortName tests how a collection with a short name works.
 // For example, for such collections hashed table names (Postgres table names) are the same as collection names.
-//func TestCreateShortName(t *testing.T) {
-//	setup.SkipForTigrisWithReason(t, "Testing collection creation without schema being set")
-//
-//	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
-//	db := collection.Database()
-//
-//	collName := "a"
-//	err := db.CreateCollection(ctx, collName)
-//	require.NoError(t, err)
-//}
+func TestCreateShortName(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Testing collection creation without schema being set")
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
+	db := collection.Database()
+
+	collName := "a"
+	err := db.CreateCollection(ctx, collName)
+	require.NoError(t, err)
+}
