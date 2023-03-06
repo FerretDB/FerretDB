@@ -23,7 +23,7 @@ slug: /supported_shells_and_guis/
 |                                        | Import/Export archive files             | ✅          |                                                            |
 |                                        | Export SQL statements to a `.sql` file  | ✅          |                                                            |
 |                                        | `collStats`                             | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/1346)  |
-| [MongoDB Compass](https://www.mongodb.com/products/compass) |                    | ❌          | Basic tool is fully supported                              |
+| [MongoDB Compass](https://www.mongodb.com/products/compass) |                    | ❌          |                           |
 |                                        | Connecting to FerretDB                  | ✅          |                                                            |
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
 |                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
