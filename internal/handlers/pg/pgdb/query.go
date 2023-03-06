@@ -260,6 +260,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		path, err := types.NewPathFromString(rootKey)
 
 		var pe *types.DocumentPathError
+
 		switch {
 		case err == nil:
 			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
@@ -270,6 +271,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			if pe.Code() == types.ErrDocumentPathEmptyKey {
 				break
 			}
+
 			return "", nil, lazyerrors.Error(err)
 		default:
 			panic("DocumentPathError expected ")
