@@ -31,7 +31,8 @@ Let's get started.
 ### MongoDB
 
 [MongoDB](https://www.mongodb.com/) is a user-friendly, schema-free, proprietary NoSQL database written as JSON-like (BSON) documents for storing data.
-It is a document database that uses BSON (stands for binary JSON), which offers more data types than regular JSON data, such as floating point, date, etc. See [how we convert and store MongoDB BSON to PostgreSQL JSON](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/).
+It is a document database that uses BSON (stands for binary JSON), which offers more data types than regular JSON data, such as floating point, date, etc.
+See [how we convert and store MongoDB BSON to PostgreSQL JSON](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/).
 
 Unlike most traditional databases using SQL, MongoDB uses a different syntax and structure, which is relatively easy to learn, even for non-programmers.
 NoSQL databases like MongoDB are well suited for managing semi-structured or unstructured data.
