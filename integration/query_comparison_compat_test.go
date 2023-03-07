@@ -314,10 +314,12 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", bson.D{{"$eq", false}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", false}}}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", bson.D{{"$eq", true}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", true}}}},
+			resultPushdown: true,
 		},
 		"Datetime": {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
