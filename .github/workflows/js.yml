@@ -51,7 +51,7 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Run build-local
+      - name: Build bin/ferretdb-local
         run: bin/task build-local
 
       - name: Wait for and setup environment
