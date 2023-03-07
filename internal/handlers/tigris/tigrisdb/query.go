@@ -150,10 +150,10 @@ func BuildFilter(filter *types.Document) (string, error) {
 				switch k {
 				case "$eq":
 					switch docVal := v.(type) {
-					case *types.Document, *types.Array, types.Binary, bool,
+					case *types.Document, *types.Array, types.Binary,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-					case float64, string, types.ObjectID, int32, int64:
+					case float64, string, types.ObjectID, bool, int32, int64:
 						rawValue, err := tjson.Marshal(docVal)
 						if err != nil {
 							return "", lazyerrors.Error(err)
