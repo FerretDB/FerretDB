@@ -306,6 +306,10 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter:   must.NotFail(types.NewDocument("_id", "foo")),
 			expected: whereContain,
 		},
+		"IDBool": {
+			filter:   must.NotFail(types.NewDocument("_id", "foo")),
+			expected: whereContain,
+		},
 		"IDDotNotation": {
 			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
@@ -342,7 +346,8 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereContain,
 		},
 		"ImplicitBool": {
-			filter: must.NotFail(types.NewDocument("v", true)),
+			filter:   must.NotFail(types.NewDocument("v", true)),
+			expected: whereContain,
 		},
 		"ImplicitObjectID": {
 			filter:   must.NotFail(types.NewDocument("v", objectID)),
@@ -399,6 +404,7 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", true)),
 			)),
+			expected: whereContain,
 		},
 		"EqObjectID": {
 			filter: must.NotFail(types.NewDocument(

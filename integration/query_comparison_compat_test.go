@@ -139,10 +139,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", primitive.Binary{}}},
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", false}},
+			filter:         bson.D{{"v", false}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", true}},
+			filter:         bson.D{{"v", true}},
+			resultPushdown: true,
 		},
 		"IDNull": {
 			filter:     bson.D{{"_id", nil}},

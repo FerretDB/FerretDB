@@ -276,7 +276,8 @@ func TestBuildFilter(t *testing.T) {
 			expected: `{"v":1.7976931348623157e+308}`,
 		},
 		"ImplicitBool": {
-			filter: must.NotFail(types.NewDocument("v", true)),
+			filter:   must.NotFail(types.NewDocument("v", true)),
+			expected: `{"v":true}`,
 		},
 		"ImplicitObjectID": {
 			filter:   must.NotFail(types.NewDocument("v", objectID)),
@@ -324,6 +325,7 @@ func TestBuildFilter(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", true)),
 			)),
+			expected: `{"v":true}`,
 		},
 		"EqObjectID": {
 			filter: must.NotFail(types.NewDocument(
