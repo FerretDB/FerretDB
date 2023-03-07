@@ -345,7 +345,6 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"v.foo", 1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2101",
 		},
 		"DotNotationNonExistent": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
