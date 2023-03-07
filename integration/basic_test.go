@@ -311,82 +311,80 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 }
 
 func TestCollectionName(t *testing.T) {
-	setup.SkipForTigris(t)
+	// TODO! test for tigris too!	setup.SkipForTigrisWithReason(t, "Testing collection creation without ")
 
 	t.Parallel()
 
-	t.Run("All", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
+	ctx, collection := setup.Setup(t)
 
-		collectionName300 := strings.Repeat("aB", 150)
-		cases := map[string]struct {
-			collection string
-			err        *mongo.CommandError
-			alt        string
-		}{
-			"TooLongForBothDBs": {
-				collection: collectionName300,
-				err: &mongo.CommandError{
-					Name: "InvalidNamespace",
-					Code: 73,
-					Message: fmt.Sprintf(
-						"Fully qualified namespace is too long. Namespace: testcollectionname-all.%s Max: 255",
-						collectionName300,
-					),
-				},
-				alt: fmt.Sprintf("Invalid collection name: 'testcollectionname-all.%s'", collectionName300),
+	collectionName300 := strings.Repeat("aB", 150)
+	collectionName100 := strings.Repeat("a", 100)
+
+	cases := map[string]struct {
+		collection string
+		err        *mongo.CommandError
+		alt        string
+	}{
+		"TooLongForBothDBs": {
+			collection: collectionName300,
+			err: &mongo.CommandError{
+				Name: "InvalidNamespace",
+				Code: 73,
+				Message: fmt.Sprintf(
+					"Fully qualified namespace is too long. Namespace: testcollectionname.%s Max: 255",
+					collectionName300,
+				),
 			},
-			"WithADollarSign": {
-				collection: "collection_name_with_a-$",
-				err: &mongo.CommandError{
-					Name:    "InvalidNamespace",
-					Code:    73,
-					Message: `Invalid collection name: collection_name_with_a-$`,
-				},
-				alt: `Invalid collection name: 'testcollectionname-all.collection_name_with_a-$'`,
+			alt: fmt.Sprintf("Invalid collection name: 'testcollectionname.%s'", collectionName300),
+		},
+		"LongEnough": {
+			collection: collectionName100,
+		},
+		"Short": {
+			collection: "a",
+		},
+		"WithADollarSign": {
+			collection: "collection_name_with_a-$",
+			err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: `Invalid collection name: collection_name_with_a-$`,
 			},
-			"WithADash": {
-				collection: "collection_name_with_a-",
+			alt: `Invalid collection name: 'testcollectionname.collection_name_with_a-$'`,
+		},
+		"WithADash": {
+			collection: "collection_name_with_a-",
+		},
+		"WithADashAtBeginning": {
+			collection: "-collection_name",
+		},
+		"Empty": {
+			collection: "",
+			err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: "Invalid namespace specified 'testcollectionname.'",
 			},
-			"WithADashAtBeginning": {
-				collection: "-collection_name",
-			},
-			"Empty": {
-				collection: "",
-				err: &mongo.CommandError{
-					Name:    "InvalidNamespace",
-					Code:    73,
-					Message: "Invalid namespace specified 'testcollectionname-all.'",
-				},
-				alt: "Invalid collection name: 'testcollectionname-all.'",
-			},
-		}
+			alt: "Invalid collection name: 'testcollectionname.'",
+		},
+	}
 
-		for name, tc := range cases {
-			name, tc := name, tc
-			t.Run(name, func(t *testing.T) {
-				err := collection.Database().CreateCollection(ctx, tc.collection)
-				if tc.err != nil {
-					AssertEqualAltError(t, *tc.err, tc.alt, err)
-					return
-				}
-				assert.NoError(t, err)
-			})
-		}
-	})
+	for name, tc := range cases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			err := collection.Database().CreateCollection(ctx, tc.collection)
+			if tc.err != nil {
+				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				return
+			}
 
-	t.Run("LongName", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
+			assert.NoError(t, err)
 
-		longCollectionName := strings.Repeat("a", 100)
-		err := collection.Database().CreateCollection(ctx, longCollectionName)
-		require.NoError(t, err)
-
-		names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
-		require.NoError(t, err)
-
-		assert.Contains(t, names, longCollectionName)
-	})
+			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+			assert.Contains(t, names, tc.collection)
+		})
+	}
 }
 
 func TestDatabaseName(t *testing.T) {
