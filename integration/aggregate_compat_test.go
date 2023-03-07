@@ -26,15 +26,15 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// aggregateStageCompatTestCase describes aggregate compatibility test case.
-type aggregateStageCompatTestCase struct {
+// aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
+type aggregateStagesCompatTestCase struct {
 	skip       string                   // skip test for all handlers, must have issue number mentioned
 	pipeline   bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-// testAggregateStageCompat tests aggregate stage compatibility test cases.
-func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateStageCompatTestCase) {
+// testAggregateStagesCompat tests aggregation stages compatibility test cases.
+func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStagesCompatTestCase) {
 	t.Helper()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -48,15 +48,17 @@ func testAggregateStageCompat(t *testing.T, testCases map[string]aggregateStageC
 				t.Skip(tc.skip)
 			}
 
+			t.Parallel()
+
 			pipeline := tc.pipeline
 			require.NotNil(t, pipeline, "pipeline should be set")
-
-			t.Parallel()
 
 			var hasSortStage bool
 			for _, stage := range pipeline {
 				stage, ok := stage.(bson.D)
-				require.True(t, ok, "stage needs to be bson.D type")
+				if !ok {
+					continue
+				}
 
 				if _, hasSortStage = stage.Map()["$sort"]; hasSortStage {
 					break
@@ -126,7 +128,7 @@ type aggregateCommandCompatTestCase struct {
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
-// Use testAggregateStageCompat for testing a stage of aggregation.
+// Use testAggregateStagesCompat for testing stages of aggregation.
 func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
 	t.Helper()
 
@@ -224,7 +226,7 @@ func TestAggregateCommandCompat(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
-	testCases := map[string]aggregateStageCompatTestCase{
+	testCases := map[string]aggregateStagesCompatTestCase{
 		"MatchAndCount": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
@@ -234,11 +236,11 @@ func TestAggregateCompatStages(t *testing.T) {
 		},
 	}
 
-	testAggregateStageCompat(t, testCases)
+	testAggregateStagesCompat(t, testCases)
 }
 
 func TestAggregateCompatCount(t *testing.T) {
-	testCases := map[string]aggregateStageCompatTestCase{
+	testCases := map[string]aggregateStagesCompatTestCase{
 		"Value": {
 			pipeline: bson.A{bson.D{{"$count", "v"}}},
 		},
@@ -267,11 +269,11 @@ func TestAggregateCompatCount(t *testing.T) {
 		},
 	}
 
-	testAggregateStageCompat(t, testCases)
+	testAggregateStagesCompat(t, testCases)
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
-	testCases := map[string]aggregateStageCompatTestCase{
+	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
 		},
@@ -315,11 +317,11 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 	}
 
-	testAggregateStageCompat(t, testCases)
+	testAggregateStagesCompat(t, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
-	testCases := map[string]aggregateStageCompatTestCase{
+	testCases := map[string]aggregateStagesCompatTestCase{
 		"AscendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", 1}}}}},
 		},
@@ -365,5 +367,5 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 	}
 
-	testAggregateStageCompat(t, testCases)
+	testAggregateStagesCompat(t, testCases)
 }
