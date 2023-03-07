@@ -104,6 +104,9 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
+	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
 

@@ -373,7 +373,6 @@ func TestAggregateCompatSort(t *testing.T) {
 		"Location15998": { // aka DotNotationMissingField
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v..foo", 1},
-				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 			resultType: emptyResult,
 		},

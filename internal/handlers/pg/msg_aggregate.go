@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v4"
 
@@ -130,6 +131,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	for _, s := range stages {
 		if docs, err = s.Process(ctx, docs); err != nil {
+
+			var pathErr *types.DocumentPathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrPathContainsEmptyElement,
+					"Empty field names in path are not allowed",
+					document.Command(),
+				)
+			}
+
 			return nil, err
 		}
 	}
