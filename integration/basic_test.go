@@ -311,7 +311,7 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 }
 
 func TestCollectionName(t *testing.T) {
-	// TODO! test for tigris too!	setup.SkipForTigrisWithReason(t, "Testing collection creation without ")
+	setup.SkipForTigris(t)
 
 	t.Parallel()
 
