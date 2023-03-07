@@ -20,8 +20,7 @@ Surely there should be one that suits your project to a tee.
 <!--truncate-->
 
 According to a [2022 Statista survey](https://www.statista.com/statistics/809750/worldwide-popularity-ranking-database-management-systems/), PostgreSQL and MongoDB are two of the most popular databases today, ranking 4th and 5th, respectively.
-Both databases share a few similarities and striking differences in terms of architecture, data model, commands, use cases, and more.
-A secure database is also critical, considering the amount of malware, cyber attacks, and many other threats modern companies face.
+Both databases share a few similarities and striking differences in terms of architecture, data model, commands, use cases, security, and more.
 
 This article will explore both PostgreSQL and MongoDB databases in detail and assist you in making an informed decision.
 
@@ -31,8 +30,8 @@ Let's get started.
 
 ### MongoDB
 
-[MongoDB](https://www.mongodb.com/) is a user-friendly schema-free NoSQL database written as JSON-like (BSON) documents for storing data.
-MongoDB is a document database that uses BSON (stands for binary JSON), which offers more data types than regular JSON data, such as floating point, date, etc.
+[MongoDB](https://www.mongodb.com/) is a user-friendly, schema-free, proprietary NoSQL database written as JSON-like (BSON) documents for storing data.
+It is a document database that uses BSON (stands for binary JSON), which offers more data types than regular JSON data, such as floating point, date, etc. See [how we convert and store MongoDB BSON to PostgreSQL JSON](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/).
 
 Unlike most traditional databases using SQL, MongoDB uses a different syntax and structure, which is relatively easy to learn, even for non-programmers.
 NoSQL databases like MongoDB are well suited for managing semi-structured or unstructured data.
@@ -73,7 +72,7 @@ PostgreSQL is more suitable for applications that need to maintain relationships
 MongoDB and PostgreSQL use different query languages, which are pretty different in syntax and functionality.
 
 To illustrate this difference, PostgreSQL uses Structured Query Language (SQL) to query relational databases composed of multiple tables with a defined relationship between them.
-SQL is a widely known language that cuts across many great tools and platforms.
+SQL is a widely known language that cuts across many great tools and platforms, including Oracle and MySQL.
 SQL databases enable you to write complex queries and run different operations on relational data.
 
 Below is an example of a typical SQL query that selects all columns and prints out all records from the `user` table.
@@ -95,10 +94,10 @@ db.users.find({
 
 ### ACID Compliance
 
-ACID (Atomicity, Consistency, Isolation, and Durability) capabilities ensure that database transactions are always consistent and reliable, which is critical when handling sensitive or financial data.
+ACID (Atomicity, Consistency, Isolation, and Durability) capabilities ensure that database transactions are always consistent and reliable, which is critical when handling highly sensitive data.
 PostgreSQL is ACID-compliant by default, making it highly suitable for databases that require transactional workflows.
 
-On the other hand, While MongoDB does support ACID transactions, it's not entirely ACID-compliant by default.
+On the other hand, while MongoDB does support ACID transactions, it's not entirely ACID-compliant by default.
 Instead, it offers several flexible options for data consistency and reliability, such as read/write concerns and multi-document transactions.
 These features allow you to configure your database to the level of data consistency and reliability you need.
 
@@ -108,7 +107,7 @@ Security is always a big talking point for databases – and that's no different
 Both database platforms offer robust security features.
 For instance, PostgreSQL boasts of a secure architecture with strict rules governing the structure of databases – ideal for businesses with complex and sensitive systems such as banking, analytics, etc.
 
-Aside from all this, PostgreSQL offers several authentication mechanisms, including PAM, LDAP authentications, certificate-based authentication, host-based authentication, and many more.
+Aside from all this, PostgreSQL offers several authentication mechanisms, including PAM, LDAP authentication, certificate-based authentication, host-based authentication, and many more.
 These authentication mechanisms help reduce a server's attack surface and prevent unauthorized access to data.
 
 Besides, PostgreSQL offers data encryption while enabling you to use SSL certificates to securely transmit data over the web.
@@ -136,7 +135,7 @@ In other words, anyone can use PostgreSQL for practically any purpose without pa
 That's not the case with MongoDB, released under the [Server Side Public License (SSPL) – a restrictive license](https://blog.ferretdb.io/open-source-is-in-danger/) that requires you to make the source code of any application using MongoDB publicly available.
 Instead, you'll need the enterprise version to have complete [control over the code and infrastructure](https://blog.ferretdb.io/how-to-keep-control-of-your-infra-using-ferretdb-and-tigris/).
 This means you'll always be at [risk of vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/).
-For companies that prefer an open-source MongoDB-compatible alternative, FerretDB is an option you might want to consider.
+For companies that prefer an open-source MongoDB-compatible alternative, [FerretDB](https://www.ferretdb.io) is an option you might want to consider.
 
 ### Community and Support
 
@@ -150,12 +149,14 @@ Aside from that, The MongoDB Enterprise support consists of a comprehensive know
 ## Build MongoDB-Compatible Applications With FerretDB
 
 Choosing between MongoDB and PostgreSQL comes down to the needs of your application.
-Mission-critical applications with high data integrity and accuracy requirements may find PostgreSQL's ACID compliance more suitable.
+Mission-critical applications with high data integrity and accuracy requirements may find PostgreSQL more suitable.
 At the same time, MongoDB is ideal for semi-structured data applications requiring high scalability and performance for quick and easy updates.
 
-Moreover, one of the foremost drawbacks of MongoDB is its SSPL licensing status, which is not open-source compared to PostgreSQL.
-In that case, using FerretDB gives you both perks – open source and MongoDB compatibility.
+Keep in mind that one of the foremost drawbacks of MongoDB is its SSPL licensing status, which is not open-source compared to PostgreSQL.
+In that case, using FerretDB gives you both perks – open source database and MongoDB compatibility.
 
 [FerretDB](https://www.ferretdb.io/) is an open-source document database with [MongoDB compatibility](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/) built-in while enabling PostgreSQL and other database backends to run MongoDB workloads.
 This allows you to use the existing MongoDB syntax and commands with your database stored in PostgreSQL.
 Unlike MongoDB, FerretDB's open source nature means you can freely use, modify, and contribute to the codebase.
+
+For more information on FerretDB and how we plan to bring MongoDB workloads back to its open source roots, read [this article](https://blog.ferretdb.io/mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement/)
