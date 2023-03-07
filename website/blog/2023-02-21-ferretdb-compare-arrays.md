@@ -5,8 +5,6 @@ authors: [chi]
 description: "In this article, we explore in detail how MongoDB BSON arrays are compared
 in filter operators."
 keywords:
-  - MongoDB $eq operator
-  - MongoDB implicit match
   - MongoDB $lt operator
   - MongoDB $gt operator
   - MongoDB array element match
@@ -108,16 +106,14 @@ The following steps show how the `$lt` filter is used to compare the filter argu
 1. Identify the BSON comparison order element of the filter argument, which is a number.
 2. Choose the array elements that are numbers from the array field, which are `[3, 1]`.
 3. Get the smallest element from the array field, which is `1`.
-4. Compare `1` with filter argument `2`.
-Since `1` is less than `2`, the operation result is true.
+4. Compare `1` with filter argument `2`, since `1` is less than `2`, the operation result is true.
 5. Therefore, when using `{v: {$lt: 2}}`, the document `{v: [3, null, 'a', 1]}` is selected.
 
 For the `$gt` and `$gte` operators, the largest element is used for comparison instead.
 The following steps show the `$gt` operator being used to compare the filter argument `2` with the array field `[3, 1]` in the collection:
 
 1. Get the largest element of the array field `[3, 1]`, which is `3`.
-2. Compare `3` with filter argument `2`.
-Since `3` is greater than `2`, the operation result is true.
+2. Compare `3` with filter argument `2`, since `3` is greater than `2`, the operation result is true.
 3. Therefore, when using the `$gt` filter, `[3, 1]` is greater than `2`.
 
 It may seem confusing at first, but note that `$lt` uses the smallest element from the array, while `$gt` uses the largest element.
@@ -203,8 +199,6 @@ The output:
 No scalar values were selected, because array argument only selects arrays.
 The filter argument selected arrays that are less
 and nested arrays which contain an array that is less.
-
-So _contains_ condition is applied on documents containing less than the filter argument, but not the other way around.
 
 For selected `array-null` and `array-mixed`, each index was compared against the filter argument.
 Using BSON comparison order, the first index element of both arrays is less than the filter argument.
