@@ -321,7 +321,8 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereEqOrContain,
 		},
 		"Bool": {
-			filter: must.NotFail(types.NewDocument("v", true)),
+			filter:   must.NotFail(types.NewDocument("v", true)),
+			expected: whereEqOrContain,
 		},
 		"Comment": {
 			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
@@ -335,6 +336,10 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereEq,
 		},
 		"IDString": {
+			filter:   must.NotFail(types.NewDocument("_id", "foo")),
+			expected: whereEq,
+		},
+		"IDBool": {
 			filter:   must.NotFail(types.NewDocument("_id", "foo")),
 			expected: whereEq,
 		},
