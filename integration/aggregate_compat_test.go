@@ -352,13 +352,6 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
-		"DotNotationMissingField": {
-			pipeline: bson.A{bson.D{{"$sort", bson.D{
-				{"v..foo", 1},
-				{"_id", 1}, // sort by _id when v is the same.
-			}}}},
-			resultType: emptyResult,
-		},
 		"DotNotationNonExistent": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"invalid.foo", 1},
@@ -375,6 +368,13 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 		"Location15976": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"Location15998": { // aka DotNotationMissingField
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v..foo", 1},
+				{"_id", 1}, // sort by _id when v is the same.
+			}}}},
 			resultType: emptyResult,
 		},
 	}
