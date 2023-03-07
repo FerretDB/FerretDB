@@ -30,7 +30,7 @@ We are executing on our [roadmap](https://github.com/orgs/FerretDB/projects/2), 
 ## Where are we headed?
 
 We would like to create a new standard for document databases, with [MongoDB compatibility](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/).
-FerretDB is a drop-in replacement for MongoDB, but it also aims to set a new standard which not only brings easy to use document databases back to its open source roots, but also enables different relational database engines to run document database workloads in a standardized way.
+FerretDB is a drop-in replacement for MongoDB, but it also aims to set a new standard which not only brings easy to use document databases back to its open source roots, but also enables different database engines to run document database workloads in a standardized way.
 
 Also, we are building an easy to use database offering the flexibility of document databases, with the possibility to run queries on the same database using SQL.
 
