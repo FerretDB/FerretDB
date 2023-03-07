@@ -32,12 +32,18 @@ import (
 )
 
 func TestVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
 	t.Cleanup(cancel)
 
-	cmd := exec.CommandContext(ctx, filepath.Join("..", "..", "bin", "ferretdb"), "--version")
+	bin := filepath.Join("..", "..", "bin", "ferretdb-local")
+
+	cmd := exec.CommandContext(ctx, bin, "--version")
 	b, err := cmd.Output()
 	require.NoError(t, err)
 	assert.Regexp(t, `version: v([0-9]+)\.([0-9]+)\.([0-9]+)`, string(b))
@@ -47,7 +53,7 @@ func TestVersion(t *testing.T) {
 
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/2102")
 
-	cmd = exec.CommandContext(ctx, "go", "version", "-m", filepath.Join("..", "..", "bin", "ferretdb"))
+	cmd = exec.CommandContext(ctx, "go", "version", "-m", bin)
 	b, err = cmd.Output()
 	require.NoError(t, err)
 	revision := regexp.MustCompile(`vcs.revision=([0-9a-f]{40})`).FindStringSubmatch(string(b))
