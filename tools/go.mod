@@ -11,7 +11,7 @@ require (
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20230227161431-f7320a6d63e8
 	golang.org/x/tools v0.6.1-0.20230217175706-3102dad5faf9
-	golang.org/x/vuln v0.0.0-20230224180816-edec1fb0a9c7
+	golang.org/x/vuln v0.0.0-20230303230808-d3042fecc4e3
 	mvdan.cc/gofumpt v0.4.0
 )
 
