@@ -256,7 +256,8 @@ func TestBuildFilter(t *testing.T) {
 			expected: `{"v":1.7976931348623157e+308}`,
 		},
 		"Bool": {
-			filter: must.NotFail(types.NewDocument("v", true)),
+			filter:   must.NotFail(types.NewDocument("v", true)),
+			expected: `{"v":true}`,
 		},
 		"Comment": {
 			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),

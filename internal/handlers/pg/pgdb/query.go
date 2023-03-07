@@ -271,11 +271,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		// Handle _id with a simpler query, as it can't be an array
 		if k == "_id" {
 			switch v := v.(type) {
-			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+			case *types.Document, *types.Array, types.Binary, time.Time, types.NullType, types.Regex, types.Timestamp:
 				// type not supported for pushdown
 				// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
 				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			case float64, string, types.ObjectID, int32, int64:
+			case float64, string, types.ObjectID, bool, int32, int64:
 				// Select if value under the key is equal to provided value.
 				sql := `(_jsonb->%[1]s)::jsonb = %[2]s`
 
@@ -293,13 +293,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		}
 
 		switch v := v.(type) {
-		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+		case *types.Document, *types.Array, types.Binary, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
 			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 			continue
 
-		case float64, string, types.ObjectID, int32, int64:
+		case float64, string, types.ObjectID, bool, int32, int64:
 			// Select if value under the key is equal to provided value.
 			// If the value under the key is not equal to v,
 			// but the value under the key k is an array - select if it contains the value equal to v.
