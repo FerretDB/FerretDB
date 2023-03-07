@@ -346,7 +346,13 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
-		"DotNotationInvalid": {
+		"DotNotationIndex": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v.0", 1},
+				{"_id", 1}, // sort by _id when v is the same.
+			}}}},
+		},
+		"DotNotationMissingField": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v..foo", 1},
 				{"_id", 1}, // sort by _id when v is the same.
