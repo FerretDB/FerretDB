@@ -182,6 +182,7 @@ tasks:
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -timeout=15m
 
   test-integration-tigris:
     desc: "Run integration tests for Tigris handler"
