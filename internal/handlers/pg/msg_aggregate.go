@@ -131,7 +131,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	for _, s := range stages {
 		if docs, err = s.Process(ctx, docs); err != nil {
-
 			var pathErr *types.DocumentPathError
 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
