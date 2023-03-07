@@ -130,6 +130,10 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
 		},
+		"WrongIncTypeArray": {
+			update:     bson.D{{"$inc", bson.A{}}},
+			resultType: emptyResult,
+		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
 			resultType: emptyResult,
