@@ -406,7 +406,6 @@ func TestPrepareWhereClause(t *testing.T) {
 			)),
 			args:     []any{`v`, fmt.Sprint(float64(2 << 61))},
 			expected: whereContain,
-			skip:     "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 		"EqBool": {
 			filter: must.NotFail(types.NewDocument(
