@@ -152,6 +152,45 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
+// AssertDocumentsMatch asserts that two document slices contain the same items,
+// regardless of their order.
+// See testutil.AssertEqual for details.
+func AssertDocumentsMatch(t testing.TB, expected, actual []bson.D) bool {
+	t.Helper()
+
+	expectedDocs := ConvertDocuments(t, expected)
+	actualDocs := ConvertDocuments(t, actual)
+
+	if len(expectedDocs) != len(actualDocs) {
+		return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
+	}
+
+	for i := len(expectedDocs) - 1; i >= 0; i-- {
+		expectedDoc := expectedDocs[i]
+
+		for j := len(actualDocs) - 1; j >= 0; j-- {
+			actualDoc := actualDocs[j]
+			if testutil.AssertEqual(t, expectedDoc, actualDoc) {
+				// actualDoc is the same as expectedDoc.
+				// remove found documents from the expectedDocs and actualDocs,
+				// so correct number of duplicates in expectedDocs and actualDocs are checked.
+
+				// remove found expectedDoc at index i from expectedDocs
+				expectedDocs = append(expectedDocs[:i], expectedDocs[i+1:]...)
+
+				// remove found actualDoc at index j from actualDocs
+				actualDocs = append(actualDocs[:j], actualDocs[j+1:]...)
+				break
+			}
+
+			// expectedDoc was not found in actualDocs
+			return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
+		}
+	}
+
+	return true
+}
+
 // AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
 func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()

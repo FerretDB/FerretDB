@@ -100,7 +100,7 @@ func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStage
 					require.NoError(t, targetCursor.All(ctx, &targetRes))
 					require.NoError(t, compatCursor.All(ctx, &compatRes))
 
-					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+					AssertDocumentsMatch(t, compatRes, targetRes)
 
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
@@ -281,9 +281,13 @@ func TestAggregateCompatGroup(t *testing.T) {
 		},
 		"DistinctID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$_id"},
+			}}}},
+		},
+		"DistinctValue": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v"},
 			}}}},
-			skip: "values with equal sort order can return in not deterministic order.",
 		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
