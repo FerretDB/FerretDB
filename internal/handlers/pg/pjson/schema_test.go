@@ -200,3 +200,27 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTypeOfValue1(t *testing.T) {
+	for _, tc := range []struct {
+		input    any
+		expected string
+	}{
+		{&types.Document{}, "object"},
+		{&types.Array{}, "array"},
+		{float64(1.1), "double"},
+		{"foo", "string"},
+		{types.Binary{}, "binData"},
+		{types.ObjectID{}, "objectId"},
+		{true, "bool"},
+		{time.Time{}, "date"},
+		{types.NullType{}, "null"},
+		{types.Regex{}, "regex"},
+		{int32(42), "int"},
+		{types.Timestamp(1), "timestamp"},
+		{int64(42), "long"},
+	} {
+		actual := GetTypeOfValue(tc.input)
+		assert.Equal(t, tc.expected, actual)
+	}
+}
