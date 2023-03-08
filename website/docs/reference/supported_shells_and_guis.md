@@ -22,7 +22,7 @@ slug: /supported_shells_and_guis/
 |                                        | Import/Export BSON                      | ✅          |                                                            |
 |                                        | Import/Export archive files             | ✅          |                                                            |
 |                                        | Export SQL statements to a `.sql` file  | ✅          |                                                            |
-|                                        | `collStats`                             | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/1346)  |
+|                                        | `dbstats`                            | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/1346)  |
 | [MongoDB Compass](https://www.mongodb.com/products/compass) |                    | ❌          |                           |
 |                                        | Connecting to FerretDB                  | ✅          |                                                            |
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
@@ -55,6 +55,7 @@ slug: /supported_shells_and_guis/
 |                                        | [Browsing Mongo collections](https://dbeaver.com/docs/wiki/MongoDB/#browsing-mongo-collections)                    | ✅          |                                                            |
 |                                        | [Executing JavaScript](https://dbeaver.com/docs/wiki/MongoDB/#executing-javascript)                    | ✅          | [Supported commands](/website/docs/reference/supported_commands.md)                                                           |
 |                                        | [Executing SQL](https://dbeaver.com/docs/wiki/MongoDB/#executing-sql)                    | ✅          |                                                            |                                                  |
+|                                        | Database Statistics (`dbstats`) | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
 
 ### [NoSQLBooster](https://nosqlbooster.com/)
 
