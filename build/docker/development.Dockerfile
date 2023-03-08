@@ -7,39 +7,46 @@
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
-FROM ghcr.io/ferretdb/golang:1.20.1-1 AS development-build
+# build stage
 
-ARG CACHEBUST=8
-RUN echo "$CACHEBUST"
+FROM ghcr.io/ferretdb/golang:1.20.2-1 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
-RUN env
-
 WORKDIR /src
 
 # see .dockerignore
 COPY . .
 
+# TODO
+# That command could be run only once by using a separate stage and/or cache;
+# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+RUN go mod download
+
 ENV CGO_ENABLED=1
 ENV GORACE=halt_on_error=1,history_size=2
 ENV GOCOVERDIR=cover
 
-# TODO
-# That command could be run only once by using a separate stage and/or cache;
-# see  https://medium.com/@tonistiigi/faster-multi-platform-builds-dockerfile-cross-compilation-guide-part-1-ec087c719eaf
-RUN go mod download
+ARG CACHEBUST=12
+RUN echo "$CACHEBUST"
 
-RUN ls -al
-RUN go test -v -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race -coverpkg=./... ./cmd/ferretdb
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+RUN env
+
+# FIXME -race flag
+RUN go test -v -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false -coverpkg=./... ./cmd/ferretdb
 RUN go version -m bin/ferretdb
 RUN bin/ferretdb --version
 
 
-FROM ghcr.io/ferretdb/golang:1.20.1-1
+# final stage
+
+FROM ghcr.io/ferretdb/golang:1.20.2-1
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
