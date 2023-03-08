@@ -88,6 +88,17 @@ func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 	return []*types.Document{res}, nil
 }
 
+// Accumulate implements Group interface.
+func (c *count) Accumulate(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+
+	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
+
+	return []*types.Document{res}, nil
+}
+
 // check interfaces
 var (
 	_ Stage = (*count)(nil)

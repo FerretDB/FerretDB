@@ -37,6 +37,7 @@ type Stage interface {
 var stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$count": newCount,
+	"$group": newGroup,
 	"$match": newMatch,
 	"$sort":  newSort,
 }

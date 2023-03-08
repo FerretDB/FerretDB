@@ -272,6 +272,123 @@ func TestAggregateCompatCount(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatGroup(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"NullID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+			}}}},
+		},
+		"DistinctID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v"},
+			}}}},
+			skip: "values with equal sort order can return in not deterministic order.",
+		},
+		"NonExistentID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$invalid"},
+			}}}},
+		},
+		"NonExpressionID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "v"},
+			}}}},
+		},
+		"NonStringID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", bson.A{}},
+			}}}},
+		},
+		"OperatorNameAsExpression": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$add"},
+			}}}},
+		},
+		"DotNotationID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+		},
+		"Location16872": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"Location15947": {
+			pipeline:   bson.A{bson.D{{"$group", 1}}},
+			resultType: emptyResult,
+		},
+		"Location15955": {
+			pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"MissingID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"bla", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+		"EmptyAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"Location40238": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"Location40234": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{{"invalid", "v"}}},
+			}}}},
+			resultType: emptyResult,
+			skip:       "once all accumulator is implemented, it should return error",
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatGroupCount(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Count": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
+		},
+		"CountID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$_id"},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
+		},
+		"CountValue": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v"},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
 func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
