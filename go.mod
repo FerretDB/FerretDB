@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
+	github.com/SAP/go-hdb v1.1.1
 	github.com/alecthomas/kong v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgconn v1.14.0
@@ -22,8 +23,6 @@ require (
 	golang.org/x/net v0.8.0
 	golang.org/x/sys v0.6.0
 )
-
-require github.com/SAP/go-hdb v1.1.1
 
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect
