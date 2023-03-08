@@ -80,7 +80,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				path, err = types.NewPathFromString(key)
 				if err != nil {
-					return false, lazyerrors.Error(err)
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrEmptyName,
+						fmt.Sprintf("Cannot apply $unset to a value of non-numeric type. "+
+							"{_id: %s} has the field '%s' of non-numeric type object",
+							must.NotFail(doc.Get("_id")),
+							key,
+						),
+					)
 				}
 
 				if doc.HasByPath(path) {
@@ -148,7 +155,10 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, NewCommandError(ErrNotImplemented, fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp))
+				return false, commonerrors.NewCommandError(
+					commonerrors.ErrNotImplemented,
+					fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp),
+				)
 			}
 
 			// Treats the update as a Replacement object.
@@ -196,7 +206,13 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 		path, err := types.NewPathFromString(setKey)
 		if err != nil {
-			return false, lazyerrors.Error(err)
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrEmptyName,
+				fmt.Sprintf(
+					"The update path '%s' contains an empty field name, which is not allowed.",
+					setKey,
+				),
+			)
 		}
 
 		if doc.HasByPath(path) {
@@ -243,7 +259,21 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 		sourcePath, err := types.NewPathFromString(key)
 		if err != nil {
-			return changed, lazyerrors.Error(err)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				switch pathErr.Code() {
+				case types.ErrDocumentPathEmptyKey:
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrEmptyName,
+						fmt.Sprintf("Cannot apply $rename to a value of non-numeric type. "+
+							"{_id: %s} has the field '%s' of non-numeric type object",
+							must.NotFail(doc.Get("_id")),
+							key,
+						),
+					)
+				}
+			}
 		}
 
 		targetPath, err := types.NewPathFromString(renameValue)
@@ -259,11 +289,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 				panic("getByPath returned error with invalid type")
 			}
 
-			if dpe.Code() == types.ErrDocumentPathKeyNotFound {
+			switch dpe.Code() {
+			case types.ErrDocumentPathKeyNotFound,
+				types.ErrDocumentPathIndexOutOfBound:
 				continue
+			default:
+				return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 			}
-
-			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 		}
 
 		// Remove old document
@@ -361,8 +393,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		switch err {
 		case errUnexpectedLeftOpType:
-			return false, NewWriteErrorMsg(
-				ErrTypeMismatch,
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot increment with non-numeric argument: {%s: %#v}`,
 					incKey,
@@ -374,8 +406,9 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			if path.Len() > 1 {
 				k = path.Suffix()
 			}
-			return false, NewWriteErrorMsg(
-				ErrTypeMismatch,
+
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $inc to a value of non-numeric type. `+
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
@@ -385,8 +418,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				),
 			)
 		case errLongExceeded:
-			return false, NewWriteErrorMsg(
-				ErrBadValue,
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
 					docValue,
@@ -394,8 +427,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				),
 			)
 		case errIntExceeded:
-			return false, NewWriteErrorMsg(
-				ErrBadValue,
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
 					docValue,
@@ -583,21 +616,14 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(mulKey)
 		if err != nil {
-			var pathErr *types.DocumentPathError
-
-			if errors.As(err, &pathErr) {
-				switch pathErr.Code() {
-				case types.ErrDocumentPathEmptyKey:
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrEmptyName,
-						fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
-							"{_id: %s} has the field '%s' of non-numeric type object",
-							must.NotFail(doc.Get("_id")),
-							mulKey,
-						),
-					)
-				}
-			}
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrEmptyName,
+				fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
+					"{_id: %s} has the field '%s' of non-numeric type object",
+					must.NotFail(doc.Get("_id")),
+					mulKey,
+				),
+			)
 		}
 
 		if !doc.HasByPath(path) {
@@ -869,8 +895,8 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, NewWriteErrorMsg(
-					ErrFailedToParse,
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
 							"update specified as an array", updateOp,
@@ -894,8 +920,8 @@ func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
 	for _, key := range a.Keys() {
 		for _, b := range bs {
 			if b != nil && b.Has(key) {
-				return NewWriteErrorMsg(
-					ErrConflictingUpdateOperators,
+				return commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
 						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
 					),
@@ -918,8 +944,8 @@ func checkConflictingChanges(a, b *types.Document) error {
 
 	for _, key := range a.Keys() {
 		if b.Has(key) {
-			return NewWriteErrorMsg(
-				ErrConflictingUpdateOperators,
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf(
 					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
 				),
@@ -951,13 +977,16 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
-		return nil, NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+		return nil, commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Modifiers operate on fields but we found another type instead",
+		)
 	}
 
 	duplicate, ok := doc.FindDuplicateKey()
 	if ok {
-		return nil, NewWriteErrorMsg(
-			ErrConflictingUpdateOperators,
+		return nil, commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrConflictingUpdateOperators,
 			fmt.Sprintf(
 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
 			),
@@ -977,7 +1006,10 @@ func validateRenameExpression(update *types.Document) error {
 
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
-		return NewWriteErrorMsg(ErrFailedToParse, "Modifiers operate on fields but we found another type instead")
+		return commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Modifiers operate on fields but we found another type instead",
+		)
 	}
 
 	iter := doc.Iterator()
@@ -999,23 +1031,23 @@ func validateRenameExpression(update *types.Document) error {
 
 		vStr, ok = v.(string)
 		if !ok {
-			return NewWriteErrorMsg(
-				ErrBadValue,
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
 			)
 		}
 
 		// disallow fields where key is equal to the target
 		if k == vStr {
-			return NewWriteErrorMsg(
-				ErrBadValue,
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
 			)
 		}
 
 		if _, ok = keys[k]; ok {
-			return NewWriteErrorMsg(
-				ErrConflictingUpdateOperators,
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
 			)
 		}
@@ -1023,8 +1055,8 @@ func validateRenameExpression(update *types.Document) error {
 		keys[k] = struct{}{}
 
 		if _, ok = keys[vStr]; ok {
-			return NewWriteErrorMsg(
-				ErrConflictingUpdateOperators,
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
 			)
 		}
@@ -1044,8 +1076,8 @@ func validateCurrentDateExpression(update *types.Document) error {
 
 	currentDateExpression, ok := currentDateTopField.(*types.Document)
 	if !ok {
-		return NewWriteErrorMsg(
-			ErrFailedToParse,
+		return commonerrors.NewWriteErrorMsg(
+			commonerrors.ErrFailedToParse,
 			"Modifiers operate on fields but we found another type instead",
 		)
 	}
@@ -1057,8 +1089,8 @@ func validateCurrentDateExpression(update *types.Document) error {
 		case *types.Document:
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
-					return NewWriteErrorMsg(
-						ErrBadValue,
+					return commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrBadValue,
 						fmt.Sprintf("Unrecognized $currentDate option: %s", k),
 					)
 				}
@@ -1070,14 +1102,14 @@ func validateCurrentDateExpression(update *types.Document) error {
 
 			currentDateTypeString, ok := currentDateType.(string)
 			if !ok {
-				return NewWriteErrorMsg(
-					ErrBadValue,
+				return commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrBadValue,
 					"The '$type' string field is required to be 'date' or 'timestamp'",
 				)
 			}
 			if !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
-				return NewWriteErrorMsg(
-					ErrBadValue,
+				return commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrBadValue,
 					"The '$type' string field is required to be 'date' or 'timestamp'",
 				)
 			}
@@ -1086,8 +1118,8 @@ func validateCurrentDateExpression(update *types.Document) error {
 			continue
 
 		default:
-			return NewWriteErrorMsg(
-				ErrBadValue,
+			return commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
 					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
 				),
