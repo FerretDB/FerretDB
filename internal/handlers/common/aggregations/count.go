@@ -16,6 +16,7 @@ package aggregations
 
 import (
 	"context"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -33,8 +34,40 @@ func newCount(stage *types.Document) (Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountNonString,
+			"the count field must be a non-empty string",
+			"$count",
+		)
+	}
+
+	if len(field) == 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonEmptyString,
 			"the count field must be a non-empty string",
+			"$count",
+		)
+	}
+
+	if strings.Contains(field, ".") {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountBadValue,
+			"the count field cannot contain '.'",
+			"$count",
+		)
+	}
+
+	if strings.HasPrefix(field, "$") {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountBadPrefix,
+			"the count field cannot be a $-prefixed path",
+			"$count",
+		)
+	}
+
+	if field == "_id" {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupID,
+			"a group's _id may only be specified once",
 			"$count",
 		)
 	}
@@ -46,7 +79,12 @@ func newCount(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+
 	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
+
 	return []*types.Document{res}, nil
 }
 
