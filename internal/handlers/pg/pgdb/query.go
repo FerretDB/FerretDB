@@ -281,6 +281,27 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
 
+				case "$ne":
+					switch v := v.(type) {
+					case *types.Document, *types.Array, types.Binary,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+					case float64, string, types.ObjectID, bool, int32, int64:
+						sql := `NOT ( ` +
+							// does document contain the key,
+							// it is necessary, as NOT won't work correctly if the key does not exist.
+							`_jsonb ? %[1]s AND ` +
+							// does the value under the key is equal to filter value
+							`_jsonb->%[1]s @> %[2]s AND ` +
+							// does the value type is equal to the filter's one
+							`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
 				default:
 					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 					continue
