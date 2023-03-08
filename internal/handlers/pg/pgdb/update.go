@@ -32,21 +32,26 @@ func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, id any, do
 		return 0, err
 	}
 
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return 0, err
 	}
 
+	return setById(ctx, tx, qp.DB, table, qp.Comment, id, doc)
+}
+
+// setById sets the document by its ID from the given PostgreSQL schema and table.
+func setById(ctx context.Context, tx pgx.Tx, schema, table, comment string, id any, doc *types.Document) (int64, error) {
 	sql := "UPDATE "
 
-	if qp.Comment != "" {
-		qp.Comment = strings.ReplaceAll(qp.Comment, "/*", "/ *")
-		qp.Comment = strings.ReplaceAll(qp.Comment, "*/", "* /")
+	if comment != "" {
+		comment = strings.ReplaceAll(comment, "/*", "/ *")
+		comment = strings.ReplaceAll(comment, "*/", "* /")
 
-		sql += `/* ` + qp.Comment + ` */ `
+		sql += `/* ` + comment + ` */ `
 	}
 
-	sql += pgx.Identifier{qp.DB, table}.Sanitize() + " SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
+	sql += pgx.Identifier{schema, table}.Sanitize() + " SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
 	tag, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)), must.NotFail(pjson.MarshalSingleValue(id)))
 	if err != nil {

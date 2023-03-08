@@ -60,7 +60,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		return nil, lazyerrors.Error(ErrTableNotExist)
 	}
 
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -131,7 +131,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
 func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
@@ -156,45 +156,14 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 	return iter, nil
 }
 
-// queryById returns the first found document by its ID from the given PostgreSQL schema and table.
-// If the document is not found, it returns nil and no error.
-func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
-	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
-
-	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	query += where
-
-	var b []byte
-	err = tx.QueryRow(ctx, query, args...).Scan(&b)
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, pgx.ErrNoRows):
-		return nil, nil
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := pjson.Unmarshal(b)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
-}
-
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema  string
-	table   string
-	comment string
-	explain bool
-	filter  *types.Document
+	schema    string
+	table     string
+	comment   string
+	explain   bool
+	filter    *types.Document
+	forUpdate bool // if SELECT FOR UPDATE is needed.
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -223,6 +192,10 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 	}
 
 	query += where
+
+	if p.forUpdate {
+		query += ` FOR UPDATE`
+	}
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
