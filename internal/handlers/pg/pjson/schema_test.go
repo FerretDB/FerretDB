@@ -201,13 +201,13 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 	}
 }
 
-func TestGetTypeOfValue1(t *testing.T) {
+func TestGetTypeOfValue(t *testing.T) {
 	for _, tc := range []struct {
 		input    any
 		expected string
 	}{
-		{&types.Document{}, "object"},
-		{&types.Array{}, "array"},
+		{new(types.Document), "object"},
+		{new(types.Array), "array"},
 		{float64(1.1), "double"},
 		{"foo", "string"},
 		{types.Binary{}, "binData"},
