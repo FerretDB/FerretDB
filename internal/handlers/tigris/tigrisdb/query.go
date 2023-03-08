@@ -123,13 +123,12 @@ func BuildFilter(filter *types.Document) (string, error) {
 				continue
 			}
 		case errors.As(err, &pe):
-			if pe.Code() == types.ErrDocumentPathEmptyKey {
-				break
+			// ignore empty key error, otherwise return error
+			if pe.Code() != types.ErrDocumentPathEmptyKey {
+				return "", lazyerrors.Error(err)
 			}
-
-			return "", lazyerrors.Error(err)
 		default:
-			panic("DocumentPathError expected ")
+			panic("Invalid error type: DocumentPathError expected ")
 		}
 
 		switch v := rootVal.(type) {
@@ -151,10 +150,10 @@ func BuildFilter(filter *types.Document) (string, error) {
 				switch k {
 				case "$eq":
 					switch docVal := v.(type) {
-					case *types.Document, *types.Array, types.Binary, bool,
+					case *types.Document, *types.Array, types.Binary,
 						time.Time, types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-					case float64, string, types.ObjectID, int32, int64:
+					case float64, string, types.ObjectID, bool, int32, int64:
 						rawValue, err := tjson.Marshal(docVal)
 						if err != nil {
 							return "", lazyerrors.Error(err)
@@ -171,11 +170,11 @@ func BuildFilter(filter *types.Document) (string, error) {
 				}
 			}
 
-		case *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+		case *types.Array, types.Binary, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
 
-		case float64, string, types.ObjectID, int32, int64:
+		case float64, string, types.ObjectID, bool, int32, int64:
 			rawValue, err := tjson.Marshal(v)
 			if err != nil {
 				return "", lazyerrors.Error(err)

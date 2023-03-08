@@ -139,10 +139,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", primitive.Binary{}}},
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", false}},
+			filter:         bson.D{{"v", false}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", true}},
+			filter:         bson.D{{"v", true}},
+			resultPushdown: true,
 		},
 		"IDNull": {
 			filter:     bson.D{{"_id", nil}},
@@ -312,10 +314,12 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", bson.D{{"$eq", false}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", false}}}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", bson.D{{"$eq", true}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", true}}}},
+			resultPushdown: true,
 		},
 		"Datetime": {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
@@ -1010,10 +1014,12 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Data: []byte{}}}}}},
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", bson.D{{"$ne", false}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", false}}}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", bson.D{{"$ne", true}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", true}}}},
+			resultPushdown: true,
 		},
 		"Datetime": {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
