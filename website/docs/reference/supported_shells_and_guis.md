@@ -47,8 +47,14 @@ slug: /supported_shells_and_guis/
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
 |                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
 |                                        | TLS Support                             | ✅          |
-
-### [DBeaver](https://dbeaver.com/docs/wiki/MongoDB/)
+| [DBeaver](https://dbeaver.com/docs/wiki/MongoDB/)|          | ✅    | Basic tool is fully supported |
+|                                        | PLAIN authentication mechanism          | ✅          |                                                            |
+|                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
+|                                        | TLS Support                             | ✅          |
+|                                        | [Data export/import](https://dbeaver.com/docs/wiki/Data-transfer/)                    | ✅          |                                                            |
+|                                        | [Browsing Mongo collections](https://dbeaver.com/docs/wiki/MongoDB/#browsing-mongo-collections)                    | ✅          |                                                            |
+|                                        | [Executing JavaScript](https://dbeaver.com/docs/wiki/MongoDB/#executing-javascript)                    | ✅          | [Supported commands](/website/docs/reference/supported_commands.md)                                                           |
+|                                        | [Executing SQL](https://dbeaver.com/docs/wiki/MongoDB/#executing-sql)                    | ✅          |                                                            |                                                  |
 
 ### [NoSQLBooster](https://nosqlbooster.com/)
 
