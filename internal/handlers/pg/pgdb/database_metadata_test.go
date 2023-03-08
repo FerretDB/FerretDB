@@ -35,7 +35,8 @@ func TestDatabaseMetadata(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		nameCreated, _, err := ensureMetadata(ctx, tx, databaseName, collectionName)
+		m := newMetadata(tx, databaseName, collectionName)
+		nameCreated, _, err := m.ensure(ctx)
 		// In this case error is possible: if this test is run in parallel with other tests,
 		// ensureMetadata may fail to create the index or insert data due to concurrent requests to PostgreSQL.
 		// In such case, we expect InTransactionRetry to handle the error and retry the transaction if neede.
@@ -45,16 +46,16 @@ func TestDatabaseMetadata(t *testing.T) {
 
 		var nameFound string
 
-		nameFound, err = getMetadata(ctx, tx, databaseName, collectionName)
+		nameFound, err = m.getTableName(ctx)
 		require.NoError(t, err)
 
 		assert.Equal(t, nameCreated, nameFound)
 
 		// adding metadata that already exist should not fail
-		_, _, err = ensureMetadata(ctx, tx, databaseName, collectionName)
+		_, _, err = m.ensure(ctx)
 		require.NoError(t, err)
 
-		err = removeMetadata(ctx, tx, databaseName, collectionName)
+		err = m.remove(ctx)
 		require.NoError(t, err)
 
 		return nil
