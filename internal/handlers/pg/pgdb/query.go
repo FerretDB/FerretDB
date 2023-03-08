@@ -241,8 +241,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
 
+	// iterate through root document
 	for {
-		k, v, err := iter.Next()
+		rootKey, rootVal, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -251,78 +252,90 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		if k != "" {
-			// skip $comment
-			if k[0] == '$' {
-				continue
-			}
+		// don't pushdown $comment, it's attached to query in handlers
+		if strings.HasPrefix(rootKey, "$") {
+			continue
+		}
 
-			path, err := types.NewPathFromString(k)
-			if err != nil {
-				return "", nil, lazyerrors.Error(err)
-			}
+		path, err := types.NewPathFromString(rootKey)
 
+		var pe *types.DocumentPathError
+
+		switch {
+		case err == nil:
 			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
 			}
+		case errors.As(err, &pe):
+			// ignore empty key error, otherwise return error
+			if pe.Code() != types.ErrDocumentPathEmptyKey {
+				return "", nil, lazyerrors.Error(err)
+			}
+		default:
+			panic("Invalid error type: DocumentPathError expected ")
 		}
 
-		// Handle _id with a simpler query, as it can't be an array
-		if k == "_id" {
-			switch v := v.(type) {
-			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-				// type not supported for pushdown
-				// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			case float64, string, types.ObjectID, int32, int64:
-				// Select if value under the key is equal to provided value.
-				sql := `(_jsonb->%[1]s)::jsonb = %[2]s`
+		switch v := rootVal.(type) {
+		case *types.Document:
+			iter := v.Iterator()
+			defer iter.Close()
 
-				// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-				// placeholder $1 is used for field key,
-				// placeholder $2 is used for field value v.
-				filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-				args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			// iterate through subdocument, as it may contain operators
+			for {
+				k, v, err := iter.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
 
-			default:
-				panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					return "", nil, lazyerrors.Error(err)
+				}
+
+				switch k {
+				case "$eq":
+					switch v := v.(type) {
+					case *types.Document, *types.Array, types.Binary,
+						time.Time, types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+					case float64, string, types.ObjectID, bool, int32, int64:
+						// Select if value under the key is equal to provided value.
+						sql := `_jsonb->%[1]s @> %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
+				default:
+					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					continue
+				}
 			}
 
-			continue
-		}
-
-		switch v := v.(type) {
-		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+		case *types.Array, types.Binary, time.Time, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
-			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
 			continue
 
-		case float64, string, types.ObjectID, int32, int64:
+		case float64, string, types.ObjectID, bool, int32, int64:
 			// Select if value under the key is equal to provided value.
-			// If the value under the key is not equal to v,
-			// but the value under the key k is an array - select if it contains the value equal to v.
-			sql := `(_jsonb->%[1]s)::jsonb = %[2]s OR (_jsonb->%[1]s)::jsonb @> %[2]s`
+			sql := `_jsonb->%[1]s @> %[2]s`
 
-			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-			// placeholder $1 is used for field key,
-			// placeholder $2 is used for field value v.
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
 	}
 
-	var query string
-
+	var filter string
 	if len(filters) > 0 {
-		query = ` WHERE ` + strings.Join(filters, " AND ")
+		filter = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	return query, args, nil
+	return filter, args, nil
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
