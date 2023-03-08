@@ -77,6 +77,32 @@ func newCount(stage *types.Document) (Stage, error) {
 	}, nil
 }
 
+// countGroup represents $count accumulator for $group.
+type countGroup struct {
+}
+
+// newCountGroupAccumulator creates a new $count accumulator for $group.
+func newCountGroupAccumulator(field string, accumulation *types.Document) (Accumulator, error) {
+	expression, err := common.GetRequiredParam[*types.Document](accumulation, "$count")
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountNonString,
+			"the count field must be a non-empty string",
+			"$count",
+		)
+	}
+
+	if expression.Len() != 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCountNonEmptyString,
+			"the count field must be a non-empty string",
+			"$count",
+		)
+	}
+
+	return &countGroup{}, nil
+}
+
 // Process implements Stage interface.
 func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	if len(in) == 0 {
@@ -88,18 +114,17 @@ func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 	return []*types.Document{res}, nil
 }
 
-// Accumulate implements Group interface.
-func (c *count) Accumulate(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	if len(in) == 0 {
-		return nil, nil
-	}
-
-	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
-
-	return []*types.Document{res}, nil
+// Accumulate implements Accumulator interface.
+func (c *countGroup) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
+	return int32(len(grouped)), nil
 }
 
 // check interfaces
 var (
 	_ Stage = (*count)(nil)
+)
+
+// check interfaces
+var (
+	_ Accumulator = (*countGroup)(nil)
 )
