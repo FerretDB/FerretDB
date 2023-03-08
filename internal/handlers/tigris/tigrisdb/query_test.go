@@ -231,40 +231,6 @@ func TestBuildFilter(t *testing.T) {
 		expected string
 		skip     string // defaults to `{}`
 	}{
-		"String": {
-			filter:   must.NotFail(types.NewDocument("v", "foo")),
-			expected: `{"v":"foo"}`,
-		},
-		"EmptyString": {
-			filter:   must.NotFail(types.NewDocument("v", "")),
-			expected: `{"v":""}`,
-		},
-		"Int32": {
-			filter:   must.NotFail(types.NewDocument("v", int32(42))),
-			expected: `{"v":42}`,
-		},
-		"Int64": {
-			filter:   must.NotFail(types.NewDocument("v", int64(42))),
-			expected: `{"v":42}`,
-		},
-		"Float64": {
-			filter:   must.NotFail(types.NewDocument("v", float64(42.13))),
-			expected: `{"v":42.13}`,
-		},
-		"MaxFloat64": {
-			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
-			expected: `{"v":1.7976931348623157e+308}`,
-		},
-		"Bool": {
-			filter: must.NotFail(types.NewDocument("v", true)),
-		},
-		"Comment": {
-			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
-		},
-		"ObjectID": {
-			filter:   must.NotFail(types.NewDocument("v", objectID)),
-			expected: `{"v":"YlbFugutwP/u////"}`,
-		},
 		"IDObjectID": {
 			filter:   must.NotFail(types.NewDocument("_id", objectID)),
 			expected: `{"_id":"YlbFugutwP/u////"}`,
@@ -276,11 +242,100 @@ func TestBuildFilter(t *testing.T) {
 		"IDDotNotation": {
 			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
+
 		"DotNotation": {
 			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
 			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
+		},
+
+		"ImplicitString": {
+			filter:   must.NotFail(types.NewDocument("v", "foo")),
+			expected: `{"v":"foo"}`,
+		},
+		"ImplicitEmptyString": {
+			filter:   must.NotFail(types.NewDocument("v", "")),
+			expected: `{"v":""}`,
+			skip:     "https://github.com/FerretDB/FerretDB/issues/1940",
+		},
+		"ImplicitInt32": {
+			filter:   must.NotFail(types.NewDocument("v", int32(42))),
+			expected: `{"v":42}`,
+		},
+		"ImplicitInt64": {
+			filter:   must.NotFail(types.NewDocument("v", int64(42))),
+			expected: `{"v":42}`,
+		},
+		"ImplicitFloat64": {
+			filter:   must.NotFail(types.NewDocument("v", float64(42.13))),
+			expected: `{"v":42.13}`,
+		},
+		"ImplicitMaxFloat64": {
+			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
+			expected: `{"v":1.7976931348623157e+308}`,
+		},
+		"ImplicitBool": {
+			filter:   must.NotFail(types.NewDocument("v", true)),
+			expected: `{"v":true}`,
+		},
+		"ImplicitObjectID": {
+			filter:   must.NotFail(types.NewDocument("v", objectID)),
+			expected: `{"v":"YlbFugutwP/u////"}`,
+		},
+
+		"EqString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", "foo")),
+			)),
+			expected: `{"v":"foo"}`,
+		},
+		"EqEmptyString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", "foo")),
+			)),
+			expected: `{"v":""}`,
+			skip:     "https://github.com/FerretDB/FerretDB/issues/1940",
+		},
+		"EqInt32": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", int32(42))),
+			)),
+			expected: `{"v":42}`,
+		},
+		"EqInt64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", int64(42))),
+			)),
+			expected: `{"v":42}`,
+		},
+		"EqFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", float64(42.13))),
+			)),
+			expected: `{"v":42.13}`,
+		},
+		"EqMaxFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
+			)),
+			expected: `{"v":1.7976931348623157e+308}`,
+		},
+		"EqBool": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", true)),
+			)),
+			expected: `{"v":true}`,
+		},
+		"EqObjectID": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$eq", objectID)),
+			)),
+			expected: `{"v":"YlbFugutwP/u////"}`,
+		},
+
+		"Comment": {
+			filter: must.NotFail(types.NewDocument("$comment", "I'm comment")),
 		},
 	} {
 		name, tc := name, tc
