@@ -161,15 +161,17 @@ services:
       context: ./build/deps
       dockerfile: ubuntu2204.Dockerfile
     container_name: ferretdb_ubuntu
+    platform: linux/amd64
     volumes:
-      - ./build/deb:/deb
+      - ./tmp/debs:/debs
   ubi:
     build:
       context: ./build/deps
       dockerfile: ubi9.Dockerfile
     container_name: ferretdb_ubi
+    platform: linux/amd64
     volumes:
-      - ./build/rpm:/rpm
+      - ./tmp/rpms:/rpms
 
   # for documentation
   textlint:

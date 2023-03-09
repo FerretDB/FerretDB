@@ -9,6 +9,7 @@
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
+
 # build stage
 
 FROM ghcr.io/ferretdb/golang:1.20.2-2 AS development-build
@@ -18,9 +19,8 @@ ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
-WORKDIR /src
-
 # see .dockerignore
+WORKDIR /src
 COPY . .
 
 # TODO
@@ -29,21 +29,22 @@ COPY . .
 RUN go mod download
 
 ENV CGO_ENABLED=1
-ENV GORACE=halt_on_error=1,history_size=2
 ENV GOCOVERDIR=cover
+ENV GORACE=halt_on_error=1,history_size=2
 
-ARG CACHEBUST=1
-RUN echo "$CACHEBUST"
+# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+ENV GOAMD64=v1
 
 # FIXME -race flag
-RUN go test -v -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false -coverpkg=./... ./cmd/ferretdb
+RUN go build -v                 -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false ./cmd/ferretdb
+RUN go test  -c -coverpkg=./... -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false ./cmd/ferretdb
 RUN go version -m bin/ferretdb
 RUN bin/ferretdb --version
 
 
 # final stage
 
-FROM golang:1.20.2
+FROM golang:1.20.2 AS development
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT

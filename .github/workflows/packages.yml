@@ -15,6 +15,12 @@ on:
   schedule:
     - cron: "12 2 * * *"
 
+# Do not run this workflow in parallel for any PR change or branch/tag push
+# to save some resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
@@ -25,9 +31,14 @@ env:
 jobs:
   build:
     name: Build packages
-    runs-on: ubuntu-22.04
+    runs-on: faster
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: >
+      github.event_name != 'pull_request' ||
+      (
+        !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+        contains(github.event.pull_request.labels.*.name, 'packages')
+      )
 
     steps:
       - name: Checkout code
@@ -51,9 +62,6 @@ jobs:
       - name: Build release binary
         run: bin/task build-release
 
-      - name: Build packages
-        run: bin/task packages
-
       - name: Upload ferretdb
         uses: actions/upload-artifact@v3
         with:
@@ -62,18 +70,21 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload ferretdb.deb
+      - name: Build packages
+        run: bin/task packages
+
+      - name: Upload .deb packages
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.deb
-          path: build/deb/ferretdb.deb
+          name: debs
+          path: tmp/debs
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload ferretdb.rpm
+      - name: Upload .rpm packages
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.rpm
-          path: build/rpm/ferretdb.rpm
+          name: rpms
+          path: tmp/rpms
           retention-days: 1
           if-no-files-found: error

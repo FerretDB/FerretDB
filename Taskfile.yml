@@ -410,36 +410,17 @@ tasks:
       - docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
       - docker buildx ls
 
-  docker-local:
-    desc: "Build `ferretdb-local` Docker image for the host platform"
-    deps: [gen-version]
-    cmds:
-      - echo 'docker-local' > build/version/package.txt
-      - >
-        docker buildx build --builder=ferretdb
-        --file=build/docker/development.Dockerfile
-        --build-arg=LABEL_VERSION={{.VERSION}}
-        --build-arg=LABEL_COMMIT={{.COMMIT}}
-        --tag=ferretdb-local
-        --output=type=docker
-        .
-    vars:
-      VERSION:
-        sh: cat build/version/version.txt
-      COMMIT:
-        sh: cat build/version/commit.txt
-
-  # FIXME linux/arm/v7
   docker-build:
     deps: [gen-version]
     cmds:
       - >
         docker buildx build --builder=ferretdb
-        --file=build/docker/development.Dockerfile
+        --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
-        --platform=linux/arm64,linux/amd64
-        --output=type=local,dest=tmp/build
+        --platform={{default "linux" .PLATFORM}}
+        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
+        --output={{.OUTPUT}}
         .
     vars:
       VERSION:
@@ -447,57 +428,79 @@ tasks:
       COMMIT:
         sh: cat build/version/commit.txt
 
+  docker-local:
+    desc: "Build `ferretdb-local` Docker image for the host platform"
+    cmds:
+      - task: docker-init
+        ignore_error: true # it might be initialized already
+      - echo 'docker-local' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: development
+          DOCKER_IMAGES: ferretdb-local
+          OUTPUT: type=docker
+
   # TODO set annotations,
   # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
-  docker-push:
-    deps: [gen-version]
+  docker-development-push:
     cmds:
       - echo 'docker' > build/version/package.txt
-      - >
-        docker buildx build --builder=ferretdb
-        --file=build/docker/development.Dockerfile
-        --build-arg=LABEL_VERSION={{.VERSION}}
-        --build-arg=LABEL_COMMIT={{.COMMIT}}
-        --platform=linux/arm/v7,linux/arm64,linux/amd64
-        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
-        --output=type=image,push=true
-        .
-    vars:
-      VERSION:
-        sh: cat build/version/version.txt
-      COMMIT:
-        sh: cat build/version/commit.txt
+      - task: docker-build
+        vars:
+          FILE: development
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          OUTPUT: type=image,push=true
+
+  # TODO set annotations,
+  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
+  docker-production-push:
+    cmds:
+      - echo 'docker' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          OUTPUT: type=image,push=true
 
   packages:
     cmds:
       - task: packages-deb
       - task: packages-rpm
+      # TODO https://github.com/FerretDB/FerretDB/issues/2172
 
   packages-deb:
-    dir: build
     cmds:
-      - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
-      - >
-        docker compose run --rm ubuntu /bin/sh -c
-        'dpkg -i /deb/ferretdb.deb && ferretdb --version'
-    env:
-      VERSION:
-        sh: cat ../build/version/version.txt
-      GOARCH:
-        sh: go env GOARCH
+      - echo 'deb' > build/version/package.txt
+      - mkdir -p tmp/debs
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          DOCKER_IMAGES: dummy
+          OUTPUT: type=local,dest=tmp/build
+      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=deb --target=tmp/debs/ferretdb.deb
+        env:
+          ARCH: amd64
+          VERSION:
+            sh: cat build/version/version.txt
+      - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
 
   packages-rpm:
-    dir: build
     cmds:
-      - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
-      - >
-        docker compose run --rm ubi /bin/sh -c
-        'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
-    env:
-      VERSION:
-        sh: cat ../build/version/version.txt
-      GOARCH:
-        sh: go env GOARCH
+      - echo 'rpm' > build/version/package.txt
+      - mkdir -p tmp/rpms
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          DOCKER_IMAGES: dummy
+          OUTPUT: type=local,dest=tmp/build
+      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=rpm --target=tmp/rpms/ferretdb.rpm
+        env:
+          ARCH: amd64
+          VERSION:
+            sh: cat build/version/version.txt
+      - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
 
   docs:
     desc: "Format, lint and build documentation"
