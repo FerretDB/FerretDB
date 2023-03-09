@@ -54,6 +54,8 @@ func newSort(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
+//
+// If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
 func (m *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	if err := common.SortDocuments(in, m.fields); err != nil {
 		return nil, err

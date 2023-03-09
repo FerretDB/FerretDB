@@ -16,6 +16,7 @@ package tigris
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -103,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 		if s, err = aggregations.NewStage(d); err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		stages[i] = s
@@ -115,19 +116,28 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	iter, err := dbPool.QueryDocuments(ctx, &qp)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	defer iter.Close()
 
 	docs, err = iterator.Values(iter)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	for _, s := range stages {
 		if docs, err = s.Process(ctx, docs); err != nil {
-			return nil, err
+			var pathErr *types.DocumentPathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrPathContainsEmptyElement,
+					"FieldPath field names may not be empty strings.",
+					document.Command(),
+				)
+			}
+
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
