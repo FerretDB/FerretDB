@@ -111,7 +111,7 @@ const (
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
-	ErrGroupInvalidFieldPath = ErrorCode(16872) //Location16872
+	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
 
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
@@ -140,7 +140,7 @@ const (
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
 
 	// ErrStageGroupOneAccumulator indicates that group field must specify one accumulator.
-	ErrStageGroupOneAccumulator = ErrorCode(40238) //Location40238
+	ErrStageGroupOneAccumulator = ErrorCode(40238) // Location40238
 
 	// ErrStageInvalid indicates invalid aggregation pipeline stage.
 	ErrStageInvalid = ErrorCode(40323) // Location40323

@@ -77,8 +77,8 @@ func newCount(stage *types.Document) (Stage, error) {
 	}, nil
 }
 
-// countGroup represents $count accumulator for $group.
-type countGroup struct{}
+// countAccumulator represents $count accumulator for $group.
+type countAccumulator struct{}
 
 // newCountAccumulator creates a new $count accumulator for $group.
 func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
@@ -91,7 +91,7 @@ func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
 		)
 	}
 
-	return new(countGroup), nil
+	return new(countAccumulator), nil
 }
 
 // Process implements Stage interface.
@@ -106,7 +106,7 @@ func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 }
 
 // Accumulate implements Accumulator interface.
-func (c *countGroup) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
+func (c *countAccumulator) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
 	return int32(len(grouped)), nil
 }
 
@@ -117,5 +117,5 @@ var (
 
 // check interfaces
 var (
-	_ Accumulator = (*countGroup)(nil)
+	_ Accumulator = (*countAccumulator)(nil)
 )

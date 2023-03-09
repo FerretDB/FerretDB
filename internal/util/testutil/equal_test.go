@@ -74,6 +74,20 @@ func TestEqualValue(t *testing.T) {
 	)
 	require.False(t, res)
 
+	res = EqualValue(
+		t,
+		must.NotFail(types.NewDocument("foo", "bar", "baz", float64(42))),
+		"",
+	)
+	require.False(t, res)
+
+	res = EqualValue(
+		t,
+		must.NotFail(types.NewArray("foo", "bar", "baz", float64(42))),
+		"",
+	)
+	require.False(t, res)
+
 	res = EqualValue(t, math.Inf(+1), math.Inf(+1))
 	require.True(t, res)
 
@@ -89,12 +103,33 @@ func TestEqualValue(t *testing.T) {
 	res = EqualValue(t, float64(12), float64(12))
 	require.True(t, res)
 
-	res = EqualValue(t, int64(12), float64(12))
-	require.True(t, res)
+	res = EqualValue(t, float64(12), math.NaN())
+	require.False(t, res)
+
+	res = EqualValue(t, float64(12), "")
+	require.False(t, res)
 
 	res = EqualValue(t, int32(12), float64(12))
 	require.True(t, res)
 
+	res = EqualValue(t, int32(12), math.NaN())
+	require.False(t, res)
+
 	res = EqualValue(t, int32(12), int64(12))
 	require.True(t, res)
+
+	res = EqualValue(t, int32(12), "")
+	require.False(t, res)
+
+	res = EqualValue(t, int64(12), float64(12))
+	require.True(t, res)
+
+	res = EqualValue(t, int64(12), math.NaN())
+	require.False(t, res)
+
+	res = EqualValue(t, int32(12), int64(12))
+	require.True(t, res)
+
+	res = EqualValue(t, int32(12), "")
+	require.False(t, res)
 }
