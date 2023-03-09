@@ -77,7 +77,7 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
-	Package          string // TODO https://github.com/FerretDB/FerretDB/issues/1805
+	Package          string
 	DebugBuild       bool
 	BuildEnvironment *types.Document
 
@@ -117,7 +117,7 @@ func init() {
 		Commit:              unknown,
 		Branch:              unknown,
 		Dirty:               false,
-		Package:             unknown, // TODO https://github.com/FerretDB/FerretDB/issues/1805
+		Package:             unknown,
 		DebugBuild:          debugbuild.Enabled,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
