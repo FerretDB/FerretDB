@@ -23,17 +23,17 @@ slug: /supported_shells_and_guis/
 |                                        | Import/Export archive files             | ✅          |                                                            |
 |                                        | Export SQL statements to a `.sql` file  | ✅          |                                                            |
 |                                        | `dbstats`                            | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/1346)  |
-| [MongoDB Compass](https://www.mongodb.com/products/compass) |                    | ❌          |                           |
+| [MongoDB Compass](https://www.mongodb.com/products/compass) |                    | ✅          | Basic tool is fully supported pre v1.29 [Issue](https://github.com/FerretDB/FerretDB/issues/153)                           |
 |                                        | Connecting to FerretDB                  | ✅          |                                                            |
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
 |                                        | SCRAM authentication mechanisms         | ❌          | [Issue](https://github.com/FerretDB/FerretDB/issues/2012)  |
 |                                        | TLS Support                             | ✅          |                                                            |
-|                                        | [View Documents](https://www.mongodb.com/docs/compass/current/documents/view/)        | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
-|                                        | [Insert Documents](https://www.mongodb.com/docs/compass/current/documents/insert/)    | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |                                                                   |
-|                                        | [Clone Documents](https://www.mongodb.com/docs/compass/current/documents/clone/)      | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
-|                                        | [Delete Documents](https://www.mongodb.com/docs/compass/current/documents/delete/)    | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
-|                                        | [Query Your Data](https://www.mongodb.com/docs/compass/current/query/filter/)         | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
-|                                        | [Import and Export Data](https://www.mongodb.com/docs/compass/current/import-export/) | ❌    | [Issue](https://github.com/FerretDB/FerretDB/issues/1346) |
+|                                        | [View Documents](https://www.mongodb.com/docs/compass/current/documents/view/)        | ✅    | |
+|                                        | [Insert Documents](https://www.mongodb.com/docs/compass/current/documents/insert/)    | ✅    |  |                                                                   |
+|                                        | [Clone Documents](https://www.mongodb.com/docs/compass/current/documents/clone/)      | ✅    |  |
+|                                        | [Delete Documents](https://www.mongodb.com/docs/compass/current/documents/delete/)    | ✅    | |
+|                                        | [Query Your Data](https://www.mongodb.com/docs/compass/current/query/filter/)         | ✅    | |
+|                                        | [Import and Export Data](https://www.mongodb.com/docs/compass/current/import-export/) | ✅    | |
 |                                        | [Embedded MongoDB Shell](https://www.mongodb.com/docs/compass/current/embedded-shell/)| ✅    |                                                           |
 | [MongoDB Shell (`mongosh`)](https://www.mongodb.com/docs/mongodb-shell/)|          | ✅    | [Supported commands](/website/docs/reference/supported_commands.md) |
 |                                        | PLAIN authentication mechanism          | ✅          |                                                            |
