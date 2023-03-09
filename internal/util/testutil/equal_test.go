@@ -19,9 +19,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEqual(t *testing.T) {

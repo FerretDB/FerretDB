@@ -338,6 +338,7 @@ func equalValue(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		return equalValueDocuments(tb, v1, d)
 
 	case *types.Array:
@@ -345,6 +346,7 @@ func equalValue(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		return equalValueArrays(tb, v1, a)
 
 	default:
@@ -420,9 +422,11 @@ func equalValueScalars(tb testing.TB, v1, v2 any) bool {
 			if math.IsNaN(s1) {
 				return math.IsNaN(s2)
 			}
+
 			if s1 == 0 && s2 == 0 {
 				return math.Signbit(s1) == math.Signbit(s2)
 			}
+
 			return s1 == s2
 		case int32:
 			return equal(tb, s1, float64(s2))
@@ -459,6 +463,7 @@ func equalValueScalars(tb testing.TB, v1, v2 any) bool {
 			if math.IsNaN(s2) {
 				return false
 			}
+
 			return float64(s1) == s2
 		case int32:
 			return s1 == s2
@@ -477,6 +482,7 @@ func equalValueScalars(tb testing.TB, v1, v2 any) bool {
 			if math.IsNaN(s2) {
 				return false
 			}
+
 			return float64(s1) == s2
 		case int32:
 			return s1 == int64(s2)

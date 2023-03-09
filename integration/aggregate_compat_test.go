@@ -31,7 +31,7 @@ type aggregateStagesCompatTestCase struct {
 	skip        string                   // skip test for all handlers, must have issue number mentioned
 	pipeline    bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
-	ignoreOrder bool                     // ignores order of elements in compat and target result, equated number of different type as long as the same value, defaults to false.
+	ignoreOrder bool                     // ignores order of elements in compat and target result, equate different number types.
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases.

@@ -91,7 +91,7 @@ func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
 		)
 	}
 
-	return &countGroup{}, nil
+	return new(countGroup), nil
 }
 
 // Process implements Stage interface.

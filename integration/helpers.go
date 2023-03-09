@@ -155,7 +155,6 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 // AssertDocumentsMatch asserts that two document slices contain the same items,
 // regardless of their order.
 // Number types are considered equal based on their value, so float64(0) equals int64(0).
-// See testutil.AssertEqual for details.
 func AssertDocumentsMatch(t testing.TB, expected, actual []bson.D) bool {
 	t.Helper()
 
@@ -175,8 +174,8 @@ func AssertDocumentsMatch(t testing.TB, expected, actual []bson.D) bool {
 		expectedDoc := expectedRemaining[i]
 
 		var found bool
-		for j := len(actualRemaining) - 1; j >= 0; j-- {
 
+		for j := len(actualRemaining) - 1; j >= 0; j-- {
 			actualDoc := actualRemaining[j]
 			if testutil.EqualValue(t, expectedDoc, actualDoc) {
 				// actualDoc is the same as expectedDoc.
@@ -187,6 +186,7 @@ func AssertDocumentsMatch(t testing.TB, expected, actual []bson.D) bool {
 				// remove found actualDoc at index j actualRemaining
 				actualRemaining = append(actualRemaining[:j], actualRemaining[j+1:]...)
 				found = true
+
 				break
 			}
 		}

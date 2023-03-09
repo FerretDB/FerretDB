@@ -16,6 +16,7 @@ package aggregations
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -50,16 +51,16 @@ var accumulators = map[string]newAccumFunc{
 //			accumulationFields[0].field: {accumulationFields[0].accumulator: accumulationFields[0].expression},
 //	}}
 type group struct {
-	// groupKey is the output _id of the document.
 	groupKey           any
 	accumulationFields []accumulationFields
+	// groupKey is the output _id of the document.
 }
 
 // accumulationFields represents accumulation to apply on the group.
 type accumulationFields struct {
-	field      string
-	accumulate func(ctx context.Context, in []*types.Document) (any, error)
 	expression any
+	accumulate func(ctx context.Context, in []*types.Document) (any, error)
+	field      string
 }
 
 // newGroup creates a new $group stage.
@@ -81,13 +82,14 @@ func newGroup(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	var group group
+	var g group
 	iter := fields.Iterator()
+
 	defer iter.Close()
 
 	for {
 		field, v, err := iter.Next()
-		if err == iterator.ErrIteratorDone {
+		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
 
@@ -96,7 +98,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 		}
 
 		if field == "_id" {
-			group.groupKey = v
+			g.groupKey = v
 			continue
 		}
 
@@ -143,10 +145,10 @@ func newGroup(stage *types.Document) (Stage, error) {
 			expression: expression,
 		}
 
-		group.accumulationFields = append(group.accumulationFields, a)
+		g.accumulationFields = append(g.accumulationFields, a)
 	}
 
-	if group.groupKey == nil {
+	if g.groupKey == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupMissingID,
 			"a group specification must include an _id",
@@ -154,14 +156,15 @@ func newGroup(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	return &group, nil
+	return &g, nil
 }
 
-type groupss struct {
+type allGroups struct {
 	docs []groupedDocuments
 }
 
-func (gs *groupss) Add(groupKey any, docs ...*types.Document) {
+// add the docs to the groupKey.
+func (gs *allGroups) add(groupKey any, docs ...*types.Document) {
 	for i, g := range gs.docs {
 		if types.Compare(groupKey, g.groupKey) == types.Equal {
 			gs.docs[i].documents = append(gs.docs[i].documents, docs...)
@@ -175,7 +178,8 @@ func (gs *groupss) Add(groupKey any, docs ...*types.Document) {
 	})
 }
 
-func (gs *groupss) GetByGroupID(groupKey any) groupedDocuments {
+// getByGroupKey gets grouped documents for the given group key.
+func (gs *allGroups) getByGroupKey(groupKey any) groupedDocuments {
 	for _, g := range gs.docs {
 		if types.Compare(groupKey, g.groupKey) == types.Equal {
 			return g
@@ -187,15 +191,21 @@ func (gs *groupss) GetByGroupID(groupKey any) groupedDocuments {
 
 // Process implements Stage interface.
 func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	gs := new(allGroups)
 	var res []*types.Document
-	groups1 := &groupss{}
 
-	// use groupKey to group them
 	switch groupKey := g.groupKey.(type) {
+	case *types.Document,
+		*types.Array,
+		float64:
+		// return a document that contains groupKey as _id.
+		res = append(res, must.NotFail(types.NewDocument("_id", groupKey)))
+		gs.add(groupKey, in...)
 	case string:
 		if !strings.HasPrefix(groupKey, "$") {
 			res = append(res, must.NotFail(types.NewDocument("_id", groupKey)))
-			groups1.Add(groupKey, in...)
+			gs.add(groupKey, in...)
+
 			break
 		}
 
@@ -210,26 +220,25 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 
 		// find groups fields
 		var err error
-		groups1.docs, err = groupDocumentsByKey(in, key)
+		gs.docs, err = groupDocumentsByKey(in, key)
+
 		if err != nil {
 			return nil, err
 		}
 
-		if len(groups1.docs) == 0 {
+		if len(gs.docs) == 0 {
 			// return {"_id": null} when no group is found
 			res = append(res, must.NotFail(types.NewDocument("_id", types.Null)))
-			groups1.Add(types.Null, in...)
+			gs.add(types.Null, in...)
+
 			break
 		}
 
-		for _, groupV := range groups1.docs {
+		for _, groupV := range gs.docs {
 			res = append(res, must.NotFail(types.NewDocument("_id", groupV.groupKey)))
 		}
 
-	case *types.Document,
-		*types.Array,
-		float64,
-		types.Binary,
+	case types.Binary,
 		types.ObjectID,
 		bool,
 		time.Time,
@@ -240,7 +249,7 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 		int64:
 		// return a document that contains groupKey as _id.
 		res = append(res, must.NotFail(types.NewDocument("_id", groupKey)))
-		groups1.Add(groupKey, in...)
+		gs.add(groupKey, in...)
 
 	default:
 		panic(fmt.Sprintf("group: unexpected type %[1]T (%#[1]v)", groupKey))
@@ -253,7 +262,7 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 				return nil, lazyerrors.Error(err)
 			}
 
-			groupedDocs := groups1.GetByGroupID(accumulatedGroup)
+			groupedDocs := gs.getByGroupKey(accumulatedGroup)
 
 			out, err := accumulation.accumulate(ctx, groupedDocs.documents)
 			if err != nil {
@@ -278,15 +287,15 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 
 // groupedDocuments contains group key and the documents for that group.
 type groupedDocuments struct {
-	documents []*types.Document
 	groupKey  any
+	documents []*types.Document
 }
 
 // groupDocumentsByKey returns group key and documents value pair.
 // The key is formatted as string to allow values such as Binary to be the key of the map.
 // If the key is not found in the document, the document is ignored.
 func groupDocumentsByKey(docs []*types.Document, key string) ([]groupedDocuments, error) {
-	var group groupss
+	var group allGroups
 
 	for _, doc := range docs {
 		path, err := types.NewPathFromString(key)
@@ -296,11 +305,11 @@ func groupDocumentsByKey(docs []*types.Document, key string) ([]groupedDocuments
 
 		v, err := doc.GetByPath(path)
 		if err != nil {
-			group.Add(types.Null, doc)
+			group.add(types.Null, doc)
 			continue
 		}
 
-		group.Add(v, doc)
+		group.add(v, doc)
 	}
 
 	return group.docs, nil
