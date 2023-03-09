@@ -94,14 +94,15 @@ var Scalars = &Values[string]{
 		"timestamp":   primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i": primitive.Timestamp{I: 1},
 
-		"int64":      int64(42),
-		"int64-zero": int64(0),
-		"int64-max":  int64(math.MaxInt64),
-		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64Big,
-		"int64-1":    int64(1099511628000),
-		"int64-2":    int64(281474976700000),
-		"int64-3":    int64(72057594040000000),
+		"int64":            int64(42),
+		"int64-zero":       int64(0),
+		"int64-max":        int64(math.MaxInt64),
+		"int64-min":        int64(math.MinInt64),
+		"int64-big":        int64Big,
+		"int64-double-big": int64(2 << 60),
+		"int64-1":          int64(1099511628000),
+		"int64-2":          int64(281474976700000),
+		"int64-3":          int64(72057594040000000),
 
 		// no 128-bit decimal floating point (yet)
 

@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"reflect"
 	"strings"
 	"time"
 
@@ -324,7 +326,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 							`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+						args = append(args, rootKey, must.NotFail(pjson.MarshalSingleValue(v)))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -339,7 +341,23 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 			continue
 
-		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+		case float64, bool, time.Time, int32, int64:
+			// Select if value under the key is equal to provided value.
+			sql := `_jsonb->%[1]s @> %[2]s`
+
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+
+			if reflect.TypeOf(v).Kind() == reflect.Int64 {
+				vi := v.(int64)
+				v, _ = new(big.Float).SetInt64(vi).SetPrec(100000).Float64()
+			}
+
+			// mongodb rounds doubles to 16 bytes so if we pass filter int(2305843009213693952)
+			// database should match float64(2305843009213694000)
+
+			args = append(args, rootKey, v)
+
+		case string, types.ObjectID:
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 
