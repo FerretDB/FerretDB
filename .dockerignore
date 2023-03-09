@@ -1,6 +1,10 @@
 **
+
 !build/version
 !cmd
 !internal
 !go.mod
 !go.sum
+
+# so `go` could set `vcs.revision`, etc.
+!.git

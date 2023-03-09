@@ -95,7 +95,8 @@ provided for each [release](https://github.com/FerretDB/FerretDB/releases).
 ## Building and packaging
 
 We strongly advise users not to build FerretDB themselves.
-Instead, use Docker images or .deb and .rpm packages provided by us.
+Instead, use Docker images or `.deb` and `.rpm` packages provided by us.
+
 If you want to package FerretDB for your operating system or distribution,
 the recommended way is to use the `build-release` task;
 see our [instructions for contributors](CONTRIBUTING.md) for more details.
