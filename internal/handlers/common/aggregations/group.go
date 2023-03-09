@@ -17,29 +17,30 @@ package aggregations
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"strings"
-	"time"
 )
 
 // newAccumFunc is a type for a function that creates a new group accumulationFields.
-type newAccumFunc func(field string, expression *types.Document) (Accumulator, error)
+type newAccumFunc func(expression *types.Document) (Accumulator, error)
 
 // Accumulator is a common interface for accumulation.
 type Accumulator interface {
-	// Accumulate applies an accumulation on group of documents.
-	Accumulate(ctx context.Context, grouped []*types.Document) (any, error)
+	// Accumulate documents and returns the result of accumulation.
+	Accumulate(ctx context.Context, in []*types.Document) (any, error)
 }
 
-// accumulators maps all supported group accumulators.
+// accumulators maps all supported $group accumulators.
 var accumulators = map[string]newAccumFunc{
 	// sorted alphabetically
-	"$count": newCountGroupAccumulator,
+	"$count": newCountAccumulator,
 }
 
 // group represents $group stage.
@@ -54,11 +55,11 @@ type group struct {
 	accumulationFields []accumulationFields
 }
 
-// accumulationFields represents accumulationFields of a group.
+// accumulationFields represents accumulation to apply on the group.
 type accumulationFields struct {
-	field       string
-	accumulator Accumulator
-	expression  any
+	field      string
+	accumulate func(ctx context.Context, in []*types.Document) (any, error)
+	expression any
 }
 
 // newGroup creates a new $group stage.
@@ -117,12 +118,12 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		accumulationOperator, accumulationExpression, err := accumulation.Iterator().Next()
+		operator, expression, err := accumulation.Iterator().Next()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		newAccumulator, ok := accumulators[accumulationOperator]
+		newAccumulator, ok := accumulators[operator]
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
@@ -131,15 +132,15 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		accumulator, err := newAccumulator(field, accumulation)
+		accumulator, err := newAccumulator(accumulation)
 		if err != nil {
 			return nil, err
 		}
 
 		a := accumulationFields{
-			field:       field,
-			accumulator: accumulator,
-			expression:  accumulationExpression,
+			field:      field,
+			accumulate: accumulator.Accumulate,
+			expression: expression,
 		}
 
 		group.accumulationFields = append(group.accumulationFields, a)
@@ -156,21 +157,45 @@ func newGroup(stage *types.Document) (Stage, error) {
 	return &group, nil
 }
 
+type groupss struct {
+	docs []groupedDocuments
+}
+
+func (gs *groupss) Add(groupKey any, docs ...*types.Document) {
+	for i, g := range gs.docs {
+		if types.Compare(groupKey, g.groupKey) == types.Equal {
+			gs.docs[i].documents = append(gs.docs[i].documents, docs...)
+			return
+		}
+	}
+
+	gs.docs = append(gs.docs, groupedDocuments{
+		groupKey:  groupKey,
+		documents: docs,
+	})
+}
+
+func (gs *groupss) GetByGroupID(groupKey any) groupedDocuments {
+	for _, g := range gs.docs {
+		if types.Compare(groupKey, g.groupKey) == types.Equal {
+			return g
+		}
+	}
+
+	panic("must not fail")
+}
+
 // Process implements Stage interface.
 func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	var res []*types.Document
-	var distinct map[any]groupedDocuments
+	groups1 := &groupss{}
 
 	// use groupKey to group them
 	switch groupKey := g.groupKey.(type) {
 	case string:
 		if !strings.HasPrefix(groupKey, "$") {
 			res = append(res, must.NotFail(types.NewDocument("_id", groupKey)))
-			distinct = map[any]groupedDocuments{
-				types.FormatAnyValue(groupKey): {
-					groupKey:  groupKey,
-					documents: in,
-				}}
+			groups1.Add(groupKey, in...)
 			break
 		}
 
@@ -183,25 +208,21 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 			)
 		}
 
-		// find distinct fields
+		// find groups fields
 		var err error
-		distinct, err = groupDocumentsByKey(in, key)
+		groups1.docs, err = groupDocumentsByKey(in, key)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(distinct) == 0 {
-			// return {"_id": null} when no distinct is found
+		if len(groups1.docs) == 0 {
+			// return {"_id": null} when no group is found
 			res = append(res, must.NotFail(types.NewDocument("_id", types.Null)))
-			distinct = map[any]groupedDocuments{
-				types.FormatAnyValue(types.Null): {
-					groupKey:  types.Null,
-					documents: in,
-				}}
+			groups1.Add(types.Null, in...)
 			break
 		}
 
-		for _, groupV := range distinct {
+		for _, groupV := range groups1.docs {
 			res = append(res, must.NotFail(types.NewDocument("_id", groupV.groupKey)))
 		}
 
@@ -219,11 +240,7 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 		int64:
 		// return a document that contains groupKey as _id.
 		res = append(res, must.NotFail(types.NewDocument("_id", groupKey)))
-		distinct = map[any]groupedDocuments{
-			types.FormatAnyValue(groupKey): {
-				groupKey:  groupKey,
-				documents: in,
-			}}
+		groups1.Add(groupKey, in...)
 
 	default:
 		panic(fmt.Sprintf("group: unexpected type %[1]T (%#[1]v)", groupKey))
@@ -236,16 +253,22 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 				return nil, lazyerrors.Error(err)
 			}
 
-			groupedDocs, ok := distinct[types.FormatAnyValue(accumulatedGroup)]
-			if !ok {
-				// cannot fail because it was built for each ID
-				return nil, lazyerrors.Error(err)
-			}
+			groupedDocs := groups1.GetByGroupID(accumulatedGroup)
 
-			out, err := accumulation.accumulator.Accumulate(ctx, groupedDocs.documents)
+			out, err := accumulation.accumulate(ctx, groupedDocs.documents)
 			if err != nil {
 				return nil, err
 			}
+
+			if r.Has(accumulation.field) {
+				// duplicate key
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrDuplicateField,
+					fmt.Sprintf("duplicate field: %s", accumulation.field),
+					"$count",
+				)
+			}
+
 			r.Set(accumulation.field, out)
 		}
 	}
@@ -262,8 +285,8 @@ type groupedDocuments struct {
 // groupDocumentsByKey returns group key and documents value pair.
 // The key is formatted as string to allow values such as Binary to be the key of the map.
 // If the key is not found in the document, the document is ignored.
-func groupDocumentsByKey(docs []*types.Document, key string) (map[any]groupedDocuments, error) {
-	group := map[any]groupedDocuments{}
+func groupDocumentsByKey(docs []*types.Document, key string) ([]groupedDocuments, error) {
+	var group groupss
 
 	for _, doc := range docs {
 		path, err := types.NewPathFromString(key)
@@ -273,33 +296,14 @@ func groupDocumentsByKey(docs []*types.Document, key string) (map[any]groupedDoc
 
 		v, err := doc.GetByPath(path)
 		if err != nil {
-			formattedGroupKey := types.FormatAnyValue(types.Null)
-			v, ok := group[formattedGroupKey]
-			if !ok {
-				group[formattedGroupKey] = groupedDocuments{
-					groupKey:  types.Null,
-					documents: []*types.Document{},
-				}
-			}
-			v.documents = append(v.documents, doc)
+			group.Add(types.Null, doc)
 			continue
 		}
 
-		switch val := v.(type) {
-		default:
-			formattedGroupKey := types.FormatAnyValue(val)
-			v, ok := group[formattedGroupKey]
-			if !ok {
-				group[formattedGroupKey] = groupedDocuments{
-					groupKey:  val,
-					documents: []*types.Document{},
-				}
-			}
-			v.documents = append(v.documents, doc)
-		}
+		group.Add(v, doc)
 	}
 
-	return group, nil
+	return group.docs, nil
 }
 
 // check interfaces

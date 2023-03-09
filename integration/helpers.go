@@ -154,6 +154,7 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 
 // AssertDocumentsMatch asserts that two document slices contain the same items,
 // regardless of their order.
+// Number types are considered equal based on their value, so float64(0) equals int64(0).
 // See testutil.AssertEqual for details.
 func AssertDocumentsMatch(t testing.TB, expected, actual []bson.D) bool {
 	t.Helper()
@@ -165,26 +166,34 @@ func AssertDocumentsMatch(t testing.TB, expected, actual []bson.D) bool {
 		return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 	}
 
-	for i := len(expectedDocs) - 1; i >= 0; i-- {
-		expectedDoc := expectedDocs[i]
+	expectedRemaining, actualRemaining := expectedDocs, actualDocs
+	// expectedRemaining and actualRemaining are used to remove found documents
+	// during the iteration, so correct number of duplicates in expectedDocs and
+	// actualDocs are checked.
 
-		for j := len(actualDocs) - 1; j >= 0; j-- {
-			actualDoc := actualDocs[j]
-			if testutil.AssertEqual(t, expectedDoc, actualDoc) {
+	for i := len(expectedRemaining) - 1; i >= 0; i-- {
+		expectedDoc := expectedRemaining[i]
+
+		var found bool
+		for j := len(actualRemaining) - 1; j >= 0; j-- {
+
+			actualDoc := actualRemaining[j]
+			if testutil.EqualValue(t, expectedDoc, actualDoc) {
 				// actualDoc is the same as expectedDoc.
-				// remove found documents from the expectedDocs and actualDocs,
-				// so correct number of duplicates in expectedDocs and actualDocs are checked.
 
-				// remove found expectedDoc at index i from expectedDocs
-				expectedDocs = append(expectedDocs[:i], expectedDocs[i+1:]...)
+				// remove found expectedDoc at index i from expectedRemaining
+				expectedRemaining = append(expectedRemaining[:i], expectedRemaining[i+1:]...)
 
-				// remove found actualDoc at index j from actualDocs
-				actualDocs = append(actualDocs[:j], actualDocs[j+1:]...)
+				// remove found actualDoc at index j actualRemaining
+				actualRemaining = append(actualRemaining[:j], actualRemaining[j+1:]...)
+				found = true
 				break
 			}
+		}
 
+		if !found {
 			// expectedDoc was not found in actualDocs
-			return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
+			return testutil.AssertEqualSlices(t, ConvertDocuments(t, expected), ConvertDocuments(t, actual))
 		}
 	}
 

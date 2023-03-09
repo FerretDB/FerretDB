@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEqual(t *testing.T) {
@@ -53,4 +54,46 @@ func TestEqual(t *testing.T) {
 		time.Date(2022, time.March, 11, 8, 8, 42, 123456789, time.FixedZone("Test", int(3*time.Hour.Seconds()))),
 		time.Date(2022, time.March, 11, 8, 8, 42, 123456789, time.UTC),
 	)
+}
+
+func TestEqualValue(t *testing.T) {
+	t.Parallel()
+
+	res := EqualValue(
+		t,
+		must.NotFail(types.NewDocument("foo", "bar", "baz", float64(42))),
+		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
+	)
+	require.True(t, res)
+
+	res = EqualValue(
+		t,
+		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
+		must.NotFail(types.NewDocument("baz", int32(42), "foo", "bar")),
+	)
+	require.False(t, res)
+
+	res = EqualValue(t, math.Inf(+1), math.Inf(+1))
+	require.True(t, res)
+
+	res = EqualValue(t, math.Inf(-1), math.Inf(+1))
+	require.False(t, res)
+
+	res = EqualValue(t, 0.0, math.Copysign(0, +1))
+	require.True(t, res)
+
+	res = EqualValue(t, math.Copysign(0, +1), math.Copysign(0, -1))
+	require.False(t, res)
+
+	res = EqualValue(t, float64(12), float64(12))
+	require.True(t, res)
+
+	res = EqualValue(t, int64(12), float64(12))
+	require.True(t, res)
+
+	res = EqualValue(t, int32(12), float64(12))
+	require.True(t, res)
+
+	res = EqualValue(t, int32(12), int64(12))
+	require.True(t, res)
 }

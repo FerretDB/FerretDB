@@ -78,24 +78,15 @@ func newCount(stage *types.Document) (Stage, error) {
 }
 
 // countGroup represents $count accumulator for $group.
-type countGroup struct {
-}
+type countGroup struct{}
 
-// newCountGroupAccumulator creates a new $count accumulator for $group.
-func newCountGroupAccumulator(field string, accumulation *types.Document) (Accumulator, error) {
+// newCountAccumulator creates a new $count accumulator for $group.
+func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
 	expression, err := common.GetRequiredParam[*types.Document](accumulation, "$count")
-	if err != nil {
+	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCountNonString,
-			"the count field must be a non-empty string",
-			"$count",
-		)
-	}
-
-	if expression.Len() != 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCountNonEmptyString,
-			"the count field must be a non-empty string",
+			commonerrors.ErrTypeMismatch,
+			"$count takes no arguments, i.e. $count:{}",
 			"$count",
 		)
 	}

@@ -172,6 +172,9 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
+
+	// ErrDuplicateField indicates duplicate field is specified.
+	ErrDuplicateField = ErrorCode(4822819) // Location4822819
 )
 
 // ErrInfo represents additional optional error information.
