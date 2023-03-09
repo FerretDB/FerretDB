@@ -19,11 +19,13 @@ ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
+ARG TARGETARCH
+
 # see .dockerignore
 WORKDIR /src
 COPY . .
 
-# TODO
+# TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage and/or cache;
 # see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
 RUN go mod download
@@ -31,13 +33,23 @@ RUN go mod download
 ENV CGO_ENABLED=1
 ENV GOCOVERDIR=cover
 ENV GORACE=halt_on_error=1,history_size=2
+ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-# FIXME -race flag
-RUN go build -v                 -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false ./cmd/ferretdb
-RUN go test  -c -coverpkg=./... -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false ./cmd/ferretdb
+# do not trim paths to make debugging with delve easier
+RUN <<EOF
+RACE=true
+if test "$TARGETARCH" = "arm"
+then
+    RACE=false
+fi
+
+go build -v                 -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+go test  -c -coverpkg=./... -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+EOF
+
 RUN go version -m bin/ferretdb
 RUN bin/ferretdb --version
 

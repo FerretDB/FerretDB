@@ -6,5 +6,5 @@
 !go.mod
 !go.sum
 
-# so `go` could set `vcs.revision`, etc.
+# so `go build` could set `vcs.revision`, etc.
 !.git

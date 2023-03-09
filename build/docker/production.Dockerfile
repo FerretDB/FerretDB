@@ -23,24 +23,26 @@ RUN test -n "$LABEL_COMMIT"
 WORKDIR /src
 COPY . .
 
-# TODO
+# TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage and/or cache;
 # see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
 RUN go mod download
 
 ENV CGO_ENABLED=0
+ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-RUN go build -v -o=bin/ferretdb -trimpath -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+RUN go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
 RUN go version -m bin/ferretdb
 RUN bin/ferretdb --version
 
 
 # final stage
 
-# TODO consider a different base image
+# TODO https://github.com/FerretDB/FerretDB/issues/2179
+# Consider a different base image after https://github.com/golang/go/issues/57792 is done.
 FROM gcr.io/distroless/static-debian11:debug AS production
 
 ARG LABEL_VERSION

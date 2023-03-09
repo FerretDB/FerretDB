@@ -59,7 +59,7 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Build release binary
+      - name: Build production release binary
         run: bin/task build-release
 
       - name: Upload ferretdb

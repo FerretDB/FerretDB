@@ -436,8 +436,6 @@ tasks:
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"
     cmds:
-      - task: docker-init
-        ignore_error: true # it might be initialized already
       - echo 'docker-local' > build/version/package.txt
       - task: docker-build
         vars:
