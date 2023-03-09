@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 12m
+  INTEGRATIONTIME: 15m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -263,6 +263,18 @@ tasks:
         --tigris-url=127.0.0.1:8081
         --test-records-dir=tmp/records
 
+  # set FERRETDB_HANA_URL environment variable to use it
+  run-hana:
+    deps: [build-local]
+    cmds:
+      - >
+        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
+        --handler=hana
+        --listen-addr=:27017
+        --mode=diff-normal
+        --proxy-addr=127.0.0.1:47017
+        --test-records-dir=records
+
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
     deps: [build-host]
@@ -348,8 +360,10 @@ tasks:
       - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
-    desc: "Serve godoc documentation at http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all"
+    desc: "Serve godoc documentation"
     cmds:
+      - cmd: open http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all
+        ignore_error: true # open might not work on that platform
       - bin/godoc{{exeExt}} -http=127.0.0.1:6060
 
   psql:
