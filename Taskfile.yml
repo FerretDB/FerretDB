@@ -265,15 +265,16 @@ tasks:
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
-    deps: [build-local]
+    desc: "Run FerretDB with `hana` handler"
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-testcover{{exeExt}} -test.coverprofile=cover.txt --
-        --handler=hana
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
-        --mode=diff-normal
         --proxy-addr=127.0.0.1:47017
-        --test-records-dir=records
+        --mode=diff-normal
+        --handler=hana
+        --test-records-dir=tmp/records
 
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
