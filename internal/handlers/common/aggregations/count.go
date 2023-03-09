@@ -112,10 +112,6 @@ func (c *countAccumulator) Accumulate(ctx context.Context, grouped []*types.Docu
 
 // check interfaces
 var (
-	_ Stage = (*count)(nil)
-)
-
-// check interfaces
-var (
+	_ Stage       = (*count)(nil)
 	_ Accumulator = (*countAccumulator)(nil)
 )

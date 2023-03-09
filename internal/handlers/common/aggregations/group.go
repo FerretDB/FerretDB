@@ -193,7 +193,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 				// duplicate key
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrDuplicateField,
-					fmt.Sprintf("duplicate outputField: %s", accumulation.outputField),
+					fmt.Sprintf("duplicate field: %s", accumulation.outputField),
 					"$group",
 				)
 			}
@@ -207,7 +207,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 	return res, nil
 }
 
-// idAccumulator accumulates _id outputField.
+// idAccumulator accumulates _id output field.
 type idAccumulator struct {
 	expression any
 }
@@ -309,7 +309,7 @@ type groupedDocuments struct {
 	documents []*types.Document
 }
 
-// groupMap holds groups of documents using unique groupKey and slide of documents pair.
+// groupMap holds groups of documents.
 type groupMap struct {
 	docs []groupedDocuments
 }
@@ -335,5 +335,6 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 
 // check interfaces
 var (
-	_ Stage = (*groupStage)(nil)
+	_ Stage       = (*groupStage)(nil)
+	_ Accumulator = (*idAccumulator)(nil)
 )

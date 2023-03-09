@@ -31,7 +31,7 @@ type aggregateStagesCompatTestCase struct {
 	skip        string                   // skip test for all handlers, must have issue number mentioned
 	pipeline    bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
-	ignoreOrder bool                     // ignores order of elements in compat and target result, equate different number types.
+	ignoreOrder bool                     // if true, ignores order of result in compat and target result, equates different number types.
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases.
@@ -104,11 +104,10 @@ func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStage
 					require.NoError(t, compatCursor.All(ctx, &compatRes))
 
 					if ignoreOrder {
-						// order of compat and target are different this causes
-						// 1. aggregation to return different type of number because it could use int64(0) or float64(0)
-						// on distinct match
-						// 2. compat and target array are sorted in different order because _id of aggregation output may be
-						// an array and array can be same sort order.
+						// 1. order of result in compat and target are different because
+						// aggregation can assign BSON array to _id.
+						// 2. compat and target may return different number type
+						// because aggregation equates numbers regardless of the type.
 						AssertDocumentsMatch(t, compatRes, targetRes)
 					} else {
 						AssertEqualDocumentsSlice(t, compatRes, targetRes)
@@ -300,13 +299,13 @@ func TestAggregateCompatGroup(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v"},
 			}}}},
-			// ignore the order of compat and target because
-			// an _id with array which has the same sort order
-			// has not deterministic order.
-			// numbers float64(0) and int32(0) are treated the same, becase
-			// aggregation group by field uses the first document $v as key,
-			// it can be different type between compat and target.
 			ignoreOrder: true,
+		},
+		"IDExpression": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", bson.D{{"v", "$v"}}},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2165",
 		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -332,7 +331,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
 			}}}},
-			skip: "not existing path may return empty array or null for unknown difference",
+			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
 		},
 		"Location16872": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -381,7 +380,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"v", bson.D{{"invalid", "v"}}},
 			}}}},
 			resultType: emptyResult,
-			skip:       "once all accumulator is implemented, it should return error",
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
 	}
 

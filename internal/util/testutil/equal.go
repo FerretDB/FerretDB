@@ -326,7 +326,7 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 }
 
 // equalValue compares any BSON values in a way that is useful for tests:
-//   - number types are converted so different type int32, int64, float64 are equal for the value.
+//   - number types are converted so different types int32, int64, float64 are equal if the value is same.
 //
 // For more see equal.
 func equalValue(tb testing.TB, v1, v2 any) bool {
@@ -354,7 +354,7 @@ func equalValue(tb testing.TB, v1, v2 any) bool {
 	}
 }
 
-// equalValueDocuments compares BSON documents.
+// equalValueDocuments compares BSON documents and equates different number types.
 func equalValueDocuments(tb testing.TB, v1, v2 *types.Document) bool {
 	tb.Helper()
 
@@ -381,7 +381,7 @@ func equalValueDocuments(tb testing.TB, v1, v2 *types.Document) bool {
 	return true
 }
 
-// equalValueArrays compares BSON arrays.
+// equalValueArrays compares BSON arrays and equates different number types.
 func equalValueArrays(tb testing.TB, v1, v2 *types.Array) bool {
 	tb.Helper()
 
@@ -408,7 +408,7 @@ func equalValueArrays(tb testing.TB, v1, v2 *types.Array) bool {
 	return true
 }
 
-// equalValueScalars compares BSON scalar values.
+// equalValueScalars compares BSON scalar values and equates different number types.
 func equalValueScalars(tb testing.TB, v1, v2 any) bool {
 	tb.Helper()
 
