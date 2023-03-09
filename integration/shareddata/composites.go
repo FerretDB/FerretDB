@@ -298,5 +298,14 @@ var ArrayDocuments = &Values[string]{
 				},
 			}},
 		},
+		"array-documents-nested-duplicate": bson.A{ // duplicate value is needed to test sorting
+			bson.D{{
+				"foo",
+				bson.A{
+					bson.D{{"bar", "hello"}},
+					bson.D{{"bar", "world"}},
+				},
+			}},
+		},
 	},
 }
