@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # for development releases (`ferret-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
@@ -9,7 +11,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.2-1 AS development-build
+FROM ghcr.io/ferretdb/golang:1.20.2-2 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -30,13 +32,8 @@ ENV CGO_ENABLED=1
 ENV GORACE=halt_on_error=1,history_size=2
 ENV GOCOVERDIR=cover
 
-ARG CACHEBUST=12
+ARG CACHEBUST=1
 RUN echo "$CACHEBUST"
-
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-
-RUN env
 
 # FIXME -race flag
 RUN go test -v -c -o=bin/ferretdb -trimpath -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana -race=false -coverpkg=./... ./cmd/ferretdb
@@ -46,7 +43,7 @@ RUN bin/ferretdb --version
 
 # final stage
 
-FROM ghcr.io/ferretdb/golang:1.20.2-1
+FROM golang:1.20.2
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT

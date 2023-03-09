@@ -399,6 +399,7 @@ tasks:
     desc: "Build `ferretdb-local` Docker image for the host platform"
     deps: [gen-version]
     cmds:
+      - echo 'docker-local' > build/version/package.txt
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/development.Dockerfile
@@ -413,6 +414,7 @@ tasks:
       COMMIT:
         sh: cat build/version/commit.txt
 
+  # FIXME linux/arm/v7
   docker-build:
     deps: [gen-version]
     cmds:
@@ -421,7 +423,7 @@ tasks:
         --file=build/docker/development.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
-        --platform=linux/arm/v7,linux/arm64,linux/amd64
+        --platform=linux/arm64,linux/amd64
         --output=type=local,dest=tmp/build
         .
     vars:
@@ -435,6 +437,7 @@ tasks:
   docker-push:
     deps: [gen-version]
     cmds:
+      - echo 'docker' > build/version/package.txt
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/development.Dockerfile
