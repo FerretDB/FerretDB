@@ -21,6 +21,7 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -279,6 +280,12 @@ func TestBuildFilter(t *testing.T) {
 			filter:   must.NotFail(types.NewDocument("v", true)),
 			expected: `{"v":true}`,
 		},
+		"ImplicitDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+			)),
+			expected: `{"v":"2021-11-01T10:18:42.123Z"}`,
+		},
 		"ImplicitObjectID": {
 			filter:   must.NotFail(types.NewDocument("v", objectID)),
 			expected: `{"v":"YlbFugutwP/u////"}`,
@@ -326,6 +333,14 @@ func TestBuildFilter(t *testing.T) {
 				"v", must.NotFail(types.NewDocument("$eq", true)),
 			)),
 			expected: `{"v":true}`,
+		},
+		"EqDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument(
+					"$eq", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+				)),
+			)),
+			expected: `{"v":"2021-11-01T10:18:42.123Z"}`,
 		},
 		"EqObjectID": {
 			filter: must.NotFail(types.NewDocument(
