@@ -48,7 +48,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	it, err := buildIterator(ctx, tx, &iteratorParams{
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
 		schema: db,
 		table:  dbMetadataTableName,
 	})
@@ -58,11 +58,11 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 	var collections []string
 
-	defer it.Close()
+	defer iter.Close()
 
 	for {
 		var doc *types.Document
-		_, doc, err = it.Next()
+		_, doc, err = iter.Next()
 
 		// if the context is canceled, we don't need to continue processing documents
 		if ctx.Err() != nil {
@@ -86,7 +86,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	_, err := getMetadata(ctx, tx, db, collection)
+	_, err := newMetadata(tx, db, collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
@@ -113,7 +113,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, created, err := ensureMetadata(ctx, tx, db, collection)
+	table, created, err := newMetadata(tx, db, collection).ensure(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -122,18 +122,22 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrAlreadyExist
 	}
 
-	if err = createTableIfNotExists(ctx, tx, db, table); err != nil {
+	if err = createPGTableIfNotExists(ctx, tx, db, table); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	// TODO Uncomment in https://github.com/FerretDB/FerretDB/issues/2044 when we have a way to store metadata
-	//if err = createIndexIfNotExists(ctx, tx, &indexParams{
-	//	schema:   db,
-	//	table:    table,
-	//	isUnique: true,
-	//}); err != nil {
-	//	return lazyerrors.Error(err)
-	//}
+	// Create default index on _id field.
+	indexParams := &indexParams{
+		db:         db,
+		collection: collection,
+		index:      "_id_",
+		key:        indexKey{{field: "_id", order: indexOrderAsc}},
+		unique:     true,
+	}
+
+	if err := createIndex(ctx, tx, indexParams); err != nil {
+		return lazyerrors.Error(err)
+	}
 
 	return nil
 }
@@ -181,7 +185,7 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrTableNotExist
 	}
 
-	err = removeMetadata(ctx, tx, db, collection)
+	err = newMetadata(tx, db, collection).remove(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -196,11 +200,11 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	return nil
 }
 
-// createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
+// createPGTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
 // If the table already exists, it does nothing.
 //
 // If a PostgreSQL conflict occurs it returns errTransactionConflict, and the caller could retry the transaction.
-func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
+func createPGTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
 	var err error
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`
