@@ -12,16 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hana
+package hanadb
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	_ "github.com/SAP/go-hdb/driver"
+	"go.uber.org/zap"
 )
 
-// MsgGetFreeMonitoringStatus implements HandlerInterface.
-func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.GetFreeMonitoringStatus(ctx, msg, h.StateProvider.Get())
+// Pool represents SAP HANA concurrency-safe connection pool.
+type Pool struct {
+	*sql.DB
+}
+
+// NewPool returns a new concurrency-safe connection pool.
+func NewPool(ctx context.Context, url string, logger *zap.Logger) (*Pool, error) {
+	pool, err := sql.Open("hdb", url)
+	if err != nil {
+		return nil, fmt.Errorf("hanadb.NewPool: %w", err)
+	}
+
+	// Check connection
+	err = pool.PingContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("hanadb.NewPool: %w", err)
+	}
+
+	res := &Pool{
+		DB: pool,
+	}
+
+	return res, nil
 }
