@@ -109,7 +109,7 @@ Telemetry can be disabled using any of the following options:
 ### Enable Telemetry
 
 Telemetry can be explicitly enabled (see [above](#configure-telemetry)) with the command-line flag `--telemetry`
-by settings one of the values:
+by setting one of the values:
 `1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`, `optin`, `opt-in`, `allow`.
 
 ```sh
