@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pgdb provides PostgreSQL connection utilities.
-package pgdb
+// Package hanadb provides SAP HANA connection utilities.
+package hanadb
 
 import "fmt"
 
@@ -30,15 +30,9 @@ var (
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exists")
 
-	// ErrIndexAlreadyExist indicates that an index already exists.
-	ErrIndexAlreadyExist = fmt.Errorf("index already exists")
-
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 
 	// ErrInvalidDatabaseName indicates that a database didn't pass name checks.
 	ErrInvalidDatabaseName = fmt.Errorf("invalid FerretDB database name")
-
-	// ErrUniqueViolation indicates that operations violates a unique constraint.
-	ErrUniqueViolation = fmt.Errorf("unique constraint violation")
 )
