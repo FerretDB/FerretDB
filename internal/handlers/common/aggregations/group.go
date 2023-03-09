@@ -321,6 +321,7 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		// Compare is used to check if the key exists in the group.
 		// groupKey used as the key can be any BSON type including array and Binary,
 		// so we cannot use structure like map.
+		// Also, numbers are considered for the same value regardless of their number type.
 		if types.Compare(groupKey, g.groupKey) == types.Equal {
 			m.docs[i].documents = append(m.docs[i].documents, docs...)
 			return
