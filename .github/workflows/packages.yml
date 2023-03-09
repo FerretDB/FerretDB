@@ -84,19 +84,19 @@ jobs:
       - name: Build packages
         run: bin/task packages
 
-      - name: Upload .deb packages
+      - name: Upload .deb package
         uses: actions/upload-artifact@v3
         with:
-          name: debs
-          path: tmp/debs
+          name: ferretdb.deb
+          path: tmp/debs/ferretdb.deb
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload .rpm packages
+      - name: Upload .rpm package
         uses: actions/upload-artifact@v3
         with:
-          name: rpms
-          path: tmp/rpms
+          name: ferretdb.rpm
+          path: tmp/rpms/ferretdb.rpm
           retention-days: 1
           if-no-files-found: error
 
