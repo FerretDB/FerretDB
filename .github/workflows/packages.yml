@@ -88,3 +88,8 @@ jobs:
           path: tmp/rpms
           retention-days: 1
           if-no-files-found: error
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
