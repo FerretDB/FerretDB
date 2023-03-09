@@ -235,3 +235,19 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"EachNumber": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(1), int32(2)}}}}}}},
+		},
+		"EachNotArray": {
+			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
