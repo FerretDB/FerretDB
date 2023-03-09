@@ -11,7 +11,7 @@ require (
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20230227161431-f7320a6d63e8
 	golang.org/x/tools v0.7.0
-	golang.org/x/vuln v0.0.0-20230308034057-d4ed0a4fab9e
+	golang.org/x/vuln v0.0.0-20230309043308-bbc736fc3bc1
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -238,7 +238,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/build v0.0.0-20200616162219-07bebbe343e9 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230203172020-98cc5a0785f9 // indirect
 	golang.org/x/mod v0.9.0 // indirect
