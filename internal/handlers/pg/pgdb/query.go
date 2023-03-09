@@ -269,9 +269,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				case "$eq":
 					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary,
-						time.Time, types.NullType, types.Regex, types.Timestamp:
+						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-					case float64, string, types.ObjectID, bool, int32, int64:
+					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 						// Select if value under the key is equal to provided value.
 						sql := `_jsonb->%[1]s @> %[2]s`
 
@@ -284,9 +284,9 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				case "$ne":
 					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary,
-						time.Time, types.NullType, types.Regex, types.Timestamp:
+						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-					case float64, string, types.ObjectID, bool, int32, int64:
+					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 						sql := `NOT ( ` +
 							// does document contain the key,
 							// it is necessary, as NOT won't work correctly if the key does not exist.
@@ -308,11 +308,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 				}
 			}
 
-		case *types.Array, types.Binary, time.Time, types.NullType, types.Regex, types.Timestamp:
+		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
 
-		case float64, string, types.ObjectID, bool, int32, int64:
+		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 
