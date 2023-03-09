@@ -19,9 +19,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
