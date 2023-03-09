@@ -79,7 +79,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
+	if err = common.SortDocuments(resDocs, params.Sort, false); err != nil {
 		var pathErr *types.DocumentPathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

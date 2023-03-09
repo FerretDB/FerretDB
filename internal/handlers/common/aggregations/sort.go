@@ -55,7 +55,7 @@ func newSort(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (m *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	if err := common.SortDocuments(in, m.fields); err != nil {
+	if err := common.SortDocuments(in, m.fields, false); err != nil {
 		return nil, err
 	}
 

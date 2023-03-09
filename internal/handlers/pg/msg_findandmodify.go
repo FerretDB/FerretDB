@@ -86,9 +86,9 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return err
 		}
 
-		err = common.SortDocuments(resDocs, params.Sort)
+		err = common.SortDocuments(resDocs, params.Sort, true)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		// findAndModify always works with a single document
