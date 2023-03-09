@@ -86,7 +86,6 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			filter:         bson.D{{"v", math.SmallestNonzeroFloat64}},
 			resultPushdown: true,
 		},
-
 		"DoubleBigInt64": {
 			filter:         bson.D{{"v", float64(2 << 61)}},
 			resultPushdown: true,
@@ -144,6 +143,22 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		},
 		"BoolTrue": {
 			filter:         bson.D{{"v", true}},
+			resultPushdown: true,
+		},
+		"Datetime": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}},
+			resultPushdown: true,
+		},
+		"DatetimeEpoch": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMin": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMax": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}},
 			resultPushdown: true,
 		},
 		"IDNull": {
@@ -322,16 +337,20 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"Datetime": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
-		},
-		"DatetimeYearMax": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"Null": {
 			filter: bson.D{{"v", bson.D{{"$eq", nil}}}},
@@ -1022,16 +1041,20 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"Datetime": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
-		},
-		"DatetimeYearMax": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMax": {
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"Timestamp": {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Timestamp{T: 42, I: 13}}}}},
