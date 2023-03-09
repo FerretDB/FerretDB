@@ -269,9 +269,9 @@ func testQueryCompatSort() map[string]queryCompatTestCase {
 			sort:   bson.D{{"v.0", 1}, {"_id", 1}},
 		},
 		"DotNotationNonExistent": {
-			filter:     bson.D{},
-			sort:       bson.D{{"invalid.foo", 1}, {"_id", 1}},
-			resultType: emptyResult,
+			filter: bson.D{},
+			sort:   bson.D{{"invalid.foo", 1}, {"_id", 1}},
+			//	resultType: emptyResult,
 		},
 		"DotNotationMissingField": {
 			filter:     bson.D{},
