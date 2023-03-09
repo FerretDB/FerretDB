@@ -175,6 +175,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 }
 
 // TestFindAndModifyCompatSort tests how various sort orders are handled.
+// TODO Add more tests: https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"DotNotation": {
