@@ -42,7 +42,7 @@ var accumulators = map[string]newAccumulatorFunc{
 	"$count": newCountAccumulator,
 }
 
-// group represents $group stage.
+// groupStage represents $group stage.
 //
 //	{ $group: {
 //		_id: <groupExpression>,
@@ -213,6 +213,9 @@ type idAccumulator struct {
 }
 
 // Accumulate implements Accumulator interface.
+//
+//	{$group: {_id: "$v"}} sets the value of $v to _id, it returns the value found at key `v`.
+//	{$group: {_id: null}} sets `null` to _id, it returns nil.
 func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (any, error) {
 	if len(in) == 0 {
 		return types.Null, nil
@@ -241,6 +244,8 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 		return nil, lazyerrors.Error(err)
 	}
 
+	// use the first item, it was already grouped by the groupKey,
+	// so all `in` documents contain the same v.
 	v, err := in[0].GetByPath(path)
 	if err != nil {
 		return types.Null, nil
