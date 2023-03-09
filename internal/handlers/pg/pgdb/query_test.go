@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
@@ -350,6 +351,12 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter:   must.NotFail(types.NewDocument("v", true)),
 			expected: whereContain,
 		},
+		"ImplicitDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+			)),
+			expected: whereContain,
+		},
 		"ImplicitObjectID": {
 			filter:   must.NotFail(types.NewDocument("v", objectID)),
 			expected: whereContain,
@@ -407,6 +414,14 @@ func TestPrepareWhereClause(t *testing.T) {
 			)),
 			expected: whereContain,
 		},
+		"EqDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument(
+					"$eq", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+				)),
+			)),
+			expected: whereContain,
+		},
 		"EqObjectID": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", objectID)),
@@ -456,6 +471,14 @@ func TestPrepareWhereClause(t *testing.T) {
 				"v", must.NotFail(types.NewDocument("$ne", true)),
 			)),
 			expected: whereNotEq + `'"bool"' )`,
+		},
+		"NeDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument(
+					"$ne", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+				)),
+			)),
+			expected: whereNotEq + `'"date"' )`,
 		},
 		"NeObjectID": {
 			filter: must.NotFail(types.NewDocument(
