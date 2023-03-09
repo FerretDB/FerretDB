@@ -135,7 +135,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrPathContainsEmptyElement,
-					"Empty field names in path are not allowed",
+					"FieldPath field names may not be empty strings.",
 					document.Command(),
 				)
 			}

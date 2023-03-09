@@ -24,10 +24,7 @@ import (
 )
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
-//
-// If ignoreInvalidSort is true, then invalid sort keys are ignored. Otherwise, an error is returned
-// if one of the sort keys is invalid.
-func SortDocuments(docs []*types.Document, sort *types.Document, ignoreInvalidSort bool) error {
+func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	if sort.Len() == 0 {
 		return nil
 	}
@@ -46,14 +43,15 @@ func SortDocuments(docs []*types.Document, sort *types.Document, ignoreInvalidSo
 
 		sortPath, err := types.NewPathFromString(sortKey)
 		if err != nil {
-			if ignoreInvalidSort {
-				continue
-			}
-
 			return err
 		}
 
 		sortFuncs[i] = lessFunc(sortPath, sortType)
+	}
+
+	if len(sortFuncs) == 0 {
+		// no keys to sort by
+		return nil
 	}
 
 	sorter := &docsSorter{docs: docs, sorts: sortFuncs}

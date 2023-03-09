@@ -176,7 +176,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 
 // TestFindAndModifyCompatSort tests how various sort orders are handled.
 //
-// TODO Add more tests: https://github.com/FerretDB/FerretDB/issues/2168
+// TODO Add more tests for sort: https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"DotNotation": {
@@ -200,13 +200,13 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"sort", bson.D{{"invalid.foo", 1}, {"_id", 1}}},
 			},
 		},
-		//"DotNotationMissingField": {
-		//	command: bson.D{
-		//		{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
-		//		{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
-		//		{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
-		//	},
-		//},
+		"DotNotationMissingField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
+				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
