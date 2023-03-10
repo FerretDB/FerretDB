@@ -429,7 +429,7 @@ tasks:
         vars:
           FILE: production
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
-          DOCKER_IMAGES: dummy
+          DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
       - mv tmp/build/ferretdb bin/ferretdb
 
@@ -479,7 +479,7 @@ tasks:
         vars:
           FILE: production
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
-          DOCKER_IMAGES: dummy
+          DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
       - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=deb --target=tmp/debs/ferretdb.deb
         env:
@@ -496,7 +496,7 @@ tasks:
         vars:
           FILE: production
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
-          DOCKER_IMAGES: dummy
+          DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
       - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=rpm --target=tmp/rpms/ferretdb.rpm
         env:
