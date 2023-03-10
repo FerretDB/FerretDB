@@ -260,19 +260,15 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		sourcePath, err := types.NewPathFromString(key)
 		if err != nil {
 			var pathErr *types.DocumentPathError
-
-			if errors.As(err, &pathErr) {
-				switch pathErr.Code() {
-				case types.ErrDocumentPathEmptyKey:
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrEmptyName,
-						fmt.Sprintf("Cannot apply $rename to a value of non-numeric type. "+
-							"{_id: %s} has the field '%s' of non-numeric type object",
-							must.NotFail(doc.Get("_id")),
-							key,
-						),
-					)
-				}
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrEmptyName,
+					fmt.Sprintf("Cannot apply $rename to a value of non-numeric type. "+
+						"{_id: %s} has the field '%s' of non-numeric type object",
+						must.NotFail(doc.Get("_id")),
+						key,
+					),
+				)
 			}
 		}
 
@@ -289,13 +285,11 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 				panic("getByPath returned error with invalid type")
 			}
 
-			switch dpe.Code() {
-			case types.ErrDocumentPathKeyNotFound,
-				types.ErrDocumentPathIndexOutOfBound:
+			if dpe.Code() == types.ErrDocumentPathKeyNotFound || dpe.Code() == types.ErrDocumentPathIndexOutOfBound {
 				continue
-			default:
-				return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 			}
+
+			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 		}
 
 		// Remove old document
