@@ -283,6 +283,7 @@ func TestAggregateCompatCount(t *testing.T) {
 
 	testAggregateStagesCompat(t, testCases)
 }
+
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// Scalars collection is not included because aggregation groups
 	// numbers of different types for $group, and this causes output
