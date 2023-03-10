@@ -96,6 +96,15 @@ db.users.find({
 })
 ```
 
+### ACID Compliance
+
+ACID (Atomicity, Consistency, Isolation, and Durability) capabilities ensure that database transactions are always consistent and reliable, which is critical when handling highly sensitive data.
+PostgreSQL is ACID-compliant by default, making it highly suitable for databases that require transactional workflows.
+
+On the other hand, while MongoDB does support ACID transactions, it's not entirely ACID-compliant by default.
+Instead, it offers several flexible options for data consistency and reliability, such as read/write concerns and multi-document transactions.
+These features allow you to configure your database to the level of data consistency and reliability you need.
+
 ### Performance and Scalability
 
 Comparing the performance of MongoDB and PostgreSQL is a complex task due to their distinctive approaches to data storage and retrieval.
@@ -110,15 +119,6 @@ Although PostgreSQL may not match the raw insertion speed of MongoDB, its except
 On the other hand, MongoDB's flexibility in structuring data makes it ideal for applications that require rapid execution of queries and for handling large amounts of data, as there are no server-side checks or validations required before inserting data.
 While MongoDB does not support relations or JOINs like PostgreSQL, it offers better query performance because all the necessary data for a query is stored in one place.
 Additionally, MongoDB's schemaless structure allows for easy horizontal scaling without the need for complex sharding solutions.
-
-### ACID Compliance
-
-ACID (Atomicity, Consistency, Isolation, and Durability) capabilities ensure that database transactions are always consistent and reliable, which is critical when handling highly sensitive data.
-PostgreSQL is ACID-compliant by default, making it highly suitable for databases that require transactional workflows.
-
-On the other hand, while MongoDB does support ACID transactions, it's not entirely ACID-compliant by default.
-Instead, it offers several flexible options for data consistency and reliability, such as read/write concerns and multi-document transactions.
-These features allow you to configure your database to the level of data consistency and reliability you need.
 
 ### Security
 
