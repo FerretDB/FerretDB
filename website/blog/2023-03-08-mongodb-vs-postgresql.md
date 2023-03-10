@@ -145,7 +145,7 @@ These features can be configured to meet the specific needs of different organiz
 To ensure the security of your databases, it's critical to follow best practices, even if MongoDB and PostgreSQL provide robust security.
 As part of this process, frequent updates, monitoring, and security training should be conducted to minimize the risk of common attack vectors like phishing and social engineering attacks.
 
-### License and cost
+### License and Cost
 
 One of the significant differences between PostgreSQL and MongoDB is their respective licenses.
 PostgreSQL is released under the [PostgreSQL License](https://opensource.org/license/postgresql/), an open-source license for free use, modification, and distribution.
