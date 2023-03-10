@@ -68,6 +68,9 @@ jobs:
       - name: Build docs
         run: bin/task docs
 
+      - name: Create directory
+        run: mkdir tmp
+
       - name: Archive docs
         run: >
           tar --directory website/build
