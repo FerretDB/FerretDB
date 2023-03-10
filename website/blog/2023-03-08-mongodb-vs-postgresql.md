@@ -45,7 +45,7 @@ Some of the many use cases for MongoDB include content management, eCommerce, re
 
 ### PostgreSQL
 
-[PostgreSQL](https://www.postgresql.org/) is a widely used, robust, open-source relational database management system (RDMS) released in 1989, making it decades other than MongoDB.
+[PostgreSQL](https://www.postgresql.org/) is a widely used, robust, open-source relational database management system (RDMS) released in 1989, making it decades older than MongoDB.
 Compared to proprietary relational databases like SQL Server and Oracle, It's a cost-effective alternative for building scalable, enterprise-grade databases.
 
 PostgreSQL boasts of a dedicated and thriving community of contributors and enthusiasts that regularly upgrade, develop, and maintain the database system.
