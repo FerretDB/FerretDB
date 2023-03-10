@@ -27,20 +27,29 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+//go:generate ../../bin/stringer -linecomment -type DocumentPathErrorCode
+
 // DocumentPathErrorCode represents DocumentPathError error code.
 type DocumentPathErrorCode int
 
 const (
+	_ DocumentPathErrorCode = iota
+
 	// ErrDocumentPathKeyNotFound indicates that key was not found in document.
-	ErrDocumentPathKeyNotFound = iota + 1
+	ErrDocumentPathKeyNotFound
+
 	// ErrDocumentPathCannotAccess indicates that path couldn't be accessed.
 	ErrDocumentPathCannotAccess
+
 	// ErrDocumentPathArrayInvalidIndex indicates that provided array index is invalid.
 	ErrDocumentPathArrayInvalidIndex
+
 	// ErrDocumentPathIndexOutOfBound indicates that provided array index is out of bound.
 	ErrDocumentPathIndexOutOfBound
+
 	// ErrDocumentPathCannotCreateField indicates that it's impossible to create a specific field.
 	ErrDocumentPathCannotCreateField
+
 	// ErrDocumentPathEmptyKey indicates that provided path contains empty key.
 	ErrDocumentPathEmptyKey
 )

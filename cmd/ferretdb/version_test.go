@@ -41,7 +41,7 @@ func TestVersion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
 	t.Cleanup(cancel)
 
-	bin := filepath.Join("..", "..", "bin", "ferretdb-local")
+	bin := filepath.Join("..", "..", "bin", "ferretdb")
 
 	cmd := exec.CommandContext(ctx, bin, "--version")
 	b, err := cmd.Output()

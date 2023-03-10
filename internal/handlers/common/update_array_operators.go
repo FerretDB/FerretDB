@@ -471,34 +471,28 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			)
 		}
 
-		for i := 0; i < array.Len(); {
-			var value any
+		for j := 0; j < pullAllArray.Len(); j++ {
+			var valueToPull any
 
-			value, err = array.Get(i)
+			valueToPull, err = pullAllArray.Get(j)
 			if err != nil {
 				return false, lazyerrors.Error(err)
 			}
 
-			for j := 0; j < pullAllArray.Len(); j++ {
-				var valueToPull any
+			// we remove all instances of valueToPull in array
+			for i := array.Len() - 1; i >= 0; i-- {
+				var value any
 
-				valueToPull, err = pullAllArray.Get(j)
+				value, err = array.Get(i)
 				if err != nil {
 					return false, lazyerrors.Error(err)
 				}
 
-				compareResult := types.Compare(value, valueToPull)
-
-				if compareResult == types.Equal {
+				if types.Compare(value, valueToPull) == types.Equal {
 					array.Remove(i)
 
 					changed = true
-
-					continue
 				}
-
-				// Increment i only if the value was not removed.
-				i++
 			}
 		}
 

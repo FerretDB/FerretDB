@@ -51,15 +51,15 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Build bin/ferretdb-local
-        run: bin/task build-local
+      - name: Build bin/ferretdb
+        run: bin/task build-host
 
       - name: Wait for and setup environment
         run: bin/task env-setup
 
       - name: Start FerretDB in the background
         run: >
-          bin/ferretdb-local
+          bin/ferretdb
           --listen-addr=:27017
           --proxy-addr=127.0.0.1:47017
           --mode=diff-normal
