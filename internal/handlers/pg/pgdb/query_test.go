@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
@@ -291,6 +292,7 @@ func TestPrepareWhereClause(t *testing.T) {
 
 	// WHERE clauses occurring frequently in tests
 	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
@@ -347,6 +349,12 @@ func TestPrepareWhereClause(t *testing.T) {
 		},
 		"ImplicitBool": {
 			filter:   must.NotFail(types.NewDocument("v", true)),
+			expected: whereContain,
+		},
+		"ImplicitDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+			)),
 			expected: whereContain,
 		},
 		"ImplicitObjectID": {
@@ -406,11 +414,77 @@ func TestPrepareWhereClause(t *testing.T) {
 			)),
 			expected: whereContain,
 		},
+		"EqDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument(
+					"$eq", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+				)),
+			)),
+			expected: whereContain,
+		},
 		"EqObjectID": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", objectID)),
 			)),
 			expected: whereContain,
+		},
+
+		"NeString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", "foo")),
+			)),
+			expected: whereNotEq + `'"string"' )`,
+		},
+		"NeEmptyString": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", "")),
+			)),
+			expected: whereNotEq + `'"string"' )`,
+		},
+		"NeInt32": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", int32(42))),
+			)),
+			expected: whereNotEq + `'"int"' )`,
+		},
+		"NeInt64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", int64(42))),
+			)),
+			expected: whereNotEq + `'"long"' )`,
+		},
+		"NeFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", float64(42.13))),
+			)),
+			expected: whereNotEq + `'"double"' )`,
+		},
+		"NeMaxFloat64": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
+			)),
+			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
+			expected: whereNotEq + `'"double"' )`,
+		},
+		"NeBool": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", true)),
+			)),
+			expected: whereNotEq + `'"bool"' )`,
+		},
+		"NeDatetime": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument(
+					"$ne", time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC),
+				)),
+			)),
+			expected: whereNotEq + `'"date"' )`,
+		},
+		"NeObjectID": {
+			filter: must.NotFail(types.NewDocument(
+				"v", must.NotFail(types.NewDocument("$ne", objectID)),
+			)),
+			expected: whereNotEq + `'"objectId"' )`,
 		},
 
 		"Comment": {

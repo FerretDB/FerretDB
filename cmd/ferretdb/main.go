@@ -102,9 +102,9 @@ var tigrisFlags struct {
 // The hanaFlags struct represents flags that are used specifically by "hana" handler.
 //
 // See main_hana.go.
-//
-//nolint:unused // remove once it is used
-var hanaFlags struct{}
+var hanaFlags struct {
+	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
+}
 
 // Additional variables for the kong parsers.
 var (
@@ -314,6 +314,8 @@ func run() {
 		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
+
+		HANAURL: hanaFlags.HANAURL,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

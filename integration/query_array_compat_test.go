@@ -253,7 +253,7 @@ func testQueryArrayCompatAll() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(42)}}}}},
 		},
 		"WholeNotFound": {
-			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(44)}}}}},
+			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(46)}}}}},
 			resultType: emptyResult,
 		},
 		"Zero": {
