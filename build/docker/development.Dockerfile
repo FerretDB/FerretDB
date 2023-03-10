@@ -38,12 +38,15 @@ ENV GOARM=7
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-# do not trim paths to make debugging with delve easier
+# Do not trim paths to make debugging with delve easier.
+#
+# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
+# (and that happens on GitHub-hosted Actions runners).
 RUN <<EOF
-RACE=true
-if test "$TARGETARCH" = "arm"
+RACE=false
+if test "$TARGETARCH" == "amd64"
 then
-    RACE=false
+    RACE=true
 fi
 
 go build -v                 -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
