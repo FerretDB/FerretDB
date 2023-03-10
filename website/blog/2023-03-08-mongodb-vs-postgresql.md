@@ -112,7 +112,7 @@ Comparing the performance of MongoDB and PostgreSQL is a complex task due to the
 PostgreSQL's rigid schema and strong typing may result in slower inserts and updates due to server-side type checking and schema validation.
 However, PostgreSQL's support for relations and JOINs allows users to create complex, structured data models that can return organized data from multiple tables with a single JOIN query.
 
-PostgreSQL uses a vertical scaling strategy to Manage vast amounts of data and increase write scalability by adding hardware resources such as disks, CPUs, and memory to existing database nodes.
+PostgreSQL uses a vertical scaling strategy to manage vast amounts of data and increase write scalability by adding hardware resources such as disks, CPUs, and memory to existing database nodes.
 
 Although PostgreSQL may not match the raw insertion speed of MongoDB, its exceptional ACID compliance ensures safe and reliable transaction processing, preventing partial writes by executing entire transactions or none at all.
 
