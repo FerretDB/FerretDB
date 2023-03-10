@@ -44,7 +44,7 @@ ENV GOAMD64=v1
 # (and that happens on GitHub-hosted Actions runners).
 RUN <<EOF
 RACE=false
-if test "$TARGETARCH" == "amd64"
+if test "$TARGETARCH" = "amd64"
 then
     RACE=true
 fi
