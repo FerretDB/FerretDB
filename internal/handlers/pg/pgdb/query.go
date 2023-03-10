@@ -344,25 +344,33 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			continue
 
 		case float64:
+			// TODO  send simpler query for <16digits numbers
 
 			//v, _ = new(big.Float).SetFloat64(v).SetPrec(100000).Float64()
 
 			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` +
-				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` +
-				`_jsonb->'$s'->'p'->%[1]s->'t' = '"long"' THEN ` +
-				`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` +
+			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` + // If the field or field's array contain the value, just return it (Double("2305843009213693000") == Double("2305843009213693000"))
+				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` + // If the db's row is the array ...
+				`_jsonb->'$s'->'p'->%[1]s->'t' = '"long"' AND ` + // ... or long, we compare them with rounded value (filter is already rounded, so we need to round the db long value)
+				`(_jsonb->%[1]s)::numeric != 0 THEN ` + // This is required as db value can be 0 and the log() cannot take 0 as argument
+				`to_jsonb(ROUND((_jsonb->%[1]s)::numeric, 16 - (floor(log(abs((_jsonb->%[1]s)::numeric)))+1)::int )) @> %[2]s ` + // comparison with rounded number in db
 				`END`
+
+				// There are problems with arrays though. They cannot be handled like that, as we can't just conver array to nummeric.
+				// While doing comparison we need to go through it
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		case int32, int64:
 			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` +
-				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` +
-				`_jsonb->'$s'->'p'->%[1]s->'t' = '"double"' THEN ` +
-				`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` +
+
+			// TODO  send simpler query for <16digits numbers
+
+			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` + // If the field or field's array contain the value, just return it (Long("2305843009213693952") == Long("2305843009213693952"))
+				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` + // If the db's row is the array ...
+				`_jsonb->'$s'->'p'->%[1]s->'t' = '"double"' THEN ` + // ... or double, we compare them with rounded filter (doubles that are already in database are already rounded).
+				`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` + // comparison with rounded filter
 				`END`
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
