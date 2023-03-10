@@ -112,6 +112,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
+        if: steps.extract.outputs.all_in_one_images != ''
+        run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.extract.outputs.all_in_one_images }}
+
       - name: Build and push development Docker images ${{ steps.extract.outputs.development_images }}
         if: steps.extract.outputs.development_images != ''
         run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.extract.outputs.development_images }}

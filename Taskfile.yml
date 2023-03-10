@@ -445,6 +445,17 @@ tasks:
 
   # TODO set annotations,
   # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
+  docker-all-in-one-push:
+    cmds:
+      - echo 'docker-all-in-one' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: all-in-one
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          OUTPUT: type=image,push=true
+
+  # TODO set annotations,
+  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
   docker-development-push:
     cmds:
       - echo 'docker' > build/version/package.txt
