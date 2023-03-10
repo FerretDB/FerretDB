@@ -36,10 +36,21 @@ import (
 )
 
 // See docker-compose.yml.
-var tigrisURLsIndex atomic.Uint32
+var (
+	postgreSQLURLsIndex atomic.Uint32
+	tigrisURLsIndex     atomic.Uint32
+)
 
-// nextTigrisUrl returns the next url for the `tigris` handler.
-func nextTigrisUrl() string {
+// nextPostgreSQLUrl returns the next url for the `pg` handler.
+func nextPostgreSQLUrl() string {
+	i := int(postgreSQLURLsIndex.Add(1)) - 1
+	urls := strings.Split(*postgreSQLURLSF, ",")
+
+	return urls[i%len(urls)]
+}
+
+// nextTigrisURL returns the next url for the `tigris` handler.
+func nextTigrisURL() string {
 	i := int(tigrisURLsIndex.Add(1)) - 1
 	urls := strings.Split(*tigrisURLSF, ",")
 
@@ -93,11 +104,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	switch *targetBackendF {
 	case "ferretdb-pg":
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
+		require.NotEmpty(tb, *postgreSQLURLSF, "-postgresql-urls must be set for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		handler = "pg"
 	case "ferretdb-tigris":
-		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *postgreSQLURLSF, "-postgresql-urls must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
 		handler = "tigris"
 	case "mongodb":
@@ -118,9 +129,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		StateProvider:   p,
 		DisablePushdown: *disablePushdownF,
 
-		PostgreSQLURL: *postgreSQLURLF,
+		PostgreSQLURL: nextPostgreSQLUrl(),
 
-		TigrisURL: nextTigrisUrl(),
+		TigrisURL: nextTigrisURL(),
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)

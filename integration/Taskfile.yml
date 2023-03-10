@@ -13,12 +13,12 @@ tasks:
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata .
         -compat-port=0
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -postgresql-urls=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata .
         -compat-port=0
-        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
+        -postgresql-urls=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata,ferretdb_tigris .

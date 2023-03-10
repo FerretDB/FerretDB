@@ -20,6 +20,25 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=ferretdb
 
+  # Additional instances for faster integration tests.
+  postgres1:
+    build:
+      context: ./build/deps
+      dockerfile: postgres.Dockerfile
+    container_name: ferretdb_postgres1
+    command: postgres -c 'max_connections=200'
+    ports:
+      - 5442:5432
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # UTC−03:30/−02:30. Set to catch timezone problems.
+      - TZ=America/St_Johns
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=ferretdb
+
   postgres_secured:
     build:
       context: ./build/deps

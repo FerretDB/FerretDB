@@ -12,7 +12,7 @@ vars:
   RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
-  SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
+  SERVICES: postgres postgres1 postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
 
 tasks:
   # invoked when `task` is run without arguments
@@ -180,7 +180,7 @@ tasks:
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -postgresql-urls=postgres://username@127.0.0.1:5432/ferretdb,postgres://username@127.0.0.1:5442/ferretdb
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
 
   test-integration-tigris:

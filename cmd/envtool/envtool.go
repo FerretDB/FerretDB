@@ -137,9 +137,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 }
 
 // setupPostgres configures `postgres` container.
-func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
+func setupPostgres(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	// user `username` must exist, but password may be any, even empty
-	return setupAnyPostgres(ctx, logger.Named("postgres"), "postgres://username@127.0.0.1:5432/ferretdb")
+	uri := fmt.Sprintf("postgres://username@127.0.0.1:%d/ferretdb", port)
+	return setupAnyPostgres(ctx, logger.Named("postgres").Named(fmt.Sprint(port)), uri)
 }
 
 // setupPostgresSecured configures `postgres_secured` container.
@@ -188,7 +189,7 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	// See docker-compose.yml.
 	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
-		if err := setupAnyTigris(ctx, logger.Named(strconv.Itoa(int(port))), port); err != nil {
+		if err := setupAnyTigris(ctx, logger.Named(fmt.Sprint(port)), port); err != nil {
 			return err
 		}
 	}
@@ -200,8 +201,11 @@ func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
 
-	if err := setupPostgres(ctx, logger); err != nil {
-		return err
+	// See docker-compose.yml.
+	for _, port := range []uint16{5432, 5442} {
+		if err := setupPostgres(ctx, logger.Named(fmt.Sprint(port)), port); err != nil {
+			return err
+		}
 	}
 
 	if err := setupPostgresSecured(ctx, logger); err != nil {
