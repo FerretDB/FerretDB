@@ -17,6 +17,7 @@ package pg
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -26,6 +27,25 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+func getPayload(doc *types.Document) ([]byte, error) {
+	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
+	if err == nil {
+		return binaryPayload.B, nil
+	}
+
+	payload, err := common.GetRequiredParam[string](doc, "payload")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	data, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return data, nil
+}
 
 // MsgSASLStart implements HandlerInterface.
 func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -47,12 +67,12 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	payload, err := common.GetRequiredParam[types.Binary](doc, "payload")
+	payload, err := getPayload(doc)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	parts := bytes.Split(payload.B, []byte{0})
+	parts := bytes.Split(payload, []byte{0})
 	if l := len(parts); l != 3 {
 		return nil, common.NewCommandErrorMsgWithArgument(
 			common.ErrTypeMismatch,
