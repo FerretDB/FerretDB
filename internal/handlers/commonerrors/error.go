@@ -139,14 +139,14 @@ const (
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
 
-	// ErrStageGroupOneAccumulator indicates that group field must specify one accumulator.
-	ErrStageGroupOneAccumulator = ErrorCode(40238) // Location40238
+	// ErrStageGroupMultipleAccumulator indicates that group field must specify one accumulator.
+	ErrStageGroupMultipleAccumulator = ErrorCode(40238) // Location40238
 
 	// ErrStageInvalid indicates invalid aggregation pipeline stage.
 	ErrStageInvalid = ErrorCode(40323) // Location40323
 
-	// ErrStageGroupInvalidField indicates invalid accumulator field.
-	ErrStageGroupInvalidField = ErrorCode(40234) // Location40234
+	// ErrStageGroupInvalidAccumulator indicates invalid accumulator field.
+	ErrStageGroupInvalidAccumulator = ErrorCode(40234) // Location40234
 
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352

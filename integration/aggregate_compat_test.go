@@ -396,17 +396,17 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
 		},
-		"Location16872": {
+		"GroupInvalidFieldPath": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
 			}}}},
 			resultType: emptyResult,
 		},
-		"Location15947": {
+		"GroupInvalidFields": {
 			pipeline:   bson.A{bson.D{{"$group", 1}}},
 			resultType: emptyResult,
 		},
-		"Location15955": {
+		"EmptyGroup": {
 			pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
 			resultType: emptyResult,
 		},
@@ -430,14 +430,14 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			resultType: emptyResult,
 		},
-		"Location40238": {
+		"GroupMultipleAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
 			}}}},
 			resultType: emptyResult,
 		},
-		"Location40234": {
+		"GroupInvalidAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{{"invalid", "v"}}},

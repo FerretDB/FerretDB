@@ -73,14 +73,6 @@ func newGroup(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	if fields.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupMissingID,
-			"a group specification must include an _id",
-			"$group",
-		)
-	}
-
 	var groupKey any
 	var groups []groupBy
 
@@ -116,7 +108,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 		accumulation, ok := v.(*types.Document)
 		if !ok || accumulation.Len() == 0 {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupInvalidField,
+				commonerrors.ErrStageGroupInvalidAccumulator,
 				fmt.Sprintf("The field '%s' must be an accumulator object", field),
 				"$group",
 			)
@@ -125,7 +117,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 		// document contains only one.
 		if accumulation.Len() > 1 {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupOneAccumulator,
+				commonerrors.ErrStageGroupMultipleAccumulator,
 				fmt.Sprintf("The field '%s' must specify one accumulator", field),
 				"$group",
 			)
@@ -217,10 +209,6 @@ type idAccumulator struct {
 //	{$group: {_id: "$v"}} sets the value of $v to _id, it returns the value found at key `v`.
 //	{$group: {_id: null}} sets `null` to _id, it returns nil.
 func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (any, error) {
-	if len(in) == 0 {
-		return types.Null, nil
-	}
-
 	groupKey, ok := a.expression.(string)
 	if !ok {
 		return a.expression, nil
@@ -231,13 +219,6 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 	}
 
 	key := strings.TrimPrefix(groupKey, "$")
-	if key == "" {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrGroupInvalidFieldPath,
-			"'$' by itself is not a valid FieldPath",
-			"$group",
-		)
-	}
 
 	path, err := types.NewPathFromString(key)
 	if err != nil {
@@ -296,13 +277,6 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 		}
 
 		group.addOrAppend(v, doc)
-	}
-
-	if len(group.docs) == 0 {
-		return []groupedDocuments{{
-			groupKey:  types.Null,
-			documents: in,
-		}}, nil
 	}
 
 	return group.docs, nil
