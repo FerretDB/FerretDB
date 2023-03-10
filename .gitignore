@@ -19,6 +19,3 @@ vendor/
 state.json
 tmp/
 website/build/
-
-# for local Docker Compse changes; see https://docs.docker.com/compose/extends/#multiple-compose-files
-docker-compose.override.yml
