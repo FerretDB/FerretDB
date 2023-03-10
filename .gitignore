@@ -9,10 +9,7 @@ bin/
 .cache/
 vendor/
 
-# packages, build artifacts, temporary files
-*.deb
-*.rpm
-*.tar
+# development and build artifacts, temporary files, etc
 *.txt
 *.out
 **/testdata/fuzz/
