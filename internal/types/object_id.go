@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -59,8 +60,10 @@ var (
 )
 
 func init() {
-	// TODO remove for Go 1.20
-	rand.Seed(time.Now().UnixNano())
+	// to make debugging easier
+	if debugbuild.Enabled {
+		return
+	}
 
 	must.NotFail(rand.Read(objectIDProcess[:]))
 	objectIDCounter.Store(rand.Uint32())
