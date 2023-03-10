@@ -287,6 +287,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// Scalars collection is not included because aggregation groups
 	// numbers of different types for $group, and this causes output
 	// _id to be different number type between compat and target.
+	// https://github.com/FerretDB/FerretDB/issues/2184
 	//
 	// Composites, ArrayStrings, ArrayInt32s are not included
 	// because the order in compat and target can be not deterministic.
@@ -294,6 +295,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// descending sort use the greatest element for comparison causing
 	// multiple documents with the same greatest element the same order,
 	// so compat and target results in different order.
+	// https://github.com/FerretDB/FerretDB/issues/2185
 
 	providers := []shareddata.Provider{
 		// shareddata.Scalars,
