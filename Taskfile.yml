@@ -259,6 +259,7 @@ tasks:
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         --test-records-dir=tmp/records
+        --test-disable-pushdown
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"

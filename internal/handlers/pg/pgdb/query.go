@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-	"reflect"
 	"strings"
 	"time"
 
@@ -302,7 +300,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						// type not supported for pushdown
 					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
+						sql := `_jsonb->%[1]s @> %[2]s OR CASE ` +
+							`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` +
+							`_jsonb->'$s'->'p'->%[1]s->'t' = '"double"' THEN ` +
+							`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` +
+							`END`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
@@ -341,23 +343,32 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 			continue
 
-		case float64, bool, time.Time, int32, int64:
+		case float64:
+
+			//v, _ = new(big.Float).SetFloat64(v).SetPrec(100000).Float64()
+
 			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
+			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` +
+				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` +
+				`_jsonb->'$s'->'p'->%[1]s->'t' = '"long"' THEN ` +
+				`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` +
+				`END`
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
-			if reflect.TypeOf(v).Kind() == reflect.Int64 {
-				vi := v.(int64)
-				v, _ = new(big.Float).SetInt64(vi).SetPrec(100000).Float64()
-			}
+		case int32, int64:
+			// Select if value under the key is equal to provided value.
+			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` +
+				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` +
+				`_jsonb->'$s'->'p'->%[1]s->'t' = '"double"' THEN ` +
+				`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` +
+				`END`
 
-			// mongodb rounds doubles to 16 bytes so if we pass filter int(2305843009213693952)
-			// database should match float64(2305843009213694000)
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
-			args = append(args, rootKey, v)
-
-		case string, types.ObjectID:
+		case string, bool, time.Time, types.ObjectID:
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 
