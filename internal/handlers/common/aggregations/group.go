@@ -46,9 +46,9 @@ var accumulators = map[string]newAccumulatorFunc{
 //
 //	{ $group: {
 //		_id: <groupExpression>,
-//		<groupBy[0].outputField>: {<groupBy[0].accumulator>: <groupBy[0].expression>},
+//		<groupBy[0].outputField>: {accumulator0: expression0},
 //		...
-//		<groupBy[N].outputField>: {<groupBy[N].accumulator>: <groupBy[N].expression>},
+//		<groupBy[N].outputField>: {accumulatorN: expressionN},
 //	}}
 type groupStage struct {
 	groupExpression any
@@ -57,7 +57,6 @@ type groupStage struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	expression  any
 	accumulate  func(ctx context.Context, in []*types.Document) (any, error)
 	outputField string
 }
@@ -206,8 +205,8 @@ type idAccumulator struct {
 
 // Accumulate implements Accumulator interface.
 //
-//	{$group: {_id: "$v"}} sets the value of $v to _id, it returns the value found at key `v`.
-//	{$group: {_id: null}} sets `null` to _id, it returns nil.
+//	{$group: {_id: "$v"}} sets the value of $v to _id, Accumulate returns the value found at key `v`.
+//	{$group: {_id: null}} sets `null` to _id, Accumulate returns nil.
 func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (any, error) {
 	groupKey, ok := a.expression.(string)
 	if !ok {
@@ -300,7 +299,7 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		// Compare is used to check if the key exists in the group.
 		// groupKey used as the key can be any BSON type including array and Binary,
 		// so we cannot use structure like map.
-		// Also, numbers are considered for the same value regardless of their number type.
+		// Also, numbers are grouped for the same value regardless of their number type.
 		if types.Compare(groupKey, g.groupKey) == types.Equal {
 			m.docs[i].documents = append(m.docs[i].documents, docs...)
 			return
