@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# FIXME https://github.com/golang/go/issues/57792
+# for production releases (`ferret` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
