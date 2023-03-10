@@ -59,7 +59,7 @@ func NewStage(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
-			name,
+			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
 		)
 	}
 
