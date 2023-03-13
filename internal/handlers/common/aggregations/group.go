@@ -98,7 +98,6 @@ func newGroup(stage *types.Document) (Stage, error) {
 			groups = append(groups, groupBy{
 				outputField: field,
 				accumulate:  idAccumulator.Accumulate,
-				expression:  v,
 			})
 
 			continue
@@ -122,7 +121,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		operator, expression, err := accumulation.Iterator().Next()
+		operator, _, err := accumulation.Iterator().Next()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -144,7 +143,6 @@ func newGroup(stage *types.Document) (Stage, error) {
 		groups = append(groups, groupBy{
 			outputField: field,
 			accumulate:  accumulator.Accumulate,
-			expression:  expression,
 		})
 	}
 
