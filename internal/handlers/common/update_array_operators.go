@@ -221,6 +221,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		}
 
 		var each *types.Array
+
 		if addToSetValue, ok := addToSetValueRaw.(*types.Document); ok {
 			if addToSetValue.Has("$each") {
 				eachRaw := must.NotFail(addToSetValue.Get("$each"))
@@ -276,7 +277,9 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		}
 
 		for i := 0; i < each.Len(); i++ {
-			addValue, err := valueInSet(array, must.NotFail(each.Get(i)))
+			var addValue any
+
+			addValue, err = valueInSet(array, must.NotFail(each.Get(i)))
 			if err != nil {
 				return false, err
 			}
@@ -286,6 +289,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			}
 
 			changed = true
+
 			array.Append(addValue)
 		}
 
