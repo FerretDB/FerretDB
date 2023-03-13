@@ -243,12 +243,29 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
-		"EachNumber": {
+		"Document": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
+				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
+			}}}}},
+		},
+		"String": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
+		},
+		"Int32": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(1), int32(2)}}}}}}},
 		},
-		"EachNotArray": {
+		"NotArray": {
 			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
 			resultType: emptyResult,
+		},
+		"EmptyArray": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
+		},
+		"ArrayValuesExists": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), int32(43)}}}}}}},
+		},
+		"ArrayMixedValuesExists": {
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 		},
 	}
 
