@@ -25,10 +25,24 @@ ARG TARGETARCH
 WORKDIR /src
 COPY . .
 
+# use a single directory for all Go caches to simpliy RUN --mount commands below
+ENV GOPATH /cache/gopath
+ENV GOCACHE /cache/gocache
+ENV GOMODCACHE /cache/gomodcache
+
+# copy cached stdlib builds from the image
+RUN --mount=type=cache,target=/cache \
+    mkdir -p /cache/gocache && \
+    cp -R /root/.cache/go-build/* /cache/gocache/
+
+# remove ",direct"
+ENV GOPROXY https://proxy.golang.org
+
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage and/or cache;
+# That command could be run only once by using a separate stage;
 # see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-RUN go mod download
+RUN --mount=type=cache,target=/cache \
+    go mod download
 
 ENV CGO_ENABLED=1
 ENV GOCOVERDIR=cover
@@ -42,7 +56,7 @@ ENV GOAMD64=v1
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-RUN <<EOF
+RUN --mount=type=cache,target=/cache <<EOF
 RACE=false
 if test "$TARGETARCH" = "amd64"
 then
