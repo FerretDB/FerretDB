@@ -451,7 +451,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: all-in-one
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
           OUTPUT: type=image,push=true
 
   # TODO set annotations,
