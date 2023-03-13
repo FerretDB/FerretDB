@@ -297,46 +297,49 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	return changed, nil
 }
 
-func valueInSet(array *types.Array, addToSetValue any) (any, error) {
+// valueInSet checks if the value is already in the array.
+// If the value is not in the array it returns the value.
+// If the value is in the array it returns nil.
+func valueInSet(array *types.Array, value any) (any, error) {
 	if array.Len() == 0 {
-		return addToSetValue, nil
+		return value, nil
 	}
 
 	var result any
 
-	switch addToSetValue := addToSetValue.(type) {
+	switch value := value.(type) {
 	case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
 		time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
-		shouldAdd := true
+		matched := true
 
 		for i := 0; i < array.Len(); i++ {
-			var value any
+			var arrayValue any
 			var err error
 
-			value, err = array.Get(i)
+			arrayValue, err = array.Get(i)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			compareResult := types.Compare(value, addToSetValue)
+			compareResult := types.Compare(arrayValue, value)
 
 			if compareResult == types.Equal {
-				shouldAdd = false
+				matched = false
 				break
 			}
 		}
 
-		if shouldAdd {
-			result = addToSetValue
+		if matched {
+			result = value
 		}
 	case *types.Array:
 		// Nested arrays are not supported.
 		return nil, commonerrors.NewWriteErrorMsg(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(addToSetValue)),
+			fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(value)),
 		)
 	default:
-		panic(fmt.Sprintf("unhandled type %T", addToSetValue))
+		panic(fmt.Sprintf("unhandled type %T", value))
 	}
 
 	return result, nil
