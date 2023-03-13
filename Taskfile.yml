@@ -406,6 +406,8 @@ tasks:
     cmds:
       - >
         docker buildx build --builder=ferretdb
+        --cache-from=type=local,src=tmp/buildx-cache
+        --cache-to=type=local,mode=max,dest=tmp/buildx-cache
         --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
