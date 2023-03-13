@@ -104,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 		if s, err = aggregations.NewStage(d); err != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, err
 		}
 
 		stages[i] = s
