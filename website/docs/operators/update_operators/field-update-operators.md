@@ -93,7 +93,7 @@ db.employee.updateOne(
 )
 ```
 
-Below is the updated document showing the updated document without the pox :
+Below is the updated document, without the `zip` field :
 
 ```js
 [
