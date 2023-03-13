@@ -252,25 +252,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		}
 
 		if array.Len() == 0 {
-			if addToSetDoc, ok := addToSetValueRaw.(*types.Document); ok {
-				if addToSetDoc.Has("$each") {
-					eachValue := must.NotFail(addToSetDoc.Get("$each"))
-
-					eachArray, ok := eachValue.(*types.Array)
-					if !ok {
-						return false, commonerrors.NewWriteErrorMsg(
-							commonerrors.ErrTypeMismatch,
-							"",
-						)
-					}
-
-					for i := 0; i < eachArray.Len(); i++ {
-						array.Append(must.NotFail(eachArray.Get(i)))
-					}
-				}
-			} else {
-				array.Append(addToSetValueRaw)
-			}
+			array.Append(addToSetValueRaw)
 
 			if err = doc.SetByPath(path, array); err != nil {
 				return false, lazyerrors.Error(err)
@@ -284,86 +266,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		var appendValue any
 
 		switch addToSetValueRaw := addToSetValueRaw.(type) {
-		case *types.Document:
-			if addToSetValueRaw.Has("$each") {
-				eachValue, err := addToSetValueRaw.Get("$each")
-				if err != nil {
-					return false, lazyerrors.Error(err)
-				}
-
-				eachArray, ok := eachValue.(*types.Array)
-				if !ok {
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrTypeMismatch,
-						fmt.Sprintf(
-							"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-							key, AliasFromType(val), must.NotFail(doc.Get("_id")),
-						),
-					)
-				}
-
-				for i := 0; i < eachArray.Len(); i++ {
-					var value any
-
-					value, err = eachArray.Get(i)
-					if err != nil {
-						return false, lazyerrors.Error(err)
-					}
-
-					shouldAdd := true
-
-					for j := 0; j < array.Len(); j++ {
-						var arrayValue any
-
-						arrayValue, err = array.Get(j)
-						if err != nil {
-							return false, lazyerrors.Error(err)
-						}
-
-						compareResult := types.Compare(value, arrayValue)
-
-						if compareResult == types.Equal {
-							shouldAdd = false
-							break
-						}
-					}
-
-					if shouldAdd {
-						array.Append(value)
-						changed = true
-					}
-				}
-
-				if err = doc.SetByPath(path, array); err != nil {
-					return false, lazyerrors.Error(err)
-				}
-
-				continue
-			}
-
-			shouldAdd := true
-
-			for i := 0; i < array.Len(); i++ {
-				var value any
-
-				value, err = array.Get(i)
-				if err != nil {
-					return false, lazyerrors.Error(err)
-				}
-
-				compareResult := types.Compare(value, addToSetValueRaw)
-
-				if compareResult == types.Equal {
-					shouldAdd = false
-					break
-				}
-			}
-
-			if shouldAdd {
-				appendValue = addToSetValueRaw
-			}
-
-		case float64, string, types.Binary, types.ObjectID, bool,
+		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
 			time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
 			shouldAdd := true
 
