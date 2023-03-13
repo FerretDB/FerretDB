@@ -101,7 +101,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	if res.BatchSize < 0 {
 		return nil, NewCommandError(
-			commonerrors.ErrBatchSizeNegative,
+			commonerrors.ErrValueNegative,
 			fmt.Errorf("BSON field 'batchSize' value must be >= 0, actual value '%d'", res.BatchSize),
 		)
 	}

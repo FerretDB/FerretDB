@@ -29,6 +29,7 @@ import (
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
 	filter     bson.D                   // required
+	skip       any                      // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -67,10 +68,12 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"count", targetCollection.Name()},
 						{"query", filter},
+						{"skip", tc.skip},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"count", compatCollection.Name()},
 						{"query", filter},
+						{"skip", tc.skip},
 					}).Decode(&compatRes)
 
 					if targetErr != nil {
@@ -110,25 +113,62 @@ func TestCountCompat(t *testing.T) {
 	testCases := map[string]countCompatTestCase{
 		"Empty": {
 			filter: bson.D{},
+			skip:   0,
 		},
 		"IDString": {
 			filter: bson.D{{"_id", "string"}},
+			skip:   0,
 		},
 		"IDObjectID": {
 			filter: bson.D{{"_id", primitive.NilObjectID}},
+			skip:   0,
 		},
 		"IDNotExists": {
 			filter: bson.D{{"_id", "count-id-not-exists"}},
+			skip:   0,
 		},
 		"IDBool": {
 			filter: bson.D{{"_id", "bool-true"}},
+			skip:   0,
 		},
 		"FieldTrue": {
 			filter: bson.D{{"v", true}},
+			skip:   0,
 		},
 		"FieldTypeArrays": {
 			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
+			skip:   0,
 		},
+
+		"SkipSimple": {
+			filter: bson.D{},
+			skip:   1,
+		},
+		"SkipBig": {
+			filter: bson.D{},
+			skip:   1000,
+		},
+		"SkipNegative": {
+			filter:     bson.D{},
+			skip:       -1,
+			resultType: emptyResult,
+		},
+		"SkipNull": {
+			filter: bson.D{},
+			skip:   nil,
+		},
+		//"SkipString": {
+		//	filter: bson.D{},
+		//	skip:   "foo",
+		//},
+		//"SkipDouble": {
+		//	filter: bson.D{},
+		//	skip:   42.42,
+		//},
+		//"SkipWhole": {
+		//	filter: bson.D{},
+		//	skip:   float64(1),
+		//},
 	}
 
 	testCountCompat(t, testCases)

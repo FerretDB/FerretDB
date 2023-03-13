@@ -51,7 +51,7 @@ func _() {
 	_ = x[ErrMissingField-40414]
 	_ = x[ErrFailedToParseInput-40415]
 	_ = x[ErrFreeMonitoringDisabled-50840]
-	_ = x[ErrBatchSizeNegative-51024]
+	_ = x[ErrValueNegative-51024]
 	_ = x[ErrRegexOptions-51075]
 	_ = x[ErrRegexMissingParen-51091]
 	_ = x[ErrBadRegexOption-51108]
