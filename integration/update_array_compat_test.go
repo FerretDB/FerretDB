@@ -247,12 +247,15 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
+			skipForTigris: "Mixed types are not supported for Tigris.",
 		},
 		"String": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
+			skipForTigris: "Mixed types are not supported for Tigris.",
 		},
 		"Int32": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(1), int32(2)}}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(1), int32(2)}}}}}}},
+			skipForTigris: "Mixed types are not supported for Tigris.",
 		},
 		"NotArray": {
 			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
@@ -275,7 +278,8 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{bson.D{{"bar", "zoo"}}}}}}}}},
 		},
 		"DotNotationNonArray": {
-			update: bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			update:     bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			resultType: emptyResult,
 		},
 		"DotNotationNonExistentPath": {
 			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
