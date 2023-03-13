@@ -273,6 +273,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		}
 
 		if each == nil {
+			each = types.MakeArray(1)
 			each.Append(addToSetValueRaw)
 		}
 
