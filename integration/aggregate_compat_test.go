@@ -33,11 +33,23 @@ type aggregateStagesCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-// testAggregateStagesCompat tests aggregation stages compatibility test cases.
+// testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
 func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStagesCompatTestCase) {
 	t.Helper()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	testAggregateStagesCompatWithProviders(t, shareddata.AllProviders(), testCases)
+}
+
+// testAggregateStagesCompatWithProviders tests aggregation stages compatibility test cases with given providers.
+func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
+	t.Helper()
+
+	require.NotEmpty(t, providers)
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: providers,
+	})
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -265,6 +277,222 @@ func TestAggregateCompatCount(t *testing.T) {
 		},
 		"Location40158": {
 			pipeline:   bson.A{bson.D{{"$count", "$foo"}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
+	// Scalars collection is not included because aggregation groups
+	// numbers of different types for $group, and this causes output
+	// _id to be different number type between compat and target.
+	// https://github.com/FerretDB/FerretDB/issues/2184
+	//
+	// Composites, ArrayStrings, ArrayInt32s are not included
+	// because the order in compat and target can be not deterministic.
+	// Aggregation assigns BSON array to output _id, and an array with
+	// descending sort use the greatest element for comparison causing
+	// multiple documents with the same greatest element the same order,
+	// so compat and target results in different order.
+	// https://github.com/FerretDB/FerretDB/issues/2185
+
+	providers := []shareddata.Provider{
+		// shareddata.Scalars,
+
+		shareddata.Doubles,
+		shareddata.BigDoubles,
+		shareddata.Strings,
+		shareddata.Binaries,
+		shareddata.ObjectIDs,
+		shareddata.Bools,
+		shareddata.DateTimes,
+		shareddata.Nulls,
+		shareddata.Regexes,
+		shareddata.Int32s,
+		shareddata.Timestamps,
+		shareddata.Int64s,
+		shareddata.Unsets,
+		shareddata.ObjectIDKeys,
+
+		// shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+
+		shareddata.DocumentsDoubles,
+		shareddata.DocumentsStrings,
+		shareddata.DocumentsDocuments,
+
+		// shareddata.ArrayStrings,
+		shareddata.ArrayDoubles,
+		// shareddata.ArrayInt32s,
+		shareddata.ArrayRegexes,
+		shareddata.ArrayDocuments,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DistinctValue": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+				}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"CountValue": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"count", bson.D{{"$count", bson.D{}}}},
+				}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
+}
+
+func TestAggregateCompatGroup(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"NullID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+			}}}},
+		},
+		"DistinctID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$_id"},
+			}}}},
+		},
+		"IDExpression": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", bson.D{{"v", "$v"}}},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2165",
+		},
+		"NonExistentID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$invalid"},
+			}}}},
+		},
+		"NonExpressionID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "v"},
+			}}}},
+		},
+		"NonStringID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", bson.A{}},
+			}}}},
+		},
+		"OperatorNameAsExpression": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$add"},
+			}}}},
+		},
+		"DotNotationID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
+		},
+		"GroupInvalidFieldPath": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"GroupInvalidFields": {
+			pipeline:   bson.A{bson.D{{"$group", 1}}},
+			resultType: emptyResult,
+		},
+		"EmptyGroup": {
+			pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"MissingID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"bla", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+		"EmptyAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"GroupMultipleAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"GroupInvalidAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{{"invalid", "v"}}},
+			}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatGroupCount(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"CountNull": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
+		},
+		"CountID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$_id"},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
+		},
+		"TypeMismatch": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"count", bson.D{{"$count", ""}}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"NonEmptyExpression": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"count", bson.D{{"$count", bson.D{{"a", 1}}}}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"NonExistentField": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$nonexistent"},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
+		},
+		"Duplicate": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v"},
+				{"count", bson.D{{"$count", bson.D{}}}},
+				{"count", bson.D{{"$count", bson.D{}}}},
+			}}}},
 			resultType: emptyResult,
 		},
 	}

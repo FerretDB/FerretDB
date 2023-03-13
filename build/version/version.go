@@ -41,6 +41,10 @@
 //   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.
 //   - The default logging level is set to debug.
+//
+// Debug builds are orthogonal to production releases, development releases, and local/host builds.
+// For example, the host build could be made non-debug, and the production release could be a debug build,
+// although that's not common.
 package version
 
 import (
@@ -73,7 +77,7 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
-	Package          string // TODO https://github.com/FerretDB/FerretDB/issues/1805
+	Package          string
 	DebugBuild       bool
 	BuildEnvironment *types.Document
 
@@ -113,7 +117,7 @@ func init() {
 		Commit:              unknown,
 		Branch:              unknown,
 		Dirty:               false,
-		Package:             unknown, // TODO https://github.com/FerretDB/FerretDB/issues/1805
+		Package:             unknown,
 		DebugBuild:          debugbuild.Enabled,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
