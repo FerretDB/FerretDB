@@ -265,7 +265,8 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), int32(43)}}}}}}},
 		},
 		"ArrayMixedValuesExists": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
+			skipForTigris: "Tigris doesn't support mixed types.",
 		},
 		"NonExistentField": {
 			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
