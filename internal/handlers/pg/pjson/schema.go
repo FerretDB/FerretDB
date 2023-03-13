@@ -62,6 +62,40 @@ const (
 	elemTypeLong      elemType = "long"
 )
 
+// GetTypeOfValue returns pjson type of supported value.
+func GetTypeOfValue(v any) string {
+	switch v.(type) {
+	case *types.Document:
+		return string(elemTypeObject)
+	case *types.Array:
+		return string(elemTypeArray)
+	case float64:
+		return string(elemTypeDouble)
+	case string:
+		return string(elemTypeString)
+	case types.Binary:
+		return string(elemTypeBinData)
+	case types.ObjectID:
+		return string(elemTypeObjectID)
+	case bool:
+		return string(elemTypeBool)
+	case time.Time:
+		return string(elemTypeDate)
+	case types.NullType:
+		return string(elemTypeNull)
+	case types.Regex:
+		return string(elemTypeRegex)
+	case int32:
+		return string(elemTypeInt)
+	case types.Timestamp:
+		return string(elemTypeTimestamp)
+	case int64:
+		return string(elemTypeLong)
+	}
+
+	panic(fmt.Sprintf("Unexpected type: %T", v))
+}
+
 // Schemas for scalar types.
 var (
 	doubleSchema = &elem{

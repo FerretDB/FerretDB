@@ -40,7 +40,7 @@ type request struct {
 	Commit           string         `json:"commit"`
 	Branch           string         `json:"branch"`
 	Dirty            bool           `json:"dirty"`
-	Package          string         `json:"-"` // TODO https://github.com/FerretDB/FerretDB/issues/1805
+	Package          string         `json:"package"`
 	Debug            bool           `json:"debug"`
 	BuildEnvironment map[string]any `json:"build_environment"`
 	OS               string         `json:"os"`

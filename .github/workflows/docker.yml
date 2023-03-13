@@ -70,7 +70,12 @@ jobs:
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/FerretDB/issues/1800
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        run: git checkout -b ${{ github.head_ref }}
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -90,7 +95,7 @@ jobs:
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
 
-      - name: Extract Docker image name and tags
+      - name: Extract Docker image names
         id: extract
         uses: FerretDB/github-actions/extract-docker-tag@main
 
@@ -107,8 +112,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker images ${{ steps.extract.outputs.images }} (dev - ${{ steps.extract.outputs.dev }})
-        run: bin/task docker-push DOCKER_IMAGES=${{ steps.extract.outputs.images }}
+      - name: Build and push development Docker images ${{ steps.extract.outputs.development_images }}
+        if: steps.extract.outputs.development_images != ''
+        run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.extract.outputs.development_images }}
+
+      - name: Build and push production Docker images ${{ steps.extract.outputs.production_images }}
+        if: steps.extract.outputs.production_images != ''
+        run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
 
       - name: Check dirty
         run: |

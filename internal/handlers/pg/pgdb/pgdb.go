@@ -30,6 +30,9 @@ var (
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exists")
 
+	// ErrIndexAlreadyExist indicates that an index already exists.
+	ErrIndexAlreadyExist = fmt.Errorf("index already exists")
+
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 

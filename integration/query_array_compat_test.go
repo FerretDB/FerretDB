@@ -103,9 +103,13 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			filter:        bson.D{{"v.0.foo.0.bar", "hello"}},
 			skipForTigris: "No suitable Tigris-compatible provider to test this data",
 		},
+		"DocumentDotNotationArrayDocumentNoIndexNin": {
+			filter: bson.D{
+				{"v.foo.bar", bson.D{{"$nin", bson.A{"baz"}}}},
+			},
+		},
 		"DocumentDotNotationArrayDocumentNoIndex": {
 			filter: bson.D{{"v.foo.bar", "hello"}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/1828",
 		},
 		"FieldArrayIndex": {
 			filter:        bson.D{{"v.foo[0]", int32(42)}},
@@ -249,7 +253,7 @@ func testQueryArrayCompatAll() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(42)}}}}},
 		},
 		"WholeNotFound": {
-			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(44)}}}}},
+			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(46)}}}}},
 			resultType: emptyResult,
 		},
 		"Zero": {
