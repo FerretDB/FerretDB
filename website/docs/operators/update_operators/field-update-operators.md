@@ -8,7 +8,7 @@ Field update operators allow you to modify the value of a specified field in a d
 
 | Operator                       | Description                                                                                 |
 | ------------------------------ | ------------------------------------------------------------------------------------------- |
-| [`$set`](#set)                 | Specifies the value of a given field                                                        |
+| [`$set`](#set)                 | Assigns the value of a given field                                                        |
 | [`$unset`](#unset)             | Deletes the records of a field from a document                                              |
 | [`$inc`](#inc)                 | Increments a given field's value                                                            |
 | [`$mul`](#mul)                 | Multiplies a given field’s value by a specific value                                        |
