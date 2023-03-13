@@ -23,10 +23,24 @@ RUN test -n "$LABEL_COMMIT"
 WORKDIR /src
 COPY . .
 
+# use a single directory for all Go caches to simpliy RUN --mount commands below
+ENV GOPATH /cache/gopath
+ENV GOCACHE /cache/gocache
+ENV GOMODCACHE /cache/gomodcache
+
+# copy cached stdlib builds from the image
+RUN --mount=type=cache,target=/cache \
+    mkdir -p /cache/gocache && \
+    cp -R /root/.cache/go-build/* /cache/gocache/
+
+# remove ",direct"
+ENV GOPROXY https://proxy.golang.org
+
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage and/or cache;
+# That command could be run only once by using a separate stage;
 # see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-RUN go mod download
+RUN --mount=type=cache,target=/cache \
+    go mod download
 
 ENV CGO_ENABLED=0
 ENV GOARM=7
@@ -34,7 +48,8 @@ ENV GOARM=7
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-RUN go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+RUN --mount=type=cache,target=/cache \
+    go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
 RUN go version -m bin/ferretdb
 RUN bin/ferretdb --version
 
