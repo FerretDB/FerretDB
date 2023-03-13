@@ -90,6 +90,9 @@ jobs:
       - name: Regenerate and reformat
         run: bin/task gen
 
+      - name: Build bin/ferretdb
+        run: bin/task build-host
+
       - name: Wait for and setup environment
         run: bin/task env-setup
 

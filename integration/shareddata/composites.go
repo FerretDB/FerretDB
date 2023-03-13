@@ -40,6 +40,11 @@ var Composites = &Values[string]{
 			{"42", "foo"},
 			{"foo", int32(42)},
 		},
+		"document-composite-numerical-field-name": bson.D{
+			{"foo", int32(42)},
+			{"42", "foo"},
+			{"array", bson.D{{"42", int32(42)}}},
+		},
 		"document-null":  bson.D{{"foo", nil}},
 		"document-empty": bson.D{},
 
@@ -227,6 +232,9 @@ var ArrayInt32s = &Values[string]{
 		"array-int32-three": bson.A{int32(42), int32(43), int32(42)},
 		// "array-int32-nil": nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-int32-empty": bson.A{},
+		"array-int32-six": bson.A{
+			int32(42), int32(43), int32(44), int32(45), int32(42), int32(43),
+		},
 	},
 }
 

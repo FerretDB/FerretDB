@@ -17,7 +17,9 @@ package tigrisdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -91,45 +93,96 @@ func BuildFilter(filter *types.Document) (string, error) {
 
 	res := map[string]any{}
 
-	for k, v := range filter.Map() {
-		// TODO https://github.com/FerretDB/FerretDB/issues/1940
-		if v == "" {
+	iter := filter.Iterator()
+	defer iter.Close()
+
+	// iterate through root document
+	for {
+		rootKey, rootVal, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", lazyerrors.Error(err)
+		}
+
+		// don't pushdown $comment, it's attached to query in handlers
+		if strings.HasPrefix(rootKey, "$") {
 			continue
 		}
 
-		if k != "" {
-			// don't pushdown $comment, it's attached to query in handlers
-			if k[0] == '$' {
-				continue
-			}
+		path, err := types.NewPathFromString(rootKey)
 
-			var path types.Path
-			var err error
+		var pe *types.DocumentPathError
 
-			if path, err = types.NewPathFromString(k); err != nil {
-				return "", lazyerrors.Error(err)
-			}
-
+		switch {
+		case err == nil:
 			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
-			// TODO https://github.com/FerretDB/FerretDB/issues/1914
 			if path.Len() > 1 {
 				continue
 			}
+		case errors.As(err, &pe):
+			// ignore empty key error, otherwise return error
+			if pe.Code() != types.ErrDocumentPathEmptyKey {
+				return "", lazyerrors.Error(err)
+			}
+		default:
+			panic("Invalid error type: DocumentPathError expected ")
 		}
 
-		switch v.(type) {
-		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
+		switch v := rootVal.(type) {
+		case *types.Document:
+			iter := v.Iterator()
+			defer iter.Close()
+
+			// iterate through subdocument, as it may contain operators
+			for {
+				k, v, err := iter.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					return "", lazyerrors.Error(err)
+				}
+
+				switch k {
+				case "$eq":
+					switch docVal := v.(type) {
+					case *types.Document, *types.Array, types.Binary,
+						types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+						rawValue, err := tjson.Marshal(docVal)
+						if err != nil {
+							return "", lazyerrors.Error(err)
+						}
+						res[rootKey] = json.RawMessage(rawValue)
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
+				default:
+					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					// TODO $ne https://github.com/FerretDB/FerretDB/issues/2052
+					continue
+				}
+			}
+
+		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
-		case float64, string, types.ObjectID, int32, int64:
+
+		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 			rawValue, err := tjson.Marshal(v)
 			if err != nil {
 				return "", lazyerrors.Error(err)
 			}
+			res[rootKey] = json.RawMessage(rawValue)
 
-			res[k] = json.RawMessage(rawValue)
 		default:
-			panic(fmt.Sprintf("Unexpected type of field %s: %T", k, v))
+			panic(fmt.Sprintf("Unexpected type of field %s: %T", rootKey, v))
 		}
 	}
 

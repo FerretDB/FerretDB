@@ -68,10 +68,13 @@ jobs:
       - name: Build docs
         run: bin/task docs
 
+      - name: Create directory
+        run: mkdir tmp
+
       - name: Archive docs
         run: >
           tar --directory website/build
-          --file docs.tar
+          --file tmp/docs.tar
           --create
           --verbose
           .
@@ -81,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: docs
-          path: docs.tar
+          path: tmp/docs.tar
           retention-days: 1
           if-no-files-found: error
 
