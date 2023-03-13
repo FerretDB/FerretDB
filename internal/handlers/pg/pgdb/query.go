@@ -348,6 +348,13 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 			//v, _ = new(big.Float).SetFloat64(v).SetPrec(100000).Float64()
 
+			if v > 999999999999999 {
+				sql := `MAX(_jsonb->%[1]s) > %[2]s`
+
+				filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+				args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			}
+
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` + // If the field or field's array contain the value, just return it (Double("2305843009213693000") == Double("2305843009213693000"))
 				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` + // If the db's row is the array ...
