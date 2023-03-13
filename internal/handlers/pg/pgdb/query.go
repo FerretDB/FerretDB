@@ -271,12 +271,18 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+					case float64, types.ObjectID, bool, time.Time, int32, int64:
 						// Select if value under the key is equal to provided value.
 						sql := `_jsonb->%[1]s @> %[2]s`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+					case string:
+						// Select if value under the key is equal to provided value.
+						sql := `_jsonb->%[1]s @> %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, v)
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
