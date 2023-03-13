@@ -73,12 +73,23 @@ RUN bin/ferretdb --version
 
 # final stage
 
-FROM golang:1.20.2 AS all-in-one
+FROM postgres:15.2 AS all-in-one
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
+
+RUN <<EOF
+set -ex
+
+apt update
+apt install -y curl runit
+curl -L https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bullseye/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+apt update
+apt install -y mongodb-mongosh
+EOF
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]
