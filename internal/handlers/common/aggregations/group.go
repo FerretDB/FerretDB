@@ -112,7 +112,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		// document contains only one.
+		// accumulation document contains only one field.
 		if accumulation.Len() > 1 {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrStageGroupMultipleAccumulator,
@@ -162,14 +162,14 @@ func newGroup(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	grouped, err := g.groupDocuments(ctx, in)
+	groupedDocuments, err := g.groupDocuments(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 
 	var res []*types.Document
 
-	for _, groupedDocument := range grouped {
+	for _, groupedDocument := range groupedDocuments {
 		doc := new(types.Document)
 
 		for _, accumulation := range g.groupBy {
@@ -179,7 +179,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 			}
 
 			if doc.Has(accumulation.outputField) {
-				// duplicate key
+				// document has duplicate key
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrDuplicateField,
 					fmt.Sprintf("duplicate field: %s", accumulation.outputField),
@@ -222,7 +222,7 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 		return nil, lazyerrors.Error(err)
 	}
 
-	// use the first item, it was already grouped by the groupKey,
+	// use the first element, it was already grouped by the groupKey,
 	// so all `in` documents contain the same v.
 	v, err := in[0].GetByPath(path)
 	if err != nil {
@@ -236,6 +236,7 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
 	groupKey, ok := g.groupExpression.(string)
 	if !ok {
+		// non-string key aggregates values of all `in` documents into one aggregated document.
 		return []groupedDocuments{{
 			groupKey:  groupKey,
 			documents: in,
@@ -243,6 +244,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 	}
 
 	if !strings.HasPrefix(groupKey, "$") {
+		// constant value aggregates values of all `in` documents into one aggregated document.
 		return []groupedDocuments{{
 			groupKey:  groupKey,
 			documents: in,
@@ -268,7 +270,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 
 		v, err := doc.GetByPath(path)
 		if err != nil {
-			// if the path does not exist, use null for grouping
+			// if the path does not exist, use null for group key.
 			group.addOrAppend(types.Null, doc)
 			continue
 		}
@@ -294,10 +296,10 @@ type groupMap struct {
 // if the groupKey exists it appends the documents to the slice.
 func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	for i, g := range m.docs {
-		// Compare is used to check if the key exists in the group.
-		// groupKey used as the key can be any BSON type including array and Binary,
+		// groupKey is a distinct key and can be any BSON type including array and Binary,
 		// so we cannot use structure like map.
-		// Also, numbers are grouped for the same value regardless of their number type.
+		// Compare is used to check if groupKey exists in groupMap, because
+		// numbers are grouped for the same value regardless of their number type.
 		if types.Compare(groupKey, g.groupKey) == types.Equal {
 			m.docs[i].documents = append(m.docs[i].documents, docs...)
 			return
