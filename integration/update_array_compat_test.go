@@ -267,6 +267,18 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 		"ArrayMixedValuesExists": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 		},
+		"NonExistentField": {
+			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+		},
+		"DotNotation": {
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+		},
+		"DotNotationNonArray": {
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+		},
+		"DotNotationNonExistentPath": {
+			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+		},
 	}
 
 	testUpdateCompat(t, testCases)
