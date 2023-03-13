@@ -115,14 +115,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	iter, err := dbPool.QueryDocuments(ctx, &qp)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	defer iter.Close()
 
 	docs, err = iterator.Values(iter)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	for _, s := range stages {
