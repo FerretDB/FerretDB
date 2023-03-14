@@ -17,7 +17,6 @@ package common
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -278,20 +277,15 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 		}
 
 		for i := 0; i < each.Len(); i++ {
-			var addValue any
+			value := must.NotFail(each.Get(i))
 
-			addValue, err = valueInSet(array, must.NotFail(each.Get(i)))
-			if err != nil {
-				return false, err
-			}
-
-			if addValue == nil {
+			if array.Contains(value) {
 				continue
 			}
 
 			changed = true
 
-			array.Append(addValue)
+			array.Append(value)
 		}
 
 		if err = doc.SetByPath(path, array); err != nil {
@@ -300,54 +294,6 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	}
 
 	return changed, nil
-}
-
-// valueInSet checks if the value is already in the array.
-// If the value is not in the array it returns the value.
-// If the value is in the array it returns nil.
-func valueInSet(array *types.Array, value any) (any, error) {
-	if array.Len() == 0 {
-		return value, nil
-	}
-
-	var result any
-
-	switch value := value.(type) {
-	case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
-		time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
-		matched := true
-
-		for i := 0; i < array.Len(); i++ {
-			var arrayValue any
-			var err error
-
-			arrayValue, err = array.Get(i)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			compareResult := types.Compare(arrayValue, value)
-
-			if compareResult == types.Equal {
-				matched = false
-				break
-			}
-		}
-
-		if matched {
-			result = value
-		}
-	case *types.Array:
-		// Nested arrays are not supported.
-		return nil, commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(value)),
-		)
-	default:
-		panic(fmt.Sprintf("unhandled type %T", value))
-	}
-
-	return result, nil
 }
 
 // processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
