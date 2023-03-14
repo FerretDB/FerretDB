@@ -28,9 +28,10 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	skip       string                   // skip test for all handlers, must have issue number mentioned
-	pipeline   bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	skip           string                   // skip test for all handlers, must have issue number mentioned
+	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown bool                     // defaults to false
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -88,6 +89,21 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
+
+					explainCommand := bson.D{{"explain", bson.D{
+						{"aggregate", targetCollection.Name()},
+						{"pipeline", pipeline},
+					}}}
+					var explainRes bson.D
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
+
+					var msg string
+					if setup.IsPushdownDisabled() {
+						tc.resultPushdown = false
+						msg = "Query pushdown is disabled, but target resulted with pushdown"
+					}
+
+					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline)
@@ -243,6 +259,14 @@ func TestAggregateCompatStages(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 				bson.D{{"$count", "v"}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			resultPushdown: true,
+		},
+		"CountAndMatch": {
+			pipeline: bson.A{
+				bson.D{{"$count", "v"}},
+				bson.D{{"$match", bson.D{{"v", 1}}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
@@ -503,17 +527,20 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
+			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
+			resultPushdown: true,
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
+			resultPushdown: true,
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
+			resultPushdown: true,
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
