@@ -30,7 +30,7 @@ ENV GOMODCACHE /cache/gomodcache
 
 # copy cached stdlib builds from the image
 RUN --mount=type=cache,target=/cache \
-    /usr/bin/rsync -a /root/.cache/go-build/ /cache/gocache
+    rsync -a /root/.cache/go-build/ /cache/gocache
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
