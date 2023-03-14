@@ -22,46 +22,29 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// match represents $match stage.
-type match struct {
-	filter *types.Document
-}
+// countAccumulator represents $count accumulator for $group.
+type countAccumulator struct{}
 
-// newMatch creates a new $match stage.
-func newMatch(stage *types.Document) (Stage, error) {
-	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
-	if err != nil {
+// newCountAccumulator creates a new $count accumulator for $group.
+func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
+	expression, err := common.GetRequiredParam[*types.Document](accumulation, "$count")
+	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMatchBadExpression,
-			"the match filter must be an expression in an object",
-			"$match (stage)",
+			commonerrors.ErrTypeMismatch,
+			"$count takes no arguments, i.e. $count:{}",
+			"$count (accumulator)",
 		)
 	}
 
-	return &match{
-		filter: filter,
-	}, nil
+	return new(countAccumulator), nil
 }
 
-// Process implements Stage interface.
-func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	var res []*types.Document
-
-	for _, doc := range in {
-		matches, err := common.FilterDocument(doc, m.filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if matches {
-			res = append(res, doc)
-		}
-	}
-
-	return res, nil
+// Accumulate implements Accumulator interface.
+func (c *countAccumulator) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
+	return int32(len(grouped)), nil
 }
 
 // check interfaces
 var (
-	_ Stage = (*match)(nil)
+	_ Accumulator = (*countAccumulator)(nil)
 )
