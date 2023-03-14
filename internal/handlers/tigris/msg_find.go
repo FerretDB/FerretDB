@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -64,7 +65,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
-		return nil, err
+		var pathErr *types.DocumentPathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"FieldPath field names may not be empty strings.",
+				document.Command(),
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
