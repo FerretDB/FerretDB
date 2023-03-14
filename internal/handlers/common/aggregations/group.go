@@ -68,7 +68,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidFields,
 			"a group's fields must be specified in an object",
-			"$group",
+			"$group (stage)",
 		)
 	}
 
@@ -108,7 +108,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrStageGroupInvalidAccumulator,
 				fmt.Sprintf("The field '%s' must be an accumulator object", field),
-				"$group",
+				"$group (stage)",
 			)
 		}
 
@@ -117,7 +117,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrStageGroupMultipleAccumulator,
 				fmt.Sprintf("The field '%s' must specify one accumulator", field),
-				"$group",
+				"$group (stage)",
 			)
 		}
 
@@ -130,8 +130,8 @@ func newGroup(stage *types.Document) (Stage, error) {
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
-				"unimplemented",
-				"$group",
+				fmt.Sprintf("$group accumulator %q is not implemented yet", operator),
+				operator+" (accumulator)",
 			)
 		}
 
@@ -150,7 +150,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupMissingID,
 			"a group specification must include an _id",
-			"$group",
+			"$group (stage)",
 		)
 	}
 
@@ -183,7 +183,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrDuplicateField,
 					fmt.Sprintf("duplicate field: %s", accumulation.outputField),
-					"$group",
+					"$group (stage)",
 				)
 			}
 
@@ -256,7 +256,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrGroupInvalidFieldPath,
 			"'$' by itself is not a valid FieldPath",
-			"$group",
+			"$group (stage)",
 		)
 	}
 

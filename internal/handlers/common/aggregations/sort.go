@@ -36,7 +36,7 @@ func newSort(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadExpression,
 			"the $sort key specification must be an object",
-			"$sort",
+			"$sort (stage)",
 		)
 	}
 
@@ -44,7 +44,7 @@ func newSort(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortMissingKey,
 			"$sort stage must have at least one sort key",
-			"$sort",
+			"$sort (stage)",
 		)
 	}
 
