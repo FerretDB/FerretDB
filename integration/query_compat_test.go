@@ -31,6 +31,7 @@ type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	projection     bson.D                   // nil for leaving projection unset
+	optSkip        int64                    // defaults to 0
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skipForTigris  string                   // skip test for Tigris
@@ -72,6 +73,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			if tc.projection != nil {
 				opts = opts.SetProjection(tc.projection)
 			}
+
+			opts.Skip = &tc.optSkip
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
@@ -228,6 +231,28 @@ func TestQueryCompatSort(t *testing.T) {
 		"DotNotationMissingField": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v..foo", 1}, {"_id", 1}},
+			resultType: emptyResult,
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryCompatSkip(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"SkipSimple": {
+			filter:  bson.D{},
+			optSkip: 1,
+		},
+		"SkipBig": {
+			filter:  bson.D{},
+			optSkip: 1000,
+		},
+		"SkipNegative": {
+			filter:     bson.D{},
+			optSkip:    -1,
 			resultType: emptyResult,
 		},
 	}

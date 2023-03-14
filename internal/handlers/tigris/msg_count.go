@@ -39,7 +39,6 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	unimplementedFields := []string{
-		"skip",
 		"collation",
 	}
 	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
@@ -62,6 +61,14 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	var limit int64
 	if l, _ := document.Get("limit"); l != nil {
 		if limit, err = common.GetWholeNumberParam(l); err != nil {
+			return nil, err
+		}
+	}
+
+	var skip int64
+
+	if s, _ := document.Get("skip"); s != nil {
+		if skip, err = common.GetSkipParam("count", s); err != nil {
 			return nil, err
 		}
 	}
@@ -91,6 +98,19 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, err
+	}
+
+	switch {
+	case skip < 0:
+		// This should be caught earlier, as if the skip param is not valid,
+		// we don't need to fetch the documents.
+		panic("negative skip must be caught earlier")
+	case skip == 0:
+		// do nothing
+	case skip > int64(len(resDocs)):
+		resDocs = []*types.Document{}
+	default:
+		resDocs = resDocs[skip:]
 	}
 
 	var reply wire.OpMsg
