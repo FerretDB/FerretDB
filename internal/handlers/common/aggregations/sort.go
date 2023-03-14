@@ -16,10 +16,12 @@ package aggregations
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // sort represents $sort stage.
@@ -34,7 +36,7 @@ func newSort(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadExpression,
 			"the $sort key specification must be an object",
-			"$sort",
+			"$sort (stage)",
 		)
 	}
 
@@ -42,7 +44,7 @@ func newSort(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortMissingKey,
 			"$sort stage must have at least one sort key",
-			"$sort",
+			"$sort (stage)",
 		)
 	}
 
@@ -54,9 +56,20 @@ func newSort(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
+//
+// If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
 func (m *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	if err := common.SortDocuments(in, m.fields); err != nil {
-		return nil, err
+		var pathErr *types.DocumentPathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"FieldPath field names may not be empty strings.",
+				"$sort (stage)",
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	return in, nil
