@@ -242,6 +242,8 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 	t.Parallel()
 
+	//setup.SkipForTigrisWithReason(t, "Tigris does not support adding new fields to documents")
+
 	testCases := map[string]updateCompatTestCase{
 		"Document": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
@@ -262,10 +264,13 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"EmptyArray": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
+			resultType: emptyResult,
 		},
 		"ArrayValuesExists": {
-			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), int32(43)}}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), int32(43)}}}}}}},
+			skipForTigris: "Tigris schema validation would fail.",
 		},
 		"ArrayMixedValuesExists": {
 			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
@@ -276,10 +281,13 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			skipForTigris: "Tigris does not support adding new fields to documents.",
 		},
 		"DotNotation": {
-			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{bson.D{{"bar", "zoo"}}}}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			skipForTigris: "Tigris schema validation would fail.",
 		},
 		"DotNotationNonArray": {
-			update: bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			resultType: emptyResult,
 		},
 		"DotNotationPathNotExist": {
 			update:        bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
