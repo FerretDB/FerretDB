@@ -212,6 +212,24 @@ func TestQueryCompatSort(t *testing.T) {
 			filter: bson.D{},
 			sort:   bson.D{{"v", -1}, {"_id", 1}},
 		},
+
+		"DotNotation": {
+			filter: bson.D{},
+			sort:   bson.D{{"v.foo", 1}, {"_id", 1}},
+		},
+		"DotNotationIndex": {
+			filter: bson.D{},
+			sort:   bson.D{{"v.0", 1}, {"_id", 1}},
+		},
+		"DotNotationNonExistent": {
+			filter: bson.D{},
+			sort:   bson.D{{"invalid.foo", 1}, {"_id", 1}},
+		},
+		"DotNotationMissingField": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v..foo", 1}, {"_id", 1}},
+			resultType: emptyResult,
+		},
 	}
 
 	testQueryCompat(t, testCases)
