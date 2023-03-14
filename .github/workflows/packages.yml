@@ -1,9 +1,20 @@
 ---
+# This workflow is dangerous and should be handled with great care to avoid security problems.
+# See the warning at conform-pr.yml.
+
+# We also tried a different approach: build Docker image in one normal, secure `pull_request` workflow,
+# upload artifact, and then download and publish it in another workflow that has access to secrets, but treats
+# artifact as passive data. We use buildx for building multi-platform images, and there is a way to export
+# multi-platform OCI tarball: https://docs.docker.com/engine/reference/commandline/buildx_build/#output
+# Unfortunately, it seems that there is no way to import that tarball in another workflow and publish it
+# as a Docker image, as strange as it sounds: https://github.com/docker/buildx/issues/186
+
 name: Packages
 on:
-  pull_request:
+  pull_request_target:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - labeled # for `trusted` label
+      - unlabeled
       - opened
       - reopened
       - synchronize
@@ -13,10 +24,11 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "42 2 * * *" # after Go workflow
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
-# to save some resources.
+# to prevent concurrent pushes for the same Docker image tag
+# and save some resources.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -34,22 +46,35 @@ jobs:
     runs-on: faster
 
     if: >
-      github.event_name != 'pull_request' ||
+      github.event_name != 'pull_request_target' ||
       (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
         !contains(github.event.pull_request.labels.*.name, 'no ci') &&
         contains(github.event.pull_request.labels.*.name, 'packages')
       )
 
+    permissions:
+      packages: write
+
     steps:
       - name: Checkout code
+        if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
 
-      # for branch.txt on pull_request; `main` is already checked out on push / schedule
+      - name: Checkout pull request code
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
       - name: Name branch
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         run: git checkout -b ${{ github.head_ref }}
 
       - name: Setup Go
@@ -70,6 +95,35 @@ jobs:
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
 
+      - name: Extract Docker image names
+        id: extract
+        uses: FerretDB/github-actions/extract-docker-tag@main
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ferretdbbot
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
+        if: steps.extract.outputs.all_in_one_images != ''
+        run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.extract.outputs.all_in_one_images }}
+
+      - name: Build and push development Docker images ${{ steps.extract.outputs.development_images }}
+        if: steps.extract.outputs.development_images != ''
+        run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.extract.outputs.development_images }}
+
+      - name: Build and push production Docker images ${{ steps.extract.outputs.production_images }}
+        if: steps.extract.outputs.production_images != ''
+        run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
+
       - name: Build production release binary
         run: bin/task build-release
 
@@ -81,7 +135,7 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Build packages
+      - name: Build Linux packages
         run: bin/task packages
 
       - name: Upload .deb package

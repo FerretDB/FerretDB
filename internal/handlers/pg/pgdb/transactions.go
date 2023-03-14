@@ -101,34 +101,39 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 	// TODO use exponential backoff with jitter instead
 	// https://github.com/FerretDB/FerretDB/issues/1720
 	const (
-		retriesMax    = 30
+		attemptsMax   = 30
 		retryDelayMin = 100 * time.Millisecond
 		retryDelayMax = 200 * time.Millisecond
 	)
 
-	var err error
-	var tcErr *transactionConflictError
+	var attempts int
 
-	for retry := 0; retry < retriesMax; retry++ {
-		err = pgPool.InTransaction(ctx, f)
+	for {
+		err := pgPool.InTransaction(ctx, f)
+		var tcErr *transactionConflictError
 
 		switch {
 		case err == nil:
 			return nil
+
 		case errors.As(err, &tcErr):
+			attempts++
+			if attempts >= attemptsMax {
+				return lazyerrors.Errorf("giving up after %d attempts: %w", attempts, err)
+			}
+
 			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
 			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
 
 			pgPool.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelWarn, "transaction failed, retrying",
-				map[string]any{"err": err, "delay": delay},
+				ctx, pgx.LogLevelWarn, "attempt failed, retrying",
+				map[string]any{"err": err, "attempt": attempts, "delay": delay},
 			)
 
 			ctxutil.Sleep(ctx, delay)
+
 		default:
-			return lazyerrors.Error(err)
+			return lazyerrors.Errorf("non-retriable error: %w", err)
 		}
 	}
-
-	return lazyerrors.Error(err)
 }
