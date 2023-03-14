@@ -67,6 +67,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	var skip int64
+
 	if s, _ := document.Get("skip"); s != nil {
 		if skip, err = common.GetSkipParam("count", s); err != nil {
 			return nil, err

@@ -106,7 +106,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 	filter := bson.D{{
 		"name", bson.D{{
-			"$in", bson.A{name}, // optSkip admin, other tests databases, etc
+			"$in", bson.A{name}, // skip admin, other tests databases, etc
 		}},
 	}}
 	names, err := db.Client().ListDatabaseNames(ctx, filter)
