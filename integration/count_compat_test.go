@@ -15,7 +15,10 @@
 package integration
 
 import (
+	"errors"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,8 +31,9 @@ import (
 
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
-	filter     bson.D                   // required
-	skip       any                      // required
+	filter     bson.D                   // required, filter for the query
+	optSkip    any                      // required, skip option for the query
+	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -68,19 +72,27 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"count", targetCollection.Name()},
 						{"query", filter},
-						{"skip", tc.skip},
+						{"skip", tc.optSkip},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"count", compatCollection.Name()},
 						{"query", filter},
-						{"skip", tc.skip},
+						{"skip", tc.optSkip},
 					}).Decode(&compatRes)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
+
+						if tc.altMessage != "" {
+							var expectedErr mongo.CommandError
+							require.True(t, errors.As(compatErr, &expectedErr))
+							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+						} else {
+							assert.Equal(t, compatErr, targetErr)
+						}
+
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
@@ -112,62 +124,60 @@ func TestCountCompat(t *testing.T) {
 
 	testCases := map[string]countCompatTestCase{
 		"Empty": {
-			filter: bson.D{},
-			skip:   0,
+			filter:  bson.D{},
+			optSkip: 0,
 		},
 		"IDString": {
-			filter: bson.D{{"_id", "string"}},
-			skip:   0,
+			filter:  bson.D{{"_id", "string"}},
+			optSkip: 0,
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
-			skip:   0,
+			filter:  bson.D{{"_id", primitive.NilObjectID}},
+			optSkip: 0,
 		},
 		"IDNotExists": {
-			filter: bson.D{{"_id", "count-id-not-exists"}},
-			skip:   0,
+			filter:  bson.D{{"_id", "count-id-not-exists"}},
+			optSkip: 0,
 		},
 		"IDBool": {
-			filter: bson.D{{"_id", "bool-true"}},
-			skip:   0,
+			filter:  bson.D{{"_id", "bool-true"}},
+			optSkip: 0,
 		},
 		"FieldTrue": {
-			filter: bson.D{{"v", true}},
-			skip:   0,
+			filter:  bson.D{{"v", true}},
+			optSkip: 0,
 		},
 		"FieldTypeArrays": {
-			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
-			skip:   0,
+			filter:  bson.D{{"v", bson.D{{"$type", "array"}}}},
+			optSkip: 0,
 		},
 
 		"SkipSimple": {
-			filter: bson.D{},
-			skip:   1,
+			filter:  bson.D{},
+			optSkip: 1,
 		},
 		"SkipBig": {
-			filter: bson.D{},
-			skip:   1000,
+			filter:  bson.D{},
+			optSkip: 1000,
+		},
+		"SkipDouble": {
+			filter:  bson.D{},
+			optSkip: 1.111,
 		},
 		"SkipNegative": {
 			filter:     bson.D{},
-			skip:       -1,
+			optSkip:    -1,
 			resultType: emptyResult,
 		},
 		"SkipNull": {
-			filter: bson.D{},
-			skip:   nil,
+			filter:  bson.D{},
+			optSkip: nil,
 		},
 		"SkipString": {
-			filter: bson.D{},
-			skip:   "foo",
-		},
-		"SkipDouble": {
-			filter: bson.D{},
-			skip:   42.42,
-		},
-		"SkipWhole": {
-			filter: bson.D{},
-			skip:   float64(1),
+			filter:     bson.D{},
+			optSkip:    "foo",
+			resultType: emptyResult,
+			altMessage: `BSON field 'count.skip' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
 	}
 

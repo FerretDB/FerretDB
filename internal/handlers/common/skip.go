@@ -15,7 +15,9 @@
 package common
 
 import (
+	"errors"
 	"fmt"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -40,23 +42,23 @@ func GetSkipParam(key string, value any) (int64, error) {
 		return skipValue, nil
 	}
 
-	switch err {
-	case errUnexpectedType:
+	switch {
+	case errors.Is(err, errUnexpectedType):
 		if _, ok := value.(types.NullType); ok {
 			return 0, nil
 		}
 
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf(`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`, key, AliasFromType(value)),
+			fmt.Sprintf(
+				`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+				key, AliasFromType(value),
+			),
 			"skip",
 		)
-	case errNotWholeNumber:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			"skip must be a whole number",
-			"skip",
-		)
+	case errors.Is(err, errNotWholeNumber):
+		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
+		return int64(math.Floor(value.(float64))), nil
 	default:
 		return 0, lazyerrors.Error(err)
 	}
