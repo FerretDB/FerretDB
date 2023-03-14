@@ -121,8 +121,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) code"
