@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for production releases (`ferret` image)
+# for all-in-one releases (`all-in-one` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -12,12 +12,14 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.2-5 AS production-build
+FROM ghcr.io/ferretdb/golang:1.20.2-5 AS all-in-one-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
+
+ARG TARGETARCH
 
 # see .dockerignore
 WORKDIR /src
@@ -35,7 +37,9 @@ RUN --mount=type=cache,target=/cache \
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-ENV CGO_ENABLED=0
+ENV CGO_ENABLED=1
+ENV GOCOVERDIR=cover
+ENV GORACE=halt_on_error=1,history_size=2
 ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
@@ -47,13 +51,24 @@ ENV GOAMD64=v1
 RUN --mount=type=cache,target=/cache \
     go mod download
 
+# Do not trim paths to make debugging with delve easier.
+#
+# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
+# (and that happens on GitHub-hosted Actions runners).
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
-# check that stdlib was cached
-go install -v -race=false std
+RACE=false
+if test "$TARGETARCH" = "amd64"
+then
+    RACE=true
+fi
 
-go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+# check that stdlib was cached
+go install -v -race=$RACE std
+
+go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
@@ -62,14 +77,23 @@ EOF
 
 # final stage
 
-# TODO https://github.com/FerretDB/FerretDB/issues/2179
-# Consider a different base image after https://github.com/golang/go/issues/57792 is done.
-FROM gcr.io/distroless/static-debian11:debug AS production
+FROM postgres:15.2 AS all-in-one
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
-COPY --from=production-build /src/bin/ferretdb /ferretdb
+COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
+
+RUN <<EOF
+set -ex
+
+apt update
+apt install -y curl runit
+curl -L https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bullseye/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+apt update
+apt install -y mongodb-mongosh
+EOF
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]

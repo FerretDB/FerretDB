@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 15m
+  INTEGRATIONTIME: 17m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -121,8 +121,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) code"
@@ -442,6 +441,17 @@ tasks:
           FILE: development
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
+
+  # TODO set annotations,
+  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
+  docker-all-in-one-push:
+    cmds:
+      - echo 'docker-all-in-one' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: all-in-one
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
+          OUTPUT: type=image,push=true
 
   # TODO set annotations,
   # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
