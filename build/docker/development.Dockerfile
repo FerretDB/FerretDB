@@ -56,6 +56,8 @@ RUN --mount=type=cache,target=/cache \
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
 RUN --mount=type=cache,target=/cache <<EOF
+set -ex
+
 RACE=false
 if test "$TARGETARCH" = "amd64"
 then

@@ -47,14 +47,16 @@ ENV GOAMD64=v1
 RUN --mount=type=cache,target=/cache \
     go mod download
 
-# check that stdlib was cached
-RUN --mount=type=cache,target=/cache \
-    go install -v -trimpath=true -race=false std
+RUN --mount=type=cache,target=/cache <<EOF
+set -ex
 
-RUN --mount=type=cache,target=/cache \
-    go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
-RUN go version -m bin/ferretdb
-RUN bin/ferretdb --version
+# check that stdlib was cached
+go install -v -trimpath=true -race=false std
+
+go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+go version -m bin/ferretdb
+bin/ferretdb --version
+EOF
 
 
 # final stage
