@@ -242,8 +242,6 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 	t.Parallel()
 
-	//setup.SkipForTigrisWithReason(t, "Tigris does not support adding new fields to documents")
-
 	testCases := map[string]updateCompatTestCase{
 		"Document": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
