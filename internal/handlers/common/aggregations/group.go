@@ -315,5 +315,5 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 // check interfaces
 var (
 	_ Stage       = (*groupStage)(nil)
-	_ Accumulator = (*idAccumulator)(nil)
+	_ Accumulator = (*countAccumulator)(nil)
 )
