@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -143,57 +142,9 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	}
 }
 
-// TestQueryCompatRunner is temporary runner to address
-// slowness of compat setup by only setting it up once
-// for all query tests.
-func TestQueryCompatRunner(t *testing.T) {
+func TestQueryCompatBasic(t *testing.T) {
 	t.Parallel()
 
-	testcases := map[string]map[string]queryCompatTestCase{
-		"Basic":         testQueryCompatBasic(),
-		"Sort":          testQueryCompatSort(),
-		"Size":          testQueryArrayCompatSize(),
-		"DotNotation":   testQueryArrayCompatDotNotation(),
-		"ElemMatch":     testQueryArrayCompatElemMatch(),
-		"ArrayEquality": testQueryArrayCompatEquality(),
-		"ArrayAll":      testQueryArrayCompatAll(),
-		"ImplicitEq":    testQueryComparisonCompatImplicit(),
-		"Eq":            testQueryComparisonCompatEq(),
-		"Gt":            testQueryComparisonCompatGt(),
-		"Gte":           testQueryComparisonCompatGte(),
-		"Lt":            testQueryComparisonCompatLt(),
-		"Lte":           testQueryComparisonCompatLte(),
-		"Nin":           testQueryComparisonCompatNin(),
-		"In":            testQueryComparisonCompatIn(),
-		"Ne":            testQueryComparisonCompatNe(),
-		"MultipleOp":    testQueryComparisonCompatMultipleOperators(),
-		"Exists":        testQueryElementCompatExists(),
-		"Type":          testQueryElementCompatElementType(),
-		"Regex":         testQueryEvaluationCompatRegexErrors(),
-		"And":           testQueryLogicalCompatAnd(),
-		"Or":            testQueryLogicalCompatOr(),
-		"Nor":           testQueryLogicalCompatNor(),
-		"Not":           testQueryLogicalCompatNot(),
-		"Projection":    testQueryProjectionCompat(),
-	}
-
-	if runtime.GOARCH != "arm64" {
-		// https://github.com/FerretDB/FerretDB/issues/491
-		testcases["Mod"] = testQueryEvaluationCompatMod()
-	}
-
-	allTestcases := make(map[string]queryCompatTestCase, 0)
-
-	for op, tcs := range testcases {
-		for name, tc := range tcs {
-			allTestcases[op+name] = tc
-		}
-	}
-
-	testQueryCompat(t, allTestcases)
-}
-
-func testQueryCompatBasic() map[string]queryCompatTestCase {
 	testCases := map[string]queryCompatTestCase{
 		"BadSortValue": {
 			filter:     bson.D{},
@@ -246,10 +197,12 @@ func testQueryCompatBasic() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryCompatSort() map[string]queryCompatTestCase {
+func TestQueryCompatSort(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Asc": {
 			filter: bson.D{},
@@ -279,5 +232,5 @@ func testQueryCompatSort() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
