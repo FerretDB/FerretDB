@@ -48,7 +48,7 @@ func GetSkipParam(key string, value any) (int64, error) {
 
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf(`BSON field '%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`, key, value),
+			fmt.Sprintf(`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`, key, AliasFromType(value)),
 			"skip",
 		)
 	case errNotWholeNumber:

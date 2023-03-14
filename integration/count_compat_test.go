@@ -157,18 +157,18 @@ func TestCountCompat(t *testing.T) {
 			filter: bson.D{},
 			skip:   nil,
 		},
-		//"SkipString": {
-		//	filter: bson.D{},
-		//	skip:   "foo",
-		//},
-		//"SkipDouble": {
-		//	filter: bson.D{},
-		//	skip:   42.42,
-		//},
-		//"SkipWhole": {
-		//	filter: bson.D{},
-		//	skip:   float64(1),
-		//},
+		"SkipString": {
+			filter: bson.D{},
+			skip:   "foo",
+		},
+		"SkipDouble": {
+			filter: bson.D{},
+			skip:   42.42,
+		},
+		"SkipWhole": {
+			filter: bson.D{},
+			skip:   float64(1),
+		},
 	}
 
 	testCountCompat(t, testCases)
