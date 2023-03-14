@@ -15,10 +15,14 @@
 package integration
 
 import (
+	"testing"
+
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func testQueryProjectionCompat() map[string]queryCompatTestCase {
+func TestQueryProjectionCompat(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"FindProjectionInclusions": {
 			filter:         bson.D{{"_id", "document-composite"}},
@@ -34,5 +38,5 @@ func testQueryProjectionCompat() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }

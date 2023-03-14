@@ -36,7 +36,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonString,
 			"the count field must be a non-empty string",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -44,7 +44,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonEmptyString,
 			"the count field must be a non-empty string",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -52,7 +52,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountBadValue,
 			"the count field cannot contain '.'",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -60,7 +60,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountBadPrefix,
 			"the count field cannot be a $-prefixed path",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -68,30 +68,13 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupID,
 			"a group's _id may only be specified once",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
 	return &count{
 		field: field,
 	}, nil
-}
-
-// countAccumulator represents $count accumulator for $group.
-type countAccumulator struct{}
-
-// newCountAccumulator creates a new $count accumulator for $group.
-func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
-	expression, err := common.GetRequiredParam[*types.Document](accumulation, "$count")
-	if err != nil || expression.Len() != 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
-			"$count takes no arguments, i.e. $count:{}",
-			"$count",
-		)
-	}
-
-	return new(countAccumulator), nil
 }
 
 // Process implements Stage interface.
@@ -105,13 +88,7 @@ func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 	return []*types.Document{res}, nil
 }
 
-// Accumulate implements Accumulator interface.
-func (c *countAccumulator) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
-	return int32(len(grouped)), nil
-}
-
 // check interfaces
 var (
-	_ Stage       = (*count)(nil)
-	_ Accumulator = (*countAccumulator)(nil)
+	_ Stage = (*count)(nil)
 )
