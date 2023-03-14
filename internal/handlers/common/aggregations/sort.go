@@ -65,7 +65,7 @@ func (m *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Docu
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrPathContainsEmptyElement,
 				"FieldPath field names may not be empty strings.",
-				"$sort",
+				"$sort (stage)",
 			)
 		}
 
