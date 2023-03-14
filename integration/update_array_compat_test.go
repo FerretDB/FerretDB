@@ -272,7 +272,8 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			skipForTigris: "Tigris doesn't support mixed types.",
 		},
 		"NonExistentField": {
-			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
+			skipForTigris: "Tigris does not support adding new fields to documents.",
 		},
 		"DotNotation": {
 			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{bson.D{{"bar", "zoo"}}}}}}}}},
