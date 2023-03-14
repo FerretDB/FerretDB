@@ -16,12 +16,15 @@ package integration
 
 import (
 	"math"
+	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func testQueryArrayCompatSize() map[string]queryCompatTestCase {
+func TestQueryArrayCompatSize(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"float64": {
 			filter: bson.D{{"v", bson.D{{"$size", float64(2)}}}},
@@ -61,10 +64,12 @@ func testQueryArrayCompatSize() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
+func TestQueryArrayCompatDotNotation(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"PositionIndexGreaterThanArrayLength": {
 			filter:     bson.D{{"v.5", bson.D{{"$type", "double"}}}},
@@ -133,10 +138,12 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
+func TestQueryArrayCompatElemMatch(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"DoubleTarget": {
 			filter: bson.D{
@@ -207,10 +214,12 @@ func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatEquality() map[string]queryCompatTestCase {
+func TestQueryArrayCompatEquality(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"One": {
 			filter: bson.D{{"v", bson.A{int32(42)}}},
@@ -235,10 +244,12 @@ func testQueryArrayCompatEquality() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatAll() map[string]queryCompatTestCase {
+func TestQueryArrayCompatAll(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"String": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
@@ -305,5 +316,5 @@ func testQueryArrayCompatAll() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
