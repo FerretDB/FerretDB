@@ -60,6 +60,22 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	pipeline, err := common.GetOptionalParam[*types.Array](explain, "pipeline", nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// pushdown query when the first stage is $match
+	if pipeline != nil && pipeline.Len() > 0 {
+		firstDoc := must.NotFail(pipeline.Get(0))
+		firstStage, isDoc := firstDoc.(*types.Document)
+
+		if isDoc && firstStage.Has("$match") {
+			matchQuery := must.NotFail(firstStage.Get("$match"))
+			filter, _ = matchQuery.(*types.Document)
+		}
+	}
+
 	if h.DisablePushdown {
 		filter = nil
 	}

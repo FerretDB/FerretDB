@@ -109,20 +109,38 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stages[i] = s
 	}
 
-	// TODO pushdown `$match` https://github.com/FerretDB/FerretDB/issues/1894
+	// pushdown query when the first stage is $match
+	var pushdownQuery *types.Document
+	if len(stagesDocs) > 0 {
+		firstDoc := stagesDocs[0]
+		firstStage, isDoc := firstDoc.(*types.Document)
+
+		if isDoc && firstStage.Has("$match") {
+			matchQuery := must.NotFail(firstStage.Get("$match"))
+			pushdownQuery, _ = matchQuery.(*types.Document)
+		}
+	}
 
 	var docs []*types.Document
 
-	iter, err := dbPool.QueryDocuments(ctx, &qp)
-	if err != nil {
-		return nil, err
-	}
+	if pushdownQuery != nil {
+		qp.Filter = pushdownQuery
+		docs, err = fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		iter, err := dbPool.QueryDocuments(ctx, &qp)
+		if err != nil {
+			return nil, err
+		}
 
-	defer iter.Close()
+		defer iter.Close()
 
-	docs, err = iterator.Values(iter)
-	if err != nil {
-		return nil, err
+		docs, err = iterator.Values(iter)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, s := range stages {

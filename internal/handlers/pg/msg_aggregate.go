@@ -111,6 +111,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stages[i] = s
 	}
 
+	// pushdown query when the first stage is $match
 	var pushdownQuery *types.Document
 	if len(stagesDocs) > 0 {
 		firstDoc := stagesDocs[0]
@@ -127,6 +128,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		if pushdownQuery != nil {
 			qp.Filter = pushdownQuery
 			docs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
+			return err
 		}
 
 		iter, getErr := pgdb.QueryDocuments(ctx, tx, &qp)

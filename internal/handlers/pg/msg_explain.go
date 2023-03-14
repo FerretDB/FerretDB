@@ -75,6 +75,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	// pushdown query when the first stage is $match
 	if pipeline != nil && pipeline.Len() > 0 {
 		firstDoc := must.NotFail(pipeline.Get(0))
 		firstStage, isDoc := firstDoc.(*types.Document)
