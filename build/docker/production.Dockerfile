@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.2-2 AS production-build
+FROM ghcr.io/ferretdb/golang:1.20.2-4 AS production-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -30,11 +30,16 @@ ENV GOMODCACHE /cache/gomodcache
 
 # copy cached stdlib builds from the image
 RUN --mount=type=cache,target=/cache \
-    mkdir -p /cache/gocache && \
-    cp -R /root/.cache/go-build/* /cache/gocache/
+    /usr/bin/rsync -a /root/.cache/go-build/ /cache/gocache
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
+
+ENV CGO_ENABLED=0
+ENV GOARM=7
+
+# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+ENV GOAMD64=v1
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
@@ -42,11 +47,9 @@ ENV GOPROXY https://proxy.golang.org
 RUN --mount=type=cache,target=/cache \
     go mod download
 
-ENV CGO_ENABLED=0
-ENV GOARM=7
-
-# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
-ENV GOAMD64=v1
+# check that stdlib was cached
+RUN --mount=type=cache,target=/cache \
+    go install -v -trimpath=true -race=false std
 
 RUN --mount=type=cache,target=/cache \
     go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
