@@ -292,6 +292,18 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<61 + 1)}}}},
 			resultPushdown: true,
 		},
+		"DoubleMaxPrec": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(2 << 53)}}}},
+			resultPushdown: true,
+		},
+		"DoubleMaxPrecClose": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<53) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleMaxPrecCloseTwo": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<53) - 2}}}},
+			resultPushdown: true,
+		},
 		"String": {
 			filter:         bson.D{{"v", bson.D{{"$eq", "foo"}}}},
 			resultPushdown: true,
@@ -398,7 +410,9 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"Int64DoubleBig": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64(2 << 60)}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", int64(2 << 60)}}}},
+			// 9007199254740992
+			// 2305843009213694000
 			resultPushdown: true,
 		},
 		"Int64DoubleBigPlusOne": {

@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	doubleBig = float64(2 << 60)
-	int64Big  = int64(2 << 61)
+	doubleBig  = float64(2 << 60)
+	doublePrec = float64(2 << 53)
+	int64Big   = int64(2 << 61)
 )
 
 // Scalars contain scalar values for tests.
@@ -123,11 +124,17 @@ var Doubles = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"double":                    42.13,
-		"double-whole":              42.0,
-		"double-zero":               0.0,
-		"double-smallest":           math.SmallestNonzeroFloat64,
-		"double-big":                doubleBig,
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-smallest": math.SmallestNonzeroFloat64,
+		"double-big":      doubleBig,
+		//"double-big-fraction-small": doubleBig + 0.1,
+		//"double-big-fraction-big":   doubleBig + 0.9,
+		"double-prec-max":           doublePrec,
+		"double-prec-min":           -doublePrec,
+		"double-prec-max-close":     doublePrec - 1,
+		"double-prec-max-close-2":   doublePrec - 2,
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
 		"double-2":                  float64(math.MinInt64),
