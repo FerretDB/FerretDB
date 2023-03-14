@@ -54,6 +54,7 @@ set -ex
 go install -v -trimpath=true -race=false std
 
 go build -v -o=bin/ferretdb -trimpath=true -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+
 go version -m bin/ferretdb
 bin/ferretdb --version
 EOF

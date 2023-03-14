@@ -69,10 +69,10 @@ go install -v -trimpath=false -race=$RACE std
 
 go build -v                 -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
 go test  -c -coverpkg=./... -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
-EOF
 
-RUN go version -m bin/ferretdb
-RUN bin/ferretdb --version
+go version -m bin/ferretdb
+bin/ferretdb --version
+EOF
 
 
 # final stage
