@@ -23,6 +23,11 @@ tasks:
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -target-backend=ferretdb-tigris
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
+      - >
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        -tags=ferretdb_testenvdata .
+        -target-backend=mongodb
+        -target-url=mongodb://127.0.0.1:47017/
 
   integration-gen:
     cmds:
