@@ -250,8 +250,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			skipForTigris: "Mixed types are not supported for Tigris.",
 		},
 		"String": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
-			skipForTigris: "Mixed types are not supported for Tigris.",
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
 		},
 		"Int32": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
