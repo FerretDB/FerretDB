@@ -137,6 +137,13 @@ func TestExplainCompatError(t *testing.T) {
 			command:  "aggregate",
 			pipeline: bson.A{1},
 		},
+		"Count": {
+			command: "count",
+		},
+		"Find": {
+			command: "find",
+			filter:  bson.D{{"v", int32(42)}},
+		},
 	}
 
 	testExplainCompatError(t, testCases)
