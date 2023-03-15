@@ -64,20 +64,23 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	var exists bool
+	var indexes []pgdb.IndexParams
 
-	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		exists, err = pgdb.CollectionExists(ctx, tx, db, collection)
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		indexes, err = pgdb.ListIndexes(ctx, tx, db, collection)
 		return err
-	}); err != nil {
-		return nil, err
-	}
+	})
 
-	if !exists {
+	switch {
+	case err == nil:
+		// do nothing
+	case err == pgdb.ErrTableNotExist:
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrNamespaceNotFound,
 			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
 		)
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	firstBatch := must.NotFail(types.NewArray(

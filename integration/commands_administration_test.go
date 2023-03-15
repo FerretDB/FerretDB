@@ -990,7 +990,11 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 func TestCommandsAdministrationListIndexes(t *testing.T) {
 	t.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                shareddata.AllProviders(),
+		AddNonExistentCollection: true,
+	})
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for i := range targetCollections {
 		targetCollection := targetCollections[i]
