@@ -108,7 +108,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		panic("negative skip must be caught earlier")
 	case skip == 0:
 		// do nothing
-	case skip > int64(len(resDocs)):
+	case skip >= int64(len(resDocs)):
 		resDocs = []*types.Document{}
 	default:
 		resDocs = resDocs[skip:]

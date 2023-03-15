@@ -108,7 +108,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		panic("negative skip must be caught earlier")
 	case params.Skip == 0:
 		// do nothing
-	case params.Skip > int64(len(resDocs)):
+	case params.Skip >= int64(len(resDocs)):
 		resDocs = []*types.Document{}
 	default:
 		resDocs = resDocs[params.Skip:]
