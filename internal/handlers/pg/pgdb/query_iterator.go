@@ -40,7 +40,7 @@ type queryIterator struct {
 	rows      pgx.Rows
 	stack     []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
 	n         int
-	unmarshal func(b []byte) (*types.Document, error)
+	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal.
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -51,6 +51,7 @@ type queryIterator struct {
 func newIterator(ctx context.Context, rows pgx.Rows, p iteratorParams) iterator.Interface[int, *types.Document] {
 	unmarshalFunc := p.unmarshal
 	if unmarshalFunc == nil {
+		// use pjson.Unmarshal when no unmarshal function is specified.
 		unmarshalFunc = pjson.Unmarshal
 	}
 

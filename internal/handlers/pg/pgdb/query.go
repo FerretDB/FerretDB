@@ -137,8 +137,8 @@ type iteratorParams struct {
 	comment   string
 	explain   bool
 	filter    *types.Document
-	forUpdate bool // if SELECT FOR UPDATE is needed.
-	unmarshal func(b []byte) (*types.Document, error)
+	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
+	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
