@@ -39,7 +39,7 @@ func TestEnvData(t *testing.T) {
 		shareddata.ArrayDocuments,
 	}
 
-	// Setups one collection for each data set for all handlers and MongoDB.
+	// Setups one collection for each data set for all backends and MongoDB.
 	t.Run("All", func(t *testing.T) {
 		for _, p := range shareddata.AllProviders() {
 			p := p
@@ -61,7 +61,7 @@ func TestEnvData(t *testing.T) {
 		}
 	})
 
-	// Setups old `values` collection with mixed types for `pg` handler and MongoDB.
+	// Setups old `values` collection with mixed types for `ferretdb-pg` backend and MongoDB.
 	t.Run("Values", func(t *testing.T) {
 		setup.SkipForTigris(t)
 
