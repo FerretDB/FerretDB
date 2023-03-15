@@ -250,8 +250,7 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			skipForTigris: "Mixed types are not supported for Tigris.",
 		},
 		"String": {
-			update:        bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
-			skipForTigris: "Mixed types are not supported for Tigris.",
+			update: bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
 		},
 		"Int32": {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{
