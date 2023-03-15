@@ -30,10 +30,12 @@ func GetPushdownQuery(stagesDoc []any) *types.Document {
 	firstStageDoc := stagesDoc[0]
 	firstStage, isDoc := firstStageDoc.(*types.Document)
 
-	if isDoc && firstStage.Has("$match") {
-		matchQuery := must.NotFail(firstStage.Get("$match"))
-		query, _ := matchQuery.(*types.Document)
+	if !isDoc || !firstStage.Has("$match") {
+		return nil
+	}
 
+	matchQuery := must.NotFail(firstStage.Get("$match"))
+	if query, isDoc := matchQuery.(*types.Document); isDoc {
 		return query
 	}
 
