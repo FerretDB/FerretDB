@@ -50,79 +50,53 @@ type QueryParams struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
+//
+// It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if !exists {
-		return nil, lazyerrors.Error(ErrTableNotExist)
-	}
-
 	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var query string
-
-	if qp.Explain {
-		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
-	}
-
-	query += `SELECT _jsonb `
-
-	if c := qp.Comment; c != "" {
-		// prevent SQL injections
-		c = strings.ReplaceAll(c, "/*", "/ *")
-		c = strings.ReplaceAll(c, "*/", "* /")
-
-		query += `/* ` + c + ` */ `
-	}
-
-	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
-
-	where, args, err := prepareWhereClause(qp.Filter)
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
+		schema:    qp.DB,
+		table:     table,
+		comment:   qp.Comment,
+		explain:   qp.Explain,
+		filter:    qp.Filter,
+		unmarshal: unmarshalExplain,
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	query += where
+	defer iter.Close()
 
-	rows, err := tx.Query(ctx, query, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
+	_, plan, err := iter.Next()
 
-	var res *types.Document
-
-	if !rows.Next() {
+	switch {
+	case errors.Is(err, iterator.ErrIteratorDone):
 		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
-	}
-
-	var b []byte
-	if err = rows.Scan(&b); err != nil {
+	case err != nil:
 		return nil, lazyerrors.Error(err)
 	}
 
+	return plan, nil
+}
+
+// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+// EXPLAIN result is not pjson, so it cannot be unmarshalled by pjson.Unmarshal.
+func unmarshalExplain(b []byte) (*types.Document, error) {
 	var plans []map[string]any
-	if err = json.Unmarshal(b, &plans); err != nil {
+	if err := json.Unmarshal(b, &plans); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if len(plans) == 0 {
-		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
+		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
 	}
 
-	res = convertJSON(plans[0]).(*types.Document)
-
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
+	return convertJSON(plans[0]).(*types.Document), nil
 }
 
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
@@ -137,7 +111,7 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil), nil
+		return newIterator(ctx, nil, iteratorParams{}), nil
 	default:
 		return nil, lazyerrors.Error(err)
 	}
@@ -164,6 +138,7 @@ type iteratorParams struct {
 	explain   bool
 	filter    *types.Document
 	forUpdate bool // if SELECT FOR UPDATE is needed.
+	unmarshal func(b []byte) (*types.Document, error)
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
@@ -202,7 +177,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows), nil
+	return newIterator(ctx, rows, *p), nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.

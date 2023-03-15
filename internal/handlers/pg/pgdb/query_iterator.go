@@ -36,10 +36,11 @@ var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/inter
 type queryIterator struct {
 	ctx context.Context
 
-	m     sync.Mutex
-	rows  pgx.Rows
-	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
-	n     int
+	m         sync.Mutex
+	rows      pgx.Rows
+	stack     []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
+	n         int
+	unmarshal func(b []byte) (*types.Document, error)
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -47,11 +48,17 @@ type queryIterator struct {
 // Iterator's Close method closes rows.
 //
 // Nil rows are possible and return already done iterator.
-func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *types.Document] {
+func newIterator(ctx context.Context, rows pgx.Rows, p iteratorParams) iterator.Interface[int, *types.Document] {
+	unmarshalFunc := p.unmarshal
+	if unmarshalFunc == nil {
+		unmarshalFunc = pjson.Unmarshal
+	}
+
 	iter := &queryIterator{
-		ctx:   ctx,
-		rows:  rows,
-		stack: debugbuild.Stack(),
+		ctx:       ctx,
+		rows:      rows,
+		stack:     debugbuild.Stack(),
+		unmarshal: unmarshalFunc,
 	}
 
 	queryIteratorProfiles.Add(iter, 1)
@@ -108,7 +115,7 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 		return 0, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := pjson.Unmarshal(b)
+	doc, err := iter.unmarshal(b)
 	if err != nil {
 		return 0, nil, lazyerrors.Error(err)
 	}
