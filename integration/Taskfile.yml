@@ -8,7 +8,6 @@ vars:
 tasks:
   env-data:
     cmds:
-      # TODO https://github.com/FerretDB/FerretDB/issues/1568
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
         -tags=ferretdb_testenvdata .
@@ -24,16 +23,6 @@ tasks:
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -target-backend=ferretdb-tigris
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
-      # - >
-      #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-      #   -tags=ferretdb_testenvdata .
-        # -compat-port=0
-      #   -target-port=47017
-      # - >
-      #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-      #   -tags=ferretdb_testenvdata .
-      #   -compat-port=0
-      #   -target-port=47018
 
   integration-gen:
     cmds:
