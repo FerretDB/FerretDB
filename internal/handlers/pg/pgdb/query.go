@@ -93,7 +93,7 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 	}
 
 	if len(plans) == 0 {
-		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
 
 	return convertJSON(plans[0]).(*types.Document), nil
