@@ -100,6 +100,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
+	// Apply skip param:
 	switch {
 	case skip < 0:
 		// This should be caught earlier, as if the skip param is not valid,

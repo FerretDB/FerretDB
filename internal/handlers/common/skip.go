@@ -27,8 +27,8 @@ import (
 // GetSkipParam validates the given skip value for find and count commands.
 //
 // If the value is valid, it returns its int64 representation,
-// otherwise it returns a command error with the given key being mentioned.
-func GetSkipParam(key string, value any) (int64, error) {
+// otherwise it returns a command error with the given command being mentioned.
+func GetSkipParam(command string, value any) (int64, error) {
 	skipValue, err := GetWholeNumberParam(value)
 
 	if err == nil {
@@ -52,7 +52,7 @@ func GetSkipParam(key string, value any) (int64, error) {
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				key, AliasFromType(value),
+				command, AliasFromType(value),
 			),
 			"skip",
 		)
