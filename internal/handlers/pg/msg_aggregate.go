@@ -111,16 +111,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stages[i] = s
 	}
 
-	// pushdown query when the first stage is $match
-	if len(stagesDocs) > 0 {
-		firstDoc := stagesDocs[0]
-		firstStage, isDoc := firstDoc.(*types.Document)
-
-		if isDoc && firstStage.Has("$match") {
-			matchQuery := must.NotFail(firstStage.Get("$match"))
-			qp.Filter, _ = matchQuery.(*types.Document)
-		}
-	}
+	qp.Filter = aggregations.GetPushdownQuery(stagesDocs)
 
 	var docs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {

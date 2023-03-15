@@ -20,8 +20,10 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -65,15 +67,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	// pushdown query when the first stage is $match
-	if pipeline != nil && pipeline.Len() > 0 {
-		firstDoc := must.NotFail(pipeline.Get(0))
-		firstStage, isDoc := firstDoc.(*types.Document)
-
-		if isDoc && firstStage.Has("$match") {
-			matchQuery := must.NotFail(firstStage.Get("$match"))
-			filter, _ = matchQuery.(*types.Document)
-		}
+	if pipeline != nil {
+		stagesDocs := must.NotFail(iterator.Values(pipeline.Iterator()))
+		filter = aggregations.GetPushdownQuery(stagesDocs)
 	}
 
 	if h.DisablePushdown {
