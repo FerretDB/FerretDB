@@ -23,7 +23,7 @@ sidebar_position: 1
 |                 | `sort`                     | ✅      |                                                            |
 |                 | `projection`               | ✅      | Basic projections with fields are supported                |
 |                 | `hint`                     | ❌      | Ignored                                                    |
-|                 | `skip`                     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1445)  |
+|                 | `skip`                     | ⚠️      |                                                            |
 |                 | `limit`                    | ✅      |                                                            |
 |                 | `batchSize`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/2005)  |
 |                 | `singleBatch`              | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/2005)  |
