@@ -291,19 +291,8 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Regenerate and reformat
-        run: bin/task gen
-
-      - name: Build bin/ferretdb
-        run: bin/task build-host
-
       - name: Wait for and setup environment
         run: bin/task env-setup
 
       - name: Run env-data
         run: bin/task env-data
-
-      - name: Check dirty
-        run: |
-          git status
-          git diff --exit-code
