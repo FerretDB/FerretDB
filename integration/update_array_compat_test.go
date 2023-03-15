@@ -247,7 +247,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
-			skipForTigris: "Mixed types are not supported for Tigris.",
+			skipForTigris: "No suitable schema for Tigris.",
 		},
 		"String": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
@@ -256,7 +256,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{int32(1), int32(42), int32(2)}},
 			}}}}},
-			skipForTigris: "Mixed types are not supported for Tigris.",
+			skipForTigris: "Tigris would implicitly convert the int32 to a float64.",
 		},
 		"NotArray": {
 			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
