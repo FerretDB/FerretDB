@@ -84,6 +84,12 @@ ARG LABEL_COMMIT
 
 COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
 
+# all-in-one hacks start there
+
+COPY --from=all-in-one-build /src/build/docker/all-in-one/ferretdb.sh /etc/service/ferretdb/run
+COPY --from=all-in-one-build /src/build/docker/all-in-one/postgresql.sh /etc/service/postgresql/run
+COPY --from=all-in-one-build /src/build/docker/all-in-one/entrypoint.sh /entrypoint.sh
+
 RUN <<EOF
 set -ex
 
@@ -95,9 +101,18 @@ apt update
 apt install -y mongodb-mongosh
 EOF
 
+ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/ferretdb
+ENV POSTGRES_USER=username
+ENV POSTGRES_PASSWORD=password
+ENV POSTGRES_DB=ferretdb
+
+STOPSIGNAL SIGKILL
+
 WORKDIR /
-ENTRYPOINT [ "/ferretdb" ]
+ENTRYPOINT [ "/entrypoint.sh" ]
 EXPOSE 27017 27018 8080
+
+# all-in-one hacks stop there
 
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
@@ -105,7 +120,7 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
 
-# https://github.com/opencontainers/image-spec/blob/main/annotations.md
+# TODO https://github.com/FerretDB/FerretDB/issues/2212
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
