@@ -99,3 +99,37 @@ jobs:
         run: |
           git status
           git diff --exit-code
+
+  env-data:
+    name: env-data
+    runs-on: ubuntu-22.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: test
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run env-data
+        run: bin/task env-data
