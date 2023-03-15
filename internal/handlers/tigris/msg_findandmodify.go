@@ -16,9 +16,11 @@ package tigris
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -78,9 +80,17 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	err = common.SortDocuments(resDocs, params.Sort)
-	if err != nil {
-		return nil, err
+	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
+		var pathErr *types.DocumentPathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"FieldPath field names may not be empty strings.",
+				document.Command(),
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	// findAndModify always works with a single document

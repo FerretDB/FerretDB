@@ -24,6 +24,8 @@ import (
 )
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
+//
+// If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
 func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	if sort.Len() == 0 {
 		return nil
@@ -41,7 +43,17 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 			return err
 		}
 
-		sortFuncs[i] = lessFunc(sortKey, sortType)
+		sortPath, err := types.NewPathFromString(sortKey)
+		if err != nil {
+			return err
+		}
+
+		sortFuncs[i] = lessFunc(sortPath, sortType)
+	}
+
+	if len(sortFuncs) == 0 {
+		// no keys to sort by
+		return nil
 	}
 
 	sorter := &docsSorter{docs: docs, sorts: sortFuncs}
@@ -52,16 +64,16 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 
 // lessFunc takes sort key and type and returns sort.Interface's Less function which
 // compares selected key of 2 documents.
-func lessFunc(sortKey string, sortType types.SortType) func(a, b *types.Document) bool {
+func lessFunc(sortPath types.Path, sortType types.SortType) func(a, b *types.Document) bool {
 	return func(a, b *types.Document) bool {
-		aField, err := a.Get(sortKey)
+		aField, err := a.GetByPath(sortPath)
 		if err != nil {
 			// sort order treats null and non-existent field equivalent,
 			// hence use null for sorting.
 			aField = types.Null
 		}
 
-		bField, err := b.Get(sortKey)
+		bField, err := b.GetByPath(sortPath)
 		if err != nil {
 			return false
 		}

@@ -285,23 +285,23 @@ func TestAggregateCompatCount(t *testing.T) {
 		"NonExistent": {
 			pipeline: bson.A{bson.D{{"$count", "nonexistent"}}},
 		},
-		"Location15948": {
+		"CountGroupID": {
 			pipeline:   bson.A{bson.D{{"$count", "_id"}}},
 			resultType: emptyResult,
 		},
-		"Location40156": {
+		"CountNonString": {
 			pipeline:   bson.A{bson.D{{"$count", 1}}},
 			resultType: emptyResult,
 		},
-		"Location40157": {
+		"CountEmpty": {
 			pipeline:   bson.A{bson.D{{"$count", ""}}},
 			resultType: emptyResult,
 		},
-		"Location40160": {
+		"CountBadValue": {
 			pipeline:   bson.A{bson.D{{"$count", "v.foo"}}},
 			resultType: emptyResult,
 		},
-		"Location40158": {
+		"CountBadPrefix": {
 			pipeline:   bson.A{bson.D{{"$count", "$foo"}}},
 			resultType: emptyResult,
 		},
@@ -568,7 +568,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v.0", int32(42)}}}},
 			},
 		},
-		"Location15959": {
+		"MatchBadValue": {
 			pipeline:   bson.A{bson.D{{"$match", 1}}},
 			resultType: emptyResult,
 		},
@@ -597,12 +597,18 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
+
 		"DotNotation": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v.foo", 1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2101",
+		},
+		"DotNotationIndex": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v.0", 1},
+				{"_id", 1}, // sort by _id when v is the same.
+			}}}},
 		},
 		"DotNotationNonExistent": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
@@ -610,15 +616,22 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
-		"Location15973": {
+		"DotNotationMissingField": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v..foo", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+
+		"SortBadExpression": {
 			pipeline:   bson.A{bson.D{{"$sort", 1}}},
 			resultType: emptyResult,
 		},
-		"Location15975": {
+		"SortBadOrder": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
 			resultType: emptyResult,
 		},
-		"Location15976": {
+		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
 			resultType: emptyResult,
 		},
