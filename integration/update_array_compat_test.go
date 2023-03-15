@@ -247,7 +247,7 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
-			skipForTigris: "Mixed types are not supported for Tigris.",
+			skipForTigris: "No suitable schema for Tigris.",
 		},
 		"String": {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
@@ -267,11 +267,7 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			update:     bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
 			resultType: emptyResult,
 		},
-		"ArrayValuesExists": {
-			update:        bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), int32(43)}}}}}}},
-			skipForTigris: "Tigris schema validation would fail.",
-		},
-		"ArrayMixedValuesExists": {
+		"MixedValuesExists": {
 			update:        bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 			skipForTigris: "Tigris doesn't support mixed types.",
 		},
