@@ -71,6 +71,17 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 				{"$db", collection.Database().Name()},
 			},
 		},
+		"Aggregate": {
+			query: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$gt", int32(0)}}}}}}}},
+			},
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$gt", int32(0)}}}}}}}},
+				{"$db", collection.Database().Name()},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

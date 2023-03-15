@@ -111,6 +111,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	// pushdown query when the first stage is $match
 	var pushdownQuery *types.Document
+
 	if len(stagesDocs) > 0 {
 		firstDoc := stagesDocs[0]
 		firstStage, isDoc := firstDoc.(*types.Document)
@@ -125,13 +126,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if pushdownQuery != nil {
 		qp.Filter = pushdownQuery
+
 		docs, err = fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		iter, err := dbPool.QueryDocuments(ctx, &qp)
-		if err != nil {
+		var iter iterator.Interface[int, *types.Document]
+		if iter, err = dbPool.QueryDocuments(ctx, &qp); err != nil {
 			return nil, err
 		}
 

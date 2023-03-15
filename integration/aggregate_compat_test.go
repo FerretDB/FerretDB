@@ -257,6 +257,7 @@ func TestAggregateCompatStages(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MatchAndCount": {
 			pipeline: bson.A{
+				// when $match is the first stage, pushdown is done.
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 				bson.D{{"$count", "v"}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
@@ -265,6 +266,7 @@ func TestAggregateCompatStages(t *testing.T) {
 		},
 		"CountAndMatch": {
 			pipeline: bson.A{
+				// when $match is the second stage, no pushdown is done.
 				bson.D{{"$count", "v"}},
 				bson.D{{"$match", bson.D{{"v", 1}}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
