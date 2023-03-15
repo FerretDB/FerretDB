@@ -205,6 +205,8 @@ var ArrayDoubles = &Values[string]{
 	data: map[string]any{
 		"array-double-desc":      bson.A{float64(40), float64(15), float64(10)},
 		"array-double-duplicate": bson.A{float64(10), float64(10), float64(20)},
+		"array-double-big":       bson.A{doubleBig},
+		"array-double-prec":      bson.A{doublePrec},
 		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-double-empty": bson.A{},
 	},

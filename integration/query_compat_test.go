@@ -271,7 +271,8 @@ func TestQuick(t *testing.T) {
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
-	maxDouble := float64(2<<52) + 11111111111111000
+	maxDouble := float64(2 << 51)
+	//maxDouble := float64(2<<52) + 11111111111111000
 
 	i := 0
 	for {
@@ -319,7 +320,7 @@ func TestQuick(t *testing.T) {
 				rep = 0
 			}
 
-			if rep == 4 {
+			if rep == 2 {
 				t.Fatalf("%d inside %v", d["_id"].(int64), compatRes)
 			}
 
