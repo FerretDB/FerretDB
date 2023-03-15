@@ -247,8 +247,9 @@ func TestQueryCompatSkip(t *testing.T) {
 			optSkip: 1,
 		},
 		"SkipBig": {
-			filter:  bson.D{},
-			optSkip: 1000,
+			filter:     bson.D{},
+			optSkip:    1000,
+			resultType: emptyResult,
 		},
 		"SkipNegative": {
 			filter:     bson.D{},
