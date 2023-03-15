@@ -22,8 +22,8 @@
 
   const expected = [
     {_id: []},
-    {_id: [40.0, 15.0, 10.0]}, // same sort order as below since it uses the smallest value 10.0 for sorting.
     {_id: [10.0, 10.0, 20.0]}, // same sort order as above since it uses the smallest value 10.0 for sorting.
+    {_id: [40.0, 15.0, 10.0]}, // same sort order as below since it uses the smallest value 10.0 for sorting.
   ];
 
   const actual = coll.aggregate(pipeline).toArray();
