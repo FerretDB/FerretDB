@@ -13,7 +13,7 @@ Your privacy is important to us, and we understand how sensitive data collection
 which is why we are not collecting any personally-identifying information
 or share any of the data with third parties.
 
-The following data will be collected:
+The following data is collected:
 
 * FerretDB version
 * Random instance UUID
@@ -69,20 +69,20 @@ If you disable telemetry, automated version checks and information on updates wi
 Telemetry can be disabled using any of the following options:
 
 1. Pass the command-line flag `--telemetry` to the FerretDB executable with value:
-   `0`, `f`, `false`, `n`, `no`, `off`, `disable`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`:
+   `0`, `f`, `false`, `n`, `no`, `off`, `disable`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`.
 
    ```sh
    --telemetry=disable
    ```
 
-2. Set the environment variable `FERRETDB_TELEMETRY`:
+2. Set the environment variable `FERRETDB_TELEMETRY`.
 
    ```sh
    export FERRETDB_TELEMETRY=disable
    ```
 
 3. Set the `DO_NOT_TRACK` environment variable with any of the following values:
-   `1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`:
+   `1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`.
 
    ```sh
    export DO_NOT_TRACK=true
@@ -108,16 +108,37 @@ Telemetry can be disabled using any of the following options:
 
 ### Enable Telemetry
 
-If telemetry is disabled, enable telemetry with the command-line flag `--telemetry` and assign any of these values to it:
-`1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`, `optin`, `opt-in`, `allow`:
+Telemetry can be explicitly enabled (see [above](#configure-telemetry)) with the command-line flag `--telemetry`
+by setting one of the values:
+`1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`, `optin`, `opt-in`, `allow`.
 
 ```sh
 --telemetry=enable
 ```
 
-You can also use `FERRETDB_TELEMETRY` environment variable with same values.
+You can also use `FERRETDB_TELEMETRY` environment variable with same values
+or on runtime via `db.enableFreeMonitoring()` command.
 
-If telemetry is disabled with a `donottrack` string in the executable,
-remove the `donottrack` string to use the command-line flag and values again.
+   ```sh
+   export FERRETDB_TELEMETRY=enable
+   ```
 
-It's also possible to enable telemetry on runtime via `db.enableFreeMonitoring()` command.
+   ```js
+   db.enableFreeMonitoring()
+   ```
+
+One case when explicitly enabling telemetry is useful is if you want to help us improve compatibility
+with your application by running its integration tests or just by testing it manually.
+If you leave the telemetry state undecided and your test lasts less than an hour,
+we will not have data about unimplemented commands and errors.
+
+If you want to help us with that, please do the following:
+
+1. Start FerretDB with [debug logging](flags.md) and telemetry explicitly enabled.
+   Confirm that telemetry is enabled from the logs.
+2. Test your application with integration tests or manually.
+3. Gracefully stop FerretDB with `SIGTERM` or `docker stop` (not with `SIGKILL` or `docker kill`).
+4. Optionally, locate instance UUID in the `state.json` file in the state directory
+   (`/state` for Docker, current directory otherwise) and send it to us.
+   That would allow us to locate your data and understand what FerretDB functionality
+   should be implemented or fixed to improve compatibility with your application.
