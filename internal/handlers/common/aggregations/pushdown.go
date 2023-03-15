@@ -22,12 +22,12 @@ import (
 // GetPushdownQuery gets pushdown query for aggregation.
 // When the first aggregation stage is $match, $match query is
 // used for pushdown, otherwise nil is return.
-func GetPushdownQuery(stagesDoc []any) *types.Document {
-	if len(stagesDoc) == 0 {
+func GetPushdownQuery(stagesDocs []any) *types.Document {
+	if len(stagesDocs) == 0 {
 		return nil
 	}
 
-	firstStageDoc := stagesDoc[0]
+	firstStageDoc := stagesDocs[0]
 	firstStage, isDoc := firstStageDoc.(*types.Document)
 
 	if !isDoc || !firstStage.Has("$match") {

@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -62,13 +63,29 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	pipeline, err := common.GetOptionalParam[*types.Array](explain, "pipeline", nil)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	if command.Command() == "aggregate" {
+		var pipeline *types.Array
+		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
 
-	if pipeline != nil {
+		if err != nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrMissingField,
+				"BSON field 'aggregate.pipeline' is missing but a required field",
+				document.Command(),
+			)
+		}
+
 		stagesDocs := must.NotFail(iterator.Values(pipeline.Iterator()))
+		for _, d := range stagesDocs {
+			if _, ok := d.(*types.Document); !ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					"Each element of the 'pipeline' array must be an object",
+					document.Command(),
+				)
+			}
+		}
+
 		filter = aggregations.GetPushdownQuery(stagesDocs)
 	}
 
