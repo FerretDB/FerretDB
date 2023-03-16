@@ -101,7 +101,7 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 }
 
 func TestQueryEvaluationCompatMod(t *testing.T) {
-	if runtime.GOARCH != "arm64" {
+	if runtime.GOARCH == "arm64" {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
