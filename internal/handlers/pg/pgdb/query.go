@@ -301,14 +301,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case float64:
 						sql := `_jsonb->%[1]s @> %[2]s`
 
-						if v > 2<<53 {
+						switch {
+						case v > types.MaxSafeDouble:
 							sql = `_jsonb->%[1]s > %[2]s`
-							v = 2 << 53
-						}
+							v = types.MaxSafeDouble
 
-						if v < -(2 << 53) {
+						case v < -types.MaxSafeDouble:
 							sql = `_jsonb->%[1]s < %[2]s`
-							v = -(2 << 53)
+							v = -types.MaxSafeDouble
 						}
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
@@ -316,15 +316,16 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 					case int64:
 						sql := `_jsonb->%[1]s @> %[2]s`
+						maxSafeDouble := int64(types.MaxSafeDouble)
 
-						if v > 2<<53 {
+						switch {
+						case v > maxSafeDouble:
 							sql = `_jsonb->%[1]s > %[2]s`
-							v = 2 << 53
-						}
+							v = maxSafeDouble
 
-						if v < -(2 << 53) {
+						case v < -maxSafeDouble:
 							sql = `_jsonb->%[1]s < %[2]s`
-							v = -(2 << 53)
+							v = -maxSafeDouble
 						}
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))

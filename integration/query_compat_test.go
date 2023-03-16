@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"log"
 	"runtime"
 	"testing"
 
@@ -265,77 +264,13 @@ func testQueryCompatSort() map[string]queryCompatTestCase {
 	return testCases
 }
 
-func TestQuick(t *testing.T) {
-	t.Parallel()
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
-
-	maxDouble := float64(2 << 51)
-	//maxDouble := float64(2<<52) + 11111111111111000
-
-	i := 0
-	for {
-		i *= 10
-
-		compatCollection.Drop(ctx)
-
-		j := 0
-		var insertDocs []any
-		for ; j < 100; j++ {
-			val := maxDouble + float64(i+j)
-			insertDocs = append(insertDocs, bson.D{{"_id", int64(i + j)}, {"v", val}})
-		}
-
-		i += j
-
-		_, err := targetCollection.InsertMany(ctx, insertDocs)
-		require.NoError(t, err)
-
-		_, err = compatCollection.InsertMany(ctx, insertDocs)
-		require.NoError(t, err)
-
-		opts := options.FindOptions{}
-
-		compatCursor, compatErr := compatCollection.Find(ctx, bson.D{}, opts.SetSort(bson.D{{"_id", 1}}))
-		require.NoError(t, compatErr)
-
-		if compatCursor != nil {
-			defer compatCursor.Close(ctx)
-		}
-
-		var compatRes []bson.D
-		require.NoError(t, compatCursor.All(ctx, &compatRes))
-
-		var lastValue any
-		var rep int
-
-		for _, doc := range compatRes {
-			d := doc.Map()
-			//index  := d["_id"].(int32)/int32(i)
-
-			log.Println(d)
-			rep++
-			if d["v"] != lastValue {
-				rep = 0
-			}
-
-			if rep == 2 {
-				t.Fatalf("%d inside %v", d["_id"].(int64), compatRes)
-			}
-
-			lastValue = d["v"]
-		}
-	}
-}
-
 func TestDoubleNearMaxPrecision(t *testing.T) {
 	t.Parallel()
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
-	maxDouble := float64(2 << 53)
+	maxDouble := float64(1 << 53)
 
 	var insertDocs []any
 
@@ -347,7 +282,6 @@ func TestDoubleNearMaxPrecision(t *testing.T) {
 	_, err := targetCollection.InsertMany(ctx, insertDocs)
 	require.NoError(t, err)
 
-	//insertDocs = append(insertDocs, bson.D{{"_id", 2137}, {"v", 1}})
 	_, err = compatCollection.InsertMany(ctx, insertDocs)
 	require.NoError(t, err)
 

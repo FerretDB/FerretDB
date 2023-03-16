@@ -87,11 +87,11 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DoubleBigInt64": {
-			filter:         bson.D{{"v", float64(2 << 61)}},
+			filter:         bson.D{{"v", float64(1 << 61)}},
 			resultPushdown: true,
 		},
 		"DoubleBigInt64PlusOne": {
-			filter:         bson.D{{"v", float64(2<<61 + 1)}},
+			filter:         bson.D{{"v", float64((1 << 61) + 1)}},
 			resultPushdown: true,
 		},
 		"Int64Max": {
@@ -103,12 +103,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"Int64DoubleBig": {
-			filter:         bson.D{{"v", int64(2 << 60)}},
+			filter:         bson.D{{"v", int64(1 << 61)}},
 			resultPushdown: true,
 		},
 
 		"DoubleBig": {
-			filter:         bson.D{{"v", float64(2 << 60)}},
+			filter:         bson.D{{"v", float64(1 << 61)}},
 			resultPushdown: true,
 		},
 		"String": {
@@ -285,23 +285,23 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DoubleBigInt64": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2 << 61)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 61)}}}},
 			resultPushdown: true,
 		},
 		"DoubleBigInt64PlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<61 + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) + 1)}}}},
 			resultPushdown: true,
 		},
 		"DoubleMaxPrec": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2 << 53)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 53)}}}},
 			resultPushdown: true,
 		},
 		"DoubleMaxPrecClose": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<53) - 1}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) - 1}}}},
 			resultPushdown: true,
 		},
 		"DoubleMaxPrecCloseTwo": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<53) - 2}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) - 2}}}},
 			resultPushdown: true,
 		},
 		"String": {
@@ -410,13 +410,13 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"Int64DoubleBig": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(2 << 60)}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", int64(1 << 61)}}}},
 			// 9007199254740992
 			// 2305843009213694000
 			resultPushdown: true,
 		},
 		"Int64DoubleBigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64(2<<60 + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 61) + 1)}}}},
 			resultType:     emptyResult,
 			resultPushdown: true,
 		},
@@ -559,7 +559,7 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$gt", int64(math.MaxInt64)}}}},
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$gt", int64(2<<60 - 1)}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", int64((1 << 61) - 1)}}}},
 		},
 	}
 
@@ -796,7 +796,7 @@ func testQueryComparisonCompatLt() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$lt", int64(math.MinInt64)}}}},
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$lt", int64(2<<60 + 1)}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", int64(1<<61 + 1)}}}},
 		},
 	}
 
@@ -1021,7 +1021,7 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DoubleBig": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1 << 61)}}}},
 			resultPushdown: true,
 		},
 		"String": {
@@ -1104,11 +1104,11 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"Int64Big": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(1 << 61)}}}},
 			resultPushdown: true,
 		},
 		"DoubleBigInt64": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 61)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1 << 61)}}}},
 			resultPushdown: true,
 		},
 		"Regex": {

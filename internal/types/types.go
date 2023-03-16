@@ -61,6 +61,8 @@ import (
 // MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16 * 1024 * 1024 // 16 MiB = 16777216 bytes
 
+const MaxSafeDouble float64 = 1 << 53 // 53bit mantissa = 9007199254740992 TODO: 1 << 53 or 1<<53-1?? TODO: should we specify float64 type here
+
 // ScalarType represents scalar type.
 type ScalarType interface {
 	float64 | string | Binary | ObjectID | bool | time.Time | NullType | Regex | int32 | Timestamp | int64
