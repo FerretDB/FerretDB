@@ -153,6 +153,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$pull":
+			changed, err = processPullArrayUpdateExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, commonerrors.NewCommandError(
@@ -851,12 +857,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	pull, err := extractValueFromUpdateOperator("$pull", update)
+	if err != nil {
+		return err
+	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
 
 	if err = checkConflictingOperators(
-		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll,
+		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll, pull,
 	); err != nil {
 		return err
 	}
@@ -885,7 +896,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			"$set", "$setOnInsert", "$unset",
 
 			// array update operators:
-			"$pop", "$push", "$addToSet", "$pullAll":
+			"$pop", "$push", "$addToSet", "$pullAll", "$pull":
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
