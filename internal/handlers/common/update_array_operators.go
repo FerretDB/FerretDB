@@ -417,6 +417,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 }
 
 // processPullArrayUpdateExpression changes document according to $pull array update operator.
+// If the document was changed it returns true.
 func processPullArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
 	var changed bool
 
