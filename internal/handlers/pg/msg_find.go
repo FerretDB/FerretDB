@@ -100,6 +100,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	// Apply skip param:
+	switch {
+	case params.Skip < 0:
+		// This should be caught earlier, as if the skip param is not valid,
+		// we don't need to fetch the documents.
+		panic("negative skip must be caught earlier")
+	case params.Skip == 0:
+		// do nothing
+	case params.Skip >= int64(len(resDocs)):
+		resDocs = []*types.Document{}
+	default:
+		resDocs = resDocs[params.Skip:]
+	}
+
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
 		firstBatch.Append(doc)
