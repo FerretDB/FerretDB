@@ -289,26 +289,34 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			filter:         bson.D{{"v", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
 			resultPushdown: true,
 		},
-		"DoubleBigInt64": {
+
+		// TODO: add to other tests
+		"DoubleBig": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 61)}}}},
 			resultPushdown: true,
 		},
-		"DoubleBigInt64PlusOne": {
+		"DoubleBigPlus": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) + 1)}}}},
 			resultPushdown: true,
 		},
-		"DoubleMaxPrec": {
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+
+		"DoublePrecMax": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 53)}}}},
 			resultPushdown: true,
 		},
-		"DoubleMaxPrecClose": {
+		"DoublePrecMaxPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxMinus": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) - 1}}}},
 			resultPushdown: true,
 		},
-		"DoubleMaxPrecCloseTwo": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) - 2}}}},
-			resultPushdown: true,
-		},
+
 		"String": {
 			filter:         bson.D{{"v", bson.D{{"$eq", "foo"}}}},
 			resultPushdown: true,
@@ -414,17 +422,33 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			filter:         bson.D{{"v", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			resultPushdown: true,
 		},
-		"Int64DoubleBig": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(1 << 61)}}}},
-			// 9007199254740992
-			// 2305843009213694000
+
+		"Int64Big": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1 << 61)}}}},
 			resultPushdown: true,
 		},
-		"Int64DoubleBigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 61) + 1)}}}},
-			resultType:     emptyResult,
+		"Int64BigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 61) + 1)}}}}, // long-big-plus
 			resultPushdown: true,
 		},
+		"Int64BigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+
+		"Int64PrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 53) + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 53) - 1)}}}},
+			resultPushdown: true,
+		},
+
 		"IDNull": {
 			filter:     bson.D{{"_id", bson.D{{"$eq", nil}}}},
 			resultType: emptyResult,

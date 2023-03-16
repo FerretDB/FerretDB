@@ -348,14 +348,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		case float64:
 			sql := `_jsonb->%[1]s @> %[2]s`
 
-			if v > 2<<53 {
+			switch {
+			case v > types.MaxSafeDouble:
 				sql = `_jsonb->%[1]s > %[2]s`
-				v = 2 << 53
-			}
+				v = types.MaxSafeDouble
 
-			if v < -(2 << 53) {
+			case v < -types.MaxSafeDouble:
 				sql = `_jsonb->%[1]s < %[2]s`
-				v = -(2 << 53)
+				v = -types.MaxSafeDouble
 			}
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
@@ -363,35 +363,22 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		case int64:
 			sql := `_jsonb->%[1]s @> %[2]s`
+			maxSafeDouble := int64(types.MaxSafeDouble)
 
-			if v > 2<<53 {
+			switch {
+			case v > maxSafeDouble:
 				sql = `_jsonb->%[1]s > %[2]s`
-				v = 2 << 53
-			}
+				v = maxSafeDouble
 
-			if v < -(2 << 53) {
+			case v < -maxSafeDouble:
 				sql = `_jsonb->%[1]s < %[2]s`
-				v = -(2 << 53)
+				v = -maxSafeDouble
 			}
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
-		case int32:
-			// Select if value under the key is equal to provided value.
-
-			// TODO  send simpler query for <16digits numbers
-
-			sql := `_jsonb->%[1]s @> %[2]s OR CASE ` + // If the field or field's array contain the value, just return it (Long("2305843009213693952") == Long("2305843009213693952"))
-				`WHEN _jsonb->'$s'->'p'->%[1]s->'t' = '"array"' OR ` + // If the db's row is the array ...
-				`_jsonb->'$s'->'p'->%[1]s->'t' = '"double"' THEN ` + // ... or double, we compare them with rounded filter (doubles that are already in database are already rounded).
-				`(_jsonb->'v')::jsonb @> to_jsonb( ROUND(%[2]s::numeric, 16 - (floor(log(abs(%[2]s::numeric)))+1)::int ) )` + // comparison with rounded filter
-				`END`
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-		case string, bool, time.Time, types.ObjectID:
+		case string, bool, time.Time, types.ObjectID, int32:
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 

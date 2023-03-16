@@ -340,6 +340,19 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
+		// TODO: why both Count and Distinct tests fails on every two runs on the prec value:
+		//  --- expected
+		//	+++ actual
+		//	@@ -54,3 +54,3 @@
+		//	     "_id": {
+		//	-      "$f": 9007199254740992
+		//	+      "$l": "9007199254740992"
+		//	     }
+		//	@@ -62,3 +62,3 @@
+		//	     "_id": {
+		//	-      "$l": "9007199254740991"
+		//	+      "$f": 9007199254740991
+		//	     }
 		"CountValue": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{
