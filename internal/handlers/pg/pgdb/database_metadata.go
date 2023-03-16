@@ -215,8 +215,6 @@ func (m *metadata) remove(ctx context.Context) error {
 		return nil
 	}
 
-	formatCollectionName("test linter fails")
-
 	return lazyerrors.Error(err)
 }
 
