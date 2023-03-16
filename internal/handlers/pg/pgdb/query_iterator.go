@@ -48,7 +48,7 @@ type queryIterator struct {
 // Iterator's Close method closes rows.
 //
 // Nil rows are possible and return already done iterator.
-func newIterator(ctx context.Context, rows pgx.Rows, p iteratorParams) iterator.Interface[int, *types.Document] {
+func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) iterator.Interface[int, *types.Document] {
 	unmarshalFunc := p.unmarshal
 	if unmarshalFunc == nil {
 		// use pjson.Unmarshal when no unmarshal function is specified.

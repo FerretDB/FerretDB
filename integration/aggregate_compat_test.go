@@ -29,13 +29,9 @@ import (
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
 	skip           string                   // skip test for all handlers, must have issue number mentioned
-	pipeline       bson.A                   // required
+	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
-	// when noSort is false, it appends bson.D{{"$sort", bson.D{{"_id", 1}}}}
-	// to pipeline, only if $sort stage does not exist.
-	// This ensures compat and target has the same order of results.
-	noSort bool
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -82,7 +78,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				}
 			}
 
-			if !hasSortStage && !tc.noSort {
+			if !hasSortStage && len(pipeline) > 0 {
 				// add sort stage to sort by _id because compat and target
 				// would be ordered differently otherwise.
 				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
@@ -292,9 +288,6 @@ func TestAggregateCompatEmptyPipeline(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Empty": {
 			pipeline: bson.A{},
-			// this tests empty pipeline, set noSort to ensure $sort stage
-			// is not added by the test setup.
-			noSort: true,
 		},
 	}
 

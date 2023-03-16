@@ -111,7 +111,7 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.I
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil, iteratorParams{}), nil
+		return newIterator(ctx, nil, new(iteratorParams)), nil
 	default:
 		return nil, lazyerrors.Error(err)
 	}
@@ -177,7 +177,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows, *p), nil
+	return newIterator(ctx, rows, p), nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
