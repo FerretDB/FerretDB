@@ -159,6 +159,25 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			return false, lazyerrors.Error(err)
 		}
 
+		var each *types.Array
+
+		if pushValue, ok := pushValueRaw.(*types.Document); ok {
+			if pushValue.Has("$each") {
+				eachRaw := must.NotFail(pushValue.Get("$each"))
+
+				each, ok = eachRaw.(*types.Array)
+				if !ok {
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrBadValue,
+						fmt.Sprintf(
+							"The argument to $each in $push must be an array but it was of type: %s",
+							AliasFromType(eachRaw),
+						),
+					)
+				}
+			}
+		}
+
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			return false, lazyerrors.Error(err)
@@ -166,6 +185,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
+			changed = true
+
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
 				return false, commonerrors.NewWriteErrorMsg(
 					commonerrors.ErrUnsuitableValueType,
@@ -190,13 +211,20 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			)
 		}
 
-		array.Append(pushValueRaw)
+		if each == nil {
+			each = types.MakeArray(1)
+			each.Append(pushValueRaw)
+		}
+
+		for i := 0; i < each.Len(); i++ {
+			array.Append(must.NotFail(each.Get(i)))
+
+			changed = true
+		}
 
 		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)
 		}
-
-		changed = true
 	}
 
 	return changed, nil
