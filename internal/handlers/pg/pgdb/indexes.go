@@ -86,7 +86,9 @@ func ListIndexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index
 			keyIter := key.Iterator()
 
 			for i := 0; i < key.Len(); i++ {
-				field, value, err := keyIter.Next()
+				var field string
+				var value any
+				field, value, err = keyIter.Next()
 
 				switch {
 				case err == nil:
@@ -96,7 +98,6 @@ func ListIndexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index
 					})
 				case errors.Is(err, iterator.ErrIteratorDone):
 					// no more key fields
-					break
 				default:
 					return nil, lazyerrors.Error(err)
 				}

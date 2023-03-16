@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
@@ -64,17 +65,17 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	var indexes []pgdb.IndexParams
+	//	var indexes []pgdb.IndexParams
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		indexes, err = pgdb.ListIndexes(ctx, tx, db, collection)
+		_, err = pgdb.ListIndexes(ctx, tx, db, collection)
 		return err
 	})
 
 	switch {
 	case err == nil:
 		// do nothing
-	case err == pgdb.ErrTableNotExist:
+	case errors.Is(err, pgdb.ErrTableNotExist):
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrNamespaceNotFound,
 			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
