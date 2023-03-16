@@ -167,33 +167,25 @@ func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection 
 //
 // TODO Test correctness for concurrent cases https://github.com/FerretDB/FerretDB/issues/1684
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	schemaExists, err := schemaExists(ctx, tx, db)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
+	md := newMetadata(tx, db, collection)
+	tableName, err := md.getTableName(ctx)
 
-	if !schemaExists {
-		return ErrSchemaNotExist
-	}
-
-	table := formatCollectionName(collection)
-	tables, err := tables(ctx, tx, db)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if !slices.Contains(tables, table) {
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, ErrTableNotExist):
 		return ErrTableNotExist
-	}
-
-	err = newMetadata(tx, db, collection).remove(ctx)
-	if err != nil {
+	default:
 		return lazyerrors.Error(err)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
-	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
+	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, tableName}.Sanitize() + ` CASCADE`
+	if _, err = tx.Exec(ctx, sql); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = md.remove(ctx); err != nil {
 		return lazyerrors.Error(err)
 	}
 
