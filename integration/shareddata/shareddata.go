@@ -18,10 +18,9 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/exp/slices"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 // unset represents a field that should not be set.
@@ -204,6 +203,7 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	}
 
 	var handler string
+
 	switch backend {
 	case "ferretdb-pg":
 		handler = "pg"
