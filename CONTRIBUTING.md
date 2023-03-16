@@ -209,6 +209,8 @@ Some of our idiosyncrasies:
 1. We use type switches over BSON types in many places in our code.
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+2. We generally pass and return `struct`s by pointers.
+   There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
 
 #### Integration tests conventions
 
