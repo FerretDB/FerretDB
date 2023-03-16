@@ -116,7 +116,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: test
+          cache-key: env-data
 
       - name: Install Task
         run: go generate -x
