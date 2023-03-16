@@ -68,6 +68,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 
 	res := make([]IndexParams, indexes.Len())
 	iter := indexes.Iterator()
+
 	defer iter.Close()
 
 	for {
