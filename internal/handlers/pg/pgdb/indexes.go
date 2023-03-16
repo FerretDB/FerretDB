@@ -51,10 +51,10 @@ const (
 	IndexOrderDesc IndexOrder = -1
 )
 
-// ListIndexes returns a list of indexes for the given database and collection.
+// Indexes returns a list of indexes for the given database and collection.
 //
 // If the given collection does not exist, it returns ErrTableNotExist.
-func ListIndexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexParams, error) {
+func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexParams, error) {
 	metadata, err := newMetadata(tx, db, collection).get(ctx, false)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func ListIndexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index
 				case err == nil:
 					res[i].Key = append(res[i].Key, IndexKeyPair{
 						Field: field,
-						Order: value.(IndexOrder),
+						Order: IndexOrder(value.(int32)),
 					})
 				case errors.Is(err, iterator.ErrIteratorDone):
 					// no more key fields

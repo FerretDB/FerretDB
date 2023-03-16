@@ -65,10 +65,10 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	//	var indexes []pgdb.IndexParams
+	var indexes []pgdb.IndexParams
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		_, err = pgdb.ListIndexes(ctx, tx, db, collection)
+		indexes, err = pgdb.Indexes(ctx, tx, db, collection)
 		return err
 	})
 
@@ -84,15 +84,21 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := must.NotFail(types.NewArray(
-		must.NotFail(types.NewDocument(
+	firstBatch := types.MakeArray(len(indexes))
+
+	for _, index := range indexes {
+		indexKey := must.NotFail(types.NewDocument())
+
+		for _, key := range index.Key {
+			indexKey.Set(key.Field, int32(key.Order))
+		}
+
+		firstBatch.Append(must.NotFail(types.NewDocument(
 			"v", int32(2),
-			"key", must.NotFail(types.NewDocument(
-				"_id", int32(1),
-			)),
-			"name", "_id_",
-		)),
-	))
+			"key", indexKey,
+			"name", index.Index,
+		)))
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
