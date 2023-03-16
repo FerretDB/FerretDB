@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"testing"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,7 +26,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatImplicit(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter:        bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
@@ -206,10 +209,12 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatEq(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{
@@ -429,10 +434,12 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatGt(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{
@@ -458,10 +465,8 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 						{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
 					}},
 				}},
-				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
-			resultType:     emptyResult,
-			resultPushdown: true,
+			resultPushdown: false,
 			skipForTigris:  "No suitable Tigris-compatible provider to test this data",
 		},
 		"DocumentNull": {
@@ -563,10 +568,12 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatGte() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatGte(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
@@ -678,10 +685,12 @@ func testQueryComparisonCompatGte() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatLt() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatLt(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
@@ -800,10 +809,12 @@ func testQueryComparisonCompatLt() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatLte() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatLte(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
@@ -913,10 +924,12 @@ func testQueryComparisonCompatLte() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatNin() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatNin(t *testing.T) {
+	t.Parallel()
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -953,10 +966,12 @@ func testQueryComparisonCompatNin() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatIn() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatIn(t *testing.T) {
+	t.Parallel()
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -993,10 +1008,12 @@ func testQueryComparisonCompatIn() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatNe(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Array": {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.A{int32(42), "foo", nil}}}}},
@@ -1128,10 +1145,12 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 		testCases[k] = tc
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatMultipleOperators() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
+	t.Parallel()
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -1164,5 +1183,5 @@ func testQueryComparisonCompatMultipleOperators() map[string]queryCompatTestCase
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }

@@ -1,5 +1,70 @@
 # Changelog
 
+## [v0.9.3](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.3) (2023-03-13)
+
+### New Features 🎉
+* Implement `$sort` aggregation pipeline stage by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2093
+* Support aggregation pipeline for Tigris by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2085
+* Pushdown `$eq` query operator by @noisersup in https://github.com/FerretDB/FerretDB/pull/1880
+* Pushdown `$ne` query operator for PostgreSQL by @noisersup in https://github.com/FerretDB/FerretDB/pull/2145
+* Create unqiue index for `_id` automatically by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2048
+* Support `$group` aggregation stage by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2151
+
+### Fixed Bugs 🐛
+* Add dot notation support for `$max` and `$min` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2072
+* Fix `$mul` operator handling dot notation by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2094
+* Add lowercase variant of `dbstats` by @b1ron in https://github.com/FerretDB/FerretDB/pull/2119
+* Fix querying an embedded field in array by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2030
+* Fix dot notation errors by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2122
+* Make `$pullAll` remove all instances from the existing array by @b1ron in https://github.com/FerretDB/FerretDB/pull/2066
+* Fix `saslStart` for particular clients by @yu-re-ka in https://github.com/FerretDB/FerretDB/pull/2164
+
+### Enhancements 🛠
+* Relax validation rules a bit by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2009
+* Allow empty strings pushdown for Tigris by @noisersup in https://github.com/FerretDB/FerretDB/pull/2110
+* Pushdown `bool` values by @noisersup in https://github.com/FerretDB/FerretDB/pull/2143
+* Pushdown `date` values by @noisersup in https://github.com/FerretDB/FerretDB/pull/2162
+
+### Documentation 📄
+* Add blog post on FerretDB v0.92 by @Fashander in https://github.com/FerretDB/FerretDB/pull/2067
+* Restructure documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/2073
+* Improve social preview for Security page by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2091
+* Update aggregation in supported command document by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2154
+* Document explicit telemetry sharing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2169
+* Update supported command document for `$group` aggregation operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2188
+
+### Other Changes 🤖
+* Fix `SkipForTigrisWithReason` helper by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2061
+* Add dot notation test cases for update operators by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2047
+* Push Docker images to Docker Hub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2059
+* Temporarily remove pushdown for dot notation by @noisersup in https://github.com/FerretDB/FerretDB/pull/2068
+* Set `retention-days` for all CI artifacts by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2087
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2041
+* Use Go 1.20 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2098
+* Small cleanups by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2107
+* Update CODEOWNERS for the Hana handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2096
+* Initial setup of `hana` handler by @lucboj in https://github.com/FerretDB/FerretDB/pull/2071
+* Checkout named branch by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2112
+* Skip docs build if no docs were changed by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2095
+* Remove CI optimization that does not work by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2113
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2148
+* Add aggregation pipeline compat tests and fix errors by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2099
+* Test that version is set correctly by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2152
+* Add connection to HANA by @lucboj in https://github.com/FerretDB/FerretDB/pull/2120
+* Bump deps, minor cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2176
+* Refactor common `saslStart` code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2181
+* Use `stringer` for "enums" by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2144
+* Rework build by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2177
+* Disable race detector on arm64 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2182
+
+## New Contributors
+* @lucboj made their first contribution in https://github.com/FerretDB/FerretDB/pull/2071
+* @yu-re-ka made their first contribution in https://github.com/FerretDB/FerretDB/pull/2164
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/37?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.2...v0.9.3).
+
+
 ## [v0.9.2](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.2) (2023-02-27)
 
 ### New Features 🎉

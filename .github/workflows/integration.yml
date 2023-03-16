@@ -1,4 +1,6 @@
 ---
+# Integration tests that don't need access to secrets.
+
 name: Integration
 on:
   pull_request:

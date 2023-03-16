@@ -86,8 +86,14 @@ const (
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
 
+	// ErrStageGroupInvalidFields indicates group's fields must be an object.
+	ErrStageGroupInvalidFields = ErrorCode(15947) // Location15947
+
 	// ErrStageGroupID indicates _id for a group can only be specified once.
 	ErrStageGroupID = ErrorCode(15948) // Location15948
+
+	// ErrStageGroupMissingID indicates that group is missing an _id.
+	ErrStageGroupMissingID = ErrorCode(15955) // Location15955
 
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
@@ -103,6 +109,12 @@ const (
 
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
+
+	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
+	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
+	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
+	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
 
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
@@ -130,8 +142,14 @@ const (
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
 
+	// ErrStageGroupMultipleAccumulator indicates that group field must specify one accumulator.
+	ErrStageGroupMultipleAccumulator = ErrorCode(40238) // Location40238
+
 	// ErrStageInvalid indicates invalid aggregation pipeline stage.
 	ErrStageInvalid = ErrorCode(40323) // Location40323
+
+	// ErrStageGroupInvalidAccumulator indicates invalid accumulator field.
+	ErrStageGroupInvalidAccumulator = ErrorCode(40234) // Location40234
 
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
@@ -146,8 +164,8 @@ const (
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
 
-	// ErrBatchSizeNegative indicates that batch size is negative.
-	ErrBatchSizeNegative = ErrorCode(51024) // Location51024
+	// ErrValueNegative indicates that value must not be negative.
+	ErrValueNegative = ErrorCode(51024) // Location51024
 
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075
@@ -157,6 +175,9 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
+
+	// ErrDuplicateField indicates duplicate field is specified.
+	ErrDuplicateField = ErrorCode(4822819) // Location4822819
 )
 
 // ErrInfo represents additional optional error information.

@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -79,7 +80,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
-		return nil, err
+		var pathErr *types.DocumentPathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
@@ -88,6 +98,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
+	}
+
+	// Apply skip param:
+	switch {
+	case params.Skip < 0:
+		// This should be caught earlier, as if the skip param is not valid,
+		// we don't need to fetch the documents.
+		panic("negative skip must be caught earlier")
+	case params.Skip == 0:
+		// do nothing
+	case params.Skip >= int64(len(resDocs)):
+		resDocs = []*types.Document{}
+	default:
+		resDocs = resDocs[params.Skip:]
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))

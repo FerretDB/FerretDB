@@ -75,5 +75,12 @@ func main() {
 		saveFile(runGit("branch", "--show-current"), "branch.txt")
 	}()
 
+	// output package.txt in the same format just for logging
+	b, err := os.ReadFile("package.txt")
+	if err != nil {
+		b = []byte(err.Error())
+	}
+	log.Printf("package.txt: %s", b)
+
 	wg.Wait()
 }

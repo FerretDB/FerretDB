@@ -15,11 +15,15 @@
 package integration
 
 import (
+	"testing"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func testQueryLogicalCompatAnd() map[string]queryCompatTestCase {
+func TestQueryLogicalCompatAnd(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
@@ -79,10 +83,12 @@ func testQueryLogicalCompatAnd() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryLogicalCompatOr() map[string]queryCompatTestCase {
+func TestQueryLogicalCompatOr(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
@@ -131,10 +137,12 @@ func testQueryLogicalCompatOr() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryLogicalCompatNor() map[string]queryCompatTestCase {
+func TestQueryLogicalCompatNor(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Zero": {
 			filter: bson.D{{
@@ -172,10 +180,12 @@ func testQueryLogicalCompatNor() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryLogicalCompatNot() map[string]queryCompatTestCase {
+func TestQueryLogicalCompatNot(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Not": {
 			filter: bson.D{{
@@ -210,5 +220,5 @@ func testQueryLogicalCompatNot() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }

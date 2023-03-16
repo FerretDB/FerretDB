@@ -210,11 +210,12 @@ var Strings = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"string":        "foo",
-		"string-double": "42.13",
-		"string-whole":  "42",
-		"string-empty":  "",
-		"string-null":   nil,
+		"string":           "foo",
+		"string-double":    "42.13",
+		"string-whole":     "42",
+		"string-empty":     "",
+		"string-duplicate": "foo",
+		"string-null":      nil,
 	},
 }
 

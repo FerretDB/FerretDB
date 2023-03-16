@@ -36,7 +36,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonString,
 			"the count field must be a non-empty string",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -44,7 +44,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonEmptyString,
 			"the count field must be a non-empty string",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -52,7 +52,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountBadValue,
 			"the count field cannot contain '.'",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -60,7 +60,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountBadPrefix,
 			"the count field cannot be a $-prefixed path",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
@@ -68,7 +68,7 @@ func newCount(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupID,
 			"a group's _id may only be specified once",
-			"$count",
+			"$count (stage)",
 		)
 	}
 
