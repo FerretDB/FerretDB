@@ -86,6 +86,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 			}
 
 			keyIter := key.Iterator()
+			defer keyIter.Close()
 
 			for i := 0; i < key.Len(); i++ {
 				var field string
