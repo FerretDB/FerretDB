@@ -48,14 +48,14 @@ that don't have those problems.
 
 With that container running, you can:
 
-1. Connect to it with any MongoDB client application using MongoDB URI `mongodb://127.0.0.1:27017/`.
-2. Connect to it using MongoDB Shell by just running `mongosh`.
-   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
-3. Connect to PostgreSQL running inside the container by running `docker exec -it ferretdb psql -U username ferretdb`.
-   * FerretDB uses PostgreSQL schemas for MongoDB databases.
-     So, if you created some collections in the `test` database using any MongoDB client,
-     you can switch to it by running `SET search_path = 'test';` query
-     and see a list of PostgreSQL tables by running `\d` `psql` command.
+* Connect to it with any MongoDB client application using MongoDB URI `mongodb://127.0.0.1:27017/`.
+* Connect to it using MongoDB Shell by just running `mongosh`.
+  If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
+* Connect to PostgreSQL running inside the container by running `docker exec -it ferretdb psql -U username ferretdb`.
+  FerretDB uses PostgreSQL schemas for MongoDB databases.
+  So, if you created some collections in the `test` database using any MongoDB client,
+  you can switch to it by running `SET search_path = 'test';` query
+  and see a list of PostgreSQL tables by running `\d` `psql` command.
 
 You can stop the container with `docker stop ferretdb`.
 
