@@ -68,7 +68,8 @@ The following steps describe a quick local setup:
    attaching to the same Docker network:
 
    ```sh
-   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
+   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
+     "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
    ```
 
 You can improve that setup by:
