@@ -236,6 +236,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, addToSetValueRaw, err := iter.Next()
@@ -330,6 +331,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, pullAllValueRaw, err := iter.Next()
@@ -422,6 +424,7 @@ func processPullArrayUpdateExpression(doc *types.Document, update *types.Documen
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, pullValueRaw, err := iter.Next()
@@ -438,7 +441,9 @@ func processPullArrayUpdateExpression(doc *types.Document, update *types.Documen
 			return false, lazyerrors.Error(err)
 		}
 
-		// If the path does not exist, create a new array and set it.
+		// If the path does not exist, try to set it.
+		// If it is not possible to set the path return error.
+		// This will deal with cases like $pull on a non-existing field or unset field.
 		if !doc.HasByPath(path) {
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
 				return false, commonerrors.NewWriteErrorMsg(
