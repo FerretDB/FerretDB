@@ -7,6 +7,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     labels: ["deps", "no ci"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
@@ -16,6 +17,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/build/docker"
     labels: ["deps", "no ci"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
@@ -33,6 +35,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     labels: ["deps", "no ci"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
@@ -41,6 +44,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/integration"
     labels: ["deps", "no ci"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
@@ -49,6 +53,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/tools"
     labels: ["deps", "no ci"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
