@@ -74,10 +74,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
+	// strip "ferretdb-" prefix, so it does not go over 64 characters.
+	suffix := "_" + strings.ReplaceAll(*targetBackendF, "ferretdb-", "")
+
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.ReplaceAll(*targetBackendF, "-", "_")
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
