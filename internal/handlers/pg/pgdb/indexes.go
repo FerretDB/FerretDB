@@ -99,8 +99,6 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 						Field: field,
 						Order: IndexOrder(value.(int32)),
 					})
-				case errors.Is(err, iterator.ErrIteratorDone):
-					// no more key fields
 				default:
 					return nil, lazyerrors.Error(err)
 				}
