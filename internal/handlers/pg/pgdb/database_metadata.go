@@ -104,7 +104,7 @@ func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, 
 		return "", false, lazyerrors.Error(err)
 	}
 
-	// Name to ensure that collection name is unique
+	// Index to ensure that collection name is unique
 	if err = createPGIndexIfNotExists(ctx, m.tx, m.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
