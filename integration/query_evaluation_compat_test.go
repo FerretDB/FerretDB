@@ -16,12 +16,16 @@ package integration
 
 import (
 	"math"
+	"runtime"
+	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func testQueryEvaluationCompatRegexErrors() map[string]queryCompatTestCase {
+func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"MissingClosingParen": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
@@ -93,10 +97,16 @@ func testQueryEvaluationCompatRegexErrors() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryEvaluationCompatMod() map[string]queryCompatTestCase {
+func TestQueryEvaluationCompatMod(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{4000, 80}}}}},
@@ -292,5 +302,5 @@ func testQueryEvaluationCompatMod() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }

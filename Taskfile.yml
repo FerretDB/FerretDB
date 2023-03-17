@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 15m
+  INTEGRATIONTIME: 17m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -121,8 +121,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) code"
@@ -155,14 +154,15 @@ tasks:
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
-    desc: "Run integration tests for PostgreSQL and Tigris in parallel"
+    desc: "Run integration tests for `pg` and `tigris` in parallel"
     deps:
       - test-integration-pg
       - test-integration-tigris
       - test-integration-mongodb
+      # no test-integration-hana
 
   test-integration-pg:
-    desc: "Run integration tests for PostgreSQL handler"
+    desc: "Run integration tests for `pg` handler"
     dir: integration
     cmds:
       - >
@@ -174,7 +174,7 @@ tasks:
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
 
   test-integration-tigris:
-    desc: "Run integration tests for Tigris handler"
+    desc: "Run integration tests for `tigris` handler"
     dir: integration
     cmds:
       - >
@@ -183,6 +183,18 @@ tasks:
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
+        -compat-url=mongodb://127.0.0.1:47017/
+
+  test-integration-hana:
+    desc: "Run integration tests for `hana` handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-hana.txt .
+        -target-backend=ferretdb-hana
+        {{.UNIXSOCKETFLAG}}
+        -hana-url=$FERRETDB_HANA_URL
         -compat-url=mongodb://127.0.0.1:47017/
 
   test-integration-mongodb:
@@ -443,8 +455,17 @@ tasks:
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
 
-  # TODO set annotations,
-  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-all-in-one-push:
+    cmds:
+      - echo 'docker-all-in-one' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: all-in-one
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
+          OUTPUT: type=image,push=true
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-development-push:
     cmds:
       - echo 'docker' > build/version/package.txt
@@ -454,8 +475,7 @@ tasks:
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
 
-  # TODO set annotations,
-  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-production-push:
     cmds:
       - echo 'docker' > build/version/package.txt

@@ -1,11 +1,12 @@
 ---
-# Integration tests that don't need access to secrets.
+# Integration tests that need access to secrets.
 
-name: Integration
+name: Trusted integration
 on:
-  pull_request:
+  pull_request_target:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - labeled # for `trusted` label
+      - unlabeled
       - opened
       - reopened
       - synchronize
@@ -33,16 +34,18 @@ jobs:
     name: Test ${{ matrix.name }}
     runs-on: faster
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: >
+      github.event_name != 'pull_request_target' ||
+      (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
+        !contains(github.event.pull_request.labels.*.name, 'no ci')
+      )
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: "PostgreSQL", task: "pg" }
-          - { name: "Tigris", task: "tigris" }
-          - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
-          - { name: "MongoDB", task: "mongodb" }
+          - { name: "Hana", task: "hana" }
 
     steps:
       - name: Checkout code
@@ -50,6 +53,19 @@ jobs:
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
+
+      - name: Checkout pull request code
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        run: git checkout -b ${{ github.head_ref }}
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -62,8 +78,6 @@ jobs:
 
       - name: Start environment
         run: bin/task env-up-detach
-        env:
-          TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
 
       - name: Run init
         run: bin/task init
@@ -73,6 +87,8 @@ jobs:
 
       - name: Run ${{ matrix.task }} tests
         run: bin/task test-integration-${{ matrix.task }}
+        env:
+          FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -99,37 +115,3 @@ jobs:
         run: |
           git status
           git diff --exit-code
-
-  env-data:
-    name: env-data
-    runs-on: ubuntu-22.04
-
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # for `git describe` to work
-          lfs: false # LFS is used only by website
-
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: env-data
-
-      - name: Install Task
-        run: go generate -x
-        working-directory: tools
-
-      - name: Start environment
-        run: bin/task env-up-detach
-
-      - name: Run init
-        run: bin/task init
-
-      - name: Wait for and setup environment
-        run: bin/task env-setup
-
-      - name: Run env-data
-        run: bin/task env-data
