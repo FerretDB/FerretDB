@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
@@ -64,31 +65,40 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	var exists bool
+	var indexes []pgdb.Index
 
-	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		exists, err = pgdb.CollectionExists(ctx, tx, db, collection)
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		indexes, err = pgdb.Indexes(ctx, tx, db, collection)
 		return err
-	}); err != nil {
-		return nil, err
-	}
+	})
 
-	if !exists {
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrNamespaceNotFound,
 			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
 		)
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := must.NotFail(types.NewArray(
-		must.NotFail(types.NewDocument(
+	firstBatch := types.MakeArray(len(indexes))
+
+	for _, index := range indexes {
+		indexKey := must.NotFail(types.NewDocument())
+
+		for _, key := range index.Key {
+			indexKey.Set(key.Field, int32(key.Order))
+		}
+
+		firstBatch.Append(must.NotFail(types.NewDocument(
 			"v", int32(2),
-			"key", must.NotFail(types.NewDocument(
-				"_id", int32(1),
-			)),
-			"name", "_id_",
-		)),
-	))
+			"key", indexKey,
+			"name", index.Name,
+		)))
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
