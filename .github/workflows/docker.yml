@@ -1,0 +1,99 @@
+name: Docker
+on:
+  push:
+    branches:
+      - main
+      - fixes1
+      - infra
+  release:
+    types: [published]
+
+env:
+  DOCKER_REPOSITORY: "tigrisdata/ferretdb"
+  QUAY_REPOSITORY: "quay.io/tigrisdata/ferretdb"
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.20'
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.GH_DOCKER_ACCESS_USER }}
+          password: ${{ secrets.GH_DOCKER_ACCESS_TOKEN }}
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ env.DOCKER_REPOSITORY }}
+#            ${{ env.QUAY_REPOSITORY }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Setup version
+        run: |
+          echo "LABEL_VERSION=$(git describe --tags --always)" >> $GITHUB_ENV
+          echo "LABEL_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./build/docker/production.Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            LABEL_VERSION=${{env.LABEL_VERSION}}
+            LABEL_COMMIT=${{env.LABEL_COMMIT}}
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

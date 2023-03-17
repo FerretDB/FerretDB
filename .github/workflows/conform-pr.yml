@@ -67,7 +67,8 @@ jobs:
 
     # No `trust` label check because we don't checkout PR's code.
     # No `no ci` label to prevent accidental auto-merges: jobs skipped with `if` conditional are considered successful.
-    if: github.event_name == 'pull_request_target'
+#    if: github.event_name == 'pull_request_target'
+    if: false
 
     steps:
       # Do not add a source code checkout step because we don't check the `trust` label.

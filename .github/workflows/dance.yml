@@ -1,0 +1,85 @@
+---
+name: Dance
+on:
+  push:
+    branches:
+      - main
+      - fixes1
+      - infra
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  schedule:
+    - cron: "12 3 * * *" # after FerretDB's Docker workflow
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  dance:
+    name: dance
+    runs-on: ubuntu-22.04
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - tigris
+          #- mongodb
+        test:
+          #- diff
+          - mongo
+          - mongo-go-driver
+          - mongo-tools
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Checkout dance repo
+        uses: actions/checkout@v3
+        with:
+          repository: FerretDB/dance
+          path: dance
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: dance
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Dance!
+        run: |
+          cd dance
+          bin/task dance
+        env:
+          DB: ${{ matrix.db }}
+          TEST: ${{ matrix.test }}
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

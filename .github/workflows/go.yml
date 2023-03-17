@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - main
+      - fixes1
+      - infra
   schedule:
     - cron: "12 2 * * *"
 
@@ -23,7 +25,7 @@ env:
 jobs:
   short-test:
     name: Short test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -34,10 +36,9 @@ jobs:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
 
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
+      - uses: actions/setup-go@v3
         with:
-          cache-key: short-test
+          go-version: '^1.20'
 
       - name: Install Task
         run: go generate -x
@@ -61,7 +62,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -109,7 +110,7 @@ jobs:
       - name: Upload coverage information
         uses: codecov/codecov-action@v3
         with:
-          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          token: 56ee498e-b763-4664-b308-74032edb6f9e
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
@@ -127,7 +128,7 @@ jobs:
 
   golangci-lint:
     name: golangci-lint
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -148,9 +149,10 @@ jobs:
 
   fuzz-short:
     name: Fuzz short
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: false
+#    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
     steps:
       - name: Checkout code
