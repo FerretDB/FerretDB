@@ -31,7 +31,7 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
-	// Setups one collection for each data set for all backends and MongoDB.
+	// Setups one collection for each data set for all backends.
 	t.Run("All", func(t *testing.T) {
 		for _, p := range shareddata.AllProviders() {
 			p := p
@@ -39,7 +39,6 @@ func TestEnvData(t *testing.T) {
 
 			t.Run(name, func(t *testing.T) {
 				if !p.IsCompatible("ferretdb-tigris") {
-					// skip for tigris if provider is not supported for Tigris backend.
 					setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
 				}
 
@@ -52,7 +51,7 @@ func TestEnvData(t *testing.T) {
 		}
 	})
 
-	// Setups old `values` collection with mixed types for `ferretdb-pg` backend and MongoDB.
+	// Setups old `values` collection with mixed types for all backends except `ferretdb-tigris`.
 	t.Run("Values", func(t *testing.T) {
 		setup.SkipForTigris(t)
 

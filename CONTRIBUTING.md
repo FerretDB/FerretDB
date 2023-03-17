@@ -82,7 +82,7 @@ With `task` installed (see above), you may do the following:
 3. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
-4. Fill `values` collection in `test` database with data for experiments with `task env-data`.
+4. Fill collections in `test` database with data for experiments with `task env-data`.
 5. Run `mongosh` with `task mongosh`.
    This allows you to run commands against FerretDB.
    For example, you can see what data was inserted by the previous command with `db.values.find()`.
