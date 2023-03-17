@@ -8,7 +8,7 @@ Field update operators allow you to modify the value of a specified field in a d
 
 | Operator                       | Description                                                                                 |
 | ------------------------------ | ------------------------------------------------------------------------------------------- |
-| [`$set`](#set)                 | Assigns the value of a given field                                                        |
+| [`$set`](#set)                 | Assigns the value of a given field                                                          |
 | [`$unset`](#unset)             | Deletes the records of a field from a document                                              |
 | [`$inc`](#inc)                 | Increments a given field's value                                                            |
 | [`$mul`](#mul)                 | Multiplies a given field’s value by a specific value                                        |
@@ -16,7 +16,7 @@ Field update operators allow you to modify the value of a specified field in a d
 | [`$min`](#min)                 | Updates a particular field only when the specified value is lesser than the specified value |
 | [`$max`](#max)                 | Updates a particular field only when the specified value is higher than the specified value |
 | [`$currentDate`](#currentdate) | Specifies the current date and time as the value of a given field                           |
-| `$setOnInsert`                 | Inserts elements into an array only if they don't already exist                             |
+| [`$setOnInsert`](#setoninsert) | Inserts elements into an array only if they don't already exist                             |
 
 For the examples in this section, insert the following documents into the `employees` collection:
 
@@ -42,7 +42,7 @@ db.employee.insertOne({
 
 The `$set` operator updates the value of a specified field and if the field does not exist, the `$set` operator creates a new field and adds it to the document.
 
-The below query is an example that updates the value of the `city` field in the `address` embedded document.
+**Example:** The below query is an example that updates the value of the `city` field in the `address` embedded document.
 
 ```js
 db.employee.updateOne(
@@ -84,7 +84,7 @@ This is the updated document:
 
 The `$unset` operator deletes the specified field from a document and if the field is not present, the `$unset` operator will not do anything.
 
-The below query deletes the `zip` field from the embedded document `address`.
+**Example:** The below query deletes the `zip` field from the embedded document `address`.
 
 ```js
 db.employee.updateOne(
@@ -121,7 +121,7 @@ Below is the updated document, without the `zip` field:
 The `$inc` operator increments the value of a given field by a specified amount.
 If the field is non-existent in the document, the `$inc` operator creates a new field and adds it to the document, setting the value to the specified increment amount.
 
-The below query increments the value of the `age` field by `1`.
+**Example:** The below query increments the value of the `age` field by `1`.
 
 ```js
 db.employee.updateOne(
@@ -158,7 +158,7 @@ The updated document looks like this:
 The `$mul` operator multiplies the value of a given field by a specified amount.
 Similar to all most of the other field update operators, if the field is non-existent in the document, the `$mul` operator creates a new one and sets the value to `0`.
 
-The below query multiplies the value of the `salary` field by `25%`, represented as `1.25`.
+**Example:** This example query multiplies the value of the `salary` field by `25%`, represented as `1.25`.
 
 ```js
 db.employee.updateOne(
@@ -194,7 +194,7 @@ The updated record looks like this:
 
 The `$rename` operator renames a given field to another name.
 
-The query below updates the `employee` collection and renames the `jobTitle` field to `title`.
+**Example:** The query below updates the `employee` collection and renames the `jobTitle` field to `title`.
 
 ```js
 db.employee.updateOne(
@@ -230,7 +230,7 @@ The updated document looks like this:
 
 The `$min` operator compares a specified value with the value of the given field and updates the field to the specified value if the specified value is less than the current value of the field.
 
-The below query updates the value of the `age` field to `30` as long as the current value is less than `30`.
+**Example:** The below query updates the value of the `age` field to `30` as long as the current value is less than `30`.
 
 ```js
 db.employee.updateOne(
@@ -267,7 +267,7 @@ The updated document now looks like this:
 
 The `$max` operator compares a specified value with the value of the given field and updates the field to the specified value if the specified value is greater than the current value of the field.
 
-The below query updates the value of the `age` field to `40` as long as the current value is greater than `40`.
+**Example:** The below query updates the value of the `age` field to `40` as long as the current value is greater than `40`.
 
 ```js
 db.employee.updateOne(
@@ -301,7 +301,7 @@ This is what the updated document looks like:
 The `$currentDate` operator assigns the current date as the value of a given field.
 This can be as a date or timestamp.
 
-To update the `startDate` field with the current date, use the following query:
+**Example:** To update the `startDate` field with the current date, use the following query:
 
 ```js
 db.employee.updateOne(
@@ -332,3 +332,54 @@ This is the document after the update:
   }
 ]
 ```
+
+## $setOnInsert
+
+The `$setOnInsert` operator sets the value of a given field if the document is inserted into a collection during an upsert operation.
+If there is no insertion, the `$setOnInsert` operator does nothing.
+
+**Example:** Let's say you have a `stocks` collection that stores information about different stocks, and you want to update the stock information or add a new stock if it doesn't exist.
+Here's an example of how `$SetOnInsert` works differently from `$set`.
+
+Using `$set`:
+
+```js
+db.stocks.update(
+  { symbol: "AAPL" },
+  {
+    $set: {
+      price: 150,
+      lastUpdate: new Date()
+    }
+  },
+  { upsert: true }
+)
+```
+
+This query checks for a stock with the symbol "AAPL".
+If it finds the stock, it updates the `price` and `lastUpdate` fields.
+If it doesn't find the stock, it inserts a new document with the `symbol`, `price`, and `lastUpdate` fields.
+
+Using `$setOnInsert`:
+
+```js
+db.stocks.update(
+  { symbol: "AAPL" },
+  {
+    $set: { price: 150 },
+    $setOnInsert: {
+      companyName: "Apple Inc.",
+      createdAt: new Date()
+    }
+  },
+  { upsert: true }
+)
+```
+
+This query also checks for a stock with the symbol "AAPL".
+If it finds the stock, it updates only the `price` field.
+If it doesn't find the stock, it inserts a new document with the `symbol`, `price`, `companyName`, and `createdAt` fields.
+The `companyName` and `createdAt` fields are only added when a new document is inserted.
+
+Comparing both examples, the `$set` operator updates or inserts the specified fields in both cases.
+On the other hand, the `$setOnInsert` operator sets the specified fields only when a new document is inserted, leaving existing documents unchanged.
