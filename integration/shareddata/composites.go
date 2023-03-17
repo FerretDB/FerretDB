@@ -232,6 +232,9 @@ var ArrayInt32s = &Values[string]{
 		"array-int32-three": bson.A{int32(42), int32(43), int32(42)},
 		// "array-int32-nil": nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-int32-empty": bson.A{},
+		"array-int32-six": bson.A{
+			int32(42), int32(43), int32(44), int32(45), int32(42), int32(43),
+		},
 	},
 }
 
@@ -290,6 +293,15 @@ var ArrayDocuments = &Values[string]{
 	},
 	data: map[string]any{
 		"array-documents-nested": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{
+					bson.D{{"bar", "hello"}},
+					bson.D{{"bar", "world"}},
+				},
+			}},
+		},
+		"array-documents-nested-duplicate": bson.A{ // duplicate value is needed to test sorting
 			bson.D{{
 				"foo",
 				bson.A{

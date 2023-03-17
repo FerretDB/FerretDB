@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 15m
+  INTEGRATIONTIME: 17m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -23,34 +23,11 @@ tasks:
     desc: "Generate, format, build, test and lint code and documentation"
     cmds:
       - task: gen
-      - task: build-local
+      - task: build-host
       - task: test
       - task: lint
       - task: security
       - task: docs
-
-  gen-version:
-    run: once
-    cmds:
-      - go generate -x ./build/version
-
-  # do not change that target much; see "Building and packaging" in README.md
-  build-release:
-    desc: "Build bin/ferretdb{{exeExt}} (release build)"
-    deps: [gen-version]
-    cmds:
-      # TODO add ferretdb_hana
-      - go build -o=bin/ferretdb{{exeExt}} -trimpath -tags=ferretdb_tigris ./cmd/ferretdb
-    env:
-      CGO_ENABLED: 0
-
-  build-local:
-    desc: "Build bin/ferretdb-local{{exeExt}} on the host"
-    run: once
-    deps: [gen-version]
-    cmds:
-      # do not trim paths to make debugging with delve easier
-      - go test -c -o=bin/ferretdb-local{{exeExt}} -trimpath=false {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   init-tools:
     dir: tools
@@ -134,6 +111,18 @@ tasks:
     cmds:
       - bin/task{{exeExt}} -d integration env-data
 
+  gen-version:
+    run: once
+    cmds:
+      - go generate -x ./build/version
+
+  build-host:
+    desc: "Build bin/ferretdb{{exeExt}} on the host for development"
+    run: once
+    deps: [gen-version]
+    cmds:
+      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+
   gen:
     desc: "Generate (and format) code"
     cmds:
@@ -165,14 +154,15 @@ tasks:
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
-    desc: "Run integration tests for PostgreSQL and Tigris in parallel"
+    desc: "Run integration tests for `pg` and `tigris` in parallel"
     deps:
       - test-integration-pg
       - test-integration-tigris
       - test-integration-mongodb
+      # no test-integration-hana
 
   test-integration-pg:
-    desc: "Run integration tests for PostgreSQL handler"
+    desc: "Run integration tests for `pg` handler"
     dir: integration
     cmds:
       - >
@@ -184,7 +174,7 @@ tasks:
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
 
   test-integration-tigris:
-    desc: "Run integration tests for Tigris handler"
+    desc: "Run integration tests for `tigris` handler"
     dir: integration
     cmds:
       - >
@@ -193,6 +183,18 @@ tasks:
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
+        -compat-url=mongodb://127.0.0.1:47017/
+
+  test-integration-hana:
+    desc: "Run integration tests for `hana` handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-hana.txt .
+        -target-backend=ferretdb-hana
+        {{.UNIXSOCKETFLAG}}
+        -hana-url=$FERRETDB_HANA_URL
         -compat-url=mongodb://127.0.0.1:47017/
 
   test-integration-mongodb:
@@ -249,10 +251,10 @@ tasks:
 
   run:
     desc: "Run FerretDB with `pg` handler"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -262,10 +264,10 @@ tasks:
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -273,12 +275,25 @@ tasks:
         --tigris-url=127.0.0.1:8081
         --test-records-dir=tmp/records
 
-  run-secured:
-    desc: "Run FerretDB with `pg` handler (TLS, auth required)"
-    deps: [build-local]
+  # set FERRETDB_HANA_URL environment variable to use it
+  run-hana:
+    desc: "Run FerretDB with `hana` handler"
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=hana
+        --test-records-dir=tmp/records
+
+  run-secured:
+    desc: "Run FerretDB with `pg` handler (TLS, auth required)"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -293,10 +308,10 @@ tasks:
   # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
   run-tigris-secured:
     desc: "Run FerretDB with `tigris` handler (TLS, auth required; SaaS)"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -310,10 +325,10 @@ tasks:
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
-    deps: [build-local]
+    deps: [build-host]
     cmds:
       - >
-        bin/ferretdb-local{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
@@ -395,87 +410,120 @@ tasks:
 
   docker-init:
     cmds:
-      - docker buildx create --driver=docker-container --name=ferretdb --use=false
+      - docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+      - docker buildx ls
+
+  docker-build:
+    deps: [gen-version]
+    cmds:
+      - >
+        docker buildx build --builder=ferretdb
+        --file=build/docker/{{.FILE}}.Dockerfile
+        --build-arg=LABEL_VERSION={{.VERSION}}
+        --build-arg=LABEL_COMMIT={{.COMMIT}}
+        --platform={{default "linux" .PLATFORM}}
+        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
+        --output={{.OUTPUT}}
+        .
+    vars:
+      VERSION:
+        sh: cat build/version/version.txt
+      COMMIT:
+        sh: cat build/version/commit.txt
+
+  # do not change that target much; see "Building and packaging" in README.md
+  build-release:
+    desc: "Build bin/ferretdb (production build)"
+    deps: [gen-version]
+    cmds:
+      - echo 'bin' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          DOCKER_IMAGES: ignored
+          OUTPUT: type=local,dest=tmp/build
+      - mv tmp/build/ferretdb bin/ferretdb
 
   docker-local:
-    desc: "Build `ferretdb-local` Docker image"
-    deps: [gen-version]
+    desc: "Build `ferretdb-local` Docker image for the host platform"
     cmds:
-      - >
-        docker buildx build --builder=ferretdb
-        --build-arg VERSION={{.VERSION}}
-        --build-arg COMMIT={{.COMMIT}}
-        --build-arg RACEFLAG={{.RACEFLAG}}
-        --tag=ferretdb-local
-        --load .
-    vars:
-      VERSION:
-        sh: cat build/version/version.txt
-      COMMIT:
-        sh: cat build/version/commit.txt
-
-  # TODO set annotations,
-  # see https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#adding-a-description-to-multi-arch-images
-  docker-push:
-    deps: [gen-version]
-    cmds:
-      - >
-        docker buildx build --builder=ferretdb
-        --build-arg VERSION={{.VERSION}}
-        --build-arg COMMIT={{.COMMIT}}
-        --build-arg RACEFLAG={{.RACEFLAG}}
-        --platform=linux/arm/v7,linux/arm64,linux/amd64
-        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
-        --push .
-    vars:
-      VERSION:
-        sh: cat build/version/version.txt
-      COMMIT:
-        sh: cat build/version/commit.txt
-
-  docker-push-release:
-    cmds:
-      - task: docker-push
+      - echo 'docker-local' > build/version/package.txt
+      - task: docker-build
         vars:
-          DOCKER_IMAGES: >
-            ferretdb/ferretdb:latest,
-            ferretdb/ferretdb:{{trimPrefix "v" .VERSION}},
-            ghcr.io/ferretdb/ferretdb:latest,
-            ghcr.io/ferretdb/ferretdb:{{trimPrefix "v" .VERSION}}
-    vars:
-      VERSION:
-        sh: cat build/version/version.txt
+          FILE: development
+          DOCKER_IMAGES: ferretdb-local
+          OUTPUT: type=docker
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-all-in-one-push:
+    cmds:
+      - echo 'docker-all-in-one' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: all-in-one
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
+          OUTPUT: type=image,push=true
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-development-push:
+    cmds:
+      - echo 'docker' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: development
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          OUTPUT: type=image,push=true
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-production-push:
+    cmds:
+      - echo 'docker' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          OUTPUT: type=image,push=true
 
   packages:
     cmds:
       - task: packages-deb
       - task: packages-rpm
+      # TODO https://github.com/FerretDB/FerretDB/issues/2172
 
   packages-deb:
-    dir: build
     cmds:
-      - ../bin/nfpm{{exeExt}} package --packager=deb --target=deb/ferretdb.deb
-      - >
-        docker compose run --rm ubuntu /bin/sh -c
-        'dpkg -i /deb/ferretdb.deb && ferretdb --version'
-    env:
-      VERSION:
-        sh: cat ../build/version/version.txt
-      GOARCH:
-        sh: go env GOARCH
+      - echo 'deb' > build/version/package.txt
+      - mkdir -p tmp/debs
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          DOCKER_IMAGES: ignored
+          OUTPUT: type=local,dest=tmp/build
+      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=deb --target=tmp/debs/ferretdb.deb
+        env:
+          ARCH: amd64
+          VERSION:
+            sh: cat build/version/version.txt
+      - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
 
   packages-rpm:
-    dir: build
     cmds:
-      - ../bin/nfpm{{exeExt}} package --packager=rpm --target=rpm/ferretdb.rpm
-      - >
-        docker compose run --rm ubi /bin/sh -c
-        'rpm -i /rpm/ferretdb.rpm && ferretdb --version'
-    env:
-      VERSION:
-        sh: cat ../build/version/version.txt
-      GOARCH:
-        sh: go env GOARCH
+      - echo 'rpm' > build/version/package.txt
+      - mkdir -p tmp/rpms
+      - task: docker-build
+        vars:
+          FILE: production
+          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          DOCKER_IMAGES: ignored
+          OUTPUT: type=local,dest=tmp/build
+      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=rpm --target=tmp/rpms/ferretdb.rpm
+        env:
+          ARCH: amd64
+          VERSION:
+            sh: cat build/version/version.txt
+      - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
 
   docs:
     desc: "Format, lint and build documentation"

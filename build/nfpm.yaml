@@ -2,17 +2,16 @@
 # https://nfpm.goreleaser.com/configuration/
 
 name: ferretdb
-arch: ${GOARCH}
+arch: ${ARCH}
 platform: linux
 version: ${VERSION}
 section: database
 maintainer: FerretDB packages <packages@ferretdb.io>
 description: >
-  FerretDB (previously MangoDB) was founded to become the de-facto open-source substitute to MongoDB.
-  FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
-  using PostgreSQL as a database engine.
+  FerretDB is an open-source proxy that translates MongoDB wire protocol
+  queries to SQL, with PostgreSQL as the database engine.
 homepage: https://ferretdb.io
 license: Apache License 2.0
 contents:
-  - src: ../bin/ferretdb
+  - src: tmp/build/ferretdb
     dst: /usr/bin/ferretdb

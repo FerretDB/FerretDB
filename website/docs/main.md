@@ -5,7 +5,7 @@ slug: /
 
 # Introduction
 
-FerretDB (formerly MangoDB) is an open-source proxy that translates MongoDB wire protocol
+FerretDB is an open-source proxy that translates MongoDB wire protocol
 queries to SQL, with PostgreSQL as the database engine.
 
 Initially built as open-source software, MongoDB was a game-changer for many developers,
