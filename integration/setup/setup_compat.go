@@ -26,7 +26,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -76,8 +75,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
-	// Add the handler's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + getHandler()
+	// Add the backend's name to prevent the usage of the same database.
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + *targetBackendF
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -150,10 +149,12 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
+		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
 			tb.Logf(
-				"Provider %q is not compatible with handler %q, skipping creating %q.",
-				provider.Name(), getHandler(), fullName,
+				"Provider %q is not compatible with backend %q, skipping creating %q.",
+				provider.Name(),
+				*targetBackendF,
+				fullName,
 			)
 			continue
 		}
@@ -167,25 +168,28 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		// drop remnants of the previous failed run
 		_ = collection.Drop(collCtx)
 
-		// Validators are only applied to target. Compat is compatible with all provider.
-		if isTarget {
-			// if validators are set, create collection with them (otherwise collection will be created on first insert)
-			if validators := provider.Validators(getHandler(), collectionName); len(validators) > 0 {
-				var opts options.CreateCollectionOptions
-				for key, value := range validators {
-					opts.SetValidator(bson.D{{key, value}})
-				}
+		backend := *targetBackendF
+		if !isTarget {
+			// compat backend is mongodb
+			backend = "mongodb"
+		}
 
-				err := database.CreateCollection(ctx, collectionName, &opts)
-				require.NoError(tb, err)
+		// if validators are set, create collection with them (otherwise collection will be created on first insert)
+		if validators := provider.Validators(backend, collectionName); len(validators) > 0 {
+			var opts options.CreateCollectionOptions
+			for key, value := range validators {
+				opts.SetValidator(bson.D{{key, value}})
 			}
+
+			err := database.CreateCollection(ctx, collectionName, &opts)
+			require.NoError(tb, err)
 		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(collCtx, docs)
-		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), getHandler(), fullName)
+		require.NoError(tb, err, "%s: backend %q, collection %s", provider.Name(), backend, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		// delete collection unless test failed
