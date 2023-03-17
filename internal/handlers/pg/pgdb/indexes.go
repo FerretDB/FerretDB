@@ -16,49 +16,114 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// indexParams contains parameters for creating an index.
-// TODO This type will become exported in https://github.com/FerretDB/FerretDB/issues/1509 (similar to QueryParams).
-type indexParams struct {
-	db         string   // FerretDB database name
-	collection string   // FerretDB collection name
-	index      string   // FerretDB index name
-	key        indexKey // Index specification (pairs of field names and sort orders) // TODO
-	unique     bool     // Whether the index is unique
+// Index contains user-visible properties of FerretDB index.
+type Index struct {
+	Name   string   // FerretDB index name
+	Key    IndexKey // Index specification (field name + sort order pairs)
+	Unique bool     // Whether the index is unique
 }
 
-// indexKey defines a type for index key - pairs of field names and sort orders.
-type indexKey []indexKeyPair
+// IndexKey is a list of field name + sort order pairs.
+type IndexKey []IndexKeyPair
 
-// indexKeyPair consists of a field name and a sort order that are part of the index.
-type indexKeyPair struct {
-	field string
-	order indexOrder
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field string
+	Order IndexOrder
 }
 
-// indexOrder defines a type for index sort order.
-type indexOrder int8
+// IndexOrder defines a type for index sort order.
+type IndexOrder int8
 
-// indexOrder constants.
+// IndexOrder constants.
 const (
-	indexOrderAsc  indexOrder = 1
-	indexOrderDesc indexOrder = -1
+	IndexOrderAsc  IndexOrder = 1
+	IndexOrderDesc IndexOrder = -1
 )
+
+// Indexes returns a list of indexes for the given database and collection.
+//
+// If the given collection does not exist, it returns ErrTableNotExist.
+func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, error) {
+	metadata, err := newMetadata(tx, db, collection).get(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if !metadata.Has("indexes") {
+		return []Index{}, nil
+	}
+
+	indexes := must.NotFail(metadata.Get("indexes")).(*types.Array)
+
+	res := make([]Index, indexes.Len())
+	iter := indexes.Iterator()
+
+	defer iter.Close()
+
+	for {
+		i, idx, err := iter.Next()
+
+		switch {
+		case err == nil:
+			idx := idx.(*types.Document)
+			key := must.NotFail(idx.Get("key")).(*types.Document)
+
+			res[i] = Index{
+				Name:   must.NotFail(idx.Get("name")).(string),
+				Unique: must.NotFail(idx.Get("unique")).(bool),
+				Key:    make([]IndexKeyPair, 0, key.Len()),
+			}
+
+			keyIter := key.Iterator()
+			defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
+
+			for i := 0; i < key.Len(); i++ {
+				var field string
+				var value any
+				field, value, err = keyIter.Next()
+
+				switch {
+				case err == nil:
+					res[i].Key = append(res[i].Key, IndexKeyPair{
+						Field: field,
+						Order: IndexOrder(value.(int32)),
+					})
+				default:
+					return nil, lazyerrors.Error(err)
+				}
+			}
+
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// no more indexes
+			// TODO Check indexes order when more than one index exist https://github.com/FerretDB/FerretDB/issues/1509
+			// slices.Sort(res)
+			return res, nil
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+}
 
 // createIndex creates a new index for the given params.
 // TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
-func createIndex(ctx context.Context, tx pgx.Tx, ip *indexParams) error {
-	pgTable, pgIndex, err := newMetadata(tx, ip.db, ip.collection).setIndex(ctx, ip.index, ip.key, ip.unique)
+func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
 	}
 
-	if err := createPGIndexIfNotExists(ctx, tx, ip.db, pgTable, pgIndex, true); err != nil {
+	if err := createPGIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
 		return err
 	}
 
