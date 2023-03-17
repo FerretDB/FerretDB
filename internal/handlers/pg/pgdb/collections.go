@@ -127,8 +127,8 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	}
 
 	// Create default index on _id field.
-	indexParams := &IndexParams{
-		Index:  "_id_",
+	indexParams := &Index{
+		Name:   "_id_",
 		Key:    IndexKey{{Field: "_id", Order: IndexOrderAsc}},
 		Unique: true,
 	}

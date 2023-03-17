@@ -65,7 +65,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	var indexes []pgdb.IndexParams
+	var indexes []pgdb.Index
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		indexes, err = pgdb.Indexes(ctx, tx, db, collection)
@@ -96,7 +96,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		firstBatch.Append(must.NotFail(types.NewDocument(
 			"v", int32(2),
 			"key", indexKey,
-			"name", index.Index,
+			"name", index.Name,
 		)))
 	}
 

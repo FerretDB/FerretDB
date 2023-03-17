@@ -115,7 +115,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	// if the plan returned filter info or index info, it means that pushdown had been done
 	pushdown := queryPlanner.HasByPath(types.NewStaticPath("Plan", "Filter")) ||
-		queryPlanner.HasByPath(types.NewStaticPath("Plan", "Index Cond"))
+		queryPlanner.HasByPath(types.NewStaticPath("Plan", "Name Cond"))
 
 	hostname, err := os.Hostname()
 	if err != nil {

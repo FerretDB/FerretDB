@@ -26,14 +26,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// IndexParams contains parameters for creating an index.
-type IndexParams struct {
-	Index  string   // FerretDB index name
-	Key    IndexKey // Index specification (pairs of field names and sort orders) // TODO
+// Index contains user-visible properties of FerretDB index.
+type Index struct {
+	Name   string   // FerretDB index name
+	Key    IndexKey // Index specification (field name + sort order pairs)
 	Unique bool     // Whether the index is unique
 }
 
-// IndexKey defines a type for index key - pairs of field names and sort orders.
+// IndexKey is a list of field name + sort order pairs.
 type IndexKey []IndexKeyPair
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
@@ -54,19 +54,19 @@ const (
 // Indexes returns a list of indexes for the given database and collection.
 //
 // If the given collection does not exist, it returns ErrTableNotExist.
-func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexParams, error) {
+func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, error) {
 	metadata, err := newMetadata(tx, db, collection).get(ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
 	if !metadata.Has("indexes") {
-		return []IndexParams{}, nil
+		return []Index{}, nil
 	}
 
 	indexes := must.NotFail(metadata.Get("indexes")).(*types.Array)
 
-	res := make([]IndexParams, indexes.Len())
+	res := make([]Index, indexes.Len())
 	iter := indexes.Iterator()
 
 	defer iter.Close()
@@ -79,8 +79,8 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 			idx := idx.(*types.Document)
 			key := must.NotFail(idx.Get("key")).(*types.Document)
 
-			res[i] = IndexParams{
-				Index:  must.NotFail(idx.Get("name")).(string),
+			res[i] = Index{
+				Name:   must.NotFail(idx.Get("name")).(string),
 				Unique: must.NotFail(idx.Get("unique")).(bool),
 				Key:    make([]IndexKeyPair, 0, key.Len()),
 			}
@@ -117,8 +117,8 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 
 // createIndex creates a new index for the given params.
 // TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
-func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, ip *IndexParams) error {
-	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, ip.Index, ip.Key, ip.Unique)
+func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
 	}
