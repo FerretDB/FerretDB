@@ -98,7 +98,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 						Field: field,
 						Order: IndexOrder(value.(int32)),
 					})
-				case errors.Is(err, iterator.ErrIteratorDone):
+				case errors.Is(err, keyIter.ErrIteratorDone):
 					// no more key fields
 				default:
 					keyIter.Close()
