@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"runtime/trace"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + *targetBackendF
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.ReplaceAll(*targetBackendF, "-", "_")
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
