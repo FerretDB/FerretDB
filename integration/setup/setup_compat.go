@@ -96,10 +96,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, true)
+	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
 
 	compatClient := setupClient(tb, setupCtx, *compatURLF)
-	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, false)
+	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
 
 	level.SetLevel(*logLevelF)
 
@@ -121,7 +121,7 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, isTarget bool) []*mongo.Collection {
+func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
@@ -150,8 +150,10 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		fullName := opts.databaseName + "." + collectionName
 
 		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
+			// Skip creating collection for both target and compat if
+			// target is not compatible. Target and compat must have same collection.
 			tb.Logf(
-				"Provider %q is not compatible with backend %q, skipping creating %q.",
+				"Provider %q is not compatible with target backend %q, skipping creating %q.",
 				provider.Name(),
 				*targetBackendF,
 				fullName,
@@ -167,12 +169,6 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		// drop remnants of the previous failed run
 		_ = collection.Drop(collCtx)
-
-		backend := *targetBackendF
-		if !isTarget {
-			// compat backend is mongodb
-			backend = "mongodb"
-		}
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(backend, collectionName); len(validators) > 0 {
