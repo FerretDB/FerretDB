@@ -9,22 +9,22 @@ tasks:
   env-data:
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -target-backend=ferretdb-tigris
-        -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
+        -tigris-urls=127.0.0.1:8081
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=mongodb
         -target-url=mongodb://127.0.0.1:47017/
