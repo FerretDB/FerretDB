@@ -169,10 +169,9 @@ func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection 
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	md := newMetadata(tx, db, collection)
 	tableName, err := md.getTableName(ctx)
-
-if err != nil{
-return err
-}
+	if err != nil {
+		return err
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, tableName}.Sanitize() + ` CASCADE`
