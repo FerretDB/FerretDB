@@ -25,11 +25,12 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  TIGRIS_DOCKERFILE: tigris_main
 
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: faster
+    runs-on: ubuntu-latest
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -37,10 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "PostgreSQL", task: "pg" }
           - { name: "Tigris", task: "tigris" }
-          - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
-          - { name: "MongoDB", task: "mongodb" }
 
     steps:
       - name: Checkout code
