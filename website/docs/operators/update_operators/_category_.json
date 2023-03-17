@@ -1,0 +1,8 @@
+{
+  "label": "Update Operators",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "The section contains all the different types of update operators available on FerretDB"
+  }
+}

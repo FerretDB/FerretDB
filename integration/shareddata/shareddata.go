@@ -20,6 +20,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 // unset represents a field that should not be set.
@@ -41,6 +42,9 @@ type Provider interface {
 	// Docs returns shared data documents.
 	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
+
+	// IsCompatible returns true if the given backend is compatible with this provider.
+	IsCompatible(backend string) bool
 }
 
 // AllProviders returns all providers in random order.
@@ -190,6 +194,26 @@ func (values *Values[idType]) Docs() []bson.D {
 	}
 
 	return res
+}
+
+// IsCompatible returns true if the given backend is compatible with this provider.
+func (values *Values[idType]) IsCompatible(backend string) bool {
+	if backend == "mongodb" {
+		return true
+	}
+
+	var handler string
+
+	switch backend {
+	case "ferretdb-pg":
+		handler = "pg"
+	case "ferretdb-tigris":
+		handler = "tigris"
+	default:
+		panic(fmt.Sprintf("unknown backend: %s", backend))
+	}
+
+	return slices.Contains(values.handlers, handler)
 }
 
 // check interfaces
