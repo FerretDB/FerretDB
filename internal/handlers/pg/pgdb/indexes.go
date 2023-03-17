@@ -86,7 +86,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 			}
 
 			keyIter := key.Iterator()
-			defer keyIter.Close()
+			defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
 
 			for i := 0; i < key.Len(); i++ {
 				var field string
@@ -102,12 +102,9 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]IndexPara
 				case errors.Is(err, iterator.ErrIteratorDone):
 					// no more key fields
 				default:
-					keyIter.Close()
 					return nil, lazyerrors.Error(err)
 				}
 			}
-
-			keyIter.Close()
 
 		case errors.Is(err, iterator.ErrIteratorDone):
 			// no more indexes
