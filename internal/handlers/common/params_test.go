@@ -95,10 +95,10 @@ func TestMultiplyLongSafely(t *testing.T) {
 				v1, v2 = tc.values[i], tc.values[i+1]
 
 				for j := 0; j < 1+tc.valuesRange; j++ {
-					// for easier debugging
-					v1 := v1 + int64(j)
+					// extracted to variable for easier debugging
+					vn := v1 + int64(j)
 
-					actualRes, err := multiplyLongSafely(v1, v2)
+					actualRes, err := multiplyLongSafely(vn, v2)
 
 					if err != nil && assert.ErrorIs(t, err, errLongExceeded) {
 						overflowActual = true
