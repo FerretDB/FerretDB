@@ -74,7 +74,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
-	// strip "ferretdb-" prefix, so it does not go over 64 characters.
+	// strip "ferretdb-" prefix, so database name does not go over 64 characters.
 	suffix := strings.ReplaceAll(*targetBackendF, "ferretdb-", "")
 
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
