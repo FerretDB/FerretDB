@@ -8,32 +8,26 @@ vars:
 tasks:
   env-data:
     cmds:
-      # TODO https://github.com/FerretDB/FerretDB/issues/1568
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -compat-port=0
+        -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -compat-port=0
+        -target-backend=ferretdb-pg
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata,ferretdb_tigris .
-        -compat-port=0
-        -tigris-urls=127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083,127.0.0.1:8085,127.0.0.1:8086
-      # - >
-      #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-      #   -tags=ferretdb_testenvdata .
-        # -compat-port=0
-      #   -target-port=47017
-      # - >
-      #   go test -count=1 {{.RACEFLAG}} -run=TestEnvData -v
-      #   -tags=ferretdb_testenvdata .
-      #   -compat-port=0
-      #   -target-port=47018
+        -target-backend=ferretdb-tigris
+        -tigris-urls=127.0.0.1:8081
+      - >
+        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
+        -tags=ferretdb_testenvdata .
+        -target-backend=mongodb
+        -target-url=mongodb://127.0.0.1:47017/
 
   integration-gen:
     cmds:
