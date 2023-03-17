@@ -63,6 +63,21 @@ func TestMultiplyLongSafely(t *testing.T) {
 			values:   []int64{math.MaxInt64, 2},
 			overflow: true,
 		},
+		"OverflowMaxMinusOne": {
+			values: []int64{math.MaxInt64, -1},
+		},
+		"OverflowMaxMinusTwo": {
+			values:   []int64{math.MaxInt64, -2},
+			overflow: true,
+		},
+		"OverflowMin": {
+			values:   []int64{math.MinInt64, 2},
+			overflow: true,
+		},
+		"OverflowMinMinusOne": {
+			values:   []int64{math.MinInt64, -1},
+			overflow: true,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

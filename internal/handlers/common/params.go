@@ -380,8 +380,14 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 // Please prefer to use multiplyNumbers instead of this function.
 func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	switch {
+	// 0 and 1 values are excluded, because those are only values that
+	// can multiply `MinInt64` without exceeding the range.
 	case v1 == 0 || v2 == 0 || v1 == 1 || v2 == 1:
 		return v1 * v2, nil
+
+	// Multiplying MinInt64 by any other value than above results in overflow.
+	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
+	// results in overflow with the MinInt64 as result.
 	case v1 == math.MinInt64 || v2 == math.MinInt64:
 		return 0, errLongExceeded
 	}
