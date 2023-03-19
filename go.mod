@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.42.0
 	github.com/stretchr/testify v1.8.2
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.24
+	github.com/tigrisdata/tigris-client-go v1.0.0-beta.25
 	go.opentelemetry.io/otel v1.14.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.7.0 // indirect; always use @latest

@@ -291,16 +291,6 @@ func TestCreateTigris(t *testing.T) {
 		expectedErr *mongo.CommandError
 		doc         bson.D
 	}{
-		"BadValidator": {
-			validator:  "$bad",
-			schema:     "{}",
-			collection: collection.Name() + "wrong",
-			expectedErr: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `required parameter "$tigrisSchemaString" is missing`,
-			},
-		},
 		"EmptySchema": {
 			validator:  "$tigrisSchemaString",
 			schema:     "",

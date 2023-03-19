@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -338,7 +339,9 @@ func arraySchema(a *types.Array) (*Schema, error) {
 		}
 
 		if !previousSchema.Equal(currentSchema) {
-			return nil, lazyerrors.Errorf("can't set schema for an array with different types")
+			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure,
+				lazyerrors.Errorf("can't set schema for an array with different types").Error(),
+			)
 		}
 	}
 

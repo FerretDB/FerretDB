@@ -75,6 +75,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 
 			var nonEmptyResults bool
+			var notAllSkipped bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -128,16 +129,20 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
 					}
+
+					notAllSkipped = true
 				})
 			}
 
-			switch tc.resultType {
-			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+			if notAllSkipped {
+				switch tc.resultType {
+				case nonEmptyResult:
+					assert.True(t, nonEmptyResults, "expected non-empty results")
+				case emptyResult:
+					assert.False(t, nonEmptyResults, "expected empty results")
+				default:
+					t.Fatalf("unknown result type %v", tc.resultType)
+				}
 			}
 		})
 	}

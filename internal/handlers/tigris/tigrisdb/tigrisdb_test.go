@@ -25,6 +25,9 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -46,16 +49,16 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		dbName := testutil.DatabaseName(t)
 		collName := testutil.CollectionName(t)
 
+		_, _ = tdb.Driver.DeleteProject(ctx, dbName)
+
 		t.Cleanup(func() {
 			_, e := tdb.Driver.DeleteProject(ctx, dbName)
 			require.NoError(t, e)
 		})
 
-		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
-			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-			collName,
-		)))
-		created, err := tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
+		schema := must.NotFail(tjson.DocumentSchema(must.NotFail(types.NewDocument("_id", types.NewObjectID()))))
+		schema.Title = collName
+		created, err := tdb.CreateOrUpdateCollection(ctx, dbName, collName, schema)
 		require.NoError(t, err)
 		assert.True(t, created)
 
@@ -67,6 +70,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		dbName := testutil.DatabaseName(t)
 		collName := testutil.CollectionName(t)
+
+		_, _ = tdb.Driver.DeleteProject(ctx, dbName)
 
 		_, err := tdb.Driver.CreateProject(ctx, dbName)
 		require.NoError(t, err)
@@ -80,11 +85,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, created)
 
-		schema := driver.Schema(strings.TrimSpace(fmt.Sprintf(
-			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-			collName,
-		)))
-		created, err = tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
+		schema := must.NotFail(tjson.DocumentSchema(must.NotFail(types.NewDocument("_id", types.NewObjectID()))))
+		schema.Title = collName
+		created, err = tdb.CreateOrUpdateCollection(ctx, dbName, collName, schema)
 		require.NoError(t, err)
 		assert.True(t, created)
 	})
@@ -94,6 +97,8 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 
 		dbName := testutil.DatabaseName(t)
 		collName := testutil.CollectionName(t)
+
+		_, _ = tdb.Driver.DeleteProject(ctx, dbName)
 
 		_, err := tdb.Driver.CreateProject(ctx, dbName)
 		require.NoError(t, err)
@@ -113,7 +118,9 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, created)
 
-		created, err = tdb.CreateCollectionIfNotExist(ctx, dbName, collName, schema)
+		schema1 := must.NotFail(tjson.DocumentSchema(must.NotFail(types.NewDocument("_id", types.NewObjectID()))))
+		schema1.Title = collName
+		created, err = tdb.CreateOrUpdateCollection(ctx, dbName, collName, schema1)
 		require.NoError(t, err)
 		assert.False(t, created)
 	})

@@ -89,7 +89,8 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			resultType: emptyResult, // conflict because of duplicate keys "v" set in $push
 		},
 		"String": {
-			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
+			update:        bson.D{{"$push", bson.D{{"v", "foo"}}}},
+			skipForTigris: "Tigris does not support arrays with different element types",
 		},
 		"Int32": {
 			update:        bson.D{{"$push", bson.D{{"v", int32(42)}}}},
@@ -132,7 +133,8 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"String": {
-			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
+			update:        bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
+			skipForTigris: "Tigris does not support adding new array elements with different types",
 		},
 		"Document": {
 			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},

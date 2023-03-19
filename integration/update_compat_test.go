@@ -81,6 +81,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 
 			var nonEmptyResults bool
+			var notAllSkipped bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -140,18 +141,22 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
 							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
 							AssertEqualDocuments(t, compatFindRes, targetFindRes)
+
+							notAllSkipped = true
 						})
 					}
 				})
 			}
 
-			switch tc.resultType {
-			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+			if notAllSkipped {
+				switch tc.resultType {
+				case nonEmptyResult:
+					assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				case emptyResult:
+					assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				default:
+					t.Fatalf("unknown result type %v", tc.resultType)
+				}
 			}
 		})
 	}

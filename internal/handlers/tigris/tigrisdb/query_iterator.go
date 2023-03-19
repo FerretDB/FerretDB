@@ -41,6 +41,10 @@ type queryIterator struct {
 	iter  driver.Iterator
 	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
 	n     int
+
+	db       *TigrisDB
+	dbName   string
+	collName string
 }
 
 // newIterator returns a new queryIterator for the given driver.Iterator.
@@ -48,12 +52,17 @@ type queryIterator struct {
 // Iterator's Close method closes driver.Iterator.
 //
 // No documents are possible and return already done iterator.
-func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
+func newQueryIterator(ctx context.Context, tdb *TigrisDB, dbName string, collName string, titer driver.Iterator,
+	schema *tjson.Schema,
+) iterator.Interface[int, *types.Document] {
 	iter := &queryIterator{
-		ctx:    ctx,
-		schema: schema,
-		iter:   titer,
-		stack:  debugbuild.Stack(),
+		ctx:      ctx,
+		schema:   schema,
+		iter:     titer,
+		stack:    debugbuild.Stack(),
+		db:       tdb,
+		collName: collName,
+		dbName:   dbName,
 	}
 
 	queryIteratorProfiles.Add(iter, 1)
@@ -120,7 +129,15 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 
 	doc, err := tjson.Unmarshal(document, iter.schema)
 	if err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		iter.schema, err = iter.db.RefreshCollectionSchema(iter.ctx, iter.dbName, iter.collName)
+		if err != nil {
+			return 0, nil, lazyerrors.Error(err)
+		}
+
+		doc, err = tjson.Unmarshal(document, iter.schema)
+		if err != nil {
+			return 0, nil, lazyerrors.Error(err)
+		}
 	}
 
 	iter.n++

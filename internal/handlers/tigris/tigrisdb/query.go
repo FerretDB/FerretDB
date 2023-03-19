@@ -41,8 +41,9 @@ type QueryParams struct {
 // QueryDocuments fetches documents from the given collection.
 func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
 	db := tdb.Driver.UseDatabase(qp.DB)
+	collName := EncodeCollName(qp.Collection)
 
-	collection, err := db.DescribeCollection(ctx, qp.Collection)
+	schema, err := tdb.GetCollectionSchema(ctx, qp.DB, qp.Collection)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
@@ -50,19 +51,14 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (itera
 		if IsNotFound(err) {
 			tdb.l.Debug(
 				"Collection doesn't exist, handling a case to deal with a non-existing collection (return empty list)",
-				zap.String("db", qp.DB), zap.String("collection", qp.Collection),
+				zap.String("db", qp.DB), zap.String("collection", collName),
 			)
 
-			return newQueryIterator(ctx, nil, nil), nil
+			return newQueryIterator(ctx, tdb, qp.DB, qp.Collection, nil, nil), nil
 		}
 
 		return nil, lazyerrors.Error(err)
 	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	var schema tjson.Schema
-	if err = schema.Unmarshal(collection.Schema); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -73,12 +69,12 @@ func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (itera
 
 	tdb.l.Sugar().Debugf("Read filter: %s", filter)
 
-	tigrisIter, err := db.Read(ctx, qp.Collection, driver.Filter(filter), nil)
+	tigrisIter, err := db.Read(ctx, collName, driver.Filter(filter), nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := newQueryIterator(ctx, tigrisIter, &schema)
+	iter := newQueryIterator(ctx, tdb, qp.DB, qp.Collection, tigrisIter, schema)
 
 	return iter, nil
 }

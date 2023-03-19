@@ -25,7 +25,6 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
-  TIGRIS_DOCKERFILE: tigris_main
 
 jobs:
   test:
@@ -38,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "Tigris", task: "tigris" }
+          - { name: "Tigris", task: "tigris", tigris_dockerfile: "tigris_main" }
 
     steps:
       - name: Checkout code

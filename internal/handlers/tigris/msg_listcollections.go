@@ -19,6 +19,7 @@ import (
 	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -66,6 +67,8 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	collections := types.MakeArray(len(names))
 	for _, n := range names {
+		n = tigrisdb.DecodeCollName(n)
+
 		d := must.NotFail(types.NewDocument(
 			"name", n,
 			"type", "collection",

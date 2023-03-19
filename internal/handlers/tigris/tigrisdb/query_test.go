@@ -17,18 +17,16 @@ package tigrisdb
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tigrisdata/tigris-client-go/config"
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -121,10 +119,10 @@ func TestQueryDocuments(t *testing.T) {
 
 		dbName, collName, ctx, tdb := setup(t)
 
-		_, err := tdb.CreateCollectionIfNotExist(ctx, dbName, collName, driver.Schema(strings.TrimSpace(fmt.Sprintf(
-			`{"title": "%s","properties": {"_id": {"type": "string","format": "byte"}},"primary_key": ["_id"]}`,
-			collName,
-		))))
+		schema := must.NotFail(tjson.DocumentSchema(must.NotFail(types.NewDocument("_id", types.NewObjectID()))))
+		schema.Title = collName
+
+		_, err := tdb.CreateOrUpdateCollection(ctx, dbName, collName, schema)
 		require.NoError(t, err)
 
 		iter, err := tdb.QueryDocuments(ctx, &QueryParams{

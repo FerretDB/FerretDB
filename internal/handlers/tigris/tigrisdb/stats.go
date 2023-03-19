@@ -30,6 +30,8 @@ type CollectionStats struct {
 
 // FetchStats returns a set of statistics for the given database and collection.
 func FetchStats(ctx context.Context, db driver.Database, collection string) (*CollectionStats, error) {
+	collection = EncodeCollName(collection)
+
 	info, err := db.DescribeCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:

@@ -16,7 +16,6 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -85,14 +84,12 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	// Validator is required for Tigris as we always need to set schema to create a collection.
-	schema, err := getJSONSchema(document)
+	schema, err := getJSONSchema(document, collection)
 	if err != nil {
 		return nil, err
 	}
 
-	b := must.NotFail(json.Marshal(schema))
-
-	created, err := dbPool.CreateCollectionIfNotExist(ctx, db, collection, b)
+	_, err = dbPool.CreateOrUpdateCollection(ctx, db, collection, schema)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
@@ -110,11 +107,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	default:
 		return nil, lazyerrors.Error(err)
-	}
-
-	if !created {
-		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-		return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
 	}
 
 	var reply wire.OpMsg

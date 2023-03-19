@@ -53,15 +53,16 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	collection = tigrisdb.EncodeCollName(collection)
+
 	err = dbPool.Driver.UseDatabase(db).DropCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
 		// do nothing
 	case *driver.Error:
-		if tigrisdb.IsNotFound(err) {
-			return nil, common.NewCommandErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+		if !tigrisdb.IsNotFound(err) {
+			return nil, lazyerrors.Error(err)
 		}
-		return nil, lazyerrors.Error(err)
 	default:
 		return nil, lazyerrors.Error(err)
 	}

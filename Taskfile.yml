@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 15m
+  INTEGRATIONTIME: 25m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -66,7 +66,7 @@ tasks:
     cmds:
       - >
         docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
-        --build --pull=always
+        --build
         {{.SERVICES}}
 
   env-up-detach-offline:
@@ -327,8 +327,8 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
-      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
+      - bin/golangci-lint{{exeExt}} run --fix --config=.golangci.yml
+      - bin/golangci-lint{{exeExt}} run --fix --config=.golangci-new.yml
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
       - bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...

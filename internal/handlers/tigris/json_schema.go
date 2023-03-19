@@ -15,21 +15,26 @@
 package tigris
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // getJSONSchema returns a marshaled JSON schema received from validator -> $jsonSchema.
-func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
-	v, err := common.GetRequiredParam[*types.Document](doc, "validator")
+func getJSONSchema(doc *types.Document, collection string) (*tjson.Schema, error) {
+	collection = tigrisdb.EncodeCollName(collection)
+
+	v, err := common.GetOptionalParam[*types.Document](doc, "validator", types.MakeDocument(0))
 	if err != nil {
 		return nil, err
 	}
 
-	schema, err := common.GetRequiredParam[string](v, "$tigrisSchemaString")
+	schema, err := common.GetOptionalParam[string](v, "$tigrisSchemaString", string(getEmptySchema(collection)))
 	if err != nil {
 		return nil, err
 	}
@@ -46,4 +51,11 @@ func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	}
 
 	return sch, nil
+}
+
+func getEmptySchema(collection string) []byte {
+	schema := must.NotFail(tjson.DocumentSchema(must.NotFail(types.NewDocument("_id", types.NewObjectID()))))
+	schema.Title = collection
+
+	return must.NotFail(json.Marshal(schema))
 }

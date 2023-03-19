@@ -17,42 +17,52 @@ package tigrisdb
 import (
 	"context"
 	"errors"
+	"strings"
+	"sync"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// CreateCollectionIfNotExist ensures that given collection exist.
+// CreateOrUpdateCollection ensures that given collection exist.
 // If needed, it creates both database and collection.
 // It returns true if the collection was created.
-func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collection string, schema driver.Schema) (bool, error) {
+func (tdb *TigrisDB) CreateOrUpdateCollection(ctx context.Context, db, collection string,
+	schema *tjson.Schema,
+) (bool, error) {
 	_, err := tdb.createDatabaseIfNotExists(ctx, db)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	exists, err := tdb.CollectionExists(ctx, db, collection)
+	encCollection := EncodeCollName(collection)
+
+	schema.Title = encCollection
+	b, err := schema.Marshal()
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	if exists {
-		return false, nil
+	exists, err := tdb.CollectionExists(ctx, db, encCollection)
+	if err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
-	err = tdb.Driver.UseDatabase(db).CreateOrUpdateCollection(ctx, collection, schema)
+	err = tdb.Driver.UseDatabase(db).CreateOrUpdateCollection(ctx, encCollection, b)
 	tdb.l.Debug(
-		"CreateCollectionIfNotExist",
-		zap.String("db", db), zap.String("collection", collection), zap.ByteString("schema", schema), zap.Error(err),
+		"CreateOrUpdateCollection",
+		zap.String("db", db), zap.String("collection", encCollection), zap.ByteString("schema", b), zap.Error(err),
 	)
 
 	var driverErr *driver.Error
 
 	switch {
 	case err == nil:
-		return true, nil
+		CacheCollectionSchema(db, DecodeCollName(encCollection), schema)
+		return !exists, nil
 	case errors.As(err, &driverErr):
 		if IsAlreadyExists(err) {
 			return false, nil
@@ -66,6 +76,7 @@ func (tdb *TigrisDB) CreateCollectionIfNotExist(ctx context.Context, db, collect
 
 // CollectionExists returns true if collection exists.
 func (tdb *TigrisDB) CollectionExists(ctx context.Context, db, collection string) (bool, error) {
+	collection = EncodeCollName(collection)
 	_, err := tdb.Driver.UseDatabase(db).DescribeCollection(ctx, collection)
 	switch err := err.(type) {
 	case nil:
@@ -79,4 +90,52 @@ func (tdb *TigrisDB) CollectionExists(ctx context.Context, db, collection string
 	default:
 		return false, lazyerrors.Error(err)
 	}
+}
+
+// EncodeCollName allows to have collection with / and . In the name.
+func EncodeCollName(name string) string {
+	name = strings.ReplaceAll(name, "/", "__A__")
+	return strings.ReplaceAll(name, ".", "__B__")
+}
+
+// DecodeCollName opposite of EncodeCollName.
+func DecodeCollName(name string) string {
+	name = strings.ReplaceAll(name, "__A__", "/")
+	return strings.ReplaceAll(name, "__B__", ".")
+}
+
+var schemaCache sync.Map
+
+// CacheCollectionSchema add collection schema to schema cache.
+func CacheCollectionSchema(db, collection string, schema *tjson.Schema) {
+	schemaCache.Store(db+"$$$$"+collection, schema)
+}
+
+// RefreshCollectionSchema reads and caches collection schema from the Tigris.
+func (tdb *TigrisDB) RefreshCollectionSchema(ctx context.Context, db, collection string) (*tjson.Schema, error) {
+	coll, err := tdb.Driver.UseDatabase(db).DescribeCollection(ctx, EncodeCollName(collection))
+	if err != nil {
+		return nil, err
+	}
+
+	var schema tjson.Schema
+	if err = schema.Unmarshal(coll.Schema); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	schema.Title = DecodeCollName(collection)
+
+	schemaCache.Store(db+"$$$$"+collection, &schema)
+
+	return &schema, nil
+}
+
+// GetCollectionSchema get schema from cache or read and caches from the Tigris.
+func (tdb *TigrisDB) GetCollectionSchema(ctx context.Context, db, collection string) (*tjson.Schema, error) {
+	res, ok := schemaCache.Load(db + "$$$$" + collection)
+	if ok {
+		return res.(*tjson.Schema), nil
+	}
+
+	return tdb.RefreshCollectionSchema(ctx, db, collection)
 }

@@ -31,8 +31,24 @@ func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string,
 		return err
 	}
 
+	collection = EncodeCollName(collection)
+
 	u, err := tjson.Marshal(doc)
 	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if _, err = tdb.Driver.UseDatabase(db).Replace(ctx, collection, []driver.Document{u}); err == nil ||
+		(!IsNotFound(err) && !IsInvalidArgument(err)) {
+		return err
+	}
+
+	schema, err := tjson.DocumentSchema(doc)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil && !IsAlreadyExists(err) {
 		return lazyerrors.Error(err)
 	}
 

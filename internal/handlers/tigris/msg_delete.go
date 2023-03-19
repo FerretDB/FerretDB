@@ -254,17 +254,30 @@ func deleteDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisd
 		ids[i] = map[string]any{"_id": json.RawMessage(id)}
 	}
 
+	collection := tigrisdb.EncodeCollName(qp.Collection)
+
 	var f driver.Filter
 	switch len(ids) {
 	case 0:
 		f = driver.Filter(`{}`)
+
+		resp, err := dbPool.Driver.UseDatabase(qp.DB).Delete(ctx, collection, f)
+		if err != nil {
+			return 0, lazyerrors.Error(err)
+		}
+
+		if err := dbPool.Driver.UseDatabase(qp.DB).DropCollection(ctx, collection); err != nil {
+			return 0, lazyerrors.Error(err)
+		}
+
+		return int(resp.DeletedCount), nil
 	case 1:
 		f = must.NotFail(json.Marshal(ids[0]))
 	default:
 		f = must.NotFail(json.Marshal(map[string]any{"$or": ids}))
 	}
 
-	_, err := dbPool.Driver.UseDatabase(qp.DB).Delete(ctx, qp.Collection, f)
+	_, err := dbPool.Driver.UseDatabase(qp.DB).Delete(ctx, collection, f)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}

@@ -51,13 +51,13 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schema *Schema) error {
 		return lazyerrors.Error(err)
 	}
 
-	if len(rawMessages) > 0 && schema.Items == nil {
-		return lazyerrors.Errorf("tjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array")
-	}
-
 	ta := types.MakeArray(len(rawMessages))
 
 	for _, el := range rawMessages {
+		if schema.Items == nil && !bytes.Equal(data, []byte("null")) {
+			return lazyerrors.Errorf("tjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array")
+		}
+
 		v, err := Unmarshal(el, schema.Items)
 		if err != nil {
 			return lazyerrors.Error(err)

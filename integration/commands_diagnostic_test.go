@@ -186,7 +186,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if err != nil {
+			if tc.err != nil {
 				AssertEqualAltError(t, *tc.err, tc.alt, err)
 				return
 			}

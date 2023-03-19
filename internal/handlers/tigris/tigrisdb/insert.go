@@ -37,20 +37,7 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 		return nil
 	}
 
-	if ok, _ := tdb.CollectionExists(ctx, db, collection); !ok {
-		doc := must.NotFail(docs.Get(0)).(*types.Document)
-
-		schema, err := tjson.DocumentSchema(doc)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		schema.Title = collection
-		b := must.NotFail(schema.Marshal())
-
-		if _, err := tdb.CreateCollectionIfNotExist(ctx, db, collection, b); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
+	collection = EncodeCollName(collection)
 
 	iter := docs.Iterator()
 	defer iter.Close()
@@ -81,11 +68,25 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 		insertDocs[i] = b
 	}
 
-	if _, err := tdb.Driver.UseDatabase(db).Insert(ctx, collection, insertDocs); err != nil {
+	if _, err := tdb.Driver.UseDatabase(db).Insert(ctx, collection, insertDocs); err == nil ||
+		(!IsNotFound(err) && !IsInvalidArgument(err)) {
+		return err
+	}
+
+	doc := must.NotFail(docs.Get(0)).(*types.Document)
+
+	schema, err := tjson.DocumentSchema(doc)
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	return nil
+	if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil && !IsAlreadyExists(err) {
+		return lazyerrors.Error(err)
+	}
+
+	_, err = tdb.Driver.UseDatabase(db).Insert(ctx, collection, insertDocs)
+
+	return err
 }
 
 // InsertDocument inserts a document into FerretDB database and collection.
@@ -96,19 +97,24 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 		return err
 	}
 
+	collection = EncodeCollName(collection)
+
+	b, err := tjson.Marshal(doc)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if _, err = tdb.Driver.UseDatabase(db).Insert(ctx, collection, []driver.Document{b}); err == nil ||
+		(!IsNotFound(err) && !IsInvalidArgument(err)) {
+		return err
+	}
+
 	schema, err := tjson.DocumentSchema(doc)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	schema.Title = collection
-	b := must.NotFail(schema.Marshal())
 
-	if _, err := tdb.CreateCollectionIfNotExist(ctx, db, collection, b); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	b, err = tjson.Marshal(doc)
-	if err != nil {
+	if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil && !IsAlreadyExists(err) {
 		return lazyerrors.Error(err)
 	}
 
