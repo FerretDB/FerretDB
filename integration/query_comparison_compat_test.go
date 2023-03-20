@@ -668,28 +668,22 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gt", int64(math.MaxInt64)}}}},
 		},
 		"Int64Big": {
-			filter:         bson.D{{"v", bson.D{{"$gt", int64(1 << 61)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1 << 61)}}}},
 		},
 		"Int64BigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$gt", int64(1<<61) + 1}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1<<61) + 1}}}},
 		},
 		"Int64BigMinusOne": {
-			filter:         bson.D{{"v", bson.D{{"$gt", int64(1<<61) - 1}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1<<61) - 1}}}},
 		},
 		"Int64NegBig": {
-			filter:         bson.D{{"v", bson.D{{"$gt", -int64(1 << 61)}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1 << 61)}}}},
 		},
 		"Int64NegBigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$gt", -int64(1<<61) + 1}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1<<61) + 1}}}},
 		},
 		"Int64NegBigMinusOne": {
-			filter:         bson.D{{"v", bson.D{{"$gt", -int64(1<<61) - 1}}}},
-			resultPushdown: true,
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1<<61) - 1}}}},
 		},
 	}
 
