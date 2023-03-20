@@ -16,23 +16,79 @@ package pg
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCreateIndexes implements HandlerInterface.
 func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/78
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
+
+	command := document.Command()
+
+	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
+		return nil, err
+	}
+
+	idxArr, err := common.GetRequiredParam[*types.Array](document, "indexes")
+	if err != nil {
+		return nil, err
+	}
+
+	iter := idxArr.Iterator()
+	defer iter.Close()
+
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		for {
+			_, _, err = iter.Next()
+
+			switch {
+			case err == nil:
+				// do nothing
+			case errors.Is(err, iterator.ErrIteratorDone):
+				// iterator is done, no more indexes to create
+				return nil
+			default:
+				return lazyerrors.Error(err)
+			}
+
+			index := pgdb.Index{
+				// TODO
+			}
+
+			if err = pgdb.CreateIndex(ctx, tx, db, collection, &index); err != nil {
+				return err
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

@@ -115,9 +115,8 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 	}
 }
 
-// createIndex creates a new index for the given params.
-// TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
-func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+// CreateIndex creates a new index for the given params.
+func CreateIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
 	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
