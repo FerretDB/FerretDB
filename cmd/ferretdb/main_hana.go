@@ -16,11 +16,7 @@
 
 package main
 
-import (
-	"github.com/alecthomas/kong"
-)
-
 // init adds "hana" handler flags when "ferretdb_hana" build tag is provided.
 func init() {
-	cli.Plugins = kong.Plugins{&hanaFlags}
+	cli.Plugins = append(cli.Plugins, &hanaFlags)
 }
