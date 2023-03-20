@@ -32,7 +32,8 @@ import (
 )
 
 // validateCollectionNameRe validates collection names.
-var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,119}$")
+// Empty collection name, names with `$` and `\x00` are not allowed.
+var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,119}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //

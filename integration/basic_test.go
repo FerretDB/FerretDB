@@ -367,6 +367,33 @@ func TestCollectionName(t *testing.T) {
 			},
 			alt: "Invalid collection name: 'testcollectionname.'",
 		},
+		"Null": {
+			collection: "\x00",
+			err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: "namespaces cannot have embedded null characters",
+			},
+			alt: "Invalid collection name: 'testcollectionname.\x00'",
+		},
+		"Dot": {
+			collection: "collection.name",
+		},
+		"Space": {
+			collection: " ",
+		},
+		"NonLatin": {
+			collection: "coleção",
+		},
+		"Number": {
+			collection: "1",
+		},
+		"SpecialCharacters": {
+			collection: `/\. ,"`,
+		},
+		"Line": {
+			collection: `\n`,
+		},
 	}
 
 	for name, tc := range cases {

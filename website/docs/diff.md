@@ -24,8 +24,6 @@ slug: /diff/
 8. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
    * database name must not include non-latin letters, spaces, dots, dollars;
-   * collection name must not include non-latin letters, spaces, dots or dollars;
-   * name must not start with a number;
    * database name cannot contain capital letters;
    * database name length cannot be more than 63 characters;
    * collection name length cannot be more than 120 characters.
