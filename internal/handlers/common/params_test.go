@@ -85,7 +85,6 @@ func TestMultiplyLongSafely(t *testing.T) {
 
 			actualRes, err := multiplyLongSafely(tc.v1, tc.v2)
 			assert.Equal(t, tc.err, err)
-
 			assert.Equal(t, tc.expected, actualRes)
 		})
 	}
