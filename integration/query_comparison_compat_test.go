@@ -323,7 +323,6 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			resultPushdown: true,
 		},
 
-		// TODO: add to other tests
 		"DoubleBig": {
 			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 61)}}}},
 			resultPushdown: true,
@@ -485,11 +484,11 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			resultPushdown: true,
 		},
 		"Int64BigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 61) + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<61) + 1}}}},
 			resultPushdown: true,
 		},
 		"Int64BigMinusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 61) - 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<61) - 1}}}},
 			resultPushdown: true,
 		},
 		"Int64NegBig": {
@@ -510,11 +509,11 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			resultPushdown: true,
 		},
 		"Int64PrecMaxPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 53) + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<53 + 1)}}}},
 			resultPushdown: true,
 		},
 		"Int64PrecMaxMinusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64((1 << 53) - 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<53 - 1)}}}},
 			resultPushdown: true,
 		},
 		"Int64PrecMin": {
@@ -673,11 +672,11 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			resultPushdown: true,
 		},
 		"Int64BigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$gt", int64((1 << 61) + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$gt", int64(1<<61) + 1}}}},
 			resultPushdown: true,
 		},
 		"Int64BigMinusOne": {
-			filter:         bson.D{{"v", bson.D{{"$gt", int64((1 << 61) - 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$gt", int64(1<<61) - 1}}}},
 			resultPushdown: true,
 		},
 		"Int64NegBig": {
@@ -1168,11 +1167,11 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			resultPushdown: true,
 		},
 		"DoubleBigPlus": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64((1 << 61) + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<61) + 1}}}},
 			resultPushdown: true,
 		},
 		"DoubleBigMinus": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64((1 << 61) - 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<61) - 1}}}},
 			resultPushdown: true,
 		},
 		"DoubleNegBig": {
@@ -1180,11 +1179,11 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			resultPushdown: true,
 		},
 		"DoubleNegBigPlus": {
-			filter:         bson.D{{"v", bson.D{{"$ne", -float64((1 << 61) + 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<61) + 1}}}},
 			resultPushdown: true,
 		},
 		"DoubleNegBigMinus": {
-			filter:         bson.D{{"v", bson.D{{"$ne", -float64((1 << 61) - 1)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<61) - 1}}}},
 			resultPushdown: true,
 		},
 		"DoublePrecMax": {
