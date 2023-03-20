@@ -45,17 +45,14 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/301
-	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
-	// 	nameOnly, ok := v.(bool)
-	// 	return ok && !nameOnly
-	// }); err != nil {
-	// 	return nil, err
-	// }
-
 	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
 	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
 	if err != nil {
 		return nil, err
 	}
@@ -93,20 +90,37 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			continue
 		}
 
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", n,
+			))
+		}
+
 		collections.Append(d)
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"cursor", must.NotFail(types.NewDocument(
-				"id", int64(0),
-				"ns", db+".$cmd.listCollections",
+
+	switch {
+	case nameOnly:
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"firstBatch", collections,
-			)),
-			"ok", float64(1),
-		))},
-	}))
+				"ok", float64(1),
+			))},
+		}))
+	default:
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"cursor", must.NotFail(types.NewDocument(
+					"id", int64(0),
+					"ns", db+".$cmd.listCollections",
+					"firstBatch", collections,
+				)),
+				"ok", float64(1),
+			))},
+		}))
+	}
 
 	return &reply, nil
 }
