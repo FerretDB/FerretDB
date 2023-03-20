@@ -45,18 +45,16 @@ const (
 	maxIndexNameLength = 63
 )
 
-// metadata is a type to structure methods that work with metadata storing and getting.
-//
-// Metadata consists of collections and indexes settings.
-type metadata struct {
+// metadataStorage offers methods to store and get metadata. .
+type metadataStorage struct {
 	tx         pgx.Tx
 	db         string
 	collection string
 }
 
-// newMetadata returns a new instance of metadata for the given transaction, database and collection names.
-func newMetadata(tx pgx.Tx, db, collection string) *metadata {
-	return &metadata{
+// newMetadataStorage returns a new instance of metadata for the given transaction, database and collection names.
+func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
+	return &metadataStorage{
 		tx:         tx,
 		db:         db,
 		collection: collection,
@@ -75,7 +73,7 @@ func newMetadata(tx pgx.Tx, db, collection string) *metadata {
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, err error) {
+func (m *metadataStorage) ensure(ctx context.Context) (tableName string, created bool, err error) {
 	tableName, err = m.getTableName(ctx)
 
 	switch {
@@ -137,7 +135,7 @@ func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, 
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func (m *metadata) getTableName(ctx context.Context) (string, error) {
+func (m *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	doc, err := m.get(ctx, false)
 	if err != nil {
 		return "", lazyerrors.Error(err)
@@ -151,7 +149,7 @@ func (m *metadata) getTableName(ctx context.Context) (string, error) {
 // get returns metadata stored in the metadata table.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func (m *metadata) get(ctx context.Context, forUpdate bool) (*types.Document, error) {
+func (m *metadataStorage) get(ctx context.Context, forUpdate bool) (*types.Document, error) {
 	metadataExist, err := tableExists(ctx, m.tx, m.db, dbMetadataTableName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -193,7 +191,7 @@ func (m *metadata) get(ctx context.Context, forUpdate bool) (*types.Document, er
 //
 // To avoid data race, set should be called only after getMetadata with forUpdate = true is called,
 // so that the metadata table is locked correctly.
-func (m *metadata) set(ctx context.Context, doc *types.Document) error {
+func (m *metadataStorage) set(ctx context.Context, doc *types.Document) error {
 	if _, err := setById(ctx, m.tx, m.db, dbMetadataTableName, "", m.collection, doc); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -204,7 +202,7 @@ func (m *metadata) set(ctx context.Context, doc *types.Document) error {
 // remove removes metadata.
 //
 // If such metadata don't exist, it doesn't return an error.
-func (m *metadata) remove(ctx context.Context) error {
+func (m *metadataStorage) remove(ctx context.Context) error {
 	_, err := deleteByIDs(ctx, m.tx, execDeleteParams{
 		schema: m.db,
 		table:  dbMetadataTableName,
@@ -243,7 +241,7 @@ func formatCollectionName(name string) string {
 // It returns a possibly wrapped error:
 //   - ErrTableNotExist - if the metadata table doesn't exist.
 //   - ErrIndexAlreadyExist - if the given index already exists.
-func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
+func (m *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
 	metadata, err := m.get(ctx, true)
 	if err != nil {
 		return "", "", err

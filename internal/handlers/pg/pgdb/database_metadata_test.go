@@ -35,7 +35,7 @@ func TestDatabaseMetadata(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		m := newMetadata(tx, databaseName, collectionName)
+		m := newMetadataStorage(tx, databaseName, collectionName)
 		nameCreated, _, err := m.ensure(ctx)
 		// In this case error is possible: if this test is run in parallel with other tests,
 		// ensureMetadata may fail to create the index or insert data due to concurrent requests to PostgreSQL.

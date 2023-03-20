@@ -55,7 +55,7 @@ const (
 //
 // If the given collection does not exist, it returns ErrTableNotExist.
 func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, error) {
-	metadata, err := newMetadata(tx, db, collection).get(ctx, false)
+	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 // createIndex creates a new index for the given params.
 // TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
 func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
-	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
+	pgTable, pgIndex, err := newMetadataStorage(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
 	}
