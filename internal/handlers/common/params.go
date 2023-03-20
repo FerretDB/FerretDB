@@ -377,7 +377,7 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 // multiplyLongSafely returns the multiplication of two int64 values.
 // It handles int64 overflows, and returns errLongExceeded error on one.
 //
-// Please prefer to use multiplyNumbers instead of this function.
+// Please always use multiplyNumbers as it calls multiplyLongSafely when needed.
 func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	switch {
 	// 0 and 1 values are excluded, because those are only values that
