@@ -16,11 +16,7 @@
 
 package main
 
-import (
-	"github.com/alecthomas/kong"
-)
-
 // init adds "tigris" handler flags when "ferretdb_tigris" build tag is provided.
 func init() {
-	cli.Plugins = kong.Plugins{&tigrisFlags}
+	cli.Plugins = append(cli.Plugins, &tigrisFlags)
 }
