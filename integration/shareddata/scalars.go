@@ -26,7 +26,7 @@ const (
 	doubleBig = float64(1 << 61) // 2305843009213693952.0
 	longBig   = int64(1 << 61)   // 2305843009213693952
 
-	doublePrec = float64(1 << 53) // 9007199254740992.0
+	doubleMaxPrec = float64(1 << 53) // 9007199254740992.0
 )
 
 // Scalars contain scalar values for tests.
@@ -135,24 +135,40 @@ var Doubles = &Values[string]{
 		"double-big-plus":  doubleBig + 1,
 		"double-big-minus": doubleBig - 1,
 
-		// double big values ~1<<61 with fraction
-		"double-big-fraction-small": doubleBig + 0.1, //TODO
-		"double-big-fraction-big":   doubleBig + 0.9,
-
 		// long big values ~1<<61
 		"long-big":       longBig,
 		"long-big-plus":  longBig + 1,
 		"long-big-minus": longBig - 1,
 
 		// double max precision ~1<<53
-		"double-prec-max":       doublePrec,
-		"double-prec-max-plus":  doublePrec + 1,
-		"double-prec-max-minus": doublePrec - 1,
+		"double-prec-max":       doubleMaxPrec,
+		"double-prec-max-plus":  doubleMaxPrec + 1,
+		"double-prec-max-minus": doubleMaxPrec - 1,
 
 		// long representation of double max precision ~1<<53
-		"long-prec-max":       int64(doublePrec),
-		"long-prec-max-plus":  int64(doublePrec) + 1,
-		"long-prec-max-minus": int64(doublePrec) - 1,
+		"long-prec-max":       int64(doubleMaxPrec),
+		"long-prec-max-plus":  int64(doubleMaxPrec) + 1,
+		"long-prec-max-minus": int64(doubleMaxPrec) - 1,
+
+		// negative double big values ~ -(1<<61)
+		"double-neg-big":       -doubleBig,
+		"double-neg-big-plus":  -(doubleBig + 1),
+		"double-neg-big-minus": -(doubleBig - 1),
+
+		// negative long big values ~ -(1<<61)
+		"long-neg-big":       -longBig,
+		"long-neg-big-plus":  -(longBig + 1),
+		"long-neg-big-minus": -(longBig - 1),
+
+		// double min precision ~ -(1<<53 - 1)
+		"double-prec-min":       -(doubleMaxPrec - 1),
+		"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
+		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
+
+		// long representation of double max precision ~ (1<<53)
+		"long-neg-prec-max":       -int64(doubleMaxPrec),
+		"long-neg-prec-max-plus":  -(int64(doubleMaxPrec) - 1) + 1,
+		"long-neg-prec-max-minus": -(int64(doubleMaxPrec) - 1) - 1,
 
 		// TODO: negative
 		// TODO: tests for everything
