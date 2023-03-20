@@ -389,10 +389,7 @@ func TestCollectionName(t *testing.T) {
 			collection: "1",
 		},
 		"SpecialCharacters": {
-			collection: `/\. ,"`,
-		},
-		"Line": {
-			collection: `\n`,
+			collection: `/\. ,"*<>:|?`,
 		},
 	}
 
