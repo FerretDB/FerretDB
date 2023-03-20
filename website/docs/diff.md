@@ -26,7 +26,6 @@ slug: /diff/
    * database name must not include non-latin letters, spaces, dots, dollars;
    * database name cannot contain capital letters;
    * database name length cannot be more than 63 characters;
-   * collection name length cannot be more than 120 characters.
 9. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
     The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 

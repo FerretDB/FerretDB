@@ -404,9 +404,11 @@ func TestCollectionName(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+			newCollection := collection.Database().Collection(tc.collection)
+
+			// insert data to ensure collection can be updated.
+			_, err = newCollection.InsertOne(ctx, bson.D{})
 			require.NoError(t, err)
-			assert.Contains(t, names, tc.collection)
 		})
 	}
 }
