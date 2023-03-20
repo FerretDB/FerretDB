@@ -18,7 +18,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,29 +25,28 @@ func TestMultiplyLongSafely(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		v1, v2   int64
-		expected *int64
-
-		// overflow checks if at least one value returned errLongExceeded error.
-		err error
+		err              error
+		v1, v2, expected int64
 	}{
 		"Zero": {
 			v1:       0,
 			v2:       1000,
-			expected: pointer.ToInt64(0),
+			expected: 0,
 		},
 		"One": {
 			v1:       42,
 			v2:       1,
-			expected: pointer.ToInt64(42),
+			expected: 42,
 		},
 		"DoubleMaxPrecision": {
-			v1: 1 << 53,
-			v2: 42,
+			v1:       1 << 53,
+			v2:       42,
+			expected: 378302368699121664,
 		},
 		"DoubleMaxPrecisionPlus": {
-			v1: (1 << 53) + 1,
-			v2: 42,
+			v1:       (1 << 53) + 1,
+			v2:       42,
+			expected: 378302368699121706,
 		},
 		"OverflowLarge": {
 			v1:  1 << 60,
@@ -61,8 +59,9 @@ func TestMultiplyLongSafely(t *testing.T) {
 			err: errLongExceeded,
 		},
 		"MaxMinusOne": {
-			v1: math.MaxInt64,
-			v2: -1,
+			v1:       math.MaxInt64,
+			v2:       -1,
+			expected: -math.MaxInt64,
 		},
 		"OverflowMaxMinusTwo": {
 			v1:  math.MaxInt64,
@@ -87,9 +86,7 @@ func TestMultiplyLongSafely(t *testing.T) {
 			actualRes, err := multiplyLongSafely(tc.v1, tc.v2)
 			assert.Equal(t, tc.err, err)
 
-			if tc.expected != nil {
-				assert.Equal(t, *tc.expected, actualRes)
-			}
+			assert.Equal(t, tc.expected, actualRes)
 		})
 	}
 }
