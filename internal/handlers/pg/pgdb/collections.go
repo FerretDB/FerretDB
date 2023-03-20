@@ -174,16 +174,13 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrSchemaNotExist
 	}
 
-	table := formatCollectionName(collection)
-	tables, err := tables(ctx, tx, db)
+	metadata := newMetadata(tx, db, collection)
+	table, err := metadata.getTableName(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	if !slices.Contains(tables, table) {
-		return ErrTableNotExist
-	}
 
-	err = newMetadata(tx, db, collection).remove(ctx)
+	err = metadata.remove(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
