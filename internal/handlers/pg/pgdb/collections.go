@@ -113,7 +113,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, created, err := newMetadataStorage(tx, db, collection).ensure(ctx)
+	table, created, err := newMetadataStorage(tx, db, collection).store(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

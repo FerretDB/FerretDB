@@ -16,14 +16,10 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Index contains user-visible properties of FerretDB index.
@@ -60,59 +56,19 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 		return nil, err
 	}
 
-	if !metadata.Has("indexes") {
-		return []Index{}, nil
-	}
+	res := make([]Index, len(metadata.indexes))
 
-	indexes := must.NotFail(metadata.Get("indexes")).(*types.Array)
-
-	res := make([]Index, indexes.Len())
-	iter := indexes.Iterator()
-
-	defer iter.Close()
-
-	for {
-		i, idx, err := iter.Next()
-
-		switch {
-		case err == nil:
-			idx := idx.(*types.Document)
-			key := must.NotFail(idx.Get("key")).(*types.Document)
-
-			res[i] = Index{
-				Name:   must.NotFail(idx.Get("name")).(string),
-				Unique: must.NotFail(idx.Get("unique")).(bool),
-				Key:    make([]IndexKeyPair, 0, key.Len()),
-			}
-
-			keyIter := key.Iterator()
-			defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
-
-			for i := 0; i < key.Len(); i++ {
-				var field string
-				var value any
-				field, value, err = keyIter.Next()
-
-				switch {
-				case err == nil:
-					res[i].Key = append(res[i].Key, IndexKeyPair{
-						Field: field,
-						Order: IndexOrder(value.(int32)),
-					})
-				default:
-					return nil, lazyerrors.Error(err)
-				}
-			}
-
-		case errors.Is(err, iterator.ErrIteratorDone):
-			// no more indexes
-			// TODO Check indexes order when more than one index exist https://github.com/FerretDB/FerretDB/issues/1509
-			// slices.Sort(res)
-			return res, nil
-		default:
-			return nil, lazyerrors.Error(err)
+	for i, idx := range metadata.indexes {
+		res[i] = Index{
+			Name:   idx.name,
+			Unique: idx.unique,
+			Key:    idx.key,
 		}
 	}
+
+	// TODO Check indexes order when more than one index exist https://github.com/FerretDB/FerretDB/issues/1509
+	// slices.Sort(res)
+	return res, nil
 }
 
 // createIndex creates a new index for the given params.
