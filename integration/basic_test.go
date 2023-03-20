@@ -391,6 +391,9 @@ func TestCollectionName(t *testing.T) {
 		"SpecialCharacters": {
 			collection: `/\. ,"*<>:|?`,
 		},
+		"Capital": {
+			collection: "A",
+		},
 	}
 
 	for name, tc := range cases {
