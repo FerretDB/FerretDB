@@ -181,14 +181,14 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return lazyerrors.Error(err)
 	}
 
-	err = metadata.remove(ctx)
+	// TODO https://github.com/FerretDB/FerretDB/issues/811
+	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
+	_, err = tx.Exec(ctx, sql)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/811
-	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
-	_, err = tx.Exec(ctx, sql)
+	err = metadata.remove(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

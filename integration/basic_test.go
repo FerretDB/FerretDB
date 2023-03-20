@@ -383,7 +383,7 @@ func TestCollectionName(t *testing.T) {
 			collection: " ",
 		},
 		"NonLatin": {
-			collection: "coleção",
+			collection: "コレクション",
 		},
 		"Number": {
 			collection: "1",
