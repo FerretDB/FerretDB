@@ -38,10 +38,12 @@ db.store.updateOne(
 After the operation, the updated document looks like this:
 
 ```js
-[ {
+[
+  {
     _id: 1,
-    items: [ 'pens', 'pencils', 'paper', 'erasers', 'rulers', 'markers' ]
-    }]
+    items: ['pens', 'pencils', 'paper', 'erasers', 'rulers', 'markers']
+  }
+]
 ```
 
 ## $addToSet
@@ -135,10 +137,12 @@ db.products.updateOne(
 The document is subsequently updated with the first element `pens` removed, as depicted below:
 
 ```js
-[ {
+[
+  {
     _id: 1,
-    items: [ 'pencils', 'paper', 'erasers', 'rulers' ]
-    }]
+    items: ['pencils', 'paper', 'erasers', 'rulers']
+  }
+]
 ```
 
 To remove the last element of the array, assign `1` as the value for the `$pop` operator.
@@ -153,10 +157,12 @@ db.products.updateOne(
 The updated now looks like this:
 
 ```js
-[ {
+[
+  {
     _id: 1,
-    items: [ 'pencils', 'paper', 'erasers' ]
-    }]
+    items: ['pencils', 'paper', 'erasers']
+  }
+]
 ```
 
 ## $pullAll
@@ -183,10 +189,12 @@ db.store.updateOne(
 After removing all instances of the specified array elements, the document is updated as follows:
 
 ```js
-[ {
+[
+  {
     _id: 1,
-    items: [ 'erasers', 'rulers' ]
-}]
+    items: ['erasers', 'rulers']
+  }
+]
 ```
 
 **Example:** Use the `$pullAll` operator to remove array of objects from an array.
@@ -195,11 +203,14 @@ Insert the following document into a `fruits` collection:
 
 ```js
 db.fruits.insertMany([
-    { _id: 1, fruits: [
-        { type: "apple", color: "red" },
-        { type: "banana", color: "yellow" },
-        { type: "orange", color: "orange" }
-        ] }
+  {
+    _id: 1,
+    fruits: [
+      { type: "apple", color: "red" },
+      { type: "banana", color: "yellow" },
+      { type: "orange", color: "orange" }
+    ]
+  }
 ]);
 ```
 
