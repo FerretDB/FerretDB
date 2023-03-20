@@ -46,7 +46,7 @@ After the operation, the updated document looks like this:
 
 ## $addToSet
 
-The `$addToSet` operator updates an array by adding a specified element to an array if the elenent does not already exist in the array.
+The `$addToSet` operator updates an array by adding a specified element to an array if the element does not already exist in the array.
 If the specified element exists in the array, the `$addToSet` operator will not modify the array.
 
 Insert the following documents into a `store` collection:
