@@ -243,7 +243,7 @@ func formatCollectionName(name string) string {
 // It returns a possibly wrapped error:
 //   - ErrTableNotExist - if the metadata table doesn't exist.
 //   - ErrIndexAlreadyExist - if the given index already exists.
-func (m *metadata) setIndex(ctx context.Context, index string, key indexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
+func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
 	metadata, err := m.get(ctx, true)
 	if err != nil {
 		return "", "", err
@@ -254,7 +254,7 @@ func (m *metadata) setIndex(ctx context.Context, index string, key indexKey, uni
 
 	indKey := types.MakeDocument(len(key))
 	for _, pair := range key {
-		indKey.Set(pair.field, int32(pair.order)) // order is set as int32 to be pjson-marshaled correctly
+		indKey.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be pjson-marshaled correctly
 	}
 
 	newIndex := must.NotFail(types.NewDocument(

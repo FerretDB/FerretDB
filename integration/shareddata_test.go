@@ -31,25 +31,15 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
-	notForTigris := []shareddata.Provider{
-		shareddata.Scalars,
-		shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-		shareddata.Nulls,
-		shareddata.ArrayDocuments,
-	}
-
-	// Setups one collection for each data set for all handlers and MongoDB.
+	// Setups one collection for each data set for all backends.
 	t.Run("All", func(t *testing.T) {
 		for _, p := range shareddata.AllProviders() {
 			p := p
 			name := p.Name()
 
 			t.Run(name, func(t *testing.T) {
-				for _, skip := range notForTigris {
-					if name == skip.Name() {
-						setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
-					}
+				if !p.IsCompatible("ferretdb-tigris") {
+					setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
 				}
 
 				setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -61,7 +51,7 @@ func TestEnvData(t *testing.T) {
 		}
 	})
 
-	// Setups old `values` collection with mixed types for `pg` handler and MongoDB.
+	// Setups old `values` collection with mixed types for all backends except `ferretdb-tigris`.
 	t.Run("Values", func(t *testing.T) {
 		setup.SkipForTigris(t)
 
