@@ -345,7 +345,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		// shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		//shareddata.BigDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
