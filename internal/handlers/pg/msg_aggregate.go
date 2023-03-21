@@ -131,7 +131,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					log.Print(v)
 				}
 			case int64:
-				if v == -9007199254740992 {
+				if v == 9007199254740992 {
 					log.Print(v)
 				}
 			}
