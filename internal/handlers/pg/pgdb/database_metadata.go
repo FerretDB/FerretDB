@@ -315,8 +315,7 @@ func (m *metadataStorage) remove(ctx context.Context) error {
 }
 
 // formatCollectionName returns collection name in form <shortened_name>_<name_hash>.
-//
-// Deprecated: this function usage is allowed for collection metadata creation only.
+// Changing this logic will break compatibility with existing databases.
 func formatCollectionName(name string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(name)))
