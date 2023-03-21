@@ -204,6 +204,8 @@ func (m *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, e
 	}
 }
 
+// documentToMetadata converts *types.Document to metadata.
+// Use this function if you want to transform document returned from the database to structured metadata.
 func documentToMetadata(doc *types.Document) (*metadata, error) {
 	var indexesArr *types.Array
 
@@ -269,6 +271,8 @@ func (m *metadataStorage) set(ctx context.Context, metadata *metadata) error {
 	return nil
 }
 
+// metadataToDocument converts metadata to *types.Document.
+// Use this function to transform metadata to document to be stored in the database.
 func (m *metadataStorage) metadataToDocument(metadata *metadata) *types.Document {
 	indexesArr := types.MakeArray(len(metadata.indexes))
 
