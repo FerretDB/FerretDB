@@ -265,6 +265,20 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, rootKey, v)
 
+					case string, types.ObjectID, time.Time:
+						// Select if value under the key is equal to provided value.
+						sql := `_jsonb->%[1]s @> %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
+					case bool, int32:
+						// Select if value under the key is equal to provided value.
+						sql := `_jsonb->%[1]s @> %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, v)
+
 					case int64:
 						// Select if value under the key is equal to provided value.
 						sql := `_jsonb->%[1]s @> %[2]s`
@@ -283,20 +297,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, rootKey, v)
-
-					case int32, bool:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, v)
-
-					case string, types.ObjectID, time.Time:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -352,6 +352,20 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, rootKey, v)
 
+		case string, types.ObjectID, time.Time:
+			// Select if value under the key is equal to provided value.
+			sql := `_jsonb->%[1]s @> %[2]s`
+
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
+		case bool, int32:
+			// Select if value under the key is equal to provided value.
+			sql := `_jsonb->%[1]s @> %[2]s`
+
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, rootKey, v)
+
 		case int64:
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
@@ -370,20 +384,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 			args = append(args, rootKey, v)
-
-		case int32, bool:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, v)
-
-		case string, time.Time, types.ObjectID:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
