@@ -303,15 +303,15 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 // filterEqual returns the proper SQL filter with arguments that filters documents
 // with the value under k is equal to v.
 func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
+	// Select if value under the key is equal to provided value.
+	sql := `_jsonb->%[1]s @> %[2]s`
+
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
 		types.NullType, types.Regex, types.Timestamp:
 		// type not supported for pushdown
 
 	case float64:
-		// Select if value under the key is equal to provided value.
-		sql := `_jsonb->%[1]s @> %[2]s`
-
 		// If value is not safe double, fetch all numbers out of safe range.
 		switch {
 		case v > types.MaxSafeDouble:
@@ -321,28 +321,24 @@ func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
 		case v < -types.MaxSafeDouble:
 			sql = `_jsonb->%[1]s < %[2]s`
 			v = -types.MaxSafeDouble
+		default:
+			// don't change the default eq query
 		}
 
 		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
-		// Select if value under the key is equal to provided value.
-		sql := `_jsonb->%[1]s @> %[2]s`
-
+		// don't change the default eq query
 		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 	case bool, int32:
-		// Select if value under the key is equal to provided value.
-		sql := `_jsonb->%[1]s @> %[2]s`
-
+		// don't change the default eq query
 		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
-		// Select if value under the key is equal to provided value.
-		sql := `_jsonb->%[1]s @> %[2]s`
 		maxSafeDouble := int64(types.MaxSafeDouble)
 
 		// If value cannot be safe double, fetch all numbers out of the safe range.
@@ -354,6 +350,8 @@ func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
 		case v < -maxSafeDouble:
 			sql = `_jsonb->%[1]s < %[2]s`
 			v = -maxSafeDouble
+		default:
+			// don't change the default eq query
 		}
 
 		filter = fmt.Sprintf(sql, p.Next(), p.Next())
