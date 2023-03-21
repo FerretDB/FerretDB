@@ -242,65 +242,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch k {
 				case "$eq":
-					switch v := v.(type) {
-					case *types.Document, *types.Array, types.Binary,
-						types.NullType, types.Regex, types.Timestamp:
-						// type not supported for pushdown
-
-					case float64:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-
-						// If value is not safe double, fetch all numbers out of safe range.
-						switch {
-						case v > types.MaxSafeDouble:
-							sql = `_jsonb->%[1]s > %[2]s`
-							v = types.MaxSafeDouble
-
-						case v < -types.MaxSafeDouble:
-							sql = `_jsonb->%[1]s < %[2]s`
-							v = -types.MaxSafeDouble
-						}
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, v)
-
-					case string, types.ObjectID, time.Time:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-					case bool, int32:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, v)
-
-					case int64:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-						maxSafeDouble := int64(types.MaxSafeDouble)
-
-						// If value cannot be safe double, fetch all numbers out of the safe range.
-						switch {
-						case v > maxSafeDouble:
-							sql = `_jsonb->%[1]s > %[2]s`
-							v = maxSafeDouble
-
-						case v < -maxSafeDouble:
-							sql = `_jsonb->%[1]s < %[2]s`
-							v = -maxSafeDouble
-						}
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, v)
-
-					default:
-						panic(fmt.Sprintf("Unexpected type of value: %v", v))
-					}
+					filters, args = filterEqual(&p, rootKey, v)
 
 				case "$ne":
 					switch v := v.(type) {
@@ -319,7 +261,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 							`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
-						args = append(args, rootKey, must.NotFail(pjson.MarshalSingleValue(v)))
+						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -334,56 +276,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 			continue
 
-		case float64:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-
-			// If value is not safe double, fetch all numbers out of safe range.
-			switch {
-			case v > types.MaxSafeDouble:
-				sql = `_jsonb->%[1]s > %[2]s`
-				v = types.MaxSafeDouble
-
-			case v < -types.MaxSafeDouble:
-				sql = `_jsonb->%[1]s < %[2]s`
-				v = -types.MaxSafeDouble
-			}
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, v)
-
-		case string, types.ObjectID, time.Time:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-		case bool, int32:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, v)
-
-		case int64:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-			maxSafeDouble := int64(types.MaxSafeDouble)
-
-			// If value cannot be safe double, fetch all numbers out of the safe range.
-			switch {
-			case v > maxSafeDouble:
-				sql = `_jsonb->%[1]s > %[2]s`
-				v = maxSafeDouble
-
-			case v < -maxSafeDouble:
-				sql = `_jsonb->%[1]s < %[2]s`
-				v = -maxSafeDouble
-			}
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, v)
+		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+			filters, args = filterEqual(&p, rootKey, v)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -396,6 +290,72 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	}
 
 	return filter, args, nil
+}
+
+// filterEqual returns the proper SQL filter with arguments that filters documents
+// with the value under k is equal to v.
+func filterEqual(p *Placeholder, k string, v any) (filters []string, args []any) {
+	switch v := v.(type) {
+	case *types.Document, *types.Array, types.Binary,
+		types.NullType, types.Regex, types.Timestamp:
+		// type not supported for pushdown
+
+	case float64:
+		// Select if value under the key is equal to provided value.
+		sql := `_jsonb->%[1]s @> %[2]s`
+
+		// If value is not safe double, fetch all numbers out of safe range.
+		switch {
+		case v > types.MaxSafeDouble:
+			sql = `_jsonb->%[1]s > %[2]s`
+			v = types.MaxSafeDouble
+
+		case v < -types.MaxSafeDouble:
+			sql = `_jsonb->%[1]s < %[2]s`
+			v = -types.MaxSafeDouble
+		}
+
+		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		args = append(args, k, v)
+
+	case string, types.ObjectID, time.Time:
+		// Select if value under the key is equal to provided value.
+		sql := `_jsonb->%[1]s @> %[2]s`
+
+		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
+	case bool, int32:
+		// Select if value under the key is equal to provided value.
+		sql := `_jsonb->%[1]s @> %[2]s`
+
+		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		args = append(args, k, v)
+
+	case int64:
+		// Select if value under the key is equal to provided value.
+		sql := `_jsonb->%[1]s @> %[2]s`
+		maxSafeDouble := int64(types.MaxSafeDouble)
+
+		// If value cannot be safe double, fetch all numbers out of the safe range.
+		switch {
+		case v > maxSafeDouble:
+			sql = `_jsonb->%[1]s > %[2]s`
+			v = maxSafeDouble
+
+		case v < -maxSafeDouble:
+			sql = `_jsonb->%[1]s < %[2]s`
+			v = -maxSafeDouble
+		}
+
+		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		args = append(args, k, v)
+
+	default:
+		panic(fmt.Sprintf("Unexpected type of value: %v", v))
+	}
+
+	return
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.

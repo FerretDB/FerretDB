@@ -23,9 +23,8 @@ import (
 )
 
 const (
-	doubleBig = float64(1 << 61) // 2305843009213693952.0
-	longBig   = int64(1 << 61)   // 2305843009213693952
-
+	doubleBig     = float64(1 << 61) // 2305843009213693952.0
+	longBig       = int64(1 << 61)   // 2305843009213693952
 	doubleMaxPrec = float64(1 << 53) // 9007199254740992.0
 )
 
@@ -169,9 +168,6 @@ var Doubles = &Values[string]{
 		"long-neg-prec-max":       -int64(doubleMaxPrec),
 		"long-neg-prec-max-plus":  -(int64(doubleMaxPrec) - 1) + 1,
 		"long-neg-prec-max-minus": -(int64(doubleMaxPrec) - 1) - 1,
-
-		// TODO: negative
-		// TODO: tests for everything
 
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),

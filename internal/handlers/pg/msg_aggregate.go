@@ -124,7 +124,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		docs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
 		for _, doc := range docs {
 			v, _ := doc.Get("v")
-			// MsgAggregate
 			switch v := v.(type) {
 			case float64:
 				if v == 9007199254740992 {

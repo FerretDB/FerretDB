@@ -209,14 +209,15 @@ var ArrayDoubles = &Values[string]{
 		"array-double-big":      bson.A{doubleBig},
 		"array-double-big-plus": bson.A{doubleBig + 1},
 
+		"array-long-big":      bson.A{int64(doubleBig)},
+		"array-long-big-plus": bson.A{int64(doubleBig) + 1},
+
 		"array-double-prec-max":      bson.A{doubleMaxPrec},
 		"array-double-prec-max-plus": bson.A{doubleMaxPrec + 1},
 
 		"array-long-prec-max":      bson.A{int64(doubleMaxPrec)},
 		"array-long-prec-max-plus": bson.A{int64(doubleMaxPrec) + 1},
 
-		// TODO: double big in arrays
-		"array-double-prec": bson.A{doubleMaxPrec},
 		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-double-empty": bson.A{},
 	},

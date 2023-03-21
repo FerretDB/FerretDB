@@ -61,7 +61,8 @@ import (
 // MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16 * 1024 * 1024 // 16 MiB = 16777216 bytes
 
-const MaxSafeDouble float64 = 1 << 53 // 53bit mantissa = 9007199254740992 TODO: 1 << 53 or 1<<53-1?? TODO: should we specify float64 type here
+// MaxSafeDouble is the maximum double value that can be represented precisely.
+const MaxSafeDouble = float64(1 << 53) // 53bit mantissa = 9007199254740992
 
 // ScalarType represents scalar type.
 type ScalarType interface {
