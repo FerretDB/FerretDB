@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -33,14 +34,20 @@ import (
 //
 // Passed arguments must not be modified.
 func FilterDocument(doc, filter *types.Document) (bool, error) {
-	filterMap := filter.Map()
-	if len(filterMap) == 0 {
-		return true, nil
-	}
+	iter := filter.Iterator()
+	defer iter.Close()
 
-	// top-level filters are ANDed together
-	for _, filterKey := range filter.Keys() {
-		filterValue := filterMap[filterKey]
+	for {
+		filterKey, filterValue, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return true, nil
+			}
+
+			return false, err
+		}
+
+		// top-level filters are ANDed together
 		matches, err := filterDocumentPair(doc, filterKey, filterValue)
 		if err != nil {
 			return false, err
@@ -49,8 +56,6 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 			return false, nil
 		}
 	}
-
-	return true, nil
 }
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
