@@ -291,7 +291,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 				panic("getByPath returned error with invalid type")
 			}
 
-			if dpe.Code() == types.ErrDocumentPathKeyNotFound || dpe.Code() == types.ErrDocumentPathIndexOutOfBound {
+			if dpe.Code() == types.ErrDocumentPathKeyNotFound {
 				continue
 			}
 

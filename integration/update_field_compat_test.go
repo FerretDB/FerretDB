@@ -214,7 +214,6 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		},
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutsideArray": {
 			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
@@ -366,9 +365,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update:     bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
-			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+			update: bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
 		},
 		"DotNotationIndexOutsideArray": {
 			update:        bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
@@ -509,9 +506,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update:     bson.D{{"$min", bson.D{{"v.-1", int32(42)}}}},
-			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
+			update: bson.D{{"$min", bson.D{{"v.-1", int32(42)}}}},
 		},
 		"DotNotationIndexOutOfArray": {
 			update:        bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
@@ -603,7 +598,6 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$rename", bson.D{{"v.-1.bar", "v.-1.baz"}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
 			update:     bson.D{{"$rename", bson.D{{"v.100.bar", "v.100.baz"}}}},
@@ -666,7 +660,6 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		},
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$unset", bson.D{{"v.-1.bar", ""}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
 			update:     bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
@@ -849,7 +842,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
 			update:        bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
@@ -957,7 +949,6 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2050",
 		},
 		"DotNotationIndexOutOfArray": {
 			update:        bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},

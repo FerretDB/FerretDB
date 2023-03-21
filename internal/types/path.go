@@ -285,6 +285,16 @@ func insertByPath(doc *Document, path Path) error {
 					)
 				}
 
+				if ind < 0 {
+					return newDocumentPathError(
+						ErrDocumentPathIndexOutOfBound,
+						fmt.Errorf(
+							"Index out of bound: %d",
+							ind,
+						),
+					)
+				}
+
 				// If path needs to be reserved in the middle of the array, we should fill the gap with Null
 				for j := v.Len(); j < ind; j++ {
 					v.Append(Null)
