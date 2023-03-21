@@ -39,7 +39,7 @@ type QueryParams struct {
 }
 
 // QueryDocuments fetches documents from the given collection.
-func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
 	db := tdb.Driver.UseDatabase(qp.DB)
 
 	collection, err := db.DescribeCollection(ctx, qp.Collection)

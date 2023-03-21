@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_hana
+package types
 
-package main
+import "github.com/FerretDB/FerretDB/internal/util/iterator"
 
-// init adds "hana" handler flags when "ferretdb_hana" build tag is provided.
-func init() {
-	cli.Plugins = append(cli.Plugins, &hanaFlags)
-}
+// DocumentsIterator represents an iterator over documents.
+type DocumentsIterator iterator.Interface[int, *Document]

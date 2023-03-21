@@ -109,7 +109,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stages[i] = s
 	}
 
-	// TODO pushdown `$match` https://github.com/FerretDB/FerretDB/issues/1894
+	qp.Filter = aggregations.GetPushdownQuery(stagesDocs)
 
 	var docs []*types.Document
 
@@ -120,7 +120,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	defer iter.Close()
 
-	docs, err = iterator.Values(iter)
+	docs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
 	if err != nil {
 		return nil, err
 	}
