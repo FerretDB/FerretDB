@@ -242,26 +242,33 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch k {
 				case "$eq":
-					filters, args = filterEqual(&p, rootKey, v)
+					f, a := filterEqual(&p, rootKey, v)
+					filters = append(filters, f)
+					args = append(args, a...)
 
 				case "$ne":
+					sql := `NOT ( ` +
+						// does document contain the key,
+						// it is necessary, as NOT won't work correctly if the key does not exist.
+						`_jsonb ? %[1]s AND ` +
+						// does the value under the key is equal to filter value
+						`_jsonb->%[1]s @> %[2]s AND ` +
+						// does the value type is equal to the filter's one
+						`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
+
 					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
 
-					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-						sql := `NOT ( ` +
-							// does document contain the key,
-							// it is necessary, as NOT won't work correctly if the key does not exist.
-							`_jsonb ? %[1]s AND ` +
-							// does the value under the key is equal to filter value
-							`_jsonb->%[1]s @> %[2]s AND ` +
-							// does the value type is equal to the filter's one
-							`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
+					case float64, bool, int32, int64:
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
+						args = append(args, rootKey, v)
 
+					case string, types.ObjectID, time.Time:
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -274,10 +281,11 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
-			continue
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			filters, args = filterEqual(&p, rootKey, v)
+			f, a := filterEqual(&p, rootKey, v)
+			filters = append(filters, f)
+			args = append(args, a...)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -294,7 +302,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
 // with the value under k is equal to v.
-func filterEqual(p *Placeholder, k string, v any) (filters []string, args []any) {
+func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
 		types.NullType, types.Regex, types.Timestamp:
@@ -315,21 +323,21 @@ func filterEqual(p *Placeholder, k string, v any) (filters []string, args []any)
 			v = -types.MaxSafeDouble
 		}
 
-		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
 		// Select if value under the key is equal to provided value.
 		sql := `_jsonb->%[1]s @> %[2]s`
 
-		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
 
 	case bool, int32:
 		// Select if value under the key is equal to provided value.
 		sql := `_jsonb->%[1]s @> %[2]s`
 
-		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
@@ -348,7 +356,7 @@ func filterEqual(p *Placeholder, k string, v any) (filters []string, args []any)
 			v = -maxSafeDouble
 		}
 
-		filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	default:

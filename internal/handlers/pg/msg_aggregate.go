@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"log"
 
 	"github.com/jackc/pgx/v4"
 
@@ -122,19 +121,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		docs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
-		for _, doc := range docs {
-			v, _ := doc.Get("v")
-			switch v := v.(type) {
-			case float64:
-				if v == 9007199254740992 {
-					log.Print(v)
-				}
-			case int64:
-				if v == 9007199254740992 {
-					log.Print(v)
-				}
-			}
-		}
 		return err
 	})
 

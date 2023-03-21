@@ -165,9 +165,9 @@ var Doubles = &Values[string]{
 		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
 
 		// long representation of double max precision ~ (1<<53)
-		"long-neg-prec-max":       -int64(doubleMaxPrec),
-		"long-neg-prec-max-plus":  -(int64(doubleMaxPrec) - 1) + 1,
-		"long-neg-prec-max-minus": -(int64(doubleMaxPrec) - 1) - 1,
+		"long-prec-min":       -int64(doubleMaxPrec),
+		"long-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
+		"long-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
 
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),

@@ -397,7 +397,7 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
 			)),
-			args:     []any{`v`, math.MaxFloat64},
+			args:     []any{`v`, types.MaxSafeDouble},
 			expected: whereGt,
 		},
 		"EqDoubleBigInt64": {
@@ -463,7 +463,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
 			)),
 			args:     []any{`v`, math.MaxFloat64},
-			expected: whereGt + `'"double"' )`,
+			expected: whereNotEq + `'"double"' )`,
 		},
 		"NeBool": {
 			filter: must.NotFail(types.NewDocument(
