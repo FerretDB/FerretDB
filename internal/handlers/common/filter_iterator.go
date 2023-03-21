@@ -20,6 +20,13 @@ import (
 )
 
 // FilterIterator returns an iterator that filters out documents that don't match the filter.
+//
+// Next method returns the next document that matches the filter.
+// Returned indexes are the same as in the underlying iterator.
+// If the document was filtered out, that index will be skipped.
+//
+// Close method closes the underlying iterator.
+// For that reason, there is no need to track both iterators.
 func FilterIterator(iter types.DocumentsIterator, filter *types.Document) types.DocumentsIterator {
 	return &filterIterator{
 		iter:   iter,
@@ -27,16 +34,13 @@ func FilterIterator(iter types.DocumentsIterator, filter *types.Document) types.
 	}
 }
 
-// filterIterator implements iterator.Interface by filtering out documents that don't match the filter.
+// filterIterator is returned by FilterIterator.
 type filterIterator struct {
 	iter   types.DocumentsIterator
 	filter *types.Document
 }
 
-// Next implements iterator.Interface by returning the next document that matches the filter.
-//
-// Returned indexes are the same as in the underlying iterator.
-// If the document was filtered out, that index will be skipped.
+// Next implements iterator.Interface. See FilterIterator for details.
 func (iter *filterIterator) Next() (int, *types.Document, error) {
 	for {
 		i, doc, err := iter.iter.Next()
@@ -55,7 +59,7 @@ func (iter *filterIterator) Next() (int, *types.Document, error) {
 	}
 }
 
-// Close implements iterator.Interface by closing the underlying iterator.
+// Close implements iterator.Interface. See FilterIterator for details.
 func (iter *filterIterator) Close() {
 	iter.iter.Close()
 }

@@ -55,28 +55,40 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	qp := pgdb.QueryParams{
+	qp := &pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
-		Filter:     params.Filter,
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if qp.Filter != nil {
-		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
+	if params.Filter != nil {
+		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 	}
 
+	if !h.DisablePushdown {
+		qp.Filter = params.Filter
+	}
+
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
+		var iter types.DocumentsIterator
+		if iter, err = pgdb.QueryDocuments(ctx, tx, qp); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		defer iter.Close()
+
+		iter = common.FilterIterator(iter, params.Filter)
+
+		resDocs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
 		return err
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
