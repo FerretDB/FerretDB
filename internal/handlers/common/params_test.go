@@ -19,114 +19,73 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMultiplyLongSafely(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		values []int64 // [v1,v2,v1+v2] or [v1,v2] if you don't want to check multiplication result
-
-		// overflow checks if at least one value returned errLongExceeded error.
-		overflow bool // defaults to false
-
-		// valuesRange allows to execute test for the numbers next to v1.
-		// if v1=42 and valuesRange=2, following numbers will be tested: [42,43,44]
-		// It shouldn't be used with multiplication result, but rather to test overflows on large ranges.
-		valuesRange int
+		err              error
+		v1, v2, expected int64
 	}{
 		"Zero": {
-			values: []int64{
-				0, 1000, 0,
-				1000, 0, 0,
-				0, 0, 0,
-			},
+			v1:       0,
+			v2:       1000,
+			expected: 0,
 		},
 		"One": {
-			values: []int64{
-				100, 1, 100,
-				1, 42, 42,
-				1, 1, 1,
-				1, math.MaxInt64, math.MaxInt64,
-			},
+			v1:       42,
+			v2:       1,
+			expected: 42,
 		},
-		"DoublePrecision": {
-			values:      []int64{1 << 53, 42},
-			valuesRange: 1000,
+		"DoubleMaxPrecision": {
+			v1:       1 << 53,
+			v2:       42,
+			expected: 378302368699121664,
+		},
+		"DoubleMaxPrecisionPlus": {
+			v1:       (1 << 53) + 1,
+			v2:       42,
+			expected: 378302368699121706,
 		},
 		"OverflowLarge": {
-			values:   []int64{1 << 60, 42},
-			overflow: true,
+			v1:  1 << 60,
+			v2:  42,
+			err: errLongExceeded,
 		},
 		"OverflowMax": {
-			values:   []int64{math.MaxInt64, 2},
-			overflow: true,
+			v1:  math.MaxInt64,
+			v2:  2,
+			err: errLongExceeded,
 		},
-		"OverflowMaxMinusOne": {
-			values: []int64{math.MaxInt64, -1},
+		"MaxMinusOne": {
+			v1:       math.MaxInt64,
+			v2:       -1,
+			expected: -math.MaxInt64,
 		},
 		"OverflowMaxMinusTwo": {
-			values:   []int64{math.MaxInt64, -2},
-			overflow: true,
+			v1:  math.MaxInt64,
+			v2:  -2,
+			err: errLongExceeded,
 		},
 		"OverflowMin": {
-			values:   []int64{math.MinInt64, 2},
-			overflow: true,
+			v1:  math.MinInt64,
+			v2:  2,
+			err: errLongExceeded,
 		},
 		"OverflowMinMinusOne": {
-			values:   []int64{math.MinInt64, -1},
-			overflow: true,
+			v1:  math.MinInt64,
+			v2:  -1,
+			err: errLongExceeded,
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			valuesLen := len(tc.values)
-			resultEnabled := valuesLen%3 == 0
-
-			require.GreaterOrEqual(t, valuesLen, 2, "values must be set with at least 2 values [v1,v2]")
-			require.True(
-				t,
-				resultEnabled || valuesLen%2 == 0,
-				"values must contain 2 values [v1,v2] for each subtest, or 3 [v1,v2,v1+v2] "+
-					"if we test multiplication results",
-			)
-
-			if tc.valuesRange != 0 {
-				require.Positive(t, tc.valuesRange)
-			}
-
-			inc := 2
-			if resultEnabled {
-				inc = 3
-			}
-
-			var v1, v2, v3 int64
-			var overflowActual bool
-
-			for i := 0; i < valuesLen; i += inc {
-				v1, v2 = tc.values[i], tc.values[i+1]
-
-				for j := 0; j < 1+tc.valuesRange; j++ {
-					// extracted to variable for easier debugging
-					vn := v1 + int64(j)
-
-					actualRes, err := multiplyLongSafely(vn, v2)
-
-					if err != nil && assert.ErrorIs(t, err, errLongExceeded) {
-						overflowActual = true
-					}
-
-					if resultEnabled {
-						v3 = tc.values[i+2]
-						assert.Equal(t, v3, actualRes)
-					}
-				}
-			}
-
-			assert.Equal(t, tc.overflow, overflowActual)
+			actualRes, err := multiplyLongSafely(tc.v1, tc.v2)
+			assert.Equal(t, tc.err, err)
+			assert.Equal(t, tc.expected, actualRes)
 		})
 	}
 }

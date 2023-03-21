@@ -246,9 +246,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
+
 					case float64:
+						// Select if value under the key is equal to provided value.
 						sql := `_jsonb->%[1]s @> %[2]s`
 
+						// If value is not safe double, fetch all numbers out of safe range.
 						switch {
 						case v > types.MaxSafeDouble:
 							sql = `_jsonb->%[1]s > %[2]s`
@@ -260,12 +263,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						}
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+						args = append(args, rootKey, v)
 
 					case int64:
+						// Select if value under the key is equal to provided value.
 						sql := `_jsonb->%[1]s @> %[2]s`
 						maxSafeDouble := int64(types.MaxSafeDouble)
 
+						// If value cannot be safe double, fetch all numbers out of the safe range.
 						switch {
 						case v > maxSafeDouble:
 							sql = `_jsonb->%[1]s > %[2]s`
@@ -277,14 +282,22 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						}
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+						args = append(args, rootKey, v)
 
-					case string, types.ObjectID, bool, time.Time, int32:
+					case int32, bool:
+						// Select if value under the key is equal to provided value.
+						sql := `_jsonb->%[1]s @> %[2]s`
+
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+						args = append(args, rootKey, v)
+
+					case string, types.ObjectID, time.Time:
 						// Select if value under the key is equal to provided value.
 						sql := `_jsonb->%[1]s @> %[2]s`
 
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -294,6 +307,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
+
 					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 						sql := `NOT ( ` +
 							// does document contain the key,
@@ -321,8 +335,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			continue
 
 		case float64:
+			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 
+			// If value is not safe double, fetch all numbers out of safe range.
 			switch {
 			case v > types.MaxSafeDouble:
 				sql = `_jsonb->%[1]s > %[2]s`
@@ -334,12 +350,14 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			}
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			args = append(args, rootKey, v)
 
 		case int64:
+			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 			maxSafeDouble := int64(types.MaxSafeDouble)
 
+			// If value cannot be safe double, fetch all numbers out of the safe range.
 			switch {
 			case v > maxSafeDouble:
 				sql = `_jsonb->%[1]s > %[2]s`
@@ -351,9 +369,16 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			}
 
 			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			args = append(args, rootKey, v)
 
-		case string, bool, time.Time, types.ObjectID, int32:
+		case int32, bool:
+			// Select if value under the key is equal to provided value.
+			sql := `_jsonb->%[1]s @> %[2]s`
+
+			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
+			args = append(args, rootKey, v)
+
+		case string, time.Time, types.ObjectID:
 			// Select if value under the key is equal to provided value.
 			sql := `_jsonb->%[1]s @> %[2]s`
 
