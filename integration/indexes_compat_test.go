@@ -103,6 +103,7 @@ func testIndexesCreateMany(t *testing.T, testCases map[string]createIndexTestCas
 	t.Helper()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	// TODO add non-existent collection test case
 
 	for name, tc := range testCases {
 		name, tc := name, tc
