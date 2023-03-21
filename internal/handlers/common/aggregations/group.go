@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"log"
-	"strings"
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulator.
@@ -174,18 +174,6 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 
 		for _, accumulation := range g.groupBy {
 			out, err := accumulation.accumulate(ctx, groupedDocument.documents)
-			// process
-			switch v := out.(type) {
-			case float64:
-				if v == 9007199254740992 {
-					log.Print(v)
-				}
-			case int64:
-				if v == -9007199254740992 {
-					log.Print(v)
-				}
-			}
-
 			if err != nil {
 				return nil, err
 			}
@@ -241,18 +229,6 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 		return types.Null, nil
 	}
 
-	// accumulate
-	switch v := v.(type) {
-	case float64:
-		if v == 9007199254740992 {
-			log.Print(v)
-		}
-	case int64:
-		if v == -9007199254740992 {
-			log.Print(v)
-		}
-	}
-
 	return v, nil
 }
 
@@ -297,18 +273,6 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 			// if the path does not exist, use null for group key.
 			group.addOrAppend(types.Null, doc)
 			continue
-		}
-
-		// groupDocuments
-		switch v := v.(type) {
-		case float64:
-			if v == 9007199254740992 {
-				log.Print(v)
-			}
-		case int64:
-			if v == 9007199254740992 {
-				log.Print(v)
-			}
 		}
 
 		group.addOrAppend(v, doc)
