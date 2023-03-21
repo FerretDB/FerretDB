@@ -143,30 +143,7 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 
 	defer iter.Close()
 
-	resDocs := make([]*types.Document, 0, 16)
+	f := common.FilterIterator(iter, filter)
 
-	for {
-		_, doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-
-		var matches bool
-
-		if matches, err = common.FilterDocument(doc, filter); err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
-	}
-
-	return resDocs, nil
+	return iterator.Values(iterator.Interface[int, *types.Document](f))
 }

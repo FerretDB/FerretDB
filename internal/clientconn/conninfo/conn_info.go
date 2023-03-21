@@ -97,8 +97,7 @@ func (connInfo *ConnInfo) Close() {
 
 // Cursor allows clients to iterate over a result set.
 type Cursor struct {
-	Iter   types.DocumentsIterator
-	Filter *types.Document
+	Iter types.DocumentsIterator
 }
 
 // Cursor returns cursor by ID, or nil.
@@ -115,7 +114,7 @@ func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 }
 
 // StoreCursor stores cursor and return its ID.
-func (connInfo *ConnInfo) StoreCursor(iter types.DocumentsIterator, filter *types.Document) int64 {
+func (connInfo *ConnInfo) StoreCursor(iter types.DocumentsIterator) int64 {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
@@ -130,8 +129,7 @@ func (connInfo *ConnInfo) StoreCursor(iter types.DocumentsIterator, filter *type
 	}
 
 	connInfo.cursors[id] = Cursor{
-		Iter:   iter,
-		Filter: filter,
+		Iter: iter,
 	}
 
 	return id

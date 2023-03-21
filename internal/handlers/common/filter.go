@@ -44,13 +44,13 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 				return true, nil
 			}
 
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 
 		// top-level filters are ANDed together
 		matches, err := filterDocumentPair(doc, filterKey, filterValue)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 		if !matches {
 			return false, nil

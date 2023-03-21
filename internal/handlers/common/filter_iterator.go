@@ -16,8 +16,10 @@ package common
 
 import (
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// FilterIterator returns an iterator that filters out documents that don't match the filter.
 func FilterIterator(iter types.DocumentsIterator, filter *types.Document) types.DocumentsIterator {
 	return &filterIterator{
 		iter:   iter,
@@ -25,30 +27,35 @@ func FilterIterator(iter types.DocumentsIterator, filter *types.Document) types.
 	}
 }
 
+// filterIterator implements iterator.Interface by filtering out documents that don't match the filter.
 type filterIterator struct {
 	iter   types.DocumentsIterator
 	filter *types.Document
 }
 
-// Next implements iterator.Interface.
+// Next implements iterator.Interface by returning the next document that matches the filter.
+//
+// Returned indexes are the same as in the underlying iterator.
+// If the document was filtered out, that index will be skipped.
 func (iter *filterIterator) Next() (int, *types.Document, error) {
 	for {
 		i, doc, err := iter.iter.Next()
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, lazyerrors.Error(err)
 		}
 
 		matches, err := FilterDocument(doc, iter.filter)
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, lazyerrors.Error(err)
 		}
+
 		if matches {
 			return i, doc, nil
 		}
 	}
 }
 
-// Next implements iterator.Interface.
+// Close implements iterator.Interface by closing the underlying iterator.
 func (iter *filterIterator) Close() {
 	iter.iter.Close()
 }
