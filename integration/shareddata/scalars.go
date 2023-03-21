@@ -125,65 +125,65 @@ var Doubles = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		// "double":          42.13,
-		// "double-whole":    42.0,
-		// "double-zero":     0.0,
-		// "double-smallest": math.SmallestNonzeroFloat64,
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-smallest": math.SmallestNonzeroFloat64,
 
-		// // double big values ~1<<61
-		// "double-big":       doubleBig,
-		// "double-big-plus":  doubleBig + 1,
-		// "double-big-minus": doubleBig - 1,
+		// double big values ~1<<61
+		"double-big":       doubleBig,
+		"double-big-plus":  doubleBig + 1,
+		"double-big-minus": doubleBig - 1,
 
-		// // long big values ~1<<61
-		// "long-big":       longBig,
-		// "long-big-plus":  longBig + 1,
-		// "long-big-minus": longBig - 1,
+		// long big values ~1<<61
+		"long-big":       longBig,
+		"long-big-plus":  longBig + 1,
+		"long-big-minus": longBig - 1,
 
 		// double max precision ~1<<53
-		"double-prec-max": doubleMaxPrec,
-		//"double-prec-max-plus":  doubleMaxPrec + 1,
-		//"double-prec-max-minus": doubleMaxPrec - 1,
+		"double-prec-max":       doubleMaxPrec,
+		"double-prec-max-plus":  doubleMaxPrec + 1,
+		"double-prec-max-minus": doubleMaxPrec - 1,
 
 		// long representation of double max precision ~1<<53
-		"long-prec-max": int64(doubleMaxPrec),
-		//"long-prec-max-plus":  int64(doubleMaxPrec) + 1,
-		//"long-prec-max-minus": int64(doubleMaxPrec) - 1,
+		"long-prec-max":       int64(doubleMaxPrec),
+		"long-prec-max-plus":  int64(doubleMaxPrec) + 1,
+		"long-prec-max-minus": int64(doubleMaxPrec) - 1,
 
-		//// negative double big values ~ -(1<<61)
-		//"double-neg-big":       -doubleBig,
-		//"double-neg-big-plus":  -(doubleBig + 1),
-		//"double-neg-big-minus": -(doubleBig - 1),
+		// negative double big values ~ -(1<<61)
+		"double-neg-big":       -doubleBig,
+		"double-neg-big-plus":  -(doubleBig + 1),
+		"double-neg-big-minus": -(doubleBig - 1),
 
-		//// negative long big values ~ -(1<<61)
-		//"long-neg-big":       -longBig,
-		//"long-neg-big-plus":  -(longBig + 1),
-		//"long-neg-big-minus": -(longBig - 1),
+		// negative long big values ~ -(1<<61)
+		"long-neg-big":       -longBig,
+		"long-neg-big-plus":  -(longBig + 1),
+		"long-neg-big-minus": -(longBig - 1),
 
-		//// double min precision ~ -(1<<53 - 1)
-		//"double-prec-min":       -(doubleMaxPrec - 1),
-		//"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
-		//"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
+		// double min precision ~ -(1<<53 - 1)
+		"double-prec-min":       -(doubleMaxPrec - 1),
+		"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
+		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
 
-		//// long representation of double max precision ~ (1<<53)
-		//"long-neg-prec-max":       -int64(doubleMaxPrec),
-		//"long-neg-prec-max-plus":  -(int64(doubleMaxPrec) - 1) + 1,
-		//"long-neg-prec-max-minus": -(int64(doubleMaxPrec) - 1) - 1,
+		// long representation of double max precision ~ (1<<53)
+		"long-neg-prec-max":       -int64(doubleMaxPrec),
+		"long-neg-prec-max-plus":  -(int64(doubleMaxPrec) - 1) + 1,
+		"long-neg-prec-max-minus": -(int64(doubleMaxPrec) - 1) - 1,
 
 		// TODO: negative
 		// TODO: tests for everything
 
-		//"double-null":               nil,
-		//"double-1":                  float64(math.MinInt64 - 1),
-		//"double-2":                  float64(math.MinInt64),
-		//"double-3":                  float64(-123456789),
-		//"double-4":                  float64(123456789),
-		//"double-5":                  float64(math.MaxInt64),
-		//"double-6":                  float64(math.MaxInt64 + 1),
-		//"double-max-overflow":       9.223372036854776833e+18,
-		//"double-max-overflow-verge": 9.223372036854776832e+18,
-		//"double-min-overflow":       -9.223372036854776833e+18,
-		//"double-min-overflow-verge": -9.223372036854776832e+18,
+		"double-null":               nil,
+		"double-1":                  float64(math.MinInt64 - 1),
+		"double-2":                  float64(math.MinInt64),
+		"double-3":                  float64(-123456789),
+		"double-4":                  float64(123456789),
+		"double-5":                  float64(math.MaxInt64),
+		"double-6":                  float64(math.MaxInt64 + 1),
+		"double-max-overflow":       9.223372036854776833e+18,
+		"double-max-overflow-verge": 9.223372036854776832e+18,
+		"double-min-overflow":       -9.223372036854776833e+18,
+		"double-min-overflow-verge": -9.223372036854776832e+18,
 	},
 }
 
