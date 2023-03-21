@@ -659,7 +659,8 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update: bson.D{{"$unset", bson.D{{"v.-1.bar", ""}}}},
+			update:     bson.D{{"$unset", bson.D{{"v.-1.bar", ""}}}},
+			resultType: emptyResult,
 		},
 		"DotNotationIndexOutOfArray": {
 			update:     bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
@@ -840,8 +841,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update:     bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
-			resultType: emptyResult,
+			update: bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
 		},
 		"DotNotationIndexOutOfArray": {
 			update:        bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
