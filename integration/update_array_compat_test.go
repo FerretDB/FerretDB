@@ -346,3 +346,43 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateArrayCompatPull(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"Int32": {
+			update: bson.D{{"$pull", bson.D{{"v", int32(42)}}}},
+		},
+		"String": {
+			update: bson.D{{"$pull", bson.D{{"v", "foo"}}}},
+		},
+		"StringDuplicates": {
+			update: bson.D{{"$pull", bson.D{{"v", "b"}}}},
+		},
+		"FieldNotExist": {
+			update:     bson.D{{"$pull", bson.D{{"non-existent-field", int32(42)}}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			update:     bson.D{{"$pull", bson.D{{"v", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
+		"Null": {
+			update: bson.D{{"$pull", bson.D{{"v", nil}}}},
+		},
+		"DotNotation": {
+			update: bson.D{{"$pull", bson.D{{"v.0.foo", bson.D{{"bar", "hello"}}}}}},
+		},
+		"DotNotationPathNotExist": {
+			update:     bson.D{{"$pull", bson.D{{"non.existent.path", int32(42)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNotArray": {
+			update:     bson.D{{"$pull", bson.D{{"v.0.foo.0.bar", int32(42)}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}

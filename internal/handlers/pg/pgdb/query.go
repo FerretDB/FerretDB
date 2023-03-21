@@ -104,7 +104,7 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, error) {
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 
 	switch {
@@ -142,7 +142,7 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[int, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, error) {
 	var query string
 
 	if p.explain {
