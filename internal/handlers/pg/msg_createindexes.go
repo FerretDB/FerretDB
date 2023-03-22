@@ -67,7 +67,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		for {
-			_, _, err = iter.Next()
+			var val any
+			_, val, err = iter.Next()
 
 			switch {
 			case err == nil:
@@ -79,11 +80,19 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return lazyerrors.Error(err)
 			}
 
-			index := pgdb.Index{
-				// TODO
+			indexDoc, ok := val.(*types.Document)
+			if !ok {
+				return lazyerrors.Errorf("expected index document, got %T", val)
 			}
 
-			if err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, &index); err != nil {
+			var index *pgdb.Index
+
+			index, err = processIndexOptions(indexDoc)
+			if err != nil {
+				return err
+			}
+
+			if err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index); err != nil {
 				return err
 			}
 		}
@@ -109,4 +118,105 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}))
 
 	return &reply, nil
+}
+
+func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
+	var index pgdb.Index
+
+	iter := indexDoc.Iterator()
+
+	for {
+		opt, _, err := iter.Next()
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			return &index, nil
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch opt {
+		case "key":
+			var keyDoc *types.Document
+
+			keyDoc, err = common.GetRequiredParam[*types.Document](indexDoc, "key")
+			if err != nil {
+				return nil, err
+			}
+
+			index.Key, err = processIndexKey(keyDoc)
+			if err != nil {
+				return nil, err
+			}
+
+		case "name":
+			index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
+			if err != nil {
+				return nil, err
+			}
+
+		case "unique", "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
+			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
+			"bits", "min", "max", "bucketSize", "collation", "wildcardProjection":
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("Index option %q is not implemented yet", opt),
+				"createIndexes",
+			)
+
+		default:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("Index option %q is unknown", opt),
+				"createIndexes",
+			)
+		}
+	}
+}
+
+// processIndexKey processes the document containing the index key.
+func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
+	res := make(pgdb.IndexKey, 0, keyDoc.Len())
+	keyIter := keyDoc.Iterator()
+
+	for {
+		field, order, err := keyIter.Next()
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			return res, nil
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+
+		var orderParam int64
+
+		if orderParam, err = common.GetWholeNumberParam(order); err != nil {
+			return nil, err
+		}
+
+		var indexOrder pgdb.IndexOrder
+
+		switch orderParam {
+		case 1:
+			indexOrder = pgdb.IndexOrderAsc
+		case -1:
+			indexOrder = pgdb.IndexOrderDesc
+		default:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("Index key order %d is invalid", orderParam),
+				"createIndexes",
+			)
+		}
+
+		res = append(res, pgdb.IndexKeyPair{
+			Field: field,
+			Order: indexOrder,
+		})
+	}
 }
