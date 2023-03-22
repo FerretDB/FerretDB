@@ -150,25 +150,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	}
 }
 
-func TestQueryCompatBasic(t *testing.T) {
+func TestQueryCompatFilter(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"BadSortValue": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", 11}},
-			resultType: emptyResult,
-		},
-		"BadSortZeroValue": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", 0}},
-			resultType: emptyResult,
-		},
-		"BadSortNullValue": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", nil}},
-			resultType: emptyResult,
-		},
 		"Empty": {
 			filter: bson.D{},
 		},
@@ -186,21 +171,6 @@ func TestQueryCompatBasic(t *testing.T) {
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
-			resultType: emptyResult,
-		},
-		"DollarSignField": {
-			filter:     bson.D{},
-			sort:       bson.D{{"$v.foo", 42}},
-			resultType: emptyResult,
-		},
-		"DollarSignMid": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v.$foo.bar", 42}},
-			resultType: emptyResult,
-		},
-		"DollarSignEnd": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v.$foo", 42}},
 			resultType: emptyResult,
 		},
 	}
@@ -221,6 +191,22 @@ func TestQueryCompatSort(t *testing.T) {
 			sort:   bson.D{{"v", -1}, {"_id", 1}},
 		},
 
+		"Bad": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", 13}},
+			resultType: emptyResult,
+		},
+		"BadZero": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", 0}},
+			resultType: emptyResult,
+		},
+		"BadNull": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v", nil}},
+			resultType: emptyResult,
+		},
+
 		"DotNotation": {
 			filter: bson.D{},
 			sort:   bson.D{{"v.foo", 1}, {"_id", 1}},
@@ -238,6 +224,28 @@ func TestQueryCompatSort(t *testing.T) {
 			sort:       bson.D{{"v..foo", 1}, {"_id", 1}},
 			resultType: emptyResult,
 		},
+
+		"BadDollarStart": {
+			filter:     bson.D{},
+			sort:       bson.D{{"$v.foo", 1}},
+			resultType: emptyResult,
+
+			skip: "https://github.com/FerretDB/FerretDB/issues/2259",
+		},
+		"BadDollarMid": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v.$foo.bar", 1}},
+			resultType: emptyResult,
+
+			skip: "https://github.com/FerretDB/FerretDB/issues/2259",
+		},
+		"BadDollarEnd": {
+			filter:     bson.D{},
+			sort:       bson.D{{"v.$foo", 1}},
+			resultType: emptyResult,
+
+			skip: "https://github.com/FerretDB/FerretDB/issues/2259",
+		},
 	}
 
 	testQueryCompat(t, testCases)
@@ -247,16 +255,20 @@ func TestQueryCompatSkip(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"SkipSimple": {
+		"Simple": {
 			filter:  bson.D{},
 			optSkip: pointer.ToInt64(1),
 		},
-		"SkipBig": {
+		"Big": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(1000),
 			resultType: emptyResult,
 		},
-		"SkipNegative": {
+		"Zero": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(0),
+		},
+		"Bad": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(-1),
 			resultType: emptyResult,
