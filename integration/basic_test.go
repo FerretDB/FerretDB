@@ -318,7 +318,7 @@ func TestCollectionName(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	collectionName300 := strings.Repeat("aB", 150)
-	collectionName100 := strings.Repeat("a", 100)
+	collectionName235 := strings.Repeat("a", 235)
 
 	cases := map[string]struct {
 		collection string
@@ -338,7 +338,7 @@ func TestCollectionName(t *testing.T) {
 			alt: fmt.Sprintf("Invalid collection name: 'testcollectionname.%s'", collectionName300),
 		},
 		"LongEnough": {
-			collection: collectionName100,
+			collection: collectionName235,
 		},
 		"Short": {
 			collection: "a",
