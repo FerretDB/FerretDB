@@ -19,6 +19,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -110,7 +111,8 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
-		strings.HasPrefix(collection, reservedPrefix) {
+		strings.HasPrefix(collection, reservedPrefix) ||
+		!utf8.ValidString(collection) {
 		return ErrInvalidCollectionName
 	}
 

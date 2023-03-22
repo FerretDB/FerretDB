@@ -46,11 +46,9 @@ const (
 	maxIndexNameLength = 63
 )
 
-// specialCharacters are potential problematic characters that are replaced with `_`.
-// They are operators and special characters of pg and white space.
-// See https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-OPERATORS
-// and https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-SPECIAL-CHARS
-var specialCharacters = regexp.MustCompile("[-+*/<>=~!@#%^&|`?()\\[\\],;:. ]")
+// specialCharacters are potential problematic characters of pg table name
+// that are replaced with `_`.
+var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 
 // metadata is a type to structure methods that work with metadata storing and getting.
 //
@@ -116,7 +114,7 @@ func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, 
 		return "", false, lazyerrors.Error(err)
 	}
 
-	tableName = transform(m.collection)
+	tableName = collectionNameToTableName(m.collection)
 	metadata := must.NotFail(types.NewDocument(
 		"_id", m.collection,
 		"table", tableName,
@@ -225,24 +223,24 @@ func (m *metadata) remove(ctx context.Context) error {
 	return lazyerrors.Error(err)
 }
 
-// transform returns name in form <shortened_name>_<name_hash>.
+// collectionNameToTableName returns name in form <shortened_name>_<name_hash>.
 // It replaces special characters with `_`.
 //
 // Deprecated: this function usage is allowed for collection metadata creation only.
-func transform(name string) string {
+func collectionNameToTableName(name string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(name)))
 
-	transformed := specialCharacters.ReplaceAllString(name, "_")
+	mangled := specialCharacters.ReplaceAllString(name, "_")
 
 	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
-	truncateTo := len(transformed)
+	truncateTo := len(mangled)
 
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return transformed[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
+	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
 }
 
 // setIndex sets the index info in the metadata table.
