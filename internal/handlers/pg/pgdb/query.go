@@ -242,9 +242,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch k {
 				case "$eq":
-					f, a := filterEqual(&p, rootKey, v)
-					filters = append(filters, f)
-					args = append(args, a...)
+					if f, a := filterEqual(&p, rootKey, v); f != "" {
+						filters = append(filters, f)
+						args = append(args, a...)
+					}
 
 				case "$ne":
 					sql := `NOT ( ` +
@@ -283,9 +284,10 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			f, a := filterEqual(&p, rootKey, v)
-			filters = append(filters, f)
-			args = append(args, a...)
+			if f, a := filterEqual(&p, rootKey, v); f != "" {
+				filters = append(filters, f)
+				args = append(args, a...)
+			}
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
