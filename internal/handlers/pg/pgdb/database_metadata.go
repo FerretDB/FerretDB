@@ -47,10 +47,10 @@ const (
 )
 
 // specialCharacters are potential problematic characters that are replaced with `_`.
-// They are operators and special characters of pg.
+// They are operators and special characters of pg and white space.
 // See https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-OPERATORS
 // and https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-SPECIAL-CHARS
-var specialCharacters = regexp.MustCompile("[-+*/<>=~!@#%^&|`?()\\[\\],;:.]")
+var specialCharacters = regexp.MustCompile("[-+*/<>=~!@#%^&|`?()\\[\\],;:. ]")
 
 // metadata is a type to structure methods that work with metadata storing and getting.
 //
@@ -230,10 +230,10 @@ func (m *metadata) remove(ctx context.Context) error {
 //
 // Deprecated: this function usage is allowed for collection metadata creation only.
 func transform(name string) string {
-	transformed := specialCharacters.ReplaceAllString(name, "_")
-
 	hash32 := fnv.New32a()
-	must.NotFail(hash32.Write([]byte(transformed)))
+	must.NotFail(hash32.Write([]byte(name)))
+
+	transformed := specialCharacters.ReplaceAllString(name, "_")
 
 	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
 	truncateTo := len(transformed)
