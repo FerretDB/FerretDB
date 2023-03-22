@@ -225,8 +225,8 @@ func (m *metadata) remove(ctx context.Context) error {
 	return lazyerrors.Error(err)
 }
 
-// transform returns collection name in form <shortened_name>_<name_hash>.
-// It replaces name mangling characters with `_`.
+// transform returns name in form <shortened_name>_<name_hash>.
+// It replaces special characters with `_`.
 //
 // Deprecated: this function usage is allowed for collection metadata creation only.
 func transform(name string) string {
