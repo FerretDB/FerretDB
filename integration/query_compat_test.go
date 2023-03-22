@@ -30,12 +30,13 @@ import (
 type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	projection     bson.D                   // nil for leaving projection unset
 	optSkip        int64                    // defaults to 0
+	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
-	skipForTigris  string                   // skip test for Tigris
-	skip           string                   // skip test for all handlers, must have issue number mentioned
+
+	skip          string // skip test for all handlers, must have issue number mentioned
+	skipForTigris string // skip test for Tigris
 }
 
 // testQueryCompat tests query compatibility test cases.
@@ -64,17 +65,20 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			filter := tc.filter
 			require.NotNil(t, filter, "filter should be set")
 
-			sort := tc.sort
-			if sort == nil {
-				sort = bson.D{{"_id", 1}}
+			opts := options.Find()
+
+			opts.SetSort(tc.sort)
+			if tc.sort == nil {
+				opts.SetSort(bson.D{{"_id", 1}})
 			}
-			opts := options.Find().SetSort(sort)
+
+			if tc.optSkip != 0 {
+				opts.SetSkip(tc.optSkip)
+			}
 
 			if tc.projection != nil {
-				opts = opts.SetProjection(tc.projection)
+				opts.SetProjection(tc.projection)
 			}
-
-			opts.Skip = &tc.optSkip
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
