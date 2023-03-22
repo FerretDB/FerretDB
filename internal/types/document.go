@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -411,3 +412,33 @@ func (d *Document) moveIDToTheFirstIndex() {
 var (
 	_ document = (*Document)(nil)
 )
+
+// ConvertJSON transforms decoded JSON map[string]any value into *types.Document.
+func ConvertJSON(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		d := MakeDocument(len(value))
+		keys := maps.Keys(value)
+		for _, k := range keys {
+			v := value[k]
+			d.Set(k, ConvertJSON(v))
+		}
+		return d
+
+	case []any:
+		a := MakeArray(len(value))
+		for _, v := range value {
+			a.Append(ConvertJSON(v))
+		}
+		return a
+
+	case nil:
+		return Null
+
+	case float64, string, bool:
+		return value
+
+	default:
+		panic(fmt.Sprintf("unsupported type: %[1]T (%[1]v)", value))
+	}
+}

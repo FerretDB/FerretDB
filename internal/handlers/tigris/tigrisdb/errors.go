@@ -46,7 +46,7 @@ func IsInvalidArgument(err error) bool {
 func IsNotFound(err error) bool {
 	var driverErr *driver.Error
 	if !errors.As(err, &driverErr) {
-		panic(fmt.Sprintf("unexpected error type %#v", err))
+		return false
 	}
 
 	return driverErr.Code == errNotFound
@@ -56,7 +56,7 @@ func IsNotFound(err error) bool {
 func IsAlreadyExists(err error) bool {
 	var driverErr *driver.Error
 	if !errors.As(err, &driverErr) {
-		panic(fmt.Sprintf("unexpected error type %#v", err))
+		return false
 	}
 
 	return driverErr.Code == errAlreadyExists

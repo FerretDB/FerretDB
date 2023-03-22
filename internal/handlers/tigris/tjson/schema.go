@@ -68,6 +68,11 @@ type Schema struct {
 	Properties map[string]*Schema `json:"properties,omitempty"`
 	Items      *Schema            `json:"items,omitempty"`
 	PrimaryKey []string           `json:"primary_key,omitempty"`
+	MaxLength  int                `json:"maxLength,omitempty"`
+	MaxItems   *int               `json:"maxItems,omitempty"`
+
+	AdditionalProperties *bool `json:"additionalProperties,omitempty"`
+	SearchIndex          *bool `json:"searchIndex,omitempty"`
 
 	// those fields are not used, but required to be there for DisallowUnknownFields
 	Description    string `json:"description,omitempty"`
@@ -204,6 +209,7 @@ func (s *Schema) Marshal() ([]byte, error) {
 func (s *Schema) Unmarshal(b []byte) error {
 	r := bytes.NewReader(b)
 	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
 
 	if err := dec.Decode(s); err != nil {
 		return err
@@ -271,27 +277,36 @@ func DocumentSchema(doc *types.Document) (*Schema, error) {
 		return nil, lazyerrors.New("document must have an _id")
 	}
 
-	return subdocumentSchema(doc, "_id")
+	schema := &Schema{
+		Type:       Object,
+		Properties: make(map[string]*Schema, doc.Len()+1),
+		PrimaryKey: []string{"_id"},
+	}
+
+	if err := MergeDocumentSchema(schema, doc); err != nil {
+		return nil, err
+	}
+
+	return schema, nil
+}
+
+// MergeDocumentSchema merges existing schema with document schema.
+func MergeDocumentSchema(schema *Schema, doc *types.Document) error {
+	return subdocumentSchema(schema, doc)
 }
 
 // subdocumentSchema returns a JSON Schema for the given subdocument.
 // Subdocument is a "nested" document that can be used as a property of another document or subdocument.
 // The difference between subdocument and document is that subdocument doesn't have to contain the _id key.
-func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
-	schema := Schema{
-		Type:       Object,
-		Properties: make(map[string]*Schema, doc.Len()+1),
-		PrimaryKey: pkey,
-	}
-
+func subdocumentSchema(schema *Schema, doc *types.Document) error {
 	schema.Properties["$k"] = &Schema{Type: Array, Items: stringSchema}
 
 	for _, k := range doc.Keys() {
 		v := must.NotFail(doc.Get(k))
 
-		s, err := valueSchema(v)
+		s, err := valueSchema(schema.Properties[k], v)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return lazyerrors.Error(err)
 		}
 
 		// If s == nil it's a field with null, according to Tigris' logic, we don't set schema for this field.
@@ -300,28 +315,30 @@ func subdocumentSchema(doc *types.Document, pkey ...string) (*Schema, error) {
 		}
 	}
 
-	return &schema, nil
+	return nil
 }
 
 // arraySchema returns a JSON Schema for the given array.
 //
 // Schema can be set successfully only if all the array elements have the same type.
 // If the array is empty, Schema's Type will be set to Array and Items will be nil.
-func arraySchema(a *types.Array) (*Schema, error) {
+func arraySchema(schema *Schema, a *types.Array) (*Schema, error) {
 	if a.Len() == 0 {
+		var i int
 		return &Schema{
-			Type:  Array,
-			Items: nil,
+			Type:     Array,
+			Items:    nil,
+			MaxItems: &i,
 		}, nil
 	}
 
-	previousSchema, err := valueSchema(must.NotFail(a.Get(0)))
+	previousSchema, err := valueSchema(schema, must.NotFail(a.Get(0)))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	for i := 1; i < a.Len(); i++ {
-		currentSchema, err := valueSchema(must.NotFail(a.Get(i)))
+		currentSchema, err := valueSchema(schema, must.NotFail(a.Get(i)))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -351,12 +368,36 @@ func arraySchema(a *types.Array) (*Schema, error) {
 }
 
 // valueSchema returns a schema for the given value.
-func valueSchema(v any) (*Schema, error) {
+func valueSchema(schema *Schema, v any) (*Schema, error) {
 	switch v := v.(type) {
 	case *types.Document:
-		return subdocumentSchema(v)
+		if schema == nil {
+			schema = &Schema{
+				Type:       Object,
+				Properties: make(map[string]*Schema, v.Len()+1),
+			}
+		} else if schema.Type != Object {
+			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure,
+				lazyerrors.Errorf("can't set schema for an object with different types").Error(),
+			)
+		}
+
+		if schema.SearchIndex == nil {
+			b1 := false
+			schema.SearchIndex = &b1
+		}
+
+		if schema.AdditionalProperties != nil && *schema.AdditionalProperties {
+			return schema, nil
+		}
+
+		if err := subdocumentSchema(schema, v); err != nil {
+			return nil, err
+		}
+
+		return schema, nil
 	case *types.Array:
-		return arraySchema(v)
+		return arraySchema(schema, v)
 	case float64:
 		return doubleSchema, nil
 	case string:
@@ -383,4 +424,12 @@ func valueSchema(v any) (*Schema, error) {
 	default:
 		panic(fmt.Sprintf("not reached: %T", v))
 	}
+}
+
+// GetEmptySchema returns schema with just ObjectID.
+func GetEmptySchema(collection string) []byte {
+	schema := must.NotFail(DocumentSchema(must.NotFail(types.NewDocument("_id", types.NewObjectID()))))
+	schema.Title = collection
+
+	return must.NotFail(json.Marshal(schema))
 }

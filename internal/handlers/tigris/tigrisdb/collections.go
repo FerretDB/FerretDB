@@ -113,13 +113,19 @@ func CacheCollectionSchema(db, collection string, schema *tjson.Schema) {
 
 // RefreshCollectionSchema reads and caches collection schema from the Tigris.
 func (tdb *TigrisDB) RefreshCollectionSchema(ctx context.Context, db, collection string) (*tjson.Schema, error) {
+	var b []byte
+
 	coll, err := tdb.Driver.UseDatabase(db).DescribeCollection(ctx, EncodeCollName(collection))
-	if err != nil {
+	if err == nil {
+		b = coll.Schema
+	} else if !IsNotFound(err) {
 		return nil, err
+	} else {
+		b = tjson.GetEmptySchema(EncodeCollName(collection))
 	}
 
 	var schema tjson.Schema
-	if err = schema.Unmarshal(coll.Schema); err != nil {
+	if err = schema.Unmarshal(b); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

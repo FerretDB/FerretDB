@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -61,7 +63,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) er
 	if err := json.Unmarshal(b, &keys); err != nil {
 		return lazyerrors.Error(err)
 	}
-	if len(keys)+1 != len(rawMessages) {
+	if len(keys)+1 != len(rawMessages) && (schema.AdditionalProperties == nil || !*schema.AdditionalProperties) {
 		return lazyerrors.Errorf(
 			"tjson.documentType.UnmarshalJSONWithSchema: %d elements in $k, %d in total",
 			len(keys), len(rawMessages),
@@ -72,18 +74,33 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) er
 	for _, key := range keys {
 		b, ok = rawMessages[EncodeKeyName(key)]
 		if !ok {
+			if pointer.Get(schema.AdditionalProperties) {
+				continue
+			}
 			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: missing key %q", key)
 		}
+
+		var v any
+		var err error
 
 		// If the field is set as null and is not present in the schema, it's a valid case.
 		// If the field is set as something but null and is not present in the schema, we should return an error.
 		s := schema.Properties[key]
 		if s == nil && !bytes.Equal(b, []byte("null")) {
-			return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q", key)
-		}
-		v, err := Unmarshal(b, s)
-		if err != nil {
-			return lazyerrors.Error(err)
+			if !pointer.Get(schema.AdditionalProperties) {
+				return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q", key)
+			}
+
+			if err = json.Unmarshal(b, &v); err != nil {
+				return lazyerrors.Errorf("tjson.documentType.UnmarshalJSONWithSchema: no schema for key %q", key)
+			}
+
+			v = types.ConvertJSON(v)
+		} else {
+			v, err = Unmarshal(b, s)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 		}
 
 		td.Set(key, v)

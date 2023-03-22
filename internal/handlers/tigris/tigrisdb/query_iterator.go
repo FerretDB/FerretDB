@@ -111,6 +111,8 @@ func (iter *queryIterator) Next() (int, *types.Document, error) {
 		switch {
 		case err == nil:
 			// nothing
+		case IsNotFound(err):
+			// Collection or project doesn't exist
 		case IsInvalidArgument(err):
 			// Skip errors from filtering different types.
 			// For example, given document {v: 42} and filter {v: "42"},

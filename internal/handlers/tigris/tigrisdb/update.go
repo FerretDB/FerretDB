@@ -43,8 +43,12 @@ func (tdb *TigrisDB) ReplaceDocument(ctx context.Context, db, collection string,
 		return err
 	}
 
-	schema, err := tjson.DocumentSchema(doc)
+	schema, err := tdb.RefreshCollectionSchema(ctx, db, collection)
 	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = tjson.MergeDocumentSchema(schema, doc); err != nil {
 		return lazyerrors.Error(err)
 	}
 

@@ -17,6 +17,8 @@ package tigrisdb
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -75,8 +77,12 @@ func (tdb *TigrisDB) InsertManyDocuments(ctx context.Context, db, collection str
 
 	doc := must.NotFail(docs.Get(0)).(*types.Document)
 
-	schema, err := tjson.DocumentSchema(doc)
+	schema, err := tdb.RefreshCollectionSchema(ctx, db, collection)
 	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = tjson.MergeDocumentSchema(schema, doc); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -109,16 +115,51 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 		return err
 	}
 
-	schema, err := tjson.DocumentSchema(doc)
+	schema, err := tdb.RefreshCollectionSchema(ctx, db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil && !IsAlreadyExists(err) {
+	if err = tjson.MergeDocumentSchema(schema, doc); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil {
+		if IsInvalidArgument(err) && strings.HasPrefix(err.Error(), "data type mismatch for field \"") {
+			keyPath := strings.TrimPrefix(strings.TrimSuffix(err.Error(), `"`), `data type mismatch for field "`)
+			if !strings.Contains(keyPath, ".") {
+				return lazyerrors.Error(err)
+			}
+			keyParts := strings.Split(keyPath, ".")
+			if err = convertToMap(keyParts, schema); err != nil {
+				return lazyerrors.Error(err)
+			}
+			if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil {
+				return lazyerrors.Error(err)
+			}
+		} else {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	_, err = tdb.Driver.UseDatabase(db).Insert(ctx, collection, []driver.Document{b})
 
 	return err
+}
+
+func convertToMap(keyParts []string, schema *tjson.Schema) error {
+	for i := 0; i < len(keyParts)-1; i++ {
+		v := keyParts[i]
+		p := schema.Properties[v]
+		if p.Type != tjson.Object {
+			return fmt.Errorf("expected object type in schema. field %v got %v", v, p.Type)
+		}
+		schema = p
+	}
+
+	b := true
+	schema.AdditionalProperties = &b
+	delete(schema.Properties, keyParts[len(keyParts)-1])
+
+	return nil
 }
