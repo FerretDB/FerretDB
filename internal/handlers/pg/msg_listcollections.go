@@ -105,7 +105,9 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	case nameOnly:
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"firstBatch", collections,
+				"cursor", must.NotFail(types.NewDocument(
+					"firstBatch", collections,
+				)),
 				"ok", float64(1),
 			))},
 		}))
