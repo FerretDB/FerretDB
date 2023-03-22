@@ -164,7 +164,7 @@ var BigDoubles = &Values[string]{
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var Strings = &Values[string]{
 	name:     "Strings",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
