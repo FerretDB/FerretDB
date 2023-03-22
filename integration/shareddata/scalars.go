@@ -134,40 +134,20 @@ var Doubles = &Values[string]{
 		"double-big-plus":  doubleBig + 1,
 		"double-big-minus": doubleBig - 1,
 
-		// long big values ~1<<61
-		"long-big":       longBig,
-		"long-big-plus":  longBig + 1,
-		"long-big-minus": longBig - 1,
-
 		// double max precision ~1<<53
 		"double-prec-max":       doubleMaxPrec,
 		"double-prec-max-plus":  doubleMaxPrec + 1,
 		"double-prec-max-minus": doubleMaxPrec - 1,
-
-		// long representation of double max precision ~1<<53
-		"long-prec-max":       int64(doubleMaxPrec),
-		"long-prec-max-plus":  int64(doubleMaxPrec) + 1,
-		"long-prec-max-minus": int64(doubleMaxPrec) - 1,
 
 		// negative double big values ~ -(1<<61)
 		"double-neg-big":       -doubleBig,
 		"double-neg-big-plus":  -(doubleBig + 1),
 		"double-neg-big-minus": -(doubleBig - 1),
 
-		// negative long big values ~ -(1<<61)
-		"long-neg-big":       -longBig,
-		"long-neg-big-plus":  -(longBig + 1),
-		"long-neg-big-minus": -(longBig - 1),
-
 		// double min precision ~ -(1<<53 - 1)
 		"double-prec-min":       -(doubleMaxPrec - 1),
 		"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
 		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
-
-		// long representation of double max precision ~ (1<<53)
-		"long-prec-min":       -int64(doubleMaxPrec),
-		"long-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
-		"long-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
 
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
@@ -381,11 +361,30 @@ var Int64s = &Values[string]{
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
-		"int64-big":  longBig,
 		// "int64-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
 		"int64-1": int64(1099511628000),
 		"int64-2": int64(281474976700000),
 		"int64-3": int64(72057594040000000),
+
+		// long big values ~1<<61
+		"int64-big":       longBig,
+		"int64-big-plus":  longBig + 1,
+		"int64-big-minus": longBig - 1,
+
+		// long representation of double max precision ~1<<53
+		"int64-prec-max":       int64(doubleMaxPrec),
+		"int64-prec-max-plus":  int64(doubleMaxPrec) + 1,
+		"int64-prec-max-minus": int64(doubleMaxPrec) - 1,
+
+		// negative long big values ~ -(1<<61)
+		"int64-neg-big":       -longBig,
+		"int64-neg-big-plus":  -(longBig + 1),
+		"int64-neg-big-minus": -(longBig - 1),
+
+		// long representation of double max precision ~ (1<<53)
+		"int64-prec-min":       -int64(doubleMaxPrec),
+		"int64-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
+		"int64-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
 	},
 }
 

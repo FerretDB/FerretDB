@@ -104,14 +104,17 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		"DoubleNegBig": {
 			filter:         bson.D{{"v", -float64(1 << 61)}},
 			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 		"DoubleNegBigPlus": {
 			filter:         bson.D{{"v", -float64(1<<61) + 1}},
 			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 		"DoubleNegBigMinus": {
 			filter:         bson.D{{"v", -float64(1<<61) - 1}},
 			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 		"Int64Max": {
 			filter:         bson.D{{"v", int64(math.MaxInt64)}},
@@ -338,14 +341,17 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		"DoubleNegBig": {
 			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1 << 61)}}}},
 			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 		"DoubleNegBigPlus": {
 			filter:         bson.D{{"v", bson.D{{"$eq", -float64((1 << 61) + 1)}}}},
 			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 		"DoubleNegBigMinus": {
 			filter:         bson.D{{"v", bson.D{{"$eq", -float64((1 << 61) - 1)}}}},
 			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 
 		"DoublePrecMax": {

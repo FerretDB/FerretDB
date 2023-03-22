@@ -209,14 +209,8 @@ var ArrayDoubles = &Values[string]{
 		"array-double-big":      bson.A{doubleBig},
 		"array-double-big-plus": bson.A{doubleBig + 1},
 
-		"array-long-big":      bson.A{int64(doubleBig)},
-		"array-long-big-plus": bson.A{int64(doubleBig) + 1},
-
 		"array-double-prec-max":      bson.A{doubleMaxPrec},
 		"array-double-prec-max-plus": bson.A{doubleMaxPrec + 1},
-
-		"array-long-prec-max":      bson.A{int64(doubleMaxPrec)},
-		"array-long-prec-max-plus": bson.A{int64(doubleMaxPrec) + 1},
 
 		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-double-empty": bson.A{},
@@ -248,6 +242,31 @@ var ArrayInt32s = &Values[string]{
 		"array-int32-six": bson.A{
 			int32(42), int32(43), int32(44), int32(45), int32(42), int32(43),
 		},
+	},
+}
+
+// ArrayInt64s contains an array with int64 values for tests.
+var ArrayInt64s = &Values[string]{
+	name:     "ArrayInt64s",
+	handlers: []string{"pg", "tigris"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "array", "items": {"type": "integer", "format": "int64"}},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-long-big":      bson.A{int64(doubleBig)},
+		"array-long-big-plus": bson.A{int64(doubleBig) + 1},
+
+		"array-long-prec-max":      bson.A{int64(doubleMaxPrec)},
+		"array-long-prec-max-plus": bson.A{int64(doubleMaxPrec) + 1},
 	},
 }
 
