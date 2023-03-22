@@ -35,6 +35,7 @@ import (
 //go:generate ../bin/stringer  -type compatTestCaseResultType
 
 // documentValidationFailureCode is returned by Tigris schema validation code.
+// TODO https://github.com/FerretDB/FerretDB/issues/2253
 const documentValidationFailureCode = 121
 
 // compatTestCaseResultType represents compatibility test case result type.
