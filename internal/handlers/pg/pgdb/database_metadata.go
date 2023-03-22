@@ -236,12 +236,12 @@ func formatCollectionName(name string) string {
 
 // setIndex sets the index info in the metadata table.
 // It returns a PostgreSQL table name and index name that can be used to create index.
+// If the given index already exists, it doesn't return an error.
 //
 // Indexes are stored in the `indexes` array of metadata entry.
 //
 // It returns a possibly wrapped error:
-//   - ErrTableNotExist - if the metadata table doesn't exist.
-//   - ErrIndexAlreadyExist - if the given index already exists.
+//   - ErrTableNotExist - if m.collection doesn't exist.
 func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
 	metadata, err := m.get(ctx, true)
 	if err != nil {
@@ -285,7 +285,7 @@ func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, uni
 			idxName := must.NotFail(idxData.Get("name")).(string)
 
 			if idxName == index {
-				return "", "", ErrIndexAlreadyExist
+				return pgTable, pgIndex, nil
 			}
 		}
 	}

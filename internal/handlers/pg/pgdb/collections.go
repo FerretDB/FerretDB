@@ -133,7 +133,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		Unique: true,
 	}
 
-	if err := CreateIndex(ctx, tx, db, collection, indexParams); err != nil {
+	if err := CreateIndexIfNotExists(ctx, tx, db, collection, indexParams); err != nil {
 		return lazyerrors.Error(err)
 	}
 

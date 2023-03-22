@@ -17,10 +17,12 @@ package pg
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -81,13 +83,22 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				// TODO
 			}
 
-			if err = pgdb.CreateIndex(ctx, tx, db, collection, &index); err != nil {
+			if err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, &index); err != nil {
 				return err
 			}
 		}
 	})
-	if err != nil {
-		return nil, err
+
+	switch {
+	case err == nil:
+	// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrNamespaceNotFound,
+			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
+		)
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg

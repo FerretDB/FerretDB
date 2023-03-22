@@ -115,11 +115,12 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 	}
 }
 
-// CreateIndex creates a new index for the given params.
+// CreateIndexIfNotExists creates a new index for the given params if such an index doesn't exist.
+// If the index exists, it doesn't return an error.
 //
 // It returns a possibly wrapped error:
-//   - ErrIndexAlreadyExist - if the given index already exists.
-func CreateIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+//   - ErrTableNotExist - if the given collection doesn't exist.
+func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
 	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
