@@ -92,6 +92,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 						{"find", targetCollection.Name()},
 						{"filter", filter},
 						{"sort", opts.Sort},
+						{"skip", opts.Sort},
 						{"projection", opts.Projection},
 					}}}
 
