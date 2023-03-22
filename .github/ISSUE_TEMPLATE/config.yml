@@ -4,7 +4,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Quick question
     url: https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A
-    about: Please join our Slack chat
+    about: Please join our Slack chat.
   - name: General question or discussion
     url: https://github.com/FerretDB/FerretDB/discussions/categories/general
-    about: Please use GitHub Discussions
+    about: Please use GitHub Discussions.

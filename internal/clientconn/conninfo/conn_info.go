@@ -25,7 +25,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // contextKey is a special type to represent context.WithValue keys a bit more safely.
@@ -98,8 +97,7 @@ func (connInfo *ConnInfo) Close() {
 
 // Cursor allows clients to iterate over a result set.
 type Cursor struct {
-	Iter   iterator.Interface[int, *types.Document]
-	Filter *types.Document
+	Iter types.DocumentsIterator
 }
 
 // Cursor returns cursor by ID, or nil.
@@ -116,7 +114,7 @@ func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
 }
 
 // StoreCursor stores cursor and return its ID.
-func (connInfo *ConnInfo) StoreCursor(iter iterator.Interface[int, *types.Document], filter *types.Document) int64 {
+func (connInfo *ConnInfo) StoreCursor(iter types.DocumentsIterator) int64 {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
@@ -131,8 +129,7 @@ func (connInfo *ConnInfo) StoreCursor(iter iterator.Interface[int, *types.Docume
 	}
 
 	connInfo.cursors[id] = Cursor{
-		Iter:   iter,
-		Filter: filter,
+		Iter: iter,
 	}
 
 	return id
