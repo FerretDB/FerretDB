@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"regexp"
 
 	"github.com/jackc/pgx/v4"
 
@@ -45,6 +46,13 @@ const (
 	maxIndexNameLength = 63
 )
 
+// nameManglingCharacters are potential problematic characters that are replaced with `_`.
+// They are operators and special characters of pg.
+// See https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-OPERATORS
+// and https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-SPECIAL-CHARS
+var nameManglingCharacters = regexp.MustCompile("[+-\\\\*/<>=~!@#%^&|`?()\\[\\],;:.]")
+
+// var nameManglingCharacters = regexp.MustCompile(`[+-*/<>=~!@#%^&|?()[],;:.]`)
 // metadata is a type to structure methods that work with metadata storing and getting.
 //
 // Metadata consists of collections and indexes settings.
@@ -222,17 +230,19 @@ func (m *metadata) remove(ctx context.Context) error {
 //
 // Deprecated: this function usage is allowed for collection metadata creation only.
 func formatCollectionName(name string) string {
+	formatted := nameManglingCharacters.ReplaceAllString(name, "_")
+
 	hash32 := fnv.New32a()
-	must.NotFail(hash32.Write([]byte(name)))
+	must.NotFail(hash32.Write([]byte(formatted)))
 
 	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
-	truncateTo := len(name)
+	truncateTo := len(formatted)
 
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
+	return formatted[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
 }
 
 // setIndex sets the index info in the metadata table.
