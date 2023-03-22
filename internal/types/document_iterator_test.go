@@ -94,4 +94,24 @@ func TestDocumentIterator(t *testing.T) {
 		assert.Zero(t, k)
 		assert.Nil(t, v)
 	})
+
+	t.Run("Nil", func(t *testing.T) {
+		t.Parallel()
+
+		iter := (*Document)(nil).Iterator()
+		defer iter.Close()
+
+		k, v, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+
+		iter.Close()
+
+		// still done after Close()
+		k, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+	})
 }
