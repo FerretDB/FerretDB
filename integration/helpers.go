@@ -36,6 +36,8 @@ import (
 
 // documentValidationFailureCode is returned by Tigris schema validation code.
 // TODO https://github.com/FerretDB/FerretDB/issues/2253
+// Tigris provider should only using collections that does not produce
+// validation error for each test case.
 const documentValidationFailureCode = 121
 
 // compatTestCaseResultType represents compatibility test case result type.
