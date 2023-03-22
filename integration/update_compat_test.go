@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -117,6 +118,12 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								t.Logf("Target error: %v", targetErr)
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
+
+								// Skip updates that could not be performed due to Tigris schema validation.
+								var e mongo.CommandError
+								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
+								}
 
 								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
 							} else {
@@ -232,6 +239,12 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 								t.Logf("Target error: %v", targetErr)
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
+
+								// Skip updates that could not be performed due to Tigris schema validation.
+								var e mongo.CommandError
+								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
+								}
 
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {

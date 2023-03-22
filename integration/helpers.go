@@ -34,6 +34,9 @@ import (
 
 //go:generate ../bin/stringer  -type compatTestCaseResultType
 
+// documentValidationFailureCode is returned by Tigris schema validation code.
+const documentValidationFailureCode = 121
+
 // compatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.

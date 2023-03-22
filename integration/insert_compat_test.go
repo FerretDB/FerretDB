@@ -15,12 +15,14 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -62,6 +64,12 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
 							if targetErr != nil {
+								// Skip inserts that could not be performed due to Tigris schema validation.
+								var e mongo.WriteException
+								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
+								}
+
 								t.Logf("Target error: %v", targetErr)
 								require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
 								targetErr = UnsetRaw(t, targetErr)
@@ -116,6 +124,12 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						}
 
 						if targetErr != nil {
+							// Skip inserts that could not be performed due to Tigris schema validation.
+							var e mongo.BulkWriteException
+							if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
+								setup.SkipForTigrisWithReason(t, targetErr.Error())
+							}
+
 							t.Logf("Target error: %v", targetErr)
 							require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
 							targetErr = UnsetRaw(t, targetErr)
