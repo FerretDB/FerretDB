@@ -89,7 +89,7 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		"arrayFilters",
 		"let",
 	}
-	if err := Unimplemented(doc, unimplementedFields...); err != nil {
+	if err = Unimplemented(doc, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
