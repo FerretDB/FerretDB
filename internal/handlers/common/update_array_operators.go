@@ -236,6 +236,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, addToSetValueRaw, err := iter.Next()
@@ -325,10 +326,12 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 }
 
 // processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
+// If the document was changed it returns true.
 func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, pullAllValueRaw, err := iter.Next()
@@ -404,6 +407,72 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 					changed = true
 				}
+			}
+		}
+
+		if err = doc.SetByPath(path, array); err != nil {
+			return false, lazyerrors.Error(err)
+		}
+	}
+
+	return changed, nil
+}
+
+// processPullArrayUpdateExpression changes document according to $pull array update operator.
+// If the document was changed it returns true.
+func processPullArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
+	var changed bool
+
+	iter := update.Iterator()
+	defer iter.Close()
+
+	for {
+		key, pullValueRaw, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		// If the path does not exist, try to set it.
+		// If it is not possible to set the path return error.
+		// This will deal with cases like $pull on a non-existing field or unset field.
+		if !doc.HasByPath(path) {
+			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				"Cannot apply $pull to a non-array value",
+			)
+		}
+
+		for i := array.Len() - 1; i >= 0; i-- {
+			value := must.NotFail(array.Get(i))
+
+			if types.Compare(value, pullValueRaw) == types.Equal {
+				array.Remove(i)
+
+				changed = true
 			}
 		}
 
