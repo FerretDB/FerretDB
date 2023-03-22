@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,7 +31,7 @@ import (
 type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	optSkip        int64                    // defaults to 0
+	optSkip        *int64                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
@@ -72,8 +73,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				opts.SetSort(bson.D{{"_id", 1}})
 			}
 
-			if tc.optSkip != 0 {
-				opts.SetSkip(tc.optSkip)
+			if tc.optSkip != nil {
+				opts.SetSkip(*tc.optSkip)
 			}
 
 			if tc.projection != nil {
@@ -248,16 +249,16 @@ func TestQueryCompatSkip(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"SkipSimple": {
 			filter:  bson.D{},
-			optSkip: 1,
+			optSkip: pointer.ToInt64(1),
 		},
 		"SkipBig": {
 			filter:     bson.D{},
-			optSkip:    1000,
+			optSkip:    pointer.ToInt64(1000),
 			resultType: emptyResult,
 		},
 		"SkipNegative": {
 			filter:     bson.D{},
-			optSkip:    -1,
+			optSkip:    pointer.ToInt64(-1),
 			resultType: emptyResult,
 		},
 	}
