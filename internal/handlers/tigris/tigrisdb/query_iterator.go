@@ -48,7 +48,7 @@ type queryIterator struct {
 // Iterator's Close method closes driver.Iterator.
 //
 // No documents are possible and return already done iterator.
-func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) iterator.Interface[int, *types.Document] {
+func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:    ctx,
 		schema: schema,
@@ -153,5 +153,5 @@ func (iter *queryIterator) close() {
 
 // check interfaces
 var (
-	_ iterator.Interface[int, *types.Document] = (*queryIterator)(nil)
+	_ types.DocumentsIterator = (*queryIterator)(nil)
 )
