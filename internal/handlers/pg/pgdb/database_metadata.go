@@ -50,7 +50,7 @@ const (
 // They are operators and special characters of pg.
 // See https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-OPERATORS
 // and https://www.postgresql.org/docs/15/sql-syntax-lexical.html#SQL-SYNTAX-SPECIAL-CHARS
-var specialCharacters = regexp.MustCompile("[+-\\\\*/<>=~!@#%^&|`?()\\[\\],;:.]")
+var specialCharacters = regexp.MustCompile("[-+*/<>=~!@#%^&|`?()\\[\\],;:.]")
 
 // metadata is a type to structure methods that work with metadata storing and getting.
 //
