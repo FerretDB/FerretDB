@@ -31,6 +31,7 @@ import (
 type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	limit          *int64                   // defaults to nil to leave unset
 	optSkip        *int64                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
@@ -73,6 +74,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				opts.SetSort(bson.D{{"_id", 1}})
 			}
 
+			if tc.limit != nil {
+				opts.SetLimit(*tc.limit)
+			}
+
 			if tc.optSkip != nil {
 				opts.SetSkip(*tc.optSkip)
 			}
@@ -92,6 +97,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 						{"find", targetCollection.Name()},
 						{"filter", filter},
 						{"sort", opts.Sort},
+						{"limit", opts.Limit},
 						{"skip", opts.Sort},
 						{"projection", opts.Projection},
 					}}}
