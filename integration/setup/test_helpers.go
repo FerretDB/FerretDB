@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// IsTigris returns true if tests are running against FerretDB with `tigris` handler.
+// IsTigris returns true if tests are running against FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.
 func IsTigris(tb testing.TB) bool {
@@ -38,7 +38,7 @@ func SkipForTigris(tb testing.TB) {
 	SkipForTigrisWithReason(tb, "empty, please update this test")
 }
 
-// SkipForTigrisWithReason skips the current test for FerretDB with `tigris` handler.
+// SkipForTigrisWithReason skips the current test for FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.
 func SkipForTigrisWithReason(tb testing.TB, reason string) {
@@ -53,7 +53,7 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 	tb.Skipf("Skipping for Tigris: %s.", reason)
 }
 
-// TigrisOnlyWithReason skips the current test except for FerretDB with `tigris` handler.
+// TigrisOnlyWithReason skips the current test except for FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.
 func TigrisOnlyWithReason(tb testing.TB, reason string) {
