@@ -88,7 +88,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 			keyIter := key.Iterator()
 			defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
 
-			for i := 0; i < key.Len(); i++ {
+			for j := 0; j < key.Len(); j++ {
 				var field string
 				var value any
 				field, value, err = keyIter.Next()
