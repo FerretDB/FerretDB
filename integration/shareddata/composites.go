@@ -248,7 +248,7 @@ var ArrayInt32s = &Values[string]{
 // ArrayInt64s contains an array with int64 values for tests.
 var ArrayInt64s = &Values[string]{
 	name:     "ArrayInt64s",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
 		"tigris": {
 			"$tigrisSchemaString": `{
