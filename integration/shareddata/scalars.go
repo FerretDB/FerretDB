@@ -33,7 +33,7 @@ const (
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
 	name:     "Scalars",
-	handlers: []string{"pg"},
+	backends: []string{"ferretdb-pg", "mongodb"},
 	data: map[string]any{
 		"double":                    42.13,
 		"double-whole":              42.0,
@@ -117,9 +117,9 @@ var Scalars = &Values[string]{
 // Doubles contains double values for tests.
 var Doubles = &Values[string]{
 	name:     "Doubles",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
 		},
 	},
@@ -170,9 +170,9 @@ var Doubles = &Values[string]{
 // in diff tests https://github.com/FerretDB/dance.
 var BigDoubles = &Values[string]{
 	name:     "BigDoubles",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
 		},
 	},
@@ -186,9 +186,9 @@ var BigDoubles = &Values[string]{
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var Strings = &Values[string]{
 	name:     "Strings",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -214,9 +214,9 @@ var Strings = &Values[string]{
 // Binaries contains binary values for tests.
 var Binaries = &Values[string]{
 	name:     "Binaries",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$b": {"type": "string", "format": "byte"}, "s": {"type": "integer", "format": "int32"}}`),
 		},
 	},
@@ -230,9 +230,9 @@ var Binaries = &Values[string]{
 // ObjectIDs contains ObjectID values for tests.
 var ObjectIDs = &Values[string]{
 	name:     "ObjectIDs",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "byte"`),
 		},
 	},
@@ -246,9 +246,9 @@ var ObjectIDs = &Values[string]{
 // Bools contains bool values for tests.
 var Bools = &Values[string]{
 	name:     "Bools",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -270,9 +270,9 @@ var Bools = &Values[string]{
 // DateTimes contains datetime values for tests.
 var DateTimes = &Values[string]{
 	name:     "DateTimes",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "date-time"`),
 		},
 	},
@@ -288,7 +288,7 @@ var DateTimes = &Values[string]{
 // Nulls contains null value for tests.
 var Nulls = &Values[string]{
 	name:     "Nulls",
-	handlers: []string{"pg"}, // Not compatible with Tigris as it needs a data type to be set.
+	backends: []string{"ferretdb-pg", "mongodb"}, // Not compatible with Tigris as it needs a data type to be set.
 	data: map[string]any{
 		"null": nil,
 	},
@@ -297,9 +297,9 @@ var Nulls = &Values[string]{
 // Regexes contains regex values for tests.
 var Regexes = &Values[string]{
 	name:     "Regexes",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$r": {"type": "string"}, "o": {"type": "string"}}`),
 		},
 	},
@@ -313,9 +313,9 @@ var Regexes = &Values[string]{
 // Int32s contains int32 values for tests.
 var Int32s = &Values[string]{
 	name:     "Int32s",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int32"`),
 		},
 	},
@@ -334,9 +334,9 @@ var Int32s = &Values[string]{
 // Timestamps contains timestamp values for tests.
 var Timestamps = &Values[string]{
 	name:     "Timestamps",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$t": {"type": "string"}}`),
 		},
 	},
@@ -350,9 +350,9 @@ var Timestamps = &Values[string]{
 // Int64s contains int64 values for tests.
 var Int64s = &Values[string]{
 	name:     "Int64s",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int64"`),
 		},
 	},
@@ -391,7 +391,7 @@ var Int64s = &Values[string]{
 // Unsets contains unset value for tests.
 var Unsets = &Values[string]{
 	name:     "Unsets",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	data: map[string]any{
 		"unset": unset,
 	},
@@ -400,7 +400,7 @@ var Unsets = &Values[string]{
 // ObjectIDKeys contains documents with ObjectID keys for tests.
 var ObjectIDKeys = &Values[primitive.ObjectID]{
 	name:     "ObjectIDKeys",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	data: map[primitive.ObjectID]any{
 		{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}: "objectid",
 		primitive.NilObjectID: "objectid-empty",
