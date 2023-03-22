@@ -282,9 +282,18 @@ func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, uni
 			}
 
 			idxData := idx.(*types.Document)
+
+			// if index name matches, return existing index
 			idxName := must.NotFail(idxData.Get("name")).(string)
 
 			if idxName == index {
+				return pgTable, pgIndex, nil
+			}
+
+			// if index key matches, return existing index
+			idxKey := must.NotFail(idxData.Get("key")).(*types.Document)
+
+			if types.Compare(idxKey, indKey) == types.Equal {
 				return pgTable, pgIndex, nil
 			}
 		}
