@@ -258,6 +258,31 @@ func TestQueryCompatSort(t *testing.T) {
 	testQueryCompat(t, testCases)
 }
 
+func TestQueryCompatLimit(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Simple": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(1),
+		},
+		"Big": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(1000),
+		},
+		"Zero": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(0),
+		},
+		"Bad": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(-1),
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
 func TestQueryCompatSkip(t *testing.T) {
 	t.Parallel()
 
