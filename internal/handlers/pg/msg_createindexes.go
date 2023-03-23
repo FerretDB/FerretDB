@@ -101,11 +101,6 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	switch {
 	case err == nil:
 	// do nothing
-	case errors.Is(err, pgdb.ErrTableNotExist):
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrNamespaceNotFound,
-			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
-		)
 	default:
 		return nil, lazyerrors.Error(err)
 	}

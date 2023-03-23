@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -28,7 +30,11 @@ import (
 func TestIndexesList(t *testing.T) {
 	t.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                shareddata.AllProviders(),
+		AddNonExistentCollection: true,
+	})
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for i := range targetCollections {
 		targetCollection := targetCollections[i]
@@ -64,9 +70,6 @@ func TestIndexesListRunCommand(t *testing.T) {
 		collectionName any
 		expectedError  *mongo.CommandError
 	}{
-		"non-existent-collection": {
-			collectionName: "non-existent-collection",
-		},
 		"invalid-collection-name": {
 			collectionName: 42,
 		},
@@ -109,8 +112,11 @@ func testIndexesCreateMany(t *testing.T, testCases map[string]createIndexTestCas
 			t.Parallel()
 
 			// Use per-test setup because createIndexes modifies collection state.
-			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-			// TODO add non-existent collection test case
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+				Providers:                shareddata.AllProviders(),
+				AddNonExistentCollection: true,
+			})
+			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
