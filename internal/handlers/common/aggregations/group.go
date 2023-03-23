@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -33,7 +31,7 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 // Accumulator is a common interface for accumulation.
 type Accumulator interface {
 	// Accumulate documents and returns the result of accumulation.
-	Accumulate(ctx context.Context, in []*types.Document) (any, error)
+	Accumulate(ctx context.Context, groupkey any, in []*types.Document) (any, error)
 }
 
 // accumulators maps all supported $group accumulators.
@@ -57,7 +55,7 @@ type groupStage struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(ctx context.Context, in []*types.Document) (any, error)
+	accumulate  func(ctx context.Context, groupkey any, in []*types.Document) (any, error)
 	outputField string
 }
 
@@ -173,7 +171,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 		doc := new(types.Document)
 
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(ctx, groupedDocument.documents)
+			out, err := accumulation.accumulate(ctx, groupedDocument.groupKey, groupedDocument.documents)
 			if err != nil {
 				return nil, err
 			}
@@ -205,13 +203,22 @@ type idAccumulator struct {
 //
 //	{$group: {_id: "$v"}} sets the value of $v to _id, Accumulate returns the value found at key `v`.
 //	{$group: {_id: null}} sets `null` to _id, Accumulate returns nil.
-func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (any, error) {
-	groupKey, ok := a.expression.(string)
+func (a *idAccumulator) Accumulate(ctx context.Context, groupkey any, in []*types.Document) (any, error) {
+	return groupkey, nil
+}
+
+// groupDocuments groups documents by group expression.
+func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
+	groupKey, ok := g.groupExpression.(string)
 	if !ok {
-		return a.expression, nil
+		// non-string key aggregates values of all `in` documents into one aggregated document.
+		return []groupedDocuments{{
+			groupKey:  g.groupExpression,
+			documents: in,
+		}}, nil
 	}
 
-	path, err := types.GetFieldPath(groupKey)
+	_, err := types.GetFieldPath(groupKey)
 	if err != nil {
 		var fieldPathErr *types.FieldPathError
 		if !errors.As(err, &fieldPathErr) {
@@ -220,7 +227,17 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 
 		switch fieldPathErr.Code() {
 		case types.ErrNotFieldPath:
-			return groupKey, nil
+			// constant value aggregates values of all `in` documents into one aggregated document.
+			return []groupedDocuments{{
+				groupKey:  groupKey,
+				documents: in,
+			}}, nil
+		case types.ErrEmptyFieldPath:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupInvalidFieldPath,
+				"'$' by itself is not a valid FieldPath",
+				"$group (stage)",
+			)
 		case types.ErrInvalidFieldPath:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
@@ -243,60 +260,18 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 			panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
 		}
 	}
-	// use the first element, it was already grouped by the groupKey,
-	// so all `in` documents contain the same v.
-	v, err := in[0].GetByPath(path)
-	if err != nil {
-		return types.Null, nil
-	}
-
-	return v, nil
-}
-
-// groupDocuments groups documents by group expression.
-func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
-	groupKey, ok := g.groupExpression.(string)
-	if !ok {
-		// non-string key aggregates values of all `in` documents into one aggregated document.
-		return []groupedDocuments{{
-			groupKey:  groupKey,
-			documents: in,
-		}}, nil
-	}
-
-	if !strings.HasPrefix(groupKey, "$") {
-		// constant value aggregates values of all `in` documents into one aggregated document.
-		return []groupedDocuments{{
-			groupKey:  groupKey,
-			documents: in,
-		}}, nil
-	}
-
-	key := strings.TrimPrefix(groupKey, "$")
-	if key == "" {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrGroupInvalidFieldPath,
-			"'$' by itself is not a valid FieldPath",
-			"$group (stage)",
-		)
-	}
 
 	var group groupMap
 
 	for _, doc := range in {
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		v, err := doc.GetByPath(path)
+		val, err := types.GetFieldValue(groupKey, doc)
 		if err != nil {
 			// if the path does not exist, use null for group key.
 			group.addOrAppend(types.Null, doc)
 			continue
 		}
 
-		group.addOrAppend(v, doc)
+		group.addOrAppend(val, doc)
 	}
 
 	return group.docs, nil

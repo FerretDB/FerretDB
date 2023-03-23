@@ -76,6 +76,8 @@ func AllProviders() Providers {
 		ArrayInt32s,
 		ArrayRegexes,
 		ArrayDocuments,
+
+		Mixed,
 	}
 
 	// check that names are unique and randomize order

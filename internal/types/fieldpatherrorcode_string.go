@@ -9,14 +9,15 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[ErrNotFieldPath-1]
-	_ = x[ErrInvalidFieldPath-2]
-	_ = x[ErrUndefinedVariable-3]
-	_ = x[ErrEmptyVariable-4]
+	_ = x[ErrEmptyFieldPath-2]
+	_ = x[ErrInvalidFieldPath-3]
+	_ = x[ErrUndefinedVariable-4]
+	_ = x[ErrEmptyVariable-5]
 }
 
-const _FieldPathErrorCode_name = "ErrNotFieldPathErrInvalidFieldPathErrUndefinedVariableErrEmptyVariable"
+const _FieldPathErrorCode_name = "ErrNotFieldPathErrEmptyFieldPathErrInvalidFieldPathErrUndefinedVariableErrEmptyVariable"
 
-var _FieldPathErrorCode_index = [...]uint8{0, 15, 34, 54, 70}
+var _FieldPathErrorCode_index = [...]uint8{0, 15, 32, 51, 71, 87}
 
 func (i FieldPathErrorCode) String() string {
 	i -= 1

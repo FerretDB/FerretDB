@@ -73,6 +73,18 @@ var Composites = &Values[string]{
 	},
 }
 
+// Mixed contain composite and scalar values for tests.
+var Mixed = &Values[string]{
+	name:     "Mixed",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"null":        nil,
+		"unset":       unset,
+		"array-empty": bson.A{},
+		"array-null":  bson.A{nil},
+	},
+}
+
 // PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
 // on pg backend.
 var PostgresEdgeCases = &Values[string]{

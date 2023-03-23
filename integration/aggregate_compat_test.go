@@ -371,6 +371,8 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		// shareddata.ArrayInt32s,
 		shareddata.ArrayRegexes,
 		shareddata.ArrayDocuments,
+
+		// shareddata.Mixed,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -531,6 +533,59 @@ func TestAggregateCompatGroup(t *testing.T) {
 	}
 
 	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatGroupDotNotation(t *testing.T) {
+	// Providers cannot be used due to sorting difference.
+	// We use one way of sorting for now, until we have another way
+	// of sorting. Skip Composites and Mixed.
+	// In compat, for `.sort()` an empty array is less than null.
+	// In compat, for aggregation `$sort` null is less than an empty array.
+
+	providers := []shareddata.Provider{
+		shareddata.Scalars,
+
+		shareddata.Doubles,
+		shareddata.BigDoubles,
+		shareddata.Strings,
+		shareddata.Binaries,
+		shareddata.ObjectIDs,
+		shareddata.Bools,
+		shareddata.DateTimes,
+		shareddata.Nulls,
+		shareddata.Regexes,
+		shareddata.Int32s,
+		shareddata.Timestamps,
+		shareddata.Int64s,
+		shareddata.Unsets,
+		shareddata.ObjectIDKeys,
+
+		// shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+
+		shareddata.DocumentsDoubles,
+		shareddata.DocumentsStrings,
+		shareddata.DocumentsDocuments,
+
+		shareddata.ArrayStrings,
+		shareddata.ArrayDoubles,
+		shareddata.ArrayInt32s,
+		shareddata.ArrayRegexes,
+		shareddata.ArrayDocuments,
+
+		// shareddata.Mixed,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatGroupCount(t *testing.T) {
