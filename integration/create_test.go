@@ -65,12 +65,12 @@ func TestCreateStress(t *testing.T) {
 			)
 
 			// Set $tigrisSchemaString for tigris only.
-			var opts options.CreateCollectionOptions
+			opts := options.CreateCollection()
 			if setup.IsTigris(t) {
-				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
+				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
 			}
 
-			err := db.CreateCollection(ctx, collName, &opts)
+			err := db.CreateCollection(ctx, collName, opts)
 			assert.NoError(t, err)
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
@@ -220,12 +220,12 @@ func TestCreateStressSameCollection(t *testing.T) {
 			)
 
 			// Set $tigrisSchemaString for tigris only.
-			var opts options.CreateCollectionOptions
+			opts := options.CreateCollection()
 			if setup.IsTigris(t) {
-				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
+				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
 			}
 
-			err := db.CreateCollection(ctx, collName, &opts)
+			err := db.CreateCollection(ctx, collName, opts)
 			if err == nil {
 				created.Add(1)
 			} else {
@@ -386,11 +386,8 @@ func TestCreateTigris(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := options.CreateCollectionOptions{
-				Validator: bson.D{{tc.validator, tc.schema}},
-			}
-
-			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, &opts)
+			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
+			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
 			if tc.expectedErr != nil {
 				AssertEqualError(t, *tc.expectedErr, err)
 			} else {
