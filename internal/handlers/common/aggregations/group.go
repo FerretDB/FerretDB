@@ -211,17 +211,38 @@ func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (a
 		return a.expression, nil
 	}
 
-	if !strings.HasPrefix(groupKey, "$") {
-		return groupKey, nil
-	}
-
-	key := strings.TrimPrefix(groupKey, "$")
-
-	path, err := types.NewPathFromString(key)
+	path, err := types.GetFieldPath(groupKey)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+		var fieldPathErr *types.FieldPathError
+		if !errors.As(err, &fieldPathErr) {
+			return nil, lazyerrors.Error(err)
+		}
 
+		switch fieldPathErr.Code() {
+		case types.ErrNotFieldPath:
+			return groupKey, nil
+		case types.ErrInvalidFieldPath:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
+				"$group (stage)",
+			)
+		case types.ErrEmptyVariable:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"empty variable names are not allowed",
+				"$group (stage)",
+			)
+		case types.ErrUndefinedVariable:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupUndefinedVariable,
+				fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
+				"$group (stage)",
+			)
+		default:
+			panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
+		}
+	}
 	// use the first element, it was already grouped by the groupKey,
 	// so all `in` documents contain the same v.
 	v, err := in[0].GetByPath(path)

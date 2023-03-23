@@ -442,11 +442,48 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
 		},
-		"GroupInvalidFieldPath": {
+		"EmptyPath": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
 			}}}},
 			resultType: emptyResult,
+		},
+		"EmptyVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$s": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$$s"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"NonExistingVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$s"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"Variable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$v"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"SystemVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$NOW"},
+			}}}},
+			resultType: emptyResult,
+			skip:       "todo",
 		},
 		"GroupInvalidFields": {
 			pipeline:   bson.A{bson.D{{"$group", 1}}},
