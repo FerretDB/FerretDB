@@ -100,7 +100,7 @@ var Scalars = &Values[string]{
 		"int64-max":        int64(math.MaxInt64),
 		"int64-min":        int64(math.MinInt64),
 		"int64-big":        longBig,
-		"int64-double-big": int64(1 << 61), // duplicate?
+		"int64-double-big": int64(1 << 61),
 		"int64-1":          int64(1099511628000),
 		"int64-2":          int64(281474976700000),
 		"int64-3":          int64(72057594040000000),
@@ -381,7 +381,7 @@ var Int64s = &Values[string]{
 		"int64-neg-big-plus":  -(longBig + 1),
 		"int64-neg-big-minus": -(longBig - 1),
 
-		// long representation of double max precision ~ (1<<53)
+		// long representation of double max precision ~ -(1<<53-1)
 		"int64-prec-min":       -int64(doubleMaxPrec),
 		"int64-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
 		"int64-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
