@@ -27,11 +27,12 @@ import (
 
 // explainCompatTestCase describes explain compatibility test case.
 type explainCompatTestCase struct {
-	skip       string                   // skip test for all handlers, must have issue number mentioned
 	command    string                   // required
 	filter     bson.D                   // ignored if nil
 	pipeline   bson.A                   // ignored if nil
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testExplainCompatError tests explain compatibility test cases.
