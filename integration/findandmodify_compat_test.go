@@ -304,7 +304,8 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
-	command       bson.D
+	command bson.D
+
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
 }

@@ -35,13 +35,14 @@ import (
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update        bson.D                   // required if replace is nil
-	replace       bson.D                   // required if update is nil
-	filter        bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skip          string                   // skips test if non-empty
-	skipForTigris string                   // skips test for Tigris if non-empty
-	providers     []shareddata.Provider    // defaults to shareddata.AllProviders()
+	update     bson.D                   // required if replace is nil
+	replace    bson.D                   // required if update is nil
+	filter     bson.D                   // defaults to bson.D{{"_id", id}}
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
+
+	skip          string // skips test if non-empty
+	skipForTigris string // skips test for Tigris if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -160,10 +161,11 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 // updateCommandCompatTestCase describes update command compatibility test case.
 type updateCommandCompatTestCase struct {
 	multi      any                      // defaults to false, if true updates multiple documents
-	skip       string                   // skips test if non-empty
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skip string // skips test if non-empty
 }
 
 // testUpdateCommandCompat tests command compatibility test cases used for update.
@@ -306,11 +308,12 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 // updateCurrentDateCompatTestCase describes update current date compatibility test case.
 type updateCurrentDateCompatTestCase struct {
-	skip       string                   // skips test if non-empty
 	paths      []types.Path             // paths to check after update
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skip string // skips test if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases for current date.
