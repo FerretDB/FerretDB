@@ -84,11 +84,12 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			"c",
 			"collation",
 			"arrayFilters",
-			"hint",
 		}
 		if err := common.Unimplemented(update, unimplementedFields...); err != nil {
 			return nil, err
 		}
+
+		common.Ignored(update, h.L, "hint")
 
 		var q, u *types.Document
 		var upsert bool
