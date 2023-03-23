@@ -306,7 +306,9 @@ func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, uni
 
 			if idxKey.Len() == len(key) {
 				for _, pair := range key {
-					order, err := idxKey.Get(pair.Field)
+					var order any
+
+					order, err = idxKey.Get(pair.Field)
 					if err != nil {
 						found = false
 						break
