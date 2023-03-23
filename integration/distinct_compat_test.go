@@ -28,9 +28,10 @@ import (
 // distinctCompatTestCase describes count compatibility test case.
 type distinctCompatTestCase struct {
 	field      string                   // required
-	skip       string                   // optional
 	filter     bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skip string // optional
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
