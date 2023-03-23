@@ -318,7 +318,7 @@ func TestCollectionName(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	collectionName300 := strings.Repeat("aB", 150)
-	collectionName100 := strings.Repeat("a", 100)
+	collectionName235 := strings.Repeat("a", 235)
 
 	cases := map[string]struct {
 		collection string
@@ -338,7 +338,7 @@ func TestCollectionName(t *testing.T) {
 			alt: fmt.Sprintf("Invalid collection name: 'testcollectionname.%s'", collectionName300),
 		},
 		"LongEnough": {
-			collection: collectionName100,
+			collection: collectionName235,
 		},
 		"Short": {
 			collection: "a",
@@ -367,6 +367,33 @@ func TestCollectionName(t *testing.T) {
 			},
 			alt: "Invalid collection name: 'testcollectionname.'",
 		},
+		"Null": {
+			collection: "\x00",
+			err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: "namespaces cannot have embedded null characters",
+			},
+			alt: "Invalid collection name: 'testcollectionname.\x00'",
+		},
+		"Dot": {
+			collection: "collection.name",
+		},
+		"Space": {
+			collection: " ",
+		},
+		"NonLatin": {
+			collection: "コレクション",
+		},
+		"Number": {
+			collection: "1",
+		},
+		"SpecialCharacters": {
+			collection: "+-/*<>=~!@#%^&|`?()[],;:. ",
+		},
+		"Capital": {
+			collection: "A",
+		},
 	}
 
 	for name, tc := range cases {
@@ -380,9 +407,20 @@ func TestCollectionName(t *testing.T) {
 
 			assert.NoError(t, err)
 
+			// check collection name is in the list.
 			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
 			require.NoError(t, err)
 			assert.Contains(t, names, tc.collection)
+
+			newCollection := collection.Database().Collection(tc.collection)
+
+			// document can be inserted and found in the collection.
+			doc := bson.D{{"_id", "item"}}
+			_, err = newCollection.InsertOne(ctx, doc)
+			require.NoError(t, err)
+
+			res := newCollection.FindOne(ctx, doc)
+			require.NoError(t, res.Err())
 		})
 	}
 }
