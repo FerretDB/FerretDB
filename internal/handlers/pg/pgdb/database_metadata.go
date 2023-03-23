@@ -81,7 +81,6 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 }
 
 // store returns PostgreSQL table name for the given FerretDB database and collection names.
-// It returns the table name, whether the metadata were created and an error if creation failed.
 //
 // If the metadata for the given settings don't exist, it creates them, including the creation
 // of the PostgreSQL schema if needed.
@@ -95,18 +94,21 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func (ms *metadataStorage) store(ctx context.Context) (string, bool, error) {
-	m, err := ms.get(ctx, false)
+func (ms *metadataStorage) store(ctx context.Context) (tableName string, created bool, err error) {
+	var m *metadata
+	m, err = ms.get(ctx, false)
 
 	switch {
 	case err == nil:
 		// metadata already exist
-		return m.table, false, nil
+		tableName = m.table
+		return
 
 	case errors.Is(err, ErrTableNotExist):
 		// metadata don't exist, do nothing
 	default:
-		return "", false, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	err = CreateDatabaseIfNotExists(ctx, ms.tx, ms.db)
@@ -115,21 +117,24 @@ func (ms *metadataStorage) store(ctx context.Context) (string, bool, error) {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrInvalidDatabaseName):
-		return "", false, err
+		return
 	default:
-		return "", false, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	if err = createPGTableIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName); err != nil {
-		return "", false, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	// Index to ensure that collection name is unique
 	if err = createPGIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
-		return "", false, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	tableName := collectionNameToTableName(ms.collection)
+	tableName = collectionNameToTableName(ms.collection)
 	m = &metadata{
 		collection: ms.collection,
 		table:      tableName,
@@ -144,13 +149,22 @@ func (ms *metadataStorage) store(ctx context.Context) (string, bool, error) {
 
 	switch {
 	case err == nil:
-		return tableName, true, nil
+		created = true
+		return
+
 	case errors.Is(err, ErrUniqueViolation):
 		// If metadata were created by another transaction we consider it transaction conflict error
 		// to mark that transaction should be retried.
-		return "", false, lazyerrors.Error(newTransactionConflictError(err))
+		tableName = ""
+		err = lazyerrors.Error(newTransactionConflictError(err))
+
+		return
+
 	default:
-		return "", false, lazyerrors.Error(err)
+		tableName = ""
+		err = lazyerrors.Error(err)
+
+		return
 	}
 }
 
