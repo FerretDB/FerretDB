@@ -81,6 +81,7 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 }
 
 // store returns PostgreSQL table name for the given FerretDB database and collection names.
+// It returns the table name, whether the metadata were created and an error if creation failed.
 //
 // If the metadata for the given settings don't exist, it creates them, including the creation
 // of the PostgreSQL schema if needed.
@@ -94,9 +95,9 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func (m *metadataStorage) store(ctx context.Context) (tableName string, created bool, err error) {
+func (m *metadataStorage) store(ctx context.Context) (string, bool, error) {
 	var metadata *metadata
-	metadata, err = m.get(ctx, false)
+	metadata, err := m.get(ctx, false)
 
 	switch {
 	case err == nil:
@@ -115,7 +116,7 @@ func (m *metadataStorage) store(ctx context.Context) (tableName string, created 
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrInvalidDatabaseName):
-		return
+		return "", false, err
 	default:
 		return "", false, lazyerrors.Error(err)
 	}
@@ -129,7 +130,7 @@ func (m *metadataStorage) store(ctx context.Context) (tableName string, created 
 		return "", false, lazyerrors.Error(err)
 	}
 
-	tableName = collectionNameToTableName(m.collection)
+	tableName := collectionNameToTableName(m.collection)
 	doc := must.NotFail(types.NewDocument(
 		"_id", m.collection,
 		"table", tableName,
