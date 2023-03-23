@@ -940,12 +940,12 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 			)
 
 			// Set $tigrisSchemaString for tigris only.
-			var opts options.CreateCollectionOptions
+			opts := options.CreateCollection()
 			if setup.IsTigris(t) {
-				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
+				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
 			}
 
-			err := db.CreateCollection(ctx, collName, &opts)
+			err := db.CreateCollection(ctx, collName, opts)
 			assert.NoError(t, err)
 
 			err = db.Drop(ctx)
