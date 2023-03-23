@@ -300,9 +300,26 @@ func (m *metadata) setIndex(ctx context.Context, index string, key IndexKey, uni
 			}
 
 			// if index key matches, return existing index
+			// TODO: this can be significantly simplified after metadata refactoring PR
 			idxKey := must.NotFail(idxData.Get("key")).(*types.Document)
+			found := true
 
-			if types.Compare(idxKey, indKey) == types.Equal {
+			if idxKey.Len() == len(key) {
+				for _, pair := range key {
+					order, err := idxKey.Get(pair.Field)
+					if err != nil {
+						found = false
+						break
+					}
+
+					if order.(int32) != int32(pair.Order) {
+						found = false
+						break
+					}
+				}
+			}
+
+			if found {
 				return pgTable, pgIndex, nil
 			}
 		}
