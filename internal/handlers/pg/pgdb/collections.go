@@ -125,7 +125,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrAlreadyExist
 	}
 
-	if err = createPGTableIfNotExists(ctx, tx, db, table); err != nil {
+	if err = createTableIfNotExists(ctx, tx, db, table); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -187,11 +187,11 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	return nil
 }
 
-// createPGTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
+// createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
 // If the table already exists, it does nothing.
 //
 // If a PostgreSQL conflict occurs it returns errTransactionConflict, and the caller could retry the transaction.
-func createPGTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
+func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
 	var err error
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`

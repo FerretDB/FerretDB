@@ -69,15 +69,15 @@ func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index
 		return err
 	}
 
-	if err := createPGIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// createPGIndexIfNotExists creates a new index for the given params if it does not exist.
-func createPGIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
+// createPgIndexIfNotExists creates a new index for the given params if it does not exist.
+func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
 	var err error
 
 	unique := ""

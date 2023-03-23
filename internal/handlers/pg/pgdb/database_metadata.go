@@ -123,13 +123,13 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	if err = createPGTableIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName); err != nil {
+	if err = createTableIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}
 
 	// Index to ensure that collection name is unique
-	if err = createPGIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
+	if err = createPgIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}
