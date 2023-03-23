@@ -19,6 +19,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -32,7 +33,8 @@ import (
 )
 
 // validateCollectionNameRe validates collection names.
-var validateCollectionNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,119}$")
+// Empty collection name, names with `$` and `\x00` are not allowed.
+var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //
@@ -109,7 +111,8 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	if !validateCollectionNameRe.MatchString(collection) ||
-		strings.HasPrefix(collection, reservedPrefix) {
+		strings.HasPrefix(collection, reservedPrefix) ||
+		!utf8.ValidString(collection) {
 		return ErrInvalidCollectionName
 	}
 
@@ -174,16 +177,8 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 		return ErrSchemaNotExist
 	}
 
-	table := formatCollectionName(collection)
-	tables, err := tables(ctx, tx, db)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	if !slices.Contains(tables, table) {
-		return ErrTableNotExist
-	}
-
-	err = newMetadata(tx, db, collection).remove(ctx)
+	metadata := newMetadata(tx, db, collection)
+	table, err := metadata.getTableName(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -191,6 +186,11 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
 	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	err = metadata.remove(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
