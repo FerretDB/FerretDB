@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"regexp"
 
 	"github.com/jackc/pgx/v4"
 
@@ -44,6 +45,10 @@ const (
 	// PostgreSQL max index name length.
 	maxIndexNameLength = 63
 )
+
+// specialCharacters are potential problematic characters of pg table name
+// that are replaced with `_`.
+var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 
 // metadata is a type to structure methods that work with metadata storing and getting.
 //
@@ -109,7 +114,7 @@ func (m *metadata) ensure(ctx context.Context) (tableName string, created bool, 
 		return "", false, lazyerrors.Error(err)
 	}
 
-	tableName = formatCollectionName(m.collection)
+	tableName = collectionNameToTableName(m.collection)
 	metadata := must.NotFail(types.NewDocument(
 		"_id", m.collection,
 		"table", tableName,
@@ -218,20 +223,24 @@ func (m *metadata) remove(ctx context.Context) error {
 	return lazyerrors.Error(err)
 }
 
-// formatCollectionName returns collection name in form <shortened_name>_<name_hash>.
-// Changing this logic will break compatibility with existing databases.
-func formatCollectionName(name string) string {
+// collectionNameToTableName returns name in form <shortened_name>_<name_hash>.
+// It replaces special characters with `_`.
+//
+// Deprecated: this function usage is allowed for collection metadata creation only.
+func collectionNameToTableName(name string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(name)))
 
+	mangled := specialCharacters.ReplaceAllString(name, "_")
+
 	nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
-	truncateTo := len(name)
+	truncateTo := len(mangled)
 
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{}))
+	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
 }
 
 // setIndex sets the index info in the metadata table.
