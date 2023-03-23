@@ -412,12 +412,14 @@ func indexNameToPgIndexName(collection, index string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(name)))
 
+	mangled := specialCharacters.ReplaceAllString(name, "_")
+
 	nameSymbolsLeft := maxIndexNameLength - hash32.Size()*2 - 5 // 5 is for "_" delimiter and "_idx" suffix
-	truncateTo := len(name)
+	truncateTo := len(mangled)
 
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil)) + "_idx"
+	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil)) + "_idx"
 }
