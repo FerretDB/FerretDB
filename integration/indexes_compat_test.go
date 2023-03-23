@@ -102,14 +102,15 @@ type createIndexTestCase struct {
 func testIndexesCreateMany(t *testing.T, testCases map[string]createIndexTestCase) {
 	t.Helper()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	// TODO add non-existent collection test case
-
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 			t.Parallel()
+
+			// Use per-test setup because createIndexes modifies collection state.
+			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+			// TODO add non-existent collection test case
 
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
