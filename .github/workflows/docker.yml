@@ -62,7 +62,7 @@ jobs:
         with:
           images: |
             ${{ env.DOCKER_REPOSITORY }}
-#            ${{ env.QUAY_REPOSITORY }}
+            ${{ env.QUAY_REPOSITORY }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
