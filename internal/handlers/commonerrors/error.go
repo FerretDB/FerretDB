@@ -117,7 +117,7 @@ const (
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
 
 	// ErrGroupUndefinedVariable indicates the variable is not defined.
-	ErrGroupUndefinedVariable = ErrorCode(17276) //Location17276
+	ErrGroupUndefinedVariable = ErrorCode(17276) // Location17276
 
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667

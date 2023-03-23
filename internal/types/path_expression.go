@@ -15,8 +15,9 @@
 package types
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 //go:generate ../../bin/stringer -linecomment -type FieldPathErrorCode
@@ -52,7 +53,7 @@ func newFieldPathError(code FieldPathErrorCode) error {
 
 // Error implements the error interface.
 func (e *FieldPathError) Error() string {
-	return e.Error()
+	return e.code.String()
 }
 
 // Code returns the FieldPathError code.
@@ -65,6 +66,7 @@ func GetFieldPath(expression string) (Path, error) {
 	var res Path
 
 	var val string
+
 	switch {
 	case strings.HasPrefix(expression, "$$"):
 		// two dollar signs indicates field has a variable.
@@ -87,6 +89,7 @@ func GetFieldPath(expression string) (Path, error) {
 	}
 
 	var err error
+
 	res, err = NewPathFromString(val)
 	if err != nil {
 		return res, lazyerrors.Error(err)
