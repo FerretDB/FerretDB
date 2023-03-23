@@ -10,8 +10,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
-github.com/SAP/go-hdb v1.1.4 h1:Z2SlLinKPg07JfmAIJ+/FgIpBluo2RmrRMPemlRVA84=
-github.com/SAP/go-hdb v1.1.4/go.mod h1:zgkdwsMWBZnF92sngaLfI/Ct+dIyyywRPKInF9QIu2Q=
+github.com/SAP/go-hdb v1.1.5 h1:Dc9wANtUY4YiAJqJQL5ObJnlvK/8ZMHUztgTdudz3sw=
+github.com/SAP/go-hdb v1.1.5/go.mod h1:zgkdwsMWBZnF92sngaLfI/Ct+dIyyywRPKInF9QIu2Q=
 github.com/alecthomas/assert/v2 v2.1.0 h1:tbredtNcQnoSd3QBhQWI7QZ3XHOVkw1Moklp2ojoH/0=
 github.com/alecthomas/kong v0.7.1 h1:azoTh0IOfwlAX3qN9sHWTxACE2oV8Bg2gAwBsMwDQY4=
 github.com/alecthomas/kong v0.7.1/go.mod h1:n1iCIO2xS46oE8ZfYCNDqdR0b0wZNrXAIAqro/2132U=
