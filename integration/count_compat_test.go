@@ -31,7 +31,7 @@ import (
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
 	filter     bson.D                   // required, filter for the query
-	optSkip    any                      // required, skip option for the query
+	optSkip    any                      // optional, skip option for the query, defaults to nil
 	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
@@ -169,8 +169,7 @@ func TestCountCompat(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"SkipNull": {
-			filter:  bson.D{},
-			optSkip: nil,
+			filter: bson.D{},
 		},
 		"SkipString": {
 			filter:     bson.D{},
