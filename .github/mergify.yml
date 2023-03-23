@@ -1,5 +1,6 @@
 ---
-# see https://docs.mergify.com/configuration/
+# see https://docs.mergify.com/
+
 pull_request_rules:
   - name: "Update out-of-date approved PRs"
     conditions:
@@ -16,3 +17,19 @@ pull_request_rules:
       - "label != 'no ci'"
     actions:
       update:
+
+  - name: "Add label on conflicts"
+    conditions:
+      - "conflict"
+    actions:
+      comment:
+        message: "@{{author}} this pull request has merge conflicts."
+      label:
+        add: [conflict]
+
+  - name: "Remove label when conflicts were resolved"
+    conditions:
+      - "-conflict"
+    actions:
+      label:
+        remove: [conflict]
