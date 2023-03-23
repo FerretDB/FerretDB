@@ -3,7 +3,7 @@
 pull_request_rules:
   - name: "Update out-of-date approved PRs"
     conditions:
-      # those rules are implicit:
+      # those rules are implicit for the update action:
       # - "#commits-behind > 0"
       # - "-closed"
       - "-conflict"
