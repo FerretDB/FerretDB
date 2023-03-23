@@ -18,15 +18,17 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Index contains user-visible properties of FerretDB index.
 type Index struct {
-	Name   string   // FerretDB index name
-	Key    IndexKey // Index specification (field name + sort order pairs)
-	Unique bool     // Whether the index is unique
+	Name   string
+	Key    IndexKey
+	Unique bool
 }
 
 // IndexKey is a list of field name + sort order pairs.
@@ -35,17 +37,8 @@ type IndexKey []IndexKeyPair
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
 	Field string
-	Order IndexOrder
+	Order types.SortType
 }
-
-// IndexOrder defines a type for index sort order.
-type IndexOrder int8
-
-// IndexOrder constants.
-const (
-	IndexOrderAsc  IndexOrder = 1
-	IndexOrderDesc IndexOrder = -1
-)
 
 // Indexes returns a list of indexes for the given database and collection.
 //
@@ -59,15 +52,12 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 	res := make([]Index, len(metadata.indexes))
 
 	for i, idx := range metadata.indexes {
-		res[i] = Index{
-			Name:   idx.name,
-			Unique: idx.unique,
-			Key:    idx.key,
-		}
+		res[i] = idx.Index
 	}
 
-	// TODO Check indexes order when more than one index exist https://github.com/FerretDB/FerretDB/issues/1509
-	// slices.Sort(res)
+	// TODO Add tests that indexes sorted correctly: https://github.com/FerretDB/FerretDB/issues/1509
+	slices.SortFunc(res, func(a, b Index) bool { return a.Name < b.Name })
+
 	return res, nil
 }
 

@@ -56,7 +56,7 @@ func InsertDocument(ctx context.Context, tx pgx.Tx, db, collection string, doc *
 		return lazyerrors.Error(err)
 	}
 
-	p := insertParams{
+	p := &insertParams{
 		schema: db,
 		table:  table,
 		doc:    doc,
@@ -81,7 +81,7 @@ type insertParams struct {
 // It returns possibly wrapped error:
 //   - ErrUniqueViolation - if the pgerrcode.UniqueViolation error is caught (e.g. due to unique index constraint).
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func insert(ctx context.Context, tx pgx.Tx, p insertParams) error {
+func insert(ctx context.Context, tx pgx.Tx, p *insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 

@@ -22,6 +22,7 @@ import (
 	"regexp"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -57,18 +58,17 @@ type metadataStorage struct {
 	collection string
 }
 
-// metadata stores information about FerretDB collections and indexes.
+// metadata stores information about FerretDB collection and indexes.
 type metadata struct {
-	table   string          // Corresponding PostgreSQL table name
-	indexes []metadataIndex // List of FerretDB indexes for the collection
+	collection string // _id
+	table      string
+	indexes    []metadataIndex
 }
 
-// metadataIndex stores information about FerretDB indexes.
+// metadataIndex stores information about FerretDB index.
 type metadataIndex struct {
-	name    string   // FerretDB index name
-	pgindex string   // Corresponding PostgreSQL index name
-	key     IndexKey // Index specification (field name + sort order pairs)
-	unique  bool     // Whether the index is unique
+	pgIndex string
+	Index
 }
 
 // newMetadataStorage returns a new instance of metadata for the given transaction, database and collection names.
@@ -95,14 +95,13 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func (m *metadataStorage) store(ctx context.Context) (string, bool, error) {
-	var metadata *metadata
-	metadata, err := m.get(ctx, false)
+func (ms *metadataStorage) store(ctx context.Context) (string, bool, error) {
+	m, err := ms.get(ctx, false)
 
 	switch {
 	case err == nil:
 		// metadata already exist
-		return metadata.table, false, nil
+		return m.table, false, nil
 
 	case errors.Is(err, ErrTableNotExist):
 		// metadata don't exist, do nothing
@@ -110,7 +109,7 @@ func (m *metadataStorage) store(ctx context.Context) (string, bool, error) {
 		return "", false, lazyerrors.Error(err)
 	}
 
-	err = CreateDatabaseIfNotExists(ctx, m.tx, m.db)
+	err = CreateDatabaseIfNotExists(ctx, ms.tx, ms.db)
 
 	switch {
 	case err == nil:
@@ -121,26 +120,26 @@ func (m *metadataStorage) store(ctx context.Context) (string, bool, error) {
 		return "", false, lazyerrors.Error(err)
 	}
 
-	if err = createPGTableIfNotExists(ctx, m.tx, m.db, dbMetadataTableName); err != nil {
+	if err = createPGTableIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
 	// Index to ensure that collection name is unique
-	if err = createPGIndexIfNotExists(ctx, m.tx, m.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
+	if err = createPGIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
 		return "", false, lazyerrors.Error(err)
 	}
 
-	tableName := collectionNameToTableName(m.collection)
-	doc := must.NotFail(types.NewDocument(
-		"_id", m.collection,
-		"table", tableName,
-		"indexes", must.NotFail(types.NewArray()),
-	))
+	tableName := collectionNameToTableName(ms.collection)
+	m = &metadata{
+		collection: ms.collection,
+		table:      tableName,
+		indexes:    []metadataIndex{},
+	}
 
-	err = insert(ctx, m.tx, insertParams{
-		schema: m.db,
+	err = insert(ctx, ms.tx, &insertParams{
+		schema: ms.db,
 		table:  dbMetadataTableName,
-		doc:    doc,
+		doc:    ms.metadataToDocument(m),
 	})
 
 	switch {
@@ -158,8 +157,8 @@ func (m *metadataStorage) store(ctx context.Context) (string, bool, error) {
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func (m *metadataStorage) getTableName(ctx context.Context) (string, error) {
-	metadata, err := m.get(ctx, false)
+func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
+	metadata, err := ms.get(ctx, false)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -170,8 +169,8 @@ func (m *metadataStorage) getTableName(ctx context.Context) (string, error) {
 // get returns metadata stored in the metadata table.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
-func (m *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, error) {
-	metadataExist, err := tableExists(ctx, m.tx, m.db, dbMetadataTableName)
+func (ms *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, error) {
+	metadataExist, err := tableExists(ctx, ms.tx, ms.db, dbMetadataTableName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -181,13 +180,13 @@ func (m *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, e
 	}
 
 	iterParams := &iteratorParams{
-		schema:    m.db,
+		schema:    ms.db,
 		table:     dbMetadataTableName,
-		filter:    must.NotFail(types.NewDocument("_id", m.collection)),
+		filter:    must.NotFail(types.NewDocument("_id", ms.collection)),
 		forUpdate: forUpdate,
 	}
 
-	iter, err := buildIterator(ctx, m.tx, iterParams)
+	iter, err := buildIterator(ctx, ms.tx, iterParams)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -234,15 +233,13 @@ func documentToMetadata(doc *types.Document) (*metadata, error) {
 		defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
 
 		for j := 0; j < keyDoc.Len(); j++ {
-			var field string
-			var value any
 			field, value, err := keyIter.Next()
 
 			switch {
 			case err == nil:
 				key[j] = IndexKeyPair{
 					Field: field,
-					Order: IndexOrder(value.(int32)),
+					Order: types.SortType(value.(int32)),
 				}
 			default:
 				return nil, lazyerrors.Error(err)
@@ -250,16 +247,19 @@ func documentToMetadata(doc *types.Document) (*metadata, error) {
 		}
 
 		indexes[i] = metadataIndex{
-			name:    must.NotFail(idxDoc.Get("name")).(string),
-			pgindex: must.NotFail(idxDoc.Get("pgindex")).(string),
-			key:     key,
-			unique:  must.NotFail(idxDoc.Get("unique")).(bool),
+			Index: Index{
+				Name:   must.NotFail(idxDoc.Get("name")).(string),
+				Key:    key,
+				Unique: must.NotFail(idxDoc.Get("unique")).(bool),
+			},
+			pgIndex: must.NotFail(idxDoc.Get("pgindex")).(string),
 		}
 	}
 
 	return &metadata{
-		table:   must.NotFail(doc.Get("table")).(string),
-		indexes: indexes,
+		collection: must.NotFail(doc.Get("_id")).(string),
+		table:      must.NotFail(doc.Get("table")).(string),
+		indexes:    indexes,
 	}, nil
 }
 
@@ -267,10 +267,10 @@ func documentToMetadata(doc *types.Document) (*metadata, error) {
 //
 // To avoid data race, set should be called only after getMetadata with forUpdate = true is called,
 // so that the metadata table is locked correctly.
-func (m *metadataStorage) set(ctx context.Context, metadata *metadata) error {
-	doc := m.metadataToDocument(metadata)
+func (ms *metadataStorage) set(ctx context.Context, metadata *metadata) error {
+	doc := ms.metadataToDocument(metadata)
 
-	if _, err := setById(ctx, m.tx, m.db, dbMetadataTableName, "", m.collection, doc); err != nil {
+	if _, err := setById(ctx, ms.tx, ms.db, dbMetadataTableName, "", ms.collection, doc); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -279,25 +279,25 @@ func (m *metadataStorage) set(ctx context.Context, metadata *metadata) error {
 
 // metadataToDocument converts metadata to *types.Document.
 // Use this function to transform metadata to document to be stored in the database.
-func (m *metadataStorage) metadataToDocument(metadata *metadata) *types.Document {
+func (ms *metadataStorage) metadataToDocument(metadata *metadata) *types.Document {
 	indexesArr := types.MakeArray(len(metadata.indexes))
 
 	for _, idx := range metadata.indexes {
-		keyDoc := types.MakeDocument(len(idx.key))
-		for _, pair := range idx.key {
+		keyDoc := types.MakeDocument(len(idx.Key))
+		for _, pair := range idx.Key {
 			keyDoc.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be pjson-marshaled correctly
 		}
 
 		indexesArr.Append(must.NotFail(types.NewDocument(
-			"pgindex", idx.pgindex,
-			"name", idx.name,
+			"pgindex", idx.pgIndex,
+			"name", idx.Name,
 			"key", keyDoc,
-			"unique", idx.unique,
+			"unique", idx.Unique,
 		)))
 	}
 
 	return must.NotFail(types.NewDocument(
-		"_id", m.collection,
+		"_id", ms.collection,
 		"table", metadata.table,
 		"indexes", indexesArr,
 	))
@@ -306,11 +306,11 @@ func (m *metadataStorage) metadataToDocument(metadata *metadata) *types.Document
 // remove removes metadata.
 //
 // If such metadata don't exist, it doesn't return an error.
-func (m *metadataStorage) remove(ctx context.Context) error {
-	_, err := deleteByIDs(ctx, m.tx, execDeleteParams{
-		schema: m.db,
+func (ms *metadataStorage) remove(ctx context.Context) error {
+	_, err := deleteByIDs(ctx, ms.tx, execDeleteParams{
+		schema: ms.db,
 		table:  dbMetadataTableName,
-	}, []any{m.collection},
+	}, []any{ms.collection},
 	)
 
 	if err == nil {
@@ -348,41 +348,41 @@ func collectionNameToTableName(name string) string {
 // It returns a possibly wrapped error:
 //   - ErrTableNotExist - if the metadata table doesn't exist.
 //   - ErrIndexAlreadyExist - if the given index already exists.
-func (m *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
-	metadata, err := m.get(ctx, true)
+func (ms *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
+	metadata, err := ms.get(ctx, true)
 	if err != nil {
-		return "", "", err
+		return
 	}
 
 	pgTable = metadata.table
-	pgIndex = formatIndexName(m.collection, index)
+	pgIndex = indexNameToPgIndexName(ms.collection, index)
 
-	if len(metadata.indexes) > 0 {
-		for _, idx := range metadata.indexes {
-			if idx.name == index {
-				return "", "", ErrIndexAlreadyExist
-			}
-		}
+	if slices.ContainsFunc(metadata.indexes, func(idx metadataIndex) bool { return idx.Name == index }) {
+		err = ErrIndexAlreadyExist
+		return
 	}
 
 	metadata.indexes = append(metadata.indexes, metadataIndex{
-		name:    index,
-		pgindex: pgIndex,
-		key:     key,
-		unique:  unique,
+		Index: Index{
+			Name:   index,
+			Key:    key,
+			Unique: unique,
+		},
+		pgIndex: pgIndex,
 	})
 
-	if err = m.set(ctx, metadata); err != nil {
-		return "", "", lazyerrors.Error(err)
+	if err = ms.set(ctx, metadata); err != nil {
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	return
 }
 
-// formatIndexName returns index name in form <shortened_name>_<name_hash>_idx.
+// indexNameToPgIndexName returns index name in form <shortened_name>_<name_hash>_idx.
 //
 // Deprecated: this function usage is allowed for index metadata creation only.
-func formatIndexName(collection, index string) string {
+func indexNameToPgIndexName(collection, index string) string {
 	name := collection + "_" + index
 
 	hash32 := fnv.New32a()
@@ -395,5 +395,5 @@ func formatIndexName(collection, index string) string {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return name[:truncateTo] + "_" + fmt.Sprintf("%x", hash32.Sum([]byte{})) + "_idx"
+	return name[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil)) + "_idx"
 }
