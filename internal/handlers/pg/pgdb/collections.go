@@ -168,21 +168,19 @@ func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection 
 //
 // TODO Test correctness for concurrent cases https://github.com/FerretDB/FerretDB/issues/1684
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	md := newMetadataStorage(tx, db, collection)
-	tableName, err := md.getTableName(ctx)
+	ms := newMetadataStorage(tx, db, collection)
+	tableName, err := ms.getTableName(ctx)
 	if err != nil {
 		return err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, tableName}.Sanitize() + ` CASCADE`
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
+	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	err = md.remove(ctx)
-	if err != nil {
+	if err = ms.remove(ctx); err != nil {
 		return lazyerrors.Error(err)
 	}
 
