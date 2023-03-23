@@ -407,11 +407,20 @@ func TestCollectionName(t *testing.T) {
 
 			assert.NoError(t, err)
 
+			// check collection name is in the list.
+			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+			assert.Contains(t, names, tc.collection)
+
 			newCollection := collection.Database().Collection(tc.collection)
 
-			// insert data to ensure collection can be updated.
-			_, err = newCollection.InsertOne(ctx, bson.D{})
+			// document can be inserted and found in the collection.
+			doc := bson.D{{"_id", "item"}}
+			_, err = newCollection.InsertOne(ctx, doc)
 			require.NoError(t, err)
+
+			res := newCollection.FindOne(ctx, doc)
+			require.NoError(t, res.Err())
 		})
 	}
 }
