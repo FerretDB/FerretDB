@@ -1,20 +1,18 @@
 ---
 # see https://docs.mergify.com/configuration/
 pull_request_rules:
-  - name: "Update out-of-date ready PRs"
-
+  - name: "Update out-of-date approved PRs"
     conditions:
-      # those rules are implicit
+      # those rules are implicit:
       # - "#commits-behind > 0"
       # - "-closed"
-
       - "-conflict"
       - "-draft"
       - "-locked"
       - "-merged"
       - "author != dependabot[bot]"
       - "base = main"
+      - "branch-protection-review-decision = APPROVED"
       - "label != 'no ci'"
-
     actions:
       update:
