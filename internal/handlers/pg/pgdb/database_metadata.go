@@ -139,7 +139,7 @@ func (ms *metadataStorage) store(ctx context.Context) (string, bool, error) {
 	err = insert(ctx, ms.tx, &insertParams{
 		schema: ms.db,
 		table:  dbMetadataTableName,
-		doc:    ms.metadataToDocument(m),
+		doc:    metadataToDocument(m),
 	})
 
 	switch {
@@ -226,34 +226,12 @@ func documentToMetadata(doc *types.Document) (*metadata, error) {
 	for i := 0; i < indexesArr.Len(); i++ {
 		idxDoc := must.NotFail(indexesArr.Get(i)).(*types.Document)
 
-		keyDoc := must.NotFail(idxDoc.Get("key")).(*types.Document)
-		key := make(IndexKey, keyDoc.Len())
-
-		keyIter := keyDoc.Iterator()
-		defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
-
-		for j := 0; j < keyDoc.Len(); j++ {
-			field, value, err := keyIter.Next()
-
-			switch {
-			case err == nil:
-				key[j] = IndexKeyPair{
-					Field: field,
-					Order: types.SortType(value.(int32)),
-				}
-			default:
-				return nil, lazyerrors.Error(err)
-			}
+		idx, err := documentToMetadataIndex(idxDoc)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		indexes[i] = metadataIndex{
-			Index: Index{
-				Name:   must.NotFail(idxDoc.Get("name")).(string),
-				Key:    key,
-				Unique: must.NotFail(idxDoc.Get("unique")).(bool),
-			},
-			pgIndex: must.NotFail(idxDoc.Get("pgindex")).(string),
-		}
+		indexes[i] = *idx
 	}
 
 	return &metadata{
@@ -263,12 +241,44 @@ func documentToMetadata(doc *types.Document) (*metadata, error) {
 	}, nil
 }
 
+// documentToMetadataIndex converts *types.Document to metadataIndex.
+func documentToMetadataIndex(doc *types.Document) (*metadataIndex, error) {
+	keyDoc := must.NotFail(doc.Get("key")).(*types.Document)
+	key := make(IndexKey, keyDoc.Len())
+
+	keyIter := keyDoc.Iterator()
+	defer keyIter.Close()
+
+	for i := 0; i < keyDoc.Len(); i++ {
+		field, value, err := keyIter.Next()
+
+		switch {
+		case err == nil:
+			key[i] = IndexKeyPair{
+				Field: field,
+				Order: types.SortType(value.(int32)),
+			}
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return &metadataIndex{
+		Index: Index{
+			Name:   must.NotFail(doc.Get("name")).(string),
+			Key:    key,
+			Unique: must.NotFail(doc.Get("unique")).(bool),
+		},
+		pgIndex: must.NotFail(doc.Get("pgindex")).(string),
+	}, nil
+}
+
 // set sets metadata for the given database and collection.
 //
 // To avoid data race, set should be called only after getMetadata with forUpdate = true is called,
 // so that the metadata table is locked correctly.
 func (ms *metadataStorage) set(ctx context.Context, metadata *metadata) error {
-	doc := ms.metadataToDocument(metadata)
+	doc := metadataToDocument(metadata)
 
 	if _, err := setById(ctx, ms.tx, ms.db, dbMetadataTableName, "", ms.collection, doc); err != nil {
 		return lazyerrors.Error(err)
@@ -279,7 +289,7 @@ func (ms *metadataStorage) set(ctx context.Context, metadata *metadata) error {
 
 // metadataToDocument converts metadata to *types.Document.
 // Use this function to transform metadata to document to be stored in the database.
-func (ms *metadataStorage) metadataToDocument(metadata *metadata) *types.Document {
+func metadataToDocument(metadata *metadata) *types.Document {
 	indexesArr := types.MakeArray(len(metadata.indexes))
 
 	for _, idx := range metadata.indexes {
@@ -297,7 +307,7 @@ func (ms *metadataStorage) metadataToDocument(metadata *metadata) *types.Documen
 	}
 
 	return must.NotFail(types.NewDocument(
-		"_id", ms.collection,
+		"_id", metadata.collection,
 		"table", metadata.table,
 		"indexes", indexesArr,
 	))
