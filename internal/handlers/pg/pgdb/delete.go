@@ -26,7 +26,7 @@ import (
 
 // DeleteDocumentsByID deletes documents by given IDs.
 func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, ids []any) (int64, error) {
-	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return 0, err
 	}
