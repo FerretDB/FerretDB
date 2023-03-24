@@ -88,7 +88,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 // CollectionExists returns true if FerretDB collection exists.
 func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
-	_, err := newMetadata(tx, db, collection).getTableName(ctx)
+	_, err := newMetadataStorage(tx, db, collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
@@ -116,7 +116,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrInvalidCollectionName
 	}
 
-	table, created, err := newMetadata(tx, db, collection).ensure(ctx)
+	table, created, err := newMetadataStorage(tx, db, collection).store(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -125,14 +125,14 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		return ErrAlreadyExist
 	}
 
-	if err = createPGTableIfNotExists(ctx, tx, db, table); err != nil {
+	if err = createTableIfNotExists(ctx, tx, db, table); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	// Create default index on _id field.
 	indexParams := &Index{
 		Name:   "_id_",
-		Key:    IndexKey{{Field: "_id", Order: IndexOrderAsc}},
+		Key:    IndexKey{{Field: "_id", Order: types.Ascending}},
 		Unique: true,
 	}
 
@@ -168,41 +168,30 @@ func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection 
 //
 // TODO Test correctness for concurrent cases https://github.com/FerretDB/FerretDB/issues/1684
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
-	schemaExists, err := schemaExists(ctx, tx, db)
+	ms := newMetadataStorage(tx, db, collection)
+	tableName, err := ms.getTableName(ctx)
 	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !schemaExists {
-		return ErrSchemaNotExist
-	}
-
-	metadata := newMetadata(tx, db, collection)
-	table, err := metadata.getTableName(ctx)
-	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
-	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, table}.Sanitize() + ` CASCADE`
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
+	sql := `DROP TABLE IF EXISTS ` + pgx.Identifier{db, tableName}.Sanitize() + ` CASCADE`
+	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	err = metadata.remove(ctx)
-	if err != nil {
+	if err = ms.remove(ctx); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	return nil
 }
 
-// createPGTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
+// createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
 // If the table already exists, it does nothing.
 //
 // If a PostgreSQL conflict occurs it returns errTransactionConflict, and the caller could retry the transaction.
-func createPGTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
+func createTableIfNotExists(ctx context.Context, tx pgx.Tx, schema, table string) error {
 	var err error
 
 	sql := `CREATE TABLE IF NOT EXISTS ` + pgx.Identifier{schema, table}.Sanitize() + ` (_jsonb jsonb)`

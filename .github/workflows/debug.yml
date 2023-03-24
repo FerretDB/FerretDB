@@ -24,6 +24,7 @@ jobs:
   contexts:
     name: Contexts
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
 
     # comment out to enable this job
     if: false
