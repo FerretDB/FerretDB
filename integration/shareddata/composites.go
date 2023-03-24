@@ -73,7 +73,8 @@ var Composites = &Values[string]{
 	},
 }
 
-// Mixed contains composite and scalar values for tests.
+// Mixed contains composite and scalar values for tests. It is used for sorting
+// mixture or array and scalar documents.
 var Mixed = &Values[string]{
 	name:     "Mixed",
 	backends: []string{"ferretdb-pg", "mongodb"},
@@ -320,6 +321,16 @@ var ArrayDocuments = &Values[string]{
 					bson.D{{"bar", "hello"}},
 					bson.D{{"bar", "world"}},
 				},
+			}},
+		},
+		"array-two-documents": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
 			}},
 		},
 	},

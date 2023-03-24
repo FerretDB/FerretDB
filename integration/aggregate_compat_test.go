@@ -481,7 +481,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", "$$NOW"},
 			}}}},
 			resultType: emptyResult,
-			skip:       "todo",
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"GroupInvalidFields": {
 			pipeline:   bson.A{bson.D{{"$group", 1}}},
@@ -536,6 +536,7 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
+	// https://github.com/FerretDB/FerretDB/issues/2276
 
 	providers := []shareddata.Provider{
 		shareddata.Scalars,

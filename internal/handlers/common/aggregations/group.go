@@ -219,7 +219,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 		}}, nil
 	}
 
-	_, err := types.GetFieldPath(groupKey)
+	expression, err := types.NewExpression(groupKey)
 	if err != nil {
 		var fieldPathErr *types.FieldPathError
 		if !errors.As(err, &fieldPathErr) {
@@ -265,13 +265,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 	var group groupMap
 
 	for _, doc := range in {
-		val, err := types.GetFieldValue(groupKey, doc)
-		if err != nil {
-			// if the path does not exist, use null for group key.
-			group.addOrAppend(types.Null, doc)
-			continue
-		}
-
+		val := expression.Evaluate(doc)
 		group.addOrAppend(val, doc)
 	}
 
