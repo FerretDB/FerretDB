@@ -56,46 +56,6 @@ func TestIndexesList(t *testing.T) {
 	}
 }
 
-// TestIndexesListRunCommand tests the behavior when listIndexes is called through RunCommand.
-// It's handy to use it to test the correctness of errors.
-func TestIndexesListRunCommand(t *testing.T) {
-	t.Parallel()
-
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
-
-	for name, tc := range map[string]struct {
-		collectionName any
-		expectedError  *mongo.CommandError
-	}{
-		"invalid-collection-name": {
-			collectionName: 42,
-		},
-	} {
-		name, tc := name, tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			require.Nil(t, targetRes)
-			require.Nil(t, compatRes)
-
-			AssertMatchesCommandError(t, compatErr, targetErr)
-		})
-	}
-}
-
 type createIndexTestCase struct {
 	models []mongo.IndexModel
 }
@@ -182,4 +142,66 @@ func TestIndexesCreate(t *testing.T) {
 	}
 
 	testIndexesCreateMany(t, testCases)
+}
+
+// TestIndexesInvalidCollectionName tests the behavior when we try to create an index with invalid parameters.
+// with invalid name.
+func TestIndexesInvalidCollectionName(t *testing.T) {
+	t.Parallel()
+
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	targetCollection := targetCollections[0]
+	compatCollection := compatCollections[0]
+
+	for name, tc := range map[string]struct {
+		collectionName any
+		key            bson.D
+		name           string
+	}{
+		"invalid-collection-name": {
+			collectionName: 42,
+			key:            bson.D{{"v", -1}},
+			name:           "custom-index",
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var targetRes bson.D
+			targetErr := targetCollection.Database().RunCommand(
+				ctx, bson.D{
+					{"createIndexes", tc.collectionName},
+					{"indexes", bson.A{bson.D{{"key", tc.key}, {"name", tc.name}}}},
+				},
+			).Decode(&targetRes)
+
+			var compatRes bson.D
+			compatErr := compatCollection.Database().RunCommand(
+				ctx, bson.D{
+					{"createIndexes", tc.collectionName},
+					{"indexes", bson.A{bson.D{{"key", tc.key}}}},
+				},
+			).Decode(&compatRes)
+
+			require.Nil(t, targetRes)
+			require.Nil(t, compatRes)
+
+			AssertMatchesCommandError(t, compatErr, targetErr)
+
+			targetErr = targetCollection.Database().RunCommand(
+				ctx, bson.D{{"listIndexes", tc.collectionName}},
+			).Decode(&targetRes)
+
+			compatErr = compatCollection.Database().RunCommand(
+				ctx, bson.D{{"listIndexes", tc.collectionName}},
+			).Decode(&targetRes)
+
+			require.Nil(t, targetRes)
+			require.Nil(t, compatRes)
+
+			AssertMatchesCommandError(t, compatErr, targetErr)
+		})
+	}
 }
