@@ -379,6 +379,9 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 				}}},
@@ -388,6 +391,9 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		},
 		"CountValue": {
 			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"count", bson.D{{"$count", bson.D{}}}},

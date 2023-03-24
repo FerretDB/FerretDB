@@ -26,6 +26,7 @@ jobs:
   preview:
     name: Preview docs
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: >
       contains(github.event.pull_request.labels.*.name, 'trust') &&
