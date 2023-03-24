@@ -16,6 +16,7 @@ package aggregations
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -40,7 +41,7 @@ func newLimit(stage *types.Document) (Stage, error) {
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrLimitStageInvalidArg,
-			fmt.Sprintf("Invalid argument to $limit stage: Expected a number in: $limit: %v", doc),
+			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", doc),
 		)
 	}
 
@@ -51,5 +52,18 @@ func newLimit(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	return common.LimitDocuments(in, l.max)
+	doc, err := common.LimitDocuments(in, l.max)
+	if err != nil {
+		var ce *commonerrors.CommandError
+		if errors.As(err, &ce) && ce.Code() == commonerrors.ErrNotImplemented {
+			return nil, common.NewCommandErrorMsg(
+				commonerrors.ErrLimitStageInvalidArg,
+				fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", l.max),
+			)
+		}
+
+		return nil, err
+	}
+
+	return doc, nil
 }

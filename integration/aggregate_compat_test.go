@@ -565,12 +565,14 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", "5"}},
 			},
+			resultType: emptyResult,
 		},
 		"Double": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 4.5}},
 			},
+			//resultType: emptyResult,
 		},
 		"DoubleInt": {
 			pipeline: bson.A{
@@ -584,11 +586,32 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", math.MaxInt64}},
 			},
 		},
+		// "OverflowInt64": {
+		// 	pipeline: bson.A{
+		// 		bson.D{{"$sort", bson.D{{"_id", -1}}}},
+		// 		bson.D{{"$limit"}},
+		// 	},
+		// },
 		"Negative": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -1}},
 			},
+			resultType: emptyResult,
+		},
+		"NegativeDouble": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", -2.1}},
+			},
+			resultType: emptyResult,
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", bson.D{}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 
