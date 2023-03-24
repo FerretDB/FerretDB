@@ -193,7 +193,7 @@ func getExpressionPathValue(doc *Document, path Path) []any {
 
 				embeddedVals = append(embeddedVals, embeddedVal)
 			case *Array:
-				// iterate array to get all documents that contain the key.
+				// iterate elements to get documents that contain the key.
 				for j := 0; j < val.Len(); j++ {
 					elem := must.NotFail(val.Get(j))
 
