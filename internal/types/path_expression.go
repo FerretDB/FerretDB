@@ -15,7 +15,6 @@
 package types
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -123,16 +122,17 @@ func GetFieldValue(expression string, doc *Document) (any, error) {
 		return val, nil
 	}
 
-	_, vals := getValuesAtSuffix(doc, path)
-
 	var isPrefixArray bool
 	prefix := path.Prefix()
+
 	if v, err := doc.Get(prefix); err == nil {
 		if _, isArray := v.(*Array); isArray {
 			// when the prefix is array, it returns empty array instead of null
 			isPrefixArray = true
 		}
 	}
+
+	_, vals := getValuesAtSuffix(doc, path)
 
 	if len(vals) == 0 {
 		if isPrefixArray {
@@ -155,7 +155,7 @@ func GetFieldValue(expression string, doc *Document) (any, error) {
 		arr.Append(v)
 	}
 
-	return NewArray(vals)
+	return NewArray(arr)
 }
 
 func getValuesAtSuffix(doc *Document, path Path) (string, []any) {
@@ -181,20 +181,7 @@ func getValuesAtSuffix(doc *Document, path Path) (string, []any) {
 				// key exists in the document, add embedded value to next iteration.
 				embeddedVals = append(embeddedVals, embeddedVal)
 			case *Array:
-				if index, err := strconv.Atoi(key); err == nil {
-					// key is an integer, check if that integer is an index of the array.
-					embeddedVal, err := val.Get(index)
-					if err != nil {
-						// index does not exist.
-						continue
-					}
-
-					// key is the index of the array, add embedded value to the next iteration.
-					embeddedVals = append(embeddedVals, embeddedVal)
-
-					continue
-				}
-
+				// ignore array index.
 				// key was not an index, iterate array to get all documents that contain the key.
 				for j := 0; j < val.Len(); j++ {
 					valAtIndex := must.NotFail(val.Get(j))

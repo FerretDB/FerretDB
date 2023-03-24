@@ -577,9 +577,29 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"DotNotation": {
+		"DocDotNotation": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
+			}}}},
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0"},
+			}}}},
+		},
+		"ArrayDocDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo"},
+			}}}},
+		},
+		"NestedDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo.0.bar"},
+			}}}},
+		},
+		"NonExistentDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$non.existent"},
 			}}}},
 		},
 	}
