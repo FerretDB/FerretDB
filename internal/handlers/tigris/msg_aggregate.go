@@ -115,7 +115,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	defer iter.Close()
 
-	docs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
+	docs, err = iterator.Values(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, err
 	}

@@ -64,21 +64,17 @@ func TestQueryDocuments(t *testing.T) {
 
 		var queried []*types.Document
 
-		i := 0
 		for {
-			var n int
 			var doc *types.Document
 
-			n, doc, err = iter.Next()
+			_, doc, err = iter.Next()
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, i, n)
 
 			queried = append(queried, doc)
-			i++
 		}
 
 		require.Equal(t, len(inserted), len(queried))
