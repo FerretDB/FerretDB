@@ -32,7 +32,7 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 // Accumulator is a common interface for accumulation.
 type Accumulator interface {
 	// Accumulate documents and returns the result of accumulation.
-	Accumulate(ctx context.Context, groupkey any, in []*types.Document) (any, error)
+	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
 }
 
 // accumulators maps all supported $group accumulators.
@@ -56,7 +56,7 @@ type groupStage struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(ctx context.Context, groupkey any, in []*types.Document) (any, error)
+	accumulate  func(ctx context.Context, groupID any, in []*types.Document) (any, error)
 	outputField string
 }
 
@@ -172,7 +172,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 		doc := new(types.Document)
 
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(ctx, groupedDocument.groupKey, groupedDocument.documents)
+			out, err := accumulation.accumulate(ctx, groupedDocument.groupID, groupedDocument.documents)
 			if err != nil {
 				return nil, err
 			}
@@ -204,8 +204,8 @@ type idAccumulator struct {
 //
 //	{$group: {_id: "$v"}} sets the value of $v to _id, Accumulate returns the value found at key `v`.
 //	{$group: {_id: null}} sets `null` to _id, Accumulate returns nil.
-func (a *idAccumulator) Accumulate(ctx context.Context, groupkey any, in []*types.Document) (any, error) {
-	return groupkey, nil
+func (a *idAccumulator) Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error) {
+	return groupID, nil
 }
 
 // groupDocuments groups documents by group expression.
@@ -214,7 +214,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 	if !ok {
 		// non-string key aggregates values of all `in` documents into one aggregated document.
 		return []groupedDocuments{{
-			groupKey:  g.groupExpression,
+			groupID:   g.groupExpression,
 			documents: in,
 		}}, nil
 	}
@@ -230,7 +230,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 		case types.ErrNotFieldPath:
 			// constant value aggregates values of all `in` documents into one aggregated document.
 			return []groupedDocuments{{
-				groupKey:  groupKey,
+				groupID:   groupKey,
 				documents: in,
 			}}, nil
 		case types.ErrEmptyFieldPath:
@@ -280,7 +280,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 
 // groupedDocuments contains group key and the documents for that group.
 type groupedDocuments struct {
-	groupKey  any
+	groupID   any
 	documents []*types.Document
 }
 
@@ -289,22 +289,22 @@ type groupMap struct {
 	docs []groupedDocuments
 }
 
-// addOrAppend adds a groupKey documents pair if the groupKey does not exist,
-// if the groupKey exists it appends the documents to the slice.
+// addOrAppend adds a groupID documents pair if the groupID does not exist,
+// if the groupID exists it appends the documents to the slice.
 func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	for i, g := range m.docs {
-		// groupKey is a distinct key and can be any BSON type including array and Binary,
+		// groupID is a distinct key and can be any BSON type including array and Binary,
 		// so we cannot use structure like map.
-		// Compare is used to check if groupKey exists in groupMap, because
+		// Compare is used to check if groupID exists in groupMap, because
 		// numbers are grouped for the same value regardless of their number type.
-		if types.Compare(groupKey, g.groupKey) == types.Equal {
+		if types.Compare(groupKey, g.groupID) == types.Equal {
 			m.docs[i].documents = append(m.docs[i].documents, docs...)
 			return
 		}
 	}
 
 	m.docs = append(m.docs, groupedDocuments{
-		groupKey:  groupKey,
+		groupID:   groupKey,
 		documents: docs,
 	})
 }

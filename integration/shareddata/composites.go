@@ -73,7 +73,7 @@ var Composites = &Values[string]{
 	},
 }
 
-// Mixed contain composite and scalar values for tests.
+// Mixed contains composite and scalar values for tests.
 var Mixed = &Values[string]{
 	name:     "Mixed",
 	backends: []string{"ferretdb-pg", "mongodb"},

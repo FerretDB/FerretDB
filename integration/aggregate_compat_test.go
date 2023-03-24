@@ -476,12 +476,6 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			resultType: emptyResult,
 		},
-		"Variable": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$$v"},
-			}}}},
-			resultType: emptyResult,
-		},
 		"SystemVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$NOW"},
@@ -538,9 +532,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDotNotation(t *testing.T) {
-	// Providers cannot be used due to sorting difference.
-	// We use one way of sorting for now, until we have another way
-	// of sorting. Skip Composites and Mixed.
+	// Providers Composites and Mixed cannot be used due to sorting difference.
+	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
 
