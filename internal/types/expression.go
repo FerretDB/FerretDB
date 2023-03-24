@@ -139,7 +139,7 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 		}
 	}
 
-	vals := getValuesAtSuffix(doc, path)
+	vals := getExpressionPathValue(doc, path)
 
 	if len(vals) == 0 {
 		if isPrefixArray {
@@ -164,48 +164,18 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 	return arr
 }
 
-// getValuesAtSuffix go through each key of the path iteratively to
+// getExpressionPathValue go through each key of the path iteratively to
 // find values that exist at suffix.
-// An array dot notation may return multiple values.
+// An array may return multiple values.
 // At each key of the path, it checks:
 //
 //	if the document has the key,
 //	if the array contains documents which have the key.
 //
 // It is different from `getDocumentsAtSuffix`, it does not find array item by
-// index.
-//
-// It returns:
-//
-//	a slice of values at suffix.
-//
-// Document path example:
-//
-//	docs:		{foo: {bar: 1}}
-//	path:		`foo.bar`
-//
-// returns
-//
-//	docsAtSuffix:	[1]
-//
-// Array index path example:
-//
-//	docs:		{foo: [{bar: 1}]}
-//	path:		`foo.0.bar`
-//
-// returns
-//
-//	docsAtSuffix:	[]
-//
-// Array document example:
-//
-//	docs:		{foo: [{bar: 1}, {bar: 2}]}
-//	path:		`foo.bar`
-//
-// returns
-//
-//	docsAtSuffix:	[1, 2}]
-func getValuesAtSuffix(doc *Document, path Path) []any {
+// array dot notation `foo.0.bar`. It returns empty array [] because using index
+// such as `0` does not match using expression path.
+func getExpressionPathValue(doc *Document, path Path) []any {
 	keys := path.Slice()
 	vals := []any{doc}
 

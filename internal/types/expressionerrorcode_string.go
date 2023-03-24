@@ -15,14 +15,14 @@ func _() {
 	_ = x[ErrEmptyVariable-5]
 }
 
-const _FieldPathErrorCode_name = "ErrNotFieldPathErrEmptyFieldPathErrInvalidFieldPathErrUndefinedVariableErrEmptyVariable"
+const _ExpressionErrorCode_name = "ErrNotFieldPathErrEmptyFieldPathErrInvalidFieldPathErrUndefinedVariableErrEmptyVariable"
 
-var _FieldPathErrorCode_index = [...]uint8{0, 15, 32, 51, 71, 87}
+var _ExpressionErrorCode_index = [...]uint8{0, 15, 32, 51, 71, 87}
 
 func (i ExpressionErrorCode) String() string {
 	i -= 1
-	if i < 0 || i >= ExpressionErrorCode(len(_FieldPathErrorCode_index)-1) {
+	if i < 0 || i >= ExpressionErrorCode(len(_ExpressionErrorCode_index)-1) {
 		return "ExpressionErrorCode(" + strconv.FormatInt(int64(i+1), 10) + ")"
 	}
-	return _FieldPathErrorCode_name[_FieldPathErrorCode_index[i]:_FieldPathErrorCode_index[i+1]]
+	return _ExpressionErrorCode_name[_ExpressionErrorCode_index[i]:_ExpressionErrorCode_index[i+1]]
 }
