@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -292,6 +291,7 @@ func TestPrepareWhereClause(t *testing.T) {
 
 	// WHERE clauses occurring frequently in tests
 	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereGt := " WHERE _jsonb->$1 > $2"
 	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
 	for name, tc := range map[string]struct {
@@ -345,7 +345,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		},
 		"ImplicitMaxFloat64": {
 			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
-			expected: whereContain,
+			expected: whereGt,
 		},
 		"ImplicitBool": {
 			filter:   must.NotFail(types.NewDocument("v", true)),
@@ -397,16 +397,15 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
 			)),
-			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
-			expected: whereContain,
+			args:     []any{`v`, types.MaxSafeDouble},
+			expected: whereGt,
 		},
 		"EqDoubleBigInt64": {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
 			)),
-			args:     []any{`v`, fmt.Sprint(float64(2 << 61))},
-			expected: whereContain,
-			skip:     "https://github.com/FerretDB/FerretDB/issues/2057",
+			args:     []any{`v`, types.MaxSafeDouble},
+			expected: whereGt,
 		},
 		"EqBool": {
 			filter: must.NotFail(types.NewDocument(
@@ -463,7 +462,7 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$ne", math.MaxFloat64)),
 			)),
-			args:     []any{`v`, fmt.Sprint(math.MaxFloat64)},
+			args:     []any{`v`, math.MaxFloat64},
 			expected: whereNotEq + `'"double"' )`,
 		},
 		"NeBool": {
