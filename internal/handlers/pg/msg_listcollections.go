@@ -101,28 +101,16 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	var reply wire.OpMsg
 
-	switch {
-	case nameOnly:
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"firstBatch", collections,
-				)),
-				"ok", float64(1),
-			))},
-		}))
-	default:
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"id", int64(0),
-					"ns", db+".$cmd.listCollections",
-					"firstBatch", collections,
-				)),
-				"ok", float64(1),
-			))},
-		}))
-	}
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"id", int64(0),
+				"ns", db+".$cmd.listCollections",
+				"firstBatch", collections,
+			)),
+			"ok", float64(1),
+		))},
+	}))
 
 	return &reply, nil
 }
