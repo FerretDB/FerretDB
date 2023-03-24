@@ -44,6 +44,7 @@ jobs:
   build:
     name: Build packages
     runs-on: faster
+    timeout-minutes: 60
 
     if: >
       github.event_name != 'pull_request_target' ||
