@@ -24,7 +24,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -1565,42 +1564,6 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 		return NewCommandErrorMsgWithArgument(
 			ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
-			operator,
-		)
-
-	default:
-		return err
-	}
-}
-
-func FormatLimitOperatorErr(err error, operator string, value any) error {
-	switch {
-	case errors.Is(err, errNotWholeNumber):
-		return NewCommandErrorMsgWithArgument(
-			commonerrors.ErrLimitStageInvalidArg,
-			fmt.Sprintf("Expected an integer: %s: %#v", operator, value),
-			operator,
-		)
-
-	case errors.Is(err, errNegativeNumber):
-		if _, ok := value.(float64); ok {
-			return NewCommandErrorMsgWithArgument(
-				commonerrors.ErrLimitStageInvalidArg,
-				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, value),
-				operator,
-			)
-		}
-
-		return NewCommandErrorMsgWithArgument(
-			commonerrors.ErrLimitStageInvalidArg,
-			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, value),
-			operator,
-		)
-
-	case errors.Is(err, errNotBinaryMask):
-		return NewCommandErrorMsgWithArgument(
-			commonerrors.ErrLimitStageInvalidArg,
-			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, value),
 			operator,
 		)
 

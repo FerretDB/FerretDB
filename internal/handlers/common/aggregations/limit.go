@@ -16,11 +16,8 @@ package aggregations
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -37,12 +34,9 @@ func newLimit(stage *types.Document) (Stage, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	max, err := common.GetWholeNumberParam(doc)
+	max, err := common.GetLimitStageParam(doc)
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrLimitStageInvalidArg,
-			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", doc),
-		)
+		return nil, err
 	}
 
 	return &limit{
@@ -54,15 +48,7 @@ func newLimit(stage *types.Document) (Stage, error) {
 func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	doc, err := common.LimitDocuments(in, l.max)
 	if err != nil {
-		var ce *commonerrors.CommandError
-		if errors.As(err, &ce) && ce.Code() == commonerrors.ErrNotImplemented {
-			return nil, common.NewCommandErrorMsg(
-				commonerrors.ErrLimitStageInvalidArg,
-				fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", l.max),
-			)
-		}
-
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return doc, nil

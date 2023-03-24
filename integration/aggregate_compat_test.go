@@ -572,7 +572,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 4.5}},
 			},
-			//resultType: emptyResult,
+			resultType: emptyResult,
 		},
 		"DoubleInt": {
 			pipeline: bson.A{
@@ -610,6 +610,13 @@ func TestAggregateCompatLimit(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", bson.D{}}},
+			},
+			resultType: emptyResult,
+		},
+		"Zero": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 0}},
 			},
 			resultType: emptyResult,
 		},

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -145,6 +146,40 @@ func GetWholeNumberParam(value any) (int64, error) {
 	default:
 		return 0, errUnexpectedType
 	}
+}
+
+func GetLimitStageParam(value any) (int64, error) {
+	max, err := GetWholeNumberParam(value)
+	switch err {
+	case nil:
+	case errUnexpectedType:
+		return 0, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
+		)
+	case errNotWholeNumber, errInfinity:
+		return 0, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
+		)
+	default:
+		panic(fmt.Sprint("Unexpected error: ", err))
+	}
+
+	switch {
+	case max < 0:
+		return 0, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", max),
+		)
+	case max == 0:
+		return 0, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrStageLimitNotPositive,
+			"The limit must be positive",
+		)
+	}
+
+	return max, nil
 }
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.
