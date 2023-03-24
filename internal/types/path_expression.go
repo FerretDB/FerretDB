@@ -125,19 +125,28 @@ func GetFieldValue(expression string, doc *Document) (any, error) {
 
 	_, vals := getValuesAtSuffix(doc, path)
 
+	var isPrefixArray bool
+	prefix := path.Prefix()
+	if v, err := doc.Get(prefix); err == nil {
+		if _, isArray := v.(*Array); isArray {
+			// when the prefix is array, it returns empty array instead of null
+			isPrefixArray = true
+		}
+	}
+
 	if len(vals) == 0 {
-		prefix := path.Prefix()
-		if v, err := doc.Get(prefix); err == nil {
-			if _, isArray := v.(*Array); isArray {
-				// when the prefix is array, it returns empty array instead of null
-				return MakeArray(0), nil
-			}
+		if isPrefixArray {
+			return NewArray()
 		}
 
 		return Null, nil
 	}
 
 	if len(vals) == 1 {
+		if isPrefixArray {
+			return NewArray(vals[0])
+		}
+
 		return vals[0], nil
 	}
 

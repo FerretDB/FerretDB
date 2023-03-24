@@ -581,7 +581,6 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
 			}}}},
-			resultType: emptyResult,
 		},
 	}
 
