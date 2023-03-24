@@ -16,6 +16,7 @@ using PostgreSQL as a database engine.
 
 ## Why do we need FerretDB?
 
+FIXME
 MongoDB was originally an eye-opening technology for many of us developers,
 empowering us to build applications faster than using relational databases.
 In its early days, its ease-to-use and well-documented drivers made MongoDB one of the simplest database solutions available.
@@ -30,6 +31,7 @@ Recognizing this, FerretDB is here to fill that gap.
 
 FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
 
+FIXME
 Currently, the project is in its early stages and welcomes all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
 a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),

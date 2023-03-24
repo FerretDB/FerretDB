@@ -22,7 +22,7 @@ const FeatureList = [
     ),
   },
   {
-    title: 'MongoDB Alternative',
+    title: 'MongoDB Alternative FIXME',
     Svg: require('@site/static/img/undraw_ferretdb_server.svg').default,
     description: (
       <>

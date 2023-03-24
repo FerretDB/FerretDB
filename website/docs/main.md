@@ -15,6 +15,7 @@ for an open-source database.
 However, all this changed when they switched to an SSPL license,
 moving away from their open-source roots.
 
+FIXME
 In light of this, FerretDB was founded to become the true open-source alternative to MongoDB,
 making it the go-to choice for most MongoDB users looking for an open-source alternative to MongoDB.
 With FerretDB, users can run the same MongoDB protocol queries without needing to learn a new language or command.
@@ -23,6 +24,7 @@ With FerretDB, users can run the same MongoDB protocol queries without needing t
 
 FerretDB is compatible with MongoDB drivers and can be used as a direct replacement for MongoDB 6.0+.
 
+FIXME
 Currently, the project is still in its early stages of development and not yet suitable for use in production-ready environments.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
 a list of [known differences with MongoDB](diff.md),
