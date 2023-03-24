@@ -22,8 +22,6 @@ import (
 // FilterIterator returns an iterator that filters out documents that don't match the filter.
 //
 // Next method returns the next document that matches the filter.
-// Returned indexes are the same as in the underlying iterator.
-// If the document was filtered out, that index will be skipped.
 //
 // Close method closes the underlying iterator.
 // For that reason, there is no need to track both iterators.
@@ -41,20 +39,22 @@ type filterIterator struct {
 }
 
 // Next implements iterator.Interface. See FilterIterator for details.
-func (iter *filterIterator) Next() (int, *types.Document, error) {
+func (iter *filterIterator) Next() (struct{}, *types.Document, error) {
+	var unused struct{}
+
 	for {
-		i, doc, err := iter.iter.Next()
+		_, doc, err := iter.iter.Next()
 		if err != nil {
-			return 0, nil, lazyerrors.Error(err)
+			return unused, nil, lazyerrors.Error(err)
 		}
 
 		matches, err := FilterDocument(doc, iter.filter)
 		if err != nil {
-			return 0, nil, lazyerrors.Error(err)
+			return unused, nil, lazyerrors.Error(err)
 		}
 
 		if matches {
-			return i, doc, nil
+			return unused, doc, nil
 		}
 	}
 }
