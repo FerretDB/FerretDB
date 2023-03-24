@@ -15,24 +15,41 @@
 package aggregations
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // limit represents $limit stage.
 type limit struct {
-	filter *types.Document
+	max int64
 }
 
 // newLimit creates a new $limit stage.
 func newLimit(stage *types.Document) (Stage, error) {
-	limit, err := common.GetRequiredParam[int64](stage, "$filter")
+	doc, err := stage.Get("$limit")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMatchBadExpression,
-			"the match filter must be an expression in an object",
-			"$match (stage)",
+		return nil, lazyerrors.Error(err)
+	}
+
+	max, err := common.GetWholeNumberParam(doc)
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrLimitStageInvalidArg,
+			fmt.Sprintf("Invalid argument to $limit stage: Expected a number in: $limit: %v", doc),
 		)
 	}
+
+	return &limit{
+		max: max,
+	}, nil
+}
+
+// Process implements Stage interface.
+func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	return common.LimitDocuments(in, l.max)
 }

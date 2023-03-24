@@ -178,6 +178,9 @@ const (
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
+
+	// ErrLimitStageInvalidArg indicates invalid argument for the aggregation $limit stage.
+	ErrLimitStageInvalidArg = ErrorCode(5107201) // Location5107201
 )
 
 // ErrInfo represents additional optional error information.

@@ -317,7 +317,7 @@ db.collection.aggregate()
 | `$graphLookup`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1422) |
 | `$group`                       | ✅️      |                                                           |
 | `$indexStats`                  | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1424) |
-| `$limit`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1425) |
+| `$limit`                       | ✅️      |                                                           |
 | `$listSessions`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
 | `$lookup`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1427) |
 | `$match`                       | ✅      |                                                           |
