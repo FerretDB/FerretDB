@@ -29,6 +29,7 @@ jobs:
   security-scan:
     name: Security scan
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
