@@ -31,7 +31,7 @@ on:
 # and save some resources.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   GOPATH: /home/runner/go
@@ -44,6 +44,7 @@ jobs:
   build:
     name: Build packages
     runs-on: faster
+    timeout-minutes: 60
 
     if: >
       github.event_name != 'pull_request_target' ||

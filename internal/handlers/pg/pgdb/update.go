@@ -32,7 +32,7 @@ func SetDocumentByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, id any, do
 		return 0, err
 	}
 
-	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return 0, err
 	}

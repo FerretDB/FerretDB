@@ -16,21 +16,19 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Index contains user-visible properties of FerretDB index.
 type Index struct {
-	Name   string   // FerretDB index name
-	Key    IndexKey // Index specification (field name + sort order pairs)
-	Unique bool     // Whether the index is unique
+	Name   string
+	Key    IndexKey
+	Unique bool
 }
 
 // IndexKey is a list of field name + sort order pairs.
@@ -39,80 +37,28 @@ type IndexKey []IndexKeyPair
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
 	Field string
-	Order IndexOrder
+	Order types.SortType
 }
-
-// IndexOrder defines a type for index sort order.
-type IndexOrder int8
-
-// IndexOrder constants.
-const (
-	IndexOrderAsc  IndexOrder = 1
-	IndexOrderDesc IndexOrder = -1
-)
 
 // Indexes returns a list of indexes for the given database and collection.
 //
 // If the given collection does not exist, it returns ErrTableNotExist.
 func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, error) {
-	metadata, err := newMetadata(tx, db, collection).get(ctx, false)
+	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
 	if err != nil {
 		return nil, err
 	}
 
-	if !metadata.Has("indexes") {
-		return []Index{}, nil
+	res := make([]Index, len(metadata.indexes))
+
+	for i, idx := range metadata.indexes {
+		res[i] = idx.Index
 	}
 
-	indexes := must.NotFail(metadata.Get("indexes")).(*types.Array)
+	// TODO Add tests that indexes sorted correctly: https://github.com/FerretDB/FerretDB/issues/1509
+	slices.SortFunc(res, func(a, b Index) bool { return a.Name < b.Name })
 
-	res := make([]Index, indexes.Len())
-	iter := indexes.Iterator()
-
-	defer iter.Close()
-
-	for {
-		i, idx, err := iter.Next()
-
-		switch {
-		case err == nil:
-			idx := idx.(*types.Document)
-			key := must.NotFail(idx.Get("key")).(*types.Document)
-
-			res[i] = Index{
-				Name:   must.NotFail(idx.Get("name")).(string),
-				Unique: must.NotFail(idx.Get("unique")).(bool),
-				Key:    make([]IndexKeyPair, 0, key.Len()),
-			}
-
-			keyIter := key.Iterator()
-			defer keyIter.Close() // it's safe to defer here as we always read the whole iterator
-
-			for j := 0; j < key.Len(); j++ {
-				var field string
-				var value any
-				field, value, err = keyIter.Next()
-
-				switch {
-				case err == nil:
-					res[i].Key = append(res[i].Key, IndexKeyPair{
-						Field: field,
-						Order: IndexOrder(value.(int32)),
-					})
-				default:
-					return nil, lazyerrors.Error(err)
-				}
-			}
-
-		case errors.Is(err, iterator.ErrIteratorDone):
-			// no more indexes
-			// TODO Check indexes order when more than one index exist https://github.com/FerretDB/FerretDB/issues/1509
-			// slices.Sort(res)
-			return res, nil
-		default:
-			return nil, lazyerrors.Error(err)
-		}
-	}
+	return res, nil
 }
 
 // CreateIndexIfNotExists creates a new index for the given params if such an index doesn't exist.
@@ -124,20 +70,20 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 		return err
 	}
 
-	pgTable, pgIndex, err := newMetadata(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
+	pgTable, pgIndex, err := newMetadataStorage(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
 	}
 
-	if err := createPGIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// createPGIndexIfNotExists creates a new index for the given params if it does not exist.
-func createPGIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
+// createPgIndexIfNotExists creates a new index for the given params if it does not exist.
+func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
 	var err error
 
 	unique := ""

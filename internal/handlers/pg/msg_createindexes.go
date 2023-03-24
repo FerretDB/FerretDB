@@ -198,13 +198,13 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 			)
 		}
 
-		var indexOrder pgdb.IndexOrder
+		var indexOrder types.SortType
 
 		switch orderParam {
 		case 1:
-			indexOrder = pgdb.IndexOrderAsc
+			indexOrder = types.Ascending
 		case -1:
-			indexOrder = pgdb.IndexOrderDesc
+			indexOrder = types.Descending
 		default:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
