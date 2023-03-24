@@ -86,6 +86,20 @@ var Mixed = &Values[string]{
 	},
 }
 
+// ArrayAndDocuments contain composite values for tests.
+var ArrayAndDocuments = &Values[string]{
+	name:     "ArrayAndDocuments",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"document": bson.D{{"foo", int32(42)}},
+		"array-documents": bson.A{
+			bson.D{{"field", int32(42)}},
+			bson.D{{"field", int32(44)}},
+			bson.D{{"foo", int32(42)}},
+		},
+	},
+}
+
 // PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
 // on pg backend.
 var PostgresEdgeCases = &Values[string]{

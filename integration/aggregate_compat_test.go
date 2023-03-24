@@ -375,6 +375,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		shareddata.ArrayDocuments,
 
 		// shareddata.Mixed,
+		// shareddata.ArrayAndDocuments,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -532,6 +533,80 @@ func TestAggregateCompatGroup(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDotNotation(t *testing.T) {
+	// Providers Composites, ArrayAndDocuments and Mixed
+	// cannot be used due to sorting difference.
+	// FerretDB always sorts empty array is less than null.
+	// In compat, for `.sort()` an empty array is less than null.
+	// In compat, for aggregation `$sort` null is less than an empty array.
+	// https://github.com/FerretDB/FerretDB/issues/2276
+
+	providers := []shareddata.Provider{
+		shareddata.Scalars,
+
+		shareddata.Doubles,
+		shareddata.BigDoubles,
+		shareddata.Strings,
+		shareddata.Binaries,
+		shareddata.ObjectIDs,
+		shareddata.Bools,
+		shareddata.DateTimes,
+		shareddata.Nulls,
+		shareddata.Regexes,
+		shareddata.Int32s,
+		shareddata.Timestamps,
+		shareddata.Int64s,
+		shareddata.Unsets,
+		shareddata.ObjectIDKeys,
+
+		// shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+
+		shareddata.DocumentsDoubles,
+		shareddata.DocumentsStrings,
+		shareddata.DocumentsDocuments,
+
+		shareddata.ArrayStrings,
+		shareddata.ArrayDoubles,
+		shareddata.ArrayInt32s,
+		shareddata.ArrayRegexes,
+		shareddata.ArrayDocuments,
+
+		// shareddata.Mixed,
+		// shareddata.ArrayAndDocuments,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DocDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0"},
+			}}}},
+		},
+		"ArrayDocDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo"},
+			}}}},
+		},
+		"NestedDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo.0.bar"},
+			}}}},
+		},
+		"NonExistentDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$non.existent"},
+			}}}},
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
+}
+
+func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 	// Providers Composites and Mixed cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
@@ -570,32 +645,13 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 		shareddata.ArrayDocuments,
 
 		// shareddata.Mixed,
+		shareddata.ArrayAndDocuments,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DocDotNotation": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
-			}}}},
-		},
-		"ArrayDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0"},
-			}}}},
-		},
-		"ArrayDocDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0.foo"},
-			}}}},
-		},
-		"NestedDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0.foo.0.bar"},
-			}}}},
-		},
-		"NonExistentDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$non.existent"},
 			}}}},
 		},
 	}

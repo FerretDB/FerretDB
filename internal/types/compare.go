@@ -66,6 +66,34 @@ func Compare(docValue, filterValue any) CompareResult {
 	}
 }
 
+// CompareForAggregation compares bson values. Unlike `Compare`,
+// an array and non array would not result in Equal.
+// This is specially used for aggregation grouping comparison.
+func CompareForAggregation(docValue, filterValue any) CompareResult {
+	if docValue == nil {
+		panic("compare: docValue is nil")
+	}
+	if filterValue == nil {
+		panic("compare: filterValue is nil")
+	}
+
+	switch docValue := docValue.(type) {
+	case *Document:
+		if filterDoc, ok := filterValue.(*Document); ok {
+			return compareDocuments(docValue, filterDoc)
+		}
+
+		return compareTypeOrder(docValue, filterValue)
+	case *Array:
+		if filterDoc, ok := filterValue.(*Array); ok {
+			return compareArrays(docValue, filterDoc)
+		}
+		return compareTypeOrder(docValue, filterValue)
+	default:
+		return compareScalars(docValue, filterValue)
+	}
+}
+
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
 	if !isScalar(v1) || !isScalar(v2) {

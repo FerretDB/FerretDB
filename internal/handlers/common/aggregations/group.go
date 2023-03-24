@@ -291,7 +291,7 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		// so we cannot use structure like map.
 		// Compare is used to check if groupID exists in groupMap, because
 		// numbers are grouped for the same value regardless of their number type.
-		if types.Compare(groupKey, g.groupID) == types.Equal {
+		if types.CompareForAggregation(groupKey, g.groupID) == types.Equal {
 			m.docs[i].documents = append(m.docs[i].documents, docs...)
 			return
 		}
