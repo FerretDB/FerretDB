@@ -548,6 +548,13 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 
 func TestAggregateCompatLimit(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
+		"Zero": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 0}},
+			},
+			resultType: emptyResult,
+		},
 		"One": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -613,12 +620,49 @@ func TestAggregateCompatLimit(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"Zero": {
+
+		"AfterMatch": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$limit", 0}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$limit", 1}},
+			},
+		},
+		"BeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 1}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultType: emptyResult,
+		},
+		"NoSortAfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$limit", 100}},
+			},
+			resultPushdown: true,
+		},
+		"NoSortBeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$limit", 100}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
+		},
+
+		"AfterGroup": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				bson.D{{"$limit", 5}},
+			},
+		},
+		"BeforeGroup": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+			},
 		},
 	}
 
