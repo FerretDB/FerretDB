@@ -67,33 +67,28 @@ func TestGetDocuments(t *testing.T) {
 
 			defer iter.Close()
 
-			n, doc, err := iter.Next()
+			_, doc, err := iter.Next()
 			require.NoError(t, err)
-			assert.Equal(t, 0, n)
 			assert.Equal(t, doc1, doc)
 
-			n, doc, err = iter.Next()
+			_, doc, err = iter.Next()
 			require.NoError(t, err)
-			assert.Equal(t, 1, n)
 			assert.Equal(t, doc2, doc)
 
-			n, doc, err = iter.Next()
+			_, doc, err = iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
-			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			// still done
-			n, doc, err = iter.Next()
+			_, doc, err = iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
-			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			cancelGet()
 
 			// still done
-			n, doc, err = iter.Next()
+			_, doc, err = iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
-			assert.Zero(t, n)
 			assert.Nil(t, doc)
 
 			return nil

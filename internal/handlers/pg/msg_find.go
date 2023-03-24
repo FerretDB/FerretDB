@@ -83,7 +83,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.FilterIterator(iter, params.Filter)
 
-		resDocs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
+		resDocs, err = iterator.Values(iterator.Interface[struct{}, *types.Document](iter))
 		return err
 	})
 
@@ -172,5 +172,5 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 
 	f := common.FilterIterator(iter, filter)
 
-	return iterator.Values(iterator.Interface[int, *types.Document](f))
+	return iterator.Values(iterator.Interface[struct{}, *types.Document](f))
 }
