@@ -461,6 +461,24 @@ func TestDatabaseName(t *testing.T) {
 					Message: `Invalid namespace: name_with_a-$.TestDatabaseName-Err`,
 				},
 			},
+			"WithSpace": {
+				db: "data base",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid namespace specified 'data base.TestDatabaseName-Err'`,
+				},
+				alt: `Invalid namespace: data base.TestDatabaseName-Err`,
+			},
+			"WithDot": {
+				db: "database.test",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `'.' is an invalid character in the database name: database.test`,
+				},
+				alt: `Invalid namespace: database.test.TestDatabaseName-Err`,
+			},
 		}
 
 		for name, tc := range cases {
