@@ -53,7 +53,7 @@ type QueryParams struct {
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
-	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -105,7 +105,7 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
 func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, error) {
-	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
