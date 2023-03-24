@@ -23,12 +23,11 @@ slug: /diff/
    * update operations producing `Infinity`, `-Infinity`, or `NaN` are not supported.
 8. Database and collection names restrictions:
    * name cannot start with the reserved prefix `_ferretdb_`;
-   * database name must not include non-latin letters, spaces, dots, dollars;
-   * collection name must not include non-latin letters, spaces, dots or dollars;
-   * name must not start with a number;
+   * database name must not include non-latin letters, spaces, dots;
+   * collection name must be valid UTF-8 characters;
+   * database name must not start with a number;
    * database name cannot contain capital letters;
    * database name length cannot be more than 63 characters;
-   * collection name length cannot be more than 120 characters.
 9. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
     The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 
