@@ -191,7 +191,11 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 		var orderParam int64
 
 		if orderParam, err = common.GetWholeNumberParam(order); err != nil {
-			return nil, err
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("Index key value %q is not implemented yet", order),
+				"createIndexes",
+			)
 		}
 
 		var indexOrder pgdb.IndexOrder
@@ -203,8 +207,8 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 			indexOrder = pgdb.IndexOrderDesc
 		default:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
-				fmt.Sprintf("Index key order %d is invalid", orderParam),
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("Index key value %q is not implemented yet", orderParam),
 				"createIndexes",
 			)
 		}

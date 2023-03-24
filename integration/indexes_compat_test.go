@@ -154,7 +154,7 @@ func TestIndexesCreate(t *testing.T) {
 		"single-index": {
 			models: []mongo.IndexModel{
 				{
-					Keys: bson.D{{"v", 1}},
+					Keys: bson.D{{"v", -1}},
 				},
 			},
 		},
