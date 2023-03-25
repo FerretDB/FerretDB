@@ -56,6 +56,9 @@ type NewHandlerOpts struct {
 
 	// for `hana` handler
 	HANAURL string
+
+	// for `sqlite` handler
+	SQLiteDBPath string
 }
 
 // NewHandler constructs a new handler.

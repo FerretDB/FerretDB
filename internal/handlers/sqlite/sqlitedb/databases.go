@@ -26,5 +26,10 @@ func createDatabase(dbName string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }

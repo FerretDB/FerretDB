@@ -110,7 +110,7 @@ var hanaFlags struct {
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
-	SQLitePath string `name:"sqlite-path" help:"SQLite database path for 'sqlite' handler"`
+	SQLiteDBPath string `name:"sqlite-path" help:"SQLite database path for 'sqlite' handler"`
 }
 
 // Additional variables for the kong parsers.
@@ -323,6 +323,8 @@ func run() {
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
 
 		HANAURL: hanaFlags.HANAURL,
+
+		SQLiteDBPath: sqliteFlags.SQLiteDBPath,
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

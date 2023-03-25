@@ -13,26 +13,3 @@
 // limitations under the License.
 
 package sqlitedb
-
-import (
-	"fmt"
-	"path"
-)
-
-func CreateCollection(dbPath, db, collection string) error {
-	dbPath = path.Join(dbPath, db+".db")
-
-	database, err := createDatabase(dbPath)
-	if err != nil {
-		return err
-	}
-
-	sqlExpr := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (json string)", collection)
-
-	_, err = database.Exec(sqlExpr)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

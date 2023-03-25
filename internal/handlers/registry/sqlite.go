@@ -27,6 +27,7 @@ func init() {
 			L:             opts.Logger,
 			StateProvider: opts.StateProvider,
 			Metrics:       opts.Metrics,
+			SQLiteDBPath:  opts.SQLiteDBPath,
 		}
 		return sqlite.New(handlerOpts)
 	}
