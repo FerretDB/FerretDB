@@ -106,6 +106,13 @@ var hanaFlags struct {
 	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
 }
 
+// The sqliteFlags struct represents flags that are used specifically by "sqlite" handler.
+//
+// See main_sqlite.go.
+var sqliteFlags struct {
+	SQLitePath string `name:"sqlite-path" help:"SQLite database path for 'sqlite' handler"`
+}
+
 // Additional variables for the kong parsers.
 var (
 	logLevels = []string{
