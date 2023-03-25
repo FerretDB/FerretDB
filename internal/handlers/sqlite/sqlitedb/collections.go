@@ -15,14 +15,12 @@
 package sqlitedb
 
 import (
+	"database/sql"
 	"fmt"
-	"path"
 )
 
-func CreateCollection(dbPath, db, collection string) error {
-	dbPath = path.Join(dbPath, db+".db")
-
-	database, err := createDatabase(dbPath)
+func CreateCollection(db, collection string) error {
+	database, err := createDatabase(db)
 	if err != nil {
 		return err
 	}
@@ -35,4 +33,20 @@ func CreateCollection(dbPath, db, collection string) error {
 	}
 
 	return nil
+}
+
+func CreateCollectionIfNotExists(db, collection string) (*sql.DB, error) {
+	database, err := createDatabase(db)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlExpr := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (json string)", collection)
+
+	_, err = database.Exec(sqlExpr)
+	if err != nil {
+		return nil, err
+	}
+
+	return database, nil
 }

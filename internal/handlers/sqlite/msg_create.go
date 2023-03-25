@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"path"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/sqlite/sqlitedb"
@@ -71,12 +72,14 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	db = path.Join(h.SQLiteDBPath, db+".db")
+
 	collection, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}
 
-	err = sqlitedb.CreateCollection(h.SQLiteDBPath, db, collection)
+	err = sqlitedb.CreateCollection(db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

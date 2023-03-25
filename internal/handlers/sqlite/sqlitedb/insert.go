@@ -13,3 +13,61 @@
 // limitations under the License.
 
 package sqlitedb
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/sqlite/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
+
+func InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
+	if err := doc.ValidateData(); err != nil {
+		return err
+	}
+
+	var err error
+	var dbConn *sql.DB
+
+	dbConn, err = CreateCollectionIfNotExists(db, collection)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer dbConn.Close()
+
+	p := &insertParams{
+		schema: db,
+		table:  collection,
+		doc:    doc,
+	}
+	err = insert(ctx, dbConn, p)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// insertParams describes the parameters for inserting a document into a table.
+type insertParams struct {
+	doc    *types.Document // document to insert
+	schema string          // pg schema name
+	table  string          // pg table name
+}
+
+func insert(ctx context.Context, db *sql.DB, p *insertParams) error {
+	sql := fmt.Sprintf(`INSERT INTO %s (json) VALUES (?)`, p.table)
+
+	marshalled := must.NotFail(sjson.Marshal(p.doc))
+
+	_, err := db.ExecContext(ctx, sql, marshalled)
+	if err == nil {
+		return nil
+	}
+
+	return lazyerrors.Error(err)
+}
