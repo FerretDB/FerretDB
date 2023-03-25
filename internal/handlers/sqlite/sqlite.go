@@ -18,8 +18,10 @@ package sqlite
 import (
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // notImplemented returns error for stub command handlers.
@@ -39,20 +41,25 @@ func notImplemented(command string) error {
 //   - setFreeMonitoringStatus;
 //   - whatsmyuri.
 type Handler struct {
-	L      *zap.Logger
-	DBPath string //path to database files
+	*NewOpts
 }
 
 type NewOpts struct {
-	L      *zap.Logger
-	DBPath string
+	SQLiteDBPath string
+
+	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
+	if opts.SQLiteDBPath == "" {
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "SQLiteDBPath is not provided")
+	}
+
 	return &Handler{
-		L:      opts.L,
-		DBPath: opts.DBPath,
+		NewOpts: opts,
 	}, nil
 }
 

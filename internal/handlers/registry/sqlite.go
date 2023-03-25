@@ -24,7 +24,9 @@ import (
 func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &sqlite.NewOpts{
-			L: opts.Logger,
+			L:             opts.Logger,
+			StateProvider: opts.StateProvider,
+			Metrics:       opts.Metrics,
 		}
 		return sqlite.New(handlerOpts)
 	}

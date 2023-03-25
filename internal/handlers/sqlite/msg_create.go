@@ -76,7 +76,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	err = sqlitedb.CreateCollection(h.DBPath, db, collection)
+	err = sqlitedb.CreateCollection(h.SQLiteDBPath, db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
