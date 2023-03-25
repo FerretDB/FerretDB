@@ -39,17 +39,20 @@ func notImplemented(command string) error {
 //   - setFreeMonitoringStatus;
 //   - whatsmyuri.
 type Handler struct {
-	L *zap.Logger
+	L      *zap.Logger
+	DBPath string //path to database files
 }
 
 type NewOpts struct {
-	L *zap.Logger
+	L      *zap.Logger
+	DBPath string
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	return &Handler{
-		L: opts.L,
+		L:      opts.L,
+		DBPath: opts.DBPath,
 	}, nil
 }
 

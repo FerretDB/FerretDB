@@ -12,24 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+package sqlitedb
 
 import (
-	"context"
+	"database/sql"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// MsgPing implements HandlerInterface.
-func (h *Handler) MsgPing(_ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	}))
+func createDatabase(dbName string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dbName)
+	if err != nil {
+		return nil, err
+	}
 
-	return &reply, nil
+	return db, nil
 }

@@ -12,24 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+package sqlitedb
 
 import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"fmt"
+	"path"
 )
 
-// MsgPing implements HandlerInterface.
-func (h *Handler) MsgPing(_ context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	}))
+func CreateCollection(dbPath, db, collection string) error {
+	dbPath = path.Join(dbPath, db, collection+".db")
 
-	return &reply, nil
+	database, err := createDatabase(dbPath)
+	if err != nil {
+		return err
+	}
+
+	sqlExpr := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s json STRING", collection)
+
+	_, err = database.Exec(sqlExpr)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

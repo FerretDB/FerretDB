@@ -16,12 +16,80 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetLog implements HandlerInterface.
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	command := document.Command()
+
+	getLog, err := document.Get(command)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, ok := getLog.(types.NullType); ok {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrMissingField,
+			`BSON field 'getLog.getLog' is missing but a required field`,
+		)
+	}
+
+	if _, ok := getLog.(string); !ok {
+		return nil, commonerrors.NewCommandError(
+			commonerrors.ErrTypeMismatch,
+			fmt.Errorf(
+				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
+				common.AliasFromType(getLog),
+			),
+		)
+	}
+
+	var resDoc *types.Document
+	switch getLog {
+	case "*":
+		resDoc = must.NotFail(types.NewDocument(
+			"names", must.NotFail(types.NewArray("global", "startupWarnings")),
+			"ok", float64(1),
+		))
+
+	case "global":
+		log, err := logging.RecentEntries.GetArray(zap.DebugLevel)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		resDoc = must.NotFail(types.NewDocument(
+			"log", log,
+			"totalLinesWritten", int64(log.Len()),
+			"ok", float64(1),
+		))
+
+	default:
+		return nil, commonerrors.NewCommandError(
+			commonerrors.ErrOperationFailed,
+			fmt.Errorf("no RecentEntries named: %s", getLog),
+		)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{resDoc},
+	}))
+
+	return &reply, nil
 }

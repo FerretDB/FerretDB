@@ -298,8 +298,8 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=sqlite
+        --sqlite-path=tmp/ferretdb_sqlite
         --test-records-dir=tmp/records
-        --sqlite-path=tmp/ferretdb.sqlite
 
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
