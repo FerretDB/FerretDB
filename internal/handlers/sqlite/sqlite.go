@@ -16,11 +16,14 @@
 package sqlite
 
 import (
+	"os"
+
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -55,7 +58,11 @@ type NewOpts struct {
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	if opts.SQLiteDBPath == "" {
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "SQLiteDBPath is not provided")
+		return nil, lazyerrors.New("SQLiteDBPath is not provided")
+	}
+
+	if _, err := os.Stat(opts.SQLiteDBPath); os.IsNotExist(err) {
+		return nil, lazyerrors.New("Path SQLiteDBPath does not exist")
 	}
 
 	return &Handler{
