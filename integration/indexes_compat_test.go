@@ -92,8 +92,30 @@ func TestIndexesCreate(t *testing.T) {
 				},
 			},
 		},
+		"multi-direction": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"v", -1}},
+				},
+				{
+					Keys: bson.D{{"v", 1}},
+				},
+			},
+		},
+		"multi-order": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"foo", -1}},
+				},
+				{
+					Keys: bson.D{{"v", 1}},
+				},
+				{
+					Keys: bson.D{{"bar", 1}},
+				},
+			},
+		},
 	} {
-
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
