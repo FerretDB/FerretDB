@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,9 +53,6 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 	for i, idx := range metadata.indexes {
 		res[i] = idx.Index
 	}
-
-	// TODO Add tests that indexes sorted correctly: https://github.com/FerretDB/FerretDB/issues/1509
-	slices.SortFunc(res, func(a, b Index) bool { return a.Name < b.Name })
 
 	return res, nil
 }
