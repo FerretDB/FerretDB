@@ -56,15 +56,44 @@ func TestIndexesList(t *testing.T) {
 	}
 }
 
-type createIndexTestCase struct {
-	models []mongo.IndexModel
-}
-
-// testIndexesCreateMany tests the behavior when collection.Indexes().CreateMany() is called.
-func testIndexesCreateMany(t *testing.T, testCases map[string]createIndexTestCase) {
+func TestIndexesCreate(t *testing.T) {
 	t.Helper()
 
-	for name, tc := range testCases {
+	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	for name, tc := range map[string]struct {
+		models []mongo.IndexModel
+	}{
+		"single-index": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"v", -1}},
+				},
+			},
+		},
+		"single-duplicate": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"_id", 1}}, // this index is already created by default
+				},
+			},
+		},
+		"single-non-existent-field": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"field-does-not-exist", 1}},
+				},
+			},
+		},
+		"single-dot-notation": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"v.foo", 1}},
+				},
+			},
+		},
+	} {
+
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
@@ -107,45 +136,7 @@ func testIndexesCreateMany(t *testing.T, testCases map[string]createIndexTestCas
 	}
 }
 
-func TestIndexesCreate(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
-	testCases := map[string]createIndexTestCase{
-		"single-index": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"v", -1}},
-				},
-			},
-		},
-		"single-duplicate": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"_id", 1}}, // this index is already created by default
-				},
-			},
-		},
-		"single-non-existent-field": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"field-does-not-exist", 1}},
-				},
-			},
-		},
-		"single-dot-notation": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"v.foo", 1}},
-				},
-			},
-		},
-	}
-
-	testIndexesCreateMany(t, testCases)
-}
-
 // TestIndexesInvalidCollectionName tests the behavior when we try to create an index with invalid parameters.
-// with invalid name.
 func TestIndexesInvalidCollectionName(t *testing.T) {
 	t.Parallel()
 

@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,6 +94,17 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
+
+					targetIdx, tagetErr := targetCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+						Keys: bson.D{{"v", 1}},
+					})
+					compatIdx, compatErr := compatCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+						Keys: bson.D{{"v", 1}},
+					})
+
+					require.NoError(t, tagetErr)
+					require.NoError(t, compatErr)
+					require.Equal(t, compatIdx, targetIdx)
 
 					explainQuery := bson.D{{"explain", bson.D{
 						{"find", targetCollection.Name()},
