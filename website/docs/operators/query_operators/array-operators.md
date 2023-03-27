@@ -8,7 +8,7 @@ Array query operators allow you to search for specific elements within an array 
 
 | Operator                   | Description                                                                                                             |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`$all`](#all)             | Selects an array that contains all elements from a given query.                                                        |
+| [`$all`](#all)             | Selects an array that contains all elements from a given query.                                                         |
 | [`$elemMatch`](#elemmatch) | Matches a document that contains an array field with at least one element that matches all the specified query criteria |
 | [`$size`](#size)           | Matches an array with a specified number of elements                                                                    |
 

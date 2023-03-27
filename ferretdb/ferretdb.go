@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/AlekSi/pointer"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -96,6 +97,16 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	p, err := state.NewProvider("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
+
+	// Telemetry reporter is not created or running anyway,
+	// but disable telemetry explicitly to disable confusing startupWarnings.
+	err = p.Update(func(s *state.State) {
+		s.Telemetry = pointer.ToBool(false)
+		s.TelemetryLocked = true
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}

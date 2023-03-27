@@ -177,7 +177,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		var f *os.File
 
-		if f, err = os.CreateTemp("", "ferretdb-test-record-*.bin"); err != nil {
+		// use local directory so os.Rename below always works
+		if f, err = os.CreateTemp(c.testRecordsDir, "_*.partial"); err != nil {
 			return
 		}
 

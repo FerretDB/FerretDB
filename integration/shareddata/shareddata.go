@@ -20,6 +20,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 // unset represents a field that should not be set.
@@ -30,17 +31,17 @@ type Provider interface {
 	// Name returns provider name.
 	Name() string
 
-	// Handlers returns handlers compatible with this provider.
-	Handlers() []string
-
-	// Validators returns validators for the given handler and collection.
-	// For example, for Tigris it should return a map with they key $tigrisSchemaString
+	// Validators returns validators for the given backend and collection.
+	// For example, for ferretdb-tigris it should return a map with the key $tigrisSchemaString
 	// and the value containing Tigris' JSON schema string.
-	Validators(handler, collection string) map[string]any
+	Validators(backend, collection string) map[string]any
 
 	// Docs returns shared data documents.
 	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
+
+	// IsCompatible returns true if the given backend is compatible with this provider.
+	IsCompatible(backend string) bool
 }
 
 // AllProviders returns all providers in random order.
@@ -145,8 +146,8 @@ func IDs(providers ...Provider) []any {
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
 	name       string
-	handlers   []string
-	validators map[string]map[string]any // handler -> validator name -> validator
+	backends   []string
+	validators map[string]map[string]any // backend -> validator name -> validator
 	data       map[idType]any
 }
 
@@ -155,23 +156,17 @@ func (values *Values[idType]) Name() string {
 	return values.name
 }
 
-// Handlers implement Provider interface.
-func (values *Values[idType]) Handlers() []string {
-	return values.handlers
-}
-
 // Validators implement Provider interface.
-func (values *Values[idType]) Validators(handler, collection string) map[string]any {
-	switch handler {
-	case "tigris":
-		validators := make(map[string]any, len(values.validators[handler]))
-		for key, value := range values.validators[handler] {
+func (values *Values[idType]) Validators(backend, collection string) map[string]any {
+	switch backend {
+	case "ferretdb-tigris":
+		validators := make(map[string]any, len(values.validators[backend]))
+		for key, value := range values.validators[backend] {
 			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
 		}
 		return validators
-
 	default:
-		return values.validators[handler]
+		return values.validators[backend]
 	}
 }
 
@@ -190,6 +185,11 @@ func (values *Values[idType]) Docs() []bson.D {
 	}
 
 	return res
+}
+
+// IsCompatible returns true if the given backend is compatible with this provider.
+func (values *Values[idType]) IsCompatible(backend string) bool {
+	return slices.Contains(values.backends, backend)
 }
 
 // check interfaces

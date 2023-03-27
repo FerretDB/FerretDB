@@ -50,65 +50,45 @@ type QueryParams struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
+//
+// It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if !exists {
-		return nil, lazyerrors.Error(ErrTableNotExist)
-	}
-
-	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
+	iter, err := buildIterator(ctx, tx, &iteratorParams{
+		schema:    qp.DB,
+		table:     table,
+		comment:   qp.Comment,
+		explain:   qp.Explain,
+		filter:    qp.Filter,
+		unmarshal: unmarshalExplain,
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var query string
+	defer iter.Close()
 
-	if qp.Explain {
-		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
-	}
+	_, plan, err := iter.Next()
 
-	query += `SELECT _jsonb `
-
-	if c := qp.Comment; c != "" {
-		// prevent SQL injections
-		c = strings.ReplaceAll(c, "/*", "/ *")
-		c = strings.ReplaceAll(c, "*/", "* /")
-
-		query += `/* ` + c + ` */ `
-	}
-
-	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
-
-	where, args, err := prepareWhereClause(qp.Filter)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	query += where
-
-	rows, err := tx.Query(ctx, query, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var res *types.Document
-
-	if !rows.Next() {
+	switch {
+	case errors.Is(err, iterator.ErrIteratorDone):
 		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
-	}
-
-	var b []byte
-	if err = rows.Scan(&b); err != nil {
+	case err != nil:
 		return nil, lazyerrors.Error(err)
 	}
 
+	return plan, nil
+}
+
+// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+// EXPLAIN result is not pjson, so it cannot be unmarshalled by pjson.Unmarshal.
+func unmarshalExplain(b []byte) (*types.Document, error) {
 	var plans []map[string]any
-	if err = json.Unmarshal(b, &plans); err != nil {
+	if err := json.Unmarshal(b, &plans); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -116,13 +96,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
 
-	res = convertJSON(plans[0]).(*types.Document)
-
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
+	return convertJSON(plans[0]).(*types.Document), nil
 }
 
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
@@ -130,14 +104,14 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
-	table, err := newMetadata(tx, qp.DB, qp.Collection).getTableName(ctx)
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, error) {
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil), nil
+		return newIterator(ctx, nil, new(iteratorParams)), nil
 	default:
 		return nil, lazyerrors.Error(err)
 	}
@@ -163,11 +137,12 @@ type iteratorParams struct {
 	comment   string
 	explain   bool
 	filter    *types.Document
-	forUpdate bool // if SELECT FOR UPDATE is needed.
+	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
+	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[int, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, error) {
 	var query string
 
 	if p.explain {
@@ -202,7 +177,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows), nil
+	return newIterator(ctx, rows, p), nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
@@ -267,37 +242,34 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch k {
 				case "$eq":
-					switch v := v.(type) {
-					case *types.Document, *types.Array, types.Binary,
-						types.NullType, types.Regex, types.Timestamp:
-						// type not supported for pushdown
-					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-						// Select if value under the key is equal to provided value.
-						sql := `_jsonb->%[1]s @> %[2]s`
-
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
-					default:
-						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					if f, a := filterEqual(&p, rootKey, v); f != "" {
+						filters = append(filters, f)
+						args = append(args, a...)
 					}
 
 				case "$ne":
+					sql := `NOT ( ` +
+						// does document contain the key,
+						// it is necessary, as NOT won't work correctly if the key does not exist.
+						`_jsonb ? %[1]s AND ` +
+						// does the value under the key is equal to filter value
+						`_jsonb->%[1]s @> %[2]s AND ` +
+						// does the value type is equal to the filter's one
+						`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
+
 					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-						sql := `NOT ( ` +
-							// does document contain the key,
-							// it is necessary, as NOT won't work correctly if the key does not exist.
-							`_jsonb ? %[1]s AND ` +
-							// does the value under the key is equal to filter value
-							`_jsonb->%[1]s @> %[2]s AND ` +
-							// does the value type is equal to the filter's one
-							`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
 
+					case float64, bool, int32, int64:
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
+						args = append(args, rootKey, v)
+
+					case string, types.ObjectID, time.Time:
 						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
 						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -310,14 +282,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
-			continue
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			// Select if value under the key is equal to provided value.
-			sql := `_jsonb->%[1]s @> %[2]s`
-
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+			if f, a := filterEqual(&p, rootKey, v); f != "" {
+				filters = append(filters, f)
+				args = append(args, a...)
+			}
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -330,6 +300,70 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	}
 
 	return filter, args, nil
+}
+
+// filterEqual returns the proper SQL filter with arguments that filters documents
+// where the value under k is equal to v.
+func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
+	// Select if value under the key is equal to provided value.
+	sql := `_jsonb->%[1]s @> %[2]s`
+
+	switch v := v.(type) {
+	case *types.Document, *types.Array, types.Binary,
+		types.NullType, types.Regex, types.Timestamp:
+		// type not supported for pushdown
+
+	case float64:
+		// If value is not safe double, fetch all numbers out of safe range.
+		switch {
+		case v > types.MaxSafeDouble:
+			sql = `_jsonb->%[1]s > %[2]s`
+			v = types.MaxSafeDouble
+
+		case v < -types.MaxSafeDouble:
+			sql = `_jsonb->%[1]s < %[2]s`
+			v = -types.MaxSafeDouble
+		default:
+			// don't change the default eq query
+		}
+
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, v)
+
+	case string, types.ObjectID, time.Time:
+		// don't change the default eq query
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+
+	case bool, int32:
+		// don't change the default eq query
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, v)
+
+	case int64:
+		maxSafeDouble := int64(types.MaxSafeDouble)
+
+		// If value cannot be safe double, fetch all numbers out of the safe range.
+		switch {
+		case v > maxSafeDouble:
+			sql = `_jsonb->%[1]s > %[2]s`
+			v = maxSafeDouble
+
+		case v < -maxSafeDouble:
+			sql = `_jsonb->%[1]s < %[2]s`
+			v = -maxSafeDouble
+		default:
+			// don't change the default eq query
+		}
+
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, v)
+
+	default:
+		panic(fmt.Sprintf("Unexpected type of value: %v", v))
+	}
+
+	return
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
