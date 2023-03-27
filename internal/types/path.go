@@ -192,7 +192,10 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			}
 
 			if index < 0 {
-				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: array index below zero: %d", index))
+				return nil, newDocumentPathError(
+					ErrDocumentPathArrayInvalidIndex,
+					fmt.Errorf("types.getByPath: array index below zero: %d", index),
+				)
 			}
 
 			next, err = s.Get(index)
