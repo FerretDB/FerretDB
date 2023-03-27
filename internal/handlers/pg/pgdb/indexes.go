@@ -106,7 +106,7 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 			return lazyerrors.Errorf("unknown sort order: %d", field.Order)
 		}
 
-		fieldsDef[i] = fmt.Sprintf(`((_jsonb->'%s')) %s`, field.Field, order) // FIXME: field.Field must be sanitized
+		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order) // FIXME: field.Field must be sanitized
 	}
 
 	// FIXME !!! Don't let SQL injection happen here !!! Don't merge !!!
@@ -118,4 +118,9 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 	}
 
 	return nil
+}
+
+// quoteString returns a string that is safe to use in SQL queries.
+func quoteString(str string) string {
+	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }
