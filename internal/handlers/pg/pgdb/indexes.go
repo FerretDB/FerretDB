@@ -16,6 +16,8 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
@@ -71,7 +73,7 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 		return err
 	}
 
-	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, true); err != nil {
 		return err
 	}
 
@@ -79,7 +81,11 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 }
 
 // createPgIndexIfNotExists creates a new index for the given params if it does not exist.
-func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
+func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, fields IndexKey, isUnique bool) error {
+	if len(fields) == 0 {
+		return lazyerrors.Errorf("no fields for index")
+	}
+
 	var err error
 
 	unique := ""
@@ -87,9 +93,25 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 		unique = " UNIQUE"
 	}
 
+	fieldsDef := make([]string, len(fields))
+
+	for i, field := range fields {
+		var order string
+		switch field.Order {
+		case types.Ascending:
+			order = "ASC"
+		case types.Descending:
+			order = "DESC"
+		default:
+			return lazyerrors.Errorf("unknown sort order: %d", field.Order)
+		}
+
+		fieldsDef[i] = fmt.Sprintf(`((_jsonb->'%s')) %s`, field.Field, order) // FIXME: field.Field must be sanitized
+	}
+
+	// FIXME !!! Don't let SQL injection happen here !!! Don't merge !!!
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
-		` ON ` + pgx.Identifier{schema, table}.Sanitize() +
-		` ((_jsonb->'_id'))` // TODO Provide ability to set fields https://github.com/FerretDB/FerretDB/issues/1509
+		` ON ` + pgx.Identifier{schema, table}.Sanitize() + ` (` + strings.Join(fieldsDef, `, `) + `)`
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)

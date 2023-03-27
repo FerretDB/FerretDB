@@ -129,7 +129,8 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	}
 
 	// Index to ensure that collection name is unique
-	if err = createPgIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, true); err != nil {
+	key := IndexKey{{Field: `_id`, Order: types.Ascending}}
+	if err = createPgIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, key, true); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}

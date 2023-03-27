@@ -15,9 +15,11 @@
 package pgdb
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,14 +36,29 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
+	indexName := "test"
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 		idx := Index{
-			Name: "test",
+			Name: indexName,
 			Key:  []IndexKeyPair{{Field: "foo", Order: types.Ascending}, {Field: "bar", Order: types.Descending}},
 		}
 		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
 	})
 	require.NoError(t, err)
 
-	// TODO: check that the index was created with the correct fields in PG!!! Checking metadata is not enough
+	tableName := collectionNameToTableName(collectionName)
+	pgIndexName := indexNameToPgIndexName(collectionName, indexName)
+
+	var indexdef string
+	err = pool.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		databaseName, tableName, pgIndexName,
+	).Scan(&indexdef)
+	require.NoError(t, err)
+
+	expectedIndexdef := fmt.Sprintf(
+		"CREATE UNIQUE INDEX %s ON %s.%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
+		pgIndexName, databaseName, tableName)
+	assert.Equal(t, expectedIndexdef, indexdef)
 }
