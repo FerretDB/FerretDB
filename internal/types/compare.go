@@ -73,6 +73,7 @@ func CompareForAggregation(docValue, filterValue any) CompareResult {
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
+
 	if filterValue == nil {
 		panic("compare: filterValue is nil")
 	}
@@ -88,6 +89,7 @@ func CompareForAggregation(docValue, filterValue any) CompareResult {
 		if filterDoc, ok := filterValue.(*Array); ok {
 			return compareArrays(docValue, filterDoc)
 		}
+
 		return compareTypeOrder(docValue, filterValue)
 	default:
 		return compareScalars(docValue, filterValue)

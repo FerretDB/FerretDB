@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulator.
@@ -31,7 +32,7 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 
 // Accumulator is a common interface for accumulation.
 type Accumulator interface {
-	// Accumulate documents and returns the result of accumulation.
+	// Accumulate documents and returns the result of applying accumulation operator.
 	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
 }
 
@@ -90,15 +91,6 @@ func newGroup(stage *types.Document) (Stage, error) {
 
 		if field == "_id" {
 			groupKey = v
-
-			idAccumulator := idAccumulator{
-				expression: v,
-			}
-			groups = append(groups, groupBy{
-				outputField: field,
-				accumulate:  idAccumulator.Accumulate,
-			})
-
 			continue
 		}
 
@@ -169,7 +161,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 	var res []*types.Document
 
 	for _, groupedDocument := range groupedDocuments {
-		doc := new(types.Document)
+		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
 		for _, accumulation := range g.groupBy {
 			out, err := accumulation.accumulate(ctx, groupedDocument.groupID, groupedDocument.documents)
@@ -193,19 +185,6 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 	}
 
 	return res, nil
-}
-
-// idAccumulator accumulates _id output field.
-type idAccumulator struct {
-	expression any
-}
-
-// Accumulate implements Accumulator interface.
-//
-//	{$group: {_id: "$v"}} sets the value of $v to _id, Accumulate returns the value found at key `v`.
-//	{$group: {_id: null}} sets `null` to _id, Accumulate returns nil.
-func (a *idAccumulator) Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error) {
-	return groupID, nil
 }
 
 // groupDocuments groups documents by group expression.
@@ -305,6 +284,5 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 
 // check interfaces
 var (
-	_ Stage       = (*groupStage)(nil)
-	_ Accumulator = (*idAccumulator)(nil)
+	_ Stage = (*groupStage)(nil)
 )
