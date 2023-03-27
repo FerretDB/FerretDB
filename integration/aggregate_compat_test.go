@@ -28,10 +28,11 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	skip           string                   // skip test for all handlers, must have issue number mentioned
 	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
+
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -151,9 +152,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 // aggregateCommandCompatTestCase describes aggregate compatibility test case.
 type aggregateCommandCompatTestCase struct {
-	skip       string                   // skip test for all handlers, must have issue number mentioned
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
@@ -376,6 +378,9 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 				}}},
@@ -385,6 +390,9 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		},
 		"CountValue": {
 			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"count", bson.D{{"$count", bson.D{}}}},

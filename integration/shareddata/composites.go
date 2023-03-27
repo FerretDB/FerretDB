@@ -27,7 +27,7 @@ import (
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
 	name:     "Composites",
-	handlers: []string{"pg"},
+	backends: []string{"ferretdb-pg", "mongodb"},
 	data: map[string]any{
 		"document": bson.D{{"foo", int32(42)}},
 		"document-composite": bson.D{
@@ -74,10 +74,10 @@ var Composites = &Values[string]{
 }
 
 // PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
-// on pg handler.
+// on pg backend.
 var PostgresEdgeCases = &Values[string]{
 	name:     "PostgresEdgeCases",
-	handlers: []string{"pg"},
+	backends: []string{"ferretdb-pg", "mongodb"},
 	data: map[string]any{
 		"document-notations": bson.D{
 			{"foo[0]", int32(42)},
@@ -92,9 +92,9 @@ var PostgresEdgeCases = &Values[string]{
 // DocumentsDoubles contains documents with double values for tests.
 var DocumentsDoubles = &Values[string]{
 	name:     "DocumentsDoubles",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "number"}}`),
 		},
 	},
@@ -113,9 +113,9 @@ var DocumentsDoubles = &Values[string]{
 // DocumentsStrings contains documents with string values for tests.
 var DocumentsStrings = &Values[string]{
 	name:     "DocumentsStrings",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "string"}}`),
 		},
 	},
@@ -132,9 +132,9 @@ var DocumentsStrings = &Values[string]{
 // DocumentsDocuments contains documents with documents for tests.
 var DocumentsDocuments = &Values[primitive.ObjectID]{
 	name:     "DocumentsDocuments",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -161,9 +161,9 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
 	name:     "ArrayStrings",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -189,9 +189,9 @@ var ArrayStrings = &Values[string]{
 // ArrayDoubles contains an array with float64 values for tests.
 var ArrayDoubles = &Values[string]{
 	name:     "ArrayDoubles",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -205,6 +205,13 @@ var ArrayDoubles = &Values[string]{
 	data: map[string]any{
 		"array-double-desc":      bson.A{float64(40), float64(15), float64(10)},
 		"array-double-duplicate": bson.A{float64(10), float64(10), float64(20)},
+
+		"array-double-big":      bson.A{doubleBig},
+		"array-double-big-plus": bson.A{doubleBig + 1},
+
+		"array-double-prec-max":      bson.A{doubleMaxPrec},
+		"array-double-prec-max-plus": bson.A{doubleMaxPrec + 1},
+
 		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-double-empty": bson.A{},
 	},
@@ -213,9 +220,9 @@ var ArrayDoubles = &Values[string]{
 // ArrayInt32s contains an array with int32 values for tests.
 var ArrayInt32s = &Values[string]{
 	name:     "ArrayInt32s",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -238,12 +245,37 @@ var ArrayInt32s = &Values[string]{
 	},
 }
 
+// ArrayInt64s contains an array with int64 values for tests.
+var ArrayInt64s = &Values[string]{
+	name:     "ArrayInt64s",
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "array", "items": {"type": "integer", "format": "int64"}},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-long-big":      bson.A{int64(doubleBig)},
+		"array-long-big-plus": bson.A{int64(doubleBig) + 1},
+
+		"array-long-prec-max":      bson.A{int64(doubleMaxPrec)},
+		"array-long-prec-max-plus": bson.A{int64(doubleMaxPrec) + 1},
+	},
+}
+
 // ArrayRegexes contains an array with regex values for tests.
 var ArrayRegexes = &Values[string]{
 	name:     "ArrayRegexes",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -271,9 +303,9 @@ var ArrayRegexes = &Values[string]{
 // This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
 	name:     "ArrayDocuments",
-	handlers: []string{"pg", "tigris"},
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],

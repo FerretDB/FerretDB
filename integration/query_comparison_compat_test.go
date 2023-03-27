@@ -89,15 +89,32 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter:         bson.D{{"v", math.SmallestNonzeroFloat64}},
 			resultPushdown: true,
 		},
-		"DoubleBigInt64": {
-			filter:         bson.D{{"v", float64(2 << 61)}},
+		"DoubleBig": {
+			filter:         bson.D{{"v", float64(1 << 61)}},
 			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
-		"DoubleBigInt64PlusOne": {
-			filter:         bson.D{{"v", float64(2<<61 + 1)}},
+		"DoubleBigPlus": {
+			filter:         bson.D{{"v", float64((1 << 61) + 1)}},
 			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
+		},
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", float64((1 << 61) - 1)}},
+			resultPushdown: true,
+		},
+		"DoubleNegBig": {
+			filter:         bson.D{{"v", -float64(1 << 61)}},
+			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
+		},
+		"DoubleNegBigPlus": {
+			filter:         bson.D{{"v", -float64(1<<61) + 1}},
+			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
+		},
+		"DoubleNegBigMinus": {
+			filter:         bson.D{{"v", -float64(1<<61) - 1}},
+			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
 		},
 		"Int64Max": {
 			filter:         bson.D{{"v", int64(math.MaxInt64)}},
@@ -106,18 +123,33 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		"Int64Min": {
 			filter:         bson.D{{"v", int64(math.MinInt64)}},
 			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
-		},
-		"Int64DoubleBig": {
-			filter:         bson.D{{"v", int64(2 << 60)}},
-			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
 
-		"DoubleBig": {
-			filter:         bson.D{{"v", float64(2 << 60)}},
+		"Int64Big": {
+			filter:         bson.D{{"v", int64(1 << 61)}},
 			resultPushdown: true,
 		},
+		"Int64BigPlus": {
+			filter:         bson.D{{"v", int64(1<<61) + 1}},
+			resultPushdown: true,
+		},
+		"Int64BigMinus": {
+			filter:         bson.D{{"v", int64(1<<61) - 1}},
+			resultPushdown: true,
+		},
+		"Int64NegBig": {
+			filter:         bson.D{{"v", -int64(1 << 61)}},
+			resultPushdown: true,
+		},
+		"Int64NegBigPlus": {
+			filter:         bson.D{{"v", -int64(1<<61) + 1}},
+			resultPushdown: true,
+		},
+		"Int64NegBigMinus": {
+			filter:         bson.D{{"v", -int64(1<<61) - 1}},
+			resultPushdown: true,
+		},
+
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
 			resultPushdown: true,
@@ -293,16 +325,60 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			filter:         bson.D{{"v", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
 			resultPushdown: true,
 		},
-		"DoubleBigInt64": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2 << 61)}}}},
+
+		"DoubleBig": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 61)}}}},
 			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
-		"DoubleBigInt64PlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", float64(2<<61 + 1)}}}},
+		"DoubleBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) + 1)}}}},
 			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBig": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1 << 61)}}}},
+			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
+		},
+		"DoubleNegBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64((1 << 61) + 1)}}}},
+			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
+		},
+		"DoubleNegBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+			skipForTigris:  "Values smaller than -(1<<53) are not pushdowned on Tigris",
+		},
+
+		"DoublePrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1<<53-1) - 1}}}},
+			resultPushdown: true,
+		},
+
 		"String": {
 			filter:         bson.D{{"v", bson.D{{"$eq", "foo"}}}},
 			resultPushdown: true,
@@ -407,18 +483,58 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		"Int64Min": {
 			filter:         bson.D{{"v", bson.D{{"$eq", int64(math.MinInt64)}}}},
 			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
 		},
-		"Int64DoubleBig": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64(2 << 60)}}}},
-			resultPushdown: true,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2057",
-		},
-		"Int64DoubleBigPlusOne": {
-			filter:         bson.D{{"v", bson.D{{"$eq", int64(2<<60 + 1)}}}},
-			resultType:     emptyResult,
+
+		"Int64Big": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1 << 61)}}}},
 			resultPushdown: true,
 		},
+		"Int64BigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64BigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBig": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+
+		"Int64PrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<53 + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<53-1) - 1}}}},
+			resultPushdown: true,
+		},
+
 		"IDNull": {
 			filter:     bson.D{{"_id", bson.D{{"$eq", nil}}}},
 			resultType: emptyResult,
@@ -558,7 +674,22 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gt", int64(math.MaxInt64)}}}},
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$gt", int64(2<<60 - 1)}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1 << 61)}}}},
+		},
+		"Int64BigPlusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1<<61) + 1}}}},
+		},
+		"Int64BigMinusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1<<61) - 1}}}},
+		},
+		"Int64NegBig": {
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1 << 61)}}}},
+		},
+		"Int64NegBigPlusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1<<61) + 1}}}},
+		},
+		"Int64NegBigMinusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1<<61) - 1}}}},
 		},
 	}
 
@@ -799,7 +930,7 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lt", int64(math.MinInt64)}}}},
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$lt", int64(2<<60 + 1)}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", int64(1<<61 + 1)}}}},
 		},
 	}
 
@@ -1032,7 +1163,51 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			resultPushdown: true,
 		},
 		"DoubleBig": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"DoubleBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBig": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<53) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<53) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<53-1) - 1}}}},
 			resultPushdown: true,
 		},
 		"String": {
@@ -1115,11 +1290,52 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			resultPushdown: true,
 		},
 		"Int64Big": {
-			filter:         bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(1 << 61)}}}},
 			resultPushdown: true,
 		},
-		"DoubleBigInt64": {
-			filter:         bson.D{{"v", bson.D{{"$ne", float64(2 << 61)}}}},
+		"Int64BigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 61) + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64BigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBig": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+
+		"Int64PrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 53) + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 53) - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<53-1) - 1}}}},
 			resultPushdown: true,
 		},
 		"Regex": {

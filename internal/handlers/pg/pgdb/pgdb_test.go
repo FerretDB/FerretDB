@@ -101,7 +101,7 @@ func TestCreateDrop(t *testing.T) {
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			return DropCollection(ctx, tx, databaseName, collectionName)
 		})
-		require.ErrorIs(t, err, ErrSchemaNotExist)
+		require.ErrorIs(t, err, ErrTableNotExist)
 
 		err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			return DropDatabase(ctx, tx, databaseName)

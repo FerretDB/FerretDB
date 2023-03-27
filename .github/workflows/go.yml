@@ -13,6 +13,11 @@ on:
   schedule:
     - cron: "12 2 * * *"
 
+# Do not run this workflow in parallel for any PR change.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
@@ -24,6 +29,7 @@ jobs:
   short-test:
     name: Short test
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -62,6 +68,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -128,6 +135,7 @@ jobs:
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -149,6 +157,7 @@ jobs:
   fuzz-short:
     name: Fuzz short
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
