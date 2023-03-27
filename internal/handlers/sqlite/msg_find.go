@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"path"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -49,7 +50,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	qp := &sqlitedb.QueryParams{
-		DB:         params.DB,
+		DB:         path.Join(h.SQLiteDBPath, params.DB+".db"),
 		Collection: params.Collection,
 		Comment:    params.Comment,
 	}

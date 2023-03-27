@@ -16,8 +16,11 @@ package sqlitedb
 
 import (
 	"context"
+	"database/sql"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type QueryParams struct {
@@ -28,5 +31,55 @@ type QueryParams struct {
 }
 
 func QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
-	return nil, nil
+	iter, err := buildIterator(ctx, &iteratorParams{
+		schema:  qp.DB,
+		table:   qp.Collection,
+		comment: qp.Comment,
+		filter:  qp.Filter,
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return iter, nil
+}
+
+// buildIterator returns an iterator to fetch documents for given iteratorParams.
+func buildIterator(ctx context.Context, p *iteratorParams) (types.DocumentsIterator, error) {
+	var query string
+
+	query += `SELECT json `
+
+	if c := p.comment; c != "" {
+		// prevent SQL injections
+		c = strings.ReplaceAll(c, "/*", "/ *")
+		c = strings.ReplaceAll(c, "*/", "* /")
+
+		query += `/* ` + c + ` */ `
+	}
+
+	query += ` FROM ` + p.table
+
+	where, args, err := prepareWhereClause(p.filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	query += where
+
+	db, err := sql.Open("sqlite3", p.schema)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return newIterator(ctx, rows), nil
+}
+
+func prepareWhereClause(filter interface{}) (string, []any, error) {
+	return "", nil, nil
 }

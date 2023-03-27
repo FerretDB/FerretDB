@@ -14,8 +14,46 @@
 
 package sqlitedb
 
-import "context"
+import (
+	"context"
+	"database/sql"
+	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/sqlite/sjson"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
 
 func DeleteDocumentsByID(ctx context.Context, qp *QueryParams, ids []any) (int64, error) {
-	return 0, nil
+	var p Placeholder
+	idsMarshalled := make([]any, len(ids))
+	placeholders := make([]string, len(ids))
+
+	for i, id := range ids {
+		placeholders[i] = p.Next()
+		idsMarshalled[i] = must.NotFail(sjson.MarshalSingleValue(id))
+	}
+
+	sqlExpr := `DELETE `
+
+	if qp.Comment != "" {
+		qp.Comment = strings.ReplaceAll(qp.Comment, "/*", "/ *")
+		qp.Comment = strings.ReplaceAll(qp.Comment, "*/", "* /")
+
+		sqlExpr += `/* ` + qp.Comment + ` */ `
+	}
+
+	sqlExpr += `FROM ` + qp.Collection +
+		` WHERE json->'$._id' IN (` + strings.Join(placeholders, ", ") + `)`
+
+	db, err := sql.Open("sqlite3", qp.DB)
+	if err != nil {
+		return 0, err
+	}
+
+	tag, err := db.ExecContext(ctx, sqlExpr, idsMarshalled...)
+	if err != nil {
+		return 0, err
+	}
+
+	return tag.RowsAffected()
 }

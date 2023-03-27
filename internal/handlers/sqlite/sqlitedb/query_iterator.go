@@ -29,7 +29,7 @@ import (
 )
 
 // queryIteratorProfiles keeps track on all query iterators.
-var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb.queryIterator")
+var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/sqlite/sqlitedb.queryIterator")
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
@@ -40,7 +40,12 @@ type queryIterator struct {
 	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
 }
 
-type iteratorParams struct{}
+type iteratorParams struct {
+	comment string
+	schema  string
+	table   string
+	filter  *types.Document
+}
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
 //
@@ -48,7 +53,6 @@ type iteratorParams struct{}
 //
 // Nil rows are possible and return already done iterator.
 func newIterator(ctx context.Context, rows *sql.Rows) types.DocumentsIterator {
-
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,
