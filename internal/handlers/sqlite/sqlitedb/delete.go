@@ -43,7 +43,7 @@ func DeleteDocumentsByID(ctx context.Context, qp *QueryParams, ids []any) (int64
 	}
 
 	sqlExpr += `FROM ` + qp.Collection +
-		` WHERE json->'$._id' IN (` + strings.Join(placeholders, ", ") + `)`
+		` WHERE  json_extract(json, '$._id') IN (` + strings.Join(placeholders, ", ") + `)`
 
 	db, err := sql.Open("sqlite3", qp.DB)
 	if err != nil {

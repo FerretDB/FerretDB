@@ -14,10 +14,13 @@
 
 package sqlitedb
 
+import "strconv"
+
 // Placeholder stores the number of the relevant placeholder of the query.
 type Placeholder int
 
 // Next increases the identifier value for the next variable in the PostgreSQL query.
 func (p *Placeholder) Next() string {
-	return "?"
+	*p++
+	return "$" + strconv.Itoa(int(*p))
 }
