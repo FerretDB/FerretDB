@@ -168,6 +168,9 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DoubleIntIncrement": {
 			update: bson.D{{"$inc", bson.D{{"v", int32(1)}}}},
 		},
+		"IntOverflow": {
+			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}},
+		},
 		"DoubleIncrementIntField": {
 			update: bson.D{{"$inc", bson.D{{"v", float64(1.13)}}}},
 		},

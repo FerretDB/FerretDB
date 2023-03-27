@@ -402,6 +402,29 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
+
+		"LimitAfter": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+			},
+		},
+		"LimitBefore": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
@@ -599,12 +622,6 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", math.MaxInt64}},
 			},
 		},
-		// "OverflowInt64": {
-		// 	pipeline: bson.A{
-		// 		bson.D{{"$sort", bson.D{{"_id", -1}}}},
-		// 		bson.D{{"$limit"}},
-		// 	},
-		// },
 		"Negative": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -653,23 +670,6 @@ func TestAggregateCompatLimit(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$limit", 100}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
-			},
-		},
-
-		"AfterGroup": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$limit", 5}},
-			},
-		},
-		"BeforeGroup": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$limit", 5}},
-				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
 	}

@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -148,16 +149,19 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
+// GetLimitStageParam returns $limit stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {
 	max, err := GetWholeNumberParam(value)
-	switch err {
-	case nil:
-	case errUnexpectedType:
+
+	switch {
+	case err == nil:
+	case errors.Is(err, errUnexpectedType):
 		return 0, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
 		)
-	case errNotWholeNumber, errInfinity:
+	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity):
 		return 0, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
