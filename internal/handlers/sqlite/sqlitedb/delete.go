@@ -14,19 +14,8 @@
 
 package sqlitedb
 
-import (
-	"context"
+import "context"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-)
-
-type QueryParams struct {
-	DB         string
-	Collection string
-	Comment    string
-	Filter     *types.Document
-}
-
-func QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
-	return nil, nil
+func DeleteDocumentsByID(ctx context.Context, qp *QueryParams, ids []any) (int64, error) {
+	return 0, nil
 }
