@@ -58,7 +58,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"double-1", "double-2", "double-4",
 				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-min", "int32-zero",
-				"int64-3", "int64-big", "int64-min", "int64-zero",
+				"int64-3", "int64-big", "int64-double-big",
+				"int64-min", "int64-zero",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
@@ -93,7 +94,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-big", "int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"DoubleNegativeValue": {
@@ -122,7 +123,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"double-big", "double-min-overflow-verge", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-big", "int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"BinaryWithZeroBytes": {
@@ -131,7 +132,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"double-1", "double-2", "double-3", "double-big",
 				"double-min-overflow-verge", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
-				"int64", "int64-1", "int64-big", "int64-min", "int64-zero",
+				"int64", "int64-1", "int64-big", "int64-double-big",
+				"int64-min", "int64-zero",
 			},
 		},
 		"Binary9Bytes": {
@@ -139,7 +141,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			expectedIDs: []any{
 				"double-big", "double-whole", "double-zero",
 				"int32", "int32-zero",
-				"int64", "int64-1", "int64-big", "int64-zero",
+				"int64", "int64-1", "int64-big", "int64-double-big", "int64-zero",
 			},
 		},
 
@@ -151,7 +153,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3", "int64-big",
-				"int64-min", "int64-zero",
+				"int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"Int32NegativeValue": {
@@ -363,7 +365,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-big", "int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
@@ -399,7 +401,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-big", "int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"DoubleNegativeValue": {
@@ -429,7 +431,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-big", "int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"BinaryWithZeroBytes": {
@@ -438,7 +440,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"double-1", "double-2", "double-3",
 				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
-				"int64", "int64-1", "int64-big", "int64-min", "int64-zero",
+				"int64", "int64-1", "int64-big", "int64-double-big",
+				"int64-min", "int64-zero",
 			},
 		},
 
@@ -450,7 +453,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
-				"int64-big", "int64-min", "int64-zero",
+				"int64-big", "int64-double-big", "int64-min", "int64-zero",
 			},
 		},
 		"Int32NegativeValue": {
@@ -468,7 +471,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				"double-1", "double-2", "double-3", "double-4",
 				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min", "int32-zero",
-				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-min", "int64-zero",
+				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-double-big",
+				"int64-min", "int64-zero",
 			},
 		},
 		"Int64NegativeValue": {
@@ -615,7 +619,8 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				"double-3", "double-4",
 				"double-big", "double-whole",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min",
-				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-max",
+				"int64", "int64-1", "int64-2", "int64-3", "int64-big",
+				"int64-double-big", "int64-max",
 			},
 		},
 		"Int64NegativeValue": {

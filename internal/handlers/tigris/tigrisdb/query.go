@@ -39,7 +39,7 @@ type QueryParams struct {
 }
 
 // QueryDocuments fetches documents from the given collection.
-func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
+func (tdb *TigrisDB) QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
 	db := tdb.Driver.UseDatabase(qp.DB)
 
 	collection, err := db.DescribeCollection(ctx, qp.Collection)
@@ -153,12 +153,17 @@ func BuildFilter(filter *types.Document) (string, error) {
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
+
 					case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-						rawValue, err := tjson.Marshal(docVal)
+						f, err := filterEqual(docVal)
 						if err != nil {
 							return "", lazyerrors.Error(err)
 						}
-						res[rootKey] = json.RawMessage(rawValue)
+
+						if f != nil {
+							res[rootKey] = f
+						}
+
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
 					}
@@ -175,11 +180,14 @@ func BuildFilter(filter *types.Document) (string, error) {
 			continue
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			rawValue, err := tjson.Marshal(v)
+			f, err := filterEqual(v)
 			if err != nil {
 				return "", lazyerrors.Error(err)
 			}
-			res[rootKey] = json.RawMessage(rawValue)
+
+			if f != nil {
+				res[rootKey] = f
+			}
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of field %s: %T", rootKey, v))
@@ -192,4 +200,42 @@ func BuildFilter(filter *types.Document) (string, error) {
 	}
 
 	return string(result), nil
+}
+
+// filterEqual returns the tigris filter with arguments that filters documents
+// where the value is equal to v.
+func filterEqual(v any) (filter any, err error) {
+	switch docVal := v.(type) {
+	case *types.Document, *types.Array, types.Binary,
+		types.NullType, types.Regex, types.Timestamp:
+		// type not supported for pushdown
+
+	case float64:
+		switch {
+		case docVal > types.MaxSafeDouble:
+			filter = map[string]any{"$gt": types.MaxSafeDouble}
+		case docVal < -types.MaxSafeDouble:
+			// skip pushdown as`$lt` operator works incorrectly
+			// for negative numbers
+		default:
+			// for all safe numbers send simple "eq" query
+			rawValue, err := tjson.Marshal(docVal)
+			if err != nil {
+				return "", lazyerrors.Error(err)
+			}
+			filter = json.RawMessage(rawValue)
+		}
+
+	case string, types.ObjectID, bool, time.Time, int32, int64:
+		rawValue, err := tjson.Marshal(docVal)
+		if err != nil {
+			return "", lazyerrors.Error(err)
+		}
+		filter = json.RawMessage(rawValue)
+
+	default:
+		panic(fmt.Sprintf("Unexpected type of value: %v", v))
+	}
+
+	return
 }

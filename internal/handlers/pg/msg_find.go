@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -54,32 +55,53 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
-	qp := pgdb.QueryParams{
+	qp := &pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
-		Filter:     params.Filter,
 	}
 
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
-	if qp.Filter != nil {
-		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
+	if params.Filter != nil {
+		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
 			return nil, err
 		}
 	}
 
+	if !h.DisablePushdown {
+		qp.Filter = params.Filter
+	}
+
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
+		var iter types.DocumentsIterator
+		if iter, err = pgdb.QueryDocuments(ctx, tx, qp); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		defer iter.Close()
+
+		iter = common.FilterIterator(iter, params.Filter)
+
+		resDocs, err = iterator.Values(iterator.Interface[struct{}, *types.Document](iter))
 		return err
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
-		return nil, err
+		var pathErr *types.DocumentPathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
@@ -88,6 +110,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
+	}
+
+	// Apply skip param:
+	switch {
+	case params.Skip < 0:
+		// This should be caught earlier, as if the skip param is not valid,
+		// we don't need to fetch the documents.
+		panic("negative skip must be caught earlier")
+	case params.Skip == 0:
+		// do nothing
+	case params.Skip >= int64(len(resDocs)):
+		resDocs = []*types.Document{}
+	default:
+		resDocs = resDocs[params.Skip:]
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))
@@ -134,27 +170,7 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 
 	defer iter.Close()
 
-	resDocs := make([]*types.Document, 0, 16)
+	f := common.FilterIterator(iter, filter)
 
-	for {
-		_, doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				return resDocs, nil
-			}
-
-			return nil, err
-		}
-
-		matches, err := common.FilterDocument(doc, filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if !matches {
-			continue
-		}
-
-		resDocs = append(resDocs, doc)
-	}
+	return iterator.Values(iterator.Interface[struct{}, *types.Document](f))
 }

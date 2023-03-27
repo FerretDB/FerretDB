@@ -28,12 +28,16 @@
 1. Wait for the [packages CI build](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
    to finish.
 2. Upload the binary and `.deb` and `.rpm` packages to the draft release.
-3. Wait for the [Docker CI build](https://github.com/FerretDB/FerretDB/actions/workflows/docker.yml?query=event%3Apush)
-   to finish.
-4. Check <https://hub.docker.com/r/ferretdb/ferretdb/tags>, <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>.
-5. Close milestone in issues.
-6. Publish release on GitHub.
-7. Announce it on Slack.
+3. Check:
+   * <https://hub.docker.com/r/ferretdb/ferretdb/tags>
+   * <https://hub.docker.com/r/ferretdb/ferretdb-dev/tags>
+   * <https://hub.docker.com/r/ferretdb/all-in-one/tags>
+   * <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>
+   * <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev>
+   * <https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one>
+4. Close milestone in issues.
+5. Publish release on GitHub.
+6. Announce it on Slack.
 
 ## Soon after
 

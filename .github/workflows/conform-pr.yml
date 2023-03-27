@@ -48,7 +48,7 @@ on:
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 env:
@@ -64,6 +64,7 @@ jobs:
   conform-pr:
     name: Conform PR
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
 
     # No `trust` label check because we don't checkout PR's code.
     # No `no ci` label to prevent accidental auto-merges: jobs skipped with `if` conditional are considered successful.

@@ -34,7 +34,7 @@ func newMatch(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrMatchBadExpression,
 			"the match filter must be an expression in an object",
-			"$match",
+			"$match (stage)",
 		)
 	}
 

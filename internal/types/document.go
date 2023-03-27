@@ -138,6 +138,8 @@ func (d *Document) Len() int {
 }
 
 // Iterator returns an iterator over the document fields.
+//
+// It returns valid (done) iterator for nil Document.
 func (d *Document) Iterator() iterator.Interface[string, any] {
 	return newDocumentIterator(d)
 }

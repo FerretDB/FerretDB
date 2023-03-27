@@ -18,55 +18,66 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4"
+	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// indexParams contains parameters for creating an index.
-// TODO This type will become exported in https://github.com/FerretDB/FerretDB/issues/1509 (similar to QueryParams).
-type indexParams struct {
-	db         string   // FerretDB database name
-	collection string   // FerretDB collection name
-	index      string   // FerretDB index name
-	key        indexKey // Index specification (pairs of field names and sort orders) // TODO
-	unique     bool     // Whether the index is unique
+// Index contains user-visible properties of FerretDB index.
+type Index struct {
+	Name   string
+	Key    IndexKey
+	Unique bool
 }
 
-// indexKey defines a type for index key - pairs of field names and sort orders.
-type indexKey []indexKeyPair
+// IndexKey is a list of field name + sort order pairs.
+type IndexKey []IndexKeyPair
 
-// indexKeyPair consists of a field name and a sort order that are part of the index.
-type indexKeyPair struct {
-	field string
-	order indexOrder
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field string
+	Order types.SortType
 }
 
-// indexOrder defines a type for index sort order.
-type indexOrder int8
+// Indexes returns a list of indexes for the given database and collection.
+//
+// If the given collection does not exist, it returns ErrTableNotExist.
+func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, error) {
+	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
+	if err != nil {
+		return nil, err
+	}
 
-// indexOrder constants.
-const (
-	indexOrderAsc  indexOrder = 1
-	indexOrderDesc indexOrder = -1
-)
+	res := make([]Index, len(metadata.indexes))
+
+	for i, idx := range metadata.indexes {
+		res[i] = idx.Index
+	}
+
+	// TODO Add tests that indexes sorted correctly: https://github.com/FerretDB/FerretDB/issues/1509
+	slices.SortFunc(res, func(a, b Index) bool { return a.Name < b.Name })
+
+	return res, nil
+}
 
 // createIndex creates a new index for the given params.
 // TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
-func createIndex(ctx context.Context, tx pgx.Tx, ip *indexParams) error {
-	pgTable, pgIndex, err := newMetadata(tx, ip.db, ip.collection).setIndex(ctx, ip.index, ip.key, ip.unique)
+func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+	pgTable, pgIndex, err := newMetadataStorage(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
 	}
 
-	if err := createPGIndexIfNotExists(ctx, tx, ip.db, pgTable, pgIndex, true); err != nil {
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// createPGIndexIfNotExists creates a new index for the given params if it does not exist.
-func createPGIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
+// createPgIndexIfNotExists creates a new index for the given params if it does not exist.
+func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
 	var err error
 
 	unique := ""

@@ -34,12 +34,12 @@ var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/inter
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx context.Context
+	ctx       context.Context
+	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal
 
 	m     sync.Mutex
 	rows  pgx.Rows
 	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
-	n     int
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -47,11 +47,17 @@ type queryIterator struct {
 // Iterator's Close method closes rows.
 //
 // Nil rows are possible and return already done iterator.
-func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *types.Document] {
+func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.DocumentsIterator {
+	unmarshalFunc := p.unmarshal
+	if unmarshalFunc == nil {
+		unmarshalFunc = pjson.Unmarshal
+	}
+
 	iter := &queryIterator{
-		ctx:   ctx,
-		rows:  rows,
-		stack: debugbuild.Stack(),
+		ctx:       ctx,
+		unmarshal: unmarshalFunc,
+		rows:      rows,
+		stack:     debugbuild.Stack(),
 	}
 
 	queryIteratorProfiles.Add(iter, 1)
@@ -78,44 +84,44 @@ func newIterator(ctx context.Context, rows pgx.Rows) iterator.Interface[int, *ty
 //
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
-func (iter *queryIterator) Next() (int, *types.Document, error) {
+func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
+	var unused struct{}
+
 	// ignore context error, if any, if iterator is already closed
 	if iter.rows == nil {
-		return 0, nil, iterator.ErrIteratorDone
+		return unused, nil, iterator.ErrIteratorDone
 	}
 
 	if err := iter.ctx.Err(); err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		return unused, nil, lazyerrors.Error(err)
 	}
 
 	if !iter.rows.Next() {
 		if err := iter.rows.Err(); err != nil {
-			return 0, nil, lazyerrors.Error(err)
+			return unused, nil, lazyerrors.Error(err)
 		}
 
 		// to avoid context cancellation changing the next `Next()` error
 		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
 
-		return 0, nil, iterator.ErrIteratorDone
+		return unused, nil, iterator.ErrIteratorDone
 	}
 
 	var b []byte
 	if err := iter.rows.Scan(&b); err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := pjson.Unmarshal(b)
+	doc, err := iter.unmarshal(b)
 	if err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		return unused, nil, lazyerrors.Error(err)
 	}
 
-	iter.n++
-
-	return iter.n - 1, doc, nil
+	return unused, doc, nil
 }
 
 // Close implements iterator.Interface.
@@ -142,5 +148,5 @@ func (iter *queryIterator) close() {
 
 // check interfaces
 var (
-	_ iterator.Interface[int, *types.Document] = (*queryIterator)(nil)
+	_ types.DocumentsIterator = (*queryIterator)(nil)
 )
