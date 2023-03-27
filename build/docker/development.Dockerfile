@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.2-2 AS development-build
+FROM ghcr.io/ferretdb/golang:1.20.2-5 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -25,10 +25,17 @@ ARG TARGETARCH
 WORKDIR /src
 COPY . .
 
-# TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage and/or cache;
-# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-RUN go mod download
+# use a single directory for all Go caches to simpliy RUN --mount commands below
+ENV GOPATH /cache/gopath
+ENV GOCACHE /cache/gocache
+ENV GOMODCACHE /cache/gomodcache
+
+# copy cached stdlib builds from the image
+RUN --mount=type=cache,target=/cache \
+    rsync -a /root/.cache/go-build/ /cache/gocache
+
+# remove ",direct"
+ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=1
 ENV GOCOVERDIR=cover
@@ -38,23 +45,34 @@ ENV GOARM=7
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
+# TODO https://github.com/FerretDB/FerretDB/issues/2170
+# That command could be run only once by using a separate stage;
+# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+RUN --mount=type=cache,target=/cache \
+    go mod download
+
 # Do not trim paths to make debugging with delve easier.
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-RUN <<EOF
+RUN --mount=type=cache,target=/cache <<EOF
+set -ex
+
 RACE=false
 if test "$TARGETARCH" = "amd64"
 then
     RACE=true
 fi
 
-go build -v                 -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
-go test  -c -coverpkg=./... -o=bin/ferretdb -trimpath=false -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
-EOF
+# check that stdlib was cached
+go install -v -race=$RACE std
 
-RUN go version -m bin/ferretdb
-RUN bin/ferretdb --version
+go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+
+go version -m bin/ferretdb
+bin/ferretdb --version
+EOF
 
 
 # final stage
@@ -76,7 +94,7 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
 
-# https://github.com/opencontainers/image-spec/blob/main/annotations.md
+# TODO https://github.com/FerretDB/FerretDB/issues/2212
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"

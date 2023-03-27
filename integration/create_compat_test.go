@@ -63,12 +63,12 @@ func TestCreateCompat(t *testing.T) {
 	)
 
 	// Set $tigrisSchemaString for tigris only.
-	var opts options.CreateCollectionOptions
+	opts := options.CreateCollection()
 	if setup.IsTigris(t) {
-		opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
+		opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
 	}
 
-	targetErr := targetDB.CreateCollection(s.Ctx, collName, &opts)
+	targetErr := targetDB.CreateCollection(s.Ctx, collName, opts)
 	compatErr := compatDB.CreateCollection(s.Ctx, collName)
 	require.Equal(t, targetErr, compatErr)
 

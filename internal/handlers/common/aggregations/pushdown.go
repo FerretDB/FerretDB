@@ -12,33 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pgdb
+package aggregations
 
 import (
-	"context"
-
-	"github.com/jackc/pgx/v4"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// schemaExists returns true if given schema exists.
-func schemaExists(ctx context.Context, tx pgx.Tx, db string) (bool, error) {
-	sql := `SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname = $1`
-	rows, err := tx.Query(ctx, sql, db)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		must.NoError(rows.Scan(&name))
-		if name == db {
-			return true, nil
-		}
+// GetPushdownQuery gets pushdown query for aggregation.
+// When the first aggregation stage is $match, $match query is
+// used for pushdown, otherwise nil is return.
+func GetPushdownQuery(stagesDocs []any) *types.Document {
+	if len(stagesDocs) == 0 {
+		return nil
 	}
 
-	return false, nil
+	firstStageDoc := stagesDocs[0]
+	firstStage, isDoc := firstStageDoc.(*types.Document)
+
+	if !isDoc || !firstStage.Has("$match") {
+		return nil
+	}
+
+	matchQuery := must.NotFail(firstStage.Get("$match"))
+	if query, isDoc := matchQuery.(*types.Document); isDoc {
+		return query
+	}
+
+	return nil
 }

@@ -110,6 +110,9 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
+	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
 
@@ -161,8 +164,8 @@ const (
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
 
-	// ErrBatchSizeNegative indicates that batch size is negative.
-	ErrBatchSizeNegative = ErrorCode(51024) // Location51024
+	// ErrValueNegative indicates that value must not be negative.
+	ErrValueNegative = ErrorCode(51024) // Location51024
 
 	// ErrRegexOptions indicates regex options error.
 	ErrRegexOptions = ErrorCode(51075) // Location51075

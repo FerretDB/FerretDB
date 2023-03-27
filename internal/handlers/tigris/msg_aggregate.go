@@ -43,19 +43,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// TODO https://github.com/FerretDB/FerretDB/issues/1892
 	common.Ignored(document, h.L, "cursor", "lsid")
 
-	if err = common.Unimplemented(document, "explain", "bypassDocumentValidation", "hint"); err != nil {
+	if err = common.Unimplemented(document, "explain", "collation", "let"); err != nil {
 		return nil, err
 	}
 
-	if err = common.Unimplemented(document, "readConcern", "writeConcern"); err != nil {
-		return nil, err
-	}
-
-	if err = common.Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "allowDiskUse", "maxTimeMS", "collation", "comment")
+	common.Ignored(
+		document, h.L,
+		"allowDiskUse", "maxTimeMS", "bypassDocumentValidation", "readConcern", "hint", "comment", "writeConcern",
+	)
 
 	var qp tigrisdb.QueryParams
 
@@ -109,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stages[i] = s
 	}
 
-	// TODO pushdown `$match` https://github.com/FerretDB/FerretDB/issues/1894
+	qp.Filter = aggregations.GetPushdownQuery(stagesDocs)
 
 	var docs []*types.Document
 
@@ -120,7 +115,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	defer iter.Close()
 
-	docs, err = iterator.Values(iter)
+	docs, err = iterator.Values(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, err
 	}

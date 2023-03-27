@@ -1,0 +1,118 @@
+---
+# Integration tests that need access to secrets.
+
+name: Trusted integration
+on:
+  pull_request_target:
+    types:
+      - labeled # for `trusted` label
+      - unlabeled
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "12 3 * * *" # after Docker workflow
+
+# Do not run this workflow in parallel for any PR change or branch/tag push
+# to save some resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  test:
+    name: Test ${{ matrix.name }}
+    runs-on: faster
+    timeout-minutes: 30
+
+    if: >
+      github.event_name != 'pull_request_target' ||
+      (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
+        !contains(github.event.pull_request.labels.*.name, 'no ci')
+      )
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Hana", task: "hana" }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Checkout pull request code
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        run: git checkout -b ${{ github.head_ref }}
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: integration
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run ${{ matrix.task }} tests
+        run: bin/task test-integration-${{ matrix.task }}
+        env:
+          FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
+
+      # The token is not required but should make uploads more stable.
+      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
+      - name: Upload coverage information
+        uses: codecov/codecov-action@v3
+        with:
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          files: ./integration/integration-${{ matrix.task }}.txt
+          flags: integration,${{ matrix.task }}
+          fail_ci_if_error: true
+          verbose: true
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

@@ -27,10 +27,11 @@ import (
 )
 
 type insertRunCommandCompatTestCase struct {
-	skip        string // optional, reason to skip the test
 	altErrorMsg string // optional, alternative error message in case of error
 	ordered     any    // required, ordered parameter
 	documents   []any  // required, slice of bson.D to be insert
+
+	skip string // optional, reason to skip the test
 }
 
 // testInsertRunCommandCompat tests insert compatibility test cases with invalid parameters.

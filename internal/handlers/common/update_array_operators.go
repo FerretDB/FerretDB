@@ -17,7 +17,6 @@ package common
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -160,6 +159,25 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			return false, lazyerrors.Error(err)
 		}
 
+		var each *types.Array
+
+		if pushValue, ok := pushValueRaw.(*types.Document); ok {
+			if pushValue.Has("$each") {
+				eachRaw := must.NotFail(pushValue.Get("$each"))
+
+				each, ok = eachRaw.(*types.Array)
+				if !ok {
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrBadValue,
+						fmt.Sprintf(
+							"The argument to $each in $push must be an array but it was of type: %s",
+							AliasFromType(eachRaw),
+						),
+					)
+				}
+			}
+		}
+
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			return false, lazyerrors.Error(err)
@@ -167,6 +185,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
+			changed = true
+
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
 				return false, commonerrors.NewWriteErrorMsg(
 					commonerrors.ErrUnsuitableValueType,
@@ -191,13 +211,20 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			)
 		}
 
-		array.Append(pushValueRaw)
+		if each == nil {
+			each = types.MakeArray(1)
+			each.Append(pushValueRaw)
+		}
+
+		for i := 0; i < each.Len(); i++ {
+			array.Append(must.NotFail(each.Get(i)))
+
+			changed = true
+		}
 
 		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)
 		}
-
-		changed = true
 	}
 
 	return changed, nil
@@ -209,6 +236,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, addToSetValueRaw, err := iter.Next()
@@ -220,6 +248,25 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			return false, lazyerrors.Error(err)
 		}
 
+		var each *types.Array
+
+		if addToSetValue, ok := addToSetValueRaw.(*types.Document); ok {
+			if addToSetValue.Has("$each") {
+				eachRaw := must.NotFail(addToSetValue.Get("$each"))
+
+				each, ok = eachRaw.(*types.Array)
+				if !ok {
+					return false, commonerrors.NewWriteErrorMsg(
+						commonerrors.ErrTypeMismatch,
+						fmt.Sprintf(
+							"The argument to $each in $addToSet must be an array but it was of type %s",
+							AliasFromType(eachRaw),
+						),
+					)
+				}
+			}
+		}
+
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			return false, lazyerrors.Error(err)
@@ -227,6 +274,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
+			changed = true
+
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
 				return false, commonerrors.NewWriteErrorMsg(
 					commonerrors.ErrUnsuitableValueType,
@@ -251,76 +300,38 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			)
 		}
 
-		if array.Len() == 0 {
-			array.Append(addToSetValueRaw)
+		if each == nil {
+			each = types.MakeArray(1)
+			each.Append(addToSetValueRaw)
+		}
 
-			if err = doc.SetByPath(path, array); err != nil {
-				return false, lazyerrors.Error(err)
+		for i := 0; i < each.Len(); i++ {
+			value := must.NotFail(each.Get(i))
+
+			if array.Contains(value) {
+				continue
 			}
 
 			changed = true
 
-			continue
+			array.Append(value)
 		}
-
-		var appendValue any
-
-		switch addToSetValueRaw := addToSetValueRaw.(type) {
-		case *types.Document, float64, string, types.Binary, types.ObjectID, bool,
-			time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
-			shouldAdd := true
-
-			for i := 0; i < array.Len(); i++ {
-				var value any
-
-				value, err = array.Get(i)
-				if err != nil {
-					return false, lazyerrors.Error(err)
-				}
-
-				compareResult := types.Compare(value, addToSetValueRaw)
-
-				if compareResult == types.Equal {
-					shouldAdd = false
-					break
-				}
-			}
-
-			if shouldAdd {
-				appendValue = addToSetValueRaw
-			}
-		case *types.Array:
-			// Nested arrays are not supported.
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrBadValue,
-				fmt.Sprintf("Nested arrays are not supported in $addToSet: %s", types.FormatAnyValue(addToSetValueRaw)),
-			)
-		default:
-			panic(fmt.Sprintf("unhandled type %T", addToSetValueRaw))
-		}
-
-		// No values to append to the array.
-		if appendValue == nil {
-			continue
-		}
-
-		array.Append(appendValue)
 
 		if err = doc.SetByPath(path, array); err != nil {
 			return false, lazyerrors.Error(err)
 		}
-
-		changed = true
 	}
 
 	return changed, nil
 }
 
 // processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
+// If the document was changed it returns true.
 func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
 	var changed bool
 
 	iter := update.Iterator()
+	defer iter.Close()
 
 	for {
 		key, pullAllValueRaw, err := iter.Next()
@@ -396,6 +407,72 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 					changed = true
 				}
+			}
+		}
+
+		if err = doc.SetByPath(path, array); err != nil {
+			return false, lazyerrors.Error(err)
+		}
+	}
+
+	return changed, nil
+}
+
+// processPullArrayUpdateExpression changes document according to $pull array update operator.
+// If the document was changed it returns true.
+func processPullArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
+	var changed bool
+
+	iter := update.Iterator()
+	defer iter.Close()
+
+	for {
+		key, pullValueRaw, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		// If the path does not exist, try to set it.
+		// If it is not possible to set the path return error.
+		// This will deal with cases like $pull on a non-existing field or unset field.
+		if !doc.HasByPath(path) {
+			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					err.Error(),
+				)
+			}
+		}
+
+		val, err := doc.GetByPath(path)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		array, ok := val.(*types.Array)
+		if !ok {
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrBadValue,
+				"Cannot apply $pull to a non-array value",
+			)
+		}
+
+		for i := array.Len() - 1; i >= 0; i-- {
+			value := must.NotFail(array.Get(i))
+
+			if types.Compare(value, pullValueRaw) == types.Equal {
+				array.Remove(i)
+
+				changed = true
 			}
 		}
 
