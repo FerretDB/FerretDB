@@ -335,7 +335,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// _id to be different number type between compat and target.
 	// https://github.com/FerretDB/FerretDB/issues/2184
 	//
-	// Composites, ArrayStrings, ArrayInt32s are not included
+	// Composites, ArrayStrings, ArrayInt32s and ArrayAndDocuments are not included
 	// because the order in compat and target can be not deterministic.
 	// Aggregation assigns BSON array to output _id, and an array with
 	// descending sort use the greatest element for comparison causing

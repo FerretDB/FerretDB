@@ -86,7 +86,8 @@ var Mixed = &Values[string]{
 	},
 }
 
-// ArrayAndDocuments contain composite values for tests.
+// ArrayAndDocuments contain array and document values for tests. It is used for
+// dot notation to find values from both document and array.
 var ArrayAndDocuments = &Values[string]{
 	name:     "ArrayAndDocuments",
 	backends: []string{"ferretdb-pg", "mongodb"},
