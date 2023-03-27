@@ -1,5 +1,68 @@
 # Changelog
 
+## [v0.9.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.4) (2023-03-27)
+
+### New Features 🎉
+* Support dot notation in sorting by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2156
+* Add support for `$each` modifier to `$addToSet` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2187
+* Add  support for `$each` modifier to `$push` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2202
+* Add support for `$pull` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2222
+
+### Fixed Bugs 🐛
+* Fix `hana` and `tigris` handlers initialization by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2234
+* Fix long overflow detection on `$mul` by @noisersup in https://github.com/FerretDB/FerretDB/pull/2232
+* Fix pushdown for large double values by @noisersup in https://github.com/FerretDB/FerretDB/pull/2163
+
+### Enhancements 🛠
+* Support `skip` argument for `find` and `count` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2193
+* Support query pushdown for `$match` aggregation stage by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2199
+* Rework integration test setup for validator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2225
+* Change collection names mangling for PostgreSQL by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2239
+* Implement `nameOnly` for `listCollections` command by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2247
+* Extract dollar path field expression to types package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2263
+
+### Documentation 📄
+* Prevent confusing messages for embedded FerretDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2209
+* Add new FerretDB v0.9.3 release blogpost by @Fashander in https://github.com/FerretDB/FerretDB/pull/2201
+* Add documentation for `all-in-one` Docker image by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2215
+* Tweak Docker docs a bit by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2228
+* Add section about field update operators by @Fashander in https://github.com/FerretDB/FerretDB/pull/2180
+* Update telemetry information by @Fashander in https://github.com/FerretDB/FerretDB/pull/2243
+* Add basic security policy by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2242
+* Add new blog post - MongoDB vs PostgreSQL by @Fashander in https://github.com/FerretDB/FerretDB/pull/2146
+* Document array update operator by @Fashander in https://github.com/FerretDB/FerretDB/pull/2237
+
+### Other Changes 🤖
+* Merge and speedup packages building by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2195
+* Provide "all-in-one" Docker image by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2183
+* Improve logging of retries by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2192
+* Split `TestQueryCompatRunner` back into separate tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2189
+* Fix telemetry tag and improve unimplemented error in aggregation by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2198
+* Improve build cache usage by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2197
+* Add CI configuration for Hana by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2194
+* Use `runit` for all-in-one Docker image by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2203
+* Pass `struct`s by pointers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2221
+* Skip a `$mod` test for arm64 by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2223
+* Fix `env-data` Taskfile by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2211
+* Make `listIndexes` use data from the database by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2214
+* Tweak dependabot config by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2233
+* Filter documents with iterators by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2245
+* Add a few query tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2260
+* Fix traffic recording by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2267
+* Cleanup unimplemented and ignored parameters by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2258
+* Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2264
+* Collection deletion and metadata refactoring by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2224
+* Update diff.md for database name differences by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2274
+* Remove indexes from `DocumentsIterator` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2278
+* Bump Tigris to 1.0.0-beta.51 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2277
+
+## New Contributors
+* @kropidlowsky made their first contribution in https://github.com/FerretDB/FerretDB/pull/2247
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/38?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.3...v0.9.4).
+
+
 ## [v0.9.3](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.3) (2023-03-13)
 
 ### New Features 🎉
