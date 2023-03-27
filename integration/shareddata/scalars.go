@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	doubleBig = float64(2 << 60)
-	int64Big  = int64(2 << 61)
+	doubleBig     = float64(1 << 61) // 2305843009213693952.0
+	longBig       = int64(1 << 61)   // 2305843009213693952
+	doubleMaxPrec = float64(1 << 53) // 9007199254740992.0
 )
 
 // Scalars contain scalar values for tests.
@@ -94,14 +95,15 @@ var Scalars = &Values[string]{
 		"timestamp":   primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i": primitive.Timestamp{I: 1},
 
-		"int64":      int64(42),
-		"int64-zero": int64(0),
-		"int64-max":  int64(math.MaxInt64),
-		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64Big,
-		"int64-1":    int64(1099511628000),
-		"int64-2":    int64(281474976700000),
-		"int64-3":    int64(72057594040000000),
+		"int64":            int64(42),
+		"int64-zero":       int64(0),
+		"int64-max":        int64(math.MaxInt64),
+		"int64-min":        int64(math.MinInt64),
+		"int64-big":        longBig,
+		"int64-double-big": int64(1 << 61),
+		"int64-1":          int64(1099511628000),
+		"int64-2":          int64(281474976700000),
+		"int64-3":          int64(72057594040000000),
 
 		// no 128-bit decimal floating point (yet)
 
@@ -122,11 +124,31 @@ var Doubles = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"double":                    42.13,
-		"double-whole":              42.0,
-		"double-zero":               0.0,
-		"double-smallest":           math.SmallestNonzeroFloat64,
-		"double-big":                doubleBig,
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-smallest": math.SmallestNonzeroFloat64,
+
+		// double big values ~1<<61
+		"double-big":       doubleBig,
+		"double-big-plus":  doubleBig + 1,
+		"double-big-minus": doubleBig - 1,
+
+		// double max precision ~1<<53
+		"double-prec-max":       doubleMaxPrec,
+		"double-prec-max-plus":  doubleMaxPrec + 1,
+		"double-prec-max-minus": doubleMaxPrec - 1,
+
+		// negative double big values ~ -(1<<61)
+		"double-neg-big":       -doubleBig,
+		"double-neg-big-plus":  -(doubleBig + 1),
+		"double-neg-big-minus": -(doubleBig - 1),
+
+		// double min precision ~ -(1<<53 - 1)
+		"double-prec-min":       -(doubleMaxPrec - 1),
+		"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
+		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
+
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
 		"double-2":                  float64(math.MinInt64),
@@ -339,11 +361,30 @@ var Int64s = &Values[string]{
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64Big,
 		// "int64-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
 		"int64-1": int64(1099511628000),
 		"int64-2": int64(281474976700000),
 		"int64-3": int64(72057594040000000),
+
+		// long big values ~1<<61
+		"int64-big":       longBig,
+		"int64-big-plus":  longBig + 1,
+		"int64-big-minus": longBig - 1,
+
+		// long representation of double max precision ~1<<53
+		"int64-prec-max":       int64(doubleMaxPrec),
+		"int64-prec-max-plus":  int64(doubleMaxPrec) + 1,
+		"int64-prec-max-minus": int64(doubleMaxPrec) - 1,
+
+		// negative long big values ~ -(1<<61)
+		"int64-neg-big":       -longBig,
+		"int64-neg-big-plus":  -(longBig + 1),
+		"int64-neg-big-minus": -(longBig - 1),
+
+		// long representation of double max precision ~ -(1<<53-1)
+		"int64-prec-min":       -int64(doubleMaxPrec),
+		"int64-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
+		"int64-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
 	},
 }
 
