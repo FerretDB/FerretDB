@@ -135,6 +135,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 			return 0, errInfinity
 		}
 
+		if value > float64(math.MaxInt64) ||
+			value < float64(math.MinInt64) {
+			return 0, errLongExceeded
+		}
+
 		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}
@@ -165,6 +170,11 @@ func GetLimitStageParam(value any) (int64, error) {
 		return 0, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
+		)
+	case errors.Is(err, errLongExceeded):
+		return 0, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
 		)
 	default:
 		panic(fmt.Sprint("Unexpected error: ", err))

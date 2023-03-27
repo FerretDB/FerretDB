@@ -804,7 +804,13 @@ func TestAggregateCompatLimit(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-
+		"Int64Overflow": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", float64(1 << 86)}},
+			},
+			resultType: emptyResult,
+		},
 		"AfterMatch": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
