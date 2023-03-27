@@ -841,7 +841,8 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update: bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
+			update:        bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
+			skipForTigris: "Schema validation would fail as we will create a new field with name '-1'",
 		},
 		"DotNotationIndexOutOfArray": {
 			update:        bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
