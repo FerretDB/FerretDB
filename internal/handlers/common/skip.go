@@ -73,7 +73,7 @@ func SkipDocuments(docs []*types.Document, skip int64) ([]*types.Document, error
 	case skip == 0:
 		return docs, nil
 	case skip > 0:
-		if int64(len(docs)) >= skip {
+		if int64(len(docs)) < skip {
 			return []*types.Document{}, nil
 		}
 
