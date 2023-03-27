@@ -73,6 +73,34 @@ var Composites = &Values[string]{
 	},
 }
 
+// Mixed contains composite and scalar values for tests. It is used for sorting
+// mixture of array and scalar documents.
+var Mixed = &Values[string]{
+	name:     "Mixed",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"null":        nil,
+		"unset":       unset,
+		"array-empty": bson.A{},
+		"array-null":  bson.A{nil},
+	},
+}
+
+// ArrayAndDocuments contain array and document values for tests. It is used for
+// dot notation to find values from both document and array.
+var ArrayAndDocuments = &Values[string]{
+	name:     "ArrayAndDocuments",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"document": bson.D{{"foo", int32(42)}},
+		"array-documents": bson.A{
+			bson.D{{"field", int32(42)}},
+			bson.D{{"field", int32(44)}},
+			bson.D{{"foo", int32(42)}},
+		},
+	},
+}
+
 // PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
 // on pg backend.
 var PostgresEdgeCases = &Values[string]{
@@ -340,6 +368,16 @@ var ArrayDocuments = &Values[string]{
 					bson.D{{"bar", "hello"}},
 					bson.D{{"bar", "world"}},
 				},
+			}},
+		},
+		"array-two-documents": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
 			}},
 		},
 	},
