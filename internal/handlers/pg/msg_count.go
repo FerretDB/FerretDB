@@ -106,11 +106,10 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	resDocs, err = common.SkipDocuments(resDocs, skip)
-	if err != nil {
+	if resDocs, err = common.SkipDocuments(resDocs, skip); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // queryCompatTestCase describes query compatibility test case.
@@ -263,6 +264,18 @@ func TestQueryCompatLimit(t *testing.T) {
 			filter: bson.D{},
 			limit:  pointer.ToInt64(1),
 		},
+		"AlmostAll": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
+		},
 		"Big": {
 			filter: bson.D{},
 			limit:  pointer.ToInt64(1000),
@@ -291,6 +304,18 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Simple": {
 			filter:  bson.D{},
 			optSkip: pointer.ToInt64(1),
+		},
+		"AlmostAll": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
 		},
 		"Big": {
 			filter:     bson.D{},
