@@ -36,10 +36,49 @@ type Stage interface {
 // stages maps all supported aggregation stages.
 var stages = map[string]newStageFunc{
 	// sorted alphabetically
-	"$count": newCount,
-	"$group": newGroup,
-	"$match": newMatch,
-	"$sort":  newSort,
+	"$count":  newCount,
+	"$group":  newGroup,
+	"$match":  newMatch,
+	"$sort":   newSort,
+	"$unwind": newUnwind,
+}
+
+// unsupportedStages maps all unsupported yet stages.
+var unsupportedStages = map[string]struct{}{
+	"$addFields":              {},
+	"$bucket":                 {},
+	"$bucketAuto":             {},
+	"$changeStream":           {},
+	"$collStats":              {},
+	"$currentOp":              {},
+	"$densify":                {},
+	"$documents":              {},
+	"$facet":                  {},
+	"$fill":                   {},
+	"$geoNear":                {},
+	"$graphLookup":            {},
+	"$indexStats":             {},
+	"$limit":                  {},
+	"$listLocalSessions":      {},
+	"$listSessions":           {},
+	"$lookup":                 {},
+	"$merge":                  {},
+	"$out":                    {},
+	"$planCacheStats":         {},
+	"$project":                {},
+	"$redact":                 {},
+	"$replaceRoot":            {},
+	"$replaceWith":            {},
+	"$sample":                 {},
+	"$search":                 {},
+	"$searchMeta":             {},
+	"$set":                    {},
+	"$setWindowFields":        {},
+	"$sharedDataDistribution": {},
+	"$skip":                   {},
+	"$sortByCount":            {},
+	"$unionWith":              {},
+	"$unset":                  {},
 }
 
 // NewStage creates a new aggregation stage.
@@ -56,11 +95,20 @@ func NewStage(stage *types.Document) (Stage, error) {
 
 	f, ok := stages[name]
 	if !ok {
+		if _, ok := unsupportedStages[name]; ok {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+				name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+			)
+		}
+
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			commonerrors.ErrStageGroupInvalidAccumulator,
+			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
 			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
 		)
+
 	}
 
 	return f(stage)
