@@ -351,16 +351,8 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 
 			return res, nil
 		case int64:
-			res := int64(v1) * v2
+			return multiplyLongSafely(int64(v1), v2)
 
-			resFloat := float64(v1) * float64(v2)
-			if float64(res) != resFloat ||
-				resFloat > float64(math.MaxInt64) ||
-				resFloat < float64(math.MinInt64) {
-				return nil, errLongExceeded
-			}
-
-			return res, nil
 		default:
 			return nil, errUnexpectedRightOpType
 		}
@@ -369,26 +361,43 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return float64(v1) * v2, nil
 		case int32:
-			res := v1 * int64(v2)
+			return multiplyLongSafely(v1, int64(v2))
 
-			if float64(res) != float64(v1)*float64(v2) {
-				return nil, errIntExceeded
-			}
-
-			return res, nil
 		case int64:
-			res := v1 * v2
-			if float64(res) != float64(v1)*float64(v2) {
-				return nil, errLongExceeded
-			}
+			return multiplyLongSafely(v1, v2)
 
-			return res, nil
 		default:
 			return nil, errUnexpectedRightOpType
 		}
 	default:
 		return nil, errUnexpectedLeftOpType
 	}
+}
+
+// multiplyLongSafely returns the multiplication of two int64 values.
+// It handles int64 overflows, and returns errLongExceeded error on one.
+//
+// Please always use multiplyNumbers as it calls multiplyLongSafely when needed.
+func multiplyLongSafely(v1, v2 int64) (int64, error) {
+	switch {
+	// 0 and 1 values are excluded, because those are only values that
+	// can multiply `MinInt64` without exceeding the range.
+	case v1 == 0 || v2 == 0 || v1 == 1 || v2 == 1:
+		return v1 * v2, nil
+
+	// Multiplying MinInt64 by any other value than above results in overflow.
+	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
+	// results in overflow with the MinInt64 as result.
+	case v1 == math.MinInt64 || v2 == math.MinInt64:
+		return 0, errLongExceeded
+	}
+
+	res := v1 * v2
+	if res/v2 != v1 {
+		return 0, errLongExceeded
+	}
+
+	return res, nil
 }
 
 // GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.

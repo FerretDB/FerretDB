@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.1.3
+	github.com/SAP/go-hdb v1.1.5
 	github.com/alecthomas/kong v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgconn v1.14.0
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/otel v1.14.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.7.0 // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/net v0.8.0
 	golang.org/x/sys v0.6.0
 )
