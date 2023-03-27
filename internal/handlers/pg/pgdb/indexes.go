@@ -121,6 +121,9 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 }
 
 // quoteString returns a string that is safe to use in SQL queries.
+//
+// Warning! Avoid using this function unless there is no other way.
+// Ideally, use a placeholder and pass the value as a parameter instead of calling this function.
 func quoteString(str string) string {
 	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }
