@@ -88,7 +88,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	}
 
 	if l, _ := doc.Get("limit"); l != nil {
-		if res.Limit, err = GetWholeNumberParam(l); err != nil {
+		if res.Limit, err = GetLimitParam("find", l); err != nil {
 			return nil, err
 		}
 	}

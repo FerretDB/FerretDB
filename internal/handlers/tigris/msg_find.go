@@ -72,17 +72,13 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter = common.FilterIterator(iter, params.Filter)
 
-	resDocs, err := iterator.Values(iterator.Interface[struct{}, *types.Document](iter))
+	iter, err = common.SortDocumentsIterator(iter, params.Sort)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
 		var pathErr *types.DocumentPathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrPathContainsEmptyElement,
-				"FieldPath field names may not be empty strings.",
+				"Empty field names in path are not allowed",
 				document.Command(),
 			)
 		}
@@ -90,26 +86,17 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
-		return nil, err
+	iter = common.LimitIterator(iter, params.Limit)
+
+	iter = common.SkipIterator(iter, params.Skip)
+
+	resDocs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
 		return nil, err
-	}
-
-	// Apply skip param:
-	switch {
-	case params.Skip < 0:
-		// This should be caught earlier, as if the skip param is not valid,
-		// we don't need to fetch the documents.
-		panic("negative skip must be caught earlier")
-	case params.Skip == 0:
-		// do nothing
-	case params.Skip >= int64(len(resDocs)):
-		resDocs = []*types.Document{}
-	default:
-		resDocs = resDocs[params.Skip:]
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))
@@ -158,5 +145,5 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 
 	f := common.FilterIterator(iter, filter)
 
-	return iterator.Values(iterator.Interface[struct{}, *types.Document](f))
+	return iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](f))
 }
