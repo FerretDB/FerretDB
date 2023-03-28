@@ -67,6 +67,7 @@ func TestIndexesCreate(t *testing.T) {
 		models      []mongo.IndexModel
 		altErrorMsg string                   // optional, alternative error message in case of error
 		resultType  compatTestCaseResultType // defaults to nonEmptyResult
+		skip        string                   // optional, skip test with a specified reason
 	}{
 		"empty": {
 			models:     []mongo.IndexModel{},
@@ -77,12 +78,13 @@ func TestIndexesCreate(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 		},
-		"duplicate": {
+		"duplicate_id": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{{"_id", 1}}, // this index is already created by default
 				},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"non-existent-field": {
 			models: []mongo.IndexModel{
@@ -133,6 +135,14 @@ func TestIndexesCreate(t *testing.T) {
 				{Keys: bson.D{{"bar", 1}}},
 			},
 		},
+		"build-same-index": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+				{Keys: bson.D{{"v", 1}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
 		"multi-with-invalid": {
 			models: []mongo.IndexModel{
 				{
@@ -156,7 +166,8 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("bar"),
 				},
 			},
-			resultType: emptyResult,
+			resultType:  emptyResult,
+			altErrorMsg: "One of the specified indexes already exists with a different name",
 		},
 		"same-name-different-keys": {
 			models: []mongo.IndexModel{
@@ -169,11 +180,16 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("index-name"),
 				},
 			},
-			resultType: emptyResult,
+			resultType:  emptyResult,
+			altErrorMsg: "One of the specified indexes already exists with a different key",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Helper()
 			t.Parallel()
 

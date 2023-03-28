@@ -73,6 +73,12 @@ const (
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 
+	// ErrIndexOptionsConflict indicates that index build process failed due to options conflict.
+	ErrIndexOptionsConflict = ErrorCode(85) // IndexOptionsConflict
+
+	// ErrIndexKeySpecsConflict indicates that index build process failed due to key specs conflict.
+	ErrIndexKeySpecsConflict = ErrorCode(86) // IndexKeySpecsConflict
+
 	// ErrOperationFailed indicates that the operation failed.
 	ErrOperationFailed = ErrorCode(96) // OperationFailed
 

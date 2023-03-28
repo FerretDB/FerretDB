@@ -22,7 +22,6 @@ import (
 	"regexp"
 
 	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -373,6 +372,8 @@ func collectionNameToTableName(name string) string {
 //
 // It returns a possibly wrapped error:
 //   - ErrTableNotExist - if the metadata table doesn't exist.
+//   - ErrIndexKeyAlreadyExist - if the given index key already exists.
+//   - ErrIndexNameAlreadyExist - if the given index name already exists.
 func (ms *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
@@ -382,38 +383,33 @@ func (ms *metadataStorage) setIndex(ctx context.Context, index string, key Index
 	pgTable = metadata.table
 	pgIndex = indexNameToPgIndexName(ms.collection, index)
 
-	// if index name or index key already exists, don't create it,
-	// just return the existing index information
-	if slices.ContainsFunc(metadata.indexes, func(idx metadataIndex) bool {
-		if idx.Name == index {
-			return true
-		}
-
-		if len(idx.Key) != len(key) {
-			return false
-		}
-
-		return slices.ContainsFunc(idx.Key, func(pair IndexKeyPair) bool {
-			for _, keyPair := range key {
-				if keyPair == pair {
-					return true
-				}
-			}
-
-			return false
-		})
-	}) {
-		return
-	}
-
-	metadata.indexes = append(metadata.indexes, metadataIndex{
+	newIndex := metadataIndex{
 		Index: Index{
 			Name:   index,
 			Key:    key,
 			Unique: unique,
 		},
 		pgIndex: pgIndex,
-	})
+	}
+
+	// If index name or index key already exists, don't create it.
+	// If existing name and key are equal to the given ones, don't return an error.
+	// Otherwise, return an error.
+	for _, existing := range metadata.indexes {
+		var exists bool
+		exists, err = checkExistingIndex(&existing, &newIndex)
+		if err != nil {
+			pgTable = ""
+			pgIndex = ""
+			return
+		}
+
+		if exists {
+			return
+		}
+	}
+
+	metadata.indexes = append(metadata.indexes, newIndex)
 
 	if err = ms.set(ctx, metadata); err != nil {
 		err = lazyerrors.Error(err)
@@ -421,6 +417,47 @@ func (ms *metadataStorage) setIndex(ctx context.Context, index string, key Index
 	}
 
 	return
+}
+
+// checkExistingIndex checks if the given index already exists.
+//
+// It returns true and no error if existing and new index names and keys are equal.
+// It returns false and no error if existing and new index names and keys are different.
+// It returns false and an error if either name or key is equal (but not both).
+// Possible errors:
+//   - ErrIndexNameAlreadyExist - if index name already exists for a different key.
+//   - ErrIndexKeyAlreadyExist - if index key already exists for a different name.
+func checkExistingIndex(existing *metadataIndex, new *metadataIndex) (bool, error) {
+	var indexNameMatch bool
+
+	if existing.Name == new.Name {
+		indexNameMatch = true
+	}
+
+	if len(existing.Key) != len(new.Key) {
+		if indexNameMatch {
+			return false, ErrIndexNameAlreadyExist
+		} else {
+			return false, nil
+		}
+	}
+
+	for i := range existing.Key {
+		if existing.Key[i] != new.Key[i] {
+			if indexNameMatch {
+				return false, ErrIndexNameAlreadyExist
+			} else {
+				return false, nil
+			}
+		}
+	}
+
+	// If we reached this line, the keys are equal.
+	if indexNameMatch {
+		return true, nil
+	} else {
+		return false, ErrIndexKeyAlreadyExist
+	}
 }
 
 // indexNameToPgIndexName returns index name in form <shortened_name>_<name_hash>_idx.

@@ -109,6 +109,18 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	switch {
 	case err == nil:
 	// do nothing
+	case errors.Is(err, pgdb.ErrIndexKeyAlreadyExist):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIndexOptionsConflict,
+			fmt.Sprintf("One of the specified indexes already exists with a different name"),
+			document.Command(),
+		)
+	case errors.Is(err, pgdb.ErrIndexNameAlreadyExist):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIndexKeySpecsConflict,
+			fmt.Sprintf("One of the specified indexes already exists with a different key"),
+			document.Command(),
+		)
 	default:
 		return nil, lazyerrors.Error(err)
 	}
