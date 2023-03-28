@@ -41,6 +41,7 @@ var stages = map[string]newStageFunc{
 	"$limit": newLimit,
 	"$match": newMatch,
 	"$sort":  newSort,
+	// please keep sorted alphabetically
 }
 
 // NewStage creates a new aggregation stage.

@@ -40,3 +40,8 @@ func (iter *withClose[K, V]) Close() {
 	// we might want to wrap it with sync.Once if needed
 	iter.close()
 }
+
+// check interfaces
+var (
+	_ Interface[any, any] = (*withClose[any, any])(nil)
+)
