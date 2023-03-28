@@ -108,7 +108,6 @@ func NewStage(stage *types.Document) (Stage, error) {
 			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
 			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
 		)
-
 	}
 
 	return f(stage)
