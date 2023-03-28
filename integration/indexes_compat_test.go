@@ -92,6 +92,7 @@ func TestIndexesCreate(t *testing.T) {
 				},
 			},
 		},
+
 		"multi-direction": {
 			models: []mongo.IndexModel{
 				{
@@ -168,8 +169,8 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		collectionName any
-		key            bson.D
 		name           string
+		key            bson.D
 	}{
 		"invalid-collection-name": {
 			collectionName: 42,

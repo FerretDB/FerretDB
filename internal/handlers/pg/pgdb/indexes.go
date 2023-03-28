@@ -97,6 +97,7 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 
 	for i, field := range fields {
 		var order string
+
 		switch field.Order {
 		case types.Ascending:
 			order = "ASC"
@@ -106,10 +107,12 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 			return lazyerrors.Errorf("unknown sort order: %d", field.Order)
 		}
 
-		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order) // FIXME: field.Field must be sanitized
+		// It's important to sanitize field.Field data here, as it's a user-provided value.
+		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order)
 	}
 
-	// FIXME !!! Don't let SQL injection happen here !!! Don't merge !!!
+	tx.Conn()
+
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
 		` ON ` + pgx.Identifier{schema, table}.Sanitize() + ` (` + strings.Join(fieldsDef, `, `) + `)`
 
@@ -124,6 +127,8 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 //
 // Warning! Avoid using this function unless there is no other way.
 // Ideally, use a placeholder and pass the value as a parameter instead of calling this function.
+//
+// This approach is used in github.com/jackc/pgx/v4@v4.18.1/internal/sanitize/sanitize.go.
 func quoteString(str string) string {
 	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }

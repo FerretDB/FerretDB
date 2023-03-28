@@ -59,6 +59,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 
 	expectedIndexdef := fmt.Sprintf(
 		"CREATE UNIQUE INDEX %s ON %s.%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
-		pgIndexName, databaseName, tableName)
+		pgIndexName, databaseName, tableName,
+	)
 	assert.Equal(t, expectedIndexdef, indexdef)
 }
