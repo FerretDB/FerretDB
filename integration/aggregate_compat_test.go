@@ -225,6 +225,8 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 }
 
 func TestAggregateCommandCompat(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateCommandCompatTestCase{
 		"CollectionAgnostic": {
 			command: bson.D{
@@ -258,6 +260,8 @@ func TestAggregateCommandCompat(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MatchAndCount": {
 			pipeline: bson.A{
@@ -282,6 +286,8 @@ func TestAggregateCompatStages(t *testing.T) {
 }
 
 func TestAggregateCompatEmptyPipeline(t *testing.T) {
+	t.Parallel()
+
 	providers := []shareddata.Provider{
 		// for testing empty pipeline use a collection with single document,
 		// because sorting will not matter.
@@ -298,6 +304,8 @@ func TestAggregateCompatEmptyPipeline(t *testing.T) {
 }
 
 func TestAggregateCompatCount(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Value": {
 			pipeline: bson.A{bson.D{{"$count", "v"}}},
@@ -331,6 +339,8 @@ func TestAggregateCompatCount(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
+	t.Parallel()
+
 	// Scalars collection is not included because aggregation groups
 	// numbers of different types for $group, and this causes output
 	// _id to be different number type between compat and target.
@@ -412,6 +422,8 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 }
 
 func TestAggregateCompatGroup(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NullID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -541,6 +553,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDotNotation(t *testing.T) {
+	t.Parallel()
+
 	// Providers Composites, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
@@ -616,6 +630,8 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
+	t.Parallel()
+
 	// Providers Composites and Mixed cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
@@ -670,6 +686,8 @@ func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 }
 
 func TestAggregateCompatGroupCount(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"CountNull": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -717,6 +735,8 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatGroupSum(t *testing.T) {
+	t.Parallel()
+
 	providers := shareddata.AllProviders().
 		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
 		Remove("Composites").
@@ -913,6 +933,8 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
@@ -964,6 +986,8 @@ func TestAggregateCompatMatch(t *testing.T) {
 }
 
 func TestAggregateCompatSort(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"AscendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", 1}}}}},
