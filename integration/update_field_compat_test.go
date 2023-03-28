@@ -949,7 +949,7 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v..", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationNegativeIndex": {
+		"DotNotationNegativeIdx": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
