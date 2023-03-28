@@ -18,12 +18,11 @@ import (
 	"errors"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -240,8 +239,8 @@ func TestIndexesCreate(t *testing.T) {
 	}
 }
 
-// TestIndexesInvalidCollectionName tests the behavior when we try to create an index with invalid parameters.
-func TestIndexesInvalidCollectionName(t *testing.T) {
+// TestIndexesCreateRunCommand tests specific behavior for index creation that can be only provided through RunCommand.
+func TestIndexesCreateRunCommand(t *testing.T) {
 	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -252,11 +251,19 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 		collectionName any
 		indexName      any
 		key            any
+		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	}{
 		"invalid-collection-name": {
 			collectionName: 42,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
+			resultType:     emptyResult,
+		},
+		"nil-collection-name": {
+			collectionName: nil,
+			key:            bson.D{{"v", -1}},
+			indexName:      "custom-name",
+			resultType:     emptyResult,
 		},
 		"index-name-not-set": {
 			collectionName: "test",
@@ -267,22 +274,27 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
+			resultType:     emptyResult,
 		},
 		"non-string-index-name": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      42,
+			resultType:     emptyResult,
 		},
 		"invalid-key": {
 			collectionName: "test",
 			key:            42,
+			resultType:     emptyResult,
 		},
 		"empty-key": {
 			collectionName: "test",
 			key:            bson.D{},
+			resultType:     emptyResult,
 		},
 		"key-not-set": {
 			collectionName: "test",
+			resultType:     emptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -304,7 +316,7 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 			targetErr := targetCollection.Database().RunCommand(
 				ctx, bson.D{
 					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{}},
+					{"indexes", bson.A{indexesDoc}},
 				},
 			).Decode(&targetRes)
 
@@ -312,14 +324,17 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 			compatErr := compatCollection.Database().RunCommand(
 				ctx, bson.D{
 					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{bson.D{{"key", tc.key}}}},
+					{"indexes", bson.A{indexesDoc}},
 				},
 			).Decode(&compatRes)
 
-			require.Nil(t, targetRes)
-			require.Nil(t, compatRes)
+			if tc.resultType == emptyResult {
+				require.Nil(t, targetRes)
+				require.Nil(t, compatRes)
+			}
 
 			AssertMatchesCommandError(t, compatErr, targetErr)
+			assert.Equal(t, compatRes, targetRes)
 
 			targetErr = targetCollection.Database().RunCommand(
 				ctx, bson.D{{"listIndexes", tc.collectionName}},

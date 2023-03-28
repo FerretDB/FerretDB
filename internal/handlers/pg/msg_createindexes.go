@@ -147,7 +147,19 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 
 			keyDoc, err = common.GetRequiredParam[*types.Document](indexDoc, "key")
 			if err != nil {
-				return nil, err
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					"'key' option must be specified as an object",
+					"createIndexes",
+				)
+			}
+
+			if keyDoc.Len() == 0 {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrCannotCreateIndex,
+					"Must specify at least one field for the index key",
+					"createIndexes",
+				)
 			}
 
 			index.Key, err = processIndexKey(keyDoc)
@@ -158,7 +170,11 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "name":
 			index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
 			if err != nil {
-				return nil, err
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					"'name' option must be specified as a string",
+					"createIndexes",
+				)
 			}
 
 		case "unique", "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
