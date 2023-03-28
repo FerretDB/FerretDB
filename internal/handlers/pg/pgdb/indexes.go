@@ -73,7 +73,7 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 		return err
 	}
 
-	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, true); err != nil {
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, i.Unique); err != nil {
 		return err
 	}
 
