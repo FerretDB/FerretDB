@@ -100,7 +100,7 @@ func TestIndexesCreate(t *testing.T) {
 				{
 					Keys: bson.D{
 						{"v", 1},
-						{"foo'))); DROP TABlE _ferretdb_metadata; CREATE INDEX IF NOT EXISTS test ON test.test (((_jsonb->'foo", 1},
+						{"foo))); DROP TABlE _ferretdb_metadata; CREATE INDEX IF NOT EXISTS test ON test.test (((_jsonb->'foo", 1},
 					},
 				},
 			},

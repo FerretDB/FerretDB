@@ -62,6 +62,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	if idxArr.Len() == 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			"Must specify at least one index to create",
+			document.Command(),
+		)
+	}
+
 	iter := idxArr.Iterator()
 	defer iter.Close()
 
