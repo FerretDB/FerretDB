@@ -250,13 +250,39 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		collectionName any
-		name           string
-		key            bson.D
+		indexName      any
+		key            any
 	}{
 		"invalid-collection-name": {
 			collectionName: 42,
 			key:            bson.D{{"v", -1}},
-			name:           "custom-index",
+			indexName:      "custom-name",
+		},
+		"index-name-not-set": {
+			collectionName: "test",
+			key:            bson.D{{"v", -1}},
+			indexName:      nil,
+		},
+		"empty-index-name": {
+			collectionName: "test",
+			key:            bson.D{{"v", -1}},
+			indexName:      "",
+		},
+		"non-string-index-name": {
+			collectionName: "test",
+			key:            bson.D{{"v", -1}},
+			indexName:      42,
+		},
+		"invalid-key": {
+			collectionName: "test",
+			key:            42,
+		},
+		"empty-key": {
+			collectionName: "test",
+			key:            bson.D{},
+		},
+		"key-not-set": {
+			collectionName: "test",
 		},
 	} {
 		name, tc := name, tc
@@ -264,11 +290,21 @@ func TestIndexesInvalidCollectionName(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			indexesDoc := bson.D{}
+
+			if tc.key != nil {
+				indexesDoc = append(indexesDoc, bson.E{Key: "key", Value: tc.key})
+			}
+
+			if tc.indexName != nil {
+				indexesDoc = append(indexesDoc, bson.E{"name", tc.indexName})
+			}
+
 			var targetRes bson.D
 			targetErr := targetCollection.Database().RunCommand(
 				ctx, bson.D{
 					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{bson.D{{"key", tc.key}, {"name", tc.name}}}},
+					{"indexes", bson.A{}},
 				},
 			).Decode(&targetRes)
 
