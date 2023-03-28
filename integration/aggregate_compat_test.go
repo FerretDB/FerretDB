@@ -825,3 +825,44 @@ func TestAggregateCompatSort(t *testing.T) {
 
 	testAggregateStagesCompat(t, testCases)
 }
+
+func TestAggregateCompatSkip(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Document": {
+			pipeline:   bson.A{bson.D{{"$skip", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"Zero": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(0)}},
+			},
+		},
+		"One": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(1)}},
+			},
+		},
+		"SkipAll": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(1000)}},
+			},
+			resultType: emptyResult,
+		},
+		"StringInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", "1"}},
+			},
+			resultType: emptyResult,
+		},
+		"NegativeValue": {
+			pipeline:   bson.A{bson.D{{"$skip", int32(-1)}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}

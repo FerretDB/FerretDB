@@ -181,6 +181,9 @@ const (
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
+
+	// ErrStageSkipBadValue indicates that $skip stage contains invalid value.
+	ErrStageSkipBadValue = ErrorCode(5107200) // Location5107200
 )
 
 // ErrInfo represents additional optional error information.
