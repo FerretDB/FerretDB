@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,11 +62,14 @@ func TestIndexesCreate(t *testing.T) {
 
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
-	for name, tc := range map[string]struct {
-		models []mongo.IndexModel
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		models      []mongo.IndexModel
+		altErrorMsg string                   // optional, alternative error message in case of error
+		resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	}{
 		"empty": {
-			models: []mongo.IndexModel{},
+			models:     []mongo.IndexModel{},
+			resultType: emptyResult,
 		},
 		"single-index": {
 			models: []mongo.IndexModel{
@@ -105,8 +109,16 @@ func TestIndexesCreate(t *testing.T) {
 				},
 			},
 		},
+		"single-same-key": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"v", -1}, {"v", 1}},
+				},
+			},
+			resultType: emptyResult,
+		},
 
-		"multi-direction": {
+		"multi-direction-different-indexes": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{{"v", -1}},
@@ -129,6 +141,18 @@ func TestIndexesCreate(t *testing.T) {
 				},
 			},
 		},
+		"multi-with-invalid": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"foo", 1}, {"bar", 1}, {"v", -1}},
+				},
+				{
+					Keys: bson.D{{"v", -1}, {"v", 1}},
+				},
+			},
+			resultType:  emptyResult,
+			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -142,6 +166,7 @@ func TestIndexesCreate(t *testing.T) {
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
+			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -152,8 +177,22 @@ func TestIndexesCreate(t *testing.T) {
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
 
-					require.Equal(t, compatErr, targetErr)
+					if tc.altErrorMsg != "" {
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						var expectedErr mongo.CommandError
+						require.True(t, errors.As(compatErr, &expectedErr))
+						expectedErr.Raw = nil
+						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
+					} else {
+						require.Equal(t, compatErr, targetErr)
+					}
+
 					assert.Equal(t, compatRes, targetRes)
+
+					if compatErr == nil {
+						nonEmptyResults = true
+					}
 
 					// List indexes to see they are identical after creation.
 					targetCur, targetErr := targetCollection.Indexes().List(ctx)
@@ -167,6 +206,15 @@ func TestIndexesCreate(t *testing.T) {
 
 					assert.Equal(t, compatIndexes, targetIndexes)
 				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

@@ -123,6 +123,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
+// processIndexOptions processes the given indexDoc and returns a pgdb.Index.
 func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 	var index pgdb.Index
 
@@ -184,6 +185,8 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 	res := make(pgdb.IndexKey, 0, keyDoc.Len())
 	keyIter := keyDoc.Iterator()
 
+	duplicateChecker := make(map[string]struct{}, keyDoc.Len())
+
 	for {
 		field, order, err := keyIter.Next()
 
@@ -195,6 +198,19 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 		default:
 			return nil, lazyerrors.Error(err)
 		}
+
+		if _, ok := duplicateChecker[field]; ok {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf(
+					"Error in specification %s, the field %q appears multiple times",
+					types.FormatAnyValue(keyDoc), field,
+				),
+				"createIndexes",
+			)
+		}
+
+		duplicateChecker[field] = struct{}{}
 
 		var orderParam int64
 
