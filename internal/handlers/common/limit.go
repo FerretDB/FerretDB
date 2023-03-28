@@ -14,9 +14,33 @@
 
 package common
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"math"
 
-// LimitDocuments returns a subslice of given documents according to the given limit.
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+// GetLimitParam validates the given limit value for find, count, and delete commands.
+func GetLimitParam(command string, value any) (int64, error) {
+	l, err := GetWholeNumberParam(value)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	// TODO return proper errors
+	// https://github.com/FerretDB/FerretDB/issues/2255
+	switch {
+	case l < 0:
+		return 0, lazyerrors.Errorf("invalid %s limit value: %d", command, l)
+	case l > math.MaxUint32:
+		return 0, lazyerrors.Errorf("invalid %s limit value: %d", command, l)
+	default:
+		return l, nil
+	}
+}
+
+// LimitDocuments returns a subslice of given documents according to the given limit value.
 func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, error) {
 	switch {
 	case limit == 0:
@@ -27,6 +51,6 @@ func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, err
 		}
 		return docs[:limit], nil
 	default:
-		return nil, NewCommandErrorMsg(ErrNotImplemented, "LimitDocuments: negative limit values are not supported")
+		return nil, lazyerrors.Errorf("unexpected limit value: %d", limit)
 	}
 }

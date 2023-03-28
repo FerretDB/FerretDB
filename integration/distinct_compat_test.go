@@ -30,8 +30,6 @@ type distinctCompatTestCase struct {
 	field      string                   // required
 	filter     bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
-
-	skip string // optional
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
@@ -49,10 +47,6 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(t, tc.skip)
-			}
 
 			t.Parallel()
 
