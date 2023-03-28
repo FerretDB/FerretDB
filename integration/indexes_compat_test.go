@@ -64,6 +64,9 @@ func TestIndexesCreate(t *testing.T) {
 	for name, tc := range map[string]struct {
 		models []mongo.IndexModel
 	}{
+		"empty": {
+			models: []mongo.IndexModel{},
+		},
 		"single-index": {
 			models: []mongo.IndexModel{
 				{
@@ -89,6 +92,16 @@ func TestIndexesCreate(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{{"v.foo", 1}},
+				},
+			},
+		},
+		"single-dangerous-key": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{
+						{"v", 1},
+						{"foo'))); DROP TABlE _ferretdb_metadata; CREATE INDEX IF NOT EXISTS test ON test.test (((_jsonb->'foo", 1},
+					},
 				},
 			},
 		},
