@@ -59,24 +59,22 @@ func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (s *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
-	if s.expression != nil {
+func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+	if a.expression != nil {
 		var values []any
 
 		for _, doc := range grouped {
-			v := s.expression.Evaluate(doc)
+			v := a.expression.Evaluate(doc)
 			values = append(values, v)
 		}
 
-		res := sumNumbers(values...)
-
-		return res, nil
+		return sumNumbers(values...), nil
 	}
 
-	switch number := s.number.(type) {
+	switch number := a.number.(type) {
 	case float64, int32, int64:
 		// Below is equivalent of len(grouped)*number,
-		// with handling conversion on int32/int64 overflows.
+		// with conversion handling upon overflow of int32 and int64.
 		// For example, { $sum: 1 } is equivalent of $count.
 		numbers := make([]any, len(grouped))
 		for i := 0; i < len(grouped); i++ {
