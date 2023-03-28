@@ -90,13 +90,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter = common.SkipIterator(iter, params.Skip)
 
-	resDocs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	iter, err = common.ProjectionIterator(iter, params.Projection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
-		return nil, err
+	resDocs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))

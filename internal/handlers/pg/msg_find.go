@@ -101,16 +101,17 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.SkipIterator(iter, params.Skip)
 
+		iter, err = common.ProjectionIterator(iter, params.Projection)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
 		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 		return err
 	})
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
-		return nil, err
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))

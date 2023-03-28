@@ -13,3 +13,52 @@
 // limitations under the License.
 
 package common
+
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document) (types.DocumentsIterator, error) {
+	inclusion, err := isProjectionInclusion(projection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &projectionIterator{
+		iter:       iter,
+		projection: projection,
+		inclusion:  inclusion,
+	}, nil
+}
+
+type projectionIterator struct {
+	iter       types.DocumentsIterator
+	projection *types.Document
+	inclusion  bool
+}
+
+func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
+	var unused struct{}
+
+	_, doc, err := iter.iter.Next()
+	if err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	err = projectDocument(iter.inclusion, doc, iter.projection)
+	if err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	return unused, doc, nil
+}
+
+func (iter *projectionIterator) Close() {
+	iter.iter.Close()
+}
+
+// check interfaces
+var (
+	_ types.DocumentsIterator = (*projectionIterator)(nil)
+)
