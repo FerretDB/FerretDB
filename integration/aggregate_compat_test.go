@@ -932,7 +932,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 					{"_id", "$v"},
 					{"sum", bson.D{{"$sum", "$v"}}},
 					{"sum", bson.D{{"$sum", "$s"}}},
-				}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 			resultType: emptyResult,
 		},
 	}
