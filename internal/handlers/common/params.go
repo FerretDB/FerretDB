@@ -157,7 +157,7 @@ func GetWholeNumberParam(value any) (int64, error) {
 // GetLimitStageParam returns $limit stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {
-	max, err := GetWholeNumberParam(value)
+	limit, err := GetWholeNumberParam(value)
 
 	switch {
 	case err == nil:
@@ -181,19 +181,19 @@ func GetLimitStageParam(value any) (int64, error) {
 	}
 
 	switch {
-	case max < 0:
+	case limit < 0:
 		return 0, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrStageLimitInvalidArg,
-			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", max),
+			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", limit),
 		)
-	case max == 0:
+	case limit == 0:
 		return 0, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrStageLimitNotPositive,
 			"The limit must be positive",
 		)
 	}
 
-	return max, nil
+	return limit, nil
 }
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.

@@ -24,7 +24,7 @@ import (
 
 // limit represents $limit stage.
 type limit struct {
-	max int64
+	limit int64
 }
 
 // newLimit creates a new $limit stage.
@@ -34,19 +34,19 @@ func newLimit(stage *types.Document) (Stage, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	max, err := common.GetLimitStageParam(doc)
+	l, err := common.GetLimitStageParam(doc)
 	if err != nil {
 		return nil, err
 	}
 
 	return &limit{
-		max: max,
+		limit: l,
 	}, nil
 }
 
 // Process implements Stage interface.
 func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	doc, err := common.LimitDocuments(in, l.max)
+	doc, err := common.LimitDocuments(in, l.limit)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
