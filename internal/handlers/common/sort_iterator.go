@@ -20,11 +20,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// SortDocumentsIterator returns an iterator of sorted documents.
+// SortIterator returns an iterator of sorted documents.
 //
 // Since sorting iterator is impossible, this function fully consumes and closes the underlying iterator,
 // sorts documents in memory and returns a new iterator over the sorted slice.
-func SortDocumentsIterator(iter types.DocumentsIterator, sort *types.Document) (types.DocumentsIterator, error) {
+func SortIterator(iter types.DocumentsIterator, sort *types.Document) (types.DocumentsIterator, error) {
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, lazyerrors.Error(err)

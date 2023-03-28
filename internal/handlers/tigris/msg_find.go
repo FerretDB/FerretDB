@@ -72,7 +72,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter = common.FilterIterator(iter, params.Filter)
 
-	iter, err = common.SortDocumentsIterator(iter, params.Sort)
+	iter, err = common.SortIterator(iter, params.Sort)
 	if err != nil {
 		var pathErr *types.DocumentPathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {

@@ -19,6 +19,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// ProjectionIterator returns an iterator that projects documents returned by the underlying iterator.
+//
+// Next method returns the next projected document.
+//
+// Close method closes the underlying iterator.
+// For that reason, there is no need to track both iterators.
 func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document) (types.DocumentsIterator, error) {
 	inclusion, err := isProjectionInclusion(projection)
 	if err != nil {
@@ -32,12 +38,14 @@ func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document
 	}, nil
 }
 
+// projectionIterator is returned by ProjectionIterator.
 type projectionIterator struct {
 	iter       types.DocumentsIterator
 	projection *types.Document
 	inclusion  bool
 }
 
+// Next implements iterator.Interface. See ProjectionIterator for details.
 func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
@@ -54,6 +62,7 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 	return unused, doc, nil
 }
 
+// Close implements iterator.Interface. See ProjectionIterator for details.
 func (iter *projectionIterator) Close() {
 	iter.iter.Close()
 }
