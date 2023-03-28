@@ -141,41 +141,44 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
+		// Process required param "key"
+		var keyDoc *types.Document
+
+		keyDoc, err = common.GetRequiredParam[*types.Document](indexDoc, "key")
+		if err != nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				"'key' option must be specified as an object",
+				"createIndexes",
+			)
+		}
+
+		if keyDoc.Len() == 0 {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrCannotCreateIndex,
+				"Must specify at least one field for the index key",
+				"createIndexes",
+			)
+		}
+
+		index.Key, err = processIndexKey(keyDoc)
+		if err != nil {
+			return nil, err
+		}
+
+		// Process required param "name"
+		index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
+		if err != nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				"'name' option must be specified as a string",
+				"createIndexes",
+			)
+		}
+
 		switch opt {
-		case "key":
-			var keyDoc *types.Document
-
-			keyDoc, err = common.GetRequiredParam[*types.Document](indexDoc, "key")
-			if err != nil {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
-					"'key' option must be specified as an object",
-					"createIndexes",
-				)
-			}
-
-			if keyDoc.Len() == 0 {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrCannotCreateIndex,
-					"Must specify at least one field for the index key",
-					"createIndexes",
-				)
-			}
-
-			index.Key, err = processIndexKey(keyDoc)
-			if err != nil {
-				return nil, err
-			}
-
-		case "name":
-			index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
-			if err != nil {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
-					"'name' option must be specified as a string",
-					"createIndexes",
-				)
-			}
+		case "key", "name":
+			// already processed, do nothing
 
 		case "unique", "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
