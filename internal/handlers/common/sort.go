@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -26,18 +27,20 @@ import (
 // SortDocuments sorts given documents in place according to the given sorting conditions.
 //
 // If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
-func SortDocuments(docs []*types.Document, sort *types.Document) error {
-	if sort.Len() == 0 {
+func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
+	if sortDoc.Len() == 0 {
 		return nil
 	}
 
-	if sort.Len() > 32 {
-		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sort.Len())
+	if sortDoc.Len() > 32 {
+		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
 	}
 
-	sortFuncs := make([]sortFunc, len(sort.Keys()))
-	for i, sortKey := range sort.Keys() {
-		sortField := must.NotFail(sort.Get(sortKey))
+	sortFuncs := make([]sortFunc, len(sortDoc.Keys()))
+
+	for i, sortKey := range sortDoc.Keys() {
+		sortField := must.NotFail(sortDoc.Get(sortKey))
+
 		sortType, err := getSortType(sortKey, sortField)
 		if err != nil {
 			return err
@@ -57,7 +60,7 @@ func SortDocuments(docs []*types.Document, sort *types.Document) error {
 	}
 
 	sorter := &docsSorter{docs: docs, sorts: sortFuncs}
-	sorter.Sort(docs)
+	sort.Sort(sorter)
 
 	return nil
 }
@@ -91,11 +94,6 @@ type docsSorter struct {
 	sorts []sortFunc
 }
 
-func (ds *docsSorter) Sort(docs []*types.Document) {
-	ds.docs = docs
-	sort.Sort(ds)
-}
-
 func (ds *docsSorter) Len() int {
 	return len(ds.docs)
 }
@@ -110,6 +108,7 @@ func (ds *docsSorter) Less(i, j int) bool {
 	var k int
 	for k = 0; k < len(ds.sorts)-1; k++ {
 		sortFunc := ds.sorts[k]
+
 		switch {
 		case sortFunc(p, q):
 			// p < q, so we have a decision.
@@ -129,8 +128,8 @@ func (ds *docsSorter) Less(i, j int) bool {
 func getSortType(key string, value any) (types.SortType, error) {
 	sortValue, err := GetWholeNumberParam(value)
 	if err != nil {
-		switch err {
-		case errUnexpectedType:
+		switch {
+		case errors.Is(err, errUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
 				value = "null"
 			}
@@ -140,7 +139,7 @@ func getSortType(key string, value any) (types.SortType, error) {
 				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
 				"$sort",
 			)
-		case errNotWholeNumber:
+		case errors.Is(err, errNotWholeNumber):
 			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, "$sort must be a whole number", "$sort")
 		default:
 			return 0, err

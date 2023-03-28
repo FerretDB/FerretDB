@@ -16,7 +16,7 @@ package types
 
 import "github.com/FerretDB/FerretDB/internal/util/iterator"
 
-// DocumentsIterator represents an iterator over documents.
+// DocumentsIterator represents an iterator over documents (slice, query results, etc).
 //
 // Key/index is not used there because it is unclear what it should be in the filter/sort/limit/skip chain,
 // and it is not used anyway.

@@ -22,6 +22,27 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// ProjectDocuments modifies given documents in places according to the given projection.
+func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
+	if projection.Len() == 0 {
+		return nil
+	}
+
+	inclusion, err := isProjectionInclusion(projection)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(docs); i++ {
+		err = projectDocument(inclusion, docs[i], projection)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
 func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
@@ -91,27 +112,6 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		}
 	}
 	return
-}
-
-// ProjectDocuments modifies given documents in places according to the given projection.
-func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
-	if projection.Len() == 0 {
-		return nil
-	}
-
-	inclusion, err := isProjectionInclusion(projection)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < len(docs); i++ {
-		err = projectDocument(inclusion, docs[i], projection)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
