@@ -717,46 +717,16 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatGroupSum(t *testing.T) {
-	// Doubles is skipped as they produce wrong result due to lost precision.
-	// Composites, ArrayStrings, ArrayInt32s, Mixed and ArrayAndDocuments are skipped due to
-	// https://github.com/FerretDB/FerretDB/issues/2185.
-	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		// TODO: handle accumulation of doubles close to max precision.
+	providers := shareddata.AllProviders().
+		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
+		Remove("Composites").
+		Remove("ArrayStrings").
+		Remove("ArrayInt32s").
+		Remove("Mixed").
+		Remove("ArrayAndDocuments").
+		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		// shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		// shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		// shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
+		Remove("Doubles")
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
