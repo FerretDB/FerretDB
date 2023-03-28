@@ -109,7 +109,8 @@ func TestIndexesCreate(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
-			resultType: emptyResult,
+			resultType:  emptyResult,
+			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
 		},
 		"custom-name": {
 			models: []mongo.IndexModel{
