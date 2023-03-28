@@ -1,1 +1,1 @@
-FROM ghcr.io/ferretdb/docusaurus-docs:2.3.1-4
+FROM ghcr.io/ferretdb/docusaurus-docs:2.4.0-1
