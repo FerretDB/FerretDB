@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -716,13 +717,14 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatGroupSum(t *testing.T) {
-	// Doubles is skipped as they produce wrong result due to inaccurate precision.
+	// Doubles is skipped as they produce wrong result due to lost precision.
 	// Composites, ArrayStrings, ArrayInt32s, Mixed and ArrayAndDocuments are skipped due to
 	// https://github.com/FerretDB/FerretDB/issues/2185.
 	providers := []shareddata.Provider{
 		shareddata.Scalars,
 
-		// TODO: handle doubles close to max precision in doubles.
+		// TODO: handle accumulation of doubles close to max precision.
+		// https://github.com/FerretDB/FerretDB/issues/2300
 		// shareddata.Doubles,
 		shareddata.OverflowVergeDoubles,
 		shareddata.SmallDoubles,
@@ -807,7 +809,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$group", bson.D{
 					{"_id", nil},
 					{"sum", bson.D{{"$sum", "v"}}},
-				}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"NonExistent": {
 			pipeline: bson.A{
@@ -836,7 +840,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"sum", bson.D{{"$sum", bson.A{"$v", "$c"}}}},
-				}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 			resultType: emptyResult,
 		},
 		"Int32": {
@@ -845,6 +851,26 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"sum", bson.D{{"$sum", int32(1)}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"MaxInt32": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", math.MaxInt32}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"NegativeInt32": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", int32(-1)}}},
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
@@ -859,12 +885,32 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
+		"MaxInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", math.MaxInt64}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
 		"Double": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"sum", bson.D{{"$sum", 43.7}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"MaxDouble": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", math.MaxFloat64}}},
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},

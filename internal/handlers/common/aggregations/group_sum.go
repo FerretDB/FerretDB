@@ -25,7 +25,7 @@ import (
 // sumAccumulator represents $sum accumulator for $group.
 type sumAccumulator struct {
 	expression types.Expression
-	count      any
+	number     any
 }
 
 // newSumAccumulator creates a new $sum accumulator for $group.
@@ -41,17 +41,17 @@ func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 			"$sum (accumulator)",
 		)
 	case float64:
-		accumulator.count = expr
+		accumulator.number = expr
 	case string:
 		var err error
 		if accumulator.expression, err = types.NewExpression(expr); err != nil {
 			// $sum returns 0 on non-existent field.
-			accumulator.count = int32(0)
+			accumulator.number = int32(0)
 		}
 	case int32, int64:
-		accumulator.count = expr
+		accumulator.number = expr
 	default:
-		accumulator.count = int32(0)
+		accumulator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}
 
@@ -73,13 +73,17 @@ func (s *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []
 		return res, nil
 	}
 
-	switch count := s.count.(type) {
-	case float64:
-		return float64(len(grouped)) * count, nil
-	case int32:
-		return int32(len(grouped)) * count, nil
-	case int64:
-		return int64(len(grouped)) * count, nil
+	switch number := s.number.(type) {
+	case float64, int32, int64:
+		// Below is equivalent of len(grouped)*number,
+		// with handling conversion on int32/int64 overflows.
+		// For example, { $sum: 1 } is equivalent of $count.
+		numbers := make([]any, len(grouped))
+		for i := 0; i < len(grouped); i++ {
+			numbers[i] = number
+		}
+
+		return sumNumbers(numbers...), nil
 	}
 
 	// $sum returns 0 on non-existent and non-numeric field.
