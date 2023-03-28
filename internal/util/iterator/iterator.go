@@ -15,11 +15,7 @@
 // Package iterator describes a generic Iterator interface.
 package iterator
 
-import (
-	"errors"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
+import "errors"
 
 // ErrIteratorDone is returned when the iterator is read to the end or closed.
 var ErrIteratorDone = errors.New("iterator is read to the end or closed")
@@ -35,7 +31,8 @@ type Interface[K, V any] interface {
 	// or Next returned fatal error,
 	// Close method still should be called.
 	//
-	// Next should not be called concurrently.
+	// Next should not be called concurrently with other Next calls,
+	// but it can be called concurrently with Close.
 	Next() (K, V, error)
 
 	// Close indicates that the iterator will no longer be used.
@@ -48,27 +45,4 @@ type Interface[K, V any] interface {
 	// Close must be concurrency-safe and may be called multiple times.
 	// All calls after the first should have no observable effect.
 	Close()
-}
-
-// Values consumes all values from iterator until it is done.
-// ErrIteratorDone error is returned as nil; any other error is returned as-is.
-//
-// Iterator is always closed at the end.
-func Values[K, V any](iter Interface[K, V]) ([]V, error) {
-	defer iter.Close()
-
-	var res []V
-
-	for {
-		_, v, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, ErrIteratorDone) {
-				return res, nil
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-
-		res = append(res, v)
-	}
 }

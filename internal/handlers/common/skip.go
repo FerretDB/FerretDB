@@ -57,9 +57,28 @@ func GetSkipParam(command string, value any) (int64, error) {
 			"skip",
 		)
 	case errors.Is(err, errNotWholeNumber):
+		// TODO that seems to be allowing negative floating numbers
+		// https://github.com/FerretDB/FerretDB/issues/2255
+
 		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
 		return int64(math.Floor(value.(float64))), nil
 	default:
 		return 0, lazyerrors.Error(err)
+	}
+}
+
+// SkipDocuments returns a subslice of given documents according to the given skip value.
+func SkipDocuments(docs []*types.Document, skip int64) ([]*types.Document, error) {
+	switch {
+	case skip == 0:
+		return docs, nil
+	case skip > 0:
+		if int64(len(docs)) < skip {
+			return []*types.Document{}, nil
+		}
+
+		return docs[skip:], nil
+	default:
+		return nil, lazyerrors.Errorf("unexpected skip value: %d", skip)
 	}
 }

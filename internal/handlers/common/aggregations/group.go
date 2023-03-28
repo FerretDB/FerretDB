@@ -40,6 +40,7 @@ type Accumulator interface {
 var accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCountAccumulator,
+	// please keep sorted alphabetically
 }
 
 // groupStage represents $group stage.
