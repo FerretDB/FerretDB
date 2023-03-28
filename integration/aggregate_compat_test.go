@@ -862,6 +862,10 @@ func TestAggregateCompatSkip(t *testing.T) {
 			pipeline:   bson.A{bson.D{{"$skip", int32(-1)}}},
 			resultType: emptyResult,
 		},
+		"NegativeDouble": {
+			pipeline:   bson.A{bson.D{{"$skip", -3.2}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)

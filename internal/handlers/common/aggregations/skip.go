@@ -16,6 +16,7 @@ package aggregations
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -40,6 +41,14 @@ func newSkip(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			"the $skip key specification must be an object",
+			"$skip (stage)",
+		)
+	}
+
+	if skipValue < 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %v", value),
 			"$skip (stage)",
 		)
 	}
