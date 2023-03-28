@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"path"
@@ -46,6 +47,12 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	qp.DB = path.Join(h.SQLiteDBPath, qp.DB+".db")
 
+	db, err := sql.Open("sqlite", qp.DB)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer db.Close()
+
 	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
@@ -70,7 +77,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	inserted, insErrors := insertMany(ctx, &qp, docs, ordered)
+	inserted, insErrors := insertMany(ctx, db, &qp, docs, ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
 		"ok", float64(1),
@@ -90,14 +97,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-func insertMany(ctx context.Context, qp *sqlitedb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+func insertMany(ctx context.Context, db *sql.DB, qp *sqlitedb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
 	var insErrors commonerrors.WriteErrors
 
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
 
-		err := insertDocument(ctx, qp, doc)
+		err := insertDocument(ctx, db, qp, doc)
 
 		var we *commonerrors.WriteErrors
 
@@ -120,7 +127,7 @@ func insertMany(ctx context.Context, qp *sqlitedb.QueryParams, docs *types.Array
 }
 
 // insertDocument prepares and executes actual INSERT request to SQLite.
-func insertDocument(ctx context.Context, qp *sqlitedb.QueryParams, doc any) error {
+func insertDocument(ctx context.Context, db *sql.DB, qp *sqlitedb.QueryParams, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return commonerrors.NewCommandErrorMsg(
@@ -129,7 +136,7 @@ func insertDocument(ctx context.Context, qp *sqlitedb.QueryParams, doc any) erro
 		)
 	}
 
-	err := sqlitedb.InsertDocument(ctx, qp.DB, qp.Collection, d)
+	err := sqlitedb.InsertDocument(ctx, db, qp.DB, qp.Collection, d)
 
 	switch {
 	case err == nil:

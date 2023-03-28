@@ -16,15 +16,14 @@ package sqlitedb
 
 import (
 	"database/sql"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func createDatabase(dbName string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbName)
+	db, err := sql.Open("sqlite", dbName)
 	if err != nil {
 		return nil, err
 	}
+	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {

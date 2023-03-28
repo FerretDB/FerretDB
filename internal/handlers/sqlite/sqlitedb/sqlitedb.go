@@ -13,3 +13,7 @@
 // limitations under the License.
 
 package sqlitedb
+
+import (
+	_ "modernc.org/sqlite"
+)

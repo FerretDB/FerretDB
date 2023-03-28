@@ -30,8 +30,8 @@ type QueryParams struct {
 	Filter     *types.Document
 }
 
-func QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
-	iter, err := buildIterator(ctx, &iteratorParams{
+func QueryDocuments(ctx context.Context, db *sql.DB, qp *QueryParams) (types.DocumentsIterator, error) {
+	iter, err := buildIterator(ctx, db, &iteratorParams{
 		schema:  qp.DB,
 		table:   qp.Collection,
 		comment: qp.Comment,
@@ -45,7 +45,7 @@ func QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterat
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, p *iteratorParams) (types.DocumentsIterator, error) {
+func buildIterator(ctx context.Context, db *sql.DB, p *iteratorParams) (types.DocumentsIterator, error) {
 	var query string
 
 	query += `SELECT json `
@@ -66,11 +66,6 @@ func buildIterator(ctx context.Context, p *iteratorParams) (types.DocumentsItera
 	}
 
 	query += where
-
-	db, err := sql.Open("sqlite3", p.schema)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {

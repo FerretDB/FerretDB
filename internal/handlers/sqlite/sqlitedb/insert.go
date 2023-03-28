@@ -25,26 +25,22 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func InsertDocument(ctx context.Context, db, collection string, doc *types.Document) error {
+func InsertDocument(ctx context.Context, db *sql.DB, dbName, collection string, doc *types.Document) error {
 	if err := doc.ValidateData(); err != nil {
 		return err
 	}
 
-	var err error
-	var dbConn *sql.DB
-
-	dbConn, err = CreateCollectionIfNotExists(db, collection)
+	err := CreateCollection(db, collection)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	defer dbConn.Close()
 
 	p := &insertParams{
-		schema: db,
+		schema: dbName,
 		table:  collection,
 		doc:    doc,
 	}
-	err = insert(ctx, dbConn, p)
+	err = insert(ctx, db, p)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func DeleteDocumentsByID(ctx context.Context, qp *QueryParams, ids []any) (int64, error) {
+func DeleteDocumentsByID(ctx context.Context, db *sql.DB, qp *QueryParams, ids []any) (int64, error) {
 	var p Placeholder
 	idsMarshalled := make([]any, len(ids))
 	placeholders := make([]string, len(ids))
@@ -44,11 +44,6 @@ func DeleteDocumentsByID(ctx context.Context, qp *QueryParams, ids []any) (int64
 
 	sqlExpr += `FROM ` + qp.Collection +
 		` WHERE  json_extract(json, '$._id') IN (` + strings.Join(placeholders, ", ") + `)`
-
-	db, err := sql.Open("sqlite3", qp.DB)
-	if err != nil {
-		return 0, err
-	}
 
 	tag, err := db.ExecContext(ctx, sqlExpr, idsMarshalled...)
 	if err != nil {

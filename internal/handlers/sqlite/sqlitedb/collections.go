@@ -19,34 +19,13 @@ import (
 	"fmt"
 )
 
-func CreateCollection(db, collection string) error {
-	database, err := createDatabase(db)
-	if err != nil {
-		return err
-	}
-
+func CreateCollection(db *sql.DB, collection string) error {
 	sqlExpr := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (json string)", collection)
 
-	_, err = database.Exec(sqlExpr)
+	_, err := db.Exec(sqlExpr)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func CreateCollectionIfNotExists(db, collection string) (*sql.DB, error) {
-	database, err := createDatabase(db)
-	if err != nil {
-		return nil, err
-	}
-
-	sqlExpr := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (json string)", collection)
-
-	_, err = database.Exec(sqlExpr)
-	if err != nil {
-		return nil, err
-	}
-
-	return database, nil
 }

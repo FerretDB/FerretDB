@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"path"
 	"time"
@@ -64,9 +65,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	qp.Filter = params.Filter
 
+	db, err := sql.Open("sqlite", qp.DB)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer db.Close()
+
 	var resDocs []*types.Document
 	var iter types.DocumentsIterator
-	if iter, err = sqlitedb.QueryDocuments(ctx, qp); err != nil {
+	if iter, err = sqlitedb.QueryDocuments(ctx, db, qp); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

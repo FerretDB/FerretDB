@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"path"
@@ -179,7 +180,13 @@ func execDelete(ctx context.Context, qp *sqlitedb.QueryParams) (int32, error) {
 	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
 	filter := qp.Filter
 
-	iter, err := sqlitedb.QueryDocuments(ctx, qp)
+	db, err := sql.Open("sqlite", qp.DB)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+	defer db.Close()
+
+	iter, err := sqlitedb.QueryDocuments(ctx, db, qp)
 	if err != nil {
 		return 0, err
 	}
@@ -215,7 +222,7 @@ func execDelete(ctx context.Context, qp *sqlitedb.QueryParams) (int32, error) {
 		return 0, nil
 	}
 
-	rowsDeleted, err := deleteDocuments(ctx, qp, resDocs)
+	rowsDeleted, err := deleteDocuments(ctx, db, qp, resDocs)
 	if err != nil {
 		return 0, err
 	}
@@ -226,14 +233,14 @@ func execDelete(ctx context.Context, qp *sqlitedb.QueryParams) (int32, error) {
 }
 
 // deleteDocuments deletes documents by _id.
-func deleteDocuments(ctx context.Context, qp *sqlitedb.QueryParams, docs []*types.Document) (int64, error) {
+func deleteDocuments(ctx context.Context, db *sql.DB, qp *sqlitedb.QueryParams, docs []*types.Document) (int64, error) {
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 		ids[i] = id
 	}
 
-	rowsDeleted, err := sqlitedb.DeleteDocumentsByID(ctx, qp, ids)
+	rowsDeleted, err := sqlitedb.DeleteDocumentsByID(ctx, db, qp, ids)
 	if err != nil {
 		// TODO check error code
 		return 0, commonerrors.NewCommandError(
