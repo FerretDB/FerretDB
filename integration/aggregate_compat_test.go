@@ -347,7 +347,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		// shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
 		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
@@ -551,7 +551,7 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 		shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
 		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
@@ -625,7 +625,7 @@ func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 		shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
 		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
@@ -716,13 +716,15 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatGroupSum(t *testing.T) {
-	// Scalars and BigDoubles are skipped as they produce `Infinity`.
+	// Doubles is skipped as they produce wrong result due to inaccurate precision.
+	// Composites, ArrayStrings, ArrayInt32s, Mixed and ArrayAndDocuments are skipped due to
+	// https://github.com/FerretDB/FerretDB/issues/2185.
 	providers := []shareddata.Provider{
-		// shareddata.Scalars,
+		shareddata.Scalars,
 
 		// TODO: handle doubles close to max precision in doubles.
 		// shareddata.Doubles,
-		// shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
 		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
@@ -737,90 +739,154 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		shareddata.Unsets,
 		shareddata.ObjectIDKeys,
 
-		shareddata.Composites,
+		// shareddata.Composites,
 		shareddata.PostgresEdgeCases,
 
 		shareddata.DocumentsDoubles,
 		shareddata.DocumentsStrings,
 		shareddata.DocumentsDocuments,
 
-		shareddata.ArrayStrings,
+		// shareddata.ArrayStrings,
 		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
+		// shareddata.ArrayInt32s,
 		shareddata.ArrayRegexes,
 		shareddata.ArrayDocuments,
 
-		shareddata.Mixed,
-		shareddata.ArrayAndDocuments,
+		// shareddata.Mixed,
+		// shareddata.ArrayAndDocuments,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"Value": {
+		"GroupNullID": {
 			pipeline: bson.A{
+				// Without $sort sum of large values results in wrong result.
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", nil},
 					{"sum", bson.D{{"$sum", "$v"}}},
 				}}},
+				// Without $sort documents are ordered not the same.
+				// Descending sort is used because it is more unique than
+				// ascending sort for shared data.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"GroupByID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"GroupByValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
 		"EmptyString": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"count", bson.D{{"$sum", ""}}},
-			}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", ""}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"NonExpression": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", "v"}}},
-			}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", nil},
+					{"sum", bson.D{{"$sum", "v"}}},
+				}}}},
 		},
 		"NonExistent": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", "$non-existent"}}},
-			}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", "$non-existent"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"Document": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", bson.D{}}}},
-			}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", bson.D{}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
-		"ArraySum": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", bson.A{"$v", "$c"}}}},
-			}}}},
+		"Array": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", bson.A{"$v", "$c"}}}},
+				}}}},
 			resultType: emptyResult,
 		},
 		"Int32": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", int32(1)}}}}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", int32(1)}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"Int64": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", int64(20)}}}}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", int64(20)}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"Double": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", 43.7}}}}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", 43.7}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"Bool": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", nil},
-				{"sum", bson.D{{"$sum", true}}}}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", true}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
 		},
 		"Duplicate": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v"},
-				{"sum", bson.D{{"$sum", "$v"}}},
-				{"sum", bson.D{{"$sum", "$s"}}},
-			}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", "$v"}}},
+					{"sum", bson.D{{"$sum", "$s"}}},
+				}}}},
 			resultType: emptyResult,
 		},
 	}

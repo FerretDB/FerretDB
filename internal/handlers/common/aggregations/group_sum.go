@@ -16,28 +16,24 @@ package aggregations
 
 import (
 	"context"
-	"errors"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"time"
 )
 
 // sumAccumulator represents $sum accumulator for $group.
 type sumAccumulator struct {
 	expression types.Expression
-	n          any
+	count      any
 }
 
 // newSumAccumulator creates a new $sum accumulator for $group.
 func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 	expr := must.NotFail(accumulation.Get("$sum"))
-
 	accumulator := new(sumAccumulator)
 
 	switch expr := expr.(type) {
-	case *types.Document:
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
@@ -45,37 +41,18 @@ func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 			"$sum (accumulator)",
 		)
 	case float64:
-		accumulator.n = expr
+		accumulator.count = expr
 	case string:
-		// get field expression
 		var err error
-		accumulator.expression, err = types.NewExpression(expr)
-
-		var fieldPathErr *types.FieldPathError
-		if errors.As(err, &fieldPathErr) && fieldPathErr.Code() == types.ErrNotFieldPath {
-			// when field is not a path, ignore this error.
-		} else {
-			if err != nil {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
-					"$sum takes no arguments, i.e. $sum:{}",
-					"$sum (accumulator)",
-				)
-			}
+		if accumulator.expression, err = types.NewExpression(expr); err != nil {
+			// $sum returns 0 on non-existent field.
+			accumulator.count = int32(0)
 		}
-	case types.Binary:
-	case types.ObjectID:
-	case bool:
-	case time.Time:
-	case types.NullType:
-	case types.Regex:
-	case int32:
-		accumulator.n = expr
-	case types.Timestamp:
-	case int64:
-		accumulator.n = expr
+	case int32, int64:
+		accumulator.count = expr
 	default:
-		// $sum ignores non-existent field
+		accumulator.count = int32(0)
+		// $sum returns 0 on non-numeric field
 	}
 
 	return accumulator, nil
@@ -85,26 +62,24 @@ func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 func (s *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	if s.expression != nil {
 		var values []any
+
 		for _, doc := range grouped {
 			v := s.expression.Evaluate(doc)
 			values = append(values, v)
 		}
 
-		res, err := types.AddNumbers(values...)
-		if err != nil {
-			// handle INF
-			return nil, lazyerrors.Error(err)
-		}
-		return res, err
+		res := sumNumbers(values...)
+
+		return res, nil
 	}
 
-	switch n := s.n.(type) {
+	switch count := s.count.(type) {
 	case float64:
-		return float64(len(grouped)) * n, nil
+		return float64(len(grouped)) * count, nil
 	case int32:
-		return int32(len(grouped)) * n, nil
+		return int32(len(grouped)) * count, nil
 	case int64:
-		return int64(len(grouped)) * n, nil
+		return int64(len(grouped)) * count, nil
 	}
 
 	// $sum returns 0 on non-existent and non-numeric field.
