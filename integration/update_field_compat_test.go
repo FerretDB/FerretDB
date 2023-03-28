@@ -365,7 +365,8 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update: bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
+			update:        bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
+			skipForTigris: "Schema validation would fail as we will create a new field with name '-1'",
 		},
 		"DotNotationIndexOutsideArray": {
 			update:        bson.D{{"$max", bson.D{{"v.100", int32(42)}}}},
@@ -506,7 +507,8 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNegativeIndex": {
-			update: bson.D{{"$min", bson.D{{"v.-1", int32(42)}}}},
+			update:        bson.D{{"$min", bson.D{{"v.-1", int32(42)}}}},
+			skipForTigris: "Schema validation would fail as we will create a new field with name '-1'",
 		},
 		"DotNotationIndexOutOfArray": {
 			update:        bson.D{{"$min", bson.D{{"v.100", int32(42)}}}},
