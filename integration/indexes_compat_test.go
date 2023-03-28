@@ -266,7 +266,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collectionName any
 		indexName      any
 		key            any
