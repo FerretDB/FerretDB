@@ -236,8 +236,8 @@ github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LB
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 h1:p104kn46Q8WdvHunIJ9dAyjPVtrBPhSr3KT2yUst43I=
 github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg7847qk6SyHyPtNmDHnmrv/HOrqktSC+C9fM+CJOE=
-github.com/go-task/task/v3 v3.22.0 h1:sW+qi054ReRpX7nG8DcKYq3e4IzfSq366RcqEq2lDxc=
-github.com/go-task/task/v3 v3.22.0/go.mod h1:+CPQZJqzoIwbXt3oe/QgHpYZiSPg+yS4ybj5HosW8x0=
+github.com/go-task/task/v3 v3.23.0 h1:egOOrya0biMnrV1W8RSEo2pviHMGTtBmy4VqxUYfcyk=
+github.com/go-task/task/v3 v3.23.0/go.mod h1:HdRk71gkYTKGu3e489AhuXkYYt/A6RvF8SiE9RKonVs=
 github.com/go-toolsmith/astcast v1.0.0/go.mod h1:mt2OdQTeAQcY4DQgPSArJjHCcOwlX+Wl/kwN+LbLGQ4=
 github.com/go-toolsmith/astcast v1.1.0 h1:+JN9xZV1A+Re+95pgnMgDboWNVnIMMQXwfBwLRPgSC8=
 github.com/go-toolsmith/astcast v1.1.0/go.mod h1:qdcuFWeGGS2xX5bLM/c3U9lewg7+Zu4mr+xPwZIB4ZU=
