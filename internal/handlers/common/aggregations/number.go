@@ -20,6 +20,9 @@ import (
 )
 
 // sumNumbers accumulate numbers and returns the result of summation.
+// The result has the same type as the input, except when the result
+// cannot be presented accurately. Then int32 is converted to int64,
+// and int64 is converted to float64.
 // It ignores non-number values.
 // This should only be used for aggregation, aggregation does not return
 // error on overflow.
@@ -56,7 +59,7 @@ func sumNumbers(vs ...any) any {
 	}
 
 	if !sumInt.IsInt64() {
-		// int64 is bigger than maximum of int64, convert to float.
+		// int64 is bigger than maximum of int64, convert to float64.
 		bigFloat := new(big.Float).SetInt(sumInt)
 
 		// ignore accuracy because there is no rounding from int64.
@@ -68,7 +71,7 @@ func sumNumbers(vs ...any) any {
 	res := sumInt.Int64()
 
 	if !hasInt64 && res <= math.MaxInt32 && res >= math.MinInt32 {
-		// convert to int32 when input is int32 only and can be represented in int32.
+		// convert to int32 if input has no int64 and can be represented in int32.
 		return int32(res)
 	}
 
