@@ -28,10 +28,11 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	skip           string                   // skip test for all handlers, must have issue number mentioned
 	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
+
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -151,9 +152,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 // aggregateCommandCompatTestCase describes aggregate compatibility test case.
 type aggregateCommandCompatTestCase struct {
-	skip       string                   // skip test for all handlers, must have issue number mentioned
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
@@ -333,7 +335,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// _id to be different number type between compat and target.
 	// https://github.com/FerretDB/FerretDB/issues/2184
 	//
-	// Composites, ArrayStrings, ArrayInt32s are not included
+	// Composites, ArrayStrings, ArrayInt32s and ArrayAndDocuments are not included
 	// because the order in compat and target can be not deterministic.
 	// Aggregation assigns BSON array to output _id, and an array with
 	// descending sort use the greatest element for comparison causing
@@ -371,11 +373,17 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		// shareddata.ArrayInt32s,
 		shareddata.ArrayRegexes,
 		shareddata.ArrayDocuments,
+
+		// shareddata.Mixed,
+		// shareddata.ArrayAndDocuments,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 				}}},
@@ -385,6 +393,9 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		},
 		"CountValue": {
 			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"count", bson.D{{"$count", bson.D{}}}},
@@ -442,11 +453,42 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
 		},
-		"GroupInvalidFieldPath": {
+		"EmptyPath": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
 			}}}},
 			resultType: emptyResult,
+		},
+		"EmptyVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$s": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$$s"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"NonExistingVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$s"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"SystemVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$NOW"},
+			}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"GroupInvalidFields": {
 			pipeline:   bson.A{bson.D{{"$group", 1}}},
@@ -494,6 +536,133 @@ func TestAggregateCompatGroup(t *testing.T) {
 	}
 
 	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatGroupDotNotation(t *testing.T) {
+	// Providers Composites, ArrayAndDocuments and Mixed
+	// cannot be used due to sorting difference.
+	// FerretDB always sorts empty array is less than null.
+	// In compat, for `.sort()` an empty array is less than null.
+	// In compat, for aggregation `$sort` null is less than an empty array.
+	// https://github.com/FerretDB/FerretDB/issues/2276
+
+	providers := []shareddata.Provider{
+		shareddata.Scalars,
+
+		shareddata.Doubles,
+		shareddata.BigDoubles,
+		shareddata.Strings,
+		shareddata.Binaries,
+		shareddata.ObjectIDs,
+		shareddata.Bools,
+		shareddata.DateTimes,
+		shareddata.Nulls,
+		shareddata.Regexes,
+		shareddata.Int32s,
+		shareddata.Timestamps,
+		shareddata.Int64s,
+		shareddata.Unsets,
+		shareddata.ObjectIDKeys,
+
+		// shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+
+		shareddata.DocumentsDoubles,
+		shareddata.DocumentsStrings,
+		shareddata.DocumentsDocuments,
+
+		shareddata.ArrayStrings,
+		shareddata.ArrayDoubles,
+		shareddata.ArrayInt32s,
+		shareddata.ArrayRegexes,
+		shareddata.ArrayDocuments,
+
+		// shareddata.Mixed,
+		// shareddata.ArrayAndDocuments,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DocDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0"},
+			}}}},
+		},
+		"ArrayDocDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo"},
+			}}}},
+		},
+		"NestedDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo.0.bar"},
+			}}}},
+		},
+		"NonExistentDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$non.existent"},
+			}}}},
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
+}
+
+func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
+	// Providers Composites and Mixed cannot be used due to sorting difference.
+	// FerretDB always sorts empty array is less than null.
+	// In compat, for `.sort()` an empty array is less than null.
+	// In compat, for aggregation `$sort` null is less than an empty array.
+	// https://github.com/FerretDB/FerretDB/issues/2276
+
+	providers := []shareddata.Provider{
+		shareddata.Scalars,
+
+		shareddata.Doubles,
+		shareddata.BigDoubles,
+		shareddata.Strings,
+		shareddata.Binaries,
+		shareddata.ObjectIDs,
+		shareddata.Bools,
+		shareddata.DateTimes,
+		shareddata.Nulls,
+		shareddata.Regexes,
+		shareddata.Int32s,
+		shareddata.Timestamps,
+		shareddata.Int64s,
+		shareddata.Unsets,
+		shareddata.ObjectIDKeys,
+
+		// shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+
+		shareddata.DocumentsDoubles,
+		shareddata.DocumentsStrings,
+		shareddata.DocumentsDocuments,
+
+		shareddata.ArrayStrings,
+		shareddata.ArrayDoubles,
+		shareddata.ArrayInt32s,
+		shareddata.ArrayRegexes,
+		shareddata.ArrayDocuments,
+
+		// shareddata.Mixed,
+		shareddata.ArrayAndDocuments,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DocDotNotation": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatGroupCount(t *testing.T) {

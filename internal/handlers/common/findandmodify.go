@@ -17,6 +17,8 @@ package common
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -30,18 +32,16 @@ type FindAndModifyParams struct {
 	MaxTimeMS                             int32
 }
 
-// PrepareFindAndModifyParams prepares findAndModify request fields.
-func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams, error) {
-	var err error
+// GetFindAndModifyParams returns `findAndModifyParams` command parameters.
+func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
+	command := doc.Command()
 
-	command := document.Command()
-
-	db, err := GetRequiredParam[string](document, "$db")
+	db, err := GetRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := GetRequiredParam[string](document, command)
+	collection, err := GetRequiredParam[string](doc, command)
 	if err != nil {
 		return nil, err
 	}
@@ -53,39 +53,56 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 		)
 	}
 
-	remove, err := GetBoolOptionalParam(document, "remove")
+	remove, err := GetBoolOptionalParam(doc, "remove")
 	if err != nil {
 		return nil, err
 	}
 
-	returnNewDocument, err := GetBoolOptionalParam(document, "new")
+	returnNewDocument, err := GetBoolOptionalParam(doc, "new")
 	if err != nil {
 		return nil, err
 	}
 
-	upsert, err := GetBoolOptionalParam(document, "upsert")
+	upsert, err := GetBoolOptionalParam(doc, "upsert")
 	if err != nil {
 		return nil, err
 	}
 
-	query, err := GetOptionalParam(document, "query", new(types.Document))
+	query, err := GetOptionalParam(doc, "query", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
 
-	sort, err := GetOptionalParam(document, "sort", new(types.Document))
+	sort, err := GetOptionalParam(doc, "sort", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
 
-	maxTimeMS, err := GetOptionalPositiveNumber(document, "maxTimeMS")
+	maxTimeMS, err := GetOptionalPositiveNumber(doc, "maxTimeMS")
 	if err != nil {
 		return nil, err
 	}
+
+	unimplementedFields := []string{
+		"fields",
+		"collation",
+		"arrayFilters",
+		"let",
+	}
+	if err = Unimplemented(doc, unimplementedFields...); err != nil {
+		return nil, err
+	}
+
+	ignoredFields := []string{
+		"bypassDocumentValidation",
+		"writeConcern",
+		"hint",
+	}
+	Ignored(doc, l, ignoredFields...)
 
 	var update *types.Document
 
-	updateParam, err := document.Get("update")
+	updateParam, err := doc.Get("update")
 	if err != nil && !remove {
 		return nil, NewCommandErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
 	}
@@ -128,7 +145,7 @@ func PrepareFindAndModifyParams(document *types.Document) (*FindAndModifyParams,
 
 	var comment string
 	// get comment from a "comment" field
-	if comment, err = GetOptionalParam(document, "comment", comment); err != nil {
+	if comment, err = GetOptionalParam(doc, "comment", comment); err != nil {
 		return nil, err
 	}
 

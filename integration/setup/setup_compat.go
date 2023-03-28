@@ -176,12 +176,12 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(backend, collectionName); len(validators) > 0 {
-			var opts options.CreateCollectionOptions
+			opts := options.CreateCollection()
 			for key, value := range validators {
 				opts.SetValidator(bson.D{{key, value}})
 			}
 
-			err := database.CreateCollection(ctx, collectionName, &opts)
+			err := database.CreateCollection(ctx, collectionName, opts)
 			require.NoError(tb, err)
 		}
 
