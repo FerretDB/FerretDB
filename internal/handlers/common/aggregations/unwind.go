@@ -91,13 +91,14 @@ func newUnwind(stage *types.Document) (Stage, error) {
 
 func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	var out []*types.Document
+	key := m.field.GetPath().Suffix()
 
 	for _, doc := range in {
 		d := m.field.Evaluate(doc)
 		switch d := d.(type) {
 		//case *types.Document:
 		case nil:
-		case types.Array:
+		case *types.Array:
 			iter := d.Iterator()
 			defer iter.Close()
 
@@ -105,14 +106,14 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 
 			for {
 				_, v, err := iter.Next()
-				switch {
-				case errors.Is(err, iterator.ErrIteratorDone):
-					break
-				default:
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
 					return nil, err
 				}
 
-				newDoc := must.NotFail(types.NewDocument("_id", id, m.field, v))
+				newDoc := must.NotFail(types.NewDocument("_id", id, key, v))
 				out = append(out, newDoc)
 			}
 

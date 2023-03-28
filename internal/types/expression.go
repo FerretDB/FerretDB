@@ -68,6 +68,7 @@ func (e *FieldPathError) Code() ExpressionErrorCode {
 // Expression is an expression constructed from field value.
 type Expression interface {
 	Evaluate(doc *Document) any
+	GetPath() Path
 }
 
 // pathExpression is field path constructed from expression.
@@ -162,6 +163,11 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 	}
 
 	return arr
+}
+
+// GetPath returns path of expression
+func (p *pathExpression) GetPath() Path {
+	return p.path
 }
 
 // getExpressionPathValue go through each key of the path iteratively to
