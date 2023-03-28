@@ -348,6 +348,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 
 		shareddata.Doubles,
 		shareddata.BigDoubles,
+		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
@@ -551,6 +552,7 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 
 		shareddata.Doubles,
 		shareddata.BigDoubles,
+		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
@@ -624,6 +626,7 @@ func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 
 		shareddata.Doubles,
 		shareddata.BigDoubles,
+		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
@@ -710,6 +713,119 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 	}
 
 	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatGroupSum(t *testing.T) {
+	// Scalars and BigDoubles are skipped as they produce `Infinity`.
+	providers := []shareddata.Provider{
+		// shareddata.Scalars,
+
+		// TODO: handle doubles close to max precision in doubles.
+		// shareddata.Doubles,
+		// shareddata.BigDoubles,
+		shareddata.SmallDoubles,
+		shareddata.Strings,
+		shareddata.Binaries,
+		shareddata.ObjectIDs,
+		shareddata.Bools,
+		shareddata.DateTimes,
+		shareddata.Nulls,
+		shareddata.Regexes,
+		shareddata.Int32s,
+		shareddata.Timestamps,
+		shareddata.Int64s,
+		shareddata.Unsets,
+		shareddata.ObjectIDKeys,
+
+		shareddata.Composites,
+		shareddata.PostgresEdgeCases,
+
+		shareddata.DocumentsDoubles,
+		shareddata.DocumentsStrings,
+		shareddata.DocumentsDocuments,
+
+		shareddata.ArrayStrings,
+		shareddata.ArrayDoubles,
+		shareddata.ArrayInt32s,
+		shareddata.ArrayRegexes,
+		shareddata.ArrayDocuments,
+
+		shareddata.Mixed,
+		shareddata.ArrayAndDocuments,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Value": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", nil},
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
+		"EmptyString": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"count", bson.D{{"$sum", ""}}},
+			}}}},
+		},
+		"NonExpression": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", "v"}}},
+			}}}},
+		},
+		"NonExistent": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", "$non-existent"}}},
+			}}}},
+		},
+		"Document": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", bson.D{}}}},
+			}}}},
+		},
+		"ArraySum": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", bson.A{"$v", "$c"}}}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"Int32": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", int32(1)}}}}}}},
+		},
+		"Int64": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", int64(20)}}}}}}},
+		},
+		"Double": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", 43.7}}}}}}},
+		},
+		"Bool": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"sum", bson.D{{"$sum", true}}}}}}},
+		},
+		"Duplicate": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v"},
+				{"sum", bson.D{{"$sum", "$v"}}},
+				{"sum", bson.D{{"$sum", "$s"}}},
+			}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatMatch(t *testing.T) {

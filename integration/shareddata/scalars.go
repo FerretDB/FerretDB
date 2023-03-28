@@ -182,6 +182,23 @@ var BigDoubles = &Values[string]{
 	},
 }
 
+// SmallDoubles contains double values that does not go close to
+// maximum precision for tests.
+var SmallDoubles = &Values[string]{
+	name:     "SmallDoubles",
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	validators: map[string]map[string]any{
+		"ferretdb-tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
+		},
+	},
+	data: map[string]any{
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-smallest": math.SmallestNonzeroFloat64,
+	},
+}
+
 // Strings contains string values for tests.
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var Strings = &Values[string]{

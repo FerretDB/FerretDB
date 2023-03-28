@@ -51,6 +51,7 @@ func AllProviders() Providers {
 
 		Doubles,
 		BigDoubles,
+		SmallDoubles,
 		Strings,
 		Binaries,
 		ObjectIDs,
