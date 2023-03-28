@@ -731,15 +731,15 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
 			pipeline: bson.A{
-				// Without $sort sum of large values results in wrong result.
+				// Without $sort, the sum of large values results different in compat and target.
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$group", bson.D{
 					{"_id", nil},
 					{"sum", bson.D{{"$sum", "$v"}}},
 				}}},
-				// Without $sort documents are ordered not the same.
+				// Without $sort, documents are ordered not the same.
 				// Descending sort is used because it is more unique than
-				// ascending sort for shared data.
+				// ascending sort for shareddata collections.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
