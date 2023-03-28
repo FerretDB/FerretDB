@@ -14,8 +14,20 @@
 
 package iterator
 
-import "testing"
+import (
+	"testing"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSliceValues(t *testing.T) {
+	expected := []int{1, 2, 3}
+	actual, err := ConsumeValues(ForSlice(expected))
+	require.NoError(t, err)
+	assert.Equal(t, expected, actual)
+
+	actual, err = ConsumeValues(Values(ForSlice(expected)))
+	require.NoError(t, err)
+	assert.Equal(t, expected, actual)
 }
