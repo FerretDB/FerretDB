@@ -28,11 +28,11 @@ import (
 // error on overflow.
 func sumNumbers(vs ...any) any {
 	// use big.Int to accumulate values larger than math.MaxInt64.
-	sumInt := big.NewInt(0)
+	intSum := big.NewInt(0)
 
 	// TODO: handle accumulation of doubles close to max precision.
 	// https://github.com/FerretDB/FerretDB/issues/2300
-	var sumFloat float64
+	var floatSum float64
 
 	var hasFloat64, hasInt64 bool
 
@@ -41,34 +41,29 @@ func sumNumbers(vs ...any) any {
 		case float64:
 			hasFloat64 = true
 
-			sumFloat = sumFloat + v
+			floatSum = floatSum + v
 		case int32:
-			sumInt.Add(sumInt, big.NewInt(int64(v)))
+			intSum.Add(intSum, big.NewInt(int64(v)))
 		case int64:
 			hasInt64 = true
 
-			sumInt.Add(sumInt, big.NewInt(v))
+			intSum.Add(intSum, big.NewInt(v))
 		default:
 			// ignore non-number
 		}
 	}
 
-	if hasFloat64 {
-		// return float64
-		return float64(sumInt.Int64()) + sumFloat
-	}
-
-	if !sumInt.IsInt64() {
-		// int64 is bigger than maximum of int64, convert to float64.
-		bigFloat := new(big.Float).SetInt(sumInt)
+	if hasFloat64 || !intSum.IsInt64() {
+		// intSum may be bigger than maximum of int64, convert to float64.
+		intAsBigFloat := new(big.Float).SetInt(intSum)
 
 		// ignore accuracy because there is no rounding from int64.
-		res, _ := bigFloat.Float64()
+		intAsFloat, _ := intAsBigFloat.Float64()
 
-		return res
+		return intAsFloat + floatSum
 	}
 
-	res := sumInt.Int64()
+	res := intSum.Int64()
 
 	if !hasInt64 && res <= math.MaxInt32 && res >= math.MinInt32 {
 		// convert to int32 if input has no int64 and can be represented in int32.
