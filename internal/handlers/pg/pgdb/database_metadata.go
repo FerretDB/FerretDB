@@ -398,9 +398,11 @@ func (ms *metadataStorage) setIndex(ctx context.Context, index string, key Index
 	for _, existing := range metadata.indexes {
 		var exists bool
 		exists, err = checkExistingIndex(&existing, &newIndex)
+
 		if err != nil {
 			pgTable = ""
 			pgIndex = ""
+
 			return
 		}
 

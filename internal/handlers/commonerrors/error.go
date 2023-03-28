@@ -68,6 +68,7 @@ const (
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
+	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
 
 	// ErrInvalidNamespace indicates that the collection name is invalid.

@@ -29,7 +29,7 @@ import (
 )
 
 func TestIndexesList(t *testing.T) {
-	t.Parallel()
+	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
@@ -42,6 +42,7 @@ func TestIndexesList(t *testing.T) {
 		compatCollection := compatCollections[i]
 
 		t.Run(targetCollection.Name(), func(t *testing.T) {
+			t.Helper()
 			t.Parallel()
 
 			targetCur, targetErr := targetCollection.Indexes().List(ctx)
@@ -257,7 +258,9 @@ func TestIndexesCreate(t *testing.T) {
 
 // TestIndexesCreateRunCommand tests specific behavior for index creation that can be only provided through RunCommand.
 func TestIndexesCreateRunCommand(t *testing.T) {
-	t.Parallel()
+	t.Helper()
+
+	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
