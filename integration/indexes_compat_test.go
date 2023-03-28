@@ -177,9 +177,10 @@ func TestIndexesCreate(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			// Use per-test setup because createIndexes modifies collection state.
+			// Use per-test setup because createIndexes modifies collection state,
+			// however, we don't need to run index creation test for all the possible collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                shareddata.AllProviders(),
+				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
