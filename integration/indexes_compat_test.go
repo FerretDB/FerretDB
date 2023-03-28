@@ -18,6 +18,8 @@ import (
 	"errors"
 	"testing"
 
+	"go.mongodb.org/mongo-driver/mongo/options"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -73,33 +75,27 @@ func TestIndexesCreate(t *testing.T) {
 		},
 		"single-index": {
 			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"v", -1}},
-				},
+				{Keys: bson.D{{"v", -1}}},
 			},
 		},
-		"single-duplicate": {
+		"duplicate": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{{"_id", 1}}, // this index is already created by default
 				},
 			},
 		},
-		"single-non-existent-field": {
+		"non-existent-field": {
 			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"field-does-not-exist", 1}},
-				},
+				{Keys: bson.D{{"field-does-not-exist", 1}}},
 			},
 		},
-		"single-dot-notation": {
+		"dot-notation": {
 			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"v.foo", 1}},
-				},
+				{Keys: bson.D{{"v.foo", 1}}},
 			},
 		},
-		"single-dangerous-key": {
+		"dangerous-key": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{
@@ -109,36 +105,32 @@ func TestIndexesCreate(t *testing.T) {
 				},
 			},
 		},
-		"single-same-key": {
+		"same-key": {
 			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"v", -1}, {"v", 1}},
-				},
+				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
 			resultType: emptyResult,
+		},
+		"custom-name": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"foo", 1}, {"bar", -1}},
+					Options: new(options.IndexOptions).SetName("custom-name"),
+				},
+			},
 		},
 
 		"multi-direction-different-indexes": {
 			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"v", -1}},
-				},
-				{
-					Keys: bson.D{{"v", 1}},
-				},
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"v", 1}}},
 			},
 		},
 		"multi-order": {
 			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"foo", -1}},
-				},
-				{
-					Keys: bson.D{{"v", 1}},
-				},
-				{
-					Keys: bson.D{{"bar", 1}},
-				},
+				{Keys: bson.D{{"foo", -1}}},
+				{Keys: bson.D{{"v", 1}}},
+				{Keys: bson.D{{"bar", 1}}},
 			},
 		},
 		"multi-with-invalid": {
@@ -152,6 +144,32 @@ func TestIndexesCreate(t *testing.T) {
 			},
 			resultType:  emptyResult,
 			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+		},
+		"same-key-different-names": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", -1}},
+					Options: new(options.IndexOptions).SetName("foo"),
+				},
+				{
+					Keys:    bson.D{{"v", -1}},
+					Options: new(options.IndexOptions).SetName("bar"),
+				},
+			},
+			resultType: emptyResult,
+		},
+		"same-name-different-keys": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"foo", -1}},
+					Options: new(options.IndexOptions).SetName("index-name"),
+				},
+				{
+					Keys:    bson.D{{"bar", -1}},
+					Options: new(options.IndexOptions).SetName("index-name"),
+				},
+			},
+			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
