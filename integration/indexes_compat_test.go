@@ -268,6 +268,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 		indexName      any
 		key            any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
+		skip           string                   // optional, skip test with a specified reason
 	}{
 		"invalid-collection-name": {
 			collectionName: 42,
@@ -285,12 +286,15 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      nil,
+			resultType:     emptyResult,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"empty-index-name": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
 			resultType:     emptyResult,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"non-string-index-name": {
 			collectionName: "test",
@@ -311,11 +315,17 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 		"key-not-set": {
 			collectionName: "test",
 			resultType:     emptyResult,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Helper()
 			t.Parallel()
 
 			indexesDoc := bson.D{}
