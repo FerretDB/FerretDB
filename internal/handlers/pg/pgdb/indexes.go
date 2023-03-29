@@ -63,7 +63,8 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 
 // DropIndex drops index. If the index was not found, it returns error.
 func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteIndexName string) error {
-	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
+	ms := newMetadataStorage(tx, db, collection)
+	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return err
 	}
@@ -80,10 +81,14 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteInde
 
 	var exists bool
 	var pgIndex string
-	for _, index := range metadata.indexes {
-		if index.Name == deleteIndexName {
-			pgIndex = index.pgIndex
+	for i := len(metadata.indexes) - 1; i >= 0; i-- {
+		if metadata.indexes[i].Name == deleteIndexName {
+			pgIndex = metadata.indexes[i].pgIndex
 			exists = true
+
+			// todo check this removed the index we want
+			metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
+
 			break
 		}
 	}
@@ -92,14 +97,13 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteInde
 		return ErrIndexNotExist
 	}
 
-	// todo set metadata in meta storage to remove index
 	sql := `DROP INDEX ` + pgx.Identifier{db, pgIndex}.Sanitize()
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	return nil
+	return ms.set(ctx, metadata)
 }
 
 // deleteAllIndexes deletes all indexes on the collection except _id index.
@@ -121,7 +125,7 @@ func deleteAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) err
 			return lazyerrors.Error(err)
 		}
 
-		// todo check removing from slice
+		// todo check this removed the index we want
 		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
 	}
 
