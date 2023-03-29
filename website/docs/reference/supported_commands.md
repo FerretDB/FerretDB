@@ -4,6 +4,12 @@ sidebar_position: 1
 
 # Supported commands
 
+<!--
+Use ⚠️ for commands and arguments that are implemented with major limitations,
+or (safely) ignored.
+Use ❌ for commands and arguments that are not implemented at all.
+-->
+
 ## Query commands
 
 | Command         | Argument                   | Status | Comments                                                   |
@@ -16,13 +22,13 @@ sidebar_position: 1
 |                 | `writeConcern`             | ⚠️      | Ignored                                                    |
 |                 | `q`                        | ✅      |                                                            |
 |                 | `limit`                    | ✅      |                                                            |
-|                 | `collation`                | ⚠️      | Unimplemented                                              |
-|                 | `hint`                     | ❌      | Unimplemented                                              |
+|                 | `collation`                | ❌      | Unimplemented                                              |
+|                 | `hint`                     | ⚠️      | Ignored                                                    |
 | `find`          |                            | ✅      | Basic command is fully supported                           |
 |                 | `filter`                   | ✅      |                                                            |
 |                 | `sort`                     | ✅      |                                                            |
 |                 | `projection`               | ✅      | Basic projections with fields are supported                |
-|                 | `hint`                     | ❌      | Ignored                                                    |
+|                 | `hint`                     | ⚠️      | Ignored                                                    |
 |                 | `skip`                     | ⚠️      |                                                            |
 |                 | `limit`                    | ✅      |                                                            |
 |                 | `batchSize`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/2005)  |
@@ -52,9 +58,9 @@ sidebar_position: 1
 |                 | `bypassDocumentValidation` | ⚠️      | Ignored                                                    |
 |                 | `writeConcern`             | ⚠️      | Ignored                                                    |
 |                 | `maxTimeMS`                | ✅      |                                                            |
-|                 | `collation`                | ⚠️      | Ignored                                                    |
+|                 | `collation`                | ❌      | Unimplemented                                              |
 |                 | `arrayFilters`             | ❌      | Unimplemented                                              |
-|                 | `hint`                     | ❌      | Ignored                                                    |
+|                 | `hint`                     | ⚠️      | Ignored                                                    |
 |                 | `comment`                  | ⚠️      | Not implemented in Tigris                                  |
 |                 | `let`                      | ⚠️      | Unimplemented                                              |
 | `getMore`       |                            | ✅      | Basic command is fully supported                           |
@@ -78,9 +84,9 @@ sidebar_position: 1
 |                 | `c`                        | ⚠️      | Unimplemented                                              |
 |                 | `upsert`                   | ✅      |                                                            |
 |                 | `multi`                    | ✅      |                                                            |
-|                 | `collation`                | ⚠️      | Unimplemented                                              |
+|                 | `collation`                | ❌      | Unimplemented                                              |
 |                 | `arrayFilters`             | ⚠️      | Unimplemented                                              |
-|                 | `hint`                     | ⚠️      | Unimplemented                                              |
+|                 | `hint`                     | ⚠️      | Ignored                                                    |
 
 ### Update Operators
 
@@ -124,7 +130,7 @@ The following operators are available in the `find` command `projection` argumen
 
 ## Query Plan Cache Commands
 
-Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
+Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                 | Argument     | Status | Comments                                                  |
 | ----------------------- | ------------ | ------ | --------------------------------------------------------- |
@@ -137,7 +143,7 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                         | `query`      | ⚠️      |                                                           |
 |                         | `sort`       | ⚠️      |                                                           |
 |                         | `projection` | ⚠️      |                                                           |
-|                         | `collation`  | ⚠️      |                                                           |
+|                         | `collation`  | ❌      | Unimplemented                                             |
 |                         | `comment`    | ⚠️      |                                                           |
 | `planCacheListFilters`  |              | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1504) |
 |                         | `comment`    | ⚠️      |                                                           |
@@ -145,7 +151,7 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                         | `query`      | ⚠️      |                                                           |
 |                         | `sort`       | ⚠️      |                                                           |
 |                         | `projection` | ⚠️      |                                                           |
-|                         | `collation`  | ⚠️      |                                                           |
+|                         | `collation`  | ❌      | Unimplemented                                             |
 |                         | `indexes`    | ⚠️      |                                                           |
 |                         | `comment`    | ⚠️      |                                                           |
 
@@ -257,9 +263,9 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 ## Session Commands
 
-Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/8)
+Related [issue](https://github.com/FerretDB/FerretDB/issues/8).
 
-Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
+Related [issue](https://github.com/FerretDB/FerretDB/issues/153).
 
 | Command                    | Argument       | Status | Comments                                                  |
 | -------------------------- | -------------- | ------ | --------------------------------------------------------- |
@@ -282,7 +288,7 @@ Related epic - [Issue](https://github.com/FerretDB/FerretDB/issues/153)
 
 ## Aggregation pipelines
 
-The epic - [Issue](https://github.com/FerretDB/FerretDB/issues/9).
+Related [issue](https://github.com/FerretDB/FerretDB/issues/9).
 
 | Command     | Argument | Status | Comments |
 | ----------- | -------- | ------ | -------- |
@@ -496,7 +502,7 @@ db.aggregate()
 | `$substrCP`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1463) |
 | `$subtract` (arithmetic operator) | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1453) |
 | `$subtract` (date operator)       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
-| `$sum`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1467) |
+| `$sum`                            | ✅️      |                                                           |
 | `$switch`                         | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1457) |
 | `$tan`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
 | `$tanh`                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
@@ -585,7 +591,7 @@ db.aggregate()
 |                                   | `indexOptionDefaults`          |                           | ⚠️      | Ingored                                                   |
 |                                   | `viewOn`                       |                           | ⚠️      | Unimplemented                                             |
 |                                   | `pipeline`                     |                           | ⚠️      | Unimplemented                                             |
-|                                   | `collation`                    |                           | ⚠️      | Unimplemented                                             |
+|                                   | `collation`                    |                           | ❌      | Unimplemented                                             |
 |                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
 |                                   | `encryptedFields`              |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
@@ -609,7 +615,7 @@ db.aggregate()
 |                                   |                                | `min`                     | ⚠️      |                                                           |
 |                                   |                                | `max`                     | ⚠️      |                                                           |
 |                                   |                                | `bucketSize`              | ⚠️      |                                                           |
-|                                   |                                | `collation`               | ⚠️      |                                                           |
+|                                   |                                | `collation`               | ❌      | Unimplemented                                             |
 |                                   |                                | `wildcardProjection`      | ⚠️      |                                                           |
 |                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
 |                                   | `commitQuorum`                 |                           | ⚠️      |                                                           |

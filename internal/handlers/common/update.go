@@ -153,6 +153,12 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$pull":
+			changed, err = processPullArrayUpdateExpression(doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, commonerrors.NewCommandError(
@@ -287,6 +293,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 			if dpe.Code() == types.ErrDocumentPathKeyNotFound || dpe.Code() == types.ErrDocumentPathIndexOutOfBound {
 				continue
+			}
+
+			if dpe.Code() == types.ErrDocumentPathArrayInvalidIndex {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					fmt.Sprintf("cannot use path %s to traverse the document", sourcePath),
+				)
 			}
 
 			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
@@ -851,12 +864,17 @@ func ValidateUpdateOperators(update *types.Document) error {
 		return err
 	}
 
+	pull, err := extractValueFromUpdateOperator("$pull", update)
+	if err != nil {
+		return err
+	}
+
 	if err = checkConflictingChanges(set, inc); err != nil {
 		return err
 	}
 
 	if err = checkConflictingOperators(
-		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll,
+		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll, pull,
 	); err != nil {
 		return err
 	}
@@ -885,7 +903,7 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			"$set", "$setOnInsert", "$unset",
 
 			// array update operators:
-			"$pop", "$push", "$addToSet", "$pullAll":
+			"$pop", "$push", "$addToSet", "$pullAll", "$pull":
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {

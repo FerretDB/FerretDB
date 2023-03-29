@@ -81,14 +81,14 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	Ignored(doc, l, "hint")
 
-	if l, _ := doc.Get("limit"); l != nil {
-		if res.Limit, err = GetWholeNumberParam(l); err != nil {
+	if s, _ := doc.Get("skip"); s != nil {
+		if res.Skip, err = GetSkipParam("find", s); err != nil {
 			return nil, err
 		}
 	}
 
-	if s, _ := doc.Get("skip"); s != nil {
-		if res.Skip, err = GetSkipParam("find", s); err != nil {
+	if l, _ := doc.Get("limit"); l != nil {
+		if res.Limit, err = GetLimitParam("find", l); err != nil {
 			return nil, err
 		}
 	}

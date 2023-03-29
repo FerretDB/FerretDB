@@ -63,20 +63,6 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-// TODO remove https://github.com/FerretDB/FerretDB/issues/1568
-func getHandler() string {
-	switch *targetBackendF {
-	case "ferretdb-pg":
-		return "pg"
-	case "ferretdb-tigris":
-		return "tigris"
-	case "mongodb":
-		return ""
-	default:
-		panic("not reached")
-	}
-}
-
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {

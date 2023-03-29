@@ -4,27 +4,24 @@ go 1.20
 
 replace github.com/FerretDB/FerretDB => ../
 
-// TODO https://github.com/FerretDB/FerretDB/issues/1977
-replace go.mongodb.org/mongo-driver v1.11.2 => go.mongodb.org/mongo-driver v1.10.4
-
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.2
-	go.mongodb.org/mongo-driver v1.11.2
+	go.mongodb.org/mongo-driver v1.11.3
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.40.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0
 	go.opentelemetry.io/otel/sdk v1.14.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
+	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 )
 
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/SAP/go-hdb v1.1.3 // indirect
+	github.com/SAP/go-hdb v1.1.6 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
