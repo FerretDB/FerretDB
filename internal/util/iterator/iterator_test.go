@@ -31,3 +31,26 @@ func TestSliceValues(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
+
+func TestConsumeValuesN(t *testing.T) {
+	s := []int{1, 2, 3}
+	iter := ForSlice(s)
+
+	actual, err := ConsumeValuesN(iter, 2)
+	require.NoError(t, err)
+	assert.Equal(t, []int{1, 2}, actual)
+
+	actual, err = ConsumeValuesN(iter, 2)
+	require.NoError(t, err)
+	assert.Equal(t, []int{3}, actual)
+
+	actual, err = ConsumeValuesN(iter, 2)
+	require.NoError(t, err)
+	assert.Nil(t, actual)
+
+	iter.Close()
+
+	actual, err = ConsumeValuesN(iter, 2)
+	require.NoError(t, err)
+	assert.Nil(t, actual)
+}

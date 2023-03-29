@@ -16,30 +16,26 @@ package pgdb
 
 import (
 	"context"
-	"runtime"
-	"runtime/pprof"
 	"sync"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
-
-// queryIteratorProfiles keeps track on all query iterators.
-var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb.queryIterator")
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
 	ctx       context.Context
 	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal
 
-	m     sync.Mutex
-	rows  pgx.Rows
-	stack []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
+	m    sync.Mutex
+	rows pgx.Rows
+
+	token *resource.Token
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -57,19 +53,10 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 		ctx:       ctx,
 		unmarshal: unmarshalFunc,
 		rows:      rows,
-		stack:     debugbuild.Stack(),
+		token:     resource.NewToken(),
 	}
 
-	queryIteratorProfiles.Add(iter, 1)
-
-	runtime.SetFinalizer(iter, func(iter *queryIterator) {
-		msg := "queryIterator.Close() has not been called"
-		if iter.stack != nil {
-			msg += "\nqueryIterator created by " + string(iter.stack)
-		}
-
-		panic(msg)
-	})
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -95,7 +82,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	if err := iter.ctx.Err(); err != nil {
+	if err := context.Cause(iter.ctx); err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
@@ -136,14 +123,12 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	queryIteratorProfiles.Remove(iter)
-
-	runtime.SetFinalizer(iter, nil)
-
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil
 	}
+
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces
