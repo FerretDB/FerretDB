@@ -1017,9 +1017,9 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// BigDoubles and Scalars contain numbers that produces +INF on compat,
+		// OverflowVergeDoubles and Scalars contain numbers that produces +INF on compat,
 		// validation error on target upon $mul operation.
-		Remove("BigDoubles", "Scalars")
+		Remove("OverflowVergeDoubles", "Scalars")
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32": {
