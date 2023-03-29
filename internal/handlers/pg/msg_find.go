@@ -21,6 +21,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -114,6 +115,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	iter := iterator.Values(iterator.ForSlice(resDocs))
+
+	cursorID := conninfo.Get(ctx).StoreCursor(conninfo.NewCursor(&conninfo.NewCursorParams{
+		Iter:       iter,
+		DB:         params.DB,
+		Collection: params.Collection,
+		BatchSize:  params.BatchSize,
+	}))
+
+	resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
 		firstBatch.Append(doc)
@@ -124,7 +139,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
+				"id", cursorID,
 				"ns", qp.DB+"."+qp.Collection,
 			)),
 			"ok", float64(1),
