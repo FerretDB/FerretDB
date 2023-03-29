@@ -247,6 +247,7 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 		var orderParam int64
 
 		if orderParam, err = common.GetWholeNumberParam(order); err != nil {
+			// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("Index key value %q is not implemented yet", order),
