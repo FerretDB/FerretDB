@@ -40,6 +40,7 @@ type Accumulator interface {
 var accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCountAccumulator,
+	"$sum":   newSumAccumulator,
 	// please keep sorted alphabetically
 }
 
