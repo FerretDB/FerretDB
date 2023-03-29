@@ -33,6 +33,9 @@ var (
 	// ErrIndexAlreadyExist indicates that an index already exists.
 	ErrIndexAlreadyExist = fmt.Errorf("index already exists")
 
+	// ErrIndexNotExist indicates there is no such index.
+	ErrIndexNotExist = fmt.Errorf("index does not exist")
+
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 

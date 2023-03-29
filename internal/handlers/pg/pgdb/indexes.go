@@ -61,6 +61,55 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 	return res, nil
 }
 
+// DropIndex drops index. If the index was not found, it returns error.
+func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, indexToDrop *Index) error {
+	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	var exists bool
+	var pgIndex string
+	for _, index := range metadata.indexes {
+		if index.Name != indexToDrop.Name && index.Unique != indexToDrop.Unique {
+			// not the same name and unique
+			continue
+		}
+
+		if len(index.Key) != len(indexToDrop.Key) {
+			// does not have the same keys
+			continue
+		}
+
+		for i, v := range index.Key {
+			if v.Field != indexToDrop.Key[i].Field {
+				exists = false
+				break
+			}
+
+			exists = true
+		}
+
+		if exists {
+			pgIndex = index.pgIndex
+		}
+	}
+
+	if !exists {
+		return ErrIndexNotExist
+	}
+
+	// todo set metadata in meta storage to remove index
+
+	sql := `DROP INDEX ` + pgx.Identifier{pgIndex}.Sanitize()
+
+	if _, err = tx.Exec(ctx, sql); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
 // createIndex creates a new index for the given params.
 // TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
 func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
