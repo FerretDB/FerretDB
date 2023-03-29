@@ -68,7 +68,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 		// if the context is canceled, we don't need to continue processing documents
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, context.Cause(ctx)
 		}
 
 		switch {

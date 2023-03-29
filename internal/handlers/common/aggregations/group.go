@@ -114,10 +114,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		operator, _, err := accumulation.Iterator().Next()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		operator := accumulation.Command()
 
 		newAccumulator, ok := accumulators[operator]
 		if !ok {
