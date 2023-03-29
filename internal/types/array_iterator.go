@@ -15,41 +15,25 @@
 package types
 
 import (
-	"runtime"
-	"runtime/pprof"
 	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
-
-// arrayIteratorProfiles keeps track on all array iterators.
-var arrayIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/types.arrayIterator")
 
 // arrayIterator represents an iterator for an Array.
 type arrayIterator struct {
-	n     atomic.Uint32
-	arr   *Array
-	stack []byte
+	n   atomic.Uint32
+	arr *Array
 }
 
 // newArrayIterator returns a new arrayIterator.
 func newArrayIterator(array *Array) iterator.Interface[int, any] {
 	iter := &arrayIterator{
-		arr:   array,
-		stack: debugbuild.Stack(),
+		arr: array,
 	}
 
-	arrayIteratorProfiles.Add(iter, 1)
-
-	runtime.SetFinalizer(iter, func(iter *arrayIterator) {
-		msg := "arrayIterator.Close() has not been called"
-		if iter.stack != nil {
-			msg += "\narrayIterator created by " + string(iter.stack)
-		}
-
-		panic(msg)
-	})
+	resource.Track(iter)
 
 	return iter
 }
@@ -69,9 +53,7 @@ func (iter *arrayIterator) Next() (int, any, error) {
 func (iter *arrayIterator) Close() {
 	iter.n.Store(uint32(iter.arr.Len()))
 
-	arrayIteratorProfiles.Remove(iter)
-
-	runtime.SetFinalizer(iter, nil)
+	resource.Untrack(iter)
 }
 
 // check interfaces

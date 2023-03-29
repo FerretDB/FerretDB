@@ -14,26 +14,39 @@
 
 package iterator
 
-import "sync/atomic"
+import (
+	"sync"
+
+	"github.com/FerretDB/FerretDB/internal/util/resource"
+)
 
 // ForSlice returns an iterator over a slice.
 func ForSlice[V any](s []V) Interface[int, V] {
-	return &sliceIterator[V]{
+	res := &sliceIterator[V]{
 		s: s,
 	}
+
+	resource.Track(res)
+
+	return res
 }
 
 // sliceIterator implements iterator.Interface.
 //
 //nolint:vet // golangci-lint's govet and gopls's govet could not agree on alignment
 type sliceIterator[V any] struct {
-	n atomic.Uint32
+	m sync.Mutex
+	n uint32
 	s []V
 }
 
 // Next implements iterator.Interface.
 func (iter *sliceIterator[V]) Next() (int, V, error) {
-	n := int(iter.n.Add(1)) - 1
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	iter.n++
+	n := int(iter.n) - 1
 
 	var zero V
 	if n >= len(iter.s) {
@@ -45,7 +58,12 @@ func (iter *sliceIterator[V]) Next() (int, V, error) {
 
 // Close implements iterator.Interface.
 func (iter *sliceIterator[V]) Close() {
-	iter.n.Store(uint32(len(iter.s)))
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	iter.s = nil
+
+	resource.Untrack(iter)
 }
 
 // check interfaces
