@@ -58,20 +58,8 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	indexNames, err := getIndexesParam(document, command)
-	if err != nil {
-		return nil, err
-	}
-
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		// TODO use iterator
-		for _, indexName := range indexNames {
-			if err = pgdb.DropIndex(ctx, tx, db, collection, indexName); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return processIndexDrop(ctx, tx, db, collection, document, command)
 	})
 
 	switch {
@@ -99,11 +87,6 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err != nil {
-		// todo handle errors
-		return nil, lazyerrors.Error(err)
-	}
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
@@ -114,21 +97,29 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	return &reply, nil
 }
 
-// getIndexesParam gets index from the document.
-func getIndexesParam(doc *types.Document, command string) ([]string, error) {
+// processIndexDrop parses index doc and processes index deletion based on the provided params.
+func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) error {
 	v, err := doc.Get("index")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
 	switch v := v.(type) {
 	case *types.Document:
-		// todo
+		// Index specification (key) is provided to drop a specific index.
+		// TODO: call processIndexKey() from createIndex:
+		// indexKey, err := processIndexKey(v)
+		// if err != nil {
+		// 	return lazyerrors.Error(err)
+		// }
+		//
+		// return pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
 	case *types.Array:
-		var indexes []string
-
+		// List of index names is provided to drop multiple indexes.
 		for {
 			iter := v.Iterator()
+
+			defer iter.Close() // It's safe to defer here as the iterators reads everything.
 
 			_, val, err := iter.Next()
 
@@ -136,14 +127,14 @@ func getIndexesParam(doc *types.Document, command string) ([]string, error) {
 			case err == nil:
 				// nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
-				return indexes, nil
+				return nil
 			default:
-				return nil, lazyerrors.Error(err)
+				return lazyerrors.Error(err)
 			}
 
 			index, ok := val.(string)
 			if !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",
@@ -153,13 +144,21 @@ func getIndexesParam(doc *types.Document, command string) ([]string, error) {
 				)
 			}
 
-			indexes = append(indexes, index)
+			if err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index}); err != nil {
+				return lazyerrors.Error(err)
+			}
 		}
 	case string:
-		return []string{v}, nil
+		if v == "*" {
+			// Drop all indexes except the _id index.
+			return pgdb.DropAllIndexes(ctx, tx, db, collection)
+		}
+
+		// Index name is provided to drop a specific index.
+		return pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
 	}
 
-	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+	return commonerrors.NewCommandErrorMsgWithArgument(
 		commonerrors.ErrTypeMismatch,
 		fmt.Sprintf(
 			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",

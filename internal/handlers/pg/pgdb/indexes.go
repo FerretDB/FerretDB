@@ -40,6 +40,21 @@ type IndexKeyPair struct {
 	Order types.SortType
 }
 
+// Equal returns true if the given index key is equal to the current one.
+func (k IndexKey) Equal(v IndexKey) bool {
+	if len(k) != len(v) {
+		return false
+	}
+
+	for i := range k {
+		if k[i] != v[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 // Indexes returns a list of indexes for the given database and collection.
 //
 // If the given collection does not exist, it returns ErrTableNotExist.
@@ -62,7 +77,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 }
 
 // DropIndex drops index. If the index was not found, it returns error.
-func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteIndexName string) error {
+func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Index) error {
 	ms := newMetadataStorage(tx, db, collection)
 
 	metadata, err := ms.get(ctx, true)
@@ -70,46 +85,44 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteInde
 		return err
 	}
 
-	// cannot delete _id index
-	if deleteIndexName == "_id_" {
-		return ErrIndexCannotDelete
-	}
-
-	if deleteIndexName == "*" {
-		// delete all indexes except _id_
-		return deleteAllIndexes(ctx, tx, db, collection)
-	}
-
-	var exists bool
-	var pgIndex string
-
 	for i := len(metadata.indexes) - 1; i >= 0; i-- {
-		if metadata.indexes[i].Name == deleteIndexName {
-			pgIndex = metadata.indexes[i].pgIndex
-			exists = true
+		current := metadata.indexes[i]
 
-			// todo check this removed the index we want
-			metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
+		var deleteCurrentIndex bool
 
-			break
+		if index.Name != "" {
+			// delete by name
+			deleteCurrentIndex = current.Name == index.Name
+		} else {
+			// delete by key
+			deleteCurrentIndex = current.Key.Equal(index.Key)
 		}
+
+		if !deleteCurrentIndex {
+			continue
+		}
+
+		if current.Name == "_id_" {
+			// cannot delete _id index
+			return ErrIndexCannotDelete
+		}
+
+		if err = dropPgIndex(ctx, tx, db, current.pgIndex); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		// todo check this removed the index we want
+		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
+
+		return ms.set(ctx, metadata)
 	}
 
-	if !exists {
-		return ErrIndexNotExist
-	}
-
-	sql := `DROP INDEX ` + pgx.Identifier{db, pgIndex}.Sanitize()
-
-	if _, err = tx.Exec(ctx, sql); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return ms.set(ctx, metadata)
+	// Did not find the index to delete
+	return ErrIndexNotExist
 }
 
-// deleteAllIndexes deletes all indexes on the collection except _id index.
-func deleteAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) error {
+// DropAllIndexes deletes all indexes on the collection except _id index.
+func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	ms := newMetadataStorage(tx, db, collection)
 
 	metadata, err := ms.get(ctx, true)
@@ -122,9 +135,7 @@ func deleteAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) err
 			continue
 		}
 
-		sql := `DROP INDEX ` + pgx.Identifier{db, metadata.indexes[i].pgIndex}.Sanitize()
-
-		if _, err = tx.Exec(ctx, sql); err != nil {
+		if err = dropPgIndex(ctx, tx, db, metadata.indexes[i].pgIndex); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -162,6 +173,19 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
 		` ON ` + pgx.Identifier{schema, table}.Sanitize() +
 		` ((_jsonb->'_id'))` // TODO Provide ability to set fields https://github.com/FerretDB/FerretDB/issues/1509
+
+	if _, err = tx.Exec(ctx, sql); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// dropPgIndex drops the given index.
+func dropPgIndex(ctx context.Context, tx pgx.Tx, schema, index string) error {
+	var err error
+
+	sql := `DROP INDEX ` + pgx.Identifier{schema, index}.Sanitize()
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)
