@@ -130,5 +130,7 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 //
 // This approach is used in github.com/jackc/pgx/v4@v4.18.1/internal/sanitize/sanitize.go.
 func quoteString(str string) string {
+	// We need "standard_conforming_strings=on" and "client_encoding=UTF8" (checked in checkConnection),
+	// otherwise we can't sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647
 	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }
