@@ -30,7 +30,7 @@ func _() {
 	_ = x[ErrStageGroupInvalidFields-15947]
 	_ = x[ErrStageGroupID-15948]
 	_ = x[ErrStageGroupMissingID-15955]
-	_ = x[ErrStageLimitNotPositive-15958]
+	_ = x[ErrStageLimitZero-15958]
 	_ = x[ErrMatchBadExpression-15959]
 	_ = x[ErrSortBadExpression-15973]
 	_ = x[ErrSortBadValue-15974]

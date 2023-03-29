@@ -162,19 +162,22 @@ func GetLimitStageParam(value any) (int64, error) {
 	switch {
 	case err == nil:
 	case errors.Is(err, errUnexpectedType):
-		return 0, commonerrors.NewCommandErrorMsg(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
+			"$limit (stage)",
 		)
 	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity):
-		return 0, commonerrors.NewCommandErrorMsg(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
+			"$limit (stage)",
 		)
 	case errors.Is(err, errLongExceeded):
-		return 0, commonerrors.NewCommandErrorMsg(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
+			"$limit (stage)",
 		)
 	default:
 		panic(fmt.Sprint("Unexpected error: ", err))
@@ -182,14 +185,16 @@ func GetLimitStageParam(value any) (int64, error) {
 
 	switch {
 	case limit < 0:
-		return 0, commonerrors.NewCommandErrorMsg(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", limit),
+			"$limit (stage)",
 		)
 	case limit == 0:
-		return 0, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrStageLimitNotPositive,
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitZero,
 			"The limit must be positive",
+			"$limit (stage)",
 		)
 	}
 

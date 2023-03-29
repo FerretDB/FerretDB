@@ -95,8 +95,8 @@ const (
 	// ErrStageGroupMissingID indicates that group is missing an _id.
 	ErrStageGroupMissingID = ErrorCode(15955) // Location15955
 
-	// ErrStageLimitNotPositive indicated that limit field is not positive.
-	ErrStageLimitNotPositive = ErrorCode(15958) // Location15958
+	// ErrStageLimitZero indicated that limit field is not positive.
+	ErrStageLimitZero = ErrorCode(15958) // Location15958
 
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
