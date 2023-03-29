@@ -225,6 +225,8 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 }
 
 func TestAggregateCommandCompat(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateCommandCompatTestCase{
 		"CollectionAgnostic": {
 			command: bson.D{
@@ -258,6 +260,8 @@ func TestAggregateCommandCompat(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MatchAndCount": {
 			pipeline: bson.A{
@@ -282,6 +286,8 @@ func TestAggregateCompatStages(t *testing.T) {
 }
 
 func TestAggregateCompatEmptyPipeline(t *testing.T) {
+	t.Parallel()
+
 	providers := []shareddata.Provider{
 		// for testing empty pipeline use a collection with single document,
 		// because sorting will not matter.
@@ -298,6 +304,8 @@ func TestAggregateCompatEmptyPipeline(t *testing.T) {
 }
 
 func TestAggregateCompatCount(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Value": {
 			pipeline: bson.A{bson.D{{"$count", "v"}}},
@@ -331,6 +339,8 @@ func TestAggregateCompatCount(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
+	t.Parallel()
+
 	// Scalars collection is not included because aggregation groups
 	// numbers of different types for $group, and this causes output
 	// _id to be different number type between compat and target.
@@ -348,7 +358,8 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 		// shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
+		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
@@ -434,6 +445,8 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 }
 
 func TestAggregateCompatGroup(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NullID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -563,6 +576,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDotNotation(t *testing.T) {
+	t.Parallel()
+
 	// Providers Composites, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
@@ -574,7 +589,8 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 		shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
+		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
@@ -637,6 +653,8 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 }
 
 func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
+	t.Parallel()
+
 	// Providers Composites and Mixed cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
@@ -647,7 +665,8 @@ func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 		shareddata.Scalars,
 
 		shareddata.Doubles,
-		shareddata.BigDoubles,
+		shareddata.OverflowVergeDoubles,
+		shareddata.SmallDoubles,
 		shareddata.Strings,
 		shareddata.Binaries,
 		shareddata.ObjectIDs,
@@ -690,6 +709,8 @@ func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 }
 
 func TestAggregateCompatGroupCount(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"CountNull": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -844,7 +865,207 @@ func TestAggregateCompatLimit(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatGroupSum(t *testing.T) {
+	t.Parallel()
+
+	providers := shareddata.AllProviders().
+		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
+		Remove("Composites").
+		Remove("ArrayStrings").
+		Remove("ArrayInt32s").
+		Remove("Mixed").
+		Remove("ArrayAndDocuments").
+		// TODO: handle $sum of doubles near max precision.
+		// https://github.com/FerretDB/FerretDB/issues/2300
+		Remove("Doubles")
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"GroupNullID": {
+			pipeline: bson.A{
+				// Without $sort, the sum of large values results different in compat and target.
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", nil},
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+				// Without $sort, documents are ordered not the same.
+				// Descending sort is used because it is more unique than
+				// ascending sort for shareddata collections.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"GroupByID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"GroupByValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", ""}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"NonExpression": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", nil},
+					{"sum", bson.D{{"$sum", "v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"NonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", "$non-existent"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", bson.D{}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"Array": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", bson.A{"$v", "$c"}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Int32": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", int32(1)}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"MaxInt32": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", math.MaxInt32}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"NegativeInt32": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", int32(-1)}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"Int64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", int64(20)}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"MaxInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", math.MaxInt64}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"Double": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", 43.7}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"MaxDouble": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", math.MaxFloat64}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"Bool": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", true}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"Duplicate": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					{"sum", bson.D{{"$sum", "$v"}}},
+					{"sum", bson.D{{"$sum", "$s"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
+}
+
 func TestAggregateCompatMatch(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
@@ -896,6 +1117,8 @@ func TestAggregateCompatMatch(t *testing.T) {
 }
 
 func TestAggregateCompatSort(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"AscendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", 1}}}}},
