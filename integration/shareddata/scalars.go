@@ -454,6 +454,9 @@ func tigrisSchema(typeString string) string {
 }
 
 func init() {
+	// If any of those assumptions fails, it means that
+	// there's an issue related to precision double conversion.
+
 	must.BeTrue(float64(int64(doubleBig)) == doubleBig)
 	must.BeTrue(float64(int64(doubleBig)+1) == doubleBig)
 
