@@ -90,6 +90,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			indexDoc, ok := val.(*types.Document)
 			if !ok {
+				// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
 				return lazyerrors.Errorf("expected index document, got %T", val)
 			}
 
