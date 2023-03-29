@@ -15,10 +15,11 @@
 package shareddata
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"math"
 	"strings"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -137,20 +138,22 @@ var Doubles = &Values[string]{
 		"double-big-plus":  doubleBig + 1,
 		"double-big-minus": doubleBig - 1,
 
-		// double max precision ~1<<53
-		"double-prec-max":       doubleMaxPrec,
-		"double-prec-max-plus":  doubleMaxPrec + 1,
-		"double-prec-max-minus": doubleMaxPrec - 1,
+		// double max precision ~1<<53 - 1
+		"double-prec-max":          doubleMaxPrec,
+		"double-prec-max-plus":     doubleMaxPrec + 1,
+		"double-prec-max-plus-two": doubleMaxPrec + 2,
+		"double-prec-max-minus":    doubleMaxPrec - 1,
 
 		// negative double big values ~ -(1<<61)
 		"double-neg-big":       -doubleBig,
-		"double-neg-big-plus":  -(doubleBig + 1),
-		"double-neg-big-minus": -(doubleBig - 1),
+		"double-neg-big-plus":  -doubleBig + 1,
+		"double-neg-big-minus": -doubleBig - 1,
 
 		// double min precision ~ -(1<<53 - 1)
-		"double-prec-min":       -(doubleMaxPrec - 1),
-		"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
-		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
+		"double-prec-min":           -doubleMaxPrec,
+		"double-prec-min-plus":      -doubleMaxPrec + 1,
+		"double-prec-min-minus":     -doubleMaxPrec - 1,
+		"double-prec-min-minus-two": -doubleMaxPrec - 2,
 
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
@@ -393,20 +396,22 @@ var Int64s = &Values[string]{
 		"int64-big-plus":  longBig + 1,
 		"int64-big-minus": longBig - 1,
 
-		// long representation of double max precision ~1<<53
-		"int64-prec-max":       int64(doubleMaxPrec),
-		"int64-prec-max-plus":  int64(doubleMaxPrec) + 1,
-		"int64-prec-max-minus": int64(doubleMaxPrec) - 1,
+		// long representation of double max precision ~1<<53 - 1
+		"int64-prec-max":          int64(doubleMaxPrec),
+		"int64-prec-max-plus":     int64(doubleMaxPrec) + 1,
+		"int64-prec-max-plus-two": int64(doubleMaxPrec) + 2,
+		"int64-prec-max-minus":    int64(doubleMaxPrec) - 1,
 
 		// negative long big values ~ -(1<<61)
 		"int64-neg-big":       -longBig,
-		"int64-neg-big-plus":  -(longBig + 1),
-		"int64-neg-big-minus": -(longBig - 1),
+		"int64-neg-big-plus":  -longBig + 1,
+		"int64-neg-big-minus": -longBig - 1,
 
-		// long representation of double max precision ~ -(1<<53-1)
-		"int64-prec-min":       -int64(doubleMaxPrec),
-		"int64-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
-		"int64-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
+		// long representation of double min precision ~ -(1<<53 - 1)
+		"int64-prec-min":           -int64(doubleMaxPrec),
+		"int64-prec-min-plus":      -int64(doubleMaxPrec) + 1,
+		"int64-prec-min-minus":     -int64(doubleMaxPrec) - 1,
+		"int64-prec-min-minus-two": -int64(doubleMaxPrec) - 2,
 	},
 }
 
@@ -448,8 +453,6 @@ func tigrisSchema(typeString string) string {
 	return strings.ReplaceAll(common, "%%type%%", typeString)
 }
 
-// init checks for assumptions about constants used in the package.
-// It panics if some of them are not true.
 func init() {
 	must.BeTrue(float64(int64(doubleBig)) == doubleBig)
 	must.BeTrue(float64(int64(doubleBig)+1) == doubleBig)
@@ -457,5 +460,8 @@ func init() {
 	must.BeTrue(float64(longBig) == doubleBig)
 
 	must.BeTrue(doubleMaxPrec != doubleMaxPrec+1)
-	must.BeTrue(-(doubleMaxPrec-1)-2 == -(doubleMaxPrec-1)-3)
+	must.BeTrue(doubleMaxPrec+1 == doubleMaxPrec+2)
+
+	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
+	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
 }
