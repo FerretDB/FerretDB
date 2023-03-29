@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -67,21 +68,12 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			pipeline := tc.pipeline
 			require.NotNil(t, pipeline, "pipeline should be set")
 
-			var hasSortStage bool
-			for _, stage := range pipeline {
-				stage, ok := stage.(bson.D)
-				if !ok {
-					continue
-				}
-
-				if _, hasSortStage = stage.Map()["$sort"]; hasSortStage {
-					break
-				}
-			}
-
+			// to make results deterministic
+			hasSortStage := slices.ContainsFunc(pipeline, func(el interface{}) bool {
+				stage, _ := el.(bson.D)
+				return stage.Map()["$sort"] != nil
+			})
 			if !hasSortStage && len(pipeline) > 0 {
-				// add sort stage to sort by _id because compat and target
-				// would be ordered differently otherwise.
 				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
 			}
 
@@ -656,9 +648,10 @@ func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DocDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo"},
-			}}}},
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v.foo"}}}},
+			},
 		},
 	}
 
