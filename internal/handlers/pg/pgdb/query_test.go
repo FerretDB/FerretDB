@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestGetDocuments(t *testing.T) {
+func TestQueryDocuments(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
