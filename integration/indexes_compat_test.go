@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -34,13 +33,12 @@ func TestIndexesDrop(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	for name, tc := range map[string]struct {
-		models        []mongo.IndexModel          // optional, if not nill create indexes before dropping
-		dropIndexName string                      // name of a single index to drop
-		dropAll       bool                        // set true for drop all indexes, if true dropIndexName must be empty.
-		opts          *options.DropIndexesOptions // required
-		altErrorMsg   string                      // optional, alternative error message in case of error
-		resultType    compatTestCaseResultType    // defaults to nonEmptyResult
-		skip          string                      // optional, skip test with a specified reason
+		models        []mongo.IndexModel       // optional, if not nil create indexes before dropping
+		dropIndexName string                   // name of a single index to drop
+		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
+		altErrorMsg   string                   // optional, alternative error message in case of error
+		resultType    compatTestCaseResultType // defaults to nonEmptyResult
+		skip          string                   // optional, skip test with a specified reason
 	}{
 		"DropAll": {
 			dropAll: true,
@@ -95,11 +93,11 @@ func TestIndexesDrop(t *testing.T) {
 					var targetErr, compatErr error
 
 					if tc.dropAll {
-						targetRes, targetErr = targetCollection.Indexes().DropAll(ctx, tc.opts)
-						compatRes, compatErr = compatCollection.Indexes().DropAll(ctx, tc.opts)
+						targetRes, targetErr = targetCollection.Indexes().DropAll(ctx)
+						compatRes, compatErr = compatCollection.Indexes().DropAll(ctx)
 					} else {
-						targetRes, targetErr = targetCollection.Indexes().DropOne(ctx, tc.dropIndexName, tc.opts)
-						compatRes, compatErr = compatCollection.Indexes().DropOne(ctx, tc.dropIndexName, tc.opts)
+						targetRes, targetErr = targetCollection.Indexes().DropOne(ctx, tc.dropIndexName)
+						compatRes, compatErr = compatCollection.Indexes().DropOne(ctx, tc.dropIndexName)
 					}
 
 					if tc.altErrorMsg != "" {

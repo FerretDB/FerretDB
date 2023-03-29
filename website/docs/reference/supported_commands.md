@@ -535,7 +535,7 @@ db.aggregate()
 ## Administration commands
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                  |
-| --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
+| --------------------------------- | ------------------------------ |---------------------------| ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                          |
 |                                   | `filter`                       |                           | ✅      |                                                           |
 |                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
@@ -633,8 +633,8 @@ db.aggregate()
 | `dropConnections`                 |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1511) |
 |                                   | `hostAndPort`                  |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
-| `dropIndexes`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1512) |
-|                                   | `index`                        |                           | ⚠️      |                                                           |
+| `dropIndexes`                     |                                |                           | ✅      |                                                           |
+|                                   | `index`                        |                           | ✅      |                                                           |
 |                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `filemd5`                         |                                |                           | ❌      |                                                           |
