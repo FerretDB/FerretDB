@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -180,7 +181,7 @@ func GetLimitStageParam(value any) (int64, error) {
 			"$limit (stage)",
 		)
 	default:
-		panic(fmt.Sprint("Unexpected error: ", err))
+		return 0, lazyerrors.Error(err)
 	}
 
 	switch {
