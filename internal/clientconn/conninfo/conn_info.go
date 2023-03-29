@@ -86,7 +86,9 @@ func (connInfo *ConnInfo) Cursor(id int64) *cursor {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.cursors[id]
+	return registryGet(id)
+
+	// return connInfo.cursors[id]
 }
 
 // StoreCursor stores cursor and return its ID.
@@ -103,6 +105,8 @@ func (connInfo *ConnInfo) StoreCursor(cursor *cursor) int64 {
 			break
 		}
 	}
+
+	registryAdd(id, cursor)
 
 	connInfo.cursors[id] = cursor
 	return id

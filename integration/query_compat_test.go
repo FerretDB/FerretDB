@@ -310,34 +310,32 @@ func TestQueryCompatBatchSize(t *testing.T) {
 			filter:    bson.D{},
 			batchSize: pointer.ToInt32(1),
 		},
-		// "AlmostAll": {
-		// 	filter:    bson.D{},
-		// 	batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()) - 1)),
-		// },
-		// "All": {
-		// 	filter:    bson.D{},
-		// 	batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()))),
-		// },
-		// "More": {
-		// 	filter:    bson.D{},
-		// 	batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()) + 1)),
-		// },
-		// "Big": {
-		// 	filter:    bson.D{},
-		// 	batchSize: pointer.ToInt32(1000),
-		// },
-		// "Zero": {
-		// 	filter:    bson.D{},
-		// 	batchSize: pointer.ToInt32(0),
-		// },
-		// "SingleBatch": {
-		// 	// The meaning of negative limits is redefined by the Go driver:
-		// 	// > A negative limit specifies that the resulting documents should be returned in a single batch.
-		// 	// On the wire, "limit" can't be negative.
-		// 	// TODO https://github.com/FerretDB/FerretDB/issues/2255
-		// 	filter:    bson.D{},
-		// 	batchSize: pointer.ToInt32(-1),
-		// },
+		"AlmostAll": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()) + 1)),
+		},
+		"Big": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(1000),
+		},
+		"Zero": {
+			filter:     bson.D{},
+			batchSize:  pointer.ToInt32(0),
+			resultType: emptyResult,
+		},
+		"Bad": {
+			filter:     bson.D{},
+			batchSize:  pointer.ToInt32(-1),
+			resultType: emptyResult,
+		},
 	}
 
 	testQueryCompat(t, testCases)

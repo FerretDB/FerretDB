@@ -47,11 +47,6 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
-	batchSize, err := GetRequiredParam[int32](document, "batchSize")
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO maxTimeMS, comment
 
 	cursor := conninfo.Get(ctx).Cursor(cursorID)
@@ -59,15 +54,17 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, lazyerrors.Errorf("no cursor %d", cursorID)
 	}
 
+	// TODO this logic should be tested
+	batchSize, _ := GetOptionalParam(document, "batchSize", cursor.BatchSize)
+	if batchSize < 0 {
+		batchSize = 101
+	}
+
 	if cursor.DB != db || cursor.Collection != collection {
 		return nil, lazyerrors.Errorf("cursor %d is for %s.%s, not %s.%s", cursorID, cursor.DB, cursor.Collection, db, collection)
 	}
 
-	if cursor.BatchSize != batchSize {
-		return nil, lazyerrors.Errorf("cursor %d has batch size %d, not %d", cursorID, cursor.BatchSize, batchSize)
-	}
-
-	resDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor.Iter), int(cursor.BatchSize))
+	resDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor.Iter), int(batchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

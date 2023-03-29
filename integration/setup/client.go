@@ -63,6 +63,10 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 		user = url.UserPassword("username", "password")
 	}
 
+	// FIXME
+	// q.Set("minPoolSize", "1")
+	// q.Set("maxPoolSize", "1")
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
