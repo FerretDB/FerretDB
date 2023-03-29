@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"runtime/trace"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -90,6 +91,13 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	}
 	logger := testutil.Logger(tb, level)
 
+	wg := new(sync.WaitGroup)
+
+	wg.Add(2)
+
+	var targetCollections []*mongo.Collection
+	var compatCollections []*mongo.Collection
+
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
 		targetClient, _ = setupListener(tb, setupCtx, logger)
@@ -100,10 +108,18 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
+	go func() {
+		targetCollections = setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
+		wg.Done()
+	}()
 
-	compatClient := setupClient(tb, setupCtx, *compatURLF)
-	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
+	go func() {
+		compatClient := setupClient(tb, setupCtx, *compatURLF)
+		compatCollections = setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	level.SetLevel(*logLevelF)
 
