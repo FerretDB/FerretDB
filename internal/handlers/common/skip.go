@@ -57,8 +57,12 @@ func GetSkipParam(command string, value any) (int64, error) {
 			"skip",
 		)
 	case errors.Is(err, errNotWholeNumber):
-		// TODO that seems to be allowing negative floating numbers
-		// https://github.com/FerretDB/FerretDB/issues/2255
+		if math.Signbit(value.(float64)) {
+			return 0, commonerrors.NewCommandError(
+				commonerrors.ErrValueNegative,
+				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%f'", value),
+			)
+		}
 
 		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
 		return int64(math.Floor(value.(float64))), nil

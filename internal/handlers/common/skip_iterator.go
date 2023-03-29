@@ -16,7 +16,6 @@ package common
 
 import (
 	"fmt"
-	"math"
 	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -32,9 +31,8 @@ func SkipIterator(iter types.DocumentsIterator, skip int64) types.DocumentsItera
 	switch {
 	case skip == 0:
 		return iter
-	case skip < 0 || skip > math.MaxUint32:
-		// that should be handled by GetSkipParam
-		// TODO https://github.com/FerretDB/FerretDB/issues/2255
+	case skip < 0:
+		// handled by GetSkipParam
 		panic(fmt.Sprintf("invalid skip value: %d", skip))
 	default:
 		return &skipIterator{

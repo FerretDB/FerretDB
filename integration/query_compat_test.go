@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -329,6 +330,11 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Bad": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(-1),
+			resultType: emptyResult,
+		},
+		"MaxInt64": {
+			filter:     bson.D{},
+			optSkip:    pointer.ToInt64(math.MaxInt64),
 			resultType: emptyResult,
 		},
 	}
