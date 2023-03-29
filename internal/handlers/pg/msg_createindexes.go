@@ -263,6 +263,7 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 		case -1:
 			indexOrder = types.Descending
 		default:
+			// TODO Add better validation: https://github.com/FerretDB/FerretDB/issues/2311
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("Index key value %q is not implemented yet", orderParam),
