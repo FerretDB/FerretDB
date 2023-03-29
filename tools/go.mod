@@ -4,14 +4,14 @@ go 1.20
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
-	github.com/go-task/task/v3 v3.22.0
-	github.com/golangci/golangci-lint v1.52.1
+	github.com/go-task/task/v3 v3.23.0
+	github.com/golangci/golangci-lint v1.52.2
 	github.com/goreleaser/nfpm/v2 v2.27.1
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	golang.org/x/perf v0.0.0-20230227161431-f7320a6d63e8
 	golang.org/x/tools v0.7.0
-	golang.org/x/vuln v0.0.0-20230323195654-ae615d898076
+	golang.org/x/vuln v0.0.0-20230325131008-9550759f8614
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -161,7 +161,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moricho/tparallel v0.3.0 // indirect
+	github.com/moricho/tparallel v0.3.1 // indirect
 	github.com/muesli/mango v0.1.0 // indirect
 	github.com/muesli/mango-cobra v1.2.0 // indirect
 	github.com/muesli/mango-pflag v0.1.0 // indirect
