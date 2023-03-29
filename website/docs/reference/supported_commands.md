@@ -502,7 +502,7 @@ db.aggregate()
 | `$substrCP`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1463) |
 | `$subtract` (arithmetic operator) | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1453) |
 | `$subtract` (date operator)       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
-| `$sum`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1467) |
+| `$sum`                            | ✅️      |                                                           |
 | `$switch`                         | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1457) |
 | `$tan`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
 | `$tanh`                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |

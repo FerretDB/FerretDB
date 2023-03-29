@@ -154,6 +154,9 @@ const (
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
 
+	// ErrStageGroupUnaryOperator indicates that $sum is a unary operator.
+	ErrStageGroupUnaryOperator = ErrorCode(40237) // Location40237
+
 	// ErrStageGroupMultipleAccumulator indicates that group field must specify one accumulator.
 	ErrStageGroupMultipleAccumulator = ErrorCode(40238) // Location40238
 
