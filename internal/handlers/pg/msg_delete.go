@@ -152,6 +152,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 		return nil, false, err
 	}
 
+	// TODO use `GetLimitParam`
+	// https://github.com/FerretDB/FerretDB/issues/2255
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
 		return nil, false, common.NewCommandErrorMsgWithArgument(

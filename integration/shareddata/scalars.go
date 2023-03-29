@@ -166,13 +166,13 @@ var Doubles = &Values[string]{
 	},
 }
 
-// BigDoubles contains double values which would overflow on
+// OverflowVergeDoubles contains double values which would overflow on
 // numeric update operation such as $mul. Upon such,
 // target returns error and compat returns +INF or -INF.
-// BigDoubles may be excluded on such update tests and tested
+// OverflowVergeDoubles may be excluded on such update tests and tested
 // in diff tests https://github.com/FerretDB/dance.
-var BigDoubles = &Values[string]{
-	name:     "BigDoubles",
+var OverflowVergeDoubles = &Values[string]{
+	name:     "OverflowVergeDoubles",
 	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
@@ -182,6 +182,25 @@ var BigDoubles = &Values[string]{
 	data: map[string]any{
 		"double-max": math.MaxFloat64,
 		"double-7":   1.79769e+307,
+	},
+}
+
+// SmallDoubles contains double values that does not go close to
+// the maximum safe precision for tests.
+var SmallDoubles = &Values[string]{
+	name:     "SmallDoubles",
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	validators: map[string]map[string]any{
+		"ferretdb-tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
+		},
+	},
+	data: map[string]any{
+		"double":       42.13,
+		"double-whole": 42.0,
+		"double-1":     4080.1234,
+		"double-2":     1048560.0099,
+		"double-3":     268435440.2,
 	},
 }
 
