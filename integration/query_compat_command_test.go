@@ -185,7 +185,7 @@ func TestQueryCompatCommandSkip(t *testing.T) {
 			filter:  bson.D{},
 			optSkip: 2.8,
 		},
-		"Float64Floor": {
+		"Float64Ceil": {
 			filter:  bson.D{},
 			optSkip: 2.1,
 		},

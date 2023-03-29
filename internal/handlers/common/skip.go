@@ -60,7 +60,7 @@ func GetSkipParam(command string, value any) (int64, error) {
 		if math.Signbit(value.(float64)) {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%f'", value),
+				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
 			)
 		}
 
