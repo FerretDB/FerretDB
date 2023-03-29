@@ -92,11 +92,11 @@ var ArrayAndDocuments = &Values[string]{
 	name:     "ArrayAndDocuments",
 	backends: []string{"ferretdb-pg", "mongodb"},
 	data: map[string]any{
-		"document": bson.D{{"foo", int32(42)}},
+		"document": bson.D{{"foo", int32(41)}},
 		"array-documents": bson.A{
 			bson.D{{"field", int32(42)}},
-			bson.D{{"field", int32(44)}},
-			bson.D{{"foo", int32(42)}},
+			bson.D{{"field", int32(43)}},
+			bson.D{{"foo", int32(44)}},
 		},
 	},
 }
