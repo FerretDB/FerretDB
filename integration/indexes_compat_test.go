@@ -305,6 +305,12 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			indexName:      42,
 			resultType:     emptyResult,
 		},
+		"existing-name-different-key-length": {
+			collectionName: "test",
+			key:            bson.D{{"_id", 1}, {"v", 1}},
+			indexName:      "_id_", // the same name as the default index
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
 		"invalid-key": {
 			collectionName: "test",
 			key:            42,

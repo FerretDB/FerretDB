@@ -439,27 +439,27 @@ func checkExistingIndex(existing *metadataIndex, new *metadataIndex) (bool, erro
 	if len(existing.Key) != len(new.Key) {
 		if indexNameMatch {
 			return false, ErrIndexNameAlreadyExist
-		} else {
-			return false, nil
 		}
+
+		return false, nil
 	}
 
 	for i := range existing.Key {
 		if existing.Key[i] != new.Key[i] {
 			if indexNameMatch {
 				return false, ErrIndexNameAlreadyExist
-			} else {
-				return false, nil
 			}
+
+			return false, nil
 		}
 	}
 
 	// If we reached this line, the keys are equal.
 	if indexNameMatch {
 		return true, nil
-	} else {
-		return false, ErrIndexKeyAlreadyExist
 	}
+
+	return false, ErrIndexKeyAlreadyExist
 }
 
 // indexNameToPgIndexName returns index name in form <shortened_name>_<name_hash>_idx.
