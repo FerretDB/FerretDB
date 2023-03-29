@@ -31,6 +31,16 @@ func TestIndexesDrop(t *testing.T) {
 		"DropAll": {
 			dropAll: true,
 		},
+		"ID": {
+			dropIndexName: "_id_",
+			resultType:    emptyResult,
+		},
+		"ValueAscending": {
+			dropIndexName: "v_1",
+		},
+		"Value": {
+			dropIndexName: "v_-1",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -117,6 +127,91 @@ func TestIndexesDrop(t *testing.T) {
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}
+		})
+	}
+}
+
+func TestIndexesDropRunCommand(t *testing.T) {
+	t.Helper()
+
+	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	targetCollection := targetCollections[0]
+	compatCollection := compatCollections[0]
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		collectionName string
+		index          any
+		resultType     compatTestCaseResultType // defaults to nonEmptyResult
+		skip           string                   // optional, skip test with a specified reason
+		altErrorMsg    string
+	}{
+		"invalid-index-type": {
+			collectionName: targetCollection.Name(),
+			index:          true,
+			resultType:     emptyResult,
+		},
+		"invalid-index": {
+			collectionName: targetCollection.Name(),
+			index:          "non-existent",
+			resultType:     emptyResult,
+		},
+		"invalid-collection": {
+			collectionName: "non-existent",
+			resultType:     emptyResult,
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Helper()
+			t.Parallel()
+
+			command := bson.D{
+				{"dropIndexes", tc.collectionName},
+				{"index", tc.index},
+			}
+
+			var targetRes bson.D
+			targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+
+			var compatRes bson.D
+			compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
+
+			if tc.altErrorMsg != "" {
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				var expectedErr mongo.CommandError
+				require.True(t, errors.As(compatErr, &expectedErr))
+				expectedErr.Raw = nil
+				AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
+			} else {
+				require.Equal(t, compatErr, targetErr)
+			}
+
+			if tc.resultType == emptyResult {
+				require.Nil(t, targetRes)
+				require.Nil(t, compatRes)
+			}
+
+			assert.Equal(t, compatRes, targetRes)
+
+			targetErr = targetCollection.Database().RunCommand(
+				ctx, bson.D{{"listIndexes", tc.collectionName}},
+			).Decode(&targetRes)
+
+			compatErr = compatCollection.Database().RunCommand(
+				ctx, bson.D{{"listIndexes", tc.collectionName}},
+			).Decode(&compatRes)
+
+			assert.Equal(t, compatRes, targetRes)
+
+			AssertMatchesCommandError(t, compatErr, targetErr)
 		})
 	}
 }

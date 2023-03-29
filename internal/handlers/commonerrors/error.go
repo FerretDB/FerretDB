@@ -68,6 +68,9 @@ const (
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
+	// ErrInvalidOptions indicates that _id index cannot be deleted.
+	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
+
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
 

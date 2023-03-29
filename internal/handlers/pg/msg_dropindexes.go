@@ -16,12 +16,17 @@ package pg
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -53,22 +58,46 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	// document could contain document, array or string
-	indexes, err := getIndexes(document)
+	indexNames, err := getIndexesParam(document, command)
 	if err != nil {
 		return nil, err
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		// TODO use iterator
-		for _, index := range indexes {
-			if err := pgdb.DropIndex(ctx, tx, db, collection, index); err != nil {
+		for _, indexName := range indexNames {
+			if err := pgdb.DropIndex(ctx, tx, db, collection, indexName); err != nil {
 				return err
 			}
 		}
 
 		return nil
 	})
+
+	switch {
+	case err == nil:
+		// nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNamespaceNotFound,
+			fmt.Sprintf("ns not found %s.%s", db, collection),
+			command,
+		)
+	case errors.Is(err, pgdb.ErrIndexNotExist):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNamespaceNotFound,
+			"index not found",
+			command,
+		)
+	case errors.Is(err, pgdb.ErrIndexCannotDelete):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidOptions,
+			"cannot drop _id index",
+			command,
+		)
+	default:
+		return nil, lazyerrors.Error(err)
+	}
 
 	if err != nil {
 		// todo handle errors
@@ -85,7 +114,55 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	return &reply, nil
 }
 
-func getIndexes(doc *types.Document) ([]*pgdb.Index, error) {
-	// todo get index
-	return nil, nil
+// getIntexesParam gets index from the document.
+func getIndexesParam(doc *types.Document, command string) ([]string, error) {
+	v, err := doc.Get("index")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	switch v := v.(type) {
+	case *types.Array:
+		var indexes []string
+
+		for {
+			iter := v.Iterator()
+
+			_, val, err := iter.Next()
+			switch {
+			case err == nil:
+				// nothing
+			case errors.Is(err, iterator.ErrIteratorDone):
+				return indexes, nil
+			default:
+				return nil, lazyerrors.Error(err)
+			}
+
+			index, ok := val.(string)
+			if !ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",
+						pjson.GetTypeOfValue(v),
+					),
+					command,
+				)
+			}
+
+			indexes = append(indexes, index)
+		}
+	case *types.Document:
+	case string:
+		return []string{v}, nil
+	}
+
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrTypeMismatch,
+		fmt.Sprintf(
+			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",
+			pjson.GetTypeOfValue(v),
+		),
+		command,
+	)
 }
