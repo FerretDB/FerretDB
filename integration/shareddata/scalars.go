@@ -15,6 +15,7 @@
 package shareddata
 
 import (
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"math"
 	"strings"
 	"time"
@@ -23,9 +24,11 @@ import (
 )
 
 const (
-	doubleBig     = float64(1 << 61) // 2305843009213693952.0
-	longBig       = int64(1 << 61)   // 2305843009213693952
-	doubleMaxPrec = float64(1 << 53) // 9007199254740992.0
+	doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
+	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: larger then safe integer (doubleBig+1 == doubleBig)
+	longBig       = int64(1 << 61)     // 2305843009213693952:   larger then safe integer, but integer
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2321
 )
 
 // Scalars contain scalar values for tests.
@@ -48,7 +51,7 @@ var Scalars = &Values[string]{
 		"double-5":                  float64(math.MaxInt64),
 		"double-6":                  float64(math.MaxInt64 + 1),
 		"double-7":                  1.79769e+307,
-		"double-max-overflow":       9.223372036854776833e+18,
+		"double-max-overflow":       9.223372036854776833e+18, // TODO https://github.com/FerretDB/FerretDB/issues/2321
 		"double-max-overflow-verge": 9.223372036854776832e+18,
 		"double-min-overflow":       -9.223372036854776833e+18,
 		"double-min-overflow-verge": -9.223372036854776832e+18,
@@ -424,4 +427,16 @@ func tigrisSchema(typeString string) string {
 				}
 			}`
 	return strings.ReplaceAll(common, "%%type%%", typeString)
+}
+
+// init checks for assumptions about constants used in the package.
+// It panics if some of them are not true.
+func init() {
+	must.BeTrue(float64(int64(doubleBig)) == doubleBig)
+	must.BeTrue(float64(int64(doubleBig)+1) == doubleBig)
+
+	must.BeTrue(float64(longBig) == doubleBig)
+
+	must.BeTrue(doubleMaxPrec != doubleMaxPrec+1)
+	must.BeTrue(-(doubleMaxPrec-1)-2 == -(doubleMaxPrec-1)-3)
 }
