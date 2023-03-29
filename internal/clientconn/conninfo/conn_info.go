@@ -73,7 +73,7 @@ func (connInfo *ConnInfo) Close() {
 	defer connInfo.rw.Unlock()
 
 	for _, c := range connInfo.cursors {
-		c.Iter.Close()
+		c.Close()
 	}
 
 	connInfo.cursors = nil
@@ -115,7 +115,7 @@ func (connInfo *ConnInfo) DeleteCursor(id int64) {
 
 	c := connInfo.cursors[id]
 
-	c.Iter.Close()
+	c.Close()
 
 	delete(connInfo.cursors, id)
 }

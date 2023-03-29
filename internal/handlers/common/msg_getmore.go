@@ -47,7 +47,7 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, err
 	}
 
-	batchSize, err := GetRequiredParam[int32](document, document.Command())
+	batchSize, err := GetRequiredParam[int32](document, "batchSize")
 	if err != nil {
 		return nil, err
 	}
