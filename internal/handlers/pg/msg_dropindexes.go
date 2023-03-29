@@ -66,7 +66,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		// TODO use iterator
 		for _, indexName := range indexNames {
-			if err := pgdb.DropIndex(ctx, tx, db, collection, indexName); err != nil {
+			if err = pgdb.DropIndex(ctx, tx, db, collection, indexName); err != nil {
 				return err
 			}
 		}
@@ -114,7 +114,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	return &reply, nil
 }
 
-// getIntexesParam gets index from the document.
+// getIndexesParam gets index from the document.
 func getIndexesParam(doc *types.Document, command string) ([]string, error) {
 	v, err := doc.Get("index")
 	if err != nil {
@@ -122,6 +122,8 @@ func getIndexesParam(doc *types.Document, command string) ([]string, error) {
 	}
 
 	switch v := v.(type) {
+	case *types.Document:
+		// todo
 	case *types.Array:
 		var indexes []string
 
@@ -129,6 +131,7 @@ func getIndexesParam(doc *types.Document, command string) ([]string, error) {
 			iter := v.Iterator()
 
 			_, val, err := iter.Next()
+
 			switch {
 			case err == nil:
 				// nothing
@@ -152,7 +155,6 @@ func getIndexesParam(doc *types.Document, command string) ([]string, error) {
 
 			indexes = append(indexes, index)
 		}
-	case *types.Document:
 	case string:
 		return []string{v}, nil
 	}

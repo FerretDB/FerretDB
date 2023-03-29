@@ -64,6 +64,7 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 // DropIndex drops index. If the index was not found, it returns error.
 func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteIndexName string) error {
 	ms := newMetadataStorage(tx, db, collection)
+
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return err
@@ -81,6 +82,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteInde
 
 	var exists bool
 	var pgIndex string
+
 	for i := len(metadata.indexes) - 1; i >= 0; i-- {
 		if metadata.indexes[i].Name == deleteIndexName {
 			pgIndex = metadata.indexes[i].pgIndex
@@ -109,6 +111,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, deleteInde
 // deleteAllIndexes deletes all indexes on the collection except _id index.
 func deleteAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	ms := newMetadataStorage(tx, db, collection)
+
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return err
