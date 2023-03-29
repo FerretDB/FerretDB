@@ -16,10 +16,8 @@ package aggregations
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -36,21 +34,9 @@ func newSkip(stage *types.Document) (Stage, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	skipValue, err := common.GetSkipParam("$skip", value)
+	skipValue, err := common.GetSkipStageParam(value)
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageSkipBadValue,
-			"the $skip key specification must be an object",
-			"$skip (stage)",
-		)
-	}
-
-	if skipValue < 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageSkipBadValue,
-			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %v", value),
-			"$skip (stage)",
-		)
+		return nil, err
 	}
 
 	return &skip{

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -865,6 +866,34 @@ func TestAggregateCompatSkip(t *testing.T) {
 		"NegativeDouble": {
 			pipeline:   bson.A{bson.D{{"$skip", -3.2}}},
 			resultType: emptyResult,
+		},
+		"MaxInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", math.MaxInt64}},
+			},
+			resultType: emptyResult,
+		},
+		"Int64Overflow": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", float64(1 << 86)}},
+			},
+			resultType: emptyResult,
+		},
+		"AfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$skip", int32(1)}},
+			},
+		},
+		"BeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(1)}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
 		},
 	}
 
