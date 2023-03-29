@@ -34,6 +34,8 @@ type queryIterator struct {
 
 	m    sync.Mutex
 	rows pgx.Rows
+
+	token *resource.Token
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -51,9 +53,10 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 		ctx:       ctx,
 		unmarshal: unmarshalFunc,
 		rows:      rows,
+		token:     resource.NewToken(),
 	}
 
-	resource.Track(iter)
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -125,7 +128,7 @@ func (iter *queryIterator) close() {
 		iter.rows = nil
 	}
 
-	resource.Untrack(iter)
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces

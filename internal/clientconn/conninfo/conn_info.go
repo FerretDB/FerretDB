@@ -51,15 +51,18 @@ type ConnInfo struct {
 	cursors  map[int64]*cursor
 	username string
 	password string
+
+	token *resource.Token
 }
 
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	connInfo := &ConnInfo{
 		cursors: map[int64]*cursor{},
+		token:   resource.NewToken(),
 	}
 
-	resource.Track(connInfo)
+	resource.Track(connInfo, connInfo.token)
 
 	return connInfo
 }
@@ -75,7 +78,7 @@ func (connInfo *ConnInfo) Close() {
 
 	connInfo.cursors = nil
 
-	resource.Untrack(connInfo)
+	resource.Untrack(connInfo, connInfo.token)
 }
 
 // Cursor returns cursor by ID, or nil.

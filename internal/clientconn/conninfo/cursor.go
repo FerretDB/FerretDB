@@ -22,6 +22,8 @@ import (
 // Cursor allows clients to iterate over a result set.
 type cursor struct {
 	*NewCursorParams
+
+	token *resource.Token
 }
 
 // NewCursorParams contains the parameters for creating a new cursor.
@@ -36,9 +38,10 @@ type NewCursorParams struct {
 func NewCursor(params *NewCursorParams) *cursor {
 	c := &cursor{
 		NewCursorParams: params,
+		token:           resource.NewToken(),
 	}
 
-	resource.Track(c)
+	resource.Track(c, c.token)
 
 	return c
 }
@@ -46,5 +49,5 @@ func NewCursor(params *NewCursorParams) *cursor {
 // Close closes the cursor.
 func (c *cursor) Close() {
 	c.Iter.Close()
-	resource.Untrack(c)
+	resource.Untrack(c, c.token)
 }

@@ -23,10 +23,11 @@ import (
 // ForSlice returns an iterator over a slice.
 func ForSlice[V any](s []V) Interface[int, V] {
 	res := &sliceIterator[V]{
-		s: s,
+		s:     s,
+		token: resource.NewToken(),
 	}
 
-	resource.Track(res)
+	resource.Track(res, res.token)
 
 	return res
 }
@@ -35,9 +36,10 @@ func ForSlice[V any](s []V) Interface[int, V] {
 //
 //nolint:vet // golangci-lint's govet and gopls's govet could not agree on alignment
 type sliceIterator[V any] struct {
-	m sync.Mutex
-	n uint32
-	s []V
+	m     sync.Mutex
+	n     uint32
+	s     []V
+	token *resource.Token
 }
 
 // Next implements iterator.Interface.
@@ -63,7 +65,7 @@ func (iter *sliceIterator[V]) Close() {
 
 	iter.s = nil
 
-	resource.Untrack(iter)
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces

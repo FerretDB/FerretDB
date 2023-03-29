@@ -23,17 +23,19 @@ import (
 
 // arrayIterator represents an iterator for an Array.
 type arrayIterator struct {
-	n   atomic.Uint32
-	arr *Array
+	n     atomic.Uint32
+	arr   *Array
+	token *resource.Token
 }
 
 // newArrayIterator returns a new arrayIterator.
 func newArrayIterator(array *Array) iterator.Interface[int, any] {
 	iter := &arrayIterator{
-		arr: array,
+		arr:   array,
+		token: resource.NewToken(),
 	}
 
-	resource.Track(iter)
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -53,7 +55,7 @@ func (iter *arrayIterator) Next() (int, any, error) {
 func (iter *arrayIterator) Close() {
 	iter.n.Store(uint32(iter.arr.Len()))
 
-	resource.Untrack(iter)
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces

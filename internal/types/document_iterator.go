@@ -23,17 +23,19 @@ import (
 
 // documentIterator represents an iterator over the document fields.
 type documentIterator struct {
-	n   atomic.Uint32
-	doc *Document
+	n     atomic.Uint32
+	doc   *Document
+	token *resource.Token
 }
 
 // newDocumentIterator creates a new document iterator.
 func newDocumentIterator(document *Document) iterator.Interface[string, any] {
 	iter := &documentIterator{
-		doc: document,
+		doc:   document,
+		token: resource.NewToken(),
 	}
 
-	resource.Track(iter)
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -53,7 +55,7 @@ func (iter *documentIterator) Next() (string, any, error) {
 func (iter *documentIterator) Close() {
 	iter.n.Store(uint32(iter.doc.Len()))
 
-	resource.Untrack(iter)
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces

@@ -34,6 +34,8 @@ type queryIterator struct {
 
 	m    sync.Mutex
 	iter driver.Iterator
+
+	token *resource.Token
 }
 
 // newIterator returns a new queryIterator for the given driver.Iterator.
@@ -46,9 +48,10 @@ func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.
 		ctx:    ctx,
 		schema: schema,
 		iter:   titer,
+		token:  resource.NewToken(),
 	}
 
-	resource.Track(iter)
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -129,7 +132,7 @@ func (iter *queryIterator) close() {
 		iter.iter = nil
 	}
 
-	resource.Untrack(iter)
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces
