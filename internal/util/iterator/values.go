@@ -43,7 +43,42 @@ func ConsumeValues[K, V any](iter Interface[K, V]) ([]V, error) {
 	}
 }
 
+// ConsumeValuesN consumes up to n values from iterator or until it is done.
+// ErrIteratorDone error is returned as nil; any other error is returned as-is.
+//
+// Iterator is closed when it is done or on any error.
+// Simply consuming n values does not close the iterator.
+//
+// Consuming already done iterator returns (nil, nil).
+func ConsumeValuesN[K, V any](iter Interface[K, V], n int) ([]V, error) {
+	var res []V
+
+	for i := 0; i < n; i++ {
+		_, v, err := iter.Next()
+		if err != nil {
+			iter.Close()
+
+			if errors.Is(err, ErrIteratorDone) {
+				break
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		if res == nil {
+			res = make([]V, 0, n)
+		}
+
+		res = append(res, v)
+	}
+
+	return res, nil
+}
+
 // Values returns an iterator over values of another iterator.
+//
+// Close method closes the underlying iterator.
+// For that reason, there is no need to track both iterators.
 func Values[K, V any](iter Interface[K, V]) Interface[struct{}, V] {
 	return &valuesIterator[K, V]{
 		iter: iter,

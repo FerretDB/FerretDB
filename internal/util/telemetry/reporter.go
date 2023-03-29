@@ -130,7 +130,7 @@ func (r *Reporter) Run(ctx context.Context) {
 }
 
 // firstReportDelay waits until telemetry reporting state is decided,
-// main context is cancelled, or timeout is reached.
+// main context is canceled, or timeout is reached.
 func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 	// no delay for decided state
 	if r.P.Get().Telemetry != nil {
