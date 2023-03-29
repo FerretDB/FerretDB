@@ -57,7 +57,6 @@ func TestQueryDocuments(t *testing.T) {
 			Collection: collName,
 		})
 		require.NoError(t, err)
-
 		require.NotNil(t, iter)
 
 		defer iter.Close()
@@ -103,8 +102,9 @@ func TestQueryDocuments(t *testing.T) {
 			Collection: collName,
 		})
 		require.NoError(t, err)
-
 		require.NotNil(t, iter)
+
+		defer iter.Close()
 
 		n, doc, err := iter.Next()
 		require.Equal(t, iterator.ErrIteratorDone, err)
@@ -128,8 +128,9 @@ func TestQueryDocuments(t *testing.T) {
 			Collection: collName,
 		})
 		require.NoError(t, err)
-
 		require.NotNil(t, iter)
+
+		defer iter.Close()
 
 		n, doc, err := iter.Next()
 		require.Equal(t, iterator.ErrIteratorDone, err)
@@ -153,7 +154,6 @@ func TestQueryDocuments(t *testing.T) {
 			Collection: collName,
 		})
 		require.NoError(t, err)
-
 		require.NotNil(t, iter)
 
 		iter.Close()
@@ -187,7 +187,6 @@ func TestQueryDocuments(t *testing.T) {
 			Collection: collName,
 		})
 		require.NoError(t, err)
-
 		require.NotNil(t, iter)
 
 		cancel()
