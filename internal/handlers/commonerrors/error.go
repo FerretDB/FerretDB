@@ -119,6 +119,9 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrStageUnwindWrongType indicates $unwind stage argument has unexpected type.
+	ErrStageUnwindWrongType = ErrorCode(15981) // Location15981
+
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
 

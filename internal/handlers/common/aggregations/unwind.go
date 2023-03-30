@@ -91,6 +91,12 @@ func newUnwind(stage *types.Document) (Stage, error) {
 			}
 
 		}
+	default:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageUnwindWrongType,
+			fmt.Sprintf("expected either a string or an object as specification for $unwind stage, got %s", types.FormatAnyValue(field)),
+			"$unwind (Stage)",
+		)
 	}
 
 	return &unwind{
@@ -100,6 +106,11 @@ func newUnwind(stage *types.Document) (Stage, error) {
 
 func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	var out []*types.Document
+
+	if m.field == nil {
+		return nil, nil
+	}
+
 	key := m.field.GetPath().Suffix()
 
 	for _, doc := range in {

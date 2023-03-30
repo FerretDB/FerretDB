@@ -1099,6 +1099,60 @@ func TestAggregateCompatUnwind(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+
+		"Null": {
+			pipeline:   bson.A{bson.D{{"$unwind", nil}}},
+			resultType: emptyResult,
+		},
+		"ID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$_id"}},
+			},
+			resultType: emptyResult,
+		},
+
+		"NameAsExpression": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$add"}}},
+			resultType: emptyResult,
+		},
+		"EmptyPath": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$"}}},
+			resultType: emptyResult,
+		},
+		"EmptyVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$"}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$$"}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$s": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$$s"}}},
+			resultType: emptyResult,
+		},
+		"NonExistingVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$s"}}},
+			resultType: emptyResult,
+		},
+		"SystemVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$NOW"}}},
+			resultType: emptyResult,
+			// skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
+		},
+		"Empty": {
+			pipeline:   bson.A{bson.D{{"$unwind", ""}}},
+			resultType: emptyResult,
+		},
+		"Number": {
+			pipeline:   bson.A{bson.D{{"$unwind", 42}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			pipeline:   bson.A{bson.D{{"$unwind", bson.A{"$v"}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
