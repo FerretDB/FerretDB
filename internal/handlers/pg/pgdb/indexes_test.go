@@ -133,7 +133,6 @@ func TestDropIndexesStress(t *testing.T) {
 				_, err := DropIndex(ctx, tx, databaseName, collectionName, &idx)
 				return err
 			})
-
 			// if the index could not be dropped, the error is checked
 			if err != nil {
 				require.Error(t, err, ErrIndexNotExist)
