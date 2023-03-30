@@ -26,6 +26,11 @@ import (
 // sorts documents in memory and returns a new iterator over the sorted slice.
 // That iterator should be closed by the caller.
 func SortIterator(iter types.DocumentsIterator, sort *types.Document) (types.DocumentsIterator, error) {
+	// don't consume all documents if there is no sort
+	if sort.Len() == 0 {
+		return iter, nil
+	}
+
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
