@@ -104,7 +104,7 @@ The response returns a single document that matches the query:
 ]
 ```
 
-**Example:** To query values in an embedded document, use [dot notation](../../understanding_ferretdb.md#dot-notation).
+**Example:** To query values in an embedded document, use [dot notation](../../understanding-ferretdb.md#dot-notation).
 The following operation queries the `employees` collection for documents that match the field `first` in the embedded document `name`.
 
 ```js
