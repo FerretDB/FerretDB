@@ -70,22 +70,16 @@ func TestIndexesCreate(t *testing.T) {
 		resultType  compatTestCaseResultType // defaults to nonEmptyResult
 		skip        string                   // optional, skip test with a specified reason
 	}{
-		"DescendingID": {
-			models: []mongo.IndexModel{
-				{Keys: bson.D{{"_id", -1}}},
-			},
-			resultType: emptyResult,
-		},
-		"empty": {
+		"Empty": {
 			models:     []mongo.IndexModel{},
 			resultType: emptyResult,
 		},
-		"single-index": {
+		"SingleIndex": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 		},
-		"duplicate_id": {
+		"DuplicateID": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{{"_id", 1}}, // this index is already created by default
@@ -93,17 +87,23 @@ func TestIndexesCreate(t *testing.T) {
 			},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"non-existent-field": {
+		"DescendingID": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"_id", -1}}},
+			},
+			resultType: emptyResult,
+		},
+		"NonExistentField": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"field-does-not-exist", 1}}},
 			},
 		},
-		"dot-notation": {
+		"DotNotation": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v.foo", 1}}},
 			},
 		},
-		"dangerous-key": {
+		"DangerousKey": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{
@@ -113,14 +113,14 @@ func TestIndexesCreate(t *testing.T) {
 				},
 			},
 		},
-		"same-key": {
+		"SameKey": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
 			resultType:  emptyResult,
 			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
 		},
-		"custom-name": {
+		"CustomName": {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"foo", 1}, {"bar", -1}},
@@ -129,20 +129,20 @@ func TestIndexesCreate(t *testing.T) {
 			},
 		},
 
-		"multi-direction-different-indexes": {
+		"MultiDirectionDifferentIndexes": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 				{Keys: bson.D{{"v", 1}}},
 			},
 		},
-		"multi-order": {
+		"MultiOrder": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"foo", -1}}},
 				{Keys: bson.D{{"v", 1}}},
 				{Keys: bson.D{{"bar", 1}}},
 			},
 		},
-		"build-same-index": {
+		"BuildSameIndex": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", 1}}},
 				{Keys: bson.D{{"v", 1}}},
@@ -150,7 +150,7 @@ func TestIndexesCreate(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"multi-with-invalid": {
+		"MultiWithInvalid": {
 			models: []mongo.IndexModel{
 				{
 					Keys: bson.D{{"foo", 1}, {"bar", 1}, {"v", -1}},
@@ -162,7 +162,7 @@ func TestIndexesCreate(t *testing.T) {
 			resultType:  emptyResult,
 			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
 		},
-		"same-key-different-names": {
+		"SameKeyDifferentNames": {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", -1}},
@@ -176,7 +176,7 @@ func TestIndexesCreate(t *testing.T) {
 			resultType:  emptyResult,
 			altErrorMsg: "One of the specified indexes already exists with a different name",
 		},
-		"same-name-different-keys": {
+		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"foo", -1}},
