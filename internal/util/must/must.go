@@ -39,7 +39,7 @@ func NoError(err error) {
 // BeTrue panic if the b is not true.
 //
 // Use that function only for static initialization, test code, or statemants that
-// "can't" be true. When in doubt, don't.
+// "can't" be false. When in doubt, don't.
 func BeTrue(b bool) {
 	if !b {
 		panic("not true")
