@@ -17,49 +17,32 @@ package conninfo
 
 import (
 	"context"
-	"math/rand"
 	"sync"
-	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // contextKey is a named unexported type for the safe use of context.WithValue.
 type contextKey struct{}
 
-var (
-	// Context key for WithConnInfo/Get.
-	connInfoKey = contextKey{}
-
-	// Global last cursor ID.
-	lastCursorID atomic.Uint32
-)
-
-func init() {
-	// to make debugging easier
-	if !debugbuild.Enabled {
-		lastCursorID.Store(rand.Uint32())
-	}
-}
+// Context key for WithConnInfo/Get.
+var connInfoKey = contextKey{}
 
 // ConnInfo represents connection info.
 type ConnInfo struct {
 	PeerAddr string
 
+	token *resource.Token
+
 	rw       sync.RWMutex
-	cursors  map[int64]*cursor
 	username string
 	password string
-
-	token *resource.Token
 }
 
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	connInfo := &ConnInfo{
-		cursors: map[int64]*cursor{},
-		token:   resource.NewToken(),
+		token: resource.NewToken(),
 	}
 
 	resource.Track(connInfo, connInfo.token)
@@ -67,57 +50,9 @@ func NewConnInfo() *ConnInfo {
 	return connInfo
 }
 
-// Close closes and deletes all cursors.
+// Close frees resources.
 func (connInfo *ConnInfo) Close() {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	for _, c := range connInfo.cursors {
-		c.Iter.Close()
-	}
-
-	connInfo.cursors = nil
-
 	resource.Untrack(connInfo, connInfo.token)
-}
-
-// Cursor returns cursor by ID, or nil.
-func (connInfo *ConnInfo) Cursor(id int64) *cursor {
-	connInfo.rw.RLock()
-	defer connInfo.rw.RUnlock()
-
-	return connInfo.cursors[id]
-}
-
-// StoreCursor stores cursor and return its ID.
-func (connInfo *ConnInfo) StoreCursor(cursor *cursor) int64 {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	var id int64
-
-	// use global, sequential, positive, short cursor IDs to make debugging easier
-	for {
-		id = int64(lastCursorID.Add(1))
-		if _, ok := connInfo.cursors[id]; id != 0 && !ok {
-			break
-		}
-	}
-
-	connInfo.cursors[id] = cursor
-	return id
-}
-
-// DeleteCursor deletes cursor by ID, closing its iterator.
-func (connInfo *ConnInfo) DeleteCursor(id int64) {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	c := connInfo.cursors[id]
-
-	c.Iter.Close()
-
-	delete(connInfo.cursors, id)
 }
 
 // Auth returns stored username and password.

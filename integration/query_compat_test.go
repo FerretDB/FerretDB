@@ -35,6 +35,7 @@ type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
 	limit          *int64                   // defaults to nil to leave unset
+	batchSize      *int32                   // defaults to nil to leave unset
 	optSkip        *int64                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
@@ -79,6 +80,10 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 
 			if tc.limit != nil {
 				opts.SetLimit(*tc.limit)
+			}
+
+			if tc.batchSize != nil {
+				opts.SetBatchSize(*tc.batchSize)
 			}
 
 			if tc.optSkip != nil {
@@ -304,6 +309,45 @@ func TestQueryCompatLimit(t *testing.T) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2255
 			filter: bson.D{},
 			limit:  pointer.ToInt64(-1),
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryCompatBatchSize(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Simple": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(1),
+		},
+		"AlmostAll": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(int32(len(shareddata.Strings.Docs()) + 1)),
+		},
+		"Big": {
+			filter:    bson.D{},
+			batchSize: pointer.ToInt32(1000),
+		},
+		"Zero": {
+			filter:     bson.D{},
+			batchSize:  pointer.ToInt32(0),
+			resultType: emptyResult,
+		},
+		"Bad": {
+			filter:     bson.D{},
+			batchSize:  pointer.ToInt32(-1),
+			resultType: emptyResult,
 		},
 	}
 
