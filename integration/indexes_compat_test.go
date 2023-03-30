@@ -670,11 +670,11 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 					require.Equal(t, compatRes, targetRes)
 
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCur, targetListErr := targetCollection.Indexes().List(ctx)
+					compatCur, compatListErr := compatCollection.Indexes().List(ctx)
 
-					require.NoError(t, compatErr)
-					assert.Equal(t, compatErr, targetErr)
+					require.NoError(t, compatListErr)
+					assert.Equal(t, compatListErr, targetListErr)
 
 					targetList := FetchAll(t, ctx, targetCur)
 					compatList := FetchAll(t, ctx, compatCur)
