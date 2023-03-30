@@ -18,7 +18,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,9 +27,9 @@ import (
 )
 
 func TestIndexesDrop(t *testing.T) {
-	t.Helper()
-
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
+
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		models        []mongo.IndexModel       // optional, if not nil create indexes before dropping
@@ -40,7 +39,7 @@ func TestIndexesDrop(t *testing.T) {
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
 		skip          string                   // optional, skip test with a specified reason
 	}{
-		"DropAll": {
+		"DropAllCommand": {
 			dropAll: true,
 		},
 		"ID": {
@@ -53,6 +52,22 @@ func TestIndexesDrop(t *testing.T) {
 		"Value": {
 			dropIndexName: "v_-1",
 		},
+		"MultipleIndexes": {
+			dropIndexName: "v_-1_id_-1",
+		},
+		"DropAllExpression": {
+			dropIndexName: "*",
+		},
+		"DropByKey": {
+			dropIndexName: "v",
+		},
+		"DropByIDKey": {
+			dropIndexName: "_id",
+		},
+		"NonExistent": {
+			dropIndexName: "nonexistent_1",
+			resultType:    emptyResult,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -60,12 +75,12 @@ func TestIndexesDrop(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
+			t.Helper()
+			t.Parallel()
+
 			if tc.dropAll {
 				require.Empty(t, tc.dropIndexName, "index name must be empty when dropping all indexes")
 			}
-
-			t.Helper()
-			t.Parallel()
 
 			// Use single provider for drop indexes test.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -111,9 +126,9 @@ func TestIndexesDrop(t *testing.T) {
 						require.Equal(t, compatErr, targetErr)
 					}
 
-					assert.Equal(t, compatRes, targetRes)
+					require.Equal(t, compatRes, targetRes)
 
-					if compatErr == nil {
+					if targetErr == nil {
 						nonEmptyResults = true
 					}
 
@@ -122,20 +137,20 @@ func TestIndexesDrop(t *testing.T) {
 					compatCur, compatErr := compatCollection.Indexes().List(ctx)
 
 					require.NoError(t, compatErr)
-					assert.Equal(t, compatErr, targetErr)
+					require.Equal(t, compatErr, targetErr)
 
 					targetIndexes := FetchAll(t, ctx, targetCur)
 					compatIndexes := FetchAll(t, ctx, compatCur)
 
-					assert.Equal(t, compatIndexes, targetIndexes)
+					require.Equal(t, compatIndexes, targetIndexes)
 				})
 			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}
@@ -144,9 +159,9 @@ func TestIndexesDrop(t *testing.T) {
 }
 
 func TestIndexesDropRunCommand(t *testing.T) {
-	t.Helper()
-
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
@@ -173,9 +188,17 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			collectionName: "non-existent",
 			resultType:     emptyResult,
 		},
+		"drop-multiple-indexes": {
+			collectionName: targetCollection.Name(),
+			index:          bson.A{"v_1", "v_1_foo_1"},
+		},
+		"invalid-multiple": {
+			collectionName: targetCollection.Name(),
+			index:          bson.A{1},
+			resultType:     emptyResult,
+		},
 	} {
 		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
@@ -211,7 +234,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				require.Nil(t, compatRes)
 			}
 
-			assert.Equal(t, compatRes, targetRes)
+			require.Equal(t, compatRes, targetRes)
 
 			targetErr = targetCollection.Database().RunCommand(
 				ctx, bson.D{{"listIndexes", tc.collectionName}},
@@ -221,7 +244,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				ctx, bson.D{{"listIndexes", tc.collectionName}},
 			).Decode(&compatRes)
 
-			assert.Equal(t, compatRes, targetRes)
+			require.Equal(t, compatRes, targetRes)
 
 			AssertMatchesCommandError(t, compatErr, targetErr)
 		})

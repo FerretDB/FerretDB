@@ -47,6 +47,9 @@ const (
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
+	// ErrIndexNotFound indicates that a index is not found for the given name.
+	ErrIndexNotFound = ErrorCode(27) // IndexNotFound
+
 	// ErrUnsuitableValueType indicates that field could not be created for given value.
 	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
 

@@ -71,12 +71,6 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			fmt.Sprintf("ns not found %s.%s", db, collection),
 			command,
 		)
-	case errors.Is(err, pgdb.ErrIndexNotExist):
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNamespaceNotFound,
-			"index not found",
-			command,
-		)
 	case errors.Is(err, pgdb.ErrIndexCannotDelete):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidOptions,
@@ -144,8 +138,13 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 				)
 			}
 
-			if err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index}); err != nil {
-				return lazyerrors.Error(err)
+			err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
+			if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrIndexNotFound,
+					fmt.Sprintf("index not found with name [%s]", index),
+					command,
+				)
 			}
 		}
 	case string:
@@ -155,7 +154,16 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		}
 
 		// Index name is provided to drop a specific index.
-		return pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
+		err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
+		if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrIndexNotFound,
+				fmt.Sprintf("index not found with name [%s]", v),
+				command,
+			)
+		}
+
+		return err
 	}
 
 	return commonerrors.NewCommandErrorMsgWithArgument(
