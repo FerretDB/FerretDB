@@ -96,7 +96,7 @@ func (k IndexKey) Equal(v IndexKey) bool {
 }
 
 // DropIndex drops index. If the index was not found, it returns error.
-func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Index) (int64, error) {
+func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Index) (int32, error) {
 	ms := newMetadataStorage(tx, db, collection)
 
 	metadata, err := ms.get(ctx, true)
@@ -104,7 +104,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 		return 0, err
 	}
 
-	indexesWas := int64(len(metadata.indexes))
+	indexesWas := int32(len(metadata.indexes))
 
 	for i := indexesWas - 1; i >= 0; i-- {
 		current := metadata.indexes[i]
@@ -147,7 +147,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 }
 
 // DropAllIndexes deletes all indexes on the collection except _id index.
-func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int64, error) {
+func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int32, error) {
 	ms := newMetadataStorage(tx, db, collection)
 
 	metadata, err := ms.get(ctx, true)
@@ -155,7 +155,7 @@ func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int6
 		return 0, err
 	}
 
-	indexesWas := int64(len(metadata.indexes))
+	indexesWas := int32(len(metadata.indexes))
 
 	for i := indexesWas - 1; i >= 0; i-- {
 		if metadata.indexes[i].Name == "_id_" {

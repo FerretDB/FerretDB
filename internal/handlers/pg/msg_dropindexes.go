@@ -58,10 +58,11 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	var nIndexesWas int64
+	var nIndexesWas int32
+	var responseMsg string
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		nIndexesWas, err = processIndexDrop(ctx, tx, db, collection, document, command)
+		nIndexesWas, responseMsg, err = processIndexDrop(ctx, tx, db, collection, document, command)
 		return err
 	})
 
@@ -84,44 +85,53 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
+	replyDoc := must.NotFail(types.NewDocument(
+		"nIndexesWas", nIndexesWas,
+	))
+
+	if responseMsg != "" {
+		replyDoc.Set("msg", responseMsg)
+	}
+
+	replyDoc.Set(
+		"ok", float64(1),
+	)
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"nIndexesWas", nIndexesWas,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{replyDoc},
 	}))
 
 	return &reply, nil
 }
 
 // processIndexDrop parses index doc and processes index deletion based on the provided params.
-func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) (int64, error) {
+func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) (int32, string, error) {
 	v, err := doc.Get("index")
 	if err != nil {
-		return 0, lazyerrors.Error(err)
+		return 0, "", lazyerrors.Error(err)
 	}
 
-	var nsIndexesWas int64
+	var nsIndexesWas int32
 
 	switch v := v.(type) {
 	case *types.Document:
 		// Index specification (key) is provided to drop a specific index.
 		indexKey, err := processIndexKey(v)
 		if err != nil {
-			return 0, lazyerrors.Error(err)
+			return 0, "", lazyerrors.Error(err)
 		}
 
 		nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
 		if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
 				fmt.Sprintf("index not found with name [%s]", indexKey),
 				command,
 			)
 		}
 
-		return 0, err
+		return 0, "", err
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
 		for {
@@ -135,14 +145,14 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 			case err == nil:
 				// nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
-				return nsIndexesWas, nil
+				return nsIndexesWas, "", nil
 			default:
-				return 0, lazyerrors.Error(err)
+				return 0, "", lazyerrors.Error(err)
 			}
 
 			index, ok := val.(string)
 			if !ok {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",
@@ -154,7 +164,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 
 			nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
 			if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrIndexNotFound,
 					fmt.Sprintf("index not found with name [%s]", index),
 					command,
@@ -162,32 +172,37 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 			}
 
 			if err != nil {
-				return 0, lazyerrors.Error(err)
+				return 0, "", lazyerrors.Error(err)
 			}
 		}
 	case string:
 		if v == "*" {
 			// Drop all indexes except the _id index.
-			return pgdb.DropAllIndexes(ctx, tx, db, collection)
+			nsIndexesWas, err = pgdb.DropAllIndexes(ctx, tx, db, collection)
+			if err != nil {
+				return 0, "", err
+			}
+
+			return nsIndexesWas, "non-_id indexes dropped for collection", nil
 		}
 
 		// Index name is provided to drop a specific index.
 		nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
 		switch {
 		case err == nil:
-			return nsIndexesWas, nil
+			return nsIndexesWas, "", nil
 		case errors.Is(err, pgdb.ErrIndexNotExist):
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
 				fmt.Sprintf("index not found with name [%s]", v),
 				command,
 			)
 		default:
-			return 0, lazyerrors.Error(err)
+			return 0, "", lazyerrors.Error(err)
 		}
 	}
 
-	return 0, commonerrors.NewCommandErrorMsgWithArgument(
+	return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 		commonerrors.ErrTypeMismatch,
 		fmt.Sprintf(
 			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",

@@ -424,20 +424,12 @@ func TestIndexesDrop(t *testing.T) {
 			},
 			dropIndexName: "v_-1",
 		},
-		"DropAllExpression": {
+		"AsteriskWithDropOne": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			dropIndexName: "*",
-		},
-		"DropByKey": {
-			models: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-			},
-			dropIndexName: "v",
-		},
-		"DropByIDKey": {
-			dropIndexName: "_id",
+			resultType:    emptyResult,
 		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
@@ -544,21 +536,19 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		index          any                      // index to drop
-		collectionName string                   // collection name of the index to drop
+		collectionName string                   // optional, default to collection name of compat and target
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		models         []mongo.IndexModel       // optional, if not nil create indexes before dropping
 		altErrorMsg    string                   // optional, alternative error message in case of error
 		skip           string                   // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
-			collectionName: targetCollection.Name(),
-			index:          true,
-			resultType:     emptyResult,
+			index:      true,
+			resultType: emptyResult,
 		},
 		"NonExistentField": {
-			collectionName: targetCollection.Name(),
-			index:          "non-existent",
-			resultType:     emptyResult,
+			index:      "non-existent",
+			resultType: emptyResult,
 		},
 		"InvalidCollection": {
 			collectionName: "non-existent",
@@ -569,30 +559,30 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
-			collectionName: targetCollection.Name(),
-			index:          bson.A{"v_1", "v_1_foo_1"},
+			index: bson.A{"v_1", "v_1_foo_1"},
 		},
 		"NonExistentMultipleIndexes": {
-			collectionName: targetCollection.Name(),
-			index:          bson.A{"non-existent", "invalid"},
+			index: bson.A{"non-existent", "invalid"},
 		},
 		"InvalidMultipleIndexType": {
-			collectionName: targetCollection.Name(),
-			index:          bson.A{1},
-			resultType:     emptyResult,
+			index:      bson.A{1},
+			resultType: emptyResult,
 		},
 		"InvalidDocumentIndex": {
-			collectionName: targetCollection.Name(),
-			index:          bson.D{{"invalid", "invalid"}},
-			resultType:     emptyResult,
+			index:      bson.D{{"invalid", "invalid"}},
+			resultType: emptyResult,
 		},
 		"DocumentIndexValue": {
-			collectionName: targetCollection.Name(),
-			index:          bson.D{{"v", 1}},
+			index: bson.D{{"v", 1}},
 		},
 		"DocumentIndexID": {
-			collectionName: targetCollection.Name(),
-			index:          bson.D{{"_id", 1}},
+			index: bson.D{{"_id", 1}},
+		},
+		"DropAllExpression": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
+			index: "*",
 		},
 	} {
 		name, tc := name, tc
@@ -611,16 +601,29 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				require.NoError(t, targetErr)
 			}
 
-			command := bson.D{
-				{"dropIndexes", tc.collectionName},
+			targetCollectionName := targetCollection.Name()
+			compatCollectionName := compatCollection.Name()
+
+			if tc.collectionName != "" {
+				targetCollectionName = tc.collectionName
+				compatCollectionName = tc.collectionName
+			}
+
+			targetCommand := bson.D{
+				{"dropIndexes", targetCollectionName},
+				{"index", tc.index},
+			}
+
+			compatCommand := bson.D{
+				{"dropIndexes", compatCollectionName},
 				{"index", tc.index},
 			}
 
 			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
 
 			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
+			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.altErrorMsg != "" {
 				AssertMatchesCommandError(t, compatErr, targetErr)
@@ -641,11 +644,11 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			require.Equal(t, compatRes, targetRes)
 
 			targetErr = targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
+				ctx, bson.D{{"listIndexes", targetCollectionName}},
 			).Decode(&targetRes)
 
 			compatErr = compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
+				ctx, bson.D{{"listIndexes", compatCollectionName}},
 			).Decode(&compatRes)
 
 			require.Equal(t, compatRes, targetRes)
