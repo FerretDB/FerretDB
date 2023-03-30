@@ -107,7 +107,16 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		// 	return lazyerrors.Error(err)
 		// }
 		//
-		// return pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
+		// err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
+		// if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
+		//	return commonerrors.NewCommandErrorMsgWithArgument(
+		//		commonerrors.ErrIndexNotFound,
+		//		fmt.Sprintf("index not found with name [%s]", indexKey),
+		//		command,
+		//	)
+		// }
+		//
+		//return err
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
 		for {
@@ -146,6 +155,8 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 					command,
 				)
 			}
+
+			return err
 		}
 	case string:
 		if v == "*" {
