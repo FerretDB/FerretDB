@@ -70,8 +70,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return nil
 		}
 
-		iter, err := dbPool.QueryDocuments(ctx, qp)
-		if err != nil {
+		var iter types.DocumentsIterator
+
+		if iter, err = dbPool.QueryDocuments(ctx, qp); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -102,6 +103,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 
 		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+
 		return err
 	}()
 
