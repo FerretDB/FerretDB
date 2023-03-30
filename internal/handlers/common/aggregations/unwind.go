@@ -97,7 +97,7 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 		d := m.field.Evaluate(doc)
 		switch d := d.(type) {
 		//case *types.Document:
-		case nil:
+		case types.NullType:
 		case *types.Array:
 			iter := d.Iterator()
 			defer iter.Close()
@@ -118,7 +118,7 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 			}
 
 		default:
-			continue
+			out = append(out, doc)
 		}
 	}
 

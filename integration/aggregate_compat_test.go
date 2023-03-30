@@ -1049,3 +1049,16 @@ func TestAggregateCompatSort(t *testing.T) {
 
 	testAggregateStagesCompat(t, testCases)
 }
+
+func TestAggregateCompatUnwind(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Simple": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v"}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
