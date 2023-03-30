@@ -138,11 +138,11 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		}
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
+		iter := v.Iterator()
+
+		defer iter.Close() // It's safe to defer here as the iterators reads everything.
+
 		for {
-			iter := v.Iterator()
-
-			defer iter.Close() // It's safe to defer here as the iterators reads everything.
-
 			_, val, err := iter.Next()
 
 			switch {
@@ -166,7 +166,8 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 				)
 			}
 
-			nsIndexesWasCurrent, err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
+			var nsIndexesWasCurrent int32
+			nsIndexesWasCurrent, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
 
 			// nsIndexesWas should give the number of indexes we had in the database before we start dropping indexes.
 			if nsIndexesWas == 0 {
