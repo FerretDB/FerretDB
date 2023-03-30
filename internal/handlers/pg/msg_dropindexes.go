@@ -117,7 +117,9 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 	switch v := v.(type) {
 	case *types.Document:
 		// Index specification (key) is provided to drop a specific index.
-		indexKey, err := processIndexKey(v)
+		var indexKey pgdb.IndexKey
+
+		indexKey, err = processIndexKey(v)
 		if err != nil {
 			return 0, "", lazyerrors.Error(err)
 		}
@@ -143,7 +145,8 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		defer iter.Close() // It's safe to defer here as the iterators reads everything.
 
 		for {
-			_, val, err := iter.Next()
+			var val any
+			_, val, err = iter.Next()
 
 			switch {
 			case err == nil:
@@ -201,6 +204,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 
 		// Index name is provided to drop a specific index.
 		nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
+
 		switch {
 		case err == nil:
 			return nsIndexesWas, "", nil

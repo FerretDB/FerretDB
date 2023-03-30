@@ -84,10 +84,10 @@ func TestDropIndexes(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
+		expectedErr error   // expected error, if any
 		toCreate    []Index // indexes to create before dropping
 		toDrop      []Index // indexes to drop
 		expected    []Index // expected indexes to remain after dropping attempt
-		expectedErr error   // expected error, if any
 	}{
 		"NonExistent": {
 			toCreate: []Index{},
@@ -169,7 +169,7 @@ func TestDropIndexes(t *testing.T) {
 		"DropComplicated": {
 			toCreate: []Index{
 				{Name: "v_-1", Key: []IndexKeyPair{{Field: "v", Order: types.Descending}}},
-				{Name: "v_1_foo_1", Key: []IndexKeyPair{{Field: "v", Order: types.Ascending}, {Field: "foo", Order: types.Ascending}}},
+				{Name: "v_1_foo_1", Key: []IndexKeyPair{{Field: "v", Order: types.Ascending}, {Field: "foo", Order: types.Ascending}}}, //nolint:lll // for readability
 				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}},
 			},
 			toDrop: []Index{{Name: "v_-1"}, {Name: "v_1_foo_1"}},
@@ -210,7 +210,8 @@ func TestDropIndexes(t *testing.T) {
 			expectedWas := int32(len(tc.toCreate) + 1) // created indexes + default _id index
 			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				for _, idx := range tc.toDrop {
-					was, err := DropIndex(ctx, tx, databaseName, collectionName, &idx)
+					var was int32
+					was, err = DropIndex(ctx, tx, databaseName, collectionName, &idx)
 					if err != nil {
 						return err
 					}
@@ -229,7 +230,9 @@ func TestDropIndexes(t *testing.T) {
 			}
 
 			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				indexes, err := Indexes(ctx, tx, databaseName, collectionName)
+				var indexes []Index
+
+				indexes, err = Indexes(ctx, tx, databaseName, collectionName)
 				if err != nil {
 					return err
 				}
@@ -240,14 +243,16 @@ func TestDropIndexes(t *testing.T) {
 			require.NoError(t, err)
 
 			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				was, err := DropAllIndexes(ctx, tx, databaseName, collectionName)
+				var was int32
+				was, err = DropAllIndexes(ctx, tx, databaseName, collectionName)
 				if err != nil {
 					return err
 				}
 
 				assert.Equal(t, expectedWas, was)
 
-				indexes, err := Indexes(ctx, tx, databaseName, collectionName)
+				var indexes []Index
+				indexes, err = Indexes(ctx, tx, databaseName, collectionName)
 				if err != nil {
 					return err
 				}
@@ -318,13 +323,13 @@ func TestDropIndexesStress(t *testing.T) {
 
 			<-start
 
-			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				idx := Index{
 					Name: indexName,
 					Key:  indexKeys,
 				}
 
-				_, err := DropIndex(ctx, tx, databaseName, collectionName, &idx)
+				_, err = DropIndex(ctx, tx, databaseName, collectionName, &idx)
 				return err
 			})
 			// if the index could not be dropped, the error is checked
