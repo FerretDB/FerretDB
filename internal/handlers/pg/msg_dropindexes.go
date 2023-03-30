@@ -166,11 +166,11 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 				)
 			}
 
-			nsIndexesWasNew, err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
+			nsIndexesWasCurrent, err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
 
 			// nsIndexesWas should give the number of indexes we had in the database before we start dropping indexes.
 			if nsIndexesWas == 0 {
-				nsIndexesWas = nsIndexesWasNew
+				nsIndexesWas = nsIndexesWasCurrent
 			}
 
 			switch {

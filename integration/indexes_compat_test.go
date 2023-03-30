@@ -54,7 +54,6 @@ func TestIndexesList(t *testing.T) {
 			targetRes := FetchAll(t, ctx, targetCur)
 			compatRes := FetchAll(t, ctx, compatCur)
 
-			require.NotNil(t, compatRes)
 			assert.Equal(t, compatRes, targetRes)
 		})
 	}
@@ -78,6 +77,11 @@ func TestIndexesCreate(t *testing.T) {
 		"SingleIndex": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
+			},
+		},
+		"SingleIndexMultiField": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"foo", 1}, {"bar", -1}}},
 			},
 		},
 		"DuplicateID": {
@@ -254,7 +258,6 @@ func TestIndexesCreate(t *testing.T) {
 					targetIndexes := FetchAll(t, ctx, targetCur)
 					compatIndexes := FetchAll(t, ctx, compatCur)
 
-					require.NotNil(t, compatIndexes)
 					assert.Equal(t, compatIndexes, targetIndexes)
 				})
 			}
@@ -638,6 +641,18 @@ func TestIndexesDropRunCommand(t *testing.T) {
 						_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.toCreate)
 						require.NoError(t, compatErr)
 						require.NoError(t, targetErr)
+
+						// List indexes to see they are identical after creation.
+						targetCur, targetListErr := targetCollection.Indexes().List(ctx)
+						compatCur, compatListErr := compatCollection.Indexes().List(ctx)
+
+						require.NoError(t, compatListErr)
+						require.NoError(t, targetListErr)
+
+						targetList := FetchAll(t, ctx, targetCur)
+						compatList := FetchAll(t, ctx, compatCur)
+
+						require.Equal(t, compatList, targetList)
 					}
 
 					targetCommand := bson.D{
@@ -688,7 +703,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					targetList := FetchAll(t, ctx, targetCur)
 					compatList := FetchAll(t, ctx, compatCur)
 
-					require.NotNil(t, compatList)
 					assert.Equal(t, compatList, targetList)
 				})
 			}

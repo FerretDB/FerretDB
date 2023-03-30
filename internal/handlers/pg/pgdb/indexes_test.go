@@ -166,6 +166,18 @@ func TestDropIndexes(t *testing.T) {
 				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
 			},
 		},
+		"DropComplicated": {
+			toCreate: []Index{
+				{Name: "v_-1", Key: []IndexKeyPair{{Field: "v", Order: types.Descending}}},
+				{Name: "v_1_foo_1", Key: []IndexKeyPair{{Field: "v", Order: types.Ascending}, {Field: "foo", Order: types.Ascending}}},
+				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}},
+			},
+			toDrop: []Index{{Name: "v_-1"}, {Name: "v_1_foo_1"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}},
+			},
+		},
 		"DropAll": {
 			toCreate: []Index{
 				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
