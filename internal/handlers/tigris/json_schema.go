@@ -35,10 +35,11 @@ func getJSONSchema(tdb *tigrisdb.TigrisDB, doc *types.Document, db string, colle
 
 	schema, err := common.GetRequiredParam[string](v, "$tigrisSchemaString")
 	if err != nil {
-		tSchema, err := tdb.RefreshCollectionSchema(context.TODO(), db, collection)
-		if err != nil {
-			return nil, err
+		tSchema, err1 := tdb.RefreshCollectionSchema(context.TODO(), db, collection)
+		if err1 != nil {
+			return nil, err1
 		}
+
 		return tSchema, nil
 	}
 

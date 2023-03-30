@@ -130,10 +130,12 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 			if !strings.Contains(keyPath, ".") {
 				return lazyerrors.Error(err)
 			}
+
 			keyParts := strings.Split(keyPath, ".")
 			if err = convertToMap(keyParts, schema); err != nil {
 				return lazyerrors.Error(err)
 			}
+
 			if _, err = tdb.CreateOrUpdateCollection(ctx, db, collection, schema); err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -150,10 +152,12 @@ func (tdb *TigrisDB) InsertDocument(ctx context.Context, db, collection string, 
 func convertToMap(keyParts []string, schema *tjson.Schema) error {
 	for i := 0; i < len(keyParts)-1; i++ {
 		v := keyParts[i]
+
 		p := schema.Properties[v]
 		if p.Type != tjson.Object {
 			return fmt.Errorf("expected object type in schema. field %v got %v", v, p.Type)
 		}
+
 		schema = p
 	}
 

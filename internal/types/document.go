@@ -418,20 +418,21 @@ func ConvertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:
 		d := MakeDocument(len(value))
+
 		keys := maps.Keys(value)
 		for _, k := range keys {
 			v := value[k]
 			d.Set(k, ConvertJSON(v))
 		}
-		return d
 
+		return d
 	case []any:
 		a := MakeArray(len(value))
 		for _, v := range value {
 			a.Append(ConvertJSON(v))
 		}
-		return a
 
+		return a
 	case nil:
 		return Null
 

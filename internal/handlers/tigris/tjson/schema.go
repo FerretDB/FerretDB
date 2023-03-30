@@ -387,10 +387,6 @@ func valueSchema(schema *Schema, v any) (*Schema, error) {
 			schema.SearchIndex = &b1
 		}
 
-		if schema.AdditionalProperties != nil && *schema.AdditionalProperties {
-			return schema, nil
-		}
-
 		if err := subdocumentSchema(schema, v); err != nil {
 			return nil, err
 		}

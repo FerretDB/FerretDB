@@ -63,6 +63,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, schema *Schema) er
 	if err := json.Unmarshal(b, &keys); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if len(keys)+1 != len(rawMessages) && (schema.AdditionalProperties == nil || !*schema.AdditionalProperties) {
 		return lazyerrors.Errorf(
 			"tjson.documentType.UnmarshalJSONWithSchema: %d elements in $k, %d in total",
