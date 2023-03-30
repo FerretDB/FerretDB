@@ -46,19 +46,35 @@ func TestIndexesDrop(t *testing.T) {
 			dropIndexName: "_id_",
 			resultType:    emptyResult,
 		},
-		"ValueAscending": {
+		"DescendingID": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"_id", -1}}},
+			},
+			dropIndexName: "_id_",
+			resultType:    emptyResult,
+		},
+		"AscendingValue": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+			},
 			dropIndexName: "v_1",
 		},
-		"Value": {
+		"DescendingValue": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
 			dropIndexName: "v_-1",
 		},
-		"MultipleIndexes": {
-			dropIndexName: "v_-1_id_-1",
-		},
 		"DropAllExpression": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
 			dropIndexName: "*",
 		},
 		"DropByKey": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
 			dropIndexName: "v",
 		},
 		"DropByIDKey": {
@@ -168,34 +184,56 @@ func TestIndexesDropRunCommand(t *testing.T) {
 	compatCollection := compatCollections[0]
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		collectionName string
-		index          any
+		models         []mongo.IndexModel       // optional, if not nil create indexes before dropping
+		collectionName string                   // collection name to use
+		index          any                      // index name
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
-		altErrorMsg    string
+		altErrorMsg    string                   // optional, alternative error message in case of error
 	}{
-		"invalid-index-type": {
+		"InvalidType": {
 			collectionName: targetCollection.Name(),
 			index:          true,
 			resultType:     emptyResult,
 		},
-		"invalid-index": {
+		"NonExistentField": {
 			collectionName: targetCollection.Name(),
 			index:          "non-existent",
 			resultType:     emptyResult,
 		},
-		"invalid-collection": {
+		"InvalidCollection": {
 			collectionName: "non-existent",
 			resultType:     emptyResult,
 		},
-		"drop-multiple-indexes": {
+		"MultipleIndexes": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"v.foo", -1}}},
+			},
 			collectionName: targetCollection.Name(),
 			index:          bson.A{"v_1", "v_1_foo_1"},
 		},
-		"invalid-multiple": {
+		"NonExistentMultipleIndexes": {
+			collectionName: targetCollection.Name(),
+			index:          bson.A{"non-existent", "invalid"},
+		},
+		"InvalidMultipleIndexType": {
 			collectionName: targetCollection.Name(),
 			index:          bson.A{1},
 			resultType:     emptyResult,
+		},
+		"InvalidDocumentIndex": {
+			collectionName: targetCollection.Name(),
+			index:          bson.D{{"invalid", "invalid"}},
+			resultType:     emptyResult,
+		},
+		"DocumentIndexValue": {
+			collectionName: targetCollection.Name(),
+			index:          bson.D{{"v", 1}},
+		},
+		"DocumentIndexID": {
+			collectionName: targetCollection.Name(),
+			index:          bson.D{{"_id", 1}},
 		},
 	} {
 		name, tc := name, tc
@@ -206,6 +244,13 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 			t.Helper()
 			t.Parallel()
+
+			if tc.models != nil {
+				_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+				_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+				require.NoError(t, compatErr)
+				require.NoError(t, targetErr)
+			}
 
 			command := bson.D{
 				{"dropIndexes", tc.collectionName},
