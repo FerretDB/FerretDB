@@ -106,7 +106,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 }
 
 // processIndexDrop parses index doc and processes index deletion based on the provided params.
-func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) (int32, string, error) {
+func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) (int32, string, error) { //nolint:lll // for readability
 	v, err := doc.Get("index")
 	if err != nil {
 		return 0, "", lazyerrors.Error(err)
@@ -123,15 +123,19 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		}
 
 		nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
-		if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
+
+		switch {
+		case err == nil:
+			return nsIndexesWas, "", nil
+		case errors.Is(err, pgdb.ErrIndexNotExist):
 			return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
 				fmt.Sprintf("can't find index with key: %s", types.FormatAnyValue(v)),
 				command,
 			)
+		default:
+			return 0, "", lazyerrors.Error(err)
 		}
-
-		return 0, "", err
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
 		for {
