@@ -1,5 +1,6 @@
 ---
 sidebar_position: 9
+slug: /operation-modes/
 ---
 
 # Operation modes
