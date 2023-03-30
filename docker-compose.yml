@@ -7,7 +7,12 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
-    command: postgres -c 'max_connections=200'
+    command: >
+      postgres
+      -c log_min_duration_statement=1000ms
+      -c log_min_error_statement=WARNING
+      -c log_min_messages=WARNING
+      -c max_connections=200
     ports:
       - 5432:5432
     extra_hosts:
@@ -25,7 +30,12 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres_secured
-    command: postgres -c 'max_connections=200'
+    command: >
+      postgres
+      -c log_min_duration_statement=1000ms
+      -c log_min_error_statement=WARNING
+      -c log_min_messages=WARNING
+      -c max_connections=200
     ports:
       - 5433:5432
     extra_hosts:
