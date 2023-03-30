@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -25,8 +26,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetMore is a common implementation of the `getMore` command.
-func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// GetMore is a part of common implementation of the getMore command.
+func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -49,7 +50,9 @@ func MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	// TODO maxTimeMS, comment
 
-	cursor := conninfo.Get(ctx).Cursor(cursorID)
+	username, _ := conninfo.Get(ctx).Auth()
+
+	cursor := registry.Cursor(username, cursorID)
 	if cursor == nil {
 		return nil, lazyerrors.Errorf("no cursor %d", cursorID)
 	}

@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,7 +35,9 @@ import (
 // Handler implements handlers.Interface on top of PostgreSQL.
 type Handler struct {
 	*NewOpts
-	url url.URL
+
+	url      url.URL
+	registry *cursor.Registry
 
 	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
@@ -63,9 +66,10 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	h := &Handler{
-		NewOpts: opts,
-		url:     *u,
-		pools:   make(map[string]*pgdb.Pool, 1),
+		NewOpts:  opts,
+		url:      *u,
+		registry: cursor.NewRegistry(),
+		pools:    make(map[string]*pgdb.Pool, 1),
 	}
 
 	return h, nil

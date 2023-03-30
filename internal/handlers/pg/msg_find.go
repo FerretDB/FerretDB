@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -116,13 +117,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	iter := iterator.Values(iterator.ForSlice(resDocs))
-
-	cursorID := conninfo.Get(ctx).StoreCursor(conninfo.NewCursor(&conninfo.NewCursorParams{
+	c := cursor.New(&cursor.NewParams{
 		Iter:       iter,
 		DB:         params.DB,
 		Collection: params.Collection,
 		BatchSize:  params.BatchSize,
-	}))
+	})
+
+	username, _ := conninfo.Get(ctx).Auth()
+	cursorID := h.registry.StoreCursor(username, c)
 
 	resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
 	if err != nil {

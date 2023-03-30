@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -36,6 +37,8 @@ import (
 //nolint:vet // for readability
 type Handler struct {
 	*NewOpts
+
+	registry *cursor.Registry
 
 	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
@@ -66,8 +69,9 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	return &Handler{
-		NewOpts: opts,
-		pools:   make(map[AuthParams]*tigrisdb.TigrisDB, 1),
+		NewOpts:  opts,
+		registry: cursor.NewRegistry(),
+		pools:    make(map[AuthParams]*tigrisdb.TigrisDB, 1),
 	}, nil
 }
 
