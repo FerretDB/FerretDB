@@ -595,10 +595,10 @@ db.aggregate()
 |                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
 |                                   | `encryptedFields`              |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
-| `createIndexes`                   |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1509) |
-|                                   | `indexes`                      |                           | ⚠️      |                                                           |
-|                                   |                                | `key`                     | ⚠️      |                                                           |
-|                                   |                                | `name`                    | ⚠️      |                                                           |
+| `createIndexes`                   |                                |                           | ✅      |                                                           |
+|                                   | `indexes`                      |                           | ✅      |                                                           |
+|                                   |                                | `key`                     | ✅      |                                                           |
+|                                   |                                | `name`                    | ✅️      |                                                           |
 |                                   |                                | `background`              | ⚠️      |                                                           |
 |                                   |                                | `unique`                  | ⚠️      |                                                           |
 |                                   |                                | `partialFilterExpression` | ⚠️      |                                                           |
