@@ -90,16 +90,15 @@ func TestDropIndexesStress(t *testing.T) {
 	indexName := "test"
 	indexKeys := []IndexKeyPair{{Field: "foo", Order: types.Ascending}, {Field: "bar", Order: types.Descending}}
 
-	// TODO create index
-	//err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-	//	idx := Index{
-	//		Name: indexName,
-	//		Key:  indexKeys,
-	//	}
-	//
-	//	return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
-	//})
-	//require.NoError(t, err)
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		idx := Index{
+			Name: indexName,
+			Key:  indexKeys,
+		}
+
+		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+	})
+	require.NoError(t, err)
 
 	var indexesAfterCreate []Index
 
@@ -134,9 +133,9 @@ func TestDropIndexesStress(t *testing.T) {
 				return DropIndex(ctx, tx, databaseName, collectionName, &idx)
 			})
 
-			// one of drop will succeed.
+			// if the index could not be dropped, the error is checked
 			if err != nil {
-				require.Error(t, err, "")
+				require.Error(t, err, ErrIndexNotExist)
 			}
 		}()
 	}

@@ -101,22 +101,21 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 	switch v := v.(type) {
 	case *types.Document:
 		// Index specification (key) is provided to drop a specific index.
-		// TODO: call processIndexKey() from createIndex:
-		// indexKey, err := processIndexKey(v)
-		// if err != nil {
-		// 	return lazyerrors.Error(err)
-		// }
-		//
-		// err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
-		// if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
-		//	return commonerrors.NewCommandErrorMsgWithArgument(
-		//		commonerrors.ErrIndexNotFound,
-		//		fmt.Sprintf("index not found with name [%s]", indexKey),
-		//		command,
-		//	)
-		// }
-		//
-		//return err
+		indexKey, err := processIndexKey(v)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
+		if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrIndexNotFound,
+				fmt.Sprintf("index not found with name [%s]", indexKey),
+				command,
+			)
+		}
+
+		return err
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
 		for {
