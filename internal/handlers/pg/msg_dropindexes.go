@@ -166,16 +166,24 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 				)
 			}
 
-			nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
-			if err != nil && errors.Is(err, pgdb.ErrIndexNotExist) {
+			nsIndexesWasNew, err := pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
+
+			// nsIndexesWas should give the number of indexes we had in the database before we start dropping indexes.
+			if nsIndexesWas == 0 {
+				nsIndexesWas = nsIndexesWasNew
+			}
+
+			switch {
+			case err == nil:
+				continue
+			case errors.Is(err, pgdb.ErrIndexNotExist):
 				return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrIndexNotFound,
 					fmt.Sprintf("index not found with name [%s]", index),
 					command,
 				)
-			}
 
-			if err != nil {
+			default:
 				return 0, "", lazyerrors.Error(err)
 			}
 		}

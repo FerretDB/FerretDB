@@ -15,6 +15,7 @@
 package pgdb
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -64,6 +65,187 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 		pgIndexName, databaseName, tableName,
 	)
 	assert.Equal(t, expectedIndexdef, indexdef)
+}
+
+// TestDropIndexes checks that we correctly drop indexes for various combination of existing indexes.
+func TestDropIndexes(t *testing.T) {
+	//	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := getPool(ctx, t)
+
+	databaseName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
+	setupDatabase(ctx, t, pool, databaseName)
+
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		toCreate    []Index // indexes to create before dropping
+		toDrop      []Index // indexes to drop
+		expected    []Index // expected indexes to remain after dropping attempt
+		expectedErr error   // expected error, if any
+	}{
+		"NonExistent": {
+			toCreate: []Index{},
+			toDrop:   []Index{{Name: "foo"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+			},
+			expectedErr: ErrIndexNotExist,
+		},
+		"DropOneByName": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Name: "foo"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+			},
+		},
+		"DropOneByKey": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+			},
+		},
+		"DropOneFromTheBeginning": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Name: "foo"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+		},
+		"DropOneFromTheMiddle": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Name: "bar"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+		},
+		"DropOneFromTheEnd": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Name: "car"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+			},
+		},
+		"DropTwo": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Name: "car"}, {Name: "foo"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+			},
+		},
+		"DropAll": {
+			toCreate: []Index{
+				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Name: "bar"}, {Name: "car"}, {Name: "foo"}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+			},
+		},
+	} {
+		tc := tc
+
+		// We don't run this subtest in parallel because we use the same database and collection.
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				for _, idx := range tc.toCreate {
+					if err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
+						return err
+					}
+				}
+
+				return nil
+			})
+			require.NoError(t, err)
+
+			expectedWas := int32(len(tc.toCreate) + 1) // created indexes + default _id index
+			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				for _, idx := range tc.toDrop {
+					was, err := DropIndex(ctx, tx, databaseName, collectionName, &idx)
+					if err != nil {
+						return err
+					}
+
+					assert.Equal(t, expectedWas, was)
+					expectedWas--
+				}
+
+				return nil
+			})
+
+			if tc.expectedErr != nil {
+				assert.True(t, errors.Is(err, tc.expectedErr))
+			} else {
+				require.NoError(t, err)
+			}
+
+			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				indexes, err := Indexes(ctx, tx, databaseName, collectionName)
+				if err != nil {
+					return err
+				}
+
+				assert.Equal(t, tc.expected, indexes)
+				return nil
+			})
+			require.NoError(t, err)
+
+			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				was, err := DropAllIndexes(ctx, tx, databaseName, collectionName)
+				if err != nil {
+					return err
+				}
+
+				assert.Equal(t, expectedWas, was)
+
+				indexes, err := Indexes(ctx, tx, databaseName, collectionName)
+				if err != nil {
+					return err
+				}
+
+				assert.Len(t, indexes, 1) // only default _id index left
+				return nil
+			})
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestDropIndexesStress(t *testing.T) {
