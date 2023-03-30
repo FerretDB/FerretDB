@@ -41,6 +41,7 @@ var stages = map[string]newStageFunc{
 	"$match":  newMatch,
 	"$sort":   newSort,
 	"$unwind": newUnwind,
+	// please keep sorted alphabetically
 }
 
 // unsupportedStages maps all unsupported yet stages.

@@ -22,9 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // queryCompatTestCase describes query compatibility test case.
@@ -93,13 +95,21 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
+					targetIdx, tagetErr := targetCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+						Keys: bson.D{{"v", 1}},
+					})
+					compatIdx, compatErr := compatCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+						Keys: bson.D{{"v", 1}},
+					})
+
+					require.NoError(t, tagetErr)
+					require.NoError(t, compatErr)
+					require.Equal(t, compatIdx, targetIdx)
+
+					// don't add sort, limit, skip, and projection because we don't pushdown them yet
 					explainQuery := bson.D{{"explain", bson.D{
 						{"find", targetCollection.Name()},
 						{"filter", filter},
-						{"sort", opts.Sort},
-						{"limit", opts.Limit},
-						{"skip", opts.Skip},
-						{"projection", opts.Projection},
 					}}}
 
 					var explainRes bson.D
@@ -266,6 +276,18 @@ func TestQueryCompatLimit(t *testing.T) {
 			filter: bson.D{},
 			limit:  pointer.ToInt64(1),
 		},
+		"AlmostAll": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter: bson.D{},
+			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
+		},
 		"Big": {
 			filter: bson.D{},
 			limit:  pointer.ToInt64(1000),
@@ -274,7 +296,11 @@ func TestQueryCompatLimit(t *testing.T) {
 			filter: bson.D{},
 			limit:  pointer.ToInt64(0),
 		},
-		"Bad": {
+		"SingleBatch": {
+			// The meaning of negative limits is redefined by the Go driver:
+			// > A negative limit specifies that the resulting documents should be returned in a single batch.
+			// On the wire, "limit" can't be negative.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2255
 			filter: bson.D{},
 			limit:  pointer.ToInt64(-1),
 		},
@@ -290,6 +316,18 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Simple": {
 			filter:  bson.D{},
 			optSkip: pointer.ToInt64(1),
+		},
+		"AlmostAll": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
 		},
 		"Big": {
 			filter:     bson.D{},

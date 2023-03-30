@@ -16,9 +16,10 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -55,21 +56,24 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 		res[i] = idx.Index
 	}
 
-	// TODO Add tests that indexes sorted correctly: https://github.com/FerretDB/FerretDB/issues/1509
-	slices.SortFunc(res, func(a, b Index) bool { return a.Name < b.Name })
-
 	return res, nil
 }
 
-// createIndex creates a new index for the given params.
-// TODO This method will become exported in https://github.com/FerretDB/FerretDB/issues/1509.
-func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+// CreateIndexIfNotExists creates a new index for the given params if such an index doesn't exist.
+//
+// If the index exists, it doesn't return an error.
+// If the collection doesn't exist, it will be created and then the index will be created.
+func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
+	if err := CreateCollectionIfNotExists(ctx, tx, db, collection); err != nil {
+		return err
+	}
+
 	pgTable, pgIndex, err := newMetadataStorage(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
 		return err
 	}
 
-	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, true); err != nil {
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, i.Unique); err != nil {
 		return err
 	}
 
@@ -77,7 +81,11 @@ func createIndex(ctx context.Context, tx pgx.Tx, db, collection string, i *Index
 }
 
 // createPgIndexIfNotExists creates a new index for the given params if it does not exist.
-func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, isUnique bool) error {
+func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, index string, fields IndexKey, isUnique bool) error {
+	if len(fields) == 0 {
+		return lazyerrors.Errorf("no fields for index")
+	}
+
 	var err error
 
 	unique := ""
@@ -85,13 +93,42 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 		unique = " UNIQUE"
 	}
 
+	fieldsDef := make([]string, len(fields))
+
+	for i, field := range fields {
+		var order string
+
+		switch field.Order {
+		case types.Ascending:
+			order = "ASC"
+		case types.Descending:
+			order = "DESC"
+		default:
+			return lazyerrors.Errorf("unknown sort order: %d", field.Order)
+		}
+
+		// It's important to sanitize field.Field data here, as it's a user-provided value.
+		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order)
+	}
+
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
-		` ON ` + pgx.Identifier{schema, table}.Sanitize() +
-		` ((_jsonb->'_id'))` // TODO Provide ability to set fields https://github.com/FerretDB/FerretDB/issues/1509
+		` ON ` + pgx.Identifier{schema, table}.Sanitize() + ` (` + strings.Join(fieldsDef, `, `) + `)`
 
 	if _, err = tx.Exec(ctx, sql); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	return nil
+}
+
+// quoteString returns a string that is safe to use in SQL queries.
+//
+// Deprecated: Warning! Avoid using this function unless there is no other way.
+// Ideally, use a placeholder and pass the value as a parameter instead of calling this function.
+//
+// This approach is used in github.com/jackc/pgx/v4@v4.18.1/internal/sanitize/sanitize.go.
+func quoteString(str string) string {
+	// We need "standard_conforming_strings=on" and "client_encoding=UTF8" (checked in checkConnection),
+	// otherwise we can't sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647
+	return "'" + strings.ReplaceAll(str, "'", "''") + "'"
 }

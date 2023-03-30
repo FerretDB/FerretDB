@@ -30,8 +30,13 @@ import (
 
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
-	filter     bson.D                   // required, filter for the query
-	optSkip    any                      // optional, skip option for the query, defaults to nil
+	filter bson.D // required, filter for the query
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2255
+	// those two probably should be of the same type
+	limit   int64 // optional, limit option for the query, defaults to 0
+	optSkip any   // optional, skip option for the query, defaults to nil
+
 	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
@@ -71,11 +76,13 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"count", targetCollection.Name()},
 						{"query", filter},
+						{"limit", tc.limit},
 						{"skip", tc.optSkip},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"count", compatCollection.Name()},
 						{"query", filter},
+						{"limit", tc.limit},
 						{"skip", tc.optSkip},
 					}).Decode(&compatRes)
 
@@ -151,9 +158,34 @@ func TestCountCompat(t *testing.T) {
 			optSkip: 0,
 		},
 
+		"LimitAlmostAll": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs()) - 1),
+		},
+		"LimitAll": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs())),
+		},
+		"LimitMore": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs()) + 1),
+		},
+
 		"SkipSimple": {
 			filter:  bson.D{},
 			optSkip: 1,
+		},
+		"SkipAlmostAll": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()) - 1,
+		},
+		"SkipAll": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()),
+		},
+		"SkipMore": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()) + 1,
 		},
 		"SkipBig": {
 			filter:  bson.D{},

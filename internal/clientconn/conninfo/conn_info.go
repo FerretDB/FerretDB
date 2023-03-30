@@ -18,24 +18,19 @@ package conninfo
 import (
 	"context"
 	"math/rand"
-	"runtime"
-	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// contextKey is a special type to represent context.WithValue keys a bit more safely.
+// contextKey is a named unexported type for the safe use of context.WithValue.
 type contextKey struct{}
 
 var (
 	// Context key for WithConnInfo/Get.
 	connInfoKey = contextKey{}
-
-	// Keeps track on all ConnInfo objects.
-	connInfoProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/clientconn/conninfo.connInfo")
 
 	// Global last cursor ID.
 	lastCursorID atomic.Uint32
@@ -53,68 +48,49 @@ type ConnInfo struct {
 	PeerAddr string
 
 	rw       sync.RWMutex
-	cursors  map[int64]Cursor
+	cursors  map[int64]*cursor
 	username string
 	password string
 
-	stack []byte
+	token *resource.Token
 }
 
 // NewConnInfo return a new ConnInfo.
 func NewConnInfo() *ConnInfo {
 	connInfo := &ConnInfo{
-		cursors: map[int64]Cursor{},
-		stack:   debugbuild.Stack(),
+		cursors: map[int64]*cursor{},
+		token:   resource.NewToken(),
 	}
 
-	connInfoProfiles.Add(connInfo, 1)
-
-	runtime.SetFinalizer(connInfo, func(connInfo *ConnInfo) {
-		msg := "ConnInfo.Close() has not been called"
-		if connInfo.stack != nil {
-			msg += "\nConnInfo created by " + string(connInfo.stack)
-		}
-
-		panic(msg)
-	})
+	resource.Track(connInfo, connInfo.token)
 
 	return connInfo
 }
 
-// Close frees resources.
+// Close closes and deletes all cursors.
 func (connInfo *ConnInfo) Close() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
-	connInfoProfiles.Remove(connInfo)
-
-	runtime.SetFinalizer(connInfo, nil)
-
 	for _, c := range connInfo.cursors {
 		c.Iter.Close()
 	}
-}
 
-// Cursor allows clients to iterate over a result set.
-type Cursor struct {
-	Iter types.DocumentsIterator
+	connInfo.cursors = nil
+
+	resource.Untrack(connInfo, connInfo.token)
 }
 
 // Cursor returns cursor by ID, or nil.
-func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
+func (connInfo *ConnInfo) Cursor(id int64) *cursor {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	c, ok := connInfo.cursors[id]
-	if !ok {
-		return nil
-	}
-
-	return &c
+	return connInfo.cursors[id]
 }
 
 // StoreCursor stores cursor and return its ID.
-func (connInfo *ConnInfo) StoreCursor(iter types.DocumentsIterator) int64 {
+func (connInfo *ConnInfo) StoreCursor(cursor *cursor) int64 {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
@@ -128,10 +104,7 @@ func (connInfo *ConnInfo) StoreCursor(iter types.DocumentsIterator) int64 {
 		}
 	}
 
-	connInfo.cursors[id] = Cursor{
-		Iter: iter,
-	}
-
+	connInfo.cursors[id] = cursor
 	return id
 }
 
