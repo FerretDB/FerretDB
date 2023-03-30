@@ -177,6 +177,10 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 			if setting != localeC && setting != localePOSIX && !isValidUTF8Locale(setting) {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
+		case "standard_conforming_strings": // To sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647
+			if setting != "on" {
+				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, "on")
+			}
 		default:
 			continue
 		}
