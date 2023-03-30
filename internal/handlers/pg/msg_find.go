@@ -117,6 +117,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var cursorID int64
+
 	if h.EnableCursors {
 		iter := iterator.Values(iterator.ForSlice(resDocs))
 		c := cursor.New(&cursor.NewParams{
