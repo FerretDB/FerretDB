@@ -558,18 +558,20 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
-			toDrop: bson.A{"v_1", "v_1_foo_1"},
+			toDrop: bson.A{"v_-1", "v_1_foo_1"},
 		},
 		"MultipleIndexesByKey": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
-			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
-			resultType: emptyResult,
+			toDrop:      bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
+			resultType:  emptyResult,
+			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
 		"NonExistentMultipleIndexes": {
-			toDrop: bson.A{"non-existent", "invalid"},
+			toDrop:     bson.A{"non-existent", "invalid"},
+			resultType: emptyResult,
 		},
 		"InvalidMultipleIndexType": {
 			toDrop:      bson.A{1},
@@ -646,6 +648,10 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					var compatRes bson.D
 					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
+					if compatErr == nil {
+						nonEmptyResults = true
+					}
+
 					if tc.altErrorMsg != "" {
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
@@ -679,9 +685,9 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
 			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}

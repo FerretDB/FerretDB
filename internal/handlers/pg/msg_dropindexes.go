@@ -159,7 +159,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 				return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
-						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object']",
+						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
 						pjson.GetTypeOfValue(v),
 					),
 					command,
