@@ -134,6 +134,9 @@ const (
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
+	// ErrStageUnwindNoPrefix indicates that $unwind aggregation stage doesn't include '$' prefix.
+	ErrStageUnwindNoPrefix = ErrorCode(28818) // Location28818
+
 	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
 	// while projection document already marked as exclusion.
 	ErrProjectionInEx = ErrorCode(31253) // Location31253

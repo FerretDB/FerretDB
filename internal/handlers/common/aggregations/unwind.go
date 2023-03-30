@@ -44,7 +44,10 @@ func newUnwind(stage *types.Document) (Stage, error) {
 	case *types.Document:
 		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
-		expr, err = types.NewExpression(field)
+		opts := types.ExpressionOpts{
+			IgnoreArrays: true,
+		}
+		expr, err = types.NewExpressionWithOpts(field, &opts)
 		if err != nil {
 			var fieldPathErr *types.FieldPathError
 			if !errors.As(err, &fieldPathErr) {
@@ -53,32 +56,38 @@ func newUnwind(stage *types.Document) (Stage, error) {
 
 			switch fieldPathErr.Code() {
 			case types.ErrNotFieldPath:
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrStageUnwindNoPrefix,
+					fmt.Sprintf("path option to $unwind stage should be prefixed with a '$': %v", types.FormatAnyValue(field)),
+					"$unwind (stage)",
+				)
 			case types.ErrEmptyFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrGroupInvalidFieldPath,
 					"'$' by itself is not a valid FieldPath",
-					"$group (stage)",
+					"$unwind (stage)",
 				)
 			case types.ErrInvalidFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFailedToParse,
 					fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(field)),
-					"$group (stage)",
+					"$unwind (stage)",
 				)
 			case types.ErrEmptyVariable:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFailedToParse,
 					"empty variable names are not allowed",
-					"$group (stage)",
+					"$unwind (stage)",
 				)
 			case types.ErrUndefinedVariable:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrGroupUndefinedVariable,
 					fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(field)),
-					"$group (stage)",
+					"$unwind (stage)",
 				)
 			default:
-				panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
+				return nil, lazyerrors.Error(err)
+				// panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
 			}
 
 		}
@@ -96,7 +105,7 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 	for _, doc := range in {
 		d := m.field.Evaluate(doc)
 		switch d := d.(type) {
-		//case *types.Document:
+		// case *types.Document:
 		case types.NullType:
 		case *types.Array:
 			iter := d.Iterator()

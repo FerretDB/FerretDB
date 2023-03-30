@@ -74,10 +74,16 @@ type Expression interface {
 // pathExpression is field path constructed from expression.
 type pathExpression struct {
 	path Path
+	*ExpressionOpts
 }
 
-// NewExpression creates a new instance by checking expression string.
-func NewExpression(expression string) (Expression, error) {
+type ExpressionOpts struct {
+	IgnoreArrays bool // defaults to false
+}
+
+// NewExpressionWithOpts creates a new instance by checking expression string.
+// It can take additional opts that specify how expressions should be evaluated.
+func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression, error) {
 	var val string
 
 	switch {
@@ -113,8 +119,14 @@ func NewExpression(expression string) (Expression, error) {
 	}
 
 	return &pathExpression{
-		path: path,
+		path:           path,
+		ExpressionOpts: opts,
 	}, nil
+}
+
+// NewExpression creates a new instance by checking expression string.
+func NewExpression(expression string) (Expression, error) {
+	return NewExpressionWithOpts(expression, &ExpressionOpts{})
 }
 
 // Evaluate gets the value at the path.
@@ -140,7 +152,7 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 		}
 	}
 
-	vals := getExpressionPathValue(doc, path)
+	vals := p.getExpressionPathValue(doc, path)
 
 	if len(vals) == 0 {
 		if isPrefixArray {
@@ -173,15 +185,14 @@ func (p *pathExpression) GetPath() Path {
 // getExpressionPathValue go through each key of the path iteratively to
 // find values that exist at suffix.
 // An array may return multiple values.
-// At each key of the path, it checks:
+// At each key of the path, it checks if the document has the key.
 //
-//	if the document has the key,
-//	if the array contains documents which have the key.
+//	~if the array contains documents which have the key.~
 //
 // It is different from `getDocumentsAtSuffix`, it does not find array item by
 // array dot notation `foo.0.bar`. It returns empty array [] because using index
 // such as `0` does not match using expression path.
-func getExpressionPathValue(doc *Document, path Path) []any {
+func (p *pathExpression) getExpressionPathValue(doc *Document, path Path) []any {
 	keys := path.Slice()
 	vals := []any{doc}
 
@@ -199,6 +210,9 @@ func getExpressionPathValue(doc *Document, path Path) []any {
 
 				embeddedVals = append(embeddedVals, embeddedVal)
 			case *Array:
+				if p.IgnoreArrays {
+					continue
+				}
 				// iterate elements to get documents that contain the key.
 				for j := 0; j < val.Len(); j++ {
 					elem := must.NotFail(val.Get(j))

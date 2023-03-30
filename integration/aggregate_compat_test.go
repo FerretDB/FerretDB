@@ -1058,6 +1058,47 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$unwind", "$v"}},
 			},
 		},
+		"NonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$non-existent"}},
+			},
+			resultType: emptyResult,
+		},
+		"Invalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"DotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.foo"}},
+			},
+		},
+		"DotNotationNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.non-existent"}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.0"}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayDotNotationKey": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.0.foo"}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
