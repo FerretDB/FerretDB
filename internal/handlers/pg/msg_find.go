@@ -76,8 +76,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var iter types.DocumentsIterator
-		if iter, err = pgdb.QueryDocuments(ctx, tx, qp); err != nil {
+		if params.BatchSize == 0 {
+			return nil
+		}
+
+		iter, err := pgdb.QueryDocuments(ctx, tx, qp)
+		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -103,8 +107,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.SkipIterator(iter, params.Skip)
 
-		iter, err = common.ProjectionIterator(iter, params.Projection)
-		if err != nil {
+		if iter, err = common.ProjectionIterator(iter, params.Projection); err != nil {
 			return lazyerrors.Error(err)
 		}
 
