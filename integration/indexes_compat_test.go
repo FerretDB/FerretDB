@@ -70,6 +70,12 @@ func TestIndexesCreate(t *testing.T) {
 		resultType  compatTestCaseResultType // defaults to nonEmptyResult
 		skip        string                   // optional, skip test with a specified reason
 	}{
+		"DescendingID": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"_id", -1}}},
+			},
+			resultType: emptyResult,
+		},
 		"empty": {
 			models:     []mongo.IndexModel{},
 			resultType: emptyResult,
@@ -403,13 +409,6 @@ func TestIndexesDrop(t *testing.T) {
 			dropAll: true,
 		},
 		"ID": {
-			dropIndexName: "_id_",
-			resultType:    emptyResult,
-		},
-		"DescendingID": {
-			models: []mongo.IndexModel{
-				{Keys: bson.D{{"_id", -1}}},
-			},
 			dropIndexName: "_id_",
 			resultType:    emptyResult,
 		},

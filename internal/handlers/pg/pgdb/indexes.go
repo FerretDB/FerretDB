@@ -96,15 +96,17 @@ func (k IndexKey) Equal(v IndexKey) bool {
 }
 
 // DropIndex drops index. If the index was not found, it returns error.
-func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Index) error {
+func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Index) (int64, error) {
 	ms := newMetadataStorage(tx, db, collection)
 
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	for i := len(metadata.indexes) - 1; i >= 0; i-- {
+	indexesWas := int64(len(metadata.indexes))
+
+	for i := indexesWas - 1; i >= 0; i-- {
 		current := metadata.indexes[i]
 
 		var deleteCurrentIndex bool
@@ -123,46 +125,56 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 
 		if current.Name == "_id_" {
 			// cannot delete _id index
-			return ErrIndexCannotDelete
+			return 0, ErrIndexCannotDelete
 		}
 
 		if err = dropPgIndex(ctx, tx, db, current.pgIndex); err != nil {
-			return lazyerrors.Error(err)
+			return 0, lazyerrors.Error(err)
 		}
 
 		// todo check this removed the index we want
 		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
 
-		return ms.set(ctx, metadata)
+		if err := ms.set(ctx, metadata); err != nil {
+			return 0, err
+		}
+
+		return indexesWas, nil
 	}
 
 	// Did not find the index to delete
-	return ErrIndexNotExist
+	return 0, ErrIndexNotExist
 }
 
 // DropAllIndexes deletes all indexes on the collection except _id index.
-func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) error {
+func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int64, error) {
 	ms := newMetadataStorage(tx, db, collection)
 
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	for i := len(metadata.indexes) - 1; i >= 0; i-- {
+	indexesWas := int64(len(metadata.indexes))
+
+	for i := indexesWas - 1; i >= 0; i-- {
 		if metadata.indexes[i].Name == "_id_" {
 			continue
 		}
 
 		if err = dropPgIndex(ctx, tx, db, metadata.indexes[i].pgIndex); err != nil {
-			return lazyerrors.Error(err)
+			return 0, lazyerrors.Error(err)
 		}
 
 		// todo check this removed the index we want
 		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
 	}
 
-	return ms.set(ctx, metadata)
+	if err := ms.set(ctx, metadata); err != nil {
+		return 0, err
+	}
+
+	return indexesWas, nil
 }
 
 // createPgIndexIfNotExists creates a new index for the given params if it does not exist.
