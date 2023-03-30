@@ -623,7 +623,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
-					t.Parallel()
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -648,8 +647,9 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					var compatRes bson.D
 					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
-					if compatErr == nil {
-						nonEmptyResults = true
+					if tc.resultType == emptyResult {
+						require.Nil(t, targetRes)
+						require.Nil(t, compatRes)
 					}
 
 					if tc.altErrorMsg != "" {
@@ -663,13 +663,13 @@ func TestIndexesDropRunCommand(t *testing.T) {
 						require.Equal(t, compatErr, targetErr)
 					}
 
-					if tc.resultType == emptyResult {
-						require.Nil(t, targetRes)
-						require.Nil(t, compatRes)
-					}
-
 					require.Equal(t, compatRes, targetRes)
 
+					if compatErr == nil {
+						nonEmptyResults = true
+					}
+
+					// List indexes to see they are identical after deletion.
 					targetCur, targetListErr := targetCollection.Indexes().List(ctx)
 					compatCur, compatListErr := compatCollection.Indexes().List(ctx)
 
