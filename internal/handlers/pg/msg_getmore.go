@@ -23,5 +23,5 @@ import (
 
 // MsgGetMore implements handlers.Interface.
 func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgGetMore(ctx, msg)
+	return common.GetMore(ctx, msg, h.registry)
 }
