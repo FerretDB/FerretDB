@@ -27,12 +27,15 @@ import (
 )
 
 // queryCompatTestCase describes query compatibility test case.
+//
+//nolint:vet // for readability
 type queryCompatCommandTestCase struct {
-	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	filter     bson.D // required
+	sort       bson.D // defaults to `bson.D{{"_id", 1}}`
+	projection bson.D // nil for leaving projection unset
+
 	limit          *int64                   // defaults to nil to leave unset
 	optSkip        any                      // defaults to nil to leave unset
-	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
@@ -109,14 +112,20 @@ func testQueryCompatCommand(t *testing.T, testCases map[string]queryCompatComman
 
 					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
-					targetCommand := append(bson.D{
-						{"find", targetCollection.Name()},
-						{"filter", filter},
-					}, rest...)
-					compatCommand := append(bson.D{
-						{"find", compatCollection.Name()},
-						{"filter", filter},
-					}, rest...)
+					targetCommand := append(
+						bson.D{
+							{"find", targetCollection.Name()},
+							{"filter", filter},
+						},
+						rest...,
+					)
+					compatCommand := append(
+						bson.D{
+							{"find", compatCollection.Name()},
+							{"filter", filter},
+						},
+						rest...,
+					)
 
 					targetResult := targetCollection.Database().RunCommand(ctx, targetCommand)
 					compatResult := compatCollection.Database().RunCommand(ctx, compatCommand)
