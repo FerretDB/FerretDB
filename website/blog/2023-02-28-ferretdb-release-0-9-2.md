@@ -5,14 +5,14 @@ authors: [alex]
 description: >
   We are delighted to announce the release of FerretDB version 0.9.2,
   which includes Tigris authentication, support for `listIndexes`, `$addtoSet`, and more.
-image: /img/blog/ferretdb_v0.9.2.jpg
+image: /img/blog/ferretdb-v0.9.2.jpg
 tags: [release]
 date: 2023-02-28
 ---
 
 We are delighted to announce the release of FerretDB version 0.9.2, which includes Tigris authentication, support for `listIndexes`, `$addtoSet`, and more.
 
-![FerretDB v0.9.2 - Minor Release](/img/blog/ferretdb_v0.9.2.jpg)
+![FerretDB v0.9.2 - Minor Release](/img/blog/ferretdb-v0.9.2.jpg)
 
 <!--truncate-->
 
