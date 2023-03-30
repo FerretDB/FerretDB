@@ -30,8 +30,11 @@ var (
 	// ErrAlreadyExist indicates that a schema or table already exists.
 	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exists")
 
-	// ErrIndexAlreadyExist indicates that an index already exists.
-	ErrIndexAlreadyExist = fmt.Errorf("index already exists")
+	// ErrIndexKeyAlreadyExist indicates that an index key already exists with a different name.
+	ErrIndexKeyAlreadyExist = fmt.Errorf("index key already exists with a different name")
+
+	// ErrIndexNameAlreadyExist indicates that an index name already exists with a different key.
+	ErrIndexNameAlreadyExist = fmt.Errorf("index name already exists with a different key")
 
 	// ErrIndexNotExist indicates there is no such index.
 	ErrIndexNotExist = fmt.Errorf("index does not exist")

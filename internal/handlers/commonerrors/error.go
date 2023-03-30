@@ -74,8 +74,17 @@ const (
 	// ErrInvalidOptions indicates that _id index cannot be deleted.
 	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
+	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
+	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
+
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
+
+	// ErrIndexOptionsConflict indicates that index build process failed due to options conflict.
+	ErrIndexOptionsConflict = ErrorCode(85) // IndexOptionsConflict
+
+	// ErrIndexKeySpecsConflict indicates that index build process failed due to key specs conflict.
+	ErrIndexKeySpecsConflict = ErrorCode(86) // IndexKeySpecsConflict
 
 	// ErrOperationFailed indicates that the operation failed.
 	ErrOperationFailed = ErrorCode(96) // OperationFailed
