@@ -29,7 +29,7 @@ import (
 )
 
 func TestIndexesList(t *testing.T) {
-	t.Helper()
+	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
@@ -60,9 +60,9 @@ func TestIndexesList(t *testing.T) {
 }
 
 func TestIndexesCreate(t *testing.T) {
-	t.Helper()
-
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models      []mongo.IndexModel
@@ -258,9 +258,9 @@ func TestIndexesCreate(t *testing.T) {
 
 // TestIndexesCreateRunCommand tests specific behavior for index creation that can be only provided through RunCommand.
 func TestIndexesCreateRunCommand(t *testing.T) {
-	t.Helper()
-
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
@@ -328,7 +328,6 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)

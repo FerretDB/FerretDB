@@ -111,8 +111,6 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order)
 	}
 
-	tx.Conn()
-
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
 		` ON ` + pgx.Identifier{schema, table}.Sanitize() + ` (` + strings.Join(fieldsDef, `, `) + `)`
 
@@ -125,7 +123,7 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 
 // quoteString returns a string that is safe to use in SQL queries.
 //
-// Warning! Avoid using this function unless there is no other way.
+// Deprecated: Warning! Avoid using this function unless there is no other way.
 // Ideally, use a placeholder and pass the value as a parameter instead of calling this function.
 //
 // This approach is used in github.com/jackc/pgx/v4@v4.18.1/internal/sanitize/sanitize.go.

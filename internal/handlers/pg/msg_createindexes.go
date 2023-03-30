@@ -96,8 +96,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			var index *pgdb.Index
 
-			index, err = processIndexOptions(indexDoc)
-			if err != nil {
+			if index, err = processIndexOptions(indexDoc); err != nil {
 				return err
 			}
 
@@ -109,7 +108,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	switch {
 	case err == nil:
-	// do nothing
+		// do nothing
 	case errors.Is(err, pgdb.ErrIndexKeyAlreadyExist):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrIndexOptionsConflict,
@@ -141,6 +140,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 	var index pgdb.Index
 
 	iter := indexDoc.Iterator()
+	defer iter.Close()
 
 	for {
 		opt, _, err := iter.Next()
@@ -215,7 +215,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 // processIndexKey processes the document containing the index key.
 func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 	res := make(pgdb.IndexKey, 0, keyDoc.Len())
+
 	keyIter := keyDoc.Iterator()
+	defer keyIter.Close()
 
 	duplicateChecker := make(map[string]struct{}, keyDoc.Len())
 
