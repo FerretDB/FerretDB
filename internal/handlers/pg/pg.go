@@ -48,10 +48,13 @@ type Handler struct {
 type NewOpts struct {
 	PostgreSQLURL string
 
-	L               *zap.Logger
-	Metrics         *connmetrics.ConnMetrics
-	StateProvider   *state.Provider
+	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
+
+	// test options
 	DisablePushdown bool
+	EnableCursors   bool
 }
 
 // New returns a new handler.

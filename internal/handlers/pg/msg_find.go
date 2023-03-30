@@ -116,20 +116,23 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := iterator.Values(iterator.ForSlice(resDocs))
-	c := cursor.New(&cursor.NewParams{
-		Iter:       iter,
-		DB:         params.DB,
-		Collection: params.Collection,
-		BatchSize:  params.BatchSize,
-	})
+	var cursorID int64
+	if h.EnableCursors {
+		iter := iterator.Values(iterator.ForSlice(resDocs))
+		c := cursor.New(&cursor.NewParams{
+			Iter:       iter,
+			DB:         params.DB,
+			Collection: params.Collection,
+			BatchSize:  params.BatchSize,
+		})
 
-	username, _ := conninfo.Get(ctx).Auth()
-	cursorID := h.registry.StoreCursor(username, c)
+		username, _ := conninfo.Get(ctx).Auth()
+		cursorID = h.registry.StoreCursor(username, c)
 
-	resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))

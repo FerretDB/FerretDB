@@ -114,10 +114,9 @@ func New(config *Config) (*FerretDB, error) {
 	metrics := connmetrics.NewListenerMetrics()
 
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:          logger,
-		Metrics:         metrics.ConnMetrics,
-		StateProvider:   p,
-		DisablePushdown: false,
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
