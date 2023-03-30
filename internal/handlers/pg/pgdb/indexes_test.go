@@ -124,13 +124,14 @@ func TestDropIndexesStress(t *testing.T) {
 
 			<-start
 
-			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				idx := Index{
 					Name: indexName,
 					Key:  indexKeys,
 				}
 
-				return DropIndex(ctx, tx, databaseName, collectionName, &idx)
+				_, err := DropIndex(ctx, tx, databaseName, collectionName, &idx)
+				return err
 			})
 
 			// if the index could not be dropped, the error is checked
