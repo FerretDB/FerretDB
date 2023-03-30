@@ -26,7 +26,7 @@ import (
 
 const (
 	doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
-	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: larger then safe integer (doubleBig+1 == doubleBig)
+	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2321
