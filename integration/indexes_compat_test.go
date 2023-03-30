@@ -31,12 +31,12 @@ func TestIndexesDrop(t *testing.T) {
 
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		models        []mongo.IndexModel       // optional, if not nil create indexes before dropping
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		dropIndexName string                   // name of a single index to drop
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
-		altErrorMsg   string                   // optional, alternative error message in case of error
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
+		models        []mongo.IndexModel       // optional, if not nil create indexes before dropping
+		altErrorMsg   string                   // optional, alternative error message in case of error
 		skip          string                   // optional, skip test with a specified reason
 	}{
 		"DropAllCommand": {
@@ -184,12 +184,12 @@ func TestIndexesDropRunCommand(t *testing.T) {
 	compatCollection := compatCollections[0]
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		models         []mongo.IndexModel       // optional, if not nil create indexes before dropping
-		collectionName string                   // collection name to use
-		index          any                      // index name
+		index          any                      // index to drop
+		collectionName string                   // collection name of the index to drop
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		skip           string                   // optional, skip test with a specified reason
+		models         []mongo.IndexModel       // optional, if not nil create indexes before dropping
 		altErrorMsg    string                   // optional, alternative error message in case of error
+		skip           string                   // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
 			collectionName: targetCollection.Name(),

@@ -156,7 +156,9 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 				)
 			}
 
-			return err
+			if err != nil {
+				return nil
+			}
 		}
 	case string:
 		if v == "*" {
