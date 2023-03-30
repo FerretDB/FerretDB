@@ -66,6 +66,10 @@ func GetSkipParam(command string, value any) (int64, error) {
 
 		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
 		return int64(math.Floor(value.(float64))), nil
+
+	case errors.Is(err, errLongExceeded):
+		return math.MaxInt64, nil
+
 	default:
 		return 0, lazyerrors.Error(err)
 	}
