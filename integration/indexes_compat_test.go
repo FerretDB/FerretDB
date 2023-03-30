@@ -54,6 +54,7 @@ func TestIndexesList(t *testing.T) {
 			targetRes := FetchAll(t, ctx, targetCur)
 			compatRes := FetchAll(t, ctx, compatCur)
 
+			require.NotNil(t, compatRes)
 			assert.Equal(t, compatRes, targetRes)
 		})
 	}
@@ -139,6 +140,13 @@ func TestIndexesCreate(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"foo", -1}}},
 				{Keys: bson.D{{"v", 1}}},
+				{Keys: bson.D{{"bar", 1}}},
+			},
+		},
+		"MultiSameKeyUsed": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"foo", 1}}},
+				{Keys: bson.D{{"foo", 1}, {"v", 1}}},
 				{Keys: bson.D{{"bar", 1}}},
 			},
 		},
@@ -246,6 +254,7 @@ func TestIndexesCreate(t *testing.T) {
 					targetIndexes := FetchAll(t, ctx, targetCur)
 					compatIndexes := FetchAll(t, ctx, compatCur)
 
+					require.NotNil(t, compatIndexes)
 					assert.Equal(t, compatIndexes, targetIndexes)
 				})
 			}
@@ -679,6 +688,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					targetList := FetchAll(t, ctx, targetCur)
 					compatList := FetchAll(t, ctx, compatCur)
 
+					require.NotNil(t, compatList)
 					assert.Equal(t, compatList, targetList)
 				})
 			}
