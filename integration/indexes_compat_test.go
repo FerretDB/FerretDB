@@ -406,6 +406,12 @@ func TestIndexesDrop(t *testing.T) {
 		skip          string                   // optional, skip test with a specified reason
 	}{
 		"DropAllCommand": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+				{Keys: bson.D{{"foo", -1}}},
+				{Keys: bson.D{{"bar", 1}}},
+				{Keys: bson.D{{"pam.pam", -1}}},
+			},
 			dropAll: true,
 		},
 		"ID": {
@@ -526,7 +532,7 @@ func TestIndexesDrop(t *testing.T) {
 }
 
 func TestIndexesDropRunCommand(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
 
@@ -543,8 +549,9 @@ func TestIndexesDropRunCommand(t *testing.T) {
 		skip           string                   // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
-			index:      true,
-			resultType: emptyResult,
+			index:       true,
+			resultType:  emptyResult,
+			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
 		},
 		"NonExistentField": {
 			index:      "non-existent",
@@ -553,6 +560,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 		"InvalidCollection": {
 			collectionName: "non-existent",
 			resultType:     emptyResult,
+			altErrorMsg:    `BSON field 'dropIndexes.index' is the wrong type 'null', expected types '[string, object]'`,
 		},
 		"MultipleIndexes": {
 			models: []mongo.IndexModel{
@@ -565,15 +573,18 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			index: bson.A{"non-existent", "invalid"},
 		},
 		"InvalidMultipleIndexType": {
-			index:      bson.A{1},
-			resultType: emptyResult,
+			index:       bson.A{1},
+			resultType:  emptyResult,
+			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object']`,
 		},
 		"InvalidDocumentIndex": {
 			index:      bson.D{{"invalid", "invalid"}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"DocumentIndexValue": {
-			index: bson.D{{"v", 1}},
+		"NonExistentKey": {
+			index:      bson.D{{"non-existent", 1}},
+			resultType: emptyResult,
 		},
 		"DocumentIndexID": {
 			index: bson.D{{"_id", 1}},
