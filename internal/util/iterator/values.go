@@ -50,6 +50,7 @@ func ConsumeValues[K, V any](iter Interface[K, V]) ([]V, error) {
 // Simply consuming n values does not close the iterator.
 //
 // Consuming already done iterator returns (nil, nil).
+// The same result is returned for n = 0.
 func ConsumeValuesN[K, V any](iter Interface[K, V], n int) ([]V, error) {
 	var res []V
 
