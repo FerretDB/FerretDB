@@ -455,7 +455,7 @@ func TestIndexesDrop(t *testing.T) {
 				require.Empty(t, tc.dropIndexName, "index name must be empty when dropping all indexes")
 			}
 
-			// Use single provider for drop indexes test.
+			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
@@ -536,64 +536,66 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 	t.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
-
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		index          any                      // index to drop
-		collectionName string                   // optional, default to collection name of compat and target
-		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		models         []mongo.IndexModel       // optional, if not nil create indexes before dropping
-		altErrorMsg    string                   // optional, alternative error message in case of error
-		skip           string                   // optional, skip test with a specified reason
+		toCreate    []mongo.IndexModel       // optional, if set, create the given indexes before drop is called
+		toDrop      any                      // index to drop
+		resultType  compatTestCaseResultType // defaults to nonEmptyResult
+		altErrorMsg string                   // optional, alternative error message in case of error
+		skip        string                   // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
-			index:       true,
+			toDrop:      true,
 			resultType:  emptyResult,
 			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
 		},
-		"NonExistentField": {
-			index:      "non-existent",
+		"NonExistentIndexName": {
+			toDrop:     "non-existent",
 			resultType: emptyResult,
 		},
-		"InvalidCollection": {
-			collectionName: "non-existent",
-			resultType:     emptyResult,
-			altErrorMsg:    `BSON field 'dropIndexes.index' is the wrong type 'null', expected types '[string, object]'`,
+		"MultipleIndexesByName": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v.foo", -1}}},
+			},
+			toDrop: bson.A{"v_1", "v_1_foo_1"},
 		},
-		"MultipleIndexes": {
-			models: []mongo.IndexModel{
+		"MultipleIndexesByKey": {
+			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
-			index: bson.A{"v_1", "v_1_foo_1"},
+			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
+			resultType: emptyResult,
 		},
 		"NonExistentMultipleIndexes": {
-			index: bson.A{"non-existent", "invalid"},
+			toDrop: bson.A{"non-existent", "invalid"},
 		},
 		"InvalidMultipleIndexType": {
-			index:       bson.A{1},
+			toDrop:      bson.A{1},
 			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object']`,
+			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
 		"InvalidDocumentIndex": {
-			index:      bson.D{{"invalid", "invalid"}},
+			toDrop:     bson.D{{"invalid", "invalid"}},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"NonExistentKey": {
-			index:      bson.D{{"non-existent", 1}},
+			toDrop:     bson.D{{"non-existent", 1}},
 			resultType: emptyResult,
 		},
 		"DocumentIndexID": {
-			index: bson.D{{"_id", 1}},
+			toDrop:     bson.D{{"_id", 1}},
+			resultType: emptyResult,
 		},
 		"DropAllExpression": {
-			models: []mongo.IndexModel{
+			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"foo.bar", 1}}},
+				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
-			index: "*",
+			toDrop: "*",
 		},
 	} {
 		name, tc := name, tc
@@ -605,66 +607,84 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			if tc.models != nil {
-				_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
-				_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
-				require.NoError(t, compatErr)
-				require.NoError(t, targetErr)
+			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+				Providers:                []shareddata.Provider{shareddata.Composites},
+				AddNonExistentCollection: true,
+			})
+			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+			var nonEmptyResults bool
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+					t.Parallel()
+
+					if tc.toCreate != nil {
+						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
+						_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.toCreate)
+						require.NoError(t, compatErr)
+						require.NoError(t, targetErr)
+					}
+
+					targetCommand := bson.D{
+						{"dropIndexes", targetCollection.Name()},
+						{"index", tc.toDrop},
+					}
+
+					compatCommand := bson.D{
+						{"dropIndexes", compatCollection.Name()},
+						{"index", tc.toDrop},
+					}
+
+					var targetRes bson.D
+					targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
+
+					var compatRes bson.D
+					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
+
+					if tc.altErrorMsg != "" {
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						var expectedErr mongo.CommandError
+						require.True(t, errors.As(compatErr, &expectedErr))
+						expectedErr.Raw = nil
+						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
+					} else {
+						require.Equal(t, compatErr, targetErr)
+					}
+
+					if tc.resultType == emptyResult {
+						require.Nil(t, targetRes)
+						require.Nil(t, compatRes)
+					}
+
+					require.Equal(t, compatRes, targetRes)
+
+					targetCur, targetErr := targetCollection.Indexes().List(ctx)
+					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+
+					require.NoError(t, compatErr)
+					assert.Equal(t, compatErr, targetErr)
+
+					targetList := FetchAll(t, ctx, targetCur)
+					compatList := FetchAll(t, ctx, compatCur)
+
+					assert.Equal(t, compatList, targetList)
+				})
 			}
 
-			targetCollectionName := targetCollection.Name()
-			compatCollectionName := compatCollection.Name()
-
-			if tc.collectionName != "" {
-				targetCollectionName = tc.collectionName
-				compatCollectionName = tc.collectionName
+			switch tc.resultType {
+			case nonEmptyResult:
+				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+			case emptyResult:
+				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
-
-			targetCommand := bson.D{
-				{"dropIndexes", targetCollectionName},
-				{"index", tc.index},
-			}
-
-			compatCommand := bson.D{
-				{"dropIndexes", compatCollectionName},
-				{"index", tc.index},
-			}
-
-			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
-
-			if tc.altErrorMsg != "" {
-				AssertMatchesCommandError(t, compatErr, targetErr)
-
-				var expectedErr mongo.CommandError
-				require.True(t, errors.As(compatErr, &expectedErr))
-				expectedErr.Raw = nil
-				AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-			} else {
-				require.Equal(t, compatErr, targetErr)
-			}
-
-			if tc.resultType == emptyResult {
-				require.Nil(t, targetRes)
-				require.Nil(t, compatRes)
-			}
-
-			require.Equal(t, compatRes, targetRes)
-
-			targetErr = targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", targetCollectionName}},
-			).Decode(&targetRes)
-
-			compatErr = compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", compatCollectionName}},
-			).Decode(&compatRes)
-
-			require.Equal(t, compatRes, targetRes)
-
-			AssertMatchesCommandError(t, compatErr, targetErr)
 		})
 	}
 }
