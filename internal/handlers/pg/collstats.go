@@ -28,13 +28,14 @@ import (
 
 // collStats represents $collStats stage.
 type collStats struct {
+	fields *types.Document
 	dbPool *pgdb.Pool
 	qp     pgdb.QueryParams
 }
 
 // newCollStats creates a new $collStats stage.
 func newCollStats(stage *types.Document, dbPool *pgdb.Pool, qp pgdb.QueryParams) (aggregations.Stage, error) {
-	_, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -42,6 +43,7 @@ func newCollStats(stage *types.Document, dbPool *pgdb.Pool, qp pgdb.QueryParams)
 	return &collStats{
 		dbPool: dbPool,
 		qp:     qp,
+		fields: fields,
 	}, nil
 }
 
@@ -59,6 +61,11 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 	)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO: check for the count value type and return error on invalid type
+	if c.fields.Has("count") {
+		doc.Set("count", int32(len(in)))
 	}
 
 	return []*types.Document{doc}, nil
