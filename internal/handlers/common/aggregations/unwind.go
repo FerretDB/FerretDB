@@ -71,31 +71,18 @@ func newUnwind(stage *types.Document) (Stage, error) {
 				)
 			case types.ErrEmptyFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrGroupInvalidFieldPath,
-					"'$' by itself is not a valid FieldPath",
+					commonerrors.ErrEmptyFieldPath,
+					"FieldPath cannot be constructed with empty string",
 					"$unwind (stage)",
 				)
-			case types.ErrInvalidFieldPath:
+			case types.ErrEmptyVariable, types.ErrInvalidFieldPath, types.ErrUndefinedVariable:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(field)),
-					"$unwind (stage)",
-				)
-			case types.ErrEmptyVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					"empty variable names are not allowed",
-					"$unwind (stage)",
-				)
-			case types.ErrUndefinedVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrGroupUndefinedVariable,
-					fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(field)),
+					commonerrors.ErrFieldPathInvalidName,
+					"FieldPath field names may not start with '$'. Consider using $getField or $setField",
 					"$unwind (stage)",
 				)
 			default:
 				return nil, lazyerrors.Error(err)
-				// panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
 			}
 
 		}

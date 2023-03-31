@@ -1109,7 +1109,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$_id"}},
 			},
-			resultType: emptyResult,
 		},
 
 		"NameAsExpression": {

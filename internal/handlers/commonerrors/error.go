@@ -125,6 +125,9 @@ const (
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
 
+	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
+	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
+
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
 
