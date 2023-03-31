@@ -36,6 +36,12 @@ var (
 	// ErrIndexNameAlreadyExist indicates that an index name already exists with a different key.
 	ErrIndexNameAlreadyExist = fmt.Errorf("index name already exists with a different key")
 
+	// ErrIndexNotExist indicates there is no such index.
+	ErrIndexNotExist = fmt.Errorf("index does not exist")
+
+	// ErrIndexCannotDelete indicates the index cannot be deleted.
+	ErrIndexCannotDelete = fmt.Errorf("index cannot be deleted")
+
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 
