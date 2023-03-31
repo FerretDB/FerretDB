@@ -50,13 +50,11 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	pgIndexName := indexNameToPgIndexName(collectionName, indexName)
 
 	var indexdef string
-	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return tx.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			databaseName, tableName, pgIndexName,
-		).Scan(&indexdef)
-	})
+	err = pool.p.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		databaseName, tableName, pgIndexName,
+	).Scan(&indexdef)
 	require.NoError(t, err)
 
 	expectedIndexdef := fmt.Sprintf(
