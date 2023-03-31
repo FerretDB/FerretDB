@@ -77,7 +77,7 @@ type pathExpression struct {
 	*ExpressionOpts
 }
 
-// ExpressionOpts represents options used to modify behavior of pathExpression functions.
+// ExpressionOpts represents options used to modify behavior of Expression functions.
 type ExpressionOpts struct {
 	IgnoreArrays bool // defaults to false
 }
