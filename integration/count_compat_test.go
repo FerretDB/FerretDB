@@ -200,6 +200,16 @@ func TestCountCompat(t *testing.T) {
 			optSkip:    -1,
 			resultType: emptyResult,
 		},
+		"SkipNegativeDouble": {
+			filter:     bson.D{},
+			optSkip:    -1.111,
+			resultType: emptyResult,
+		},
+		"SkipNegativeDoubleCeil": {
+			filter:     bson.D{},
+			optSkip:    -1.888,
+			resultType: emptyResult,
+		},
 		"SkipNull": {
 			filter: bson.D{},
 		},
