@@ -323,18 +323,20 @@ func TestDropIndexesStress(t *testing.T) {
 
 			<-start
 
-			err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			// do not use `err`, to avoid data race
+			tErr := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				idx := Index{
 					Name: indexName,
 					Key:  indexKeys,
 				}
 
-				_, err = DropIndex(ctx, tx, databaseName, collectionName, &idx)
-				return err
+				// do not use `err`, to avoid data race
+				_, dropErr := DropIndex(ctx, tx, databaseName, collectionName, &idx)
+				return dropErr
 			})
 			// if the index could not be dropped, the error is checked
-			if err != nil {
-				require.Error(t, err, ErrIndexNotExist)
+			if tErr != nil {
+				require.Error(t, tErr, ErrIndexNotExist)
 			}
 		}()
 	}
