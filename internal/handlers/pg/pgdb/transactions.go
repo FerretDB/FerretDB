@@ -55,6 +55,7 @@ func (e *transactionConflictError) Error() string {
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
+
 	if tx, err = pgPool.p.Begin(ctx); err != nil {
 		err = lazyerrors.Error(err)
 		return

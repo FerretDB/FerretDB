@@ -217,6 +217,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
 
 	var args []any
+
 	if schema != "" {
 		sql += " WHERE t.table_schema = $1"
 		args = append(args, schema)
@@ -232,6 +233,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	}
 
 	row := pgPool.p.QueryRow(ctx, sql, args...)
+
 	err := row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	if err != nil {
 		// just log it for now
