@@ -18,10 +18,28 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetMore implements handlers.Interface.
-func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.GetMore(ctx, msg, h.registry)
+// MsgDropIndexes implements HandlerInterface.
+func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/78
+
+	document, err := msg.Document()
+	if err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

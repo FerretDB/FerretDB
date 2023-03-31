@@ -416,6 +416,29 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
+
+		"LimitAfter": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+			},
+		},
+		"LimitBefore": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
@@ -728,6 +751,114 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 				{"count", bson.D{{"$count", bson.D{}}}},
 			}}}},
 			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatLimit(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Zero": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 0}},
+			},
+			resultType: emptyResult,
+		},
+		"One": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 1}},
+			},
+		},
+		"Five": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+			},
+		},
+		"StringInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", "5"}},
+			},
+			resultType: emptyResult,
+		},
+		"Double": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 4.5}},
+			},
+			resultType: emptyResult,
+		},
+		"DoubleInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5.0}},
+			},
+		},
+		"MaxInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", math.MaxInt64}},
+			},
+		},
+		"Negative": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", -1}},
+			},
+			resultType: emptyResult,
+		},
+		"NegativeDouble": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", -2.1}},
+			},
+			resultType: emptyResult,
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", bson.D{}}},
+			},
+			resultType: emptyResult,
+		},
+		"Int64Overflow": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", float64(1 << 86)}},
+			},
+			resultType: emptyResult,
+		},
+		"AfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$limit", 1}},
+			},
+		},
+		"BeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 1}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
+			resultType: emptyResult,
+		},
+		"NoSortAfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$limit", 100}},
+			},
+			resultPushdown: true,
+		},
+		"NoSortBeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$limit", 100}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
 		},
 	}
 

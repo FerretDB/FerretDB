@@ -15,10 +15,13 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -133,6 +136,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 			return 0, errInfinity
 		}
 
+		if value > float64(math.MaxInt64) ||
+			value < float64(math.MinInt64) {
+			return 0, errLongExceeded
+		}
+
 		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}
@@ -145,6 +153,53 @@ func GetWholeNumberParam(value any) (int64, error) {
 	default:
 		return 0, errUnexpectedType
 	}
+}
+
+// GetLimitStageParam returns $limit stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
+func GetLimitStageParam(value any) (int64, error) {
+	limit, err := GetWholeNumberParam(value)
+
+	switch {
+	case err == nil:
+	case errors.Is(err, errUnexpectedType):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
+			"$limit (stage)",
+		)
+	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
+			"$limit (stage)",
+		)
+	case errors.Is(err, errLongExceeded):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
+			"$limit (stage)",
+		)
+	default:
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch {
+	case limit < 0:
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", limit),
+			"$limit (stage)",
+		)
+	case limit == 0:
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitZero,
+			"The limit must be positive",
+			"$limit (stage)",
+		)
+	}
+
+	return limit, nil
 }
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.

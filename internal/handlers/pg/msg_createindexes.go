@@ -174,6 +174,22 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			)
 		}
 
+		// Special case: if keyDocs consists of a {"_id": -1} only, an error should be returned.
+		if keyDoc.Len() == 1 {
+			var val any
+			var order int64
+
+			if val, err = keyDoc.Get("_id"); err == nil {
+				if order, err = common.GetWholeNumberParam(val); err == nil && order == -1 {
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
+						"createIndexes",
+					)
+				}
+			}
+		}
+
 		index.Key, err = processIndexKey(keyDoc)
 		if err != nil {
 			return nil, err
