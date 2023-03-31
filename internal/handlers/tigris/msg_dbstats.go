@@ -46,7 +46,6 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	m := document.Map()
 	scale, ok := m["scale"].(float64)
-
 	if !ok {
 		scale = 1
 	}

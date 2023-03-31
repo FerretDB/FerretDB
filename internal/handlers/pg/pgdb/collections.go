@@ -68,7 +68,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 
 		// if the context is canceled, we don't need to continue processing documents
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			return nil, context.Cause(ctx)
 		}
 
 		switch {
@@ -136,7 +136,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 		Unique: true,
 	}
 
-	if err := createIndex(ctx, tx, db, collection, indexParams); err != nil {
+	if err := CreateIndexIfNotExists(ctx, tx, db, collection, indexParams); err != nil {
 		return lazyerrors.Error(err)
 	}
 

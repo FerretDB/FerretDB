@@ -82,8 +82,8 @@ To reference the fourth field in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
-* [Query an array](basic_operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
-* [Update an array](basic_operations/update.md#update-an-array-element)
+* [Query an array](basic-operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
+* [Update an array](basic-operations/update.md#update-an-array-element)
 
 ### Embedded documents
 
@@ -115,8 +115,8 @@ To reference the `city` field in the embedded document, use the dot notation `"c
 
 For dot notation examples on embedded documents, see here:
 
-* [Query an embedded document](basic_operations/read.md#query-on-an-embedded-or-nested-document)
-* [Update an embedded document](basic_operations/update.md#update-an-embedded-document)
+* [Query an embedded document](basic-operations/read.md#query-on-an-embedded-or-nested-document)
+* [Update an embedded document](basic-operations/update.md#update-an-embedded-document)
 
 ## Collections
 

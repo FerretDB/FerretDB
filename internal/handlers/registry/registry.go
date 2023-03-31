@@ -41,10 +41,9 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all handlers
-	Logger          *zap.Logger
-	Metrics         *connmetrics.ConnMetrics
-	StateProvider   *state.Provider
-	DisablePushdown bool
+	Logger        *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 
 	// for `pg` handler
 	PostgreSQLURL string
@@ -59,6 +58,14 @@ type NewHandlerOpts struct {
 
 	// for `sqlite` handler
 	SQLiteDBPath string
+
+  TestOpts
+}
+
+// TestOpts represents experimental configuration options.
+type TestOpts struct {
+	DisablePushdown bool
+	EnableCursors   bool
 }
 
 // NewHandler constructs a new handler.
@@ -92,10 +99,12 @@ func init() {
 		handlerOpts := &pg.NewOpts{
 			PostgreSQLURL: opts.PostgreSQLURL,
 
-			L:               opts.Logger,
-			Metrics:         opts.Metrics,
-			StateProvider:   opts.StateProvider,
+			L:             opts.Logger,
+			Metrics:       opts.Metrics,
+			StateProvider: opts.StateProvider,
+
 			DisablePushdown: opts.DisablePushdown,
+			EnableCursors:   opts.EnableCursors,
 		}
 		return pg.New(handlerOpts)
 	}
