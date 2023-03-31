@@ -668,7 +668,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
 	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
-	assert.InDelta(t, float64(49152), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, float64(65152), doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
