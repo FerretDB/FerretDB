@@ -132,7 +132,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 			return 0, lazyerrors.Error(err)
 		}
 
-		// todo check this removed the index we want
+		// remove i-th element from the slice
 		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
 
 		if err := ms.set(ctx, metadata); err != nil {
@@ -166,7 +166,7 @@ func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int3
 			return 0, lazyerrors.Error(err)
 		}
 
-		// todo check this removed the index we want
+		// remove i-th element from the slice
 		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
 	}
 
