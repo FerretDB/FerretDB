@@ -208,11 +208,6 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 	}
 
 	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		metadata, err := newMetadataStorage(tx, schema, collection).get(ctx, false)
-		if err != nil {
-			return err
-		}
-
 		sql := `
 	SELECT COUNT(distinct t.table_name)                                                         AS CountTables,
 		COALESCE(SUM(s.n_live_tup), 0)                                                          AS CountRows,
@@ -233,6 +228,11 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 			args = append(args, schema)
 
 			if collection != "" {
+				metadata, err := newMetadataStorage(tx, schema, collection).get(ctx, false)
+				if err != nil {
+					return err
+				}
+
 				sql += " AND t.table_name = $2"
 				args = append(args, metadata.table)
 			}
