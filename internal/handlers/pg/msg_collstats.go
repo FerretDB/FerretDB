@@ -48,6 +48,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	if err = common.UnimplementedNonDefault(document, "scale", func(v any) bool {
+		b, ok := v.(int32)
+		return ok && b == 1
+	}); err != nil {
+		return nil, err
+	}
+
 	stats, err := dbPool.Stats(ctx, db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

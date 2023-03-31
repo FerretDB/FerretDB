@@ -41,11 +41,14 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	m := document.Map()
-	scale, ok := m["scale"].(float64)
-	if !ok {
-		scale = 1
+	if err = common.UnimplementedNonDefault(document, "scale", func(v any) bool {
+		b, ok := v.(int32)
+		return ok && b == 1
+	}); err != nil {
+		return nil, err
 	}
+
+	scale := float64(1)
 
 	stats, err := dbPool.Stats(ctx, db, "")
 	if err != nil {
