@@ -289,7 +289,7 @@ func testAggregateCollStatsCompat(t *testing.T, testCases map[string]aggregateCo
 				require.NoError(t, targetCursor.All(ctx, &targetRes))
 				require.NoError(t, compatCursor.All(ctx, &compatRes))
 
-				// $collStats return an array with one document
+				// $collStats returns one document per shard.
 				require.Equal(t, 1, len(compatRes))
 				require.Equal(t, 1, len(targetRes))
 
