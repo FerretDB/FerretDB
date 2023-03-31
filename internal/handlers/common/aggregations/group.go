@@ -40,6 +40,7 @@ type Accumulator interface {
 var accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCountAccumulator,
+	"$sum":   newSumAccumulator,
 	// please keep sorted alphabetically
 }
 
@@ -113,10 +114,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		operator, _, err := accumulation.Iterator().Next()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		operator := accumulation.Command()
 
 		newAccumulator, ok := accumulators[operator]
 		if !ok {

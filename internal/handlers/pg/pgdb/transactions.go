@@ -43,7 +43,13 @@ func (e *transactionConflictError) Error() string {
 }
 
 // InTransaction wraps the given function f in a transaction.
+//
 // If f returns an error, the transaction is rolled back.
+//
+// Passed context will be used for BEGIN/ROLLBACK/COMMIT statements.
+// Context cancellation does not rollback the transaction.
+// In practice, f should use the same ctx for Query/QueryRow/Exec that would return an error if context is canceled.
+//
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
