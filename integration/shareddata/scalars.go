@@ -19,9 +19,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
