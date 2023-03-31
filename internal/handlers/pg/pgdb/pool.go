@@ -203,7 +203,17 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 // SchemaStats returns a set of statistics for FerretDB server, database, collection
 // - or, in terms of PostgreSQL, database, schema, table.
 func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
-	sql := `
+	res := &DBStats{
+		Name: schema,
+	}
+
+	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		metadata, err := newMetadataStorage(tx, schema, collection).get(ctx, false)
+		if err != nil {
+			return err
+		}
+
+		sql := `
 	SELECT COUNT(distinct t.table_name)                                                         AS CountTables,
 		COALESCE(SUM(s.n_live_tup), 0)                                                          AS CountRows,
 		COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0) AS SizeTotal,
@@ -214,27 +224,24 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		LEFT OUTER JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema AND s.relname = t.table_name
 		LEFT OUTER JOIN pg_indexes          AS i ON i.schemaname = t.table_schema AND i.tablename = t.table_name`
 
-	// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
+		// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
 
-	var args []any
+		var args []any
 
-	if schema != "" {
-		sql += " WHERE t.table_schema = $1"
-		args = append(args, schema)
+		if schema != "" {
+			sql += " WHERE t.table_schema = $1"
+			args = append(args, schema)
 
-		if collection != "" {
-			sql += " AND t.table_name = $2"
-			args = append(args, collection)
+			if collection != "" {
+				sql += " AND t.table_name = $2"
+				args = append(args, metadata.table)
+			}
 		}
-	}
 
-	res := &DBStats{
-		Name: schema,
-	}
+		row := tx.QueryRow(ctx, sql, args...)
 
-	row := pgPool.p.QueryRow(ctx, sql, args...)
-
-	err := row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
+		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
+	})
 	if err != nil {
 		// just log it for now
 		// TODO https://github.com/FerretDB/FerretDB/issues/1346
