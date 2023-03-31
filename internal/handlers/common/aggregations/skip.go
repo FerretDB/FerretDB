@@ -45,7 +45,7 @@ func newSkip(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (m *skip) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (m *skip) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
 	return common.SkipDocuments(in, m.value)
 }
 
