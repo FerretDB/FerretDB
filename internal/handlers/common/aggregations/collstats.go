@@ -16,22 +16,63 @@ package aggregations
 
 import (
 	"context"
+	"os"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // collStats represents $collStats stage.
-type collStats struct{}
+type collStats struct {
+	f      Fetcher
+	fields *types.Document
+}
 
 // newCollStats creates a new $collStats stage.
-func newCollStats(stage *types.Document) (Stage, error) {
-	return nil, ErrRequireHandlerImplementation
+func newCollStats(stage *types.Document, fetcher Fetcher) (Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &collStats{
+		f:      fetcher,
+		fields: fields,
+	}, nil
 }
 
 // Process implements Stage interface.
 func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	// impossible to reach
-	panic("$collStats is not implemented for the current handler")
+	host, err := os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	ns := c.f.GetNameSpace()
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	doc, err := types.NewDocument(
+		"ns", ns,
+		"host", host,
+		"localTime", now,
+	)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	count, err := c.fields.Get("count")
+
+	if err == nil {
+		doc.Set("count", int32(len(in)))
+	}
+
+	// TODO: return error on invalid type of count.
+	// https://github.com/FerretDB/FerretDB/issues/2336
+	_ = count
+
+	return []*types.Document{doc}, nil
 }
 
 // check interfaces

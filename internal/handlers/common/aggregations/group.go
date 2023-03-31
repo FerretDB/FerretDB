@@ -64,7 +64,7 @@ type groupBy struct {
 }
 
 // newGroup creates a new $group stage.
-func newGroup(stage *types.Document) (Stage, error) {
+func newGroup(stage *types.Document, fetcher Fetcher) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

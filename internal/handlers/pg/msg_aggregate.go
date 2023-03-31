@@ -16,8 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
@@ -87,6 +85,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
+	f := &pgFetcher{
+		dbPool: dbPool,
+		qp:     qp,
+	}
+
 	stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stages := make([]aggregations.Stage, len(stagesDocs))
 
@@ -101,17 +104,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		var s aggregations.Stage
-		if s, err = aggregations.NewStage(d); err != nil {
-			switch {
-			case err == nil:
-				continue
-			case errors.Is(err, aggregations.ErrRequireHandlerImplementation):
-				if s, err = newStage(d, dbPool, qp); err != nil {
-					return nil, err
-				}
-			default:
-				return nil, err
-			}
+
+		if s, err = aggregations.NewStage(d, f); err != nil {
+			return nil, err
 		}
 
 		stages[i] = s
@@ -161,28 +156,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
-// handlerStages maps stages that are implemented specifically for a handler.
-var handlerStages = map[string]newStageFunc{
-	// sorted alphabetically
-	"$collStats": newCollStats,
-	// please keep sorted alphabetically
+// pgFetcher fetches pg specific values.
+type pgFetcher struct {
+	dbPool *pgdb.Pool
+	qp     pgdb.QueryParams
 }
 
-// newStageFunc is a type for a function that creates a new aggregation stage.
-type newStageFunc func(stage *types.Document, dbPool *pgdb.Pool, qp pgdb.QueryParams) (aggregations.Stage, error)
-
-// newStage creates a stage implemented by a handler.
-func newStage(stage *types.Document, dbPool *pgdb.Pool, qp pgdb.QueryParams) (aggregations.Stage, error) {
-	name := stage.Command()
-
-	f, ok := handlerStages[name]
-	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
-			name+" (stage)",
-		)
-	}
-
-	return f(stage, dbPool, qp)
+// GetNameSpace implements Fetcher interface.
+func (f *pgFetcher) GetNameSpace() string {
+	return f.qp.DB + "." + f.qp.Collection
 }
+
+// check interfaces
+var (
+	_ aggregations.Fetcher = (*pgFetcher)(nil)
+)
