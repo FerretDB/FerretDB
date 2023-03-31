@@ -16,6 +16,8 @@ package aggregations
 
 import (
 	"context"
+	"os"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -36,12 +38,23 @@ func newCollStats(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (m *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	var res []*types.Document
+func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	host, err := os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	// todo
+	doc, err := types.NewDocument(
+		// todo return "ns"
+		"host", host,
+		"localtime", time.Now().UTC().Format(time.RFC3339),
+	)
 
-	return res, nil
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return []*types.Document{doc}, nil
 }
 
 // check interfaces

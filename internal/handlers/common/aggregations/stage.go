@@ -36,7 +36,7 @@ type Stage interface {
 // stages maps all supported aggregation stages.
 var stages = map[string]newStageFunc{
 	// sorted alphabetically
-	"$callStats": newCollStats,
+	"$collStats": newCollStats,
 	"$count":     newCount,
 	"$group":     newGroup,
 	"$match":     newMatch,
