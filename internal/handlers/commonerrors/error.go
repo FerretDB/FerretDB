@@ -137,6 +137,9 @@ const (
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
+	// ErrStageUnwindNoPath indicates that $unwind aggregation stage is empty.
+	ErrStageUnwindNoPath = ErrorCode(28812) // Location28812
+
 	// ErrStageUnwindNoPrefix indicates that $unwind aggregation stage doesn't include '$' prefix.
 	ErrStageUnwindNoPrefix = ErrorCode(28818) // Location28818
 

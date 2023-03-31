@@ -44,6 +44,14 @@ func newUnwind(stage *types.Document) (Stage, error) {
 	case *types.Document:
 		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
+		if field == "" {
+			return nil, common.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrStageUnwindNoPath,
+				"no path specified to $unwind stage",
+				"$unwind (stage)",
+			)
+		}
+
 		opts := types.ExpressionOpts{
 			IgnoreArrays: true,
 		}
