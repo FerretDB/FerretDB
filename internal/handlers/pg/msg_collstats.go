@@ -48,7 +48,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	stats, err := dbPool.SchemaStats(ctx, db, collection)
+	stats, err := dbPool.Stats(ctx, db, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

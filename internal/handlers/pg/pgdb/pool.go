@@ -200,11 +200,11 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// SchemaStats returns a set of statistics for FerretDB server, database, collection
+// Stats returns a set of statistics for FerretDB server, database, collection
 // - or, in terms of PostgreSQL, database, schema, table.
-func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
+func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
 	res := &DBStats{
-		Name: schema,
+		Name: db,
 	}
 
 	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
@@ -223,12 +223,12 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 
 		var args []any
 
-		if schema != "" {
+		if db != "" {
 			sql += " WHERE t.table_schema = $1"
-			args = append(args, schema)
+			args = append(args, db)
 
 			if collection != "" {
-				metadata, err := newMetadataStorage(tx, schema, collection).get(ctx, false)
+				metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
 				if err != nil {
 					return err
 				}
@@ -246,7 +246,7 @@ func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) 
 		// just log it for now
 		// TODO https://github.com/FerretDB/FerretDB/issues/1346
 		pgPool.p.Config().ConnConfig.Logger.Log(
-			ctx, pgx.LogLevelError, "pgdb.SchemaStats: failed to get stats",
+			ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
 			map[string]any{"err": err},
 		)
 	}
