@@ -328,7 +328,7 @@ func TestPathSuffixPrefix(t *testing.T) {
 		f    func() string
 	}
 
-	// Obtaining prefix and suffix of single value path is harmless
+	// Obtaining prefix and suffix of single value path is harmless.
 	for _, tc := range []testCase{{
 		name: "prefixZero",
 		f:    pathZeroElement.Prefix,

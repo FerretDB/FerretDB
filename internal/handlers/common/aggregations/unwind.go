@@ -32,6 +32,7 @@ type unwind struct {
 	field types.Expression
 }
 
+// newUnwind creates a new $unwind stage.
 func newUnwind(stage *types.Document) (Stage, error) {
 	field, err := stage.Get("$unwind")
 	if err != nil {

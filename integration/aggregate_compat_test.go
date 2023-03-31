@@ -1269,7 +1269,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 		"SystemVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$NOW"}}},
 			resultType: emptyResult,
-			// skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"Empty": {
 			pipeline:   bson.A{bson.D{{"$unwind", ""}}},
