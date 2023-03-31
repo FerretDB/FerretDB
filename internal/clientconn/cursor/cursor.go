@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conninfo
+// Package cursor provides access to cursor registry.
+package cursor
 
 import (
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -21,24 +22,24 @@ import (
 
 // Cursor allows clients to iterate over a result set.
 type cursor struct {
-	*NewCursorParams
+	*NewParams
 
 	token *resource.Token
 }
 
-// NewCursorParams contains the parameters for creating a new cursor.
-type NewCursorParams struct {
+// NewParams contains the parameters for creating a new cursor.
+type NewParams struct {
 	Iter       types.DocumentsIterator
 	DB         string
 	Collection string
 	BatchSize  int32
 }
 
-// NewCursor creates a new cursor.
-func NewCursor(params *NewCursorParams) *cursor {
+// New creates a new cursor.
+func New(params *NewParams) *cursor {
 	c := &cursor{
-		NewCursorParams: params,
-		token:           resource.NewToken(),
+		NewParams: params,
+		token:     resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
