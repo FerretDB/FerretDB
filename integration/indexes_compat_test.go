@@ -414,8 +414,6 @@ func TestIndexesDrop(t *testing.T) {
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
 		toCreate      []mongo.IndexModel       // optional, if not nil create indexes before dropping
-		altErrorMsg   string                   // optional, alternative error message in case of error
-		skip          string                   // optional, skip test with a specified reason
 	}{
 		"DropAllCommand": {
 			toCreate: []mongo.IndexModel{
@@ -456,10 +454,6 @@ func TestIndexesDrop(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Helper()
 			t.Parallel()
 
@@ -500,17 +494,7 @@ func TestIndexesDrop(t *testing.T) {
 						compatRes, compatErr = compatCollection.Indexes().DropOne(ctx, tc.dropIndexName)
 					}
 
-					if tc.altErrorMsg != "" {
-						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
-						expectedErr.Raw = nil
-						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
-					}
-
+					require.Equal(t, compatErr, targetErr)
 					require.Equal(t, compatRes, targetRes)
 
 					if targetErr == nil {
