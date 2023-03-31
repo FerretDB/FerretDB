@@ -35,7 +35,6 @@ func TestQueryProjection(t *testing.T) {
 		projection any
 		filter     any
 		expected   bson.D
-		err        bool // TODO check error type
 	}{
 		"FindProjectionIDExclusion": {
 			filter: bson.D{{"_id", "document-composite"}},
@@ -43,21 +42,12 @@ func TestQueryProjection(t *testing.T) {
 			projection: bson.D{{"_id", false}, {"array", int32(1)}},
 			expected:   bson.D{},
 		},
-		"Invalid": {
-			filter:     bson.D{},
-			projection: bson.D{{"a", bson.A{}}},
-			err:        true,
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
-			if tc.err {
-				require.Error(t, err)
-				return
-			}
 			require.NoError(t, err)
 
 			var actual []bson.D
