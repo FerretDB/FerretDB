@@ -269,7 +269,7 @@ func TestBuildFilter(t *testing.T) {
 		},
 		"ImplicitMaxFloat64": {
 			filter:   must.NotFail(types.NewDocument("v", math.MaxFloat64)),
-			expected: `{"v":{"$gt":9007199254740992}}`,
+			expected: `{"v":{"$gt":9007199254740991}}`,
 		},
 		"ImplicitBool": {
 			filter:   must.NotFail(types.NewDocument("v", true)),
@@ -321,7 +321,7 @@ func TestBuildFilter(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
 			)),
-			expected: `{"v":{"$gt":9007199254740992}}`,
+			expected: `{"v":{"$gt":9007199254740991}}`,
 		},
 		"EqBool": {
 			filter: must.NotFail(types.NewDocument(

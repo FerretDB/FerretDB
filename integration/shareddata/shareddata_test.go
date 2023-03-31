@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package shareddata
 
 import "testing"
 
-func TestCommandsAuthenticationSASLStart(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
+func TestInit(t *testing.T) {
+	// nothing, just test init()
 }

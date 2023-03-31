@@ -20,12 +20,16 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
-	doubleBig     = float64(1 << 61) // 2305843009213693952.0
-	longBig       = int64(1 << 61)   // 2305843009213693952
-	doubleMaxPrec = float64(1 << 53) // 9007199254740992.0
+	doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
+	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
+	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2321
 )
 
 // Scalars contain scalar values for tests.
@@ -48,7 +52,7 @@ var Scalars = &Values[string]{
 		"double-5":                  float64(math.MaxInt64),
 		"double-6":                  float64(math.MaxInt64 + 1),
 		"double-7":                  1.79769e+307,
-		"double-max-overflow":       9.223372036854776833e+18,
+		"double-max-overflow":       9.223372036854776833e+18, // TODO https://github.com/FerretDB/FerretDB/issues/2321
 		"double-max-overflow-verge": 9.223372036854776832e+18,
 		"double-min-overflow":       -9.223372036854776833e+18,
 		"double-min-overflow-verge": -9.223372036854776832e+18,
@@ -134,20 +138,22 @@ var Doubles = &Values[string]{
 		"double-big-plus":  doubleBig + 1,
 		"double-big-minus": doubleBig - 1,
 
-		// double max precision ~1<<53
-		"double-prec-max":       doubleMaxPrec,
-		"double-prec-max-plus":  doubleMaxPrec + 1,
-		"double-prec-max-minus": doubleMaxPrec - 1,
+		// double max precision ~1<<53 - 1
+		"double-prec-max":          doubleMaxPrec,
+		"double-prec-max-plus":     doubleMaxPrec + 1,
+		"double-prec-max-plus-two": doubleMaxPrec + 2,
+		"double-prec-max-minus":    doubleMaxPrec - 1,
 
 		// negative double big values ~ -(1<<61)
 		"double-neg-big":       -doubleBig,
-		"double-neg-big-plus":  -(doubleBig + 1),
-		"double-neg-big-minus": -(doubleBig - 1),
+		"double-neg-big-plus":  -doubleBig + 1,
+		"double-neg-big-minus": -doubleBig - 1,
 
 		// double min precision ~ -(1<<53 - 1)
-		"double-prec-min":       -(doubleMaxPrec - 1),
-		"double-prec-min-plus":  -(doubleMaxPrec - 1) + 1,
-		"double-prec-min-minus": -(doubleMaxPrec - 1) - 1,
+		"double-prec-min":           -doubleMaxPrec,
+		"double-prec-min-plus":      -doubleMaxPrec + 1,
+		"double-prec-min-minus":     -doubleMaxPrec - 1,
+		"double-prec-min-minus-two": -doubleMaxPrec - 2,
 
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
@@ -390,20 +396,22 @@ var Int64s = &Values[string]{
 		"int64-big-plus":  longBig + 1,
 		"int64-big-minus": longBig - 1,
 
-		// long representation of double max precision ~1<<53
-		"int64-prec-max":       int64(doubleMaxPrec),
-		"int64-prec-max-plus":  int64(doubleMaxPrec) + 1,
-		"int64-prec-max-minus": int64(doubleMaxPrec) - 1,
+		// long representation of double max precision ~1<<53 - 1
+		"int64-prec-max":          int64(doubleMaxPrec),
+		"int64-prec-max-plus":     int64(doubleMaxPrec) + 1,
+		"int64-prec-max-plus-two": int64(doubleMaxPrec) + 2,
+		"int64-prec-max-minus":    int64(doubleMaxPrec) - 1,
 
 		// negative long big values ~ -(1<<61)
 		"int64-neg-big":       -longBig,
-		"int64-neg-big-plus":  -(longBig + 1),
-		"int64-neg-big-minus": -(longBig - 1),
+		"int64-neg-big-plus":  -longBig + 1,
+		"int64-neg-big-minus": -longBig - 1,
 
-		// long representation of double max precision ~ -(1<<53-1)
-		"int64-prec-min":       -int64(doubleMaxPrec),
-		"int64-prec-min-plus":  -(int64(doubleMaxPrec) - 1) + 1,
-		"int64-prec-min-minus": -(int64(doubleMaxPrec) - 1) - 1,
+		// long representation of double min precision ~ -(1<<53 - 1)
+		"int64-prec-min":           -int64(doubleMaxPrec),
+		"int64-prec-min-plus":      -int64(doubleMaxPrec) + 1,
+		"int64-prec-min-minus":     -int64(doubleMaxPrec) - 1,
+		"int64-prec-min-minus-two": -int64(doubleMaxPrec) - 2,
 	},
 }
 
@@ -443,4 +451,20 @@ func tigrisSchema(typeString string) string {
 				}
 			}`
 	return strings.ReplaceAll(common, "%%type%%", typeString)
+}
+
+func init() {
+	// If any of those assumptions fails, it means that
+	// there's an issue related to precision double conversion.
+
+	must.BeTrue(float64(int64(doubleBig)) == doubleBig)
+	must.BeTrue(float64(int64(doubleBig)+1) == doubleBig)
+
+	must.BeTrue(float64(longBig) == doubleBig)
+
+	must.BeTrue(doubleMaxPrec != doubleMaxPrec+1)
+	must.BeTrue(doubleMaxPrec+1 == doubleMaxPrec+2)
+
+	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
+	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
 }
