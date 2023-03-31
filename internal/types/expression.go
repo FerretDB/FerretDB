@@ -77,6 +77,7 @@ type pathExpression struct {
 	*ExpressionOpts
 }
 
+// ExpressionOpts represents options used to modify behavior of pathExpression functions.
 type ExpressionOpts struct {
 	IgnoreArrays bool // defaults to false
 }
@@ -126,7 +127,7 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression,
 
 // NewExpression creates a new instance by checking expression string.
 func NewExpression(expression string) (Expression, error) {
-	return NewExpressionWithOpts(expression, &ExpressionOpts{})
+	return NewExpressionWithOpts(expression, new(ExpressionOpts))
 }
 
 // Evaluate gets the value at the path.
@@ -177,7 +178,7 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 	return arr
 }
 
-// GetPath returns path of expression
+// GetPath returns path of expression.
 func (p *pathExpression) GetPath() Path {
 	return p.path
 }

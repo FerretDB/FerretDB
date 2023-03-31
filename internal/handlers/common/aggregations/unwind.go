@@ -45,7 +45,7 @@ func newUnwind(stage *types.Document) (Stage, error) {
 		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
 		if field == "" {
-			return nil, common.NewCommandErrorMsgWithArgument(
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrStageUnwindNoPath,
 				"no path specified to $unwind stage",
 				"$unwind (stage)",
@@ -56,6 +56,7 @@ func newUnwind(stage *types.Document) (Stage, error) {
 			IgnoreArrays: true,
 		}
 		expr, err = types.NewExpressionWithOpts(field, &opts)
+
 		if err != nil {
 			var fieldPathErr *types.FieldPathError
 			if !errors.As(err, &fieldPathErr) {
@@ -84,12 +85,14 @@ func newUnwind(stage *types.Document) (Stage, error) {
 			default:
 				return nil, lazyerrors.Error(err)
 			}
-
 		}
 	default:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageUnwindWrongType,
-			fmt.Sprintf("expected either a string or an object as specification for $unwind stage, got %s", types.FormatAnyValue(field)),
+			fmt.Sprintf(
+				"expected either a string or an object as specification for $unwind stage, got %s",
+				types.FormatAnyValue(field),
+			),
 			"$unwind (Stage)",
 		)
 	}
@@ -99,6 +102,7 @@ func newUnwind(stage *types.Document) (Stage, error) {
 	}, nil
 }
 
+// Process implements Stage interface.
 func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	var out []*types.Document
 
@@ -111,8 +115,6 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 	for _, doc := range in {
 		d := m.field.Evaluate(doc)
 		switch d := d.(type) {
-		// case *types.Document:
-		case types.NullType:
 		case *types.Array:
 			iter := d.Iterator()
 			defer iter.Close()
@@ -125,13 +127,15 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
 					}
+
 					return nil, err
 				}
 
 				newDoc := must.NotFail(types.NewDocument("_id", id, key, v))
 				out = append(out, newDoc)
 			}
-
+		case types.NullType:
+			// Ignore Nulls
 		default:
 			out = append(out, doc)
 		}
