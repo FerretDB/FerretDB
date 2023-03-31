@@ -74,17 +74,17 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 
 	// TODO: implement latencyStats
 	// https://github.com/FerretDB/FerretDB/issues/1416
-	latencyStats, err := c.fields.Get("latencyStats")
+	latencyStats, _ := c.fields.Get("latencyStats")
 	_ = latencyStats
 
 	// TODO: implement queryExecStats
 	// https://github.com/FerretDB/FerretDB/issues/1416
-	queryExecStats, err := c.fields.Get("queryExecStats")
+	queryExecStats, _ := c.fields.Get("queryExecStats")
 	_ = queryExecStats
 
 	// TODO: implement storageStats
 	// https://github.com/FerretDB/FerretDB/issues/1416
-	storageStats, err := c.fields.Get("storageStats")
+	storageStats, _ := c.fields.Get("storageStats")
 	_ = storageStats
 
 	return []*types.Document{doc}, nil
