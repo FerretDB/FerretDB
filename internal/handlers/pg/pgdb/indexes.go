@@ -136,7 +136,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 		metadata.indexes = append(metadata.indexes[:i], metadata.indexes[i+1:]...)
 
 		if err := ms.set(ctx, metadata); err != nil {
-			return 0, err
+			return 0, lazyerrors.Error(err)
 		}
 
 		return nIndexesWas, nil

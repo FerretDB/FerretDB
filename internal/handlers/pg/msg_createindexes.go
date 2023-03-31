@@ -174,6 +174,19 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			)
 		}
 
+		// Special case: if keyDocs consists of a {"_id": -1} only, an error should be returned.
+		if keyDoc.Len() == 1 {
+			if val, err := keyDoc.Get("_id"); err == nil {
+				if v, err := common.GetWholeNumberParam(val); err == nil && v == -1 {
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
+						"createIndexes",
+					)
+				}
+			}
+		}
+
 		index.Key, err = processIndexKey(keyDoc)
 		if err != nil {
 			return nil, err
@@ -214,20 +227,6 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 
 // processIndexKey processes the document containing the index key.
 func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
-	// Special case: if keyDocs consists of a {"_id": -1} only, an error should be returned.
-	if keyDoc.Len() == 1 {
-		if val, err := keyDoc.Get("_id"); err == nil {
-			if v, err := common.GetWholeNumberParam(val); err == nil && v == -1 {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
-					"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
-					"createIndexes",
-				)
-			}
-		}
-	}
-
-	// Otherwise, process the index key normally.
 	res := make(pgdb.IndexKey, 0, keyDoc.Len())
 
 	keyIter := keyDoc.Iterator()

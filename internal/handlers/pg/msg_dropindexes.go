@@ -106,10 +106,16 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 }
 
 // processIndexDrop parses index doc and processes index deletion based on the provided params.
+// Upon successful drop of index, it returns the number of indexes we had in the database before
+// the indexes were dropped, and if any message related to particular indexes being dropped.
 func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) (int32, string, error) { //nolint:lll // for readability
 	v, err := doc.Get("index")
 	if err != nil {
-		return 0, "", lazyerrors.Error(err)
+		return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
+			"BSON field 'dropIndexes.index' is missing but a required field",
+			command,
+		)
 	}
 
 	var nIndexesWas int32
@@ -196,7 +202,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 			// Drop all indexes except the _id index.
 			nIndexesWas, err = pgdb.DropAllIndexes(ctx, tx, db, collection)
 			if err != nil {
-				return 0, "", err
+				return 0, "", lazyerrors.Error(err)
 			}
 
 			return nIndexesWas, "non-_id indexes dropped for collection", nil

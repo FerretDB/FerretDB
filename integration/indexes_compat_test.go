@@ -413,12 +413,12 @@ func TestIndexesDrop(t *testing.T) {
 		dropIndexName string                   // name of a single index to drop
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
-		models        []mongo.IndexModel       // optional, if not nil create indexes before dropping
+		toCreate      []mongo.IndexModel       // optional, if not nil create indexes before dropping
 		altErrorMsg   string                   // optional, alternative error message in case of error
 		skip          string                   // optional, skip test with a specified reason
 	}{
 		"DropAllCommand": {
-			models: []mongo.IndexModel{
+			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", 1}}},
 				{Keys: bson.D{{"foo", -1}}},
 				{Keys: bson.D{{"bar", 1}}},
@@ -431,19 +431,19 @@ func TestIndexesDrop(t *testing.T) {
 			resultType:    emptyResult,
 		},
 		"AscendingValue": {
-			models: []mongo.IndexModel{
+			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", 1}}},
 			},
 			dropIndexName: "v_1",
 		},
 		"DescendingValue": {
-			models: []mongo.IndexModel{
+			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			dropIndexName: "v_-1",
 		},
 		"AsteriskWithDropOne": {
-			models: []mongo.IndexModel{
+			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			dropIndexName: "*",
@@ -482,9 +482,9 @@ func TestIndexesDrop(t *testing.T) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					if tc.models != nil {
-						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
-						_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+					if tc.toCreate != nil {
+						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
+						_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.toCreate)
 						require.NoError(t, compatErr)
 						require.NoError(t, targetErr)
 					}
@@ -552,6 +552,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 		toCreate    []mongo.IndexModel       // optional, if set, create the given indexes before drop is called
 		toDrop      any                      // index to drop
 		resultType  compatTestCaseResultType // defaults to nonEmptyResult
+		command     bson.D                   // optional, if set it runs this command instead of dropping toDrop
 		altErrorMsg string                   // optional, alternative error message in case of error
 		skip        string                   // optional, skip test with a specified reason
 	}{
@@ -590,6 +591,12 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			resultType:  emptyResult,
 			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
+		"DocumentIndex": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
+			toDrop: bson.D{{"v", -1}},
+		},
 		"InvalidDocumentIndex": {
 			toDrop:     bson.D{{"invalid", "invalid"}},
 			resultType: emptyResult,
@@ -611,6 +618,32 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			},
 			toDrop: "*",
 		},
+		"MissingIndexField": {
+			command: bson.D{
+				{"dropIndexes", "collection"},
+			},
+			resultType: emptyResult,
+		},
+		"NonExistentDescendingID": {
+			toDrop:     bson.D{{"_id", -1}},
+			resultType: emptyResult,
+		},
+		"MultipleKeyIndex": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"_id", -1}, {"v", 1}}},
+			},
+			toDrop: bson.D{
+				{"_id", -1},
+				{"v", 1},
+			},
+		},
+		"NonExistentMultipleKeyIndex": {
+			toDrop: bson.D{
+				{"non-existent1", -1},
+				{"non-existent2", -1},
+			},
+			resultType: emptyResult,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -620,6 +653,10 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 			t.Helper()
 			t.Parallel()
+
+			if tc.command != nil {
+				require.Nil(t, tc.toDrop, "toDrop name must be nil when using command")
+			}
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -663,6 +700,11 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					compatCommand := bson.D{
 						{"dropIndexes", compatCollection.Name()},
 						{"index", tc.toDrop},
+					}
+
+					if tc.command != nil {
+						targetCommand = tc.command
+						compatCommand = tc.command
 					}
 
 					var targetRes bson.D
