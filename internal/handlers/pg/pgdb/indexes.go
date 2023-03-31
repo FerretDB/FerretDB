@@ -104,9 +104,9 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 		return 0, err
 	}
 
-	indexesWas := int32(len(metadata.indexes))
+	nIndexesWas := int32(len(metadata.indexes))
 
-	for i := indexesWas - 1; i >= 0; i-- {
+	for i := nIndexesWas - 1; i >= 0; i-- {
 		current := metadata.indexes[i]
 
 		var deleteCurrentIndex bool
@@ -139,7 +139,7 @@ func DropIndex(ctx context.Context, tx pgx.Tx, db, collection string, index *Ind
 			return 0, err
 		}
 
-		return indexesWas, nil
+		return nIndexesWas, nil
 	}
 
 	// Did not find the index to delete
@@ -155,9 +155,9 @@ func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int3
 		return 0, err
 	}
 
-	indexesWas := int32(len(metadata.indexes))
+	nIndexesWas := int32(len(metadata.indexes))
 
-	for i := indexesWas - 1; i >= 0; i-- {
+	for i := nIndexesWas - 1; i >= 0; i-- {
 		if metadata.indexes[i].Name == "_id_" {
 			continue
 		}
@@ -174,7 +174,7 @@ func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int3
 		return 0, err
 	}
 
-	return indexesWas, nil
+	return nIndexesWas, nil
 }
 
 // createPgIndexIfNotExists creates a new index for the given params if it does not exist.

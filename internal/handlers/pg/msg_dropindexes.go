@@ -112,7 +112,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		return 0, "", lazyerrors.Error(err)
 	}
 
-	var nsIndexesWas int32
+	var nIndexesWas int32
 
 	switch v := v.(type) {
 	case *types.Document:
@@ -124,11 +124,11 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 			return 0, "", lazyerrors.Error(err)
 		}
 
-		nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
+		nIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Key: indexKey})
 
 		switch {
 		case err == nil:
-			return nsIndexesWas, "", nil
+			return nIndexesWas, "", nil
 		case errors.Is(err, pgdb.ErrIndexNotExist):
 			return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
@@ -152,7 +152,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 			case err == nil:
 				// nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
-				return nsIndexesWas, "", nil
+				return nIndexesWas, "", nil
 			default:
 				return 0, "", lazyerrors.Error(err)
 			}
@@ -172,9 +172,9 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 			var nsIndexesWasCurrent int32
 			nsIndexesWasCurrent, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: index})
 
-			// nsIndexesWas should give the number of indexes we had in the database before we start dropping indexes.
-			if nsIndexesWas == 0 {
-				nsIndexesWas = nsIndexesWasCurrent
+			// nIndexesWas should give the number of indexes we had in the database before we start dropping indexes.
+			if nIndexesWas == 0 {
+				nIndexesWas = nsIndexesWasCurrent
 			}
 
 			switch {
@@ -194,20 +194,20 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 	case string:
 		if v == "*" {
 			// Drop all indexes except the _id index.
-			nsIndexesWas, err = pgdb.DropAllIndexes(ctx, tx, db, collection)
+			nIndexesWas, err = pgdb.DropAllIndexes(ctx, tx, db, collection)
 			if err != nil {
 				return 0, "", err
 			}
 
-			return nsIndexesWas, "non-_id indexes dropped for collection", nil
+			return nIndexesWas, "non-_id indexes dropped for collection", nil
 		}
 
 		// Index name is provided to drop a specific index.
-		nsIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
+		nIndexesWas, err = pgdb.DropIndex(ctx, tx, db, collection, &pgdb.Index{Name: v})
 
 		switch {
 		case err == nil:
-			return nsIndexesWas, "", nil
+			return nIndexesWas, "", nil
 		case errors.Is(err, pgdb.ErrIndexNotExist):
 			return 0, "", commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
