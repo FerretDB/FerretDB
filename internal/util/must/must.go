@@ -35,3 +35,13 @@ func NoError(err error) {
 		panic(err)
 	}
 }
+
+// BeTrue panic if the b is not true.
+//
+// Use that function only for static initialization, test code, or statemants that
+// "can't" be false. When in doubt, don't.
+func BeTrue(b bool) {
+	if !b {
+		panic("not true")
+	}
+}
