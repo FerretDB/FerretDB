@@ -106,8 +106,8 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 }
 
 // processIndexDrop parses index doc and processes index deletion based on the provided params.
-// Upon successful drop of index, it returns the number of indexes we had in the database before
-// the indexes were dropped, and if any message related to particular indexes being dropped.
+// Upon successful drop of index, it returns the number of indexes we had in the database
+// before the indexes were dropped, and if any message related to particular indexes being dropped.
 func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc *types.Document, command string) (int32, string, error) { //nolint:lll // for readability
 	v, err := doc.Get("index")
 	if err != nil {

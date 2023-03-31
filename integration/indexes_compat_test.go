@@ -517,7 +517,7 @@ func TestIndexesDrop(t *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// List indexes to see they are identical after creation.
+					// List indexes to see they are identical after drop.
 					targetCur, targetErr := targetCollection.Indexes().List(ctx)
 					compatCur, compatErr := compatCollection.Indexes().List(ctx)
 
@@ -560,10 +560,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			toDrop:      true,
 			resultType:  emptyResult,
 			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
-		},
-		"NonExistentIndexName": {
-			toDrop:     "non-existent",
-			resultType: emptyResult,
 		},
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{

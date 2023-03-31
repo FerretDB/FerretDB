@@ -152,7 +152,7 @@ func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int3
 
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
-		return 0, err
+		return 0, lazyerrors.Error(err)
 	}
 
 	nIndexesWas := int32(len(metadata.indexes))
@@ -171,7 +171,7 @@ func DropAllIndexes(ctx context.Context, tx pgx.Tx, db, collection string) (int3
 	}
 
 	if err := ms.set(ctx, metadata); err != nil {
-		return 0, err
+		return 0, lazyerrors.Error(err)
 	}
 
 	return nIndexesWas, nil

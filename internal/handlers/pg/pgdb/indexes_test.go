@@ -69,8 +69,6 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 
 // TestDropIndexes checks that we correctly drop indexes for various combination of existing indexes.
 func TestDropIndexes(t *testing.T) {
-	//	t.Parallel()
-
 	ctx := testutil.Ctx(t)
 	pool := getPool(ctx, t)
 
@@ -91,7 +89,7 @@ func TestDropIndexes(t *testing.T) {
 	}{
 		"NonExistent": {
 			toCreate: []Index{},
-			toDrop:   []Index{{Name: "foo"}},
+			toDrop:   []Index{{Name: "foo_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
 			},
@@ -99,16 +97,16 @@ func TestDropIndexes(t *testing.T) {
 		},
 		"DropOneByName": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
 			},
-			toDrop: []Index{{Name: "foo"}},
+			toDrop: []Index{{Name: "foo_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
 			},
 		},
 		"DropOneByKey": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
 			},
 			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}}},
 			expected: []Index{
@@ -117,53 +115,53 @@ func TestDropIndexes(t *testing.T) {
 		},
 		"DropOneFromTheBeginning": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
-			toDrop: []Index{{Name: "foo"}},
+			toDrop: []Index{{Name: "foo_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
 		},
 		"DropOneFromTheMiddle": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
-			toDrop: []Index{{Name: "bar"}},
+			toDrop: []Index{{Name: "bar_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
 		},
 		"DropOneFromTheEnd": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
-			toDrop: []Index{{Name: "car"}},
+			toDrop: []Index{{Name: "car_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
 			},
 		},
 		"DropTwo": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
-			toDrop: []Index{{Name: "car"}, {Name: "foo"}},
+			toDrop: []Index{{Name: "car_1"}, {Name: "foo_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
 			},
 		},
 		"DropComplicated": {
@@ -180,11 +178,11 @@ func TestDropIndexes(t *testing.T) {
 		},
 		"DropAll": {
 			toCreate: []Index{
-				{Name: "foo", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
 			},
-			toDrop: []Index{{Name: "bar"}, {Name: "car"}, {Name: "foo"}},
+			toDrop: []Index{{Name: "bar_1"}, {Name: "car_1"}, {Name: "foo_1"}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
 			},
