@@ -57,16 +57,21 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 	doc, err := types.NewDocument(
 		"ns", c.qp.DB+"."+c.qp.Collection,
 		"host", host,
-		"localtime", time.Now().UTC().Format(time.RFC3339),
+		"localTime", time.Now().UTC().Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO: check for the count value type and return error on invalid type
-	if c.fields.Has("count") {
+	count, err := c.fields.Get("count")
+
+	if err == nil {
 		doc.Set("count", int32(len(in)))
 	}
+
+	// TODO: return error on invalid type of count.
+	// https://github.com/FerretDB/FerretDB/issues/2336
+	_ = count
 
 	return []*types.Document{doc}, nil
 }
