@@ -48,11 +48,12 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	if err = common.UnimplementedNonDefault(document, "scale", func(v any) bool {
-		b, ok := v.(int32)
-		return ok && b == 1
-	}); err != nil {
-		return nil, err
+	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
+	var scale int32
+
+	scale, err = common.GetOptionalPositiveNumber(document, "scale")
+	if err != nil || scale == 0 {
+		scale = 1
 	}
 
 	stats, err := dbPool.Stats(ctx, db, collection)
@@ -65,11 +66,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
 			"count", stats.CountRows,
-			"size", stats.SizeTotal,
-			"storageSize", stats.SizeRelation,
-			"totalIndexSize", stats.SizeIndexes,
-			"totalSize", stats.SizeTotal,
-			"scaleFactor", int32(1),
+			"size", float64(stats.SizeTotal/int64(scale)),
+			"storageSize", float64(stats.SizeRelation/int64(scale)),
+			"totalIndexSize", float64(stats.SizeIndexes/int64(scale)),
+			"totalSize", float64(stats.SizeTotal/int64(scale)),
+			"scaleFactor", scale,
 			"ok", float64(1),
 		))},
 	}))
