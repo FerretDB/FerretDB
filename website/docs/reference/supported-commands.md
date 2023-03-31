@@ -323,7 +323,7 @@ db.collection.aggregate()
 | `$graphLookup`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1422) |
 | `$group`                       | ✅️      |                                                           |
 | `$indexStats`                  | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1424) |
-| `$limit`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1425) |
+| `$limit`                       | ✅️      |                                                           |
 | `$listSessions`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
 | `$lookup`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1427) |
 | `$match`                       | ✅      |                                                           |
@@ -502,7 +502,7 @@ db.aggregate()
 | `$substrCP`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1463) |
 | `$subtract` (arithmetic operator) | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1453) |
 | `$subtract` (date operator)       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
-| `$sum`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1467) |
+| `$sum`                            | ✅️      |                                                           |
 | `$switch`                         | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1457) |
 | `$tan`                            | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
 | `$tanh`                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
@@ -535,7 +535,7 @@ db.aggregate()
 ## Administration commands
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                  |
-| --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
+| --------------------------------- | ------------------------------ |---------------------------| ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                          |
 |                                   | `filter`                       |                           | ✅      |                                                           |
 |                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
@@ -595,10 +595,10 @@ db.aggregate()
 |                                   | `writeConcern`                 |                           | ⚠️      | Ingored                                                   |
 |                                   | `encryptedFields`              |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      | Ingored                                                   |
-| `createIndexes`                   |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1509) |
-|                                   | `indexes`                      |                           | ⚠️      |                                                           |
-|                                   |                                | `key`                     | ⚠️      |                                                           |
-|                                   |                                | `name`                    | ⚠️      |                                                           |
+| `createIndexes`                   |                                |                           | ✅      |                                                           |
+|                                   | `indexes`                      |                           | ✅      |                                                           |
+|                                   |                                | `key`                     | ✅      |                                                           |
+|                                   |                                | `name`                    | ✅️      |                                                           |
 |                                   |                                | `background`              | ⚠️      |                                                           |
 |                                   |                                | `unique`                  | ⚠️      |                                                           |
 |                                   |                                | `partialFilterExpression` | ⚠️      |                                                           |
@@ -633,8 +633,8 @@ db.aggregate()
 | `dropConnections`                 |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1511) |
 |                                   | `hostAndPort`                  |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
-| `dropIndexes`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1512) |
-|                                   | `index`                        |                           | ⚠️      |                                                           |
+| `dropIndexes`                     |                                |                           | ✅      |                                                           |
+|                                   | `index`                        |                           | ✅      |                                                           |
 |                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `filemd5`                         |                                |                           | ❌      |                                                           |
