@@ -38,7 +38,7 @@ Also, we are building an easy to use database offering the flexibility of docume
 
 FerretDB 1.0 GA includes all the essential features capable of running document-type workloads.
 
-We are testing FerretDB 0.9.2 against real-world applications, like [BigBlueButton](https://bigbluebutton.org/), [Strapi](https://strapi.io/), or frameworks such as [MeteorJS](https://www.meteor.com/), among others.
+We are testing FerretDB against real-world applications, like [BigBlueButton](https://bigbluebutton.org/), [Strapi](https://strapi.io/), or frameworks such as [MeteorJS](https://www.meteor.com/), among others.
 We also confirmed that popular database management software such as [Mongosh/MongoDB Compass](https://www.mongodb.com/docs/compass/current/embedded-shell/), [NoSQL Booster](https://nosqlbooster.com/downloads), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
 It’s like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
 We think this is insanely cool!
