@@ -83,11 +83,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	f := &tigrisFetcher{
-		dbPool: dbPool,
-		qp:     qp,
-	}
-
 	stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stages := make([]aggregations.Stage, len(stagesDocs))
 
@@ -103,7 +98,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 
-		if s, err = aggregations.NewStage(d, f); err != nil {
+		if s, err = aggregations.NewStage(d); err != nil {
 			return nil, err
 		}
 
@@ -152,19 +147,3 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	return &reply, nil
 }
-
-// tigrisFetcher fetches tigris specific values.
-type tigrisFetcher struct {
-	dbPool *tigrisdb.TigrisDB
-	qp     tigrisdb.QueryParams
-}
-
-// GetNameSpace implements Fetcher interface.
-func (f *tigrisFetcher) GetNameSpace() string {
-	return f.qp.DB + "." + f.qp.Collection
-}
-
-// check interfaces
-var (
-	_ aggregations.Fetcher = (*tigrisFetcher)(nil)
-)

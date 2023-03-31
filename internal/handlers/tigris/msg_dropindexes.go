@@ -12,47 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package tigris
 
 import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgServerStatus implements HandlerInterface.
-func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
+// MsgDropIndexes implements HandlerInterface.
+func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/78
+
+	document, err := msg.Document()
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	res, err := common.ServerStatus(h.StateProvider.Get(), h.Metrics)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	stats, err := dbPool.Stats(ctx, "", "")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", stats.CountTables,
-		"capped", int32(0),
-		"timeseries", int32(0),
-		"views", int32(0),
-		"internalCollections", int32(0),
-		"internalViews", int32(0),
-	)))
+	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
 	}))
 
 	return &reply, nil

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pg
+package aggregations
 
 import (
 	"context"
@@ -20,40 +20,36 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgServerStatus implements HandlerInterface.
-func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
+// limit represents $limit stage.
+type limit struct {
+	limit int64
+}
+
+// newLimit creates a new $limit stage.
+func newLimit(stage *types.Document) (Stage, error) {
+	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := common.ServerStatus(h.StateProvider.Get(), h.Metrics)
+	l, err := common.GetLimitStageParam(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &limit{
+		limit: l,
+	}, nil
+}
+
+// Process implements Stage interface.
+func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	doc, err := common.LimitDocuments(in, l.limit)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := dbPool.Stats(ctx, "", "")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", stats.CountTables,
-		"capped", int32(0),
-		"timeseries", int32(0),
-		"views", int32(0),
-		"internalCollections", int32(0),
-		"internalViews", int32(0),
-	)))
-
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
-	}))
-
-	return &reply, nil
+	return doc, nil
 }

@@ -94,6 +94,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
+		// SortIterator should be closed
+		defer iter.Close()
+
 		iter = common.LimitIterator(iter, params.Limit)
 
 		iter = common.SkipIterator(iter, params.Skip)

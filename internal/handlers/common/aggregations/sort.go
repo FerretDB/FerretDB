@@ -30,7 +30,7 @@ type sort struct {
 }
 
 // newSort creates a new $sort stage.
-func newSort(stage *types.Document, fetcher Fetcher) (Stage, error) {
+func newSort(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

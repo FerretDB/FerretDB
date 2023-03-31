@@ -23,7 +23,7 @@ import (
 )
 
 // newStageFunc is a type for a function that creates a new aggregation stage.
-type newStageFunc func(stage *types.Document, fetcher Fetcher) (Stage, error)
+type newStageFunc func(stage *types.Document) (Stage, error)
 
 // Stage is a common interface for all aggregation stages.
 // TODO use iterators instead of slices of documents
@@ -33,26 +33,20 @@ type Stage interface {
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
 }
 
-// Fetcher is an interface for fetching handler specific values
-// for stages.
-type Fetcher interface {
-	// GetNameSpace gets the ns in <database>.<collection> format.
-	GetNameSpace() string
-}
-
 // stages maps all supported aggregation stages.
 var stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$collStats": newCollStats,
 	"$count":     newCount,
 	"$group":     newGroup,
+	"$limit":     newLimit,
 	"$match":     newMatch,
 	"$sort":      newSort,
 	// please keep sorted alphabetically
 }
 
 // NewStage creates a new aggregation stage.
-func NewStage(stage *types.Document, fetcher Fetcher) (Stage, error) {
+func NewStage(stage *types.Document) (Stage, error) {
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
@@ -72,5 +66,5 @@ func NewStage(stage *types.Document, fetcher Fetcher) (Stage, error) {
 		)
 	}
 
-	return f(stage, fetcher)
+	return f(stage)
 }

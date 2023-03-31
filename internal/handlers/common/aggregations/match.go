@@ -28,7 +28,7 @@ type match struct {
 }
 
 // newMatch creates a new $match stage.
-func newMatch(stage *types.Document, fetcher Fetcher) (Stage, error) {
+func newMatch(stage *types.Document) (Stage, error) {
 	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

@@ -47,6 +47,9 @@ const (
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
+	// ErrIndexNotFound indicates that a index is not found for the given name.
+	ErrIndexNotFound = ErrorCode(27) // IndexNotFound
+
 	// ErrUnsuitableValueType indicates that field could not be created for given value.
 	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
 
@@ -67,6 +70,9 @@ const (
 
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
+
+	// ErrInvalidOptions indicates that _id index cannot be deleted.
+	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
@@ -103,6 +109,9 @@ const (
 
 	// ErrStageGroupMissingID indicates that group is missing an _id.
 	ErrStageGroupMissingID = ErrorCode(15955) // Location15955
+
+	// ErrStageLimitZero indicated that limit field is not positive.
+	ErrStageLimitZero = ErrorCode(15958) // Location15958
 
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
@@ -193,6 +202,9 @@ const (
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
+
+	// ErrStageLimitInvalidArg indicates invalid argument for the aggregation $limit stage.
+	ErrStageLimitInvalidArg = ErrorCode(5107201) // Location5107201
 )
 
 // ErrInfo represents additional optional error information.

@@ -30,7 +30,7 @@ type count struct {
 }
 
 // newCount creates a new $count stage.
-func newCount(stage *types.Document, fetcher Fetcher) (Stage, error) {
+func newCount(stage *types.Document) (Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

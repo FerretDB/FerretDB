@@ -85,11 +85,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	f := &pgFetcher{
-		dbPool: dbPool,
-		qp:     qp,
-	}
-
 	stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stages := make([]aggregations.Stage, len(stagesDocs))
 
@@ -105,7 +100,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 
-		if s, err = aggregations.NewStage(d, f); err != nil {
+		if s, err = aggregations.NewStage(d); err != nil {
 			return nil, err
 		}
 
@@ -155,19 +150,3 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	return &reply, nil
 }
-
-// pgFetcher fetches pg specific values.
-type pgFetcher struct {
-	dbPool *pgdb.Pool
-	qp     pgdb.QueryParams
-}
-
-// GetNameSpace implements Fetcher interface.
-func (f *pgFetcher) GetNameSpace() string {
-	return f.qp.DB + "." + f.qp.Collection
-}
-
-// check interfaces
-var (
-	_ aggregations.Fetcher = (*pgFetcher)(nil)
-)

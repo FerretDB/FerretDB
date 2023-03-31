@@ -26,19 +26,17 @@ import (
 
 // collStats represents $collStats stage.
 type collStats struct {
-	f      Fetcher
 	fields *types.Document
 }
 
 // newCollStats creates a new $collStats stage.
-func newCollStats(stage *types.Document, fetcher Fetcher) (Stage, error) {
+func newCollStats(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &collStats{
-		f:      fetcher,
 		fields: fields,
 	}, nil
 }
@@ -50,7 +48,7 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 		return nil, lazyerrors.Error(err)
 	}
 
-	ns := c.f.GetNameSpace()
+	ns := "" // c.f.GetNameSpace()
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	doc, err := types.NewDocument(
