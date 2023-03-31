@@ -133,6 +133,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 			return 0, errInfinity
 		}
 
+		if value > float64(math.MaxInt64) ||
+			value < float64(math.MinInt64) {
+			return 0, errLongExceeded
+		}
+
 		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}

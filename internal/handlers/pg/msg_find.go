@@ -21,6 +21,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -74,7 +76,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if params.BatchSize == 0 {
+			return nil
+		}
+
 		var iter types.DocumentsIterator
+
 		if iter, err = pgdb.QueryDocuments(ctx, tx, qp); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -101,17 +108,37 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.SkipIterator(iter, params.Skip)
 
-		iter, err = common.ProjectionIterator(iter, params.Projection)
-		if err != nil {
+		if iter, err = common.ProjectionIterator(iter, params.Projection); err != nil {
 			return lazyerrors.Error(err)
 		}
 
 		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+
 		return err
 	})
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	var cursorID int64
+
+	if h.EnableCursors {
+		iter := iterator.Values(iterator.ForSlice(resDocs))
+		c := cursor.New(&cursor.NewParams{
+			Iter:       iter,
+			DB:         params.DB,
+			Collection: params.Collection,
+			BatchSize:  params.BatchSize,
+		})
+
+		username, _ := conninfo.Get(ctx).Auth()
+		cursorID = h.registry.StoreCursor(username, c)
+
+		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))
@@ -124,7 +151,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
+				"id", cursorID,
 				"ns", qp.DB+"."+qp.Collection,
 			)),
 			"ok", float64(1),
