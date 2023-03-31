@@ -60,7 +60,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	stats, err := dbPool.SchemaStats(ctx, db, collection)
+	stats, err := dbPool.Stats(ctx, db, collection)
 	elapses := time.Since(started)
 
 	addEstimate := true

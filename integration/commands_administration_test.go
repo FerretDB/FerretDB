@@ -615,6 +615,27 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
 }
 
+func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	assert.InDelta(t, float64(16), must.NotFail(doc.Get("size")), 16)
+	assert.InDelta(t, float64(8), must.NotFail(doc.Get("storageSize")), 8)
+	assert.InDelta(t, float64(8), must.NotFail(doc.Get("totalIndexSize")), 8)
+	assert.InDelta(t, float64(24), must.NotFail(doc.Get("totalSize")), 24)
+}
+
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
@@ -668,7 +689,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
 	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, float64(49152), doc.Remove("totalSize"), 49152)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
@@ -777,7 +798,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.True(t, ok)
 
 	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
-	assert.InDelta(t, float64(250), must.NotFail(catalogStats.Get("collections")), 250)
+	assert.InDelta(t, float64(632), must.NotFail(catalogStats.Get("collections")), 632)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
