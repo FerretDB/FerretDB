@@ -16,12 +16,8 @@ package aggregations
 
 import (
 	"context"
-	"os"
-	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // collStats represents $collStats stage.
@@ -29,32 +25,13 @@ type collStats struct{}
 
 // newCollStats creates a new $collStats stage.
 func newCollStats(stage *types.Document) (Stage, error) {
-	_, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return new(collStats), nil
+	return nil, ErrRequireHandlerImplementation
 }
 
 // Process implements Stage interface.
 func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	host, err := os.Hostname()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := types.NewDocument(
-		// todo return "ns"
-		"host", host,
-		"localtime", time.Now().UTC().Format(time.RFC3339),
-	)
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return []*types.Document{doc}, nil
+	// impossible to reach
+	panic("$collStats is not implemented for the current handler")
 }
 
 // check interfaces

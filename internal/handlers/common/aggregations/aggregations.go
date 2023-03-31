@@ -12,5 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package aggregations provides aggregation pipelines.
 package aggregations
+
+import "errors"
+
+// ErrRequireHandlerImplementation indicate that the stage must be implemented by each handler.
+var ErrRequireHandlerImplementation = errors.New("require handler implementation")
