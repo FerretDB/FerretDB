@@ -110,6 +110,9 @@ const (
 	// ErrStageGroupMissingID indicates that group is missing an _id.
 	ErrStageGroupMissingID = ErrorCode(15955) // Location15955
 
+	// ErrStageLimitZero indicated that limit field is not positive.
+	ErrStageLimitZero = ErrorCode(15958) // Location15958
+
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
 
@@ -199,6 +202,9 @@ const (
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
+
+	// ErrStageLimitInvalidArg indicates invalid argument for the aggregation $limit stage.
+	ErrStageLimitInvalidArg = ErrorCode(5107201) // Location5107201
 )
 
 // ErrInfo represents additional optional error information.
