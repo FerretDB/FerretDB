@@ -33,7 +33,8 @@ type Stage interface {
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
 }
 
-// Fetcher is an interface for fetching values necessary by stages.
+// Fetcher is an interface for fetching handler specific values
+// for stages.
 type Fetcher interface {
 	// GetNameSpace gets the ns in <database>.<collection> format.
 	GetNameSpace() string
