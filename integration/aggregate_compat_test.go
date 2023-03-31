@@ -439,6 +439,28 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
+		"SkipAfter": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", 2}},
+			},
+		},
+		"SkipBefore": {
+			pipeline: bson.A{
+				// the first type in collection is chosen)
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", 2}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
