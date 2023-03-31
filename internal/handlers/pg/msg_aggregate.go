@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
@@ -54,13 +55,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"allowDiskUse", "maxTimeMS", "bypassDocumentValidation", "readConcern", "hint", "comment", "writeConcern",
 	)
 
-	var qp pgdb.QueryParams
+	var db string
 
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
-	collection, err := document.Get(document.Command())
+	collectionParam, err := document.Get(document.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// TODO handle collection-agnostic pipelines ({aggregate: 1})
 	// https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
-	if qp.Collection, ok = collection.(string); !ok {
+	var collection string
+
+	if collection, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			"Invalid command format: the 'aggregate' field must specify a collection name or 1",
@@ -85,10 +88,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stages := make([]aggregations.Stage, len(stagesDocs))
+	stages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
+	stagesDocuments := make([]aggregations.Stage, len(stages))
+	stagesStats := make([]aggregations.Stage, len(stages))
 
-	for i, d := range stagesDocs {
+	for _, d := range stages {
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -104,35 +108,43 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		stages[i] = s
+		switch s.Type() {
+		case aggregations.StageTypeDocuments:
+			stagesDocuments = append(stagesDocuments, s)
+		case aggregations.StageTypeStats:
+			stagesStats = append(stagesStats, s)
+		default:
+			panic(fmt.Sprintf("unknown stage type: %v", s.Type()))
+		}
 	}
 
-	qp.Filter = aggregations.GetPushdownQuery(stagesDocs)
+	var resDocs []*types.Document
 
-	var docs []*types.Document
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.QueryDocuments(ctx, tx, &qp)
-		if getErr != nil {
-			return getErr
+	if len(stagesDocuments) > 0 {
+		qp := pgdb.QueryParams{
+			DB:         db,
+			Collection: collection,
 		}
 
-		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-		return err
-	})
+		qp.Filter = aggregations.GetPushdownQuery(stages)
 
-	if err != nil {
-		return nil, err
+		var err error
+		if resDocs, err = processStagesDocuments(ctx, dbPool, &qp, stagesDocuments); err != nil {
+			return nil, err
+		}
 	}
 
-	for _, s := range stages {
-		if docs, err = s.Process(ctx, docs); err != nil {
+	if len(stagesStats) > 0 {
+		statistics := aggregations.GetStatistics(stagesStats)
+
+		if resDocs, err = processStagesStats(ctx, dbPool, statistics, db, collection, stagesStats); err != nil {
 			return nil, err
 		}
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1892
-	firstBatch := types.MakeArray(len(docs))
-	for _, doc := range docs {
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
 		firstBatch.Append(doc)
 	}
 
@@ -142,11 +154,81 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", int64(0),
-				"ns", qp.DB+"."+qp.Collection,
+				"ns", db+"."+collection,
 			)),
 			"ok", float64(1),
 		))},
 	}))
 
 	return &reply, nil
+}
+
+func processStagesDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, stages []aggregations.Stage) ([]*types.Document, error) { //nolint:lll // for readability
+	var docs []*types.Document
+
+	if err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		iter, getErr := pgdb.QueryDocuments(ctx, tx, qp)
+		if getErr != nil {
+			return getErr
+		}
+
+		var err error
+		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	for _, s := range stages {
+		var err error
+		if docs, err = s.Process(ctx, docs); err != nil {
+			return nil, err
+		}
+	}
+
+	return docs, nil
+}
+
+func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[aggregations.Statistic]struct{}, db, collection string, stages []aggregations.Stage) ([]*types.Document, error) {
+	var docs []*types.Document
+
+	_, hasCount := statistics[aggregations.StatisticCount]
+	_, hasStorage := statistics[aggregations.StatisticStorage]
+
+	var dbStats *pgdb.DBStats
+	var err error
+
+	if hasCount || hasStorage {
+		dbStats, err = dbPool.Stats(ctx, db, collection)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	for stat := range statistics {
+		switch stat {
+		case aggregations.StatisticCount:
+			docs = append(docs, must.NotFail(types.NewDocument(
+				"type", int32(aggregations.StatisticCount),
+				"value", float64(dbStats.CountRows),
+			)))
+		case aggregations.StatisticStorage:
+			docs = append(docs, must.NotFail(types.NewDocument(
+				"type", int32(aggregations.StatisticStorage),
+				"value", float64(dbStats.SizeTotal),
+			)))
+		default:
+			panic(fmt.Sprintf("unknown statistic: %v", stat))
+		}
+	}
+
+	var res []*types.Document
+	for _, s := range stages {
+		var err error
+		if res, err = s.Process(ctx, docs); err != nil {
+			return nil, err
+		}
+	}
+
+	return res, nil
 }

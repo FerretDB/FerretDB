@@ -19,6 +19,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -26,7 +28,10 @@ import (
 
 // collStats represents $collStats stage.
 type collStats struct {
-	fields *types.Document
+	count          bool
+	latencyStats   bool
+	queryExecStats bool
+	storageStats   bool
 }
 
 // newCollStats creates a new $collStats stage.
@@ -36,9 +41,25 @@ func newCollStats(stage *types.Document) (Stage, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &collStats{
-		fields: fields,
-	}, nil
+	var cs collStats
+
+	// TODO: return error on invalid type of count.
+	// https://github.com/FerretDB/FerretDB/issues/2336
+	cs.count = fields.Has("count")
+
+	// TODO: implement latencyStats
+	// https://github.com/FerretDB/FerretDB/issues/1416
+	cs.latencyStats = fields.Has("latencyStats")
+
+	// TODO: implement queryExecStats
+	// https://github.com/FerretDB/FerretDB/issues/1416
+	cs.queryExecStats = fields.Has("queryExecStats")
+
+	// TODO: implement storageStats
+	// https://github.com/FerretDB/FerretDB/issues/1416
+	cs.storageStats = fields.Has("storageStats")
+
+	return &cs, nil
 }
 
 // Process implements Stage interface.
@@ -51,41 +72,25 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 	ns := "" // c.f.GetNameSpace()
 	now := time.Now().UTC().Format(time.RFC3339)
 
-	doc, err := types.NewDocument(
+	res := must.NotFail(types.NewDocument(
 		"ns", ns,
 		"host", host,
 		"localTime", now,
-	)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	))
+
+	for _, doc := range in {
+		t := must.NotFail(doc.Get("type"))
+		if t == int32(StatisticCount) {
+			res.Set("count", must.NotFail(doc.Get("value")))
+		}
 	}
 
-	count, err := c.fields.Get("count")
+	return []*types.Document{res}, nil
+}
 
-	if err == nil {
-		doc.Set("count", int32(len(in)))
-	}
-
-	// TODO: return error on invalid type of count.
-	// https://github.com/FerretDB/FerretDB/issues/2336
-	_ = count
-
-	// TODO: implement latencyStats
-	// https://github.com/FerretDB/FerretDB/issues/1416
-	latencyStats, _ := c.fields.Get("latencyStats")
-	_ = latencyStats
-
-	// TODO: implement queryExecStats
-	// https://github.com/FerretDB/FerretDB/issues/1416
-	queryExecStats, _ := c.fields.Get("queryExecStats")
-	_ = queryExecStats
-
-	// TODO: implement storageStats
-	// https://github.com/FerretDB/FerretDB/issues/1416
-	storageStats, _ := c.fields.Get("storageStats")
-	_ = storageStats
-
-	return []*types.Document{doc}, nil
+// Type implements Stage interface.
+func (c *collStats) Type() StageType {
+	return StageTypeStats
 }
 
 // check interfaces
