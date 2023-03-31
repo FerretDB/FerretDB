@@ -79,6 +79,8 @@ type pathExpression struct {
 
 // ExpressionOpts represents options used to modify behavior of Expression functions.
 type ExpressionOpts struct {
+	// IgnoreArrays disables checking arrays for provided key.
+	// So expression {"$v.foo"} won't match {"v":[{"foo":42}]}
 	IgnoreArrays bool // defaults to false
 }
 
