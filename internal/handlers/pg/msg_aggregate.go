@@ -201,8 +201,11 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 		"ns", db+"."+collection,
 	))
 
+	var dbStats *pgdb.DBStats
+	var err error
+
 	if hasCount || hasStorage {
-		dbStats, err := dbPool.Stats(ctx, db, collection)
+		dbStats, err = dbPool.Stats(ctx, db, collection)
 		switch {
 		case err == nil:
 		// do nothing
@@ -215,7 +218,15 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 		default:
 			return nil, err
 		}
+	}
 
+	if hasCount {
+		doc.Set(
+			"count", dbStats.CountRows,
+		)
+	}
+
+	if hasStorage {
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
 				"size", dbStats.SizeTotal,
@@ -238,7 +249,6 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 	var res []*types.Document
 
 	for _, s := range stages {
-		var err error
 		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
 			return nil, err
 		}
