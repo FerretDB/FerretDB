@@ -227,11 +227,16 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 	}
 
 	if hasStorage {
+		var avgObjSize float64
+		if dbStats.CountRows > 0 {
+			avgObjSize = float64(dbStats.SizeRelation) / float64(dbStats.CountRows)
+		}
+
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
 				"size", dbStats.SizeTotal,
 				"count", dbStats.CountRows,
-				"avgObjSize", float64(dbStats.SizeRelation)/float64(dbStats.CountRows),
+				"avgObjSize", avgObjSize,
 				"storageSize", dbStats.SizeRelation,
 				"freeStorageSize", float64(0), // TODO
 				"capped", false, // TODO
