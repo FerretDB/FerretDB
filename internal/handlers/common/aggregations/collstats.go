@@ -16,10 +16,9 @@ package aggregations
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -63,27 +62,26 @@ func newCollStats(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
+//
+// Processing consists of modification of the input document, so it contains all the necessary fields
+// and the data is modified according to the given request.
 func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	// The result of $collStats stage is always an array with a single document, and we expect the same input.
+	if len(in) != 1 {
+		panic(fmt.Sprintf("collStats: expected 1 document, got %d", len(in)))
+	}
+
+	res := in[0]
+
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	ns := "" // c.f.GetNameSpace()
+	res.Set("host", host)
+
 	now := time.Now().UTC().Format(time.RFC3339)
-
-	res := must.NotFail(types.NewDocument(
-		"ns", ns,
-		"host", host,
-		"localTime", now,
-	))
-
-	for _, doc := range in {
-		t := must.NotFail(doc.Get("type"))
-		if t == int32(StatisticCount) {
-			res.Set("count", must.NotFail(doc.Get("value")))
-		}
-	}
+	res.Set("localTime", now)
 
 	return []*types.Document{res}, nil
 }

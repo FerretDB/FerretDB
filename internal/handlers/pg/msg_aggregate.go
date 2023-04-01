@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
@@ -89,8 +90,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	stages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]aggregations.Stage, len(stages))
-	stagesStats := make([]aggregations.Stage, len(stages))
+	stagesDocuments := make([]aggregations.Stage, 0, len(stages))
+	stagesStats := make([]aggregations.Stage, 0, len(stages))
 
 	for _, d := range stages {
 		d, ok := d.(*types.Document)
@@ -163,6 +164,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
+// processStagesDocuments retrieves the documents from the database and then processes them through the stages.
 func processStagesDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, stages []aggregations.Stage) ([]*types.Document, error) { //nolint:lll // for readability
 	var docs []*types.Document
 
@@ -189,43 +191,55 @@ func processStagesDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.Que
 	return docs, nil
 }
 
+// processStagesStats retrieves the statistics from the database and then processes them through the stages.
 func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[aggregations.Statistic]struct{}, db, collection string, stages []aggregations.Stage) ([]*types.Document, error) {
-	var docs []*types.Document
-
+	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := statistics[aggregations.StatisticCount]
 	_, hasStorage := statistics[aggregations.StatisticStorage]
 
-	var dbStats *pgdb.DBStats
-	var err error
+	doc := must.NotFail(types.NewDocument(
+		"ns", db+"."+collection,
+	))
 
 	if hasCount || hasStorage {
-		dbStats, err = dbPool.Stats(ctx, db, collection)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	for stat := range statistics {
-		switch stat {
-		case aggregations.StatisticCount:
-			docs = append(docs, must.NotFail(types.NewDocument(
-				"type", int32(aggregations.StatisticCount),
-				"value", float64(dbStats.CountRows),
-			)))
-		case aggregations.StatisticStorage:
-			docs = append(docs, must.NotFail(types.NewDocument(
-				"type", int32(aggregations.StatisticStorage),
-				"value", float64(dbStats.SizeTotal),
-			)))
+		dbStats, err := dbPool.Stats(ctx, db, collection)
+		switch {
+		case err == nil:
+		// do nothing
+		case errors.Is(err, pgdb.ErrTableNotExist):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNamespaceNotFound,
+				fmt.Sprintf("ns not found: %s.%s", db, collection),
+				"aggregate",
+			)
 		default:
-			panic(fmt.Sprintf("unknown statistic: %v", stat))
+			return nil, err
 		}
+
+		doc.Set(
+			"storageStats", must.NotFail(types.NewDocument(
+				"size", dbStats.SizeTotal,
+				"count", dbStats.CountRows,
+				"avgObjSize", float64(dbStats.SizeRelation)/float64(dbStats.CountRows),
+				"storageSize", dbStats.SizeRelation,
+				"freeStorageSize", float64(0), // TODO
+				"capped", false, // TODO
+				"wiredTiger", must.NotFail(types.NewDocument()), // TODO
+				"nindexes", dbStats.CountIndexes,
+				"indexDetails", must.NotFail(types.NewDocument()), // TODO
+				"indexBuilds", must.NotFail(types.NewDocument()), // TODO
+				"totalIndexSize", dbStats.SizeIndexes,
+				"indexSizes", must.NotFail(types.NewDocument()), // TODO
+			)),
+		)
 	}
 
+	// Process the retrieved statistics through the stages.
 	var res []*types.Document
+
 	for _, s := range stages {
 		var err error
-		if res, err = s.Process(ctx, docs); err != nil {
+		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
 			return nil, err
 		}
 	}
