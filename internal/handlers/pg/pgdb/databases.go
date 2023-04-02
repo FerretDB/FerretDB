@@ -59,6 +59,16 @@ func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	return res, nil
 }
 
+// DatabaseExists returns true if the given database exists.
+func DatabaseExists(ctx context.Context, tx pgx.Tx, db string) bool {
+	_, err := tx.Exec(ctx, "SELECT 1 FROM pg_database WHERE datname='$1'")
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
 // CreateDatabaseIfNotExists creates a new FerretDB database (PostgreSQL schema).
 //
 // If a PostgreSQL conflict occurs it returns *transactionConflictError, and the caller could retry the transaction.
