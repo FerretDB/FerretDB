@@ -43,7 +43,7 @@ func GetStatistics(stages []Stage) map[Statistic]struct{} {
 				stats[StatisticQueryExec] = struct{}{}
 			}
 
-			if st.storageStats {
+			if st.storageStats != nil {
 				stats[StatisticStorage] = struct{}{}
 			}
 		}

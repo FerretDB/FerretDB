@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // collStats represents $collStats stage.
@@ -29,7 +29,12 @@ type collStats struct {
 	count          bool
 	latencyStats   bool
 	queryExecStats bool
-	storageStats   bool
+	storageStats   *storageStats
+}
+
+// storageStats represents $collStats.storageStats field.
+type storageStats struct {
+	scale int32
 }
 
 // newCollStats creates a new $collStats stage.
@@ -39,27 +44,33 @@ func newCollStats(stage *types.Document) (Stage, error) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCollStatsInvalidArg,
 			fmt.Sprintf("$collStats must take a nested object but found: $collStats: %s", types.FormatAnyValue(stage)),
-			"$collstats (stage)",
+			"$collStats (stage)",
 		)
 	}
 
 	var cs collStats
 
-	// TODO: return error on invalid type of count.
-	// https://github.com/FerretDB/FerretDB/issues/2336
+	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
 	cs.count = fields.Has("count")
 
-	// TODO: implement latencyStats
-	// https://github.com/FerretDB/FerretDB/issues/1416
+	// TODO Implement latencyStats: https://github.com/FerretDB/FerretDB/issues/2341
 	cs.latencyStats = fields.Has("latencyStats")
 
-	// TODO: implement queryExecStats
-	// https://github.com/FerretDB/FerretDB/issues/1416
+	// TODO Implement queryExecStats: https://github.com/FerretDB/FerretDB/issues/2341
 	cs.queryExecStats = fields.Has("queryExecStats")
 
-	// TODO: implement storageStats
-	// https://github.com/FerretDB/FerretDB/issues/1416
-	cs.storageStats = fields.Has("storageStats")
+	if fields.Has("storageStats") {
+		cs.storageStats = &storageStats{}
+
+		// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
+		cs.storageStats.scale, err = common.GetOptionalPositiveNumber(
+			must.NotFail(fields.Get("storageStats")).(*types.Document),
+			"scale",
+		)
+		if err != nil || cs.storageStats.scale == 0 {
+			cs.storageStats.scale = 1
+		}
+	}
 
 	return &cs, nil
 }
@@ -75,6 +86,18 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 	}
 
 	res := in[0]
+
+	if c.storageStats != nil && c.storageStats.scale > 1 {
+		scale := float64(c.storageStats.scale)
+
+		scalable := []string{"size", "storageSize", "freeStorageSize", "totalIndexSize"}
+		for _, key := range scalable {
+			if res.Has(key) {
+				res.Set(key, must.NotFail(res.Get(key)).(float64)/scale)
+			}
+		}
+	}
+
 	return []*types.Document{res}, nil
 }
 
