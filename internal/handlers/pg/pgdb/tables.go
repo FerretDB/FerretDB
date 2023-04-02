@@ -97,15 +97,14 @@ func renameTable(ctx context.Context, tx pgx.Tx, namespace, to string) (bool, er
 		return false, errors.New("Can't rename a collection to itself")
 	}
 
-	namespaceExists, err := tableExists(ctx, tx, strings.Split(namespace, ".")[0],
+	nsExists, err := tableExists(ctx, tx, strings.Split(namespace, ".")[0],
 		strings.Split(namespace, ".")[1])
 
-	if !namespaceExists {
+	if !nsExists {
 		return false, errors.New("source namespace does not exist")
 	}
 
-	// we have to alter DB too
-
+	// TODO: alter source DB if to DB differs.
 	sql := `ALTER TABLE ` + strings.Split(namespace, ".")[1] +
 		` RENAME TO ` + strings.Split(to, ".")[1]
 
