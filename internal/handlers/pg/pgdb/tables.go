@@ -97,13 +97,14 @@ func renameTable(ctx context.Context, tx pgx.Tx, namespace, to string) (bool, er
 		return false, errors.New("Can't rename a collection to itself")
 	}
 
-	te, err := tableExists(ctx, tx, strings.Split(to, ".")[0], strings.Split(to, ".")[1])
-	if err != nil {
-		return false, lazyerrors.Error(err)
+	namespaceExists, err := tableExists(ctx, tx, strings.Split(namespace, ".")[0],
+		strings.Split(namespace, ".")[1])
+
+	if !namespaceExists {
+		return false, errors.New("source namespace does not exist")
 	}
 
-	if !DatabaseExists(ctx, tx, strings.Split(namespace, ".")[0]) || !te {
-		return false, errors.New("source namespace does not exist")
+	// we have to alter DB too
 
 	sql := `ALTER TABLE ` + strings.Split(namespace, ".")[1] +
 		` RENAME TO ` + strings.Split(to, ".")[1]
@@ -112,5 +113,6 @@ func renameTable(ctx context.Context, tx pgx.Tx, namespace, to string) (bool, er
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
+
 	return true, nil
 }
