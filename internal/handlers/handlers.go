@@ -144,6 +144,9 @@ type Interface interface {
 	// MsgPing returns a pong response.
 	MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgRenameCollection changes the name of an existing collection.
+	MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgSASLStart starts the SASL authentication process.
 	MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
