@@ -191,6 +191,10 @@ var Commands = map[string]command{
 		Help:    "Returns a pong response.",
 		Handler: handlers.Interface.MsgPing,
 	},
+	"renameCollection": {
+		Help:    "Changes the name of an existing collection.",
+		Handler: handlers.Interface.MsgRenameCollection,
+	},
 	"saslStart": {
 		Help:    "Starts a SASL conversation.",
 		Handler: handlers.Interface.MsgSASLStart,
