@@ -127,9 +127,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
+			Filter:     aggregations.GetPushdownQuery(stages),
 		}
-
-		qp.Filter = aggregations.GetPushdownQuery(stages)
 
 		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
 			dbPool, &qp, stagesDocuments,

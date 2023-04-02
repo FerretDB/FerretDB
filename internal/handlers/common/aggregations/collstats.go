@@ -43,7 +43,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCollStatsInvalidArg,
-			fmt.Sprintf("$collStats must take a nested object but found: $collStats: %s", types.FormatAnyValue(stage)),
+			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(stage)),
 			"$collStats (stage)",
 		)
 	}

@@ -64,7 +64,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 
 			// It's enough to use a couple of providers: one for some collection and one for a non-existent collection.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.Composites},
+				Providers:                []shareddata.Provider{shareddata.ArrayDocuments},
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
