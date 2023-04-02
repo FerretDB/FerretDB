@@ -131,8 +131,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		qp.Filter = aggregations.GetPushdownQuery(stages)
 
-		var err error
-		if resDocs, err = processStagesDocuments(ctx, dbPool, &qp, stagesDocuments); err != nil {
+		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
+			dbPool, &qp, stagesDocuments,
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -140,7 +141,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if len(stagesStats) > 0 {
 		statistics := aggregations.GetStatistics(stagesStats)
 
-		if resDocs, err = processStagesStats(ctx, dbPool, statistics, db, collection, stagesStats); err != nil {
+		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
+			dbPool, db, collection, statistics, stagesStats,
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -166,12 +169,19 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
+// stagesDocumentsParams contains the parameters for processStagesDocuments.
+type stagesDocumentsParams struct {
+	dbPool *pgdb.Pool
+	qp     *pgdb.QueryParams
+	stages []aggregations.Stage
+}
+
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
-func processStagesDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, stages []aggregations.Stage) ([]*types.Document, error) { //nolint:lll // for readability
+func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*types.Document, error) { //nolint:lll // for readability
 	var docs []*types.Document
 
-	if err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.QueryDocuments(ctx, tx, qp)
+	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		iter, getErr := pgdb.QueryDocuments(ctx, tx, p.qp)
 		if getErr != nil {
 			return getErr
 		}
@@ -183,7 +193,7 @@ func processStagesDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.Que
 		return nil, err
 	}
 
-	for _, s := range stages {
+	for _, s := range p.stages {
 		var err error
 		if docs, err = s.Process(ctx, docs); err != nil {
 			return nil, err
@@ -193,11 +203,20 @@ func processStagesDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.Que
 	return docs, nil
 }
 
+// stagesStatsParams contains the parameters for processStagesStats.
+type stagesStatsParams struct {
+	dbPool     *pgdb.Pool
+	db         string
+	collection string
+	statistics map[aggregations.Statistic]struct{}
+	stages     []aggregations.Stage
+}
+
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
-func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[aggregations.Statistic]struct{}, db, collection string, stages []aggregations.Stage) ([]*types.Document, error) {
+func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Document, error) {
 	// Clarify what needs to be retrieved from the database and retrieve it.
-	_, hasCount := statistics[aggregations.StatisticCount]
-	_, hasStorage := statistics[aggregations.StatisticStorage]
+	_, hasCount := p.statistics[aggregations.StatisticCount]
+	_, hasStorage := p.statistics[aggregations.StatisticStorage]
 
 	var host string
 	var err error
@@ -208,7 +227,7 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 	}
 
 	doc := must.NotFail(types.NewDocument(
-		"ns", db+"."+collection,
+		"ns", p.db+"."+p.collection,
 		"host", host,
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
@@ -216,14 +235,15 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 	var dbStats *pgdb.DBStats
 
 	if hasCount || hasStorage {
-		dbStats, err = dbPool.Stats(ctx, db, collection)
+		dbStats, err = p.dbPool.Stats(ctx, p.db, p.collection)
+
 		switch {
 		case err == nil:
 		// do nothing
 		case errors.Is(err, pgdb.ErrTableNotExist):
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNamespaceNotFound,
-				fmt.Sprintf("ns not found: %s.%s", db, collection),
+				fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
 				"aggregate",
 			)
 		default:
@@ -264,7 +284,7 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 	// Process the retrieved statistics through the stages.
 	var res []*types.Document
 
-	for _, s := range stages {
+	for _, s := range p.stages {
 		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
 			return nil, err
 		}

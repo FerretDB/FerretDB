@@ -26,10 +26,10 @@ import (
 
 // collStats represents $collStats stage.
 type collStats struct {
+	storageStats   *storageStats
 	count          bool
 	latencyStats   bool
 	queryExecStats bool
-	storageStats   *storageStats
 }
 
 // storageStats represents $collStats.storageStats field.
@@ -60,7 +60,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 	cs.queryExecStats = fields.Has("queryExecStats")
 
 	if fields.Has("storageStats") {
-		cs.storageStats = &storageStats{}
+		cs.storageStats = new(storageStats)
 
 		// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
 		cs.storageStats.scale, err = common.GetOptionalPositiveNumber(

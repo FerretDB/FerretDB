@@ -14,8 +14,10 @@
 
 package aggregations
 
+// Statistic represents a statistic that can be fetched from the DB.
 type Statistic int32
 
+// List of statistics that can be fetched from the DB.
 const (
 	StatisticCount Statistic = iota
 	StatisticLatency
@@ -26,7 +28,7 @@ const (
 // GetStatistics has the same idea as GetPushdownQuery: it returns a list of statistics that need
 // to be fetched from the DB, because they are needed for one or more stages.
 func GetStatistics(stages []Stage) map[Statistic]struct{} {
-	stats := make(map[Statistic]struct{})
+	stats := make(map[Statistic]struct{}, len(stages))
 
 	for _, stage := range stages {
 		switch st := stage.(type) {
