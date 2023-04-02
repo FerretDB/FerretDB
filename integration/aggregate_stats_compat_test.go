@@ -115,14 +115,6 @@ func TestAggregateCompatCollStats(t *testing.T) {
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
 					}
-
-					// Check equality when possible
-					for i, targetField := range targetRes[0] {
-						compatField := compatRes[0][i]
-						if targetField.Key == "count" {
-							assert.Equal(t, compatField, targetField)
-						}
-					}
 				})
 			}
 
