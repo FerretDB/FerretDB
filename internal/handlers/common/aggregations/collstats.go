@@ -17,12 +17,11 @@ package aggregations
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // collStats represents $collStats stage.
@@ -37,7 +36,11 @@ type collStats struct {
 func newCollStats(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageCollStatsInvalidArg,
+			fmt.Sprintf("$collStats must take a nested object but found: $collStats: %s", types.FormatAnyValue(stage)),
+			"$collstats (stage)",
+		)
 	}
 
 	var cs collStats
@@ -72,17 +75,6 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 	}
 
 	res := in[0]
-
-	host, err := os.Hostname()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("host", host)
-
-	now := time.Now().UTC().Format(time.RFC3339)
-	res.Set("localTime", now)
-
 	return []*types.Document{res}, nil
 }
 

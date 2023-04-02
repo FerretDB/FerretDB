@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -197,12 +199,21 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 	_, hasCount := statistics[aggregations.StatisticCount]
 	_, hasStorage := statistics[aggregations.StatisticStorage]
 
+	var host string
+	var err error
+
+	host, err = os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	doc := must.NotFail(types.NewDocument(
 		"ns", db+"."+collection,
+		"host", host,
+		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
 	var dbStats *pgdb.DBStats
-	var err error
 
 	if hasCount || hasStorage {
 		dbStats, err = dbPool.Stats(ctx, db, collection)
@@ -218,12 +229,6 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 		default:
 			return nil, err
 		}
-	}
-
-	if hasCount {
-		doc.Set(
-			"count", dbStats.CountRows,
-		)
 	}
 
 	if hasStorage {
@@ -247,6 +252,12 @@ func processStagesStats(ctx context.Context, dbPool *pgdb.Pool, statistics map[a
 				"totalIndexSize", dbStats.SizeIndexes,
 				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
+		)
+	}
+
+	if hasCount {
+		doc.Set(
+			"count", dbStats.CountRows,
 		)
 	}
 

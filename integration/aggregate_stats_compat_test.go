@@ -34,7 +34,8 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
 	}{
 		"NilCollStats": {
-			collStats: nil,
+			collStats:  nil,
+			resultType: emptyResult,
 		},
 		"EmptyCollStats": {
 			collStats: bson.D{},
@@ -115,11 +116,11 @@ func TestAggregateCompatCollStats(t *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// check equality for fields that have the same value.
+					// Check equality when possible
 					for i, targetField := range targetRes[0] {
 						compatField := compatRes[0][i]
 						if targetField.Key == "count" {
-							require.Equal(t, targetField, compatField)
+							assert.Equal(t, compatField, targetField)
 						}
 					}
 				})

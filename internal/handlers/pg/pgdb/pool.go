@@ -202,6 +202,8 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 
 // Stats returns a set of statistics for FerretDB server, database, collection
 // - or, in terms of PostgreSQL, database, schema, table.
+//
+// It returns ErrTableNotExist is the given collection does not exist, and ignores other errors.
 func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
 	res := &DBStats{
 		Name: db,
@@ -240,15 +242,19 @@ func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats,
 
 		row := tx.QueryRow(ctx, sql, args...)
 
-		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
+		if err := row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes); err != nil {
+			// just log it for now
+			// TODO https://github.com/FerretDB/FerretDB/issues/1346
+			pgPool.p.Config().ConnConfig.Logger.Log(
+				ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
+				map[string]any{"err": err},
+			)
+		}
+
+		return nil
 	})
 	if err != nil {
-		// just log it for now
-		// TODO https://github.com/FerretDB/FerretDB/issues/1346
-		pgPool.p.Config().ConnConfig.Logger.Log(
-			ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
-			map[string]any{"err": err},
-		)
+		return nil, err
 	}
 
 	return res, nil
