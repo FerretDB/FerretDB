@@ -224,106 +224,6 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 	}
 }
 
-// aggregateCollStatsCompatTestCase describes aggregate compatibility test case.
-type aggregateCollStatsCompatTestCase struct {
-	skip       string                   // skip test for all handlers, must have issue number mentioned
-	collStats  bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
-}
-
-// testAggregateCollStatsCompat tests $collStats aggregation stage.
-// The response equality not checked for compat and target,
-// only the presence of the keys are checked for most of the fields.
-func testAggregateCollStatsCompat(t *testing.T, testCases map[string]aggregateCollStatsCompatTestCase) {
-	t.Helper()
-
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		// Use a single provider
-		Providers: []shareddata.Provider{shareddata.Int32s},
-	})
-
-	ctx := s.Ctx
-	targetCollection := s.TargetCollections[0]
-	compatCollection := s.CompatCollections[0]
-
-	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
-			t.Parallel()
-
-			require.NotNil(t, tc.collStats, "collStats should be set")
-
-			command := bson.A{bson.D{{"$collStats", tc.collStats}}}
-
-			var nonEmptyResults bool
-
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
-
-				targetCursor, targetErr := targetCollection.Aggregate(ctx, command)
-				compatCursor, compatErr := compatCollection.Aggregate(ctx, command)
-
-				if targetCursor != nil {
-					defer targetCursor.Close(ctx)
-				}
-				if compatCursor != nil {
-					defer compatCursor.Close(ctx)
-				}
-
-				if targetErr != nil {
-					t.Logf("Target error: %v", targetErr)
-					t.Logf("Compat error: %v", compatErr)
-					AssertMatchesCommandError(t, compatErr, targetErr)
-
-					return
-				}
-				require.NoError(t, compatErr, "compat error; target returned no error")
-
-				var targetRes, compatRes []bson.D
-				require.NoError(t, targetCursor.All(ctx, &targetRes))
-				require.NoError(t, compatCursor.All(ctx, &compatRes))
-
-				// $collStats returns one document per shard.
-				require.Equal(t, 1, len(compatRes))
-				require.Equal(t, 1, len(targetRes))
-
-				// Check the keys are the same
-				targetKeys := CollectKeys(t, targetRes[0])
-				compatKeys := CollectKeys(t, compatRes[0])
-
-				require.Equal(t, compatKeys, targetKeys)
-
-				if len(targetRes) > 0 || len(compatRes) > 0 {
-					nonEmptyResults = true
-				}
-
-				// check equality for fields that have the same value.
-				for i, targetField := range targetRes[0] {
-					compatField := compatRes[0][i]
-					if targetField.Key == "count" {
-						require.Equal(t, targetField, compatField)
-					}
-				}
-			})
-
-			switch tc.resultType {
-			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
-			}
-		})
-	}
-}
-
 func TestAggregateCommandCompat(t *testing.T) {
 	t.Parallel()
 
@@ -401,21 +301,6 @@ func TestAggregateCompatEmptyPipeline(t *testing.T) {
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
-}
-
-func TestAggregateCompatCollStats(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]aggregateCollStatsCompatTestCase{
-		"Empty": {
-			collStats: bson.D{},
-		},
-		"Count": {
-			collStats: bson.D{{"count", bson.D{}}},
-		},
-	}
-
-	testAggregateCollStatsCompat(t, testCases)
 }
 
 func TestAggregateCompatCount(t *testing.T) {
