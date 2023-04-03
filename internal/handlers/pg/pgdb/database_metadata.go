@@ -180,15 +180,14 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	return metadata.table, nil
 }
 
-func (ms *metadataStorage) renameCollection(ctx context.Context, newName string) error {
+// renameCollection renames metadataStorage.collection.
+func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
-		// TODO collection doesnt exist
-		return err
+		return lazyerrors.Error(err)
 	}
 
-	metadata.collection = newName
-	// TODO handle duplicates
+	metadata.collection = to
 
 	return ms.set(ctx, metadata)
 }
