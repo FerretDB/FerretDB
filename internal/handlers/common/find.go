@@ -32,8 +32,8 @@ type FindParams struct {
 	Filter      *types.Document
 	Sort        *types.Document
 	Projection  *types.Document
-	Limit       int64
 	Skip        int64
+	Limit       int64
 	BatchSize   int32
 	SingleBatch bool
 	Comment     string

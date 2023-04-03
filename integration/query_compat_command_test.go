@@ -34,8 +34,8 @@ type queryCompatCommandTestCase struct {
 	sort       bson.D // defaults to `bson.D{{"_id", 1}}`
 	projection bson.D // nil for leaving projection unset
 
-	limit          *int64                   // defaults to nil to leave unset
 	optSkip        any                      // defaults to nil to leave unset
+	limit          *int64                   // defaults to nil to leave unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
@@ -71,12 +71,12 @@ func testQueryCompatCommand(t *testing.T, testCases map[string]queryCompatComman
 				rest = append(rest, bson.E{Key: "sort", Value: bson.D{{"_id", 1}}})
 			}
 
-			if tc.limit != nil {
-				rest = append(rest, bson.E{Key: "limit", Value: *tc.limit})
-			}
-
 			if tc.optSkip != nil {
 				rest = append(rest, bson.E{Key: "skip", Value: tc.optSkip})
+			}
+
+			if tc.limit != nil {
+				rest = append(rest, bson.E{Key: "limit", Value: *tc.limit})
 			}
 
 			if tc.projection != nil {
