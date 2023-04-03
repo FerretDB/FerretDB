@@ -148,11 +148,6 @@ For example, the following collection contains three documents.
 }
 ```
 
-## Indexing
-
-FerretDB does not currently support indexing.
-Kindly check [our roadmap](https://github.com/orgs/FerretDB/projects/2) or the [open issue on indexing support](https://github.com/FerretDB/FerretDB/issues/78) to know when this will be made available available.
-
 ## Data Storage
 
 For PostgreSQL, FerretDB converts MongoDB drivers and protocols to SQL, where we convert MongoDB bson to jsonb and store it as a value in a row.

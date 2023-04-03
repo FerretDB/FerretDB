@@ -17,7 +17,7 @@ because it works for both editors/IDEs (Ctrl/⌘+click works) and Docusaurus.
 Always add `.md` extension to the file paths.
 Examples:
 
-* [file in the same directory](contributing.md)
+* [file in the same directory](writing-guide.md)
 * [file in a parent directory](../telemetry.md)
 
 ## Images
