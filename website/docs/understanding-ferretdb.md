@@ -56,7 +56,7 @@ For complex documents, you can nest objects (subdocuments) inside a document.
 
 In the example above, the `name` field is a subdocument embedded into a document.
 
-## Dot Notation
+## Dot notation
 
 Dot notations `(.)` are used to reference a field in an embedded document or its index position in an array.
 
@@ -148,7 +148,7 @@ For example, the following collection contains three documents.
 }
 ```
 
-## Data Storage
+## Supported backends
 
 For PostgreSQL, FerretDB converts MongoDB drivers and protocols to SQL, where we convert MongoDB bson to jsonb and store it as a value in a row.
 Read more on [jsonb in PostgreSQL](https://www.postgresql.org/docs/current/datatype-json.html).

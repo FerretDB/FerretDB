@@ -16,7 +16,7 @@ Here are some of the current FerretDB projects that you can fork and contribute 
 For those taking their first steps in contributing to an open source project.
 Please take a look at this post on [how to contribute to open source software](https://www.ferretdb.io/how-to-contribute-to-open-source-2022/).
 
-## Get Started
+## Get started
 
 You don’t have to be a developer to contribute to FerretDB projects, you can even get started by helping us improve this documentation.
 If you have any questions or suggestions on how we can improve, kindly join our [Slack chat](/#community) or [GitHub discussions](https://github.com/FerretDB/FerretDB/discussions).
