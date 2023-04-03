@@ -26,6 +26,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -188,6 +189,10 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 }
 
 func RenameCollection(ctx context.Context, tx pgx.Tx, schema, from, to string) error {
+	if from == to {
+		return commonerrors.NewCommandErrorMsg(commonerrors.ErrIllegalOperation, "Can't rename a collection to itself")
+	}
+
 	return newMetadataStorage(tx, schema, from).renameCollection(ctx, to)
 }
 
