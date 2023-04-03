@@ -43,13 +43,20 @@ func (e *transactionConflictError) Error() string {
 }
 
 // InTransaction wraps the given function f in a transaction.
+//
 // If f returns an error, the transaction is rolled back.
+//
+// Passed context will be used for BEGIN/ROLLBACK/COMMIT statements.
+// Context cancellation does not rollback the transaction.
+// In practice, f should use the same ctx for Query/QueryRow/Exec that would return an error if context is canceled.
+//
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
-	if tx, err = pgPool.Begin(ctx); err != nil {
+
+	if tx, err = pgPool.p.Begin(ctx); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}
@@ -68,9 +75,9 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		}
 
 		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.Config().ConnConfig.Logger.Log(
+			pgPool.p.Config().ConnConfig.Logger.Log(
 				ctx, pgx.LogLevelError, "failed to perform rollback",
-				map[string]any{"error": rerr},
+				map[string]any{"err": rerr},
 			)
 
 			// in case of `runtime.Goexit()` or `panic(nil)`; see above
@@ -125,7 +132,7 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
 			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
 
-			pgPool.Config().ConnConfig.Logger.Log(
+			pgPool.p.Config().ConnConfig.Logger.Log(
 				ctx, pgx.LogLevelWarn, "attempt failed, retrying",
 				map[string]any{"err": err, "attempt": attempts, "delay": delay},
 			)

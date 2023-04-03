@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 9
 slug: /telemetry/
 ---
 
@@ -142,7 +142,7 @@ we will not have data about unimplemented commands and errors.
 
 If you want to help us with that, please do the following:
 
-1. Start FerretDB with [debug logging](flags.md) and telemetry explicitly enabled.
+1. Start FerretDB with [debug logging](configuration/flags.md) and telemetry explicitly enabled.
    Confirm that telemetry is enabled from the logs.
 2. Test your application with integration tests or manually.
 3. Gracefully stop FerretDB with `SIGTERM` or `docker stop` (not with `SIGKILL` or `docker kill`).

@@ -39,7 +39,7 @@ const (
 
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
-	*pgxpool.Pool
+	p *pgxpool.Pool
 }
 
 // DBStats describes statistics for a database.
@@ -112,7 +112,7 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 	}
 
 	res := &Pool{
-		Pool: pool,
+		p: pool,
 	}
 
 	if err = res.checkConnection(ctx); err != nil {
@@ -121,6 +121,13 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 	}
 
 	return res, nil
+}
+
+// Close closes all connections in the pool.
+//
+// It blocks until all connections are closed.
+func (pgPool *Pool) Close() {
+	pgPool.p.Close()
 }
 
 // isValidUTF8Locale Currently supported locale variants, compromised between https://www.postgresql.org/docs/9.3/multibyte.html
@@ -139,9 +146,9 @@ func isValidUTF8Locale(setting string) bool {
 
 // checkConnection checks PostgreSQL settings.
 func (pgPool *Pool) checkConnection(ctx context.Context) error {
-	logger := pgPool.Config().ConnConfig.Logger
+	logger := pgPool.p.Config().ConnConfig.Logger
 
-	rows, err := pgPool.Query(ctx, "SHOW ALL")
+	rows, err := pgPool.p.Query(ctx, "SHOW ALL")
 	if err != nil {
 		return fmt.Errorf("pgdb.checkConnection: %w", err)
 	}
@@ -170,6 +177,10 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 			if setting != localeC && setting != localePOSIX && !isValidUTF8Locale(setting) {
 				return fmt.Errorf("pgdb.checkConnection: %q is %q", name, setting)
 			}
+		case "standard_conforming_strings": // To sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647
+			if setting != "on" {
+				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, "on")
+			}
 		default:
 			continue
 		}
@@ -189,12 +200,56 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	return nil
 }
 
-// SchemaStats is a stub to return a set of statistics for FerretDB server, database, collection
+// Stats returns a set of statistics for FerretDB server, database, collection
 // - or, in terms of PostgreSQL, database, schema, table.
-// Currently, it always returns an empty DBStats, this needs to be fixed later.
-// TODO https://github.com/FerretDB/FerretDB/issues/1346
-func (pgPool *Pool) SchemaStats(ctx context.Context, schema, collection string) (*DBStats, error) {
-	return &DBStats{
-		Name: schema,
-	}, nil
+func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
+	res := &DBStats{
+		Name: db,
+	}
+
+	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		sql := `
+	SELECT COUNT(distinct t.table_name)                                                         AS CountTables,
+		COALESCE(SUM(s.n_live_tup), 0)                                                          AS CountRows,
+		COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0) AS SizeTotal,
+		COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeIndexes,
+		COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)       AS SizeRelation,
+		COUNT(distinct i.indexname)                                                             AS CountIndexes
+	FROM information_schema.tables AS t
+		LEFT OUTER JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema AND s.relname = t.table_name
+		LEFT OUTER JOIN pg_indexes          AS i ON i.schemaname = t.table_schema AND i.tablename = t.table_name`
+
+		// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
+
+		var args []any
+
+		if db != "" {
+			sql += " WHERE t.table_schema = $1"
+			args = append(args, db)
+
+			if collection != "" {
+				metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
+				if err != nil {
+					return err
+				}
+
+				sql += " AND t.table_name = $2"
+				args = append(args, metadata.table)
+			}
+		}
+
+		row := tx.QueryRow(ctx, sql, args...)
+
+		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
+	})
+	if err != nil {
+		// just log it for now
+		// TODO https://github.com/FerretDB/FerretDB/issues/1346
+		pgPool.p.Config().ConnConfig.Logger.Log(
+			ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
+			map[string]any{"err": err},
+		)
+	}
+
+	return res, nil
 }

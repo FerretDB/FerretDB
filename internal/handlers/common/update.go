@@ -295,6 +295,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 				continue
 			}
 
+			if dpe.Code() == types.ErrDocumentPathArrayInvalidIndex {
+				return false, commonerrors.NewWriteErrorMsg(
+					commonerrors.ErrUnsuitableValueType,
+					fmt.Sprintf("cannot use path %s to traverse the document", sourcePath),
+				)
+			}
+
 			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
 		}
 

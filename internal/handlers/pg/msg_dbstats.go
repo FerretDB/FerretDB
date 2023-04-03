@@ -41,13 +41,15 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	m := document.Map()
-	scale, ok := m["scale"].(float64)
-	if !ok {
+	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
+	var scale int32
+
+	scale, err = common.GetOptionalPositiveNumber(document, "scale")
+	if err != nil || scale == 0 {
 		scale = 1
 	}
 
-	stats, err := dbPool.SchemaStats(ctx, db, "")
+	stats, err := dbPool.Stats(ctx, db, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -66,11 +68,11 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"views", int32(0),
 			"objects", stats.CountRows,
 			"avgObjSize", avgObjSize,
-			"dataSize", float64(stats.SizeRelation)/scale,
+			"dataSize", float64(stats.SizeRelation/int64(scale)),
 			"indexes", stats.CountIndexes,
-			"indexSize", float64(stats.SizeIndexes)/scale,
-			"totalSize", float64(stats.SizeTotal)/scale,
-			"scaleFactor", scale,
+			"indexSize", float64(stats.SizeIndexes/int64(scale)),
+			"totalSize", float64(stats.SizeTotal/int64(scale)),
+			"scaleFactor", float64(scale),
 			"ok", float64(1),
 		))},
 	}))

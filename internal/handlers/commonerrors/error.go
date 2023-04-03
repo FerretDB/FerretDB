@@ -47,6 +47,9 @@ const (
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
+	// ErrIndexNotFound indicates that a index is not found for the given name.
+	ErrIndexNotFound = ErrorCode(27) // IndexNotFound
+
 	// ErrUnsuitableValueType indicates that field could not be created for given value.
 	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
 
@@ -68,8 +71,20 @@ const (
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
+	// ErrInvalidOptions indicates that _id index cannot be deleted.
+	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
+
+	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
+	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
+
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
+
+	// ErrIndexOptionsConflict indicates that index build process failed due to options conflict.
+	ErrIndexOptionsConflict = ErrorCode(85) // IndexOptionsConflict
+
+	// ErrIndexKeySpecsConflict indicates that index build process failed due to key specs conflict.
+	ErrIndexKeySpecsConflict = ErrorCode(86) // IndexKeySpecsConflict
 
 	// ErrOperationFailed indicates that the operation failed.
 	ErrOperationFailed = ErrorCode(96) // OperationFailed
@@ -95,6 +110,9 @@ const (
 	// ErrStageGroupMissingID indicates that group is missing an _id.
 	ErrStageGroupMissingID = ErrorCode(15955) // Location15955
 
+	// ErrStageLimitZero indicated that limit field is not positive.
+	ErrStageLimitZero = ErrorCode(15958) // Location15958
+
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
 
@@ -115,6 +133,9 @@ const (
 
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
+
+	// ErrGroupUndefinedVariable indicates the variable is not defined.
+	ErrGroupUndefinedVariable = ErrorCode(17276) // Location17276
 
 	// ErrInvalidArg indicates invalid argument in projection document.
 	ErrInvalidArg = ErrorCode(28667) // Location28667
@@ -141,6 +162,9 @@ const (
 
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
+
+	// ErrStageGroupUnaryOperator indicates that $sum is a unary operator.
+	ErrStageGroupUnaryOperator = ErrorCode(40237) // Location40237
 
 	// ErrStageGroupMultipleAccumulator indicates that group field must specify one accumulator.
 	ErrStageGroupMultipleAccumulator = ErrorCode(40238) // Location40238
@@ -178,6 +202,12 @@ const (
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
+
+	// ErrStageSkipBadValue indicates that $skip stage contains invalid value.
+	ErrStageSkipBadValue = ErrorCode(5107200) // Location5107200
+
+	// ErrStageLimitInvalidArg indicates invalid argument for the aggregation $limit stage.
+	ErrStageLimitInvalidArg = ErrorCode(5107201) // Location5107201
 )
 
 // ErrInfo represents additional optional error information.

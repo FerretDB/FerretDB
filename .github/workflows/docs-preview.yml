@@ -3,8 +3,8 @@ name: Docs Preview
 on:
   pull_request_target:
     types:
-      - labeled # for `trusted` label
-      - unlabeled
+      # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
