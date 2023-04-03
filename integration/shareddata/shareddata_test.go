@@ -12,16 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package shareddata
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgGetMore implements handlers.Interface.
-func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.GetMore(ctx, msg, h.registry)
+func TestInit(t *testing.T) {
+	// nothing, just test init()
 }

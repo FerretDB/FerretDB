@@ -323,7 +323,7 @@ db.collection.aggregate()
 | `$graphLookup`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1422) |
 | `$group`                       | ✅️      |                                                           |
 | `$indexStats`                  | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1424) |
-| `$limit`                       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1425) |
+| `$limit`                       | ✅️      |                                                           |
 | `$listSessions`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1426) |
 | `$lookup`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1427) |
 | `$match`                       | ✅      |                                                           |
@@ -336,7 +336,7 @@ db.collection.aggregate()
 | `$sample`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
 | `$search`, `$searchMeta`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
 | `$setWindowFields`             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
-| `$skip`                        | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1438) |
+| `$skip`                        | ✅️      |                                                           |
 | `$sort`                        | ✅️      |                                                           |
 | `$sortByCount`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
@@ -535,7 +535,7 @@ db.aggregate()
 ## Administration commands
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                  |
-| --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
+| --------------------------------- | ------------------------------ |---------------------------| ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                          |
 |                                   | `filter`                       |                           | ✅      |                                                           |
 |                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
@@ -633,8 +633,8 @@ db.aggregate()
 | `dropConnections`                 |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1511) |
 |                                   | `hostAndPort`                  |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
-| `dropIndexes`                     |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1512) |
-|                                   | `index`                        |                           | ⚠️      |                                                           |
+| `dropIndexes`                     |                                |                           | ✅      |                                                           |
+|                                   | `index`                        |                           | ✅      |                                                           |
 |                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
 | `filemd5`                         |                                |                           | ❌      |                                                           |

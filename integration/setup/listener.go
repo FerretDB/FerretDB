@@ -99,14 +99,18 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	metrics := connmetrics.NewListenerMetrics()
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Logger:          logger,
-		Metrics:         metrics.ConnMetrics,
-		StateProvider:   p,
-		DisablePushdown: *disablePushdownF,
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
 
 		PostgreSQLURL: *postgreSQLURLF,
 
 		TigrisURL: nextTigrisUrl(),
+
+		TestOpts: registry.TestOpts{
+			DisablePushdown: *disablePushdownF,
+			EnableCursors:   *enableCursorsF,
+		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)

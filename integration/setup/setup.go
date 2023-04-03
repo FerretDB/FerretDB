@@ -55,6 +55,7 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
+	enableCursorsF   = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.
