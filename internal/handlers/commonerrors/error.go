@@ -128,8 +128,14 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrStageUnwindWrongType indicates $unwind stage argument has unexpected type.
+	ErrStageUnwindWrongType = ErrorCode(15981) // Location15981
+
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
+	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
+	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
 
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
@@ -142,6 +148,12 @@ const (
 
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
+
+	// ErrStageUnwindNoPath indicates that $unwind aggregation stage is empty.
+	ErrStageUnwindNoPath = ErrorCode(28812) // Location28812
+
+	// ErrStageUnwindNoPrefix indicates that $unwind aggregation stage doesn't include '$' prefix.
+	ErrStageUnwindNoPrefix = ErrorCode(28818) // Location28818
 
 	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
 	// while projection document already marked as exclusion.

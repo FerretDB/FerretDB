@@ -341,7 +341,7 @@ db.collection.aggregate()
 | `$sort`                        | ✅️      |                                                           |
 | `$sortByCount`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
-| `$unwind`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |
+| `$unwind`                      | ✅️      |                                                           |
 
 #### Aggregation database stages
 
