@@ -16,6 +16,9 @@ package pg
 
 import (
 	"context"
+	"errors"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -57,7 +60,14 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	stats, err := dbPool.Stats(ctx, db, collection)
-	if err != nil {
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		// Return empty stats for non-existent collections.
+		stats = new(pgdb.DBStats)
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
