@@ -30,6 +30,8 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -44,6 +46,10 @@ import (
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
+	Version bool `default:"false" help:"Print version to stdout and exit."`
+
+	Mode string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`
+
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
@@ -55,8 +61,15 @@ var cli struct {
 
 	ProxyAddr string `default:""                help:"Proxy address."`
 	DebugAddr string `default:"127.0.0.1:8088"  help:"${help_debug_addr}"`
-	StateDir  string `default:"."               help:"Process state directory."`
-	Mode      string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`
+
+	Handler string `default:"pg" help:"${help_handler}"`
+
+	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+
+	// see setCLIPlugins
+	kong.Plugins
+
+	StateDir string `default:"."               help:"Process state directory."`
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -66,15 +79,6 @@ var cli struct {
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
-
-	Handler string `default:"pg" help:"${help_handler}"`
-
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
-
-	// Put flags for other handlers there, between --postgresql-url and --version in the help output.
-	kong.Plugins
-
-	Version bool `default:"false" help:"Print version to stdout and exit."`
 
 	Test struct {
 		RecordsDir      string `default:"" help:"Experimental: directory for record files."`
@@ -106,6 +110,19 @@ var hanaFlags struct {
 	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
 }
 
+// handlerFlags is a map of handler names to their flags.
+var handlerFlags = map[string]any{}
+
+// setCLIPlugins adds Kong flags for handlers in the stable order.
+func setCLIPlugins() {
+	handlers := maps.Keys(handlerFlags)
+	slices.Sort(handlers)
+
+	for _, h := range handlers {
+		cli.Plugins = append(cli.Plugins, handlerFlags[h])
+	}
+}
+
 // Additional variables for the kong parsers.
 var (
 	logLevels = []string{
@@ -134,6 +151,7 @@ var (
 )
 
 func main() {
+	setCLIPlugins()
 	kong.Parse(&cli, kongOptions...)
 
 	run()
