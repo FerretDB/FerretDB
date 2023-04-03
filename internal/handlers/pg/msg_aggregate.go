@@ -95,7 +95,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	stagesDocuments := make([]aggregations.Stage, 0, len(stages))
 	stagesStats := make([]aggregations.Stage, 0, len(stages))
 
-	for _, d := range stages {
+	for i, d := range stages {
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -114,7 +114,15 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch s.Type() {
 		case aggregations.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
+			stagesStats = append(stagesStats, s)
 		case aggregations.StageTypeStats:
+			if i > 0 {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					"The stage should be first...", // FIXME !!!
+					document.Command(),
+				)
+			}
 			stagesStats = append(stagesStats, s)
 		default:
 			panic(fmt.Sprintf("unknown stage type: %v", s.Type()))
@@ -123,7 +131,15 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var resDocs []*types.Document
 
-	if len(stagesDocuments) > 0 {
+	if len(stagesStats) > 0 {
+		statistics := aggregations.GetStatistics(stagesStats)
+
+		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
+			dbPool, db, collection, statistics, stagesStats,
+		}); err != nil {
+			return nil, err
+		}
+	} else if len(stagesDocuments) > 0 {
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
@@ -137,11 +153,15 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	if len(stagesStats) > 0 {
-		statistics := aggregations.GetStatistics(stagesStats)
+	if len(stagesStats) == 0 && len(stagesDocuments) == 0 {
+		qp := pgdb.QueryParams{
+			DB:         db,
+			Collection: collection,
+			Filter:     aggregations.GetPushdownQuery(stages),
+		}
 
-		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
-			dbPool, db, collection, statistics, stagesStats,
+		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
+			dbPool, &qp, stagesDocuments,
 		}); err != nil {
 			return nil, err
 		}
