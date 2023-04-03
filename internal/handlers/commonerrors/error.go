@@ -203,6 +203,9 @@ const (
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
 
+	// ErrStageSkipBadValue indicates that $skip stage contains invalid value.
+	ErrStageSkipBadValue = ErrorCode(5107200) // Location5107200
+
 	// ErrStageLimitInvalidArg indicates invalid argument for the aggregation $limit stage.
 	ErrStageLimitInvalidArg = ErrorCode(5107201) // Location5107201
 
