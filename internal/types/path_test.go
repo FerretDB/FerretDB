@@ -321,7 +321,6 @@ func TestPathTrimSuffixPrefix(t *testing.T) {
 func TestPathSuffixPrefix(t *testing.T) {
 	t.Parallel()
 
-	pathOneElement := NewStaticPath("1")
 	pathZeroElement := Path{s: []string{}}
 
 	type testCase struct {
@@ -329,13 +328,8 @@ func TestPathSuffixPrefix(t *testing.T) {
 		f    func() string
 	}
 
+	// Obtaining prefix and suffix of single value path is harmless.
 	for _, tc := range []testCase{{
-		name: "prefixOne",
-		f:    pathOneElement.Prefix,
-	}, {
-		name: "suffixOne",
-		f:    pathOneElement.Suffix,
-	}, {
 		name: "prefixZero",
 		f:    pathZeroElement.Prefix,
 	}, {

@@ -30,8 +30,13 @@ import (
 
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
-	filter     bson.D                   // required, filter for the query
-	optSkip    any                      // optional, skip option for the query, defaults to nil
+	filter bson.D // required, filter for the query
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2255
+	// those two probably should be of the same type
+	optSkip any   // optional, skip option for the query, defaults to nil
+	limit   int64 // optional, limit option for the query, defaults to 0
+
 	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
@@ -72,11 +77,13 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 						{"count", targetCollection.Name()},
 						{"query", filter},
 						{"skip", tc.optSkip},
+						{"limit", tc.limit},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"count", compatCollection.Name()},
 						{"query", filter},
 						{"skip", tc.optSkip},
+						{"limit", tc.limit},
 					}).Decode(&compatRes)
 
 					if targetErr != nil {
@@ -151,9 +158,34 @@ func TestCountCompat(t *testing.T) {
 			optSkip: 0,
 		},
 
+		"LimitAlmostAll": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs()) - 1),
+		},
+		"LimitAll": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs())),
+		},
+		"LimitMore": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs()) + 1),
+		},
+
 		"SkipSimple": {
 			filter:  bson.D{},
 			optSkip: 1,
+		},
+		"SkipAlmostAll": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()) - 1,
+		},
+		"SkipAll": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()),
+		},
+		"SkipMore": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()) + 1,
 		},
 		"SkipBig": {
 			filter:  bson.D{},
@@ -166,6 +198,16 @@ func TestCountCompat(t *testing.T) {
 		"SkipNegative": {
 			filter:     bson.D{},
 			optSkip:    -1,
+			resultType: emptyResult,
+		},
+		"SkipNegativeDouble": {
+			filter:     bson.D{},
+			optSkip:    -1.111,
+			resultType: emptyResult,
+		},
+		"SkipNegativeDoubleCeil": {
+			filter:     bson.D{},
+			optSkip:    -1.888,
 			resultType: emptyResult,
 		},
 		"SkipNull": {
