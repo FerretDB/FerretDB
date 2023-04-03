@@ -59,16 +59,16 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetLimitParam("count", l); err != nil {
+	var skip, limit int64
+
+	if s, _ := document.Get("skip"); s != nil {
+		if skip, err = common.GetSkipParam("count", s); err != nil {
 			return nil, err
 		}
 	}
 
-	var skip int64
-	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = common.GetSkipParam("count", s); err != nil {
+	if l, _ := document.Get("limit"); l != nil {
+		if limit, err = common.GetLimitParam("count", l); err != nil {
 			return nil, err
 		}
 	}
@@ -105,11 +105,11 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+	if resDocs, err = common.SkipDocuments(resDocs, skip); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if resDocs, err = common.SkipDocuments(resDocs, skip); err != nil {
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
