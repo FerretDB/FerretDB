@@ -111,7 +111,7 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 		return nil, nil
 	}
 
-	key := m.field.GetPath().Suffix()
+	key := m.field.GetExpressionSuffix()
 
 	for _, doc := range in {
 		d := m.field.Evaluate(doc)

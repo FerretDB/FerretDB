@@ -68,7 +68,7 @@ func (e *FieldPathError) Code() ExpressionErrorCode {
 // Expression is an expression constructed from field value.
 type Expression interface {
 	Evaluate(doc *Document) any
-	GetPath() Path
+	GetExpressionSuffix() string
 }
 
 // pathExpression is field path constructed from expression.
@@ -79,6 +79,8 @@ type pathExpression struct {
 
 // ExpressionOpts represents options used to modify behavior of Expression functions.
 type ExpressionOpts struct {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2348
+
 	// IgnoreArrays disables checking arrays for provided key.
 	// So expression {"$v.foo"} won't match {"v":[{"foo":42}]}
 	IgnoreArrays bool // defaults to false
@@ -87,6 +89,7 @@ type ExpressionOpts struct {
 // NewExpressionWithOpts creates a new instance by checking expression string.
 // It can take additional opts that specify how expressions should be evaluated.
 func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	var val string
 
 	switch {
@@ -129,6 +132,7 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression,
 
 // NewExpression creates a new instance by checking expression string.
 func NewExpression(expression string) (Expression, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	return NewExpressionWithOpts(expression, new(ExpressionOpts))
 }
 
@@ -180,9 +184,9 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 	return arr
 }
 
-// GetPath returns path of expression.
-func (p *pathExpression) GetPath() Path {
-	return p.path
+// GetExpressionSuffix returns suffix of pathExpression.
+func (p *pathExpression) GetExpressionSuffix() string {
+	return p.path.Suffix()
 }
 
 // getExpressionPathValue go through each key of the path iteratively to
@@ -197,6 +201,7 @@ func (p *pathExpression) GetPath() Path {
 // array dot notation `foo.0.bar`. It returns empty array [] because using index
 // such as `0` does not match using expression path.
 func (p *pathExpression) getExpressionPathValue(doc *Document, path Path) []any {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	keys := path.Slice()
 	vals := []any{doc}
 

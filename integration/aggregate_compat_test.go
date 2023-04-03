@@ -254,6 +254,13 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"InvalidStage": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{"$invalid-stage"}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateCommandCompat(t, testCases)
@@ -1230,7 +1237,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-
 		"Null": {
 			pipeline:   bson.A{bson.D{{"$unwind", nil}}},
 			resultType: emptyResult,
@@ -1241,7 +1247,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$unwind", "$_id"}},
 			},
 		},
-
 		"NameAsExpression": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$add"}}},
 			resultType: emptyResult,
