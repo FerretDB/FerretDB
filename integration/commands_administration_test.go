@@ -764,6 +764,66 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
+func TestCommandsAdministrationRenameCollection(t *testing.T) {
+	for name, tc := range map[string]struct {
+		sourceColl string
+		sourceDB   string
+		toColl     string
+		expected   bson.D
+		err        *mongo.CommandError
+	}{
+		"Rename": {
+			sourceColl: "old-collection",
+			sourceDB:   "db",
+			toColl:     "new-collection",
+			expected:   bson.D{{"ok", float64(1)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName:   "admin",
+				CollectionName: "test.test-collection",
+			})
+
+			ctx := s.Ctx
+			db := s.Collection.Database().Client().Database(tc.sourceDB)
+
+			require.NoError(t, db.CreateCollection(ctx, tc.sourceColl))
+
+			// commonerrors.ErrInvalidNamespace
+			var actual bson.D
+			err := s.Collection.Database().RunCommand(
+				ctx, bson.D{
+					{"renameCollection", fmt.Sprintf("%s.%s", tc.sourceDB, tc.sourceColl)},
+					{"to", fmt.Sprintf("%s.%s", tc.sourceDB, tc.toColl)},
+				},
+			).Decode(&actual)
+
+			if tc.err != nil {
+				require.Equal(t, tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, actual)
+
+			collections, err := db.ListCollectionNames(
+				ctx,
+				bson.D{},
+				nil,
+			)
+
+			require.NoError(t, err)
+
+			require.Contains(t, collections, tc.toColl)
+			require.NotContains(t, collections, tc.sourceColl)
+		})
+	}
+}
+
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
 	setup.SkipForTigris(t)
