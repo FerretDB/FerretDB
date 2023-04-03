@@ -189,9 +189,10 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 
 // RenameCollection renames the collection. It does not change pg table name.
 func RenameCollection(ctx context.Context, tx pgx.Tx, db, collection, to string) error {
-	_ = newMetadataStorage(tx, db, collection)
+	ms := newMetadataStorage(tx, db, collection)
 
 	// todo update collection name
+	ms.collection = to
 
 	return nil
 }

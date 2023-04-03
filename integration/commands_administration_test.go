@@ -767,18 +767,19 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	for name, tc := range map[string]struct {
 		collectionName string
-		expected       *bson.D
+		expected       bson.D
 		err            *mongo.CommandError
 	}{
 		"Rename": {
 			collectionName: "new-collection",
-			expected:       &bson.D{},
+			expected:       bson.D{{"ok", float64(1)}},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				DatabaseName: "admin",
+				DatabaseName:   "admin",
+				CollectionName: "test.test-collection",
 			})
 
 			var actual bson.D
@@ -788,17 +789,18 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 					{"to", tc.collectionName},
 				},
 			).Decode(&actual)
-			require.Equal(t, tc.err, err)
 
 			if tc.err != nil {
+				require.Equal(t, tc.err, err)
 				return
 			}
 
+			require.NoError(t, err)
 			require.Equal(t, tc.expected, actual)
 
 			collections, err := s.Collection.Database().ListCollectionNames(
 				s.Ctx,
-				bson.D{{"name", tc.collectionName}},
+				bson.D{},
 				nil,
 			)
 

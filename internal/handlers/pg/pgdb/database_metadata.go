@@ -287,6 +287,22 @@ func documentToMetadataIndex(doc *types.Document) (*metadataIndex, error) {
 	}, nil
 }
 
+// renameCollection renames collection
+func (ms *metadataStorage) renameCollection(ctx context.Context, collectionName string) error {
+	metadata, err := ms.get(ctx, true)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	metadata.collection = collectionName
+
+	if err = ms.set(ctx, metadata); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
 // set sets metadata for the given database and collection.
 //
 // To avoid data race, set should be called only after getMetadata with forUpdate = true is called,
@@ -294,7 +310,7 @@ func documentToMetadataIndex(doc *types.Document) (*metadataIndex, error) {
 func (ms *metadataStorage) set(ctx context.Context, metadata *metadata) error {
 	doc := metadataToDocument(metadata)
 
-	if _, err := setById(ctx, ms.tx, ms.db, dbMetadataTableName, "", ms.collection, doc); err != nil {
+	if _, err := setById(ctx, ms.tx, ms.db, dbMetadataTableName, "", metadata.table, doc); err != nil {
 		return lazyerrors.Error(err)
 	}
 
