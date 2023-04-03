@@ -180,6 +180,19 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	return metadata.table, nil
 }
 
+func (ms *metadataStorage) renameCollection(ctx context.Context, newName string) error {
+	metadata, err := ms.get(ctx, true)
+	if err != nil {
+		// TODO collection doesnt exist
+		return err
+	}
+
+	metadata.collection = newName
+	// TODO handle duplicates
+
+	return ms.set(ctx, metadata)
+}
+
 // get returns metadata stored in the metadata table.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
