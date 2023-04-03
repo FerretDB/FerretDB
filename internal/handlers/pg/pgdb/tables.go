@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -89,29 +88,4 @@ func tableExists(ctx context.Context, tx pgx.Tx, schema, table string) (bool, er
 	}
 
 	return exists, nil
-}
-
-// renameTable returns true if the given PostgreSQL table is renamed.
-func renameTable(ctx context.Context, tx pgx.Tx, namespace, to string) (bool, error) {
-	if namespace == to {
-		return false, errors.New("Can't rename a collection to itself")
-	}
-
-	nsExists, err := tableExists(ctx, tx, strings.Split(namespace, ".")[0],
-		strings.Split(namespace, ".")[1])
-
-	if !nsExists {
-		return false, errors.New("source namespace does not exist")
-	}
-
-	// TODO: alter source DB if to DB differs.
-	sql := `ALTER TABLE ` + strings.Split(namespace, ".")[1] +
-		` RENAME TO ` + strings.Split(to, ".")[1]
-
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	return true, nil
 }
