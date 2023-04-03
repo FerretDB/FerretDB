@@ -24,8 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// collStats represents $collStats stage.
-type collStats struct {
+// collStatsStage represents $collStats stage.
+type collStatsStage struct {
 	storageStats   *storageStats
 	count          bool
 	latencyStats   bool
@@ -48,7 +48,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	var cs collStats
+	var cs collStatsStage
 
 	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
 	cs.count = fields.Has("count")
@@ -79,10 +79,10 @@ func newCollStats(stage *types.Document) (Stage, error) {
 //
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
-func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (c *collStatsStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	// The result of $collStats stage is always an array with a single document, and we expect the same input.
 	if len(in) != 1 {
-		panic(fmt.Sprintf("collStats: expected 1 document, got %d", len(in)))
+		panic(fmt.Sprintf("collStatsStage: Process: expected 1 document, got %d", len(in)))
 	}
 
 	res := in[0]
@@ -102,11 +102,11 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 }
 
 // Type implements Stage interface.
-func (c *collStats) Type() StageType {
+func (c *collStatsStage) Type() StageType {
 	return StageTypeStats
 }
 
 // check interfaces
 var (
-	_ Stage = (*collStats)(nil)
+	_ Stage = (*collStatsStage)(nil)
 )

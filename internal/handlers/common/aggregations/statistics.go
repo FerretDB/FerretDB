@@ -32,7 +32,7 @@ func GetStatistics(stages []Stage) map[Statistic]struct{} {
 
 	for _, stage := range stages {
 		switch st := stage.(type) {
-		case *collStats:
+		case *collStatsStage:
 			if st.count {
 				stats[StatisticCount] = struct{}{}
 			}

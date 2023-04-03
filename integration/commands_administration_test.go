@@ -639,8 +639,6 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
-	// FIXME !!!
-
 	t.Run("Existing", func(t *testing.T) {
 		t.Parallel()
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
