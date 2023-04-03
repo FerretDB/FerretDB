@@ -73,6 +73,34 @@ var Composites = &Values[string]{
 	},
 }
 
+// Mixed contains composite and scalar values for tests. It is used for sorting
+// mixture of array and scalar documents.
+var Mixed = &Values[string]{
+	name:     "Mixed",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"null":        nil,
+		"unset":       unset,
+		"array-empty": bson.A{},
+		"array-null":  bson.A{nil},
+	},
+}
+
+// ArrayAndDocuments contain array and document values for tests. It is used for
+// dot notation to find values from both document and array.
+var ArrayAndDocuments = &Values[string]{
+	name:     "ArrayAndDocuments",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"document": bson.D{{"foo", int32(42)}},
+		"array-documents": bson.A{
+			bson.D{{"field", int32(42)}},
+			bson.D{{"field", int32(44)}},
+			bson.D{{"foo", int32(42)}},
+		},
+	},
+}
+
 // PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
 // on pg backend.
 var PostgresEdgeCases = &Values[string]{
@@ -205,6 +233,13 @@ var ArrayDoubles = &Values[string]{
 	data: map[string]any{
 		"array-double-desc":      bson.A{float64(40), float64(15), float64(10)},
 		"array-double-duplicate": bson.A{float64(10), float64(10), float64(20)},
+
+		"array-double-big":      bson.A{doubleBig},
+		"array-double-big-plus": bson.A{doubleBig + 1},
+
+		"array-double-prec-max":      bson.A{doubleMaxPrec},
+		"array-double-prec-max-plus": bson.A{doubleMaxPrec + 1},
+
 		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-double-empty": bson.A{},
 	},
@@ -235,6 +270,31 @@ var ArrayInt32s = &Values[string]{
 		"array-int32-six": bson.A{
 			int32(42), int32(43), int32(44), int32(45), int32(42), int32(43),
 		},
+	},
+}
+
+// ArrayInt64s contains an array with int64 values for tests.
+var ArrayInt64s = &Values[string]{
+	name:     "ArrayInt64s",
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	validators: map[string]map[string]any{
+		"tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"v": {"type": "array", "items": {"type": "integer", "format": "int64"}},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]any{
+		"array-long-big":      bson.A{int64(doubleBig)},
+		"array-long-big-plus": bson.A{int64(doubleBig) + 1},
+
+		"array-long-prec-max":      bson.A{int64(doubleMaxPrec)},
+		"array-long-prec-max-plus": bson.A{int64(doubleMaxPrec) + 1},
 	},
 }
 
@@ -308,6 +368,16 @@ var ArrayDocuments = &Values[string]{
 					bson.D{{"bar", "hello"}},
 					bson.D{{"bar", "world"}},
 				},
+			}},
+		},
+		"array-two-documents": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
 			}},
 		},
 	},

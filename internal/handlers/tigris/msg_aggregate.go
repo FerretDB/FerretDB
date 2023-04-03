@@ -83,7 +83,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	stagesDocs := must.NotFail(iterator.Values(pipeline.Iterator()))
+	stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stages := make([]aggregations.Stage, len(stagesDocs))
 
 	for i, d := range stagesDocs {
@@ -115,7 +115,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	defer iter.Close()
 
-	docs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
+	docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, err
 	}

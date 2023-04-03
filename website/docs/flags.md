@@ -10,7 +10,7 @@ To make user experience cloud native, every flag has its environment variable eq
 There is no configuration file.
 
 :::info
-Some default values are overridden in [our Docker image](quickstart_guide/docker.md).
+Some default values are overridden in [our Docker image](quickstart-guide/docker.md).
 :::
 
 | Flag                    | Description                                                               | Env Variable                     | Default Value                           |
@@ -36,8 +36,8 @@ Some default values are overridden in [our Docker image](quickstart_guide/docker
 | `listen-tls-key-file`   | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS_KEY_FILE`   |                                         |
 | `listen-tls-ca-file`    | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS_CA_FILE`    |                                         |
 | **Operation Modes**     |                                                                           |                                  |                                         |
-| `mode`                  | See [Operation modes](operation_modes.md)                                 | `FERRETDB_MODE`                  | `normal`                                |
-| `proxy-addr`            | See [Operation modes/Proxy](operation_modes.md#proxy)                     | `FERRETDB_PROXY_ADDR`            |                                         |
+| `mode`                  | See [Operation modes](operation-modes.md)                                 | `FERRETDB_MODE`                  | `normal`                                |
+| `proxy-addr`            | See [Operation modes/Proxy](operation-modes.md#proxy)                     | `FERRETDB_PROXY_ADDR`            |                                         |
 | **Telemetry**           |                                                                           |                                  |                                         |
 | `telemetry`             | See [Configure telemetry](telemetry.md#configure-telemetry)               | `FERRETDB_TELEMETRY`             | `undecided`                             |
 | **Testing**             |                                                                           |                                  |                                         |

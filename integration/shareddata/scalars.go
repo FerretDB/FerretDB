@@ -20,11 +20,16 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
-	doubleBig = float64(2 << 60)
-	int64Big  = int64(2 << 61)
+	doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
+	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
+	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2321
 )
 
 // Scalars contain scalar values for tests.
@@ -47,7 +52,7 @@ var Scalars = &Values[string]{
 		"double-5":                  float64(math.MaxInt64),
 		"double-6":                  float64(math.MaxInt64 + 1),
 		"double-7":                  1.79769e+307,
-		"double-max-overflow":       9.223372036854776833e+18,
+		"double-max-overflow":       9.223372036854776833e+18, // TODO https://github.com/FerretDB/FerretDB/issues/2321
 		"double-max-overflow-verge": 9.223372036854776832e+18,
 		"double-min-overflow":       -9.223372036854776833e+18,
 		"double-min-overflow-verge": -9.223372036854776832e+18,
@@ -94,14 +99,15 @@ var Scalars = &Values[string]{
 		"timestamp":   primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i": primitive.Timestamp{I: 1},
 
-		"int64":      int64(42),
-		"int64-zero": int64(0),
-		"int64-max":  int64(math.MaxInt64),
-		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64Big,
-		"int64-1":    int64(1099511628000),
-		"int64-2":    int64(281474976700000),
-		"int64-3":    int64(72057594040000000),
+		"int64":            int64(42),
+		"int64-zero":       int64(0),
+		"int64-max":        int64(math.MaxInt64),
+		"int64-min":        int64(math.MinInt64),
+		"int64-big":        longBig,
+		"int64-double-big": int64(1 << 61),
+		"int64-1":          int64(1099511628000),
+		"int64-2":          int64(281474976700000),
+		"int64-3":          int64(72057594040000000),
 
 		// no 128-bit decimal floating point (yet)
 
@@ -122,11 +128,33 @@ var Doubles = &Values[string]{
 		},
 	},
 	data: map[string]any{
-		"double":                    42.13,
-		"double-whole":              42.0,
-		"double-zero":               0.0,
-		"double-smallest":           math.SmallestNonzeroFloat64,
-		"double-big":                doubleBig,
+		"double":          42.13,
+		"double-whole":    42.0,
+		"double-zero":     0.0,
+		"double-smallest": math.SmallestNonzeroFloat64,
+
+		// double big values ~1<<61
+		"double-big":       doubleBig,
+		"double-big-plus":  doubleBig + 1,
+		"double-big-minus": doubleBig - 1,
+
+		// double max precision ~1<<53 - 1
+		"double-prec-max":          doubleMaxPrec,
+		"double-prec-max-plus":     doubleMaxPrec + 1,
+		"double-prec-max-plus-two": doubleMaxPrec + 2,
+		"double-prec-max-minus":    doubleMaxPrec - 1,
+
+		// negative double big values ~ -(1<<61)
+		"double-neg-big":       -doubleBig,
+		"double-neg-big-plus":  -doubleBig + 1,
+		"double-neg-big-minus": -doubleBig - 1,
+
+		// double min precision ~ -(1<<53 - 1)
+		"double-prec-min":           -doubleMaxPrec,
+		"double-prec-min-plus":      -doubleMaxPrec + 1,
+		"double-prec-min-minus":     -doubleMaxPrec - 1,
+		"double-prec-min-minus-two": -doubleMaxPrec - 2,
+
 		"double-null":               nil,
 		"double-1":                  float64(math.MinInt64 - 1),
 		"double-2":                  float64(math.MinInt64),
@@ -141,13 +169,13 @@ var Doubles = &Values[string]{
 	},
 }
 
-// BigDoubles contains double values which would overflow on
+// OverflowVergeDoubles contains double values which would overflow on
 // numeric update operation such as $mul. Upon such,
 // target returns error and compat returns +INF or -INF.
-// BigDoubles may be excluded on such update tests and tested
+// OverflowVergeDoubles may be excluded on such update tests and tested
 // in diff tests https://github.com/FerretDB/dance.
-var BigDoubles = &Values[string]{
-	name:     "BigDoubles",
+var OverflowVergeDoubles = &Values[string]{
+	name:     "OverflowVergeDoubles",
 	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
@@ -157,6 +185,25 @@ var BigDoubles = &Values[string]{
 	data: map[string]any{
 		"double-max": math.MaxFloat64,
 		"double-7":   1.79769e+307,
+	},
+}
+
+// SmallDoubles contains double values that does not go close to
+// the maximum safe precision for tests.
+var SmallDoubles = &Values[string]{
+	name:     "SmallDoubles",
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	validators: map[string]map[string]any{
+		"ferretdb-tigris": {
+			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
+		},
+	},
+	data: map[string]any{
+		"double":       42.13,
+		"double-whole": 42.0,
+		"double-1":     4080.1234,
+		"double-2":     1048560.0099,
+		"double-3":     268435440.2,
 	},
 }
 
@@ -339,11 +386,32 @@ var Int64s = &Values[string]{
 		"int64-zero": int64(0),
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
-		"int64-big":  int64Big,
 		// "int64-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
 		"int64-1": int64(1099511628000),
 		"int64-2": int64(281474976700000),
 		"int64-3": int64(72057594040000000),
+
+		// long big values ~1<<61
+		"int64-big":       longBig,
+		"int64-big-plus":  longBig + 1,
+		"int64-big-minus": longBig - 1,
+
+		// long representation of double max precision ~1<<53 - 1
+		"int64-prec-max":          int64(doubleMaxPrec),
+		"int64-prec-max-plus":     int64(doubleMaxPrec) + 1,
+		"int64-prec-max-plus-two": int64(doubleMaxPrec) + 2,
+		"int64-prec-max-minus":    int64(doubleMaxPrec) - 1,
+
+		// negative long big values ~ -(1<<61)
+		"int64-neg-big":       -longBig,
+		"int64-neg-big-plus":  -longBig + 1,
+		"int64-neg-big-minus": -longBig - 1,
+
+		// long representation of double min precision ~ -(1<<53 - 1)
+		"int64-prec-min":           -int64(doubleMaxPrec),
+		"int64-prec-min-plus":      -int64(doubleMaxPrec) + 1,
+		"int64-prec-min-minus":     -int64(doubleMaxPrec) - 1,
+		"int64-prec-min-minus-two": -int64(doubleMaxPrec) - 2,
 	},
 }
 
@@ -383,4 +451,20 @@ func tigrisSchema(typeString string) string {
 				}
 			}`
 	return strings.ReplaceAll(common, "%%type%%", typeString)
+}
+
+func init() {
+	// If any of those assumptions fails, it means that
+	// there's an issue related to precision double conversion.
+
+	must.BeTrue(float64(int64(doubleBig)) == doubleBig)
+	must.BeTrue(float64(int64(doubleBig)+1) == doubleBig)
+
+	must.BeTrue(float64(longBig) == doubleBig)
+
+	must.BeTrue(doubleMaxPrec != doubleMaxPrec+1)
+	must.BeTrue(doubleMaxPrec+1 == doubleMaxPrec+2)
+
+	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
+	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
 }

@@ -87,6 +87,9 @@ type Interface interface {
 	// MsgDrop drops the collection.
 	MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgDropIndexes drops indexes on a collection.
+	MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgDropDatabase drops production database.
 	MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 

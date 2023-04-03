@@ -15,41 +15,27 @@
 package types
 
 import (
-	"runtime"
-	"runtime/pprof"
 	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
-
-// documentIteratorProfiles keeps track on all document iterators.
-var documentIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/types.documentIterator")
 
 // documentIterator represents an iterator over the document fields.
 type documentIterator struct {
 	n     atomic.Uint32
 	doc   *Document
-	stack []byte
+	token *resource.Token
 }
 
 // newDocumentIterator creates a new document iterator.
 func newDocumentIterator(document *Document) iterator.Interface[string, any] {
 	iter := &documentIterator{
 		doc:   document,
-		stack: debugbuild.Stack(),
+		token: resource.NewToken(),
 	}
 
-	documentIteratorProfiles.Add(iter, 1)
-
-	runtime.SetFinalizer(iter, func(iter *documentIterator) {
-		msg := "documentIterator.Close() has not been called"
-		if iter.stack != nil {
-			msg += "\ndocumentIterator created by " + string(iter.stack)
-		}
-
-		panic(msg)
-	})
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -69,9 +55,7 @@ func (iter *documentIterator) Next() (string, any, error) {
 func (iter *documentIterator) Close() {
 	iter.n.Store(uint32(iter.doc.Len()))
 
-	documentIteratorProfiles.Remove(iter)
-
-	runtime.SetFinalizer(iter, nil)
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces

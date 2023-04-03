@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulator.
@@ -32,14 +32,16 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 
 // Accumulator is a common interface for accumulation.
 type Accumulator interface {
-	// Accumulate documents and returns the result of accumulation.
-	Accumulate(ctx context.Context, in []*types.Document) (any, error)
+	// Accumulate documents and returns the result of applying accumulation operator.
+	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
 }
 
 // accumulators maps all supported $group accumulators.
 var accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCountAccumulator,
+	"$sum":   newSumAccumulator,
+	// please keep sorted alphabetically
 }
 
 // groupStage represents $group stage.
@@ -57,7 +59,7 @@ type groupStage struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(ctx context.Context, in []*types.Document) (any, error)
+	accumulate  func(ctx context.Context, groupID any, in []*types.Document) (any, error)
 	outputField string
 }
 
@@ -91,15 +93,6 @@ func newGroup(stage *types.Document) (Stage, error) {
 
 		if field == "_id" {
 			groupKey = v
-
-			idAccumulator := idAccumulator{
-				expression: v,
-			}
-			groups = append(groups, groupBy{
-				outputField: field,
-				accumulate:  idAccumulator.Accumulate,
-			})
-
 			continue
 		}
 
@@ -121,10 +114,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		operator, _, err := accumulation.Iterator().Next()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		operator := accumulation.Command()
 
 		newAccumulator, ok := accumulators[operator]
 		if !ok {
@@ -170,10 +160,10 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 	var res []*types.Document
 
 	for _, groupedDocument := range groupedDocuments {
-		doc := new(types.Document)
+		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(ctx, groupedDocument.documents)
+			out, err := accumulation.accumulate(ctx, groupedDocument.groupID, groupedDocument.documents)
 			if err != nil {
 				return nil, err
 			}
@@ -196,86 +186,65 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 	return res, nil
 }
 
-// idAccumulator accumulates _id output field.
-type idAccumulator struct {
-	expression any
-}
-
-// Accumulate implements Accumulator interface.
-//
-//	{$group: {_id: "$v"}} sets the value of $v to _id, Accumulate returns the value found at key `v`.
-//	{$group: {_id: null}} sets `null` to _id, Accumulate returns nil.
-func (a *idAccumulator) Accumulate(ctx context.Context, in []*types.Document) (any, error) {
-	groupKey, ok := a.expression.(string)
-	if !ok {
-		return a.expression, nil
-	}
-
-	if !strings.HasPrefix(groupKey, "$") {
-		return groupKey, nil
-	}
-
-	key := strings.TrimPrefix(groupKey, "$")
-
-	path, err := types.NewPathFromString(key)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// use the first element, it was already grouped by the groupKey,
-	// so all `in` documents contain the same v.
-	v, err := in[0].GetByPath(path)
-	if err != nil {
-		return types.Null, nil
-	}
-
-	return v, nil
-}
-
 // groupDocuments groups documents by group expression.
 func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
 	groupKey, ok := g.groupExpression.(string)
 	if !ok {
 		// non-string key aggregates values of all `in` documents into one aggregated document.
 		return []groupedDocuments{{
-			groupKey:  groupKey,
+			groupID:   g.groupExpression,
 			documents: in,
 		}}, nil
 	}
 
-	if !strings.HasPrefix(groupKey, "$") {
-		// constant value aggregates values of all `in` documents into one aggregated document.
-		return []groupedDocuments{{
-			groupKey:  groupKey,
-			documents: in,
-		}}, nil
-	}
+	expression, err := types.NewExpression(groupKey)
+	if err != nil {
+		var fieldPathErr *types.FieldPathError
+		if !errors.As(err, &fieldPathErr) {
+			return nil, lazyerrors.Error(err)
+		}
 
-	key := strings.TrimPrefix(groupKey, "$")
-	if key == "" {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrGroupInvalidFieldPath,
-			"'$' by itself is not a valid FieldPath",
-			"$group (stage)",
-		)
+		switch fieldPathErr.Code() {
+		case types.ErrNotFieldPath:
+			// constant value aggregates values of all `in` documents into one aggregated document.
+			return []groupedDocuments{{
+				groupID:   groupKey,
+				documents: in,
+			}}, nil
+		case types.ErrEmptyFieldPath:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupInvalidFieldPath,
+				"'$' by itself is not a valid FieldPath",
+				"$group (stage)",
+			)
+		case types.ErrInvalidFieldPath:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
+				"$group (stage)",
+			)
+		case types.ErrEmptyVariable:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"empty variable names are not allowed",
+				"$group (stage)",
+			)
+		case types.ErrUndefinedVariable:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupUndefinedVariable,
+				fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
+				"$group (stage)",
+			)
+		default:
+			panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
+		}
 	}
 
 	var group groupMap
 
 	for _, doc := range in {
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		v, err := doc.GetByPath(path)
-		if err != nil {
-			// if the path does not exist, use null for group key.
-			group.addOrAppend(types.Null, doc)
-			continue
-		}
-
-		group.addOrAppend(v, doc)
+		val := expression.Evaluate(doc)
+		group.addOrAppend(val, doc)
 	}
 
 	return group.docs, nil
@@ -283,7 +252,7 @@ func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) (
 
 // groupedDocuments contains group key and the documents for that group.
 type groupedDocuments struct {
-	groupKey  any
+	groupID   any
 	documents []*types.Document
 }
 
@@ -292,28 +261,27 @@ type groupMap struct {
 	docs []groupedDocuments
 }
 
-// addOrAppend adds a groupKey documents pair if the groupKey does not exist,
-// if the groupKey exists it appends the documents to the slice.
+// addOrAppend adds a groupID documents pair if the groupID does not exist,
+// if the groupID exists it appends the documents to the slice.
 func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	for i, g := range m.docs {
-		// groupKey is a distinct key and can be any BSON type including array and Binary,
+		// groupID is a distinct key and can be any BSON type including array and Binary,
 		// so we cannot use structure like map.
-		// Compare is used to check if groupKey exists in groupMap, because
+		// Compare is used to check if groupID exists in groupMap, because
 		// numbers are grouped for the same value regardless of their number type.
-		if types.Compare(groupKey, g.groupKey) == types.Equal {
+		if types.CompareForAggregation(groupKey, g.groupID) == types.Equal {
 			m.docs[i].documents = append(m.docs[i].documents, docs...)
 			return
 		}
 	}
 
 	m.docs = append(m.docs, groupedDocuments{
-		groupKey:  groupKey,
+		groupID:   groupKey,
 		documents: docs,
 	})
 }
 
 // check interfaces
 var (
-	_ Stage       = (*groupStage)(nil)
-	_ Accumulator = (*idAccumulator)(nil)
+	_ Stage = (*groupStage)(nil)
 )
