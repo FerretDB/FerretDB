@@ -187,6 +187,10 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	return nil
 }
 
+func RenameCollection(ctx context.Context, tx pgx.Tx, schema, from, to string) error {
+	return newMetadataStorage(tx, schema, from).renameCollection(ctx, to)
+}
+
 // createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
 // If the table already exists, it does nothing.
 //
