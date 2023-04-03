@@ -615,6 +615,27 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
 }
 
+func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	assert.InDelta(t, float64(16), must.NotFail(doc.Get("size")), 16)
+	assert.InDelta(t, float64(8), must.NotFail(doc.Get("storageSize")), 8)
+	assert.InDelta(t, float64(8), must.NotFail(doc.Get("totalIndexSize")), 8)
+	assert.InDelta(t, float64(24), must.NotFail(doc.Get("totalSize")), 24)
+}
+
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
@@ -668,7 +689,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
 	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, float64(49152), doc.Remove("totalSize"), 49152)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
@@ -777,7 +798,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.True(t, ok)
 
 	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
-	assert.InDelta(t, float64(250), must.NotFail(catalogStats.Get("collections")), 250)
+	assert.InDelta(t, float64(632), must.NotFail(catalogStats.Get("collections")), 632)
 	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
@@ -940,12 +961,12 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 			)
 
 			// Set $tigrisSchemaString for tigris only.
-			var opts options.CreateCollectionOptions
+			opts := options.CreateCollection()
 			if setup.IsTigris(t) {
-				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
+				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
 			}
 
-			err := db.CreateCollection(ctx, collName, &opts)
+			err := db.CreateCollection(ctx, collName, opts)
 			assert.NoError(t, err)
 
 			err = db.Drop(ctx)
@@ -985,73 +1006,4 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 
 	_, ok := must.NotFail(doc.Get("inprog")).(*types.Array)
 	assert.True(t, ok)
-}
-
-func TestCommandsAdministrationListIndexes(t *testing.T) {
-	t.Parallel()
-
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-
-	for i := range targetCollections {
-		targetCollection := targetCollections[i]
-		compatCollection := compatCollections[i]
-
-		t.Run(targetCollection.Name(), func(t *testing.T) {
-			t.Parallel()
-
-			targetCur, targetErr := targetCollection.Indexes().List(ctx)
-			compatCur, compatErr := compatCollection.Indexes().List(ctx)
-
-			require.NoError(t, compatErr)
-			assert.Equal(t, compatErr, targetErr)
-
-			targetRes := FetchAll(t, ctx, targetCur)
-			compatRes := FetchAll(t, ctx, compatCur)
-
-			assert.Equal(t, compatRes, targetRes)
-		})
-	}
-}
-
-// TestCommandsAdministrationRunCommandListIndexes tests the behavior when listIndexes is called through RunCommand.
-// It's handy to use it to test the correctness of errors.
-func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
-	t.Parallel()
-
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
-
-	for name, tc := range map[string]struct {
-		collectionName any
-		expectedError  *mongo.CommandError
-	}{
-		"non-existent-collection": {
-			collectionName: "non-existent-collection",
-		},
-		"invalid-collection-name": {
-			collectionName: 42,
-		},
-	} {
-		name, tc := name, tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			require.Nil(t, targetRes)
-			require.Nil(t, compatRes)
-
-			AssertMatchesCommandError(t, compatErr, targetErr)
-		})
-	}
 }

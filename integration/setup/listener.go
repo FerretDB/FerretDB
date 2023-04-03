@@ -63,20 +63,6 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-// TODO remove https://github.com/FerretDB/FerretDB/issues/1568
-func getHandler() string {
-	switch *targetBackendF {
-	case "ferretdb-pg":
-		return "pg"
-	case "ferretdb-tigris":
-		return "tigris"
-	case "mongodb":
-		return ""
-	default:
-		panic("not reached")
-	}
-}
-
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
@@ -113,14 +99,18 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	metrics := connmetrics.NewListenerMetrics()
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Logger:          logger,
-		Metrics:         metrics.ConnMetrics,
-		StateProvider:   p,
-		DisablePushdown: *disablePushdownF,
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: p,
 
 		PostgreSQLURL: *postgreSQLURLF,
 
 		TigrisURL: nextTigrisUrl(),
+
+		TestOpts: registry.TestOpts{
+			DisablePushdown: *disablePushdownF,
+			EnableCursors:   *enableCursorsF,
+		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)

@@ -77,15 +77,15 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout and exit."`
 
 	Test struct {
-		RecordsDir string `default:"" help:"Testing flag: directory for record files."`
-
-		DisablePushdown bool `default:"false" help:"Testing flag: disable query pushdown."`
+		RecordsDir      string `default:"" help:"Experimental: directory for record files."`
+		DisablePushdown bool   `default:"false" help:"Experimental: disable query pushdown."`
+		EnableCursors   bool   `default:"false" help:"Experimental: enable cursors."`
 
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry: reporting URL."`
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
-			ReportInterval time.Duration `default:"24h" hidden:""               help:"Testing flag: telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"  hidden:""               help:"Testing flag: telemetry: report timeout."`
+			ReportInterval time.Duration `default:"24h" hidden:""               help:"Experimental: telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"  hidden:""               help:"Experimental: telemetry: report timeout."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
@@ -125,7 +125,7 @@ var (
 			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
 			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
 			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
-			"help_telemetry_undecided_delay": "Testing flag: telemetry: delay for undecided state.",
+			"help_telemetry_undecided_delay": "Experimental: telemetry: delay for undecided state.",
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
@@ -195,7 +195,6 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("package", info.Package),
 		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
-		zap.Bool("disablePushdown", cli.Test.DisablePushdown),
 	}
 	logUUID := stateProvider.Get().UUID
 
@@ -304,10 +303,9 @@ func run() {
 	}()
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:          logger,
-		Metrics:         metrics.ConnMetrics,
-		StateProvider:   stateProvider,
-		DisablePushdown: cli.Test.DisablePushdown,
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: stateProvider,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
@@ -316,6 +314,11 @@ func run() {
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
 
 		HANAURL: hanaFlags.HANAURL,
+
+		TestOpts: registry.TestOpts{
+			DisablePushdown: cli.Test.DisablePushdown,
+			EnableCursors:   cli.Test.EnableCursors,
+		},
 	})
 	if err != nil {
 		logger.Fatal(err.Error())

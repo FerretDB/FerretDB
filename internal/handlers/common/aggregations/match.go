@@ -61,6 +61,11 @@ func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 	return res, nil
 }
 
+// Type  implements Stage interface.
+func (m *match) Type() StageType {
+	return StageTypeDocuments
+}
+
 // check interfaces
 var (
 	_ Stage = (*match)(nil)

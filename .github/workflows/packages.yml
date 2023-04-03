@@ -13,8 +13,8 @@ name: Packages
 on:
   pull_request_target:
     types:
-      - labeled # for `trusted` label
-      - unlabeled
+      # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -31,7 +31,7 @@ on:
 # and save some resources.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   GOPATH: /home/runner/go
@@ -43,7 +43,9 @@ env:
 jobs:
   build:
     name: Build packages
-    runs-on: faster
+    runs-on:
+      group: paid
+    timeout-minutes: 60
 
     if: >
       github.event_name != 'pull_request_target' ||

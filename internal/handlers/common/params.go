@@ -15,10 +15,13 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -133,6 +136,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 			return 0, errInfinity
 		}
 
+		if value > float64(math.MaxInt64) ||
+			value < float64(math.MinInt64) {
+			return 0, errLongExceeded
+		}
+
 		if value != math.Trunc(value) {
 			return 0, errNotWholeNumber
 		}
@@ -145,6 +153,88 @@ func GetWholeNumberParam(value any) (int64, error) {
 	default:
 		return 0, errUnexpectedType
 	}
+}
+
+// GetLimitStageParam returns $limit stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
+func GetLimitStageParam(value any) (int64, error) {
+	limit, err := GetWholeNumberParam(value)
+
+	switch {
+	case err == nil:
+	case errors.Is(err, errUnexpectedType):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
+			"$limit (stage)",
+		)
+	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
+			"$limit (stage)",
+		)
+	case errors.Is(err, errLongExceeded):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
+			"$limit (stage)",
+		)
+	default:
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch {
+	case limit < 0:
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitInvalidArg,
+			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", limit),
+			"$limit (stage)",
+		)
+	case limit == 0:
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageLimitZero,
+			"The limit must be positive",
+			"$limit (stage)",
+		)
+	}
+
+	return limit, nil
+}
+
+// GetSkipStageParam returns $skip stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
+func GetSkipStageParam(value any) (int64, error) {
+	limit, err := GetWholeNumberParam(value)
+
+	switch {
+	case err == nil:
+	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity), errors.Is(err, errUnexpectedType):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
+			"$skip (stage)",
+		)
+	case errors.Is(err, errLongExceeded):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
+			"$skip (stage)",
+		)
+	default:
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch {
+	case limit < 0:
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Expected a non-negative number in: $skip: %#v", limit),
+			"$skip (stage)",
+		)
+	}
+
+	return limit, nil
 }
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.
@@ -351,16 +441,8 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 
 			return res, nil
 		case int64:
-			res := int64(v1) * v2
+			return multiplyLongSafely(int64(v1), v2)
 
-			resFloat := float64(v1) * float64(v2)
-			if float64(res) != resFloat ||
-				resFloat > float64(math.MaxInt64) ||
-				resFloat < float64(math.MinInt64) {
-				return nil, errLongExceeded
-			}
-
-			return res, nil
 		default:
 			return nil, errUnexpectedRightOpType
 		}
@@ -369,26 +451,43 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return float64(v1) * v2, nil
 		case int32:
-			res := v1 * int64(v2)
+			return multiplyLongSafely(v1, int64(v2))
 
-			if float64(res) != float64(v1)*float64(v2) {
-				return nil, errIntExceeded
-			}
-
-			return res, nil
 		case int64:
-			res := v1 * v2
-			if float64(res) != float64(v1)*float64(v2) {
-				return nil, errLongExceeded
-			}
+			return multiplyLongSafely(v1, v2)
 
-			return res, nil
 		default:
 			return nil, errUnexpectedRightOpType
 		}
 	default:
 		return nil, errUnexpectedLeftOpType
 	}
+}
+
+// multiplyLongSafely returns the multiplication of two int64 values.
+// It handles int64 overflows, and returns errLongExceeded error on one.
+//
+// Please always use multiplyNumbers as it calls multiplyLongSafely when needed.
+func multiplyLongSafely(v1, v2 int64) (int64, error) {
+	switch {
+	// 0 and 1 values are excluded, because those are only values that
+	// can multiply `MinInt64` without exceeding the range.
+	case v1 == 0 || v2 == 0 || v1 == 1 || v2 == 1:
+		return v1 * v2, nil
+
+	// Multiplying MinInt64 by any other value than above results in overflow.
+	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
+	// results in overflow with the MinInt64 as result.
+	case v1 == math.MinInt64 || v2 == math.MinInt64:
+		return 0, errLongExceeded
+	}
+
+	res := v1 * v2
+	if res/v2 != v1 {
+		return 0, errLongExceeded
+	}
+
+	return res, nil
 }
 
 // GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.

@@ -60,18 +60,20 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	db, collection := targets[0], targets[1]
 
 	started := time.Now()
-	stats, err := dbPool.SchemaStats(ctx, db, collection)
+	stats, err := dbPool.Stats(ctx, db, collection)
 	elapses := time.Since(started)
 
 	addEstimate := true
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, lazyerrors.Error(err)
-		}
 
+	switch {
+	case err == nil, errors.Is(err, pgx.ErrNoRows):
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
 		// return zeroes for non-existent collection
 		stats = new(pgdb.DBStats)
 		addEstimate = false
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	var pairs []any

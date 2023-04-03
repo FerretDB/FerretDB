@@ -16,31 +16,26 @@ package pgdb
 
 import (
 	"context"
-	"runtime"
-	"runtime/pprof"
 	"sync"
 
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
-
-// queryIteratorProfiles keeps track on all query iterators.
-var queryIteratorProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb.queryIterator")
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx context.Context
+	ctx       context.Context
+	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal
 
-	m         sync.Mutex
-	rows      pgx.Rows
-	stack     []byte // not really under mutex, but placed there to make struct smaller (due to alignment)
-	n         int
-	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal.
+	m    sync.Mutex
+	rows pgx.Rows
+
+	token *resource.Token
 }
 
 // newIterator returns a new queryIterator for the given pgx.Rows.
@@ -48,30 +43,20 @@ type queryIterator struct {
 // Iterator's Close method closes rows.
 //
 // Nil rows are possible and return already done iterator.
-func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) iterator.Interface[int, *types.Document] {
+func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.DocumentsIterator {
 	unmarshalFunc := p.unmarshal
 	if unmarshalFunc == nil {
-		// use pjson.Unmarshal when no unmarshal function is specified.
 		unmarshalFunc = pjson.Unmarshal
 	}
 
 	iter := &queryIterator{
 		ctx:       ctx,
-		rows:      rows,
-		stack:     debugbuild.Stack(),
 		unmarshal: unmarshalFunc,
+		rows:      rows,
+		token:     resource.NewToken(),
 	}
 
-	queryIteratorProfiles.Add(iter, 1)
-
-	runtime.SetFinalizer(iter, func(iter *queryIterator) {
-		msg := "queryIterator.Close() has not been called"
-		if iter.stack != nil {
-			msg += "\nqueryIterator created by " + string(iter.stack)
-		}
-
-		panic(msg)
-	})
+	resource.Track(iter, iter.token)
 
 	return iter
 }
@@ -86,44 +71,44 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) iterator
 //
 // Otherwise, as the first value it returns the number of the current iteration (starting from 0),
 // as the second value it returns the document.
-func (iter *queryIterator) Next() (int, *types.Document, error) {
+func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
+	var unused struct{}
+
 	// ignore context error, if any, if iterator is already closed
 	if iter.rows == nil {
-		return 0, nil, iterator.ErrIteratorDone
+		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	if err := iter.ctx.Err(); err != nil {
-		return 0, nil, lazyerrors.Error(err)
+	if err := context.Cause(iter.ctx); err != nil {
+		return unused, nil, lazyerrors.Error(err)
 	}
 
 	if !iter.rows.Next() {
 		if err := iter.rows.Err(); err != nil {
-			return 0, nil, lazyerrors.Error(err)
+			return unused, nil, lazyerrors.Error(err)
 		}
 
 		// to avoid context cancellation changing the next `Next()` error
 		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
 
-		return 0, nil, iterator.ErrIteratorDone
+		return unused, nil, iterator.ErrIteratorDone
 	}
 
 	var b []byte
 	if err := iter.rows.Scan(&b); err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		return unused, nil, lazyerrors.Error(err)
 	}
 
 	doc, err := iter.unmarshal(b)
 	if err != nil {
-		return 0, nil, lazyerrors.Error(err)
+		return unused, nil, lazyerrors.Error(err)
 	}
 
-	iter.n++
-
-	return iter.n - 1, doc, nil
+	return unused, doc, nil
 }
 
 // Close implements iterator.Interface.
@@ -138,17 +123,15 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	queryIteratorProfiles.Remove(iter)
-
-	runtime.SetFinalizer(iter, nil)
-
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil
 	}
+
+	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces
 var (
-	_ iterator.Interface[int, *types.Document] = (*queryIterator)(nil)
+	_ types.DocumentsIterator = (*queryIterator)(nil)
 )

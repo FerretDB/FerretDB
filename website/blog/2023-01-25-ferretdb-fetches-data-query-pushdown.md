@@ -1,6 +1,6 @@
 ---
-title: "How FerretDB fetches data - about query pushdown"
 slug: ferretdb-fetches-data-query-pushdown
+title: "How FerretDB fetches data - about query pushdown"
 author: Patryk Kwiatek
 description: "Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as “backend”)"
 image: /img/blog/ferretdb-query-pushdown.jpg

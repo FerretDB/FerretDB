@@ -183,7 +183,7 @@ func (l *Listener) Run(ctx context.Context) error {
 	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
-	return ctx.Err()
+	return context.Cause(ctx)
 }
 
 // setupTLSListenerOpts represents TLS listener setup options.

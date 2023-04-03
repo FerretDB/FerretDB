@@ -55,6 +55,7 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
+	enableCursorsF   = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.
@@ -191,10 +192,11 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	for _, provider := range opts.Providers {
-		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
+		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
 			tb.Logf(
-				"Provider %q is not compatible with handler %q, skipping it.",
-				provider.Name(), getHandler(),
+				"Provider %q is not compatible with backend %q, skipping it.",
+				provider.Name(),
+				*targetBackendF,
 			)
 
 			continue
@@ -205,13 +207,13 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		region := trace.StartRegion(provCtx, spanName)
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(getHandler(), collectionName); len(validators) > 0 {
-			var copts options.CreateCollectionOptions
+		if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
+			copts := options.CreateCollection()
 			for key, value := range validators {
 				copts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(provCtx, collectionName, &copts))
+			require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
 		}
 
 		docs := shareddata.Docs(provider)

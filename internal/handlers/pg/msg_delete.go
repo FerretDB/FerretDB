@@ -140,9 +140,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
 	var err error
 
-	if err = common.Unimplemented(deleteDoc, "collation", "hint"); err != nil {
+	if err = common.Unimplemented(deleteDoc, "collation"); err != nil {
 		return nil, false, err
 	}
+
+	common.Ignored(deleteDoc, h.L, "hint")
 
 	// get filter from document
 	var filter *types.Document
@@ -150,6 +152,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 		return nil, false, err
 	}
 
+	// TODO use `GetLimitParam`
+	// https://github.com/FerretDB/FerretDB/issues/2255
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
 		return nil, false, common.NewCommandErrorMsgWithArgument(

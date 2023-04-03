@@ -24,8 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// count represents $count stage.
-type count struct {
+// countStage represents $count stage.
+type countStage struct {
 	field string
 }
 
@@ -72,13 +72,13 @@ func newCount(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	return &count{
+	return &countStage{
 		field: field,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (c *countStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	if len(in) == 0 {
 		return nil, nil
 	}
@@ -88,7 +88,12 @@ func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 	return []*types.Document{res}, nil
 }
 
+// Type implements Stage interface.
+func (c *countStage) Type() StageType {
+	return StageTypeDocuments
+}
+
 // check interfaces
 var (
-	_ Stage = (*count)(nil)
+	_ Stage = (*countStage)(nil)
 )

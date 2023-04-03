@@ -127,6 +127,11 @@ func newConn(opts *newConnOpts) (*conn, error) {
 //
 // The caller is responsible for closing the underlying net.Conn.
 func (c *conn) run(ctx context.Context) (err error) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer func() {
+		cancel(lazyerrors.Errorf("run exits: %w", err))
+	}()
+
 	connInfo := conninfo.NewConnInfo()
 	defer connInfo.Close()
 
@@ -134,10 +139,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
 	}
 
-	// keep connInfo in context for the whole connection lifetime;
-	// we need it for authentication to work
-	ctx, cancel := context.WithCancel(conninfo.WithConnInfo(ctx, connInfo))
-	defer cancel()
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	done := make(chan struct{})
 
@@ -177,7 +179,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		var f *os.File
 
-		if f, err = os.CreateTemp("", "ferretdb-test-record-*.bin"); err != nil {
+		// use local directory so os.Rename below always works
+		if f, err = os.CreateTemp(c.testRecordsDir, "_*.partial"); err != nil {
 			return
 		}
 
