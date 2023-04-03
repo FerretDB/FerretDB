@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'FerretDB Blog',
-  tagline: 'Open Source, MongoDB-compatible document database',
+  tagline: 'A truly Open Source MongoDB alternative',
 
   url: 'https://blog.ferretdb.io',
   baseUrl: '/',

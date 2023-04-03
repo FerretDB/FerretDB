@@ -95,7 +95,7 @@ ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
-LABEL org.opencontainers.image.description="Open Source, MongoDB-compatible document database"
+LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"

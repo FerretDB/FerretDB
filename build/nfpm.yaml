@@ -7,7 +7,7 @@ platform: linux
 version: ${VERSION}
 section: database
 maintainer: packages@ferretdb.io
-description: Open Source, MongoDB-compatible document database
+description: A truly Open Source MongoDB alternative
 homepage: https://ferretdb.io
 license: Apache License 2.0
 contents:
