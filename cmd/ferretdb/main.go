@@ -45,13 +45,16 @@ import (
 
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
+//
+// Keep order in sync with documentation.
 var cli struct {
-	Version bool `default:"false" help:"Print version to stdout and exit."`
-
-	Mode string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`
+	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
+	Handler  string `default:"pg" help:"${help_handler}"`
+	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
+	StateDir string `default:"."               help:"Process state directory."`
 
 	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen address."`
+		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
 		TLS         string `default:""                help:"Listen TLS address."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
@@ -60,16 +63,12 @@ var cli struct {
 	} `embed:"" prefix:"listen-"`
 
 	ProxyAddr string `default:""                help:"Proxy address."`
-	DebugAddr string `default:"127.0.0.1:8088"  help:"${help_debug_addr}"`
-
-	Handler string `default:"pg" help:"${help_handler}"`
+	DebugAddr string `default:"127.0.0.1:8088"  help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
 	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
 
 	// see setCLIPlugins
 	kong.Plugins
-
-	StateDir string `default:"."               help:"Process state directory."`
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -138,7 +137,6 @@ var (
 			"default_mode":           clientconn.AllModes[0],
 			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
 
-			"help_debug_addr":                "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
 			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
 			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
 			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
