@@ -16,21 +16,19 @@ package pg
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/jackc/pgx/v4"
 )
 
 // MsgRenameCollection implements HandlerInterface.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
+	_, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -44,46 +42,26 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
-	// to: "<target_namespace>",
-	// dropTarget: <true|false>,
-	// writeConcern: <document>,
-	// comment: <any> }
-
-	var collectionParam string
-	if collectionParam, err = common.GetRequiredParam[string](document, document.Command()); err != nil {
-		return nil, err
-	}
-
-	var newCollection string
-	if newCollection, err = common.GetRequiredParam[string](document, "to"); err != nil {
-		return nil, err
-	}
-
-	sourceDB, sourceColl, err := extractFromNamespace(collectionParam)
+	fromNamespace, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
 
-	destDB, destColl, err := extractFromNamespace(newCollection)
+	toNamespace, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
 		return nil, err
 	}
 
-	if sourceDB != destDB {
-		// TODO unimplemented err
-	}
-
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return pgdb.RenameCollection(ctx, tx, sourceDB, sourceColl, destColl)
-	})
-	if err != nil {
-		return nil, err
+	if fromNamespace == toNamespace {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrIllegalOperation,
+			"Can't rename a collection to itself",
+		)
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			// TODO
 			"ok", float64(1),
 		))},
 	}))
@@ -91,13 +69,18 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	return &reply, nil
 }
 
+// extractFromNamespace returns the database and collection name from the namespace.
 func extractFromNamespace(namespace string) (string, string, error) {
-	s := strings.Split(namespace, ".")
+	split := strings.Split(namespace, ".")
 
-	if len(s) != 2 {
-		// TODO
-		return "", "", fmt.Errorf("wrong namespace")
+	// TODO: validate namespace.
+	// we assume that a give namespace contains a single dot.
+	if len(split) != 2 {
+		return "", "", commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrInvalidNamespace,
+			"Invalid namespace specified "+namespace,
+		)
 	}
 
-	return s[0], s[1], nil
+	return split[0], split[1], nil
 }
