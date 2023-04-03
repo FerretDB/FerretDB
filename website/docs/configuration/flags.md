@@ -2,10 +2,10 @@
 sidebar_position: 1
 ---
 
-# Configuration flags and variables
+# Configuration flags
 
-FerretDB provides numerous configuration flags that you can customize to suit your needs and environment.
-You can always access them by using the `--help` flag.
+FerretDB provides numerous configuration flags you can customize to suit your needs and environment.
+You can always see the complete list by using `--help` flag.
 To make user experience cloud native, every flag has its environment variable equivalent.
 There is no configuration file.
 
@@ -13,35 +13,63 @@ There is no configuration file.
 Some default values are overridden in [our Docker image](quickstart-guide/docker.md).
 :::
 
-| Flag                    | Description                                                               | Env Variable                     | Default Value                           |
-| ----------------------- | ------------------------------------------------------------------------- | -------------------------------- | --------------------------------------- |
-| `version`               | Print version to stdout and exit                                          | `FERRETDB_VERSION`               |                                         |
-| `log-level`             | Log level: `debug`, `info`, `warn`, `error`                               | `FERRETDB_LOG_LEVEL`             | `info`                                  |
-| `log-uuid`              | Add instance UUID to all log messages                                     | `FERRETDB_LOG_UUID`              |                                         |
-| `metrics-uuid`          | Add instance UUID to all metrics                                          | `FERRETDB_METRICS_UUID`          |                                         |
-| `state-dir`             | Path to the FerretDB state directory                                      | `FERRETDB_STATE_DIR`             | `.` (`/state` for Docker)               |
-| `debug-addr`            | Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers | `FERRETDB_DEBUG_ADDR`            | `127.0.0.1:8088` (`:8088` for Docker)   |
-| **Listeners**           |                                                                           |                                  |                                         |
-| `listen-addr`           | FerretDB address for incoming TCP connections                             | `FERRETDB_LISTEN_ADDR`           | `127.0.0.1:27017` (`:27017` for Docker) |
-| `listen-unix`           | FerretDB Unix domain socket path. If empty - Unix socket is disabled      | `FERRETDB_LISTEN_UNIX`           |                                         |
-| **Handlers**            |                                                                           |                                  |                                         |
-| `handler`               | FerretDB backend handler: 'dummy', 'pg', 'tigris'                         | `FERRETDB_HANDLER`               | `pg`                                    |
-| `postgresql-url`        | PostgreSQL URL for `pg` handler                                           | `FERRETDB_POSTGRESQL_URL`        | `postgres://127.0.0.1:5432/ferretdb`    |
-| `tigris-url`            | Tigris URL for 'tigris' handler                                           | `FERRETDB_TIGRIS_URL`            | `127.0.0.1:8081`                        |
-| `tigris-client-id`      | [Tigris Client ID][tigris-docs-auth]                                      | `FERRETDB_TIGRIS_CLIENT_ID`      |                                         |
-| `tigris-client-secret`  | [Tigris Client secret][tigris-docs-auth]                                  | `FERRETDB_TIGRIS_CLIENT_SECRET`  |                                         |
-| **TLS**                 |                                                                           |                                  |                                         |
-| `listen-tls`            | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS`            |                                         |
-| `listen-tls-cert-file`  | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS_CERT_FILE`  |                                         |
-| `listen-tls-key-file`   | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS_KEY_FILE`   |                                         |
-| `listen-tls-ca-file`    | See [Securing connections with TLS][securing-with-tls]                    | `FERRETDB_LISTEN_TLS_CA_FILE`    |                                         |
-| **Operation Modes**     |                                                                           |                                  |                                         |
-| `mode`                  | See [Operation modes](operation-modes.md)                                 | `FERRETDB_MODE`                  | `normal`                                |
-| `proxy-addr`            | See [Operation modes/Proxy](operation-modes.md#proxy)                     | `FERRETDB_PROXY_ADDR`            |                                         |
-| **Telemetry**           |                                                                           |                                  |                                         |
-| `telemetry`             | See [Configure telemetry](telemetry.md#configure-telemetry)               | `FERRETDB_TELEMETRY`             | `undecided`                             |
-| **Testing**             |                                                                           |                                  |                                         |
-| `test-disable-pushdown` | Disable pushing down queries to the backend (to only filter on FerretDB)  | `FERRETDB_TEST_DISABLE_PUSHDOWN` | `false`                                 |
+<!-- Keep order in sync with the `--help` output -->
 
-[tigris-docs-auth]: https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
-[securing-with-tls]: /security#securing-connections-with-tls
+<!-- For <br /> -->
+<!-- markdownlint-disable MD033 -->
+
+## General
+
+| Flag           | Description                          | Environment Variable | Default Value                  |
+| -------------- | ------------------------------------ | -------------------- | ------------------------------ |
+| `-h`, `--help` | Show context-sensitive help          |                      | false                          |
+| `--version`    | Print version to stdout and exit     |                      | false                          |
+| `--handler`    | Backend handler                      | `FERRETDB_HANDLER`   | `pg` (PostgreSQL)              |
+| `--mode`       | [Operation mode](operation-modes.md) | `FERRETDB_MODE`      | `normal`                       |
+| `--state-dir`  | Path to the FerretDB state directory | `FERRETDB_STATE_DIR` | `.`<br />(`/state` for Docker) |
+
+## Interfaces
+
+| Flag                     | Description                                              | Environment Variable            | Default Value                                |
+| ------------------------ | -------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
+| `--listen-addr`          | Listen TCP address                                       | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
+| `--listen-unix`          | Listen Unix domain socket path                           | `FERRETDB_LISTEN_UNIX`          |                                              |
+| `--listen-tls`           | Listen TLS address (see [here](../security.md))          | `FERRETDB_LISTEN_TLS`           |                                              |
+| `--listen-tls-cert-file` | TLS cert file path                                       | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
+| `--listen-tls-key-file`  | TLS key file path                                        | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
+| `--listen-tls-ca-file`   | TLS CA file path                                         | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
+| `--proxy-addr`           | Proxy address                                            | `FERRETDB_PROXY_ADDR`           |                                              |
+| `--debug-addr`           | Listen address for HTTP handlers for metrics, pprof, etc | `FERRETDB_DEBUG_ADDR`           | `127.0.0.1:8088`<br />(`:8088` for Docker)   |
+
+## Backend handlers
+
+### PostgreSQL
+
+PostgreSQL backend can be enabled by `--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
+
+| Flag               | Description                     | Environment Variable      | Default Value                        |
+| ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
+| `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
+
+### Tigris (beta)
+
+Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
+
+| Flag                     | Description                     | Environment Variable            | Default Value    |
+| ------------------------ | ------------------------------- | ------------------------------- | ---------------- |
+| `--tigris-url`           | Tigris URL for 'tigris' handler | `FERRETDB_TIGRIS_URL`           | `127.0.0.1:8081` |
+| `--tigris-client-id`     | Tigris Client ID                | `FERRETDB_TIGRIS_CLIENT_ID`     |                  |
+| `--tigris-client-secret` | Tigris Client secret            | `FERRETDB_TIGRIS_CLIENT_SECRET` |                  |
+
+## Miscellaneous
+
+| Flag                  | Description                                       | Environment Variable    | Default Value |
+| --------------------- | ------------------------------------------------- | ----------------------- | ------------- |
+| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'       | `FERRETDB_LOG_LEVEL`    | `debug`       |
+| `--[no-]log-uuid`     | Add instance UUID to all log messages             | `FERRETDB_LOG_UUID`     |               |
+| `--[no-]metrics-uuid` | Add instance UUID to all metrics                  | `FERRETDB_METRICS_UUID` |               |
+| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md) | `FERRETDB_TELEMETRY`    | `undecided`   |
+
+<!-- Do not document `--test-XXX` flags here -->
+
+<!-- markdownlint-enable MD033 -->
