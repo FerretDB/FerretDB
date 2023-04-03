@@ -59,17 +59,16 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	var limit int64
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetWholeNumberParam(l); err != nil {
+	var skip, limit int64
+
+	if s, _ := document.Get("skip"); s != nil {
+		if skip, err = common.GetSkipParam("count", s); err != nil {
 			return nil, err
 		}
 	}
 
-	var skip int64
-
-	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = common.GetSkipParam("count", s); err != nil {
+	if l, _ := document.Get("limit"); l != nil {
+		if limit, err = common.GetLimitParam("count", l); err != nil {
 			return nil, err
 		}
 	}
@@ -106,22 +105,12 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-		return nil, err
+	if resDocs, err = common.SkipDocuments(resDocs, skip); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	// Apply skip param:
-	switch {
-	case skip < 0:
-		// This should be caught earlier, as if the skip param is not valid,
-		// we don't need to fetch the documents.
-		panic("negative skip must be caught earlier")
-	case skip == 0:
-		// do nothing
-	case skip >= int64(len(resDocs)):
-		resDocs = []*types.Document{}
-	default:
-		resDocs = resDocs[skip:]
+	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg

@@ -31,7 +31,9 @@ env:
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: faster
+    runs-on:
+      group: paid
+    timeout-minutes: 45
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -103,6 +105,7 @@ jobs:
   env-data:
     name: env-data
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 

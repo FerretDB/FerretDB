@@ -5,9 +5,10 @@ unlisted: true
 
 # Writing guide
 
-## File names
+## Names and URLs
 
-Use `kebab-case-with-dashes` instead of `snake_case_with_underscores` for file names because URL paths typically use dashes.
+Use `kebab-case-with-dashes` instead of `snake_case_with_underscores` or spaces
+for file names, directory names, and slugs because URL paths typically use dashes.
 
 ## Links
 
@@ -43,7 +44,7 @@ Use Markdown syntax for images with descriptive alt texts and the path.
 All assets (images, gifs, videos, etc.) relating to FerretDB documentation and blog are in the `static/img/` folder.
 Rather than use relative paths, we strongly suggest the following approach, since our content engine renders all images directly from the `img` folder.
 
-`![FerretDB logo](/img/logo_dark.png)`.
+`![FerretDB logo](/img/logo-dark.png)`.
 
 ## Terminologies
 

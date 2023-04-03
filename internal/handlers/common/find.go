@@ -32,8 +32,8 @@ type FindParams struct {
 	Filter      *types.Document
 	Sort        *types.Document
 	Projection  *types.Document
-	Limit       int64
 	Skip        int64
+	Limit       int64
 	BatchSize   int32
 	SingleBatch bool
 	Comment     string
@@ -81,14 +81,14 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	Ignored(doc, l, "hint")
 
-	if l, _ := doc.Get("limit"); l != nil {
-		if res.Limit, err = GetWholeNumberParam(l); err != nil {
+	if s, _ := doc.Get("skip"); s != nil {
+		if res.Skip, err = GetSkipParam("find", s); err != nil {
 			return nil, err
 		}
 	}
 
-	if s, _ := doc.Get("skip"); s != nil {
-		if res.Skip, err = GetSkipParam("find", s); err != nil {
+	if l, _ := doc.Get("limit"); l != nil {
+		if res.Limit, err = GetLimitParam("find", l); err != nil {
 			return nil, err
 		}
 	}

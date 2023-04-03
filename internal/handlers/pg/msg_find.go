@@ -21,6 +21,8 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -74,7 +76,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		if params.BatchSize == 0 {
+			return nil
+		}
+
 		var iter types.DocumentsIterator
+
 		if iter, err = pgdb.QueryDocuments(ctx, tx, qp); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -83,7 +90,33 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.FilterIterator(iter, params.Filter)
 
-		resDocs, err = iterator.Values(iterator.Interface[int, *types.Document](iter))
+		iter, err = common.SortIterator(iter, params.Sort)
+		if err != nil {
+			var pathErr *types.DocumentPathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrPathContainsEmptyElement,
+					"Empty field names in path are not allowed",
+					document.Command(),
+				)
+			}
+
+			return lazyerrors.Error(err)
+		}
+
+		// SortIterator should be closed
+		defer iter.Close()
+
+		iter = common.SkipIterator(iter, params.Skip)
+
+		iter = common.LimitIterator(iter, params.Limit)
+
+		if iter, err = common.ProjectionIterator(iter, params.Projection); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+
 		return err
 	})
 
@@ -91,39 +124,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.SortDocuments(resDocs, params.Sort); err != nil {
-		var pathErr *types.DocumentPathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
-				"Empty field names in path are not allowed",
-				document.Command(),
-			)
+	var cursorID int64
+
+	if h.EnableCursors {
+		iter := iterator.Values(iterator.ForSlice(resDocs))
+		c := cursor.New(&cursor.NewParams{
+			Iter:       iter,
+			DB:         params.DB,
+			Collection: params.Collection,
+			BatchSize:  params.BatchSize,
+		})
+
+		username, _ := conninfo.Get(ctx).Auth()
+		cursorID = h.registry.StoreCursor(username, c)
+
+		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
-		return nil, err
-	}
-
-	if err = common.ProjectDocuments(resDocs, params.Projection); err != nil {
-		return nil, err
-	}
-
-	// Apply skip param:
-	switch {
-	case params.Skip < 0:
-		// This should be caught earlier, as if the skip param is not valid,
-		// we don't need to fetch the documents.
-		panic("negative skip must be caught earlier")
-	case params.Skip == 0:
-		// do nothing
-	case params.Skip >= int64(len(resDocs)):
-		resDocs = []*types.Document{}
-	default:
-		resDocs = resDocs[params.Skip:]
 	}
 
 	firstBatch := types.MakeArray(len(resDocs))
@@ -136,7 +154,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0), // TODO
+				"id", cursorID,
 				"ns", qp.DB+"."+qp.Collection,
 			)),
 			"ok", float64(1),
@@ -172,5 +190,5 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 
 	f := common.FilterIterator(iter, filter)
 
-	return iterator.Values(iterator.Interface[int, *types.Document](f))
+	return iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](f))
 }

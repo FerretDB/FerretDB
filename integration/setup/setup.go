@@ -55,6 +55,7 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
+	enableCursorsF   = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.
@@ -207,12 +208,12 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 		// if validators are set, create collection with them (otherwise collection will be created on first insert)
 		if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
-			var copts options.CreateCollectionOptions
+			copts := options.CreateCollection()
 			for key, value := range validators {
 				copts.SetValidator(bson.D{{key, value}})
 			}
 
-			require.NoError(tb, database.CreateCollection(provCtx, collectionName, &copts))
+			require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
 		}
 
 		docs := shareddata.Docs(provider)

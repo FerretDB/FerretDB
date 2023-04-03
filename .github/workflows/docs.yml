@@ -30,6 +30,7 @@ jobs:
   build:
     name: Build docs
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
 
@@ -96,6 +97,7 @@ jobs:
   github:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     # deploy only on push to main; exclude pull_request and schedule
     needs: build
@@ -112,7 +114,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
         with:
           artifact_name: docs
           timeout: 300000 # 5*60*1000 milliseconds

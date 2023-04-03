@@ -127,17 +127,11 @@ func (p Path) Slice() []string {
 
 // Suffix returns the last path element.
 func (p Path) Suffix() string {
-	if len(p.s) <= 1 {
-		panic("path should have more than 1 element")
-	}
 	return p.s[p.Len()-1]
 }
 
 // Prefix returns the first path element.
 func (p Path) Prefix() string {
-	if p.Len() <= 1 {
-		panic("path should have more than 1 element")
-	}
 	return p.s[0]
 }
 
@@ -189,6 +183,13 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			index, err := strconv.Atoi(p)
 			if err != nil {
 				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+			}
+
+			if index < 0 {
+				return nil, newDocumentPathError(
+					ErrDocumentPathArrayInvalidIndex,
+					fmt.Errorf("types.getByPath: array index below zero: %d", index),
+				)
 			}
 
 			next, err = s.Get(index)
@@ -281,6 +282,16 @@ func insertByPath(doc *Document, path Path) error {
 							pathElem,
 							insertedPath.Slice()[suffix-1],
 							FormatAnyValue(v),
+						),
+					)
+				}
+
+				if ind < 0 {
+					return newDocumentPathError(
+						ErrDocumentPathIndexOutOfBound,
+						fmt.Errorf(
+							"Index out of bound: %d",
+							ind,
 						),
 					)
 				}

@@ -31,10 +31,12 @@ func init() {
 				ClientSecret: opts.TigrisClientSecret,
 			},
 
-			L:               opts.Logger,
-			Metrics:         opts.Metrics,
-			StateProvider:   opts.StateProvider,
+			L:             opts.Logger,
+			Metrics:       opts.Metrics,
+			StateProvider: opts.StateProvider,
+
 			DisablePushdown: opts.DisablePushdown,
+			EnableCursors:   opts.EnableCursors,
 		}
 		return tigris.New(handlerOpts)
 	}

@@ -14,9 +14,7 @@
 
 package integration
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/1568
