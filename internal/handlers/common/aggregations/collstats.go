@@ -80,7 +80,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
 func (c *collStatsStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	// The result of $collStats stage is always an array with a single document, and we expect the same input.
+	// For non-shared collections, the input must be an array with a single document.
 	if len(in) != 1 {
 		panic(fmt.Sprintf("collStatsStage: Process: expected 1 document, got %d", len(in)))
 	}
