@@ -202,6 +202,41 @@ func GetLimitStageParam(value any) (int64, error) {
 	return limit, nil
 }
 
+// GetSkipStageParam returns $skip stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
+func GetSkipStageParam(value any) (int64, error) {
+	limit, err := GetWholeNumberParam(value)
+
+	switch {
+	case err == nil:
+	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity), errors.Is(err, errUnexpectedType):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
+			"$skip (stage)",
+		)
+	case errors.Is(err, errLongExceeded):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
+			"$skip (stage)",
+		)
+	default:
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch {
+	case limit < 0:
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Expected a non-negative number in: $skip: %#v", limit),
+			"$skip (stage)",
+		)
+	}
+
+	return limit, nil
+}
+
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.
 // Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
 func getBinaryMaskParam(mask any) (uint64, error) {

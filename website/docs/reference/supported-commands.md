@@ -336,7 +336,7 @@ db.collection.aggregate()
 | `$sample`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
 | `$search`, `$searchMeta`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
 | `$setWindowFields`             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
-| `$skip`                        | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1438) |
+| `$skip`                        | ✅️      |                                                           |
 | `$sort`                        | ✅️      |                                                           |
 | `$sortByCount`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
