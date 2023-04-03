@@ -36,4 +36,4 @@ $ sudo apt install ./<filename>.deb
 ```
 
 Once FerretDB is installed, you can start the software.
-See [our Docker guide](docker.md) and [Configuration flags and variables](../flags.md) page for more details.
+See [our Docker guide](docker.md) and [Configuration flags and variables](../configuration/flags.md) page for more details.

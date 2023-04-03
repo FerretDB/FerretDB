@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+description: This is a list of all supported commands in FerretDB
 ---
 
 # Supported commands
