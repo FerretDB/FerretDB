@@ -40,6 +40,7 @@ var stages = map[string]newStageFunc{
 	"$group": newGroup,
 	"$limit": newLimit,
 	"$match": newMatch,
+	"$skip":  newSkip,
 	"$sort":  newSort,
 	// please keep sorted alphabetically
 }
