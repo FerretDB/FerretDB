@@ -44,6 +44,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrIllegalOperation indicated that operation is illegal.
+	ErrIllegalOperation = ErrorCode(20) // IllegalOperation
+
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
