@@ -767,14 +767,12 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	for name, tc := range map[string]struct {
 		sourceColl string
-		sourceDB   string
 		toColl     string
 		expected   bson.D
 		err        *mongo.CommandError
 	}{
 		"Rename": {
 			sourceColl: "old-collection",
-			sourceDB:   "db",
 			toColl:     "new-collection",
 			expected:   bson.D{{"ok", float64(1)}},
 		},
@@ -783,24 +781,27 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				DatabaseName:   "admin",
-				CollectionName: "test.test-collection",
-			})
+			// s := setup.SetupWithOpts(t, &setup.SetupOpts{
+			// 	DatabaseName:   "admin",
+			// 	CollectionName: "test.test-collection",
+			// })
 
-			ctx := s.Ctx
-			db := s.Collection.Database().Client().Database(tc.sourceDB)
+			ctx, sourceColl := setup.Setup(t, shareddata.Bools)
+
+			db := sourceColl.Database()
+			require.NoError(t, db.Drop(ctx))
 
 			require.NoError(t, db.CreateCollection(ctx, tc.sourceColl))
 
 			// commonerrors.ErrInvalidNamespace
 			var actual bson.D
-			err := s.Collection.Database().RunCommand(
+			err := sourceColl.Database().Client().Database("admin").RunCommand(
 				ctx, bson.D{
-					{"renameCollection", fmt.Sprintf("%s.%s", tc.sourceDB, tc.sourceColl)},
-					{"to", fmt.Sprintf("%s.%s", tc.sourceDB, tc.toColl)},
+					{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), tc.sourceColl)},
+					{"to", fmt.Sprintf("%s.%s", db.Name(), tc.toColl)},
 				},
 			).Decode(&actual)
+			t.Log(db.Name())
 
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
