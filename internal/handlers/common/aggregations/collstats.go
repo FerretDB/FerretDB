@@ -87,15 +87,19 @@ func (c *collStatsStage) Process(ctx context.Context, in []*types.Document) ([]*
 
 	res := in[0]
 
-	if c.storageStats != nil && c.storageStats.scale > 1 {
-		scale := float64(c.storageStats.scale)
+	if c.storageStats != nil {
+		scale := c.storageStats.scale
 
-		scalable := []string{"size", "avgObjSize", "storageSize", "freeStorageSize", "totalIndexSize"}
-		for _, key := range scalable {
-			path := types.NewStaticPath("storageStats", key)
-			val := must.NotFail(res.GetByPath(path))
-			must.NoError(res.SetByPath(path, val.(float64)/scale))
+		if c.storageStats.scale > 1 {
+			scalable := []string{"size", "avgObjSize", "storageSize", "freeStorageSize", "totalIndexSize"}
+			for _, key := range scalable {
+				path := types.NewStaticPath("storageStats", key)
+				val := must.NotFail(res.GetByPath(path))
+				must.NoError(res.SetByPath(path, val.(int32)/scale))
+			}
 		}
+
+		must.NoError(res.SetByPath(types.NewStaticPath("storageStats", "scaleFactor"), scale))
 	}
 
 	return []*types.Document{res}, nil

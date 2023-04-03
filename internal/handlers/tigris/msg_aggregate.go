@@ -264,24 +264,25 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	if hasStorage {
-		var avgObjSize float64
+		var avgObjSize int32
 		if dbStats.NumObjects > 0 {
-			avgObjSize = float64(dbStats.Size) / float64(dbStats.NumObjects)
+			avgObjSize = int32(dbStats.Size) / dbStats.NumObjects
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", float64(dbStats.Size),
+				"size", int32(dbStats.Size),
 				"count", dbStats.NumObjects,
-				"avgObjSize", float64(avgObjSize),
-				"storageSize", float64(dbStats.Size),
-				"freeStorageSize", float64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"avgObjSize", avgObjSize,
+				"storageSize", int32(dbStats.Size),
+				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", int64(0), // Not supported for Tigris
+				"nindexes", int32(0), // Not supported for Tigris
 				"indexDetails", must.NotFail(types.NewDocument()), // Not supported for Tigris
 				"indexBuilds", must.NotFail(types.NewDocument()), // Not supported for Tigris
-				"totalIndexSize", float64(0), // Not supported for Tigris
+				"totalIndexSize", int32(0), // Not supported for Tigris
+				"totalSize", int32(dbStats.Size),
 				"indexSizes", must.NotFail(types.NewDocument()), // Not supported for Tigris
 			)),
 		)
