@@ -62,7 +62,7 @@ With that container running, you can:
 You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions.
-See [our documentation](https://docs.ferretdb.io/category/quickstart/) for more details.
+See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more details.
 
 ## Building and packaging
 

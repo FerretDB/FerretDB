@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+slug: /quickstart-guide/docker/ # referenced in README.md
 description: How to set up FerretDB using Docker
 ---
 

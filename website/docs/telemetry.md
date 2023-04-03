@@ -1,6 +1,6 @@
 ---
 sidebar_position: 8
-slug: /telemetry/
+slug: /telemetry/ # referenced in many places; must not change
 ---
 
 # Telemetry reporting

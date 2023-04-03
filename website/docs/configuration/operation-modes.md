@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-slug: /operation-modes/
+slug: /configuration/operation-modes/ # referenced in README.md
 ---
 
 # Operation modes
