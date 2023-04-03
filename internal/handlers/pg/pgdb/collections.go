@@ -187,6 +187,15 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	return nil
 }
 
+// RenameCollection renames the collection. It does not change pg table name.
+func RenameCollection(ctx context.Context, tx pgx.Tx, db, collection, to string) error {
+	_ = newMetadataStorage(tx, db, collection)
+
+	// todo update collection name
+
+	return nil
+}
+
 // createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.
 // If the table already exists, it does nothing.
 //

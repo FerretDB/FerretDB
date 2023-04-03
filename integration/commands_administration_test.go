@@ -764,6 +764,50 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
+func TestCommandsAdministrationRenameCollection(t *testing.T) {
+	for name, tc := range map[string]struct {
+		collectionName string
+		expected       *bson.D
+		err            *mongo.CommandError
+	}{
+		"Rename": {
+			collectionName: "new-collection",
+			expected:       &bson.D{},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName: "admin",
+			})
+
+			var actual bson.D
+			err := s.Collection.Database().RunCommand(
+				s.Ctx, bson.D{
+					{"renameCollection", s.Collection.Name()},
+					{"to", tc.collectionName},
+				},
+			).Decode(&actual)
+			require.Equal(t, tc.err, err)
+
+			if tc.err != nil {
+				return
+			}
+
+			require.Equal(t, tc.expected, actual)
+
+			collections, err := s.Collection.Database().ListCollectionNames(
+				s.Ctx,
+				bson.D{{"name", tc.collectionName}},
+				nil,
+			)
+
+			require.NoError(t, err)
+			require.Contains(t, collections, tc.collectionName)
+		})
+	}
+}
+
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
 	setup.SkipForTigris(t)
