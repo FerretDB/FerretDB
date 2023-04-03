@@ -104,17 +104,17 @@ func newUnwind(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	var out []*types.Document
 
-	if m.field == nil {
+	if u.field == nil {
 		return nil, nil
 	}
 
-	key := m.field.GetExpressionSuffix()
+	key := u.field.GetExpressionSuffix()
 
 	for _, doc := range in {
-		d := m.field.Evaluate(doc)
+		d := u.field.Evaluate(doc)
 		switch d := d.(type) {
 		case *types.Array:
 			iter := d.Iterator()
@@ -144,3 +144,13 @@ func (m *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 
 	return out, nil
 }
+
+// Type implements Stage interface.
+func (u *unwind) Type() StageType {
+	return StageTypeDocuments
+}
+
+// check interfaces
+var (
+	_ Stage = (*unwind)(nil)
+)

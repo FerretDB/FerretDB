@@ -25,24 +25,39 @@ import (
 // newStageFunc is a type for a function that creates a new aggregation stage.
 type newStageFunc func(stage *types.Document) (Stage, error)
 
+// StageType is a type for aggregation stage types.
+type StageType int
+
+const (
+	// StageTypeDocuments is a type for stages that process documents.
+	StageTypeDocuments StageType = iota
+
+	// StageTypeStats is a type for stages that process statistics and doesn't need documents.
+	StageTypeStats
+)
+
 // Stage is a common interface for all aggregation stages.
 // TODO use iterators instead of slices of documents
 // https://github.com/FerretDB/FerretDB/issues/1889.
 type Stage interface {
 	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
+
+	// Type returns the type of the stage.
+	Type() StageType
 }
 
 // stages maps all supported aggregation stages.
 var stages = map[string]newStageFunc{
 	// sorted alphabetically
-	"$count":  newCount,
-	"$group":  newGroup,
-	"$limit":  newLimit,
-	"$match":  newMatch,
-	"$skip":   newSkip,
-	"$sort":   newSort,
-	"$unwind": newUnwind,
+	"$collStats": newCollStats,
+	"$count":     newCount,
+	"$group":     newGroup,
+	"$limit":     newLimit,
+	"$match":     newMatch,
+	"$skip":      newSkip,
+	"$sort":      newSort,
+	"$unwind":    newUnwind,
 	// please keep sorted alphabetically
 }
 
@@ -52,7 +67,6 @@ var unsupportedStages = map[string]struct{}{
 	"$bucket":                 {},
 	"$bucketAuto":             {},
 	"$changeStream":           {},
-	"$collStats":              {},
 	"$currentOp":              {},
 	"$densify":                {},
 	"$documents":              {},
