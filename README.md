@@ -28,7 +28,8 @@ Recognizing this, FerretDB is here to fill that gap.
 
 ## Scope and current state
 
-FerretDB is compatible with MongoDB drivers and popular MongoDB tools. It functions as a drop-in replacement for MongoDB 6.0+ in many cases.
+FerretDB is compatible with MongoDB drivers and popular MongoDB tools.
+It functions as a drop-in replacement for MongoDB 6.0+ in many cases.
 Features are constantly being added to further increase compatibility and performance.
 
 We welcome all contributors.
