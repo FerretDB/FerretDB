@@ -242,21 +242,22 @@ func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats,
 
 		row := tx.QueryRow(ctx, sql, args...)
 
-		if err := row.Scan(
-			&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes,
-		); err != nil {
-			// just log it for now
-			// TODO https://github.com/FerretDB/FerretDB/issues/1346
-			pgPool.p.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
-				map[string]any{"err": err},
-			)
-		}
-
-		return nil
+		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	})
-	if err != nil {
+
+	switch err {
+	case nil:
+		// do nothing
+	case ErrTableNotExist:
+		// return this error as is because it can be handled by the caller
 		return nil, err
+	default:
+		// just log it for now
+		// TODO https://github.com/FerretDB/FerretDB/issues/1346
+		pgPool.p.Config().ConnConfig.Logger.Log(
+			ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
+			map[string]any{"err": err},
+		)
 	}
 
 	return res, nil
