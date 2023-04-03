@@ -765,6 +765,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
+	// TODO push documents to collections and findAll after rename
 	t.Parallel()
 	insertCollections := []string{"old-collection", "duplicated-collection"}
 
@@ -932,6 +933,7 @@ func TestCommandsAdministrationRenameNamespace(t *testing.T) {
 	})
 
 	t.Run("DifferentDB", func(t *testing.T) {
+		// TODO push documents to collections and findAll after rename
 		t.Parallel()
 		var actual bson.D
 
@@ -954,6 +956,7 @@ func TestCommandsAdministrationRenameNamespace(t *testing.T) {
 	})
 
 	t.Run("CreateAfterRename", func(t *testing.T) {
+		// TODO push documents to collection and findAll after rename. Afterwards create collection and find if its empty
 		t.Parallel()
 		var actual bson.D
 
