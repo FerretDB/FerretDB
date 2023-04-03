@@ -150,14 +150,25 @@ For example, the following collection contains three documents.
 
 ## Supported backends
 
-For PostgreSQL, FerretDB converts MongoDB drivers and protocols to SQL, where we convert MongoDB bson to jsonb and store it as a value in a row.
-Read more on [jsonb in PostgreSQL](https://www.postgresql.org/docs/current/datatype-json.html).
-
-In Tigris case, we convert MongoDB BSON to Tigris data based on the [Tigris model](https://docs.tigrisdata.com/documents/datamodel).
-There are a few differences in how data is stored in PostgreSQL and Tigris.
-Please [check here](diff.md) for more details on the differences.
-
 :::caution
 FerretDB is under constant development.
 As with any database, before moving to production, please verify if it is suitable for your application.
 :::
+
+### PostgreSQL
+
+PostgreSQL backend is our main backend and is fully supported.
+MongoDB collections are mapped to PostgreSQL tables,
+and MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
+The physical layout might change as we work on improving compatibility and performance.
+
+### Tigris (beta)
+
+We also support the [Tigris](https://www.tigrisdata.com) backend on a beta level.
+Read more [here](https://www.tigrisdata.com/docs/concepts/mongodb-compatibility/).
+
+### SAP HANA (alpha)
+
+Currently, [we are also working](https://blogs.sap.com/2022/12/13/introduction-to-sap-hana-compatibility-layer-for-mongodb-wire-protocol/)
+with SAP on HANA compatibility.
+It is not officially supported yet.

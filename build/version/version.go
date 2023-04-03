@@ -31,7 +31,7 @@
 //	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
 //	ferretdb_testcover - enables test coverage instrumentation
 //	ferretdb_tigris    - enables Tigris backend handler (beta)
-//	ferretdb_hana      - enables Hana backend handler (not ready yet)
+//	ferretdb_hana      - enables Hana backend handler (alpha)
 //
 // # Debug builds
 //
