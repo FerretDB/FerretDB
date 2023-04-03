@@ -16,8 +16,10 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -48,8 +50,23 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	stats, err := dbPool.SchemaStats(ctx, db, collection)
-	if err != nil {
+	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
+	var scale int32
+
+	scale, err = common.GetOptionalPositiveNumber(document, "scale")
+	if err != nil || scale == 0 {
+		scale = 1
+	}
+
+	stats, err := dbPool.Stats(ctx, db, collection)
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		// Return empty stats for non-existent collections.
+		stats = new(pgdb.DBStats)
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -58,11 +75,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
 			"count", stats.CountRows,
-			"size", stats.SizeTotal,
-			"storageSize", stats.SizeRelation,
-			"totalIndexSize", stats.SizeIndexes,
-			"totalSize", stats.SizeTotal,
-			"scaleFactor", int32(1),
+			"size", int32(stats.SizeTotal)/scale,
+			"storageSize", int32(stats.SizeRelation)/scale,
+			"totalIndexSize", int32(stats.SizeIndexes)/scale,
+			"totalSize", int32(stats.SizeTotal)/scale,
+			"scaleFactor", scale,
 			"ok", float64(1),
 		))},
 	}))

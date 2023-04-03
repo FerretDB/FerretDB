@@ -113,6 +113,10 @@ var Commands = map[string]command{
 		Help:    "Drops production database.",
 		Handler: handlers.Interface.MsgDropDatabase,
 	},
+	"dropIndexes": {
+		Help:    "Drops indexes on a collection.",
+		Handler: handlers.Interface.MsgDropIndexes,
+	},
 	"explain": {
 		Help:    "Returns the execution plan.",
 		Handler: handlers.Interface.MsgExplain,
