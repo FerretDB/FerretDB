@@ -163,5 +163,5 @@ There are a few differences in how data is stored in PostgreSQL and Tigris.
 Please [check here](diff.md) for more details on the differences.
 
 :::caution
-FerretDB under constant development. As with any database, please verify if it is suitable for your application.
+FerretDB is under constant development. As with any database, before moving to production, please verify if it is suitable for your application.
 :::
