@@ -258,17 +258,17 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", dbStats.SizeTotal,
+				"size", float64(dbStats.SizeTotal),
 				"count", dbStats.CountRows,
-				"avgObjSize", avgObjSize,
-				"storageSize", dbStats.SizeRelation,
+				"avgObjSize", float64(avgObjSize),
+				"storageSize", float64(dbStats.SizeRelation),
 				"freeStorageSize", float64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"nindexes", dbStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", dbStats.SizeIndexes,
+				"totalIndexSize", float64(dbStats.SizeIndexes),
 				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
 		)

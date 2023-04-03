@@ -92,9 +92,9 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 
 		scalable := []string{"size", "storageSize", "freeStorageSize", "totalIndexSize"}
 		for _, key := range scalable {
-			if res.Has(key) {
-				res.Set(key, must.NotFail(res.Get(key)).(float64)/scale)
-			}
+			path := types.NewStaticPath("storageStats", key)
+			val := must.NotFail(res.GetByPath(path))
+			must.NoError(res.SetByPath(path, val.(float64)/scale))
 		}
 	}
 
