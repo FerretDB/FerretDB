@@ -92,7 +92,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	stagesDocuments := make([]aggregations.Stage, 0, len(stages))
 	stagesStats := make([]aggregations.Stage, 0, len(stages))
 
-	for _, d := range stages {
+	for i, d := range stages {
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -111,7 +111,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch s.Type() {
 		case aggregations.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
+			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
 		case aggregations.StageTypeStats:
+			if i > 0 {
+				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrCollStatsIsNotFirstStage,
+					"$collStats is only valid as the first stage in a pipeline",
+					document.Command(),
+				)
+			}
 			stagesStats = append(stagesStats, s)
 		default:
 			panic(fmt.Sprintf("unknown stage type: %v", s.Type()))
@@ -120,7 +129,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var resDocs []*types.Document
 
-	if len(stagesDocuments) > 0 {
+	// At this point we have a list of stages to apply to the documents or stats.
+	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
+	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
+	if len(stagesStats) == len(stagesDocuments) {
 		qp := tigrisdb.QueryParams{
 			DB:         db,
 			Collection: collection,
@@ -134,9 +146,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}); err != nil {
 			return nil, err
 		}
-	}
-
-	if len(stagesStats) > 0 {
+	} else {
 		statistics := aggregations.GetStatistics(stagesStats)
 
 		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
@@ -261,17 +271,17 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", dbStats.Size,
+				"size", float64(dbStats.Size),
 				"count", dbStats.NumObjects,
-				"avgObjSize", avgObjSize,
-				"storageSize", dbStats.Size,
+				"avgObjSize", float64(avgObjSize),
+				"storageSize", float64(dbStats.Size),
 				"freeStorageSize", float64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"nindexes", int64(0), // Not supported for Tigris
 				"indexDetails", must.NotFail(types.NewDocument()), // Not supported for Tigris
 				"indexBuilds", must.NotFail(types.NewDocument()), // Not supported for Tigris
-				"totalIndexSize", int64(0), // Not supported for Tigris
+				"totalIndexSize", float64(0), // Not supported for Tigris
 				"indexSizes", must.NotFail(types.NewDocument()), // Not supported for Tigris
 			)),
 		)
