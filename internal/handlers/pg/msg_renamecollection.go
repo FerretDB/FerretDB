@@ -18,6 +18,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/jackc/pgx/v4"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -25,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/jackc/pgx/v4"
 )
 
 // MsgRenameCollection implements HandlerInterface.
