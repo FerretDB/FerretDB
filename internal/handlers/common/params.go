@@ -202,7 +202,7 @@ func GetLimitStageParam(value any) (int64, error) {
 	return limit, nil
 }
 
-// GetSkipStageParam returns $limit stage argument from the provided value.
+// GetSkipStageParam returns $skip stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetSkipStageParam(value any) (int64, error) {
 	limit, err := GetWholeNumberParam(value)
