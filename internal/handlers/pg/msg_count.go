@@ -59,14 +59,14 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	var skip int64
+	var skip, limit int64
+
 	if s, _ := document.Get("skip"); s != nil {
 		if skip, err = common.GetSkipParam("count", s); err != nil {
 			return nil, err
 		}
 	}
 
-	var limit int64
 	if l, _ := document.Get("limit"); l != nil {
 		if limit, err = common.GetLimitParam("count", l); err != nil {
 			return nil, err
