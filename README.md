@@ -23,14 +23,15 @@ However, as time passed, MongoDB abandoned its open-source roots;
 changing the license to SSPL - making it unusable for many open source and early-stage commercial projects.
 
 Most MongoDB users do not require any advanced features offered by MongoDB;
-however, they need an easy-to-use open-source database solution.
+however, they need an easy-to-use open-source document database solution.
 Recognizing this, FerretDB is here to fill that gap.
 
 ## Scope and current state
 
-FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
+FerretDB is compatible with MongoDB drivers and popular MongoDB tools. It functions as a drop-in replacement for MongoDB 6.0+ in many cases.
+Features are constantly being added to further increase compatibility and performance.
 
-Currently, the project is in its early stages and welcomes all contributors.
+We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
 a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
 and [contributing guidelines](CONTRIBUTING.md).
