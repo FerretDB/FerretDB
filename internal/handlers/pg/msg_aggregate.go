@@ -132,40 +132,29 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var resDocs []*types.Document
 
-	if len(stagesStats) > 0 {
+	// At this point we have a list of stages to apply to the documents or stats.
+	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
+	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
+	if len(stagesStats) == len(stagesDocuments) {
+		// only documents stages or no stages - fetch documents from the DB and apply stages to them
+		qp := pgdb.QueryParams{
+			DB:         db,
+			Collection: collection,
+			Filter:     aggregations.GetPushdownQuery(stages),
+		}
+
+		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
+	} else {
+		// stats stages are provided - fetch stats from the DB and apply stages to them
 		statistics := aggregations.GetStatistics(stagesStats)
 
-		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
+		resDocs, err = processStagesStats(ctx, &stagesStatsParams{
 			dbPool, db, collection, statistics, stagesStats,
-		}); err != nil {
-			return nil, err
-		}
-	} else if len(stagesDocuments) > 0 {
-		qp := pgdb.QueryParams{
-			DB:         db,
-			Collection: collection,
-			Filter:     aggregations.GetPushdownQuery(stages),
-		}
-
-		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
-			dbPool, &qp, stagesDocuments,
-		}); err != nil {
-			return nil, err
-		}
+		})
 	}
 
-	if len(stagesStats) == 0 && len(stagesDocuments) == 0 {
-		qp := pgdb.QueryParams{
-			DB:         db,
-			Collection: collection,
-			Filter:     aggregations.GetPushdownQuery(stages),
-		}
-
-		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
-			dbPool, &qp, stagesDocuments,
-		}); err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1892

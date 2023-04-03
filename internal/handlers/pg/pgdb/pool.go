@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -245,10 +246,10 @@ func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats,
 		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	})
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		// do nothing
-	case ErrTableNotExist:
+	case errors.Is(err, ErrTableNotExist):
 		// return this error as is because it can be handled by the caller
 		return nil, err
 	default:

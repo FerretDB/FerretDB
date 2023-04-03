@@ -469,8 +469,6 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 func TestAggregateCompatGroup(t *testing.T) {
 	t.Parallel()
 
-	// FIXME skip for now because of the order
-
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NullID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
