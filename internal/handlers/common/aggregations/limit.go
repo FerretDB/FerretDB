@@ -53,3 +53,13 @@ func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 
 	return doc, nil
 }
+
+// Type implements Stage interface.
+func (l *limit) Type() StageType {
+	return StageTypeDocuments
+}
+
+// check interfaces
+var (
+	_ Stage = (*limit)(nil)
+)
