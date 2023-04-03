@@ -765,20 +765,22 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
+	insertCollections := []string{"old-collection", "duplicated-collection"}
+
 	for name, tc := range map[string]struct {
-		collections []string
-		toColl      string
-		expected    bson.D
-		err         *mongo.CommandError
+		fromColl string
+		toColl   string
+		expected bson.D
+		err      *mongo.CommandError
 	}{
 		"Rename": {
-			collections: []string{"old-collection"},
-			toColl:      "new-collection",
-			expected:    bson.D{{"ok", float64(1)}},
+			fromColl: "old-collection",
+			toColl:   "new-collection",
+			expected: bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
-			collections: []string{"old-collection"},
-			toColl:      "old-collection",
+			fromColl: "old-collection",
+			toColl:   "old-collection",
 			err: &mongo.CommandError{
 				Code:    20,
 				Name:    "IllegalOperation",
@@ -786,8 +788,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
-			collections: []string{"old-collection", "duplicated-collection"},
-			toColl:      "duplicated-collection",
+			fromColl: "old-collection",
+			toColl:   "duplicated-collection",
 			err: &mongo.CommandError{
 				Code:    48,
 				Name:    "NamespaceExists",
@@ -818,8 +820,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			db := sourceColl.Database()
 			require.NoError(t, db.Drop(ctx))
 
-			require.NotEmpty(t, tc.collections)
-			for _, coll := range tc.collections {
+			require.NotEmpty(t, insertCollections)
+			for _, coll := range insertCollections {
 				require.NoError(t, db.CreateCollection(ctx, coll))
 			}
 
@@ -827,7 +829,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			var actual bson.D
 			err := sourceColl.Database().Client().Database("admin").RunCommand(
 				ctx, bson.D{
-					{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), tc.collections[0])},
+					{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), tc.fromColl)},
 					{"to", fmt.Sprintf("%s.%s", db.Name(), tc.toColl)},
 				},
 			).Decode(&actual)
@@ -850,9 +852,12 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Contains(t, collections, tc.toColl)
-			require.NotContains(t, collections, tc.collections[0])
+			require.NotContains(t, collections, tc.fromColl)
 		})
 	}
+}
+
+func TestCommandsAdministrationRenameNamespace(t *testing.T) {
 }
 
 //nolint:paralleltest // we test a global server status
