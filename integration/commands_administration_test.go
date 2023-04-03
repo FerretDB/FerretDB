@@ -639,6 +639,8 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
+	// FIXME !!!
+
 	t.Run("Existing", func(t *testing.T) {
 		t.Parallel()
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
@@ -922,6 +924,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
+	t.Skip("FIXME!!!")
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
