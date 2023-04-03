@@ -184,6 +184,9 @@ const (
 	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
 	ErrFailedToParseInput = ErrorCode(40415) // Location40415
 
+	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
+	ErrCollStatsIsNotFirstStage = ErrorCode(40415) // Location40602
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840

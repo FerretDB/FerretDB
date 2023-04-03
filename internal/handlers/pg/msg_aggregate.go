@@ -114,12 +114,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch s.Type() {
 		case aggregations.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
-			stagesStats = append(stagesStats, s)
+			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
 		case aggregations.StageTypeStats:
 			if i > 0 {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					"The stage should be first...", // FIXME !!!
+					commonerrors.ErrCollStatsIsNotFirstStage,
+					"$collStats is only valid as the first stage in a pipeline",
 					document.Command(),
 				)
 			}
