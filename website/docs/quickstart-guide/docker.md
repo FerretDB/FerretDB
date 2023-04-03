@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+description: How to set up FerretDB using Docker
 ---
 
 # Docker
