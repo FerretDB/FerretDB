@@ -254,6 +254,13 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"InvalidStage": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{"$invalid-stage"}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateCommandCompat(t, testCases)
@@ -1196,6 +1203,110 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatUnwind(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Simple": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v"}},
+			},
+		},
+		"NonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$non-existent"}},
+			},
+			resultType: emptyResult,
+		},
+		"Invalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"DotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.foo"}},
+			},
+		},
+		"DotNotationNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.non-existent"}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.0"}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayDotNotationKey": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.0.foo"}},
+			},
+			resultType: emptyResult,
+		},
+		"Null": {
+			pipeline:   bson.A{bson.D{{"$unwind", nil}}},
+			resultType: emptyResult,
+		},
+		"ID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$_id"}},
+			},
+		},
+		"NameAsExpression": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$add"}}},
+			resultType: emptyResult,
+		},
+		"EmptyPath": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$"}}},
+			resultType: emptyResult,
+		},
+		"EmptyVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$"}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$$"}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$s": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$$s"}}},
+			resultType: emptyResult,
+		},
+		"NonExistingVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$s"}}},
+			resultType: emptyResult,
+		},
+		"SystemVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$NOW"}}},
+			resultType: emptyResult,
+		},
+		"Empty": {
+			pipeline:   bson.A{bson.D{{"$unwind", ""}}},
+			resultType: emptyResult,
+		},
+		"Number": {
+			pipeline:   bson.A{bson.D{{"$unwind", 42}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			pipeline:   bson.A{bson.D{{"$unwind", bson.A{"$v"}}}},
 			resultType: emptyResult,
 		},
 	}

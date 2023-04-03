@@ -128,8 +128,14 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrStageUnwindWrongType indicates $unwind stage argument has unexpected type.
+	ErrStageUnwindWrongType = ErrorCode(15981) // Location15981
+
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
+	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
+	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
 
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
@@ -142,6 +148,12 @@ const (
 
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
+
+	// ErrStageUnwindNoPath indicates that $unwind aggregation stage is empty.
+	ErrStageUnwindNoPath = ErrorCode(28812) // Location28812
+
+	// ErrStageUnwindNoPrefix indicates that $unwind aggregation stage doesn't include '$' prefix.
+	ErrStageUnwindNoPrefix = ErrorCode(28818) // Location28818
 
 	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
 	// while projection document already marked as exclusion.
@@ -184,6 +196,9 @@ const (
 	// ErrFailedToParseInput indicates invalid input (absent or malformed fields).
 	ErrFailedToParseInput = ErrorCode(40415) // Location40415
 
+	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
+	ErrCollStatsIsNotFirstStage = ErrorCode(40415) // Location40602
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
@@ -208,6 +223,9 @@ const (
 
 	// ErrStageLimitInvalidArg indicates invalid argument for the aggregation $limit stage.
 	ErrStageLimitInvalidArg = ErrorCode(5107201) // Location5107201
+
+	// ErrStageCollStatsInvalidArg indicates invalid argument for the aggregation $collStats stage.
+	ErrStageCollStatsInvalidArg = ErrorCode(5447000) // Location5447000
 )
 
 // ErrInfo represents additional optional error information.
