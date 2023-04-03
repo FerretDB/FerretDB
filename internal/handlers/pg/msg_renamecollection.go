@@ -69,12 +69,12 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	return &reply, nil
 }
 
-// extractFromNamespace returns the database and collection name from the namespace.
+// extractFromNamespace returns the database and collection name from a namespace.
 func extractFromNamespace(namespace string) (string, string, error) {
 	split := strings.Split(namespace, ".")
 
 	// TODO: validate namespace.
-	// we assume that a give namespace contains a single dot.
+	// we assume that a given namespace contains a single dot.
 	if len(split) != 2 {
 		return "", "", commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrInvalidNamespace,
