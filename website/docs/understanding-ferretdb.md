@@ -162,7 +162,6 @@ In Tigris case, we convert MongoDB BSON to Tigris data based on the [Tigris mode
 There are a few differences in how data is stored in PostgreSQL and Tigris.
 Please [check here](diff.md) for more details on the differences.
 
-FIXME
 :::caution
-FerretDB is still under development and not currently suitable for production-ready environments.
+FerretDB under constant development. As with any database, please verify if it is suitable for your application.
 :::
