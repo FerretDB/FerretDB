@@ -43,7 +43,8 @@ env:
 jobs:
   build:
     name: Build packages
-    runs-on: faster
+    runs-on:
+      group: paid
     timeout-minutes: 60
 
     if: >
