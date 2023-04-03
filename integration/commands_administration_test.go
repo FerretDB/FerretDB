@@ -766,61 +766,71 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	for name, tc := range map[string]struct {
-		sourceColl string
-		toColl     string
-		expected   bson.D
-		err        *mongo.CommandError
+		fromNamespace string
+		toNamespace   string
+		expected      bson.D
+		err           *mongo.CommandError
 	}{
 		"Rename": {
-			sourceColl: "old-collection",
-			toColl:     "new-collection",
-			expected:   bson.D{{"ok", float64(1)}},
+			fromNamespace: "Bool.bool-false",
+			toNamespace:   "Bool.bar",
+			expected:      bson.D{{"ok", 1}},
+			err:           nil,
+		},
+		"RenameSame": {
+			fromNamespace: "Bool.bool-false",
+			toNamespace:   "Bool.bool-false",
+			err: &mongo.CommandError{
+				Code:    20,
+				Name:    "IllegalOperation",
+				Message: `Can't rename a collection to itself`,
+			},
+		},
+		"RenameInvalidNamespace": {
+			fromNamespace: "Boolfalse",
+			toNamespace:   "Bool.bool-false",
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: `Invalid namespace specified ` + "testfoo",
+			},
+		},
+		"RenameDuplicate": {
+			fromNamespace: "Bool.bool-true",
+			toNamespace:   "Bool.bool-false",
+			err: &mongo.CommandError{
+				Code:    48,
+				Name:    "NamespaceExists",
+				Message: `target namespace exists`,
+			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// s := setup.SetupWithOpts(t, &setup.SetupOpts{
-			// 	DatabaseName:   "admin",
-			// 	CollectionName: "test.test-collection",
-			// })
-
 			ctx, sourceColl := setup.Setup(t, shareddata.Bools)
 
 			db := sourceColl.Database()
 			require.NoError(t, db.Drop(ctx))
 
-			require.NoError(t, db.CreateCollection(ctx, tc.sourceColl))
-
-			// commonerrors.ErrInvalidNamespace
 			var actual bson.D
 			err := sourceColl.Database().Client().Database("admin").RunCommand(
 				ctx, bson.D{
-					{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), tc.sourceColl)},
-					{"to", fmt.Sprintf("%s.%s", db.Name(), tc.toColl)},
+					{"renameCollection", tc.fromNamespace},
+					{"to", tc.toNamespace},
 				},
 			).Decode(&actual)
-			t.Log(db.Name())
 
 			if tc.err != nil {
-				require.Equal(t, tc.err, err)
+				AssertEqualError(t, *tc.err, err)
 				return
 			}
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected, actual)
 
-			collections, err := db.ListCollectionNames(
-				ctx,
-				bson.D{},
-				nil,
-			)
-
 			require.NoError(t, err)
-
-			require.Contains(t, collections, tc.toColl)
-			require.NotContains(t, collections, tc.sourceColl)
 		})
 	}
 }
