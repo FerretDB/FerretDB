@@ -115,6 +115,8 @@ func TestAggregateCompatCollStats(t *testing.T) {
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
 					}
+
+					// TODO Check the returned values when possible: https://github.com/FerretDB/FerretDB/issues/2349
 				})
 			}
 
