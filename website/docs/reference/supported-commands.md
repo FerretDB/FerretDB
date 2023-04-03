@@ -314,7 +314,7 @@ db.collection.aggregate()
 | `$addFields`, `$set`           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
 | `$bucket`, `$bucketAuto`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
 | `$changeStream`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
-| `$collStats`                   | ⚠️️      | Fields `count` and `storageStats` supported               |
+| `$collStats`                   | ⚠️️      | Fields `count` and `storageStats` are supported           |
 | `$count`                       | ✅️      |                                                           |
 | `$densify`                     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1418) |
 | `$documents`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
