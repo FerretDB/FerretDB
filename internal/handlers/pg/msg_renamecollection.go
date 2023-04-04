@@ -32,6 +32,7 @@ import (
 
 // MsgRenameCollection implements HandlerInterface.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var err error
 	dbPool, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -42,40 +43,53 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "dropTarget", "writeConcern", "comment"); err != nil {
+	if err = common.Unimplemented(document, "dropTarget", "writeConcern", "comment"); err != nil {
 		return nil, err
 	}
 
-	sourceNs, err := common.GetRequiredParam[string](document, document.Command())
+	var qp pgdb.QueryParams
+
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return nil, err
+	}
+
+	if qp.DB != "admin" {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrUnauthorized,
+			"renameCollection may only be run against the admin database.",
+		)
+	}
+
+	sourceNamespace, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
 
-	targetNs, err := common.GetRequiredParam[string](document, "to")
+	targetNamespace, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
 		return nil, err
 	}
 
-	// IllegalOperation done.
-	if sourceNs == targetNs {
+	if sourceNamespace == targetNamespace {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrIllegalOperation,
 			"Can't rename a collection to itself",
 		)
 	}
 
-	sourceDB, sourceColl, err := extractFromNamespace(sourceNs)
+	sourceDB, collection, err := extractFromNamespace(sourceNamespace)
 	if err != nil {
 		return nil, err
 	}
 
-	_, targetColl, err := extractFromNamespace(targetNs)
+	// we assume we cannot move a collection between databases, yet.
+	_, targetCollection, err := extractFromNamespace(targetNamespace)
 	if err != nil {
 		return nil, err
 	}
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return pgdb.RenameCollection(ctx, tx, sourceDB, sourceColl, targetColl)
+		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection)
 	})
 
 	switch {
