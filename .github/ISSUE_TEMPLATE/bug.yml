@@ -29,7 +29,7 @@ body:
     attributes:
       label: How can we reproduce it?
       description: >
-        Include a pull request with MongoDB test script following [reporting a bug](CONTRIBUTING.md#reporting-a-bug) if you can.
+        Include a pull request with MongoDB test script following [reporting a bug](../../CONTRIBUTING.md#reporting-a-bug) if you can.
     validations:
       required: true
   - type: textarea
