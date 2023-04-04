@@ -86,6 +86,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			commonerrors.ErrNamespaceExists,
 			"target namespace exists",
 		)
+	case errors.Is(err, nil):
+		return nil, nil
 	}
 
 	var reply wire.OpMsg
@@ -102,7 +104,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 func extractFromNamespace(namespace string) (string, string, error) {
 	split := strings.Split(namespace, ".")
 
-	// TODO: validate namespace.
 	// we assume that the given namespace contains a single dot.
 	if len(split) != 2 {
 		return "", "", commonerrors.NewCommandErrorMsg(
