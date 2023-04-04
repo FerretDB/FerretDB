@@ -155,6 +155,8 @@ func init() {
 		panic(msg)
 	}
 
+	info.BuildEnvironment.Set("go.version", buildInfo.GoVersion)
+
 	for _, s := range buildInfo.Settings {
 		switch s.Key {
 		case "vcs.revision":
@@ -172,18 +174,6 @@ func init() {
 
 		case "vcs.modified":
 			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
-
-		case "-compiler":
-			info.BuildEnvironment.Set("compiler", s.Value)
-
-		case "-race":
-			info.BuildEnvironment.Set("race", s.Value)
-
-		case "-tags":
-			info.BuildEnvironment.Set("buildtags", s.Value)
-
-		case "-trimpath":
-			info.BuildEnvironment.Set("trimpath", s.Value)
 
 		default:
 			info.BuildEnvironment.Set(s.Key, s.Value)
