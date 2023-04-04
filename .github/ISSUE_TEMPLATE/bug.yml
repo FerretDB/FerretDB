@@ -31,7 +31,7 @@ body:
       description: >
         Include a pull request with test script noted in [reporting a bug](../../CONTRIBUTING.md#reporting-a-bug) if you can.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: expected
     attributes:
