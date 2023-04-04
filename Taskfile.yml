@@ -409,12 +409,14 @@ tasks:
         /legacy-mongo-shell/test.js
 
   docker-init:
+    run: once
     cmds:
-      - docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+      - cmd: docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+        ignore_error: true
       - docker buildx ls
 
   docker-build:
-    deps: [gen-version]
+    deps: [gen-version, docker-init]
     cmds:
       - >
         docker buildx build --builder=ferretdb
@@ -434,7 +436,6 @@ tasks:
   # do not change that target much; see "Building and packaging" in README.md
   build-release:
     desc: "Build bin/ferretdb (production build)"
-    deps: [gen-version]
     cmds:
       - echo 'bin' > build/version/package.txt
       - task: docker-build
