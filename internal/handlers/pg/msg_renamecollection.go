@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -55,6 +56,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
+	// IllegalOperation done.
 	if fromNamespace == toNamespace {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrIllegalOperation,
@@ -76,8 +78,14 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return pgdb.RenameCollection(ctx, tx, fromDB, fromColl, toColl)
 	})
 
-	if err != nil {
-		return nil, err
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrAlreadyExist):
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrNamespaceExists,
+			"target namespace exists",
+		)
 	}
 
 	var reply wire.OpMsg
