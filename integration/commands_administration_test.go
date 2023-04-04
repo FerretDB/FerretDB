@@ -770,19 +770,19 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	insertCollections := []string{"old-collection", "duplicated-collection"}
 
 	for name, tc := range map[string]struct {
-		fromColl string
-		toColl   string
-		expected bson.D
-		err      *mongo.CommandError
+		sourceColl string
+		targetColl string
+		expected   bson.D
+		err        *mongo.CommandError
 	}{
 		"Rename": {
-			fromColl: "old-collection",
-			toColl:   "new-collection",
-			expected: bson.D{{"ok", float64(1)}},
+			sourceColl: "old-collection",
+			targetColl: "new-collection",
+			expected:   bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
-			fromColl: "old-collection",
-			toColl:   "old-collection",
+			sourceColl: "old-collection",
+			targetColl: "old-collection",
 			err: &mongo.CommandError{
 				Code:    20,
 				Name:    "IllegalOperation",
@@ -790,8 +790,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
-			fromColl: "old-collection",
-			toColl:   "duplicated-collection",
+			sourceColl: "old-collection",
+			targetColl: "duplicated-collection",
 			err: &mongo.CommandError{
 				Code:    48,
 				Name:    "NamespaceExists",
@@ -799,8 +799,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameNonExistent": {
-			fromColl: "not-exists",
-			toColl:   "new-collection",
+			sourceColl: "not-exists",
+			targetColl: "new-collection",
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
@@ -808,20 +808,20 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameInvalid": {
-			fromColl: ".not-exists",
-			toColl:   "new-collection",
+			sourceColl: ".not-exists",
+			targetColl: "new-collection",
 			err: &mongo.CommandError{
 				Code:    20,
 				Name:    "IllegalOperation",
 				Message: `error with source namespace: Invalid collection name: .not-exists`,
 			},
 		},
-		// ---
+		//
 		// TODO
 		// 1. insert collection "foo"
 		// 2. rename "foo" to "bar"
 		// 3. insert collection "foo"
-		// ---
+		//
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -837,17 +837,20 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				require.NoError(t, db.CreateCollection(ctx, coll))
 			}
 
-			// commonerrors.ErrInvalidNamespace
 			var actual bson.D
+
+			from := fmt.Sprintf("%s.%s", db.Name(), tc.sourceColl)
+			to := fmt.Sprintf("%s.%s", db.Name(), tc.targetColl)
+			cmd := bson.D{
+				{"renameCollection", from},
+				{"to", to},
+			}
+
 			err := sourceColl.Database().Client().Database("admin").RunCommand(
-				ctx, bson.D{
-					{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), tc.fromColl)},
-					{"to", fmt.Sprintf("%s.%s", db.Name(), tc.toColl)},
-				},
+				ctx, cmd,
 			).Decode(&actual)
 
 			if tc.err != nil {
-				// AssertEqualAltError(t, *tc.err, tc.altMessage, err)
 				AssertEqualError(t, *tc.err, err)
 				return
 			}
@@ -863,8 +866,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			require.NoError(t, err)
 
-			require.Contains(t, collections, tc.toColl)
-			require.NotContains(t, collections, tc.fromColl)
+			require.Contains(t, collections, tc.targetColl)
+			require.NotContains(t, collections, tc.sourceColl)
 		})
 	}
 }
