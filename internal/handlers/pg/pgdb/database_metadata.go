@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
+	"math/rand"
 	"regexp"
 
 	"github.com/jackc/pgx/v4"
@@ -170,7 +171,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
-// If such metadata don't exist, it returns ErrTableNotExist.
+// If such metadata doesn't exist, it returns ErrTableNotExist.
 func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	metadata, err := ms.get(ctx, false)
 	if err != nil {
@@ -191,6 +192,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 		return ErrTableNotExist
 	}
 
+	// if the metadata exists for to, we return ErrAlreadyExist.
 	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); err != ErrTableNotExist {
 		if err == nil {
 			return ErrAlreadyExist
@@ -384,7 +386,9 @@ func collectionNameToTableName(name string) string {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
+	i := rand.Intn(100)
+
+	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x%d", hash32.Sum(nil), i)
 }
 
 // setIndex sets the index info in the metadata table.
