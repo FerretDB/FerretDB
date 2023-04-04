@@ -242,18 +242,18 @@ Typical test cases include:
 ## Reporting a bug
 
 We appreciate reporting a bug to us. For us to accurately identify the cause, we encourage
-including the MongoDB query script in the bug issue.
-The query script is written in
+you to include a pull request with MongoDB test script.
+The test script should be written in
 [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-An example of how to prepare a query script is in
+An example of how to prepare a test script is found in
 [build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
 
 Test your script using following steps:
 1. Start the development environment with `task env-up`.
 2. Start FerretDB with `task run`.
-3. Run the script with `task testjs`.
+3. Run the test script with `task testjs`.
 
-Please link the pull request containing query script, upon creating a bug issue.
+Please create a pull request and include the link of the pull request in the bug issue.
 
 ## Contributing documentation
 

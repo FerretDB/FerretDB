@@ -21,9 +21,15 @@ body:
     id: do
     attributes:
       label: What did you do?
+      description: Include MongoDB queries if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: do
+    attributes:
+      label: How can we reproduce it?
       description: >
-        Include MongoDB queries and
-        a pull request with MongoDB queries script [CONTRIBUTING.md#reporting-bugs](CONTRIBUTING.md#reporting-bugs) if you can.
+        Include a pull request with MongoDB test script following [reporting a bug](/CONTRIBUTING.md#reporting-a-bug) if you can.
     validations:
       required: true
   - type: textarea
