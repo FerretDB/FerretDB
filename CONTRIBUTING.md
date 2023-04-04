@@ -241,7 +241,8 @@ Typical test cases include:
 
 ## Reporting a bug
 
-We appreciate reporting a bug to us. To help us accurately identify the cause, we encourage
+We appreciate reporting a bug to us.
+To help us accurately identify the cause, we encourage
 you to include a pull request with test script.
 Please write the test script in
 [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
@@ -249,6 +250,7 @@ You can find an example of how to prepare a test script in
 [build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
 
 Test your script using following steps:
+
 1. Start the development environment with `task env-up`.
 2. Start FerretDB with `task run`.
 3. Run the test script with `task testjs`.
