@@ -29,7 +29,7 @@ body:
     attributes:
       label: How can we reproduce it?
       description: >
-        Include a pull request with test script noted in [reporting a bug](../CONTRIBUTING.md#reporting-a-bug) if you can.
+        Include a pull request with test script noted in [reporting a bug](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#reporting-a-bug) if you can.
     validations:
       required: false
   - type: textarea
