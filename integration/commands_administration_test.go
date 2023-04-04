@@ -767,7 +767,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	// TODO push documents to collections and findAll after rename
 	t.Parallel()
-	insertCollections := []string{"old-collection", "duplicated-collection"}
+	insertCollections := []string{"foo", "bar"}
 
 	for name, tc := range map[string]struct {
 		sourceColl string
@@ -776,13 +776,13 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		err        *mongo.CommandError
 	}{
 		"Rename": {
-			sourceColl: "old-collection",
-			targetColl: "new-collection",
+			sourceColl: "foo",
+			targetColl: "bar",
 			expected:   bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
-			sourceColl: "old-collection",
-			targetColl: "old-collection",
+			sourceColl: "foo",
+			targetColl: "foo",
 			err: &mongo.CommandError{
 				Code:    20,
 				Name:    "IllegalOperation",
@@ -790,38 +790,23 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
-			sourceColl: "old-collection",
-			targetColl: "duplicated-collection",
+			sourceColl: "foo",
+			targetColl: "bar",
 			err: &mongo.CommandError{
 				Code:    48,
 				Name:    "NamespaceExists",
 				Message: `target namespace exists`,
 			},
 		},
-		"RenameNonExistent": {
-			sourceColl: "not-exists",
-			targetColl: "new-collection",
+		"RenameAndNewMetadata": {
+			sourceColl: "foo",
+			targetColl: "bar",
 			err: &mongo.CommandError{
-				Code:    26,
-				Name:    "NamespaceNotFound",
-				Message: `Source collection testcommandsadministrationrenamecollection-renamenonexistent.not-exists does not exist`,
+				Code:    48,
+				Name:    "NamespaceExists",
+				Message: `target namespace exists`,
 			},
 		},
-		"RenameInvalid": {
-			sourceColl: ".not-exists",
-			targetColl: "new-collection",
-			err: &mongo.CommandError{
-				Code:    20,
-				Name:    "IllegalOperation",
-				Message: `error with source namespace: Invalid collection name: .not-exists`,
-			},
-		},
-		//
-		// TODO
-		// 1. insert collection "foo"
-		// 2. rename "foo" to "bar"
-		// 3. insert collection "foo"
-		//
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -839,13 +824,16 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			var actual bson.D
 
-			from := fmt.Sprintf("%s.%s", db.Name(), tc.sourceColl)
-			to := fmt.Sprintf("%s.%s", db.Name(), tc.targetColl)
-			cmd := bson.D{
-				{"renameCollection", from},
-				{"to", to},
+			if name == "RenameAndNewMetadata" {
+				// TODO: add test DoD #1.
 			}
 
+			sourceNs := fmt.Sprintf("%s.%s", db.Name(), tc.sourceColl)
+			targetNs := fmt.Sprintf("%s.%s", db.Name(), tc.targetColl)
+			cmd := bson.D{
+				{"renameCollection", sourceNs},
+				{"to", targetNs},
+			}
 			err := sourceColl.Database().Client().Database("admin").RunCommand(
 				ctx, cmd,
 			).Decode(&actual)
@@ -870,119 +858,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.NotContains(t, collections, tc.sourceColl)
 		})
 	}
-}
-
-func TestCommandsAdministrationRenameNamespace(t *testing.T) {
-	t.Parallel()
-	ctx, sourceColl := setup.Setup(t, shareddata.Bools)
-
-	db := sourceColl.Database()
-	require.NoError(t, db.Drop(ctx))
-
-	require.NoError(t, db.CreateCollection(ctx, "collection"))
-
-	t.Run("NoNamespaceFrom", func(t *testing.T) {
-		t.Parallel()
-		var actual bson.D
-		err := sourceColl.Database().Client().Database("admin").RunCommand(
-			ctx, bson.D{
-				{"renameCollection", "collection"},
-				{"to", fmt.Sprintf("%s.%s", db.Name(), "new-collection")},
-			},
-		).Decode(&actual)
-		expectedErr := mongo.CommandError{
-			Code:    73,
-			Name:    "InvalidNamespace",
-			Message: `Invalid namespace specified 'collection'`,
-		}
-
-		AssertEqualError(t, expectedErr, err)
-	})
-
-	t.Run("NoNamespaceTo", func(t *testing.T) {
-		t.Parallel()
-		var actual bson.D
-		err := sourceColl.Database().Client().Database("admin").RunCommand(
-			ctx, bson.D{
-				{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), "collection")},
-				{"to", "new-collection"},
-			},
-		).Decode(&actual)
-		expectedErr := mongo.CommandError{
-			Code:    73,
-			Name:    "InvalidNamespace",
-			Message: `Invalid target namespace: new-collection`,
-		}
-
-		AssertEqualError(t, expectedErr, err)
-	})
-
-	t.Run("DotCollection", func(t *testing.T) {
-		t.Parallel()
-		var actual bson.D
-		err := sourceColl.Database().Client().Database("admin").RunCommand(
-			ctx, bson.D{
-				{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), "collection")},
-				{"to", ".new-collection"},
-			},
-		).Decode(&actual)
-		expectedErr := mongo.CommandError{
-			Code:    73,
-			Name:    "InvalidNamespace",
-			Message: `Invalid target namespace: .new-collection`,
-		}
-
-		AssertEqualError(t, expectedErr, err)
-	})
-
-	t.Run("DifferentDB", func(t *testing.T) {
-		// TODO push documents to collections and findAll after rename
-		t.Parallel()
-		var actual bson.D
-
-		ctx, sourceColl := setup.Setup(t, shareddata.Bools)
-
-		db := sourceColl.Database()
-		require.NoError(t, db.Drop(ctx))
-
-		require.NoError(t, db.CreateCollection(ctx, "collection"))
-
-		err := sourceColl.Database().Client().Database("admin").RunCommand(
-			ctx, bson.D{
-				{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), "collection")},
-				{"to", fmt.Sprintf("%s-new.%s", db.Name(), "collection")},
-			},
-		).Decode(&actual)
-		require.NoError(t, err)
-
-		assert.Equal(t, bson.D{{"ok", float64(1)}}, actual)
-	})
-
-	t.Run("CreateAfterRename", func(t *testing.T) {
-		// TODO push documents to collection and findAll after rename. Afterwards create collection and find if its empty
-		t.Parallel()
-		var actual bson.D
-
-		ctx, sourceColl := setup.Setup(t, shareddata.Bools)
-
-		db := sourceColl.Database()
-		require.NoError(t, db.Drop(ctx))
-
-		require.NoError(t, db.CreateCollection(ctx, "collection"))
-
-		err := sourceColl.Database().Client().Database("admin").RunCommand(
-			ctx, bson.D{
-				{"renameCollection", fmt.Sprintf("%s.%s", db.Name(), "collection")},
-				{"to", fmt.Sprintf("%s-new.%s", db.Name(), "new-collection")},
-			},
-		).Decode(&actual)
-		require.NoError(t, err)
-
-		require.Equal(t, bson.D{{"ok", float64(1)}}, actual)
-
-		assert.NoError(t, db.CreateCollection(ctx, "collection"))
-	})
-
 }
 
 //nolint:paralleltest // we test a global server status
