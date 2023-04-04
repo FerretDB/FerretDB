@@ -193,10 +193,11 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 	}
 
 	// if the metadata exists for to, we return ErrAlreadyExist.
-	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); err != ErrTableNotExist {
+	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); !errors.Is(err, ErrTableNotExist) {
 		if err == nil {
 			return ErrAlreadyExist
 		}
+
 		return lazyerrors.Error(err)
 	}
 
