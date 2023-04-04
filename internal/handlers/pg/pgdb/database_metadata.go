@@ -23,7 +23,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -190,7 +189,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 
 	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); err != ErrTableNotExist {
 		if err == nil {
-			return commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, "target namespace exists")
+			return ErrAlreadyExist
 		}
 		return lazyerrors.Error(err)
 	}
