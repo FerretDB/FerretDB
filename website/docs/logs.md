@@ -19,4 +19,4 @@ docker logs -name ferretdb-docker-ferretdb-1
 ## Binary executable logs
 FerretDB generates logs to standard output `stdout` and standard error `stderr` streams
 but does not retain them.
-Refer to the [flags](configuration/flags#miscellaneous) to adjust the log level.
+Refer to the [flags](configuration/flags.md#miscellaneous) to adjust the log level.
