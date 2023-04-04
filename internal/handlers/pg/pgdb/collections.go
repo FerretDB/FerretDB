@@ -187,7 +187,12 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	return nil
 }
 
-// TODO: comment.
+// RenameCollection changes the name of an existing collection.
+//
+// It returns ErrTableNotExist if either source database or collection does not exist.
+// Please use errors.Is to check the error.
+//
+// It returns ErrAlreadyExist if the target database or collection already exists.
 func RenameCollection(ctx context.Context, tx pgx.Tx, schema, from, to string) error {
 	return newMetadataStorage(tx, schema, from).renameCollection(ctx, to)
 }
