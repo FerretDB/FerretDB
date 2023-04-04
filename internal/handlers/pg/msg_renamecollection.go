@@ -86,8 +86,11 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			commonerrors.ErrNamespaceExists,
 			"target namespace exists",
 		)
-	case errors.Is(err, nil):
-		return nil, nil
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrNamespaceNotFound,
+			"source namespace does not exist",
+		)
 	}
 
 	var reply wire.OpMsg
