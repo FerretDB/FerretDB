@@ -172,20 +172,20 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
 	t.Parallel()
-	ctx, targetCollectionections, compatCollections := setup.SetupCompat(t)
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-	require.Greater(t, len(targetCollectionections), 2)
+	require.Greater(t, len(targetCollections), 2)
 
 	filter := bson.D{{
 		"name", bson.D{{
 			"$in", bson.A{
-				targetCollectionections[0].Name(),
-				targetCollectionections[len(targetCollectionections)-1].Name(),
+				targetCollections[0].Name(),
+				targetCollections[len(targetCollections)-1].Name(),
 			},
 		}},
 	}}
 
-	target, err := targetCollectionections[0].Database().ListCollectionNames(ctx, filter)
+	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
 	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
