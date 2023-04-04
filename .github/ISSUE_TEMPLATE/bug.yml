@@ -25,6 +25,14 @@ body:
     validations:
       required: true
   - type: textarea
+    id: how
+    attributes:
+      label: How can we reproduce it?
+      description: >
+        Include a pull request with test script noted in [reporting a bug](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#reporting-a-bug) if you can.
+    validations:
+      required: false
+  - type: textarea
     id: expected
     attributes:
       label: What did you expect to see?
