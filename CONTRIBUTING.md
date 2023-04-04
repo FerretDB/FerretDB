@@ -241,11 +241,11 @@ Typical test cases include:
 
 ## Reporting a bug
 
-We appreciate reporting a bug to us. For us to accurately identify the cause, we encourage
-you to include a pull request with MongoDB test script.
-The test script should be written in
+We appreciate reporting a bug to us. To help us accurately identify the cause, we encourage
+you to include a pull request with test script.
+Please write the test script in
 [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-An example of how to prepare a test script is found in
+You can find an example of how to prepare a test script in
 [build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
 
 Test your script using following steps:
