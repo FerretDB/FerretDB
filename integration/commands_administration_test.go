@@ -820,7 +820,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			var actual bson.D
 
-			if name == "RenameAndVerifyMetadata" {
+			if name == "RenameVerifyMetadata" {
 				collection.Drop(ctx)
 				_, err := collection.InsertMany(
 					ctx,
@@ -848,7 +848,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				return
 			}
 
-			if name == "RenameAndVerifyMetadata" {
+			if name == "RenameVerifyMetadata" {
 				cur, err := db.Collection(tc.collection).Find(ctx, bson.D{{}}, nil)
 				require.NoError(t, err)
 				require.False(t, cur.Next(ctx))
