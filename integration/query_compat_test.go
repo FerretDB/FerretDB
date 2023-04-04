@@ -34,9 +34,9 @@ import (
 type queryCompatTestCase struct {
 	filter         bson.D                   // required
 	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	optSkip        *int64                   // defaults to nil to leave unset
 	limit          *int64                   // defaults to nil to leave unset
 	batchSize      *int32                   // defaults to nil to leave unset
-	optSkip        *int64                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
@@ -78,16 +78,16 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 				opts.SetSort(bson.D{{"_id", 1}})
 			}
 
+			if tc.optSkip != nil {
+				opts.SetSkip(*tc.optSkip)
+			}
+
 			if tc.limit != nil {
 				opts.SetLimit(*tc.limit)
 			}
 
 			if tc.batchSize != nil {
 				opts.SetBatchSize(*tc.batchSize)
-			}
-
-			if tc.optSkip != nil {
-				opts.SetSkip(*tc.optSkip)
 			}
 
 			if tc.projection != nil {
@@ -274,6 +274,55 @@ func TestQueryCompatSort(t *testing.T) {
 	testQueryCompat(t, testCases)
 }
 
+func TestQueryCompatSkip(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Simple": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(1),
+		},
+		"SimpleWithLimit": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(1),
+			limit:   pointer.ToInt64(1),
+		},
+		"AlmostAll": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+		},
+		"All": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+		},
+		"More": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
+		},
+		"Big": {
+			filter:     bson.D{},
+			optSkip:    pointer.ToInt64(1000),
+			resultType: emptyResult,
+		},
+		"Zero": {
+			filter:  bson.D{},
+			optSkip: pointer.ToInt64(0),
+		},
+		"Bad": {
+			filter:     bson.D{},
+			optSkip:    pointer.ToInt64(-1),
+			resultType: emptyResult,
+		},
+		"MaxInt64": {
+			filter:     bson.D{},
+			optSkip:    pointer.ToInt64(math.MaxInt64),
+			resultType: emptyResult,
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
 func TestQueryCompatLimit(t *testing.T) {
 	t.Parallel()
 
@@ -347,50 +396,6 @@ func TestQueryCompatBatchSize(t *testing.T) {
 		"Bad": {
 			filter:     bson.D{},
 			batchSize:  pointer.ToInt32(-1),
-			resultType: emptyResult,
-		},
-	}
-
-	testQueryCompat(t, testCases)
-}
-
-func TestQueryCompatSkip(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryCompatTestCase{
-		"Simple": {
-			filter:  bson.D{},
-			optSkip: pointer.ToInt64(1),
-		},
-		"AlmostAll": {
-			filter:  bson.D{},
-			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
-		},
-		"All": {
-			filter:  bson.D{},
-			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
-		},
-		"More": {
-			filter:  bson.D{},
-			optSkip: pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
-		},
-		"Big": {
-			filter:     bson.D{},
-			optSkip:    pointer.ToInt64(1000),
-			resultType: emptyResult,
-		},
-		"Zero": {
-			filter:  bson.D{},
-			optSkip: pointer.ToInt64(0),
-		},
-		"Bad": {
-			filter:     bson.D{},
-			optSkip:    pointer.ToInt64(-1),
-			resultType: emptyResult,
-		},
-		"MaxInt64": {
-			filter:     bson.D{},
-			optSkip:    pointer.ToInt64(math.MaxInt64),
 			resultType: emptyResult,
 		},
 	}

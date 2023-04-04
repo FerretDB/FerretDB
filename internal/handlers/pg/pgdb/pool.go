@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -202,6 +203,8 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 
 // Stats returns a set of statistics for FerretDB server, database, collection
 // - or, in terms of PostgreSQL, database, schema, table.
+//
+// It returns ErrTableNotExist is the given collection does not exist, and ignores other errors.
 func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
 	res := &DBStats{
 		Name: db,
@@ -242,7 +245,14 @@ func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats,
 
 		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
 	})
-	if err != nil {
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, ErrTableNotExist):
+		// return this error as is because it can be handled by the caller
+		return nil, err
+	default:
 		// just log it for now
 		// TODO https://github.com/FerretDB/FerretDB/issues/1346
 		pgPool.p.Config().ConnConfig.Logger.Log(

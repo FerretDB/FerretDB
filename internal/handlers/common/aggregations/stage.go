@@ -25,23 +25,77 @@ import (
 // newStageFunc is a type for a function that creates a new aggregation stage.
 type newStageFunc func(stage *types.Document) (Stage, error)
 
+// StageType is a type for aggregation stage types.
+type StageType int
+
+const (
+	// StageTypeDocuments is a type for stages that process documents.
+	StageTypeDocuments StageType = iota
+
+	// StageTypeStats is a type for stages that process statistics and doesn't need documents.
+	StageTypeStats
+)
+
 // Stage is a common interface for all aggregation stages.
 // TODO use iterators instead of slices of documents
 // https://github.com/FerretDB/FerretDB/issues/1889.
 type Stage interface {
 	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
+
+	// Type returns the type of the stage.
+	Type() StageType
 }
 
 // stages maps all supported aggregation stages.
 var stages = map[string]newStageFunc{
 	// sorted alphabetically
-	"$count": newCount,
-	"$group": newGroup,
-	"$limit": newLimit,
-	"$match": newMatch,
-	"$sort":  newSort,
+	"$collStats": newCollStats,
+	"$count":     newCount,
+	"$group":     newGroup,
+	"$limit":     newLimit,
+	"$match":     newMatch,
+	"$skip":      newSkip,
+	"$sort":      newSort,
+	"$unwind":    newUnwind,
 	// please keep sorted alphabetically
+}
+
+// unsupportedStages maps all unsupported yet stages.
+var unsupportedStages = map[string]struct{}{
+	"$addFields":              {},
+	"$bucket":                 {},
+	"$bucketAuto":             {},
+	"$changeStream":           {},
+	"$currentOp":              {},
+	"$densify":                {},
+	"$documents":              {},
+	"$facet":                  {},
+	"$fill":                   {},
+	"$geoNear":                {},
+	"$graphLookup":            {},
+	"$indexStats":             {},
+	"$limit":                  {},
+	"$listLocalSessions":      {},
+	"$listSessions":           {},
+	"$lookup":                 {},
+	"$merge":                  {},
+	"$out":                    {},
+	"$planCacheStats":         {},
+	"$project":                {},
+	"$redact":                 {},
+	"$replaceRoot":            {},
+	"$replaceWith":            {},
+	"$sample":                 {},
+	"$search":                 {},
+	"$searchMeta":             {},
+	"$set":                    {},
+	"$setWindowFields":        {},
+	"$sharedDataDistribution": {},
+	"$skip":                   {},
+	"$sortByCount":            {},
+	"$unionWith":              {},
+	"$unset":                  {},
 }
 
 // NewStage creates a new aggregation stage.
@@ -58,9 +112,17 @@ func NewStage(stage *types.Document) (Stage, error) {
 
 	f, ok := stages[name]
 	if !ok {
+		if _, ok := unsupportedStages[name]; ok {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+				name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+			)
+		}
+
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			commonerrors.ErrStageGroupInvalidAccumulator,
+			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
 			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
 		)
 	}

@@ -23,14 +23,16 @@ However, as time passed, MongoDB abandoned its open-source roots;
 changing the license to SSPL - making it unusable for many open source and early-stage commercial projects.
 
 Most MongoDB users do not require any advanced features offered by MongoDB;
-however, they need an easy-to-use open-source database solution.
+however, they need an easy-to-use open-source document database solution.
 Recognizing this, FerretDB is here to fill that gap.
 
 ## Scope and current state
 
-FerretDB will be compatible with MongoDB drivers and will strive to serve as a drop-in replacement for MongoDB 6.0+.
+FerretDB is compatible with MongoDB drivers and popular MongoDB tools.
+It functions as a drop-in replacement for MongoDB 6.0+ in many cases.
+Features are constantly being added to further increase compatibility and performance.
 
-Currently, the project is in its early stages and welcomes all contributors.
+We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
 a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
 and [contributing guidelines](CONTRIBUTING.md).
@@ -43,7 +45,7 @@ docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/all-in-one
 
 This command will start a container with FerretDB, PostgreSQL, and MongoDB Shell for testing and experiments.
 However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
-See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart_guide/docker/) for instructions
+See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart-guide/docker/) for instructions
 that don't have those problems.
 
 With that container running, you can:
@@ -60,7 +62,7 @@ With that container running, you can:
 You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions.
-See [our documentation](https://docs.ferretdb.io/category/quickstart/) for more details.
+See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more details.
 
 ## Building and packaging
 

@@ -128,7 +128,7 @@ The primary key of a documents is stored in the `_id` field, which typically con
 
 Proxy is any MongoDB-compatible database that is running in parallel with FerretDB.
 It's used to test differences between FerretDB and other databases.
-See [Operation modes](../operation-modes.md) for more details.
+See [Operation modes](../configuration/operation-modes.md) for more details.
 
 #### PostgreSQL
 
@@ -142,5 +142,6 @@ FerretDB uses PostgreSQL as a database engine.
 #### Tigris
 
 A database platform used by FerretDB as a database engine.
+See <https://www.tigrisdata.com/> for more details.
 
 ---

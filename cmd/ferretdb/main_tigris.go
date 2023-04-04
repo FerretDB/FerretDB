@@ -18,5 +18,5 @@ package main
 
 // init adds "tigris" handler flags when "ferretdb_tigris" build tag is provided.
 func init() {
-	cli.Plugins = append(cli.Plugins, &tigrisFlags)
+	handlerFlags["tigris"] = &tigrisFlags
 }

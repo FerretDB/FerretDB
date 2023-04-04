@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Debian package
+# DEB package
 
 To install the .deb packages for FerretDB on your Debian, Ubuntu, Linux, and other Unix-like systems, you can use `apt` or `dpkg`.
 
@@ -36,4 +36,4 @@ $ sudo apt install ./<filename>.deb
 ```
 
 Once FerretDB is installed, you can start the software.
-See [our Docker guide](docker.md) and [Configuration flags and variables](../flags.md) page for more details.
+See [our Docker guide](docker.md) and [Configuration flags and variables](../configuration/flags.md) page for more details.
