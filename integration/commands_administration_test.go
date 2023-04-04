@@ -821,7 +821,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			var actual bson.D
 
 			if name == "RenameVerifyMetadata" {
-				collection.Drop(ctx)
 				_, err := collection.InsertMany(
 					ctx,
 					[]interface{}{
