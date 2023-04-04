@@ -768,7 +768,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	t.Parallel()
 	insertCollections := []string{"foo", "none"}
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collection       string
 		targetCollection string
 		expected         bson.D
@@ -815,7 +815,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.NotEmpty(t, insertCollections)
 			for _, coll := range insertCollections {
 				require.NoError(t, db.CreateCollection(ctx, coll))
-
 			}
 
 			var actual bson.D
@@ -848,7 +847,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			}
 
 			if name == "RenameVerifyMetadata" {
-				cur, err := db.Collection(tc.collection).Find(ctx, bson.D{{}}, nil)
+				cur, err := db.Collection(tc.collection).Find(ctx, bson.D{{}}, nil) //nolint:vet // for readability
 				require.NoError(t, err)
 				require.False(t, cur.Next(ctx))
 			}
