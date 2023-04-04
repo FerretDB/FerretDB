@@ -802,26 +802,26 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			fromColl: "not-exists",
 			toColl:   "new-collection",
 			err: &mongo.CommandError{
-				Code:    48,
-				Name:    "NamespaceExists",
-				Message: `target namespace exists`,
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: `Source collection testcommandsadministrationrenamecollection-renamenonexistent.not-exists does not exist`,
 			},
-			//expected: bson.D{{"ok", float64(1)}},
 		},
-		//"RenameInvalidNamespace": {
-		//	fromNamespace: "Boolfalse",
-		//	toNamespace:   "Bool.bool-false",
-		//	err: &mongo.CommandError{
-		//		Code:    73,
-		//		Name:    "InvalidNamespace",
-		//		Message: `Invalid namespace specified ` + "testfoo",
-		//	},
-		//},
-
+		"RenameInvalid": {
+			fromColl: ".not-exists",
+			toColl:   "new-collection",
+			err: &mongo.CommandError{
+				Code:    20,
+				Name:    "IllegalOperation",
+				Message: `error with source namespace: Invalid collection name: .not-exists`,
+			},
+		},
+		// ---
 		// TODO
 		// 1. insert collection "foo"
 		// 2. rename "foo" to "bar"
 		// 3. insert collection "foo"
+		// ---
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
