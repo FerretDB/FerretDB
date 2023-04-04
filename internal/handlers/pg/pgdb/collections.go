@@ -187,6 +187,7 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	return nil
 }
 
+// TODO: comment.
 func RenameCollection(ctx context.Context, tx pgx.Tx, schema, from, to string) error {
 	return newMetadataStorage(tx, schema, from).renameCollection(ctx, to)
 }
