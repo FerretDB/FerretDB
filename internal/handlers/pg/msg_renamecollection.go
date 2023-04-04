@@ -34,6 +34,7 @@ import (
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var err error
 	dbPool, err := h.DBPool(ctx)
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -48,6 +49,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	var dropTarget bool
+
 	if dropTarget, err = common.GetOptionalParam(document, "dropTarget", false); err != nil {
 		return nil, err
 	}
