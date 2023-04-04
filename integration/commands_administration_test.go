@@ -172,20 +172,20 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
 	t.Parallel()
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	ctx, targetCollectionections, compatCollections := setup.SetupCompat(t)
 
-	require.Greater(t, len(targetCollections), 2)
+	require.Greater(t, len(targetCollectionections), 2)
 
 	filter := bson.D{{
 		"name", bson.D{{
 			"$in", bson.A{
-				targetCollections[0].Name(),
-				targetCollections[len(targetCollections)-1].Name(),
+				targetCollectionections[0].Name(),
+				targetCollectionections[len(targetCollectionections)-1].Name(),
 			},
 		}},
 	}}
 
-	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
+	target, err := targetCollectionections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
 	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
@@ -765,24 +765,23 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
-	// TODO push documents to collections and findAll after rename
 	t.Parallel()
-	insertCollections := []string{"foo", "bar"}
+	insertCollections := []string{"foo", "none"}
 
 	for name, tc := range map[string]struct {
-		sourceColl string
-		targetColl string
-		expected   bson.D
-		err        *mongo.CommandError
+		collection       string
+		targetCollection string
+		expected         bson.D
+		err              *mongo.CommandError
 	}{
 		"Rename": {
-			sourceColl: "foo",
-			targetColl: "bar",
-			expected:   bson.D{{"ok", float64(1)}},
+			collection:       "foo",
+			targetCollection: "bar",
+			expected:         bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
-			sourceColl: "foo",
-			targetColl: "foo",
+			collection:       "foo",
+			targetCollection: "foo",
 			err: &mongo.CommandError{
 				Code:    20,
 				Name:    "IllegalOperation",
@@ -790,57 +789,69 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
-			sourceColl: "foo",
-			targetColl: "bar",
+			collection:       "foo",
+			targetCollection: "none",
 			err: &mongo.CommandError{
 				Code:    48,
 				Name:    "NamespaceExists",
 				Message: `target namespace exists`,
 			},
 		},
-		"RenameAndNewMetadata": {
-			sourceColl: "foo",
-			targetColl: "bar",
-			err: &mongo.CommandError{
-				Code:    48,
-				Name:    "NamespaceExists",
-				Message: `target namespace exists`,
-			},
+		"RenameVerifyMetadata": {
+			collection:       "foo",
+			targetCollection: "bar",
+			expected:         bson.D{{"ok", float64(1)}},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx, sourceColl := setup.Setup(t, shareddata.Bools)
+			ctx, collection := setup.Setup(t, shareddata.Bools)
 
-			db := sourceColl.Database()
+			db := collection.Database()
 			require.NoError(t, db.Drop(ctx))
 
 			require.NotEmpty(t, insertCollections)
 			for _, coll := range insertCollections {
 				require.NoError(t, db.CreateCollection(ctx, coll))
+
 			}
 
 			var actual bson.D
 
-			if name == "RenameAndNewMetadata" {
-				// TODO: add test DoD #1.
+			if name == "RenameAndVerifyMetadata" {
+				collection.Drop(ctx)
+				_, err := collection.InsertMany(
+					ctx,
+					[]interface{}{
+						bson.D{{"a", 1}},
+						bson.D{{"a", 2}},
+					},
+					nil,
+				)
+				require.NoError(t, err)
 			}
 
-			sourceNs := fmt.Sprintf("%s.%s", db.Name(), tc.sourceColl)
-			targetNs := fmt.Sprintf("%s.%s", db.Name(), tc.targetColl)
+			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.collection)
+			targetNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)
 			cmd := bson.D{
-				{"renameCollection", sourceNs},
-				{"to", targetNs},
+				{"renameCollection", sourceNamespace},
+				{"to", targetNamespace},
 			}
-			err := sourceColl.Database().Client().Database("admin").RunCommand(
+			err := collection.Database().Client().Database("admin").RunCommand(
 				ctx, cmd,
 			).Decode(&actual)
 
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
+			}
+
+			if name == "RenameAndVerifyMetadata" {
+				cur, err := db.Collection(tc.collection).Find(ctx, bson.D{{}}, nil)
+				require.NoError(t, err)
+				require.False(t, cur.Next(ctx))
 			}
 
 			require.NoError(t, err)
@@ -854,8 +865,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			require.NoError(t, err)
 
-			require.Contains(t, collections, tc.targetColl)
-			require.NotContains(t, collections, tc.sourceColl)
+			require.Contains(t, collections, tc.targetCollection)
+			require.NotContains(t, collections, tc.collection)
 		})
 	}
 }
