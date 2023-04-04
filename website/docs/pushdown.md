@@ -8,36 +8,18 @@ sidebar_position: 1
 It saves memory space, network bandwidth, and reduces the query execution time by not prefetching
 unnecessary data to the database management system.
 
+By default, FerretDB retrieves all data related to queried collection, and applies filters on its own, making
+it possible to implement complex logic safely and quickly.
+To make this process more efficient, we minimize the amount of incoming data, by applying proper SQL filters.
+
 :::info
-You can read more about query pushdown in our [blog post](https://blog.ferretdb.io/ferretdb-fetches-data-query-pushdown/)!
+You can learn more about query pushdown in our [blog post](https://blog.ferretdb.io/ferretdb-fetches-data-query-pushdown/).
 :::
-
-## Why do we need query pushdown
-
-As FerretDB mission is to become true open-source MongoDB-compatible database, it's important
-to handle all operations, comparisons, data types, and commands in the same fashion as MongoDB.
-
-Doing so can be really challenging on different database backends.
-For example, it's difficult to
-make PostgreSQL abide BSON types comparison order, or compare large floating-point values in the IEEE 754 fashion.
-And even, if some things are possible, the SQL query that implements the logic might be huge and really hard to maintain.
-
-Because of that, FerretDB fetch all necessary data from collection and applies filters on it's own.
-That solution allows to implement all complicated logic safely, easily and quickly.
-Maintainers are not overwhelmed
-by database backend specifics, which also makes FerretDB a great, universal solution to implement new backends.
-
-The downside of this is obvious - fetching much data from collection on every single query can be inefficient and
-time-consuming (especially for larger collections).
-
-Query pushdown is a great compromise between complexity and performance.
-It allows to handle all MongoDB logic without many issues related to underyling database architecture,
-while still keeping a good query performance.
 
 ## Query pushdown supported filters
 
 The following table shows all operators and types that FerretDB pushdowns on PostgreSQL backend.
-If filter uses type and operator, that's marked as pushdown supported on this list,
+If filter uses type and operator, that's marked as pushdown-supported on this list,
 FerretDB will prefetch less data, resulting with more performent query.
 
 If your application requires better performance for specific operation,
