@@ -50,7 +50,7 @@ that don't have those problems.
 
 With that container running, you can:
 
-* Connect to it with any MongoDB client application using MongoDB URI `mongodb://127.0.0.1:27017/`.
+* Connect to it with any MongoDB client application using MongoDB URI `mongodb://username:password@127.0.0.1:27017/?authMechanism=PLAIN`.
 * Connect to it using MongoDB Shell by just running `mongosh`.
   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
 * Connect to PostgreSQL running inside the container by running `docker exec -it ferretdb psql -U username ferretdb`.
