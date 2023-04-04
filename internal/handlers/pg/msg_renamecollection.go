@@ -46,36 +46,36 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
-	fromNamespace, err := common.GetRequiredParam[string](document, document.Command())
+	sourceNs, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
 
-	toNamespace, err := common.GetRequiredParam[string](document, "to")
+	targetNs, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
 		return nil, err
 	}
 
 	// IllegalOperation done.
-	if fromNamespace == toNamespace {
+	if sourceNs == targetNs {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrIllegalOperation,
 			"Can't rename a collection to itself",
 		)
 	}
 
-	fromDB, fromColl, err := extractFromNamespace(fromNamespace)
+	sourceDB, sourceColl, err := extractFromNamespace(sourceNs)
 	if err != nil {
 		return nil, err
 	}
 
-	_, toColl, err := extractFromNamespace(toNamespace)
+	_, targetColl, err := extractFromNamespace(targetNs)
 	if err != nil {
 		return nil, err
 	}
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return pgdb.RenameCollection(ctx, tx, fromDB, fromColl, toColl)
+		return pgdb.RenameCollection(ctx, tx, sourceDB, sourceColl, targetColl)
 	})
 
 	switch {
