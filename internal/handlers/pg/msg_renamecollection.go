@@ -43,9 +43,15 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "dropTarget", "writeConcern", "comment"); err != nil {
+	if err = common.Unimplemented(document, "writeConcern", "comment"); err != nil {
 		return nil, err
 	}
+
+	var dropTarget bool
+	if dropTarget, err = common.GetOptionalParam(document, "dropTarget", false); err != nil {
+		return nil, err
+	}
+	_ = dropTarget
 
 	var qp pgdb.QueryParams
 
