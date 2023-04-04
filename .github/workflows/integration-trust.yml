@@ -32,7 +32,8 @@ env:
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: faster
+    runs-on:
+      group: paid
     timeout-minutes: 30
 
     if: >

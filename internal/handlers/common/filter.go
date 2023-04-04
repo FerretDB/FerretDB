@@ -190,6 +190,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 //	suffix:		`bar`
 //	docsAtSuffix:	[{bar: 1}, {bar: 2}]
 func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, docsAtSuffix []*types.Document) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	suffix = path.Suffix()
 
 	// docsAtSuffix are the document found at the suffix.

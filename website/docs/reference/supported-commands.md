@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+description: This is a list of all supported commands in FerretDB
 ---
 
 # Supported commands
@@ -313,7 +314,7 @@ db.collection.aggregate()
 | `$addFields`, `$set`           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
 | `$bucket`, `$bucketAuto`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
 | `$changeStream`                | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
-| `$collStats`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1416) |
+| `$collStats`                   | ⚠️️      | Fields `count` and `storageStats` are supported           |
 | `$count`                       | ✅️      |                                                           |
 | `$densify`                     | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1418) |
 | `$documents`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1419) |
@@ -336,11 +337,11 @@ db.collection.aggregate()
 | `$sample`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
 | `$search`, `$searchMeta`       | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
 | `$setWindowFields`             | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
-| `$skip`                        | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1438) |
+| `$skip`                        | ✅️      |                                                           |
 | `$sort`                        | ✅️      |                                                           |
 | `$sortByCount`                 | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`                   | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
-| `$unwind`                      | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1442) |
+| `$unwind`                      | ✅️      |                                                           |
 
 #### Aggregation database stages
 

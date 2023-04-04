@@ -53,7 +53,7 @@ set -ex
 # check that stdlib was cached
 go install -v -race=false std
 
-go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version

@@ -16,8 +16,10 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -57,7 +59,14 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	stats, err := dbPool.Stats(ctx, db, collection)
-	if err != nil {
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		// Return empty stats for non-existent collections.
+		stats = new(pgdb.DBStats)
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -66,10 +75,10 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
 			"count", stats.CountRows,
-			"size", float64(stats.SizeTotal/int64(scale)),
-			"storageSize", float64(stats.SizeRelation/int64(scale)),
-			"totalIndexSize", float64(stats.SizeIndexes/int64(scale)),
-			"totalSize", float64(stats.SizeTotal/int64(scale)),
+			"size", int32(stats.SizeTotal)/scale,
+			"storageSize", int32(stats.SizeRelation)/scale,
+			"totalIndexSize", int32(stats.SizeIndexes)/scale,
+			"totalSize", int32(stats.SizeTotal)/scale,
 			"scaleFactor", scale,
 			"ok", float64(1),
 		))},

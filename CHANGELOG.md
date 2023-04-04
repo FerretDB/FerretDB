@@ -1,5 +1,48 @@
 # Changelog
 
+## [v1.0.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.0.0) (2023-04-03)
+
+### What's Changed
+We are delighted to announce the release of FerretDB 1.0 GA!
+
+### New Features 🎉
+* Support `$sum` accumulator of `$group` aggregation by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2292
+* Implement `createIndexes` command by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2244
+* Add basic `getMore` command by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2309
+* Implement `dropIndexes` command by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2313
+* Implement `$limit` aggregation pipeline stage by @noisersup in https://github.com/FerretDB/FerretDB/pull/2270
+* Add partial support for `collStats`, `dbStats` and `dataSize` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2322
+* Implement `$skip` aggregation pipeline stage by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2310
+* Implement `$unwind` aggregation pipeline stage by @noisersup in https://github.com/FerretDB/FerretDB/pull/2294
+* Support `count` and `storageStats` fields in `$collStats` aggregation pipeline stage by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2338
+
+### Fixed Bugs 🐛
+* Fix dot notation negative index errors by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2246
+* Apply `skip` before `limit` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2351
+
+### Documentation 📄
+* Update supported command for `$sum` aggregation operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2318
+* Add supported shells and GUIs images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2323
+* Publish FerretDB v0.9.4 blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/2268
+* Use dashes instead of underscores or spaces by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2329
+* Update documentation sidebar by @Fashander in https://github.com/FerretDB/FerretDB/pull/2347
+* Update FerretDB descriptions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2281
+* Improve flags documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2331
+* Describe supported fields for `$collStats` aggregation stage by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2352
+
+### Other Changes 🤖
+* Use iterators for `sort`, `limit`, `skip`, and `projection` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2254
+* Bump dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2307
+* Improve resource tracking by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2319
+* Add tests for `find`'s and `count`'s `skip` argument by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2325
+* Close iterator properly by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2333
+* Improve large numbers initialization in test data by @noisersup in https://github.com/FerretDB/FerretDB/pull/2324
+* Ignore `unique` index option for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2350
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/39?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.4...v1.0.0).
+
+
 ## [v0.9.4](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.4) (2023-03-27)
 
 ### New Features 🎉

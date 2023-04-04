@@ -1,6 +1,6 @@
 ---
-sidebar_position: 7
-slug: /telemetry/
+sidebar_position: 8
+slug: /telemetry/ # referenced in many places; must not change
 ---
 
 # Telemetry reporting
@@ -114,7 +114,7 @@ Telemetry can be disabled using any of the following options:
    to modify its state via command.
    :::
 
-### Enable Telemetry
+### Enable telemetry
 
 Telemetry can be explicitly enabled (see [above](#configure-telemetry)) with the command-line flag `--telemetry`
 by setting one of the values:
@@ -142,7 +142,7 @@ we will not have data about unimplemented commands and errors.
 
 If you want to help us with that, please do the following:
 
-1. Start FerretDB with [debug logging](flags.md) and telemetry explicitly enabled.
+1. Start FerretDB with [debug logging](configuration/flags.md) and telemetry explicitly enabled.
    Confirm that telemetry is enabled from the logs.
 2. Test your application with integration tests or manually.
 3. Gracefully stop FerretDB with `SIGTERM` or `docker stop` (not with `SIGKILL` or `docker kill`).
