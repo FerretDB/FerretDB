@@ -43,6 +43,7 @@ The following steps describe a quick local setup:
          - 27017:27017
        environment:
          - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
+       restart: on-failure
 
    networks:
      default:
