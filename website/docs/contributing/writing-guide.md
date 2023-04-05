@@ -1,6 +1,6 @@
 ---
 sidebar_position: 99
-unlisted: true
+draft: true
 ---
 
 # Writing guide
