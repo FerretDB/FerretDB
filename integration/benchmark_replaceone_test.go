@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -29,37 +30,44 @@ func BenchmarkReplaceOne(b *testing.B) {
 	ctx, coll := setup.Setup(b, shareddata.Composites)
 	defer setup.Shutdown()
 
-	// TODO: understand setup.
+	// TODO: understand setup and shareddata.
 	b.Run("ReplaceWithFilter", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			objectID := primitive.NewObjectID()
 			filter := bson.D{{"_id", objectID}}
 
-			b.Log(largeDocument(objectID))
+			// TODO: fix nested arrays.
+			doc := largeDocument(objectID)
+			b.Log(doc.Values()...)
 
-			_, err := coll.InsertOne(ctx, largeDocument(objectID), nil)
+			_, err := coll.InsertOne(ctx, doc, nil)
 			require.NoError(b, err)
 
-			res, err := coll.ReplaceOne(ctx, filter, largeDocument(primitive.NewObjectID()))
+			replacement := doc
+			replacement.Set("_id", primitive.NewObjectID())
+
+			res, err := coll.ReplaceOne(ctx, filter, replacement)
 			require.Equal(b, 1, res.ModifiedCount)
 		}
 	})
 
 }
 
-func largeDocument(objectID primitive.ObjectID) types.Document {
+func largeDocument(objectID primitive.ObjectID) *types.Document {
 	ld := types.Document{}
-	ld.Set("_id", objectID)
 
-	docs := shareddata.Composites.Docs()
+	docs := shareddata.Int64s.Docs()
 
+	i := 0
 	for _, doc := range docs {
 		m := doc.Map()
-		delete(m, "_id")
-		for k, v := range m {
-			ld.Set(k, v)
+		for _, v := range m {
+			ld.Set(strconv.Itoa((i)), v)
+			i++
 		}
 	}
 
-	return ld
+	ld.Set("_id", objectID)
+
+	return &ld
 }
