@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -26,41 +25,39 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var objectID = primitive.ObjectID{100, 45, 201, 30, 9, 97, 166, 6, 75, 239, 151, 226}
-
 func BenchmarkReplaceOne(b *testing.B) {
-	ctx, coll := setup.Setup(b, shareddata.AllProviders()...)
+	ctx, coll := setup.Setup(b, shareddata.Composites)
+	defer setup.Shutdown()
 
-	filter := bson.D{{"_id", objectID}}
-
+	// TODO: understand setup.
 	b.Run("ReplaceWithFilter", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, err := coll.InsertOne(ctx, largeDocument(), nil)
+			objectID := primitive.NewObjectID()
+			filter := bson.D{{"_id", objectID}}
+
+			b.Log(largeDocument(objectID))
+
+			_, err := coll.InsertOne(ctx, largeDocument(objectID), nil)
 			require.NoError(b, err)
 
-			res, err := coll.ReplaceOne(ctx, filter, filter)
+			res, err := coll.ReplaceOne(ctx, filter, largeDocument(primitive.NewObjectID()))
 			require.Equal(b, 1, res.ModifiedCount)
 		}
 	})
 
 }
 
-func largeDocument() types.Document {
+func largeDocument(objectID primitive.ObjectID) types.Document {
 	ld := types.Document{}
 	ld.Set("_id", objectID)
 
 	docs := shareddata.Composites.Docs()
 
-	i := 0
 	for _, doc := range docs {
 		m := doc.Map()
 		delete(m, "_id")
-		for _, v := range m {
-			// keys are single letters and are in alphabetical order
-			// so that we generate the same document each time.
-			k := fmt.Sprint(i + 'a')
+		for k, v := range m {
 			ld.Set(k, v)
-			i++
 		}
 	}
 
