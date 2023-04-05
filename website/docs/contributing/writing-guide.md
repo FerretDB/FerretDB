@@ -5,10 +5,33 @@ draft: true
 
 # Writing guide
 
+## Front matter
+
+The front matter represents the metadata for each page.
+It is written at the top of each page and must be enclosed by `---` on both sides.
+Example:
+
+```yaml
+---
+sidebar_position: 1
+slug: /writing-guide
+description: How to write documentation
+---
+```
+
 ## Names and URLs
 
 Use `kebab-case-with-dashes` instead of `snake_case_with_underscores` or spaces
 for file names, directory names, and slugs because URL paths typically use dashes.
+
+Ensure that the file name/URL path matches the title of the page.
+For example, if the title of your page is "Getting Started", then the file name/URL path (`slug` in front matter) should also be "getting-started" to maintain consistency.
+
+## Sidebar position
+
+Use the `sidebar_position` in the front matter to set the order of the pages in the sidebar.
+Please ensure that the `sidebar_position` is unique for each page.
+For example, if there are several pages in the folder "Getting Started", let `sidebar_position` equal "1", "2", "3", "4", and so on to avoid duplication.
 
 ## Headers
 
