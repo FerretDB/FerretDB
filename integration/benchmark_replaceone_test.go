@@ -62,7 +62,7 @@ func largeDocument(objectID primitive.ObjectID) *types.Document {
 	for _, doc := range docs {
 		m := doc.Map()
 		for _, v := range m {
-			ld.Set(strconv.Itoa((i)), v)
+			ld.Set(strconv.Itoa(i), v)
 			i++
 		}
 	}
