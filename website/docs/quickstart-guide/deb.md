@@ -40,4 +40,4 @@ See [our Docker guide](docker.md) and [Configuration flags and variables](../con
 
 Find out more about:
 
-* [Getting logs](../logs.md#binary-executable-logs)
+* [Getting logs](../configuration/logging.md#binary-executable-logs)

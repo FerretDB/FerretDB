@@ -81,4 +81,4 @@ You can improve that setup by:
 
 Find out more about:
 
-* [Getting logs](../logs.md#docker-logs)
+* [Getting logs](../configuration/logging.md#docker-logs)

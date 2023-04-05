@@ -1,6 +1,6 @@
 ---
-sidebar_position: 10
-description: Logs
+sidebar_position: 3
+description: Logging
 ---
 
 # Logging
@@ -9,7 +9,7 @@ description: Logs
 
 Logs from FerretDB running on Docker can be accessed through the container.
 
-If Docker was launched with the [quick start](quickstart-guide/docker.md#setup-with-docker-compose),
+If Docker was launched with the [quick start](../quickstart-guide/docker.md#setup-with-docker-compose),
 the following command can be used to fetch the logs.
 
 ```shell
@@ -20,4 +20,4 @@ docker logs -name ferretdb-docker-ferretdb-1
 
 FerretDB generates logs to standard output `stdout` and standard error `stderr` streams
 but does not retain them.
-Refer to the [flags](configuration/flags.md#miscellaneous) to adjust the log level.
+Refer to the [flags](flags.md#miscellaneous) to adjust the log level.
