@@ -79,3 +79,7 @@ You can improve that setup by:
 
 * [securing connections with TLS](../security.md#securing-connections-with-tls);
 * adding backups.
+
+Find out more about:
+
+* [Getting logs](../configuration/logging.md#docker-logs)
