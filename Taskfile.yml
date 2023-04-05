@@ -64,6 +64,8 @@ tasks:
 
   env-up-detach:
     cmds:
+      - docker version
+      - docker compose version
       # use -t instead of --timeout / --wait-timeout to be compatible with all versions:
       # https://github.com/docker/compose/issues/10269#issuecomment-1495205234
       - >
@@ -73,6 +75,8 @@ tasks:
 
   env-up-detach-offline:
     cmds:
+      - docker version
+      - docker compose version
       # use -t instead of --timeout / --wait-timeout to be compatible with all versions:
       # https://github.com/docker/compose/issues/10269#issuecomment-1495205234
       - >
