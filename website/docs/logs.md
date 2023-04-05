@@ -3,7 +3,7 @@ sidebar_position: 10
 description: Logs
 ---
 
-# Logs
+# Logging
 
 ## Docker logs
 
