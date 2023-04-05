@@ -64,18 +64,18 @@ tasks:
 
   env-up-detach:
     cmds:
+      - docker version
+      - docker compose version
       - >
-        docker version
-        docker compose version
         docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         --build --pull=always
         {{.SERVICES}}
 
   env-up-detach-offline:
     cmds:
+      - docker version
+      - docker compose version
       - >
-        docker version
-        docker compose version
         docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
         {{.SERVICES}}
 
