@@ -24,8 +24,65 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
+type QueryBenchmarkCase struct {
+	filter bson.D
+}
+
+func BenchmarkFoo(b *testing.B) {
+	ctx, coll, collNoPushdown := setup.SetupBenchmark(b)
+
+	for name, bm := range map[string]QueryBenchmarkCase{
+		"String": {
+			filter: bson.D{{"v", "foo"}},
+		},
+	} {
+		b.Run(name, func(b *testing.B) {
+			b.Run("Pushdown", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cur, err := coll.Find(ctx, bm.filter)
+					require.NoError(b, err)
+
+					var res []bson.D
+					require.NoError(b, cur.All(ctx, &res))
+				}
+			})
+			b.Run("NoPushdown", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cur, err := collNoPushdown.Find(ctx, bm.filter)
+					require.NoError(b, err)
+
+					var res []bson.D
+					require.NoError(b, cur.All(ctx, &res))
+				}
+			})
+
+		})
+	}
+}
+
+func BenchmarkLargeReplace(b *testing.B) {
+	for {
+		b.Run("insert", func(b *testing.B) {
+			// insert the same data all the time
+			// TODO consider running benchmark only once
+		})
+		b.Run("Pushdown", func(b *testing.B) {
+			// find and replace
+		})
+		b.Run("NoPushdown", func(b *testing.B) {
+			// find and replace
+		})
+	}
+}
+
 func BenchmarkPushdowns(b *testing.B) {
-	ctx, coll := setup.Setup(b, shareddata.AllProviders()...)
+	s := setup.SetupWithOpts(b, &setup.SetupOpts{
+		DatabaseName:   b.Name(),
+		CollectionName: b.Name(),
+		Providers:      []shareddata.Provider{shareddata.Scalars},
+	})
+
+	ctx, coll := s.Ctx, s.Collection
 
 	res, err := coll.InsertOne(ctx, bson.D{{}})
 	require.NoError(b, err)

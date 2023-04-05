@@ -63,10 +63,25 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
+type setupListenerOpt int
+
+const listenerPushdownDisabled = setupListenerOpt(1)
+
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, opts ...setupListenerOpt) (*mongo.Client, string) {
 	tb.Helper()
+
+	var disablePushdown bool = *disablePushdownF
+
+	for _, opt := range opts {
+		switch opt {
+		case listenerPushdownDisabled:
+			disablePushdown = true
+		default:
+			tb.Fatal("Unknown setupListener option: ", opt)
+		}
+	}
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
@@ -108,7 +123,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		TigrisURL: nextTigrisUrl(),
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: *disablePushdownF,
+			DisablePushdown: disablePushdown,
 			EnableCursors:   *enableCursorsF,
 		},
 	}

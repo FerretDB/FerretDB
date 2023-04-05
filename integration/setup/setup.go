@@ -78,6 +78,8 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
+
+	DisablePushdown bool
 }
 
 // SetupResult represents setup results.
@@ -127,8 +129,13 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var client *mongo.Client
 	var uri string
 
+	var listenerOpts []setupListenerOpt
+	if opts.DisablePushdown {
+		listenerOpts = append(listenerOpts, listenerPushdownDisabled)
+	}
+
 	if *targetURLF == "" {
-		client, uri = setupListener(tb, ctx, logger)
+		client, uri = setupListener(tb, ctx, logger, listenerOpts...)
 	} else {
 		client = setupClient(tb, ctx, *targetURLF)
 		uri = *targetURLF
@@ -146,6 +153,29 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		Collection: collection,
 		MongoDBURI: uri,
 	}
+}
+
+func SetupBenchmark(tb testing.TB) (context.Context, *mongo.Collection, *mongo.Collection) {
+	tb.Helper()
+
+	// TODO insert data
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+
+	target := SetupWithOpts(tb, &SetupOpts{
+		Providers: []shareddata.Provider{shareddata.Scalars},
+	})
+
+	targetNoPushdown := SetupWithOpts(tb, &SetupOpts{
+		Providers:       []shareddata.Provider{shareddata.Scalars},
+		DisablePushdown: true,
+	})
+
+	// TODO "compat" collection
+
+	tb.Cleanup(cancel)
+
+	return ctx, target.Collection, targetNoPushdown.Collection
 }
 
 // Setup setups a single collection for all compatible providers, if the are present.
