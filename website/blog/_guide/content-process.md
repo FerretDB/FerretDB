@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-unlisted: true
+draft: true
 ---
 
 # Content Creation Guide for FerretDB
@@ -39,7 +39,7 @@ Please see our [writing guide](writing-guide.md) for help formatting your blog p
 
 Front matter is the metadata that appears at the top of the markdown file and provides information about the post, such as the title, author, and date.
 
-In the front matter, ensure to set the `unlisted: true` in the front matter until it's ready to publish.
+In the front matter, ensure to set the `draft: true` in the front matter until it's ready to publish.
 Make sure to include all necessary information in the front matter, such as the title, author, and date.
 
 ## Reviewing and Editing Content
@@ -57,7 +57,7 @@ Once the content is ready for review, please open a PR and assign it to @Ferretd
 ## Final Approval and Publishing
 
 The final approval for publishing content is given once it has passed through all reviews and approved by the team.
-To publish the content, change the date in the front matter to the proposed published date, and then remove `unlisted: true` from the front matter.
+To publish the content, change the date in the front matter to the proposed published date, and then remove `draft: true` from the front matter.
 
 ## Post Publishing
 
