@@ -1,9 +1,9 @@
 ---
+slug: url-slug-of-post # the URL slug of the blog post with dashes instead of spaces
 title: "This is the title of the FerretDB Blog post"
-slug: url-slug-of-post #the URL slug of the blog post
 author: Firstname Lastname
-author_url: #link to website or GitHub account
-author_image_url: #link to author profile image # optional – please remove this line if you don't want to use an author image. See below for more info
+author_url: # link to website or GitHub account
+author_image_url: # link to author profile image (optional – please remove this line if you don't want to use an author image. See below for more info)
 description: >
   This is a short description of a FerretDB blog post.
 keywords:
@@ -11,7 +11,7 @@ keywords:
   - keyword2
 image: /img/blog/post-cover-image.jpg
 tags: [tag1, tag2]
-unlisted: true
+draft: true
 ---
 
 Leave a space before starting article.

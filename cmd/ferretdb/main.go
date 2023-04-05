@@ -30,6 +30,8 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -43,9 +45,16 @@ import (
 
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
+//
+// Keep order in sync with documentation.
 var cli struct {
+	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
+	Handler  string `default:"pg" help:"${help_handler}"`
+	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
+	StateDir string `default:"."               help:"Process state directory."`
+
 	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen address."`
+		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
 		TLS         string `default:""                help:"Listen TLS address."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
@@ -54,9 +63,12 @@ var cli struct {
 	} `embed:"" prefix:"listen-"`
 
 	ProxyAddr string `default:""                help:"Proxy address."`
-	DebugAddr string `default:"127.0.0.1:8088"  help:"${help_debug_addr}"`
-	StateDir  string `default:"."               help:"Process state directory."`
-	Mode      string `default:"${default_mode}" help:"${help_mode}"             enum:"${enum_mode}"`
+	DebugAddr string `default:"127.0.0.1:8088"  help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+
+	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+
+	// see setCLIPlugins
+	kong.Plugins
 
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -67,25 +79,18 @@ var cli struct {
 
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
-	Handler string `default:"pg" help:"${help_handler}"`
-
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
-
-	// Put flags for other handlers there, between --postgresql-url and --version in the help output.
-	kong.Plugins
-
-	Version bool `default:"false" help:"Print version to stdout and exit."`
-
 	Test struct {
-		RecordsDir string `default:"" help:"Testing flag: directory for record files."`
+		RecordsDir      string `default:"" help:"Experimental: directory for record files."`
+		DisablePushdown bool   `default:"false" help:"Experimental: disable query pushdown."`
+		EnableCursors   bool   `default:"false" help:"Experimental: enable cursors."`
 
-		DisablePushdown bool `default:"false" help:"Testing flag: disable query pushdown."`
-
+		//nolint:lll // for readability
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Testing flag: telemetry: reporting URL."`
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
-			ReportInterval time.Duration `default:"24h" hidden:""               help:"Testing flag: telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"  hidden:""               help:"Testing flag: telemetry: report timeout."`
+			ReportInterval time.Duration `default:"24h"                         help:"Experimental: telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                          help:"Experimental: telemetry: report timeout."`
+			Package        string        `default:""                            help:"Experimental: telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
@@ -106,6 +111,19 @@ var hanaFlags struct {
 	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
 }
 
+// handlerFlags is a map of handler names to their flags.
+var handlerFlags = map[string]any{}
+
+// setCLIPlugins adds Kong flags for handlers in the stable order.
+func setCLIPlugins() {
+	handlers := maps.Keys(handlerFlags)
+	slices.Sort(handlers)
+
+	for _, h := range handlers {
+		cli.Plugins = append(cli.Plugins, handlerFlags[h])
+	}
+}
+
 // Additional variables for the kong parsers.
 var (
 	logLevels = []string{
@@ -121,11 +139,10 @@ var (
 			"default_mode":           clientconn.AllModes[0],
 			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
 
-			"help_debug_addr":                "Debug address for /debug/metrics, /debug/pprof, and similar HTTP handlers.",
 			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
 			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
 			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
-			"help_telemetry_undecided_delay": "Testing flag: telemetry: delay for undecided state.",
+			"help_telemetry_undecided_delay": "Experimental: telemetry: delay for undecided state.",
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
@@ -134,6 +151,7 @@ var (
 )
 
 func main() {
+	setCLIPlugins()
 	kong.Parse(&cli, kongOptions...)
 
 	run()
@@ -195,7 +213,6 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		zap.String("package", info.Package),
 		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
-		zap.Bool("disablePushdown", cli.Test.DisablePushdown),
 	}
 	logUUID := stateProvider.Get().UUID
 
@@ -244,9 +261,13 @@ func dumpMetrics() {
 
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
-	if cli.Version {
-		info := version.Get()
+	info := version.Get()
 
+	if p := cli.Test.Telemetry.Package; p != "" {
+		info.Package = p
+	}
+
+	if cli.Version {
 		fmt.Fprintln(os.Stdout, "version:", info.Version)
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
@@ -304,10 +325,9 @@ func run() {
 	}()
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:          logger,
-		Metrics:         metrics.ConnMetrics,
-		StateProvider:   stateProvider,
-		DisablePushdown: cli.Test.DisablePushdown,
+		Logger:        logger,
+		Metrics:       metrics.ConnMetrics,
+		StateProvider: stateProvider,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
@@ -316,6 +336,11 @@ func run() {
 		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
 
 		HANAURL: hanaFlags.HANAURL,
+
+		TestOpts: registry.TestOpts{
+			DisablePushdown: cli.Test.DisablePushdown,
+			EnableCursors:   cli.Test.EnableCursors,
+		},
 	})
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -351,7 +376,7 @@ func run() {
 
 	wg.Wait()
 
-	if version.Get().DebugBuild {
+	if info.DebugBuild {
 		dumpMetrics()
 	}
 }

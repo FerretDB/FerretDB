@@ -75,7 +75,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			)
 		}
 
-		stagesDocs := must.NotFail(iterator.Values(pipeline.Iterator()))
+		stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 		for _, d := range stagesDocs {
 			if _, ok := d.(*types.Document); !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(

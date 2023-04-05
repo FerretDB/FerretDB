@@ -40,6 +40,8 @@ type Accumulator interface {
 var accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCountAccumulator,
+	"$sum":   newSumAccumulator,
+	// please keep sorted alphabetically
 }
 
 // groupStage represents $group stage.
@@ -112,10 +114,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		operator, _, err := accumulation.Iterator().Next()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		operator := accumulation.Command()
 
 		newAccumulator, ok := accumulators[operator]
 		if !ok {
@@ -280,6 +279,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		groupID:   groupKey,
 		documents: docs,
 	})
+}
+
+// Type implements Stage interface.
+func (g *groupStage) Type() StageType {
+	return StageTypeDocuments
 }
 
 // check interfaces

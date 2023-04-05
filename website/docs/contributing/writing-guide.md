@@ -1,13 +1,18 @@
 ---
 sidebar_position: 99
-unlisted: true
+draft: true
 ---
 
 # Writing guide
 
-## File names
+## Names and URLs
 
-Use `kebab-case-with-dashes` instead of `snake_case_with_underscores` for file names because URL paths typically use dashes.
+Use `kebab-case-with-dashes` instead of `snake_case_with_underscores` or spaces
+for file names, directory names, and slugs because URL paths typically use dashes.
+
+## Headers
+
+Use sentence case for headers: `### Some header with URL`, not `### Some Header With URL`.
 
 ## Links
 
@@ -16,7 +21,7 @@ because it works for both editors/IDEs (Ctrl/⌘+click works) and Docusaurus.
 Always add `.md` extension to the file paths.
 Examples:
 
-* [file in the same directory](contributing.md)
+* [file in the same directory](writing-guide.md)
 * [file in a parent directory](../telemetry.md)
 
 ## Images
@@ -26,7 +31,7 @@ Also, you can collate images for a specific blog post inside a single folder.
 Name the folder appropriately using the `YYYY-MM-DD` format.
 For example, a typical path for an image will be `/img/blog/2023-01-01/ferretdb-image.jpg`
 
-### Alt Text
+### Alt text
 
 Please remember to add an alternate text for images.
 The alt text should provide a description of the image for the user.
@@ -43,7 +48,7 @@ Use Markdown syntax for images with descriptive alt texts and the path.
 All assets (images, gifs, videos, etc.) relating to FerretDB documentation and blog are in the `static/img/` folder.
 Rather than use relative paths, we strongly suggest the following approach, since our content engine renders all images directly from the `img` folder.
 
-`![FerretDB logo](/img/logo_dark.png)`.
+`![FerretDB logo](/img/logo-dark.png)`.
 
 ## Terminologies
 

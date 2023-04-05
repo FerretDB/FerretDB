@@ -46,6 +46,7 @@ func TestMain(m *testing.M) {
 		forTest = os.Args[1:i]
 	}
 
+	setCLIPlugins()
 	parser := must.NotFail(kong.New(&cli, kongOptions...))
 
 	_, err := parser.Parse(forKong)

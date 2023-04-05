@@ -10,5 +10,8 @@
 # so `go build` could set `vcs.revision`, etc.
 !.git
 
+# so generated *.txt files do not make binaries dirty
+!.gitignore
+
 # additional files for Docker images
 !build/docker

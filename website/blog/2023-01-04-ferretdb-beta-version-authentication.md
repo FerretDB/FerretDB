@@ -1,6 +1,6 @@
 ---
-title: FerretDB v0.8.0 - The Beta Version
 slug: ferretdb-beta-version-authentication
+title: FerretDB v0.8.0 - The Beta Version
 author: Alexander Fashakin
 description: The FerretDB beta version (v.0.8.0) includes exciting new features, including authentication for PostgreSQL, `$min` operator support, and much more.
 image: /img/blog/FerretDB-is-now-Beta.-1-980x551.png

@@ -1,0 +1,15 @@
+---
+# https://nfpm.goreleaser.com/configuration/
+
+name: ferretdb
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: database
+maintainer: packages@ferretdb.io
+description: A truly Open Source MongoDB alternative
+homepage: https://ferretdb.io
+license: Apache License 2.0
+contents:
+  - src: tmp/build/ferretdb
+    dst: /usr/bin/ferretdb

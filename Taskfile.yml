@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 20m
+  INTEGRATIONTIME: 30m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -362,7 +362,7 @@ tasks:
     cmds:
       - >
         docker compose run --rm trivy filesystem .
-        --secret-config=./build/trivy-secret.yaml
+        --secret-config=./build/trivy-secret.yml
         --ignorefile=./build/.trivyignore
         --cache-dir=./.cache/trivy
         --exit-code=1
@@ -409,12 +409,14 @@ tasks:
         /legacy-mongo-shell/test.js
 
   docker-init:
+    run: once
     cmds:
-      - docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+      - cmd: docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+        ignore_error: true
       - docker buildx ls
 
   docker-build:
-    deps: [gen-version]
+    deps: [gen-version, docker-init]
     cmds:
       - >
         docker buildx build --builder=ferretdb
@@ -434,7 +436,6 @@ tasks:
   # do not change that target much; see "Building and packaging" in README.md
   build-release:
     desc: "Build bin/ferretdb (production build)"
-    deps: [gen-version]
     cmds:
       - echo 'bin' > build/version/package.txt
       - task: docker-build
@@ -501,7 +502,7 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=deb --target=tmp/debs/ferretdb.deb
+      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
         env:
           ARCH: amd64
           VERSION:
@@ -518,7 +519,7 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yaml --packager=rpm --target=tmp/rpms/ferretdb.rpm
+      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
         env:
           ARCH: amd64
           VERSION:

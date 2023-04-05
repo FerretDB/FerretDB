@@ -13,12 +13,12 @@ sidebar_position: 2
 #### aggregation
 
 A way of processsing documents in a collection and passing them through various operations or stages.
-See [list of supported aggregation operations and commands here](supported_commands.md#aggregation-pipelines).
+See [list of supported aggregation operations and commands here](supported-commands.md#aggregation-pipelines).
 
 #### aggregation pipeline
 
 A set of operators that lets you perform complex operations that aggregate and summarize values.
-See [list of supported aggregation pipeline operators](supported_commands.md#aggregation-pipeline-operators) here.
+See [list of supported aggregation pipeline operators](supported-commands.md#aggregation-pipeline-operators) here.
 
 ---
 
@@ -50,7 +50,7 @@ It is comparable to a table in a relational database.
 #### CRUD
 
 The four basic operations of a database: Create, Read, Update, and Delete.
-See [Basic FerretDB CRUD operations here](../basic_operations/index.md).
+See [Basic FerretDB CRUD operations here](../basic-operations/index.md).
 
 ---
 
@@ -63,17 +63,17 @@ An organized repository for collections containing its own sets of documents, an
 #### database command
 
 The set of commands in FerretDB.
-For more information, see [supported commands](supported_commands.md) for more details.
+For more information, see [supported commands](supported-commands.md) for more details.
 
 #### document
 
 A record in a collection that comprises key-value pairs.
-See [Documents](../understanding_ferretdb.md#documents) for more.
+See [Documents](../understanding-ferretdb.md#documents) for more.
 
 #### dot notation
 
 Dot notation is used to reference or access the elements in an array or in an embedded document.
-See [dot notation](../understanding_ferretdb.md#dot-notation) for more details.
+See [dot notation](../understanding-ferretdb.md#dot-notation) for more details.
 
 ---
 
@@ -128,7 +128,7 @@ The primary key of a documents is stored in the `_id` field, which typically con
 
 Proxy is any MongoDB-compatible database that is running in parallel with FerretDB.
 It's used to test differences between FerretDB and other databases.
-See [Operation modes](../operation_modes.md) for more details.
+See [Operation modes](../configuration/operation-modes.md) for more details.
 
 #### PostgreSQL
 
@@ -142,5 +142,6 @@ FerretDB uses PostgreSQL as a database engine.
 #### Tigris
 
 A database platform used by FerretDB as a database engine.
+See <https://www.tigrisdata.com/> for more details.
 
 ---
