@@ -5,8 +5,8 @@ name: Trusted integration
 on:
   pull_request_target:
     types:
-      - labeled # for `trusted` label
-      - unlabeled
+      # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -32,7 +32,8 @@ env:
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: faster
+    runs-on:
+      group: paid
     timeout-minutes: 30
 
     if: >

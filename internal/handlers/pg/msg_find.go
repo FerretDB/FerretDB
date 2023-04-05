@@ -104,9 +104,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
-		iter = common.LimitIterator(iter, params.Limit)
+		// SortIterator should be closed
+		defer iter.Close()
 
 		iter = common.SkipIterator(iter, params.Skip)
+
+		iter = common.LimitIterator(iter, params.Limit)
 
 		if iter, err = common.ProjectionIterator(iter, params.Projection); err != nil {
 			return lazyerrors.Error(err)

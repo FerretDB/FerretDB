@@ -281,6 +281,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	})
 }
 
+// Type implements Stage interface.
+func (g *groupStage) Type() StageType {
+	return StageTypeDocuments
+}
+
 // check interfaces
 var (
 	_ Stage = (*groupStage)(nil)

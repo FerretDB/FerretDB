@@ -174,6 +174,22 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			)
 		}
 
+		// Special case: if keyDocs consists of a {"_id": -1} only, an error should be returned.
+		if keyDoc.Len() == 1 {
+			var val any
+			var order int64
+
+			if val, err = keyDoc.Get("_id"); err == nil {
+				if order, err = common.GetWholeNumberParam(val); err == nil && order == -1 {
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
+						"createIndexes",
+					)
+				}
+			}
+		}
+
 		index.Key, err = processIndexKey(keyDoc)
 		if err != nil {
 			return nil, err
@@ -193,7 +209,11 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "key", "name":
 			// already processed, do nothing
 
-		case "unique", "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
+		case "unique":
+			// TODO https://github.com/FerretDB/FerretDB/issues/2045
+			// just ignore it for now, don't return error
+
+		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
 			"bits", "min", "max", "bucketSize", "collation", "wildcardProjection":
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

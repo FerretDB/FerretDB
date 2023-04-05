@@ -92,7 +92,7 @@ With `task` installed (see above), you may do the following:
 FerretDB can run in multiple operation modes.
 Operation mode specify how FerretDB handles incoming requests.
 FerretDB supports four operation modes: `normal`, `proxy`, `diff-normal`, `diff-proxy`,
-see [Operation modes documentation page](https://docs.ferretdb.io/operation_modes) for more details.
+see [Operation modes documentation page](https://docs.ferretdb.io/configuration/operation-modes/) for more details.
 
 By running `task run` FerretDB starts on `diff-normal` mode, which routes all of
 the sent requests both to the FerretDB and MongoDB.
@@ -238,6 +238,24 @@ Typical test cases include:
    new and changed top-level declarations (functions, types, etc).
 3. Comments are rendered correctly in the `task godocs` output.
 4. `task all` passes.
+
+## Reporting a bug
+
+We appreciate reporting a bug to us.
+To help us accurately identify the cause, we encourage
+you to include a pull request with test script.
+Please write the test script in
+[build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
+You can find an example of how to prepare a test script in
+[build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
+
+Test your script using following steps:
+
+1. Start the development environment with `task env-up`.
+2. Start FerretDB with `task run`.
+3. Run the test script with `task testjs`.
+
+Please create a pull request and include the link of the pull request in the bug issue.
 
 ## Contributing documentation
 

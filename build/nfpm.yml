@@ -6,10 +6,8 @@ arch: ${ARCH}
 platform: linux
 version: ${VERSION}
 section: database
-maintainer: FerretDB packages <packages@ferretdb.io>
-description: >
-  FerretDB is an open-source proxy that translates MongoDB wire protocol
-  queries to SQL, with PostgreSQL as the database engine.
+maintainer: packages@ferretdb.io
+description: A truly Open Source MongoDB alternative
 homepage: https://ferretdb.io
 license: Apache License 2.0
 contents:

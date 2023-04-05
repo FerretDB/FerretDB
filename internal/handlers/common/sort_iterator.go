@@ -24,7 +24,13 @@ import (
 //
 // Since sorting iterator is impossible, this function fully consumes and closes the underlying iterator,
 // sorts documents in memory and returns a new iterator over the sorted slice.
+// That iterator should be closed by the caller.
 func SortIterator(iter types.DocumentsIterator, sort *types.Document) (types.DocumentsIterator, error) {
+	// don't consume all documents if there is no sort
+	if sort.Len() == 0 {
+		return iter, nil
+	}
+
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -34,5 +40,7 @@ func SortIterator(iter types.DocumentsIterator, sort *types.Document) (types.Doc
 		return nil, lazyerrors.Error(err)
 	}
 
-	return iterator.Values(iterator.ForSlice(docs)), nil
+	sliceIter := iterator.ForSlice(docs)
+
+	return iterator.Values(sliceIter), nil
 }

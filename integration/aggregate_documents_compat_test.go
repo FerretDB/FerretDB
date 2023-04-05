@@ -254,6 +254,13 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"InvalidStage": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{"$invalid-stage"}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateCommandCompat(t, testCases)
@@ -412,6 +419,51 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 					{"_id", "$v"},
 					{"count", bson.D{{"$count", bson.D{}}}},
 				}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+
+		"LimitAfter": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+			},
+		},
+		"LimitBefore": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+		},
+		"SkipAfter": {
+			pipeline: bson.A{
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// the first type in collection is chosen)
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				// sort descending order, so ArrayDoubles has deterministic order.
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", 2}},
+			},
+		},
+		"SkipBefore": {
+			pipeline: bson.A{
+				// the first type in collection is chosen)
+				// sort to assure the same type of values (while grouping 2 types with the same value,
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", 2}},
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
@@ -734,6 +786,114 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatLimit(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Zero": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 0}},
+			},
+			resultType: emptyResult,
+		},
+		"One": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 1}},
+			},
+		},
+		"Five": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5}},
+			},
+		},
+		"StringInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", "5"}},
+			},
+			resultType: emptyResult,
+		},
+		"Double": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 4.5}},
+			},
+			resultType: emptyResult,
+		},
+		"DoubleInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 5.0}},
+			},
+		},
+		"MaxInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", math.MaxInt64}},
+			},
+		},
+		"Negative": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", -1}},
+			},
+			resultType: emptyResult,
+		},
+		"NegativeDouble": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", -2.1}},
+			},
+			resultType: emptyResult,
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", bson.D{}}},
+			},
+			resultType: emptyResult,
+		},
+		"Int64Overflow": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", float64(1 << 86)}},
+			},
+			resultType: emptyResult,
+		},
+		"AfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$limit", 1}},
+			},
+		},
+		"BeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", 1}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
+			resultType: emptyResult,
+		},
+		"NoSortAfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$limit", 100}},
+			},
+			resultPushdown: true,
+		},
+		"NoSortBeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$limit", 100}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
 func TestAggregateCompatGroupSum(t *testing.T) {
 	t.Parallel()
 
@@ -1044,6 +1204,183 @@ func TestAggregateCompatSort(t *testing.T) {
 		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
 			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatUnwind(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Simple": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v"}},
+			},
+		},
+		"NonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$non-existent"}},
+			},
+			resultType: emptyResult,
+		},
+		"Invalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"DotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.foo"}},
+			},
+		},
+		"DotNotationNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.non-existent"}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.0"}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayDotNotationKey": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$v.0.foo"}},
+			},
+			resultType: emptyResult,
+		},
+		"Null": {
+			pipeline:   bson.A{bson.D{{"$unwind", nil}}},
+			resultType: emptyResult,
+		},
+		"ID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unwind", "$_id"}},
+			},
+		},
+		"NameAsExpression": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$add"}}},
+			resultType: emptyResult,
+		},
+		"EmptyPath": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$"}}},
+			resultType: emptyResult,
+		},
+		"EmptyVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$"}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$$"}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$s": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$$s"}}},
+			resultType: emptyResult,
+		},
+		"NonExistingVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$s"}}},
+			resultType: emptyResult,
+		},
+		"SystemVariable": {
+			pipeline:   bson.A{bson.D{{"$unwind", "$$NOW"}}},
+			resultType: emptyResult,
+		},
+		"Empty": {
+			pipeline:   bson.A{bson.D{{"$unwind", ""}}},
+			resultType: emptyResult,
+		},
+		"Number": {
+			pipeline:   bson.A{bson.D{{"$unwind", 42}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			pipeline:   bson.A{bson.D{{"$unwind", bson.A{"$v"}}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatSkip(t *testing.T) {
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Document": {
+			pipeline:   bson.A{bson.D{{"$skip", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"Zero": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(0)}},
+			},
+		},
+		"One": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(1)}},
+			},
+		},
+		"SkipAll": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(1000)}},
+			},
+			resultType: emptyResult,
+		},
+		"StringInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", "1"}},
+			},
+			resultType: emptyResult,
+		},
+		"NegativeValue": {
+			pipeline:   bson.A{bson.D{{"$skip", int32(-1)}}},
+			resultType: emptyResult,
+		},
+		"NegativeDouble": {
+			pipeline:   bson.A{bson.D{{"$skip", -3.2}}},
+			resultType: emptyResult,
+		},
+		"MaxInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", math.MaxInt64}},
+			},
+			resultType: emptyResult,
+		},
+		"Int64Overflow": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", float64(1 << 86)}},
+			},
+			resultType: emptyResult,
+		},
+		"AfterMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+				bson.D{{"$skip", int32(1)}},
+			},
+		},
+		"BeforeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", int32(1)}},
+				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
 		},
 	}
 
