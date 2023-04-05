@@ -41,6 +41,7 @@ The following steps describe a quick local setup:
 
      ferretdb:
        image: ghcr.io/ferretdb/ferretdb
+       restart: on-failure
        ports:
          - 27017:27017
        environment:
