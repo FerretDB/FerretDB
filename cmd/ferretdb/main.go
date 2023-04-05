@@ -84,11 +84,13 @@ var cli struct {
 		DisablePushdown bool   `default:"false" help:"Experimental: disable query pushdown."`
 		EnableCursors   bool   `default:"false" help:"Experimental: enable cursors."`
 
+		//nolint:lll // for readability
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
-			ReportInterval time.Duration `default:"24h" hidden:""               help:"Experimental: telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"  hidden:""               help:"Experimental: telemetry: report timeout."`
+			ReportInterval time.Duration `default:"24h"                         help:"Experimental: telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                          help:"Experimental: telemetry: report timeout."`
+			Package        string        `default:""                            help:"Experimental: telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
@@ -259,9 +261,13 @@ func dumpMetrics() {
 
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
-	if cli.Version {
-		info := version.Get()
+	info := version.Get()
 
+	if p := cli.Test.Telemetry.Package; p != "" {
+		info.Package = p
+	}
+
+	if cli.Version {
 		fmt.Fprintln(os.Stdout, "version:", info.Version)
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
@@ -370,7 +376,7 @@ func run() {
 
 	wg.Wait()
 
-	if version.Get().DebugBuild {
+	if info.DebugBuild {
 		dumpMetrics()
 	}
 }

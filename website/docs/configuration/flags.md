@@ -65,7 +65,7 @@ Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=ti
 
 | Flag                  | Description                                       | Environment Variable    | Default Value |
 | --------------------- | ------------------------------------------------- | ----------------------- | ------------- |
-| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'       | `FERRETDB_LOG_LEVEL`    | `debug`       |
+| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'       | `FERRETDB_LOG_LEVEL`    | `info`        |
 | `--[no-]log-uuid`     | Add instance UUID to all log messages             | `FERRETDB_LOG_UUID`     |               |
 | `--[no-]metrics-uuid` | Add instance UUID to all metrics                  | `FERRETDB_METRICS_UUID` |               |
 | `--telemetry`         | Enable or disable [basic telemetry](telemetry.md) | `FERRETDB_TELEMETRY`    | `undecided`   |
