@@ -9,7 +9,7 @@ description: Logs
 
 Logs from FerretDB running on Docker can be accessed through the container.
 
-If the Docker was launched with the [quick start](quickstart-guide/docker.md#setup-with-docker-compose),
+If Docker was launched with the [quick start](quickstart-guide/docker.md#setup-with-docker-compose),
 the following command can be used to fetch the logs.
 
 ```shell
