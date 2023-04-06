@@ -30,6 +30,8 @@ As query pushdown allows developers to implement query optimizations separately 
 the table will be updated frequently.
 :::
 
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable MD033 MD051 MD001 -->
 |            | Object   | Array   | Double                 | String   | Binary   | ObjectID   | Boolean   | Date   | Null   | Regex   | Integer   | Timestamp   | Long                   |
 | ---------- | -------- | ------- | --------               | -------- | -------- | ---------- | --------- | ------ | ------ | ------- | --------- | ----------- | ------                 |
 | `=`        | ✖️        | ✖️       | ⚠️ <sub>[[1]](#1)</sub> | ✅       | ✖️        | ✅         | ✅        | ✅     | ✖️      | ✖️       | ✅        | ✖️           | ⚠️ <sub>[[1]](#1)</sub> |
@@ -43,5 +45,7 @@ the table will be updated frequently.
 | `$nin`     | ✖️        | ✖️       | ✖️                      | ✖️        | ✖️        | ✖️          | ✖️         | ✖️      | ✖️      | ✖️       | ✖️         | ✖️           | ✖️                      |
 
 ###### [1] {#1}
+
 Numbers outside the range of the safe IEEE 754 precision (`< -9007199254740991.0, 9007199254740991.0 >`),
 will prefetch all numbers larger/smaller than max/min value of the range.
+<!-- markdownlint-restore -->
