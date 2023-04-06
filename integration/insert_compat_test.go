@@ -166,27 +166,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 	}
 }
 
-func returnNestedDoc(elem bson.D, iterations int) bson.D {
-	if iterations <= 0 {
-		return elem
-	}
-
-	return returnNestedDoc(bson.D{{"v", bson.A{elem}}}, iterations-1)
-}
-
-func TestWeirdCases(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]insertCompatTestCase{
-		"BRB30Mins": {
-			insert:     []any{returnNestedDoc(bson.D{}, 40000)},
-			resultType: emptyResult,
-		},
-	}
-
-	testInsertCompat(t, testCases)
-}
-
 func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 

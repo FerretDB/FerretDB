@@ -71,21 +71,6 @@ func BenchmarkFoo(b *testing.B) {
 	}
 }
 
-func BenchmarkLargeReplace(b *testing.B) {
-	for {
-		b.Run("insert", func(b *testing.B) {
-			// insert the same data all the time
-			// TODO consider running benchmark only once
-		})
-		b.Run("Pushdown", func(b *testing.B) {
-			// find and replace
-		})
-		b.Run("NoPushdown", func(b *testing.B) {
-			// find and replace
-		})
-	}
-}
-
 func BenchmarkPushdowns(b *testing.B) {
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
 		DatabaseName:   b.Name(),

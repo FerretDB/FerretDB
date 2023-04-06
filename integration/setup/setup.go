@@ -78,8 +78,6 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
-
-	DisablePushdown bool
 }
 
 // SetupResult represents setup results.
@@ -129,13 +127,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var client *mongo.Client
 	var uri string
 
-	var listenerOpts []setupListenerOpt
-	if opts.DisablePushdown {
-		listenerOpts = append(listenerOpts, listenerPushdownDisabled)
-	}
-
 	if *targetURLF == "" {
-		client, uri = setupListener(tb, ctx, logger, listenerOpts...)
+		client, uri = setupListener(tb, ctx, logger)
 	} else {
 		client = setupClient(tb, ctx, *targetURLF)
 		uri = *targetURLF
@@ -163,7 +156,7 @@ var SimpleData BenchmarkData = func(ctx context.Context, coll *mongo.Collection)
 	}
 	var docs []any
 
-	for i := 0; i < 200; {
+	for i := 0; i < len(values)*100; {
 		for _, doc := range values {
 			docs = append(docs, bson.D{{"_id", i}, {"v", doc}})
 			i++
