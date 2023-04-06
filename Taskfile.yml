@@ -228,7 +228,7 @@ tasks:
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem' | tee -a new.txt
-      - bin/benchstat{{exeExt}} old.txt new.txt
+      - ../bin/benchstat{{exeExt}} old.txt new.txt
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
@@ -240,7 +240,7 @@ tasks:
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
-      - ../bin/benchstat{{exeExt}} old.txt new.txt
+      - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
   # But good enough for us.
