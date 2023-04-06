@@ -20,7 +20,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,23 +31,21 @@ func BenchmarkReplaceOne(b *testing.B) {
 
 	b.Run("ReplaceWithFilter", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			objectID := primitive.NewObjectID()
-			doc := largeDocument(b, objectID)
-			b.Log(doc.Values()...)
 
-			_, err := coll.InsertOne(ctx, doc, nil)
+			objectID := primitive.NewObjectID()
+			filter := bson.D{{"_id", objectID}}
+
+			doc, err := largeDocument(b, objectID)
 			require.NoError(b, err)
 
-			ii, err := coll.InsertOne(
-				ctx,
-				largeDocument(b, objectID),
-			)
-			b.Log(err, ii.InsertedID, objectID)
+			ior, err := coll.InsertOne(ctx, doc, nil)
+			require.NoError(b, err)
 
-			replacement := doc
-			replacement.Set("_id", primitive.NewObjectID())
+			require.Equal(b, ior.InsertedID, objectID)
 
-			filter := bson.D{{"_id", objectID}}
+			objectID = primitive.NewObjectID()
+			replacement, err := largeDocument(b, objectID)
+			require.NoError(b, err)
 
 			res, err := coll.ReplaceOne(ctx, filter, replacement)
 			require.Equal(b, 1, res.ModifiedCount)
@@ -57,25 +54,23 @@ func BenchmarkReplaceOne(b *testing.B) {
 
 }
 
-func largeDocument(b *testing.B, objectID primitive.ObjectID) *types.Document {
-	ld := types.Document{}
-	ld.Set("_id", objectID)
+// returns a 43474B BSON document.
+func largeDocument(b *testing.B, objectID primitive.ObjectID) ([]byte, error) {
+	ld := bson.M{}
+	ld["_id"] = objectID
 
-	docs := shareddata.Int64s.Docs()
+	// for now just concatenate all providers to create a large document.
+	// XXX: use external data for benchmarking in the future - https://www.percona.com/blog/sample-datasets-for-benchmarking-and-testing/
+	docs := shareddata.Docs(shareddata.AllProviders()...)
 
 	i := 0
 	for _, doc := range docs {
-		m := doc.Map()
-		for _, v := range m {
-			ld.Set(strconv.Itoa(i), v)
+		doc := doc.(primitive.D).Map()
+		for _, v := range doc {
+			ld[strconv.Itoa(i)] = v
 			i++
 		}
 	}
 
-	if !objectID.IsZero() {
-		b.Log(true)
-		b.Log(ld.Keys()[0] == objectID.String())
-	}
-
-	return &ld
+	return bson.Marshal(ld)
 }
