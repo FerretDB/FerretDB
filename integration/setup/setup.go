@@ -148,66 +148,6 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-type BenchmarkData func(context.Context, *mongo.Collection) error
-
-var SimpleData BenchmarkData = func(ctx context.Context, coll *mongo.Collection) error {
-	values := []any{
-		"foo", 42, "42", bson.D{{"42", "hello"}},
-	}
-	var docs []any
-
-	for i := 0; i < len(values)*100; {
-		for _, doc := range values {
-			docs = append(docs, bson.D{{"_id", i}, {"v", doc}})
-			i++
-		}
-	}
-
-	_, err := coll.InsertMany(ctx, docs)
-	return err
-}
-
-func SetupBenchmark(tb testing.TB, insert BenchmarkData) (context.Context, *mongo.Collection, *mongo.Collection, *mongo.Collection) {
-	tb.Helper()
-
-	if *compatURLF == "" {
-		tb.Skip("-compat-url is empty, skipping benchmark")
-	}
-
-	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
-
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
-	if *debugSetupF {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	}
-	logger := testutil.Logger(tb, level)
-
-	targetClient, _ := setupListener(tb, ctx, logger)
-	targetNoPushdownClient, _ := setupListenerWithOpts(tb, ctx, &setupListenerOpts{
-		Logger:          logger,
-		DisablePushdown: true,
-	})
-
-	compatClient := setupClient(tb, ctx, *compatURLF)
-
-	tb.Cleanup(cancel)
-
-	//dbName := tb.Name()
-	//collName := "Benchmark"
-
-	var collections []*mongo.Collection
-
-	for _, client := range []*mongo.Client{
-		targetClient, targetNoPushdownClient, compatClient,
-	} {
-		coll := setupCollection(tb, ctx, client, &SetupOpts{})
-		require.NoError(tb, insert(ctx, coll))
-		collections = append(collections, coll)
-	}
-
-	return ctx, collections[0], collections[1], collections[2]
-}
-
 // Setup setups a single collection for all compatible providers, if the are present.
 func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()

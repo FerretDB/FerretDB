@@ -20,17 +20,21 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/integration/benchmarkdata"
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-type QueryBenchmarkCase struct {
-	filter bson.D
-}
+func BenchmarkQuery(b *testing.B) {
+	s := setup.SetupBenchmark(b, benchmarkdata.SimpleData)
+	ctx := s.Ctx
 
-func BenchmarkFoo(b *testing.B) {
-	ctx, coll, collNoPushdown, compatColl := setup.SetupBenchmark(b, setup.SimpleData)
+	coll := s.TargetCollection
+	collNoPushdown := s.TargetNoPushdownCollection
+	collCompat := s.CompatCollection
 
-	for name, bm := range map[string]QueryBenchmarkCase{
+	for name, bm := range map[string]struct {
+		filter bson.D
+	}{
 		"String": {
 			filter: bson.D{{"v", "foo"}},
 		},
@@ -59,7 +63,7 @@ func BenchmarkFoo(b *testing.B) {
 			})
 			b.Run("Compat", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					cur, err := compatColl.Find(ctx, bm.filter)
+					cur, err := collCompat.Find(ctx, bm.filter)
 					require.NoError(b, err)
 
 					var res []bson.D

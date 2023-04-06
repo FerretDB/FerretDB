@@ -82,7 +82,7 @@ func setupListenerWithOpts(tb testing.TB, ctx context.Context, opts *setupListen
 	tb.Helper()
 
 	if opts == nil {
-		panic("setupListenerWithOpts must be called with opts. Consider using setupListener.")
+		tb.Fatal("setupListenerWithOpts must be called with opts. Consider using setupListener.")
 	}
 
 	disablePushdown := *disablePushdownF || opts.DisablePushdown
