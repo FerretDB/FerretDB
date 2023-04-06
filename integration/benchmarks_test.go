@@ -21,7 +21,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 type QueryBenchmarkCase struct {
@@ -69,58 +68,4 @@ func BenchmarkFoo(b *testing.B) {
 			})
 		})
 	}
-}
-
-func BenchmarkPushdowns(b *testing.B) {
-	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		DatabaseName:   b.Name(),
-		CollectionName: b.Name(),
-		Providers:      []shareddata.Provider{shareddata.Scalars},
-	})
-
-	ctx, coll := s.Ctx, s.Collection
-
-	res, err := coll.InsertOne(ctx, bson.D{{}})
-	require.NoError(b, err)
-
-	id := res.InsertedID
-
-	b.Run("ObjectID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"_id", id}})
-			require.NoError(b, err)
-
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
-
-			require.NotEmpty(b, res)
-		}
-	})
-
-	b.Run("StringID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"_id", "string"}})
-			require.NoError(b, err)
-
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
-
-			require.NotEmpty(b, res)
-		}
-	})
-
-	b.Run("NoPushdown", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"v", bson.D{{"$eq", 42.0}}}})
-			require.NoError(b, err)
-
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
-
-			require.NotEmpty(b, res)
-		}
-	})
 }
