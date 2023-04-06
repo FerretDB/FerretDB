@@ -100,7 +100,7 @@ func AllProviders() Providers {
 // Providers are array of providers.
 type Providers []Provider
 
-// In returns true is name is in Providers.
+// In returns true if name is in Providers.
 func (ps Providers) In(name string) bool {
 	m := make(map[string]bool)
 	for _, p := range ps {
