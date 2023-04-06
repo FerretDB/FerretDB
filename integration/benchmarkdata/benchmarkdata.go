@@ -51,7 +51,7 @@ var SimpleData Data = func(ctx context.Context, coll *mongo.Collection) error {
 }
 
 // LargeDocument returns a document of size 43474B by concatenating
-// all providers. The order of fields is indeterministic because AllProviders
+// all providers. The order of fields is non-deterministic because AllProviders
 // returns all providers in a random order.
 var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error {
 	var docs = shareddata.Docs(shareddata.AllProviders()...)
