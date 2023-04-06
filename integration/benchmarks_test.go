@@ -85,7 +85,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 	for name, bm := range map[string]struct {
 		filter bson.D
 	}{
-		"NoFilter": {
+		"NoFilter": { // there's only ever one document to replace.
 			filter: bson.D{{}},
 		},
 	} {
@@ -106,7 +106,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 					require.Equal(b, 1, ures.ModifiedCount)
 				}
 			})
-			b.Run("Compat", func(b *testing.B) {
+			b.Run("CompatWithNewObjectID", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					res := bson.D{}
 					err := collCompat.FindOne(ctx, bm.filter).Decode(&res)
