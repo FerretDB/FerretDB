@@ -19,55 +19,92 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/integration/benchmarkdata"
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func BenchmarkPushdowns(b *testing.B) {
-	ctx, coll := setup.Setup(b, shareddata.AllProviders()...)
+func BenchmarkQuery(b *testing.B) {
+	s := setup.SetupBenchmark(b, benchmarkdata.SimpleData)
+	ctx := s.Ctx
 
-	res, err := coll.InsertOne(ctx, bson.D{{}})
-	require.NoError(b, err)
+	coll := s.TargetCollection
+	collNoPushdown := s.TargetNoPushdownCollection
+	collCompat := s.CompatCollection
 
-	id := res.InsertedID
+	for name, bm := range map[string]struct {
+		filter bson.D
+	}{
+		"String": {
+			filter: bson.D{{"v", "foo"}},
+		},
+		"DotNotation": {
+			filter: bson.D{{"v.42", "hello"}},
+		},
+	} {
+		b.Run(name, func(b *testing.B) {
+			b.Run("Pushdown", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cur, err := coll.Find(ctx, bm.filter)
+					require.NoError(b, err)
 
-	b.Run("ObjectID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"_id", id}})
-			require.NoError(b, err)
+					var res []bson.D
+					require.NoError(b, cur.All(ctx, &res))
+				}
+			})
+			b.Run("NoPushdown", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cur, err := collNoPushdown.Find(ctx, bm.filter)
+					require.NoError(b, err)
 
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
+					var res []bson.D
+					require.NoError(b, cur.All(ctx, &res))
+				}
+			})
+			b.Run("Compat", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cur, err := collCompat.Find(ctx, bm.filter)
+					require.NoError(b, err)
 
-			require.NotEmpty(b, res)
-		}
-	})
+					var res []bson.D
+					require.NoError(b, cur.All(ctx, &res))
+				}
+			})
+		})
+	}
+}
 
-	b.Run("StringID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"_id", "string"}})
-			require.NoError(b, err)
+func BenchmarkReplaceOne(b *testing.B) {
+	s := setup.SetupBenchmark(b, benchmarkdata.LargeDocument)
+	ctx := s.Ctx
 
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
+	coll := s.TargetCollection
 
-			require.NotEmpty(b, res)
-		}
-	})
+	for name, bm := range map[string]struct {
+		filter bson.D
+	}{
+		"ReplaceWithNewObjectID": {
+			filter: bson.D{{}},
+		},
+	} {
+		b.Run(name, func(b *testing.B) {
+			b.Run("ReplaceWithNewObjectID", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					res := bson.D{}
+					err := coll.FindOne(ctx, bm.filter).Decode(&res)
+					require.NoError(b, err)
 
-	b.Run("NoPushdown", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"v", bson.D{{"$eq", 42.0}}}})
-			require.NoError(b, err)
+					m := res.Map()
+					m["_id"] = primitive.NewObjectID()
+					replacement, err := bson.Marshal(m)
+					require.NoError(b, err)
 
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
-
-			require.NotEmpty(b, res)
-		}
-	})
+					ures, err := coll.ReplaceOne(ctx, bm.filter, replacement)
+					require.NoError(b, err)
+					require.Equal(b, 1, ures.ModifiedCount)
+				}
+			})
+		})
+	}
 }
