@@ -16,6 +16,7 @@ package benchmarkdata
 
 import (
 	"context"
+	"sort"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -54,7 +55,22 @@ var SimpleData Data = func(ctx context.Context, coll *mongo.Collection) error {
 // all providers. The order of fields is non-deterministic because AllProviders
 // returns all providers in a random order.
 var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error {
-	var docs = shareddata.Docs(shareddata.AllProviders()...)
+	var docs = shareddata.Docs()
+
+	ap := shareddata.AllProviders()
+
+	names := []string{}
+	for _, p := range ap {
+		names = append(names, p.Name())
+	}
+	sort.Strings(names)
+
+	// XXX confirm that this gives a deterministic order.
+	for _, name := range names {
+		if ap.In(name) {
+			docs = append(docs, shareddata.Docs(ap...)...)
+		}
+	}
 
 	ld := bson.M{}
 	ld["_id"] = primitive.NewObjectID()
