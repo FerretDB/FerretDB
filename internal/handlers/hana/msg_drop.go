@@ -16,12 +16,60 @@ package hana
 
 import (
 	"context"
+	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDrop implements HandlerInterface.
 func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.L, "writeConcern", "comment")
+
+	command := document.Command()
+
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dbPool.DropCollection(ctx, db, collection)
+	switch {
+	case err == nil:
+		// Success case
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, common.NewCommandErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"nIndexesWas", int32(1), // TODO
+			"ns", db+"."+collection,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
