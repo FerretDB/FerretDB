@@ -47,6 +47,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 			require.NoError(b, err)
 
 			res, err := coll.ReplaceOne(ctx, filter, replacement)
+			require.NoError(b, err)
 			require.Equal(b, 1, res.ModifiedCount)
 		}
 	})
