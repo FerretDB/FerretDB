@@ -30,21 +30,25 @@ func BenchmarkReplaceOne(b *testing.B) {
 	ctx, coll := setup.Setup(b, shareddata.Composites)
 	defer setup.Shutdown()
 
-	// TODO: understand setup and shareddata.
 	b.Run("ReplaceWithFilter", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			objectID := primitive.NewObjectID()
-			filter := bson.D{{"_id", objectID}}
-
-			// TODO: fix nested arrays.
-			doc := largeDocument(objectID)
+			doc := largeDocument(b, objectID)
 			b.Log(doc.Values()...)
 
 			_, err := coll.InsertOne(ctx, doc, nil)
 			require.NoError(b, err)
 
+			ii, err := coll.InsertOne(
+				ctx,
+				largeDocument(b, objectID),
+			)
+			b.Log(err, ii.InsertedID, objectID)
+
 			replacement := doc
 			replacement.Set("_id", primitive.NewObjectID())
+
+			filter := bson.D{{"_id", objectID}}
 
 			res, err := coll.ReplaceOne(ctx, filter, replacement)
 			require.Equal(b, 1, res.ModifiedCount)
@@ -53,8 +57,9 @@ func BenchmarkReplaceOne(b *testing.B) {
 
 }
 
-func largeDocument(objectID primitive.ObjectID) *types.Document {
+func largeDocument(b *testing.B, objectID primitive.ObjectID) *types.Document {
 	ld := types.Document{}
+	ld.Set("_id", objectID)
 
 	docs := shareddata.Int64s.Docs()
 
@@ -67,7 +72,10 @@ func largeDocument(objectID primitive.ObjectID) *types.Document {
 		}
 	}
 
-	ld.Set("_id", objectID)
+	if !objectID.IsZero() {
+		b.Log(true)
+		b.Log(ld.Keys()[0] == objectID.String())
+	}
 
 	return &ld
 }
