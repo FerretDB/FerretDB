@@ -183,7 +183,10 @@ func SetupBenchmark(tb testing.TB, insert BenchmarkData) (context.Context, *mong
 	logger := testutil.Logger(tb, level)
 
 	targetClient, _ := setupListener(tb, ctx, logger)
-	targetNoPushdownClient, _ := setupListener(tb, ctx, logger, listenerPushdownDisabled)
+	targetNoPushdownClient, _ := setupListenerWithOpts(tb, ctx, &setupListenerOpts{
+		Logger:          logger,
+		DisablePushdown: true,
+	})
 
 	compatClient := setupClient(tb, ctx, *compatURLF)
 

@@ -63,25 +63,32 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-type setupListenerOpt int
-
-const listenerPushdownDisabled = setupListenerOpt(1)
+type setupListenerOpts struct {
+	DisablePushdown bool //defaults to false
+	Logger          *zap.Logger
+}
 
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger, opts ...setupListenerOpt) (*mongo.Client, string) {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
+	return setupListenerWithOpts(tb, ctx, &setupListenerOpts{
+		Logger: logger,
+	})
+}
+
+// setupListenerWithOpts starts in-process FerretDB server that runs until ctx is done.
+// It returns client and MongoDB URI of that listener.
+func setupListenerWithOpts(tb testing.TB, ctx context.Context, opts *setupListenerOpts) (*mongo.Client, string) {
 	tb.Helper()
 
-	var disablePushdown bool = *disablePushdownF
-
-	for _, opt := range opts {
-		switch opt {
-		case listenerPushdownDisabled:
-			disablePushdown = true
-		default:
-			tb.Fatal("Unknown setupListener option: ", opt)
-		}
+	if opts == nil {
+		panic("setupListenerWithOpts must be called with opts. Consider using setupListener.")
 	}
+
+	disablePushdown := *disablePushdownF || opts.DisablePushdown
+	logger := opts.Logger
+
+	require.False(tb, opts.DisablePushdown && *disablePushdownF, "-disable-pushdown flag mustn't be set with test that disables pushdown")
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
