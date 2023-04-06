@@ -8,7 +8,7 @@ sidebar_position: 1
 It saves memory space, network bandwidth, and reduces the query execution time by not prefetching
 unnecessary data to the database management system.
 
-By default, FerretDB retrieves all data related to queried collection, and applies filters on its own, making
+Initially FerretDB retrieved all data related to queried collection, and applies filters on its own, making
 it possible to implement complex logic safely and quickly.
 To make this process more efficient, we minimize the amount of incoming data, by applying proper SQL filters.
 
