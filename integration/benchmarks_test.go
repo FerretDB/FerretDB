@@ -80,16 +80,17 @@ func BenchmarkReplaceOne(b *testing.B) {
 	ctx := s.Ctx
 
 	coll := s.TargetCollection
+	collCompat := s.CompatCollection
 
 	for name, bm := range map[string]struct {
 		filter bson.D
 	}{
-		"ReplaceWithNewObjectID": {
+		"NoFilter": {
 			filter: bson.D{{}},
 		},
 	} {
 		b.Run(name, func(b *testing.B) {
-			b.Run("ReplaceWithNewObjectID", func(b *testing.B) {
+			b.Run("WithNewObjectID", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					res := bson.D{}
 					err := coll.FindOne(ctx, bm.filter).Decode(&res)
@@ -101,6 +102,22 @@ func BenchmarkReplaceOne(b *testing.B) {
 					require.NoError(b, err)
 
 					ures, err := coll.ReplaceOne(ctx, bm.filter, replacement)
+					require.NoError(b, err)
+					require.Equal(b, 1, ures.ModifiedCount)
+				}
+			})
+			b.Run("Compat", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					res := bson.D{}
+					err := collCompat.FindOne(ctx, bm.filter).Decode(&res)
+					require.NoError(b, err)
+
+					m := res.Map()
+					m["_id"] = primitive.NewObjectID()
+					replacement, err := bson.Marshal(m)
+					require.NoError(b, err)
+
+					ures, err := collCompat.ReplaceOne(ctx, bm.filter, replacement)
 					require.NoError(b, err)
 					require.Equal(b, 1, ures.ModifiedCount)
 				}
