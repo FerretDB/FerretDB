@@ -35,6 +35,9 @@ func BenchmarkFoo(b *testing.B) {
 		"String": {
 			filter: bson.D{{"v", "foo"}},
 		},
+		"DotNotation": {
+			filter: bson.D{{"v.42", "hello"}},
+		},
 	} {
 		b.Run(name, func(b *testing.B) {
 			b.Run("Pushdown", func(b *testing.B) {

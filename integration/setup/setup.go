@@ -158,11 +158,16 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 type BenchmarkData func(context.Context, *mongo.Collection) error
 
 var SimpleData BenchmarkData = func(ctx context.Context, coll *mongo.Collection) error {
-	var docs []any
-	for i, doc := range []any{
+	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
-	} {
-		docs = append(docs, bson.D{{"_id", i}, {"v", doc}})
+	}
+	var docs []any
+
+	for i := 0; i < 200; {
+		for _, doc := range values {
+			docs = append(docs, bson.D{{"_id", i}, {"v", doc}})
+			i++
+		}
 	}
 
 	_, err := coll.InsertMany(ctx, docs)
