@@ -16,7 +16,7 @@ To make this process more efficient, we minimize the amount of incoming data, by
 You can learn more about query pushdown in our [blog post](https://blog.ferretdb.io/ferretdb-fetches-data-query-pushdown/).
 :::
 
-## Query pushdown supported filters
+## Supported types and operators
 
 The following table shows all operators and types that FerretDB pushdowns on PostgreSQL backend.
 If filter uses type and operator, that's marked as pushdown-supported on this list,
