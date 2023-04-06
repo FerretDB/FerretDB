@@ -1386,3 +1386,17 @@ func TestAggregateCompatSkip(t *testing.T) {
 
 	testAggregateStagesCompat(t, testCases)
 }
+
+func TestAggregateCompatProject(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"ReturnField": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", int32(1)}}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}

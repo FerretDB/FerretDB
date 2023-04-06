@@ -55,6 +55,7 @@ var stages = map[string]newStageFunc{
 	"$group":     newGroup,
 	"$limit":     newLimit,
 	"$match":     newMatch,
+	"$project":   newProject,
 	"$skip":      newSkip,
 	"$sort":      newSort,
 	"$unwind":    newUnwind,
