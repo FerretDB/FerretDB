@@ -155,14 +155,26 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-func SetupBenchmark(tb testing.TB) (context.Context, *mongo.Collection, *mongo.Collection, *mongo.Collection) {
+type BenchmarkData func(context.Context, *mongo.Collection) error
+
+var SimpleData BenchmarkData = func(ctx context.Context, coll *mongo.Collection) error {
+	var docs []any
+	for i, doc := range []any{
+		"foo", 42, "42", bson.D{{"42", "hello"}},
+	} {
+		docs = append(docs, bson.D{{"_id", i}, {"v", doc}})
+	}
+
+	_, err := coll.InsertMany(ctx, docs)
+	return err
+}
+
+func SetupBenchmark(tb testing.TB, insert BenchmarkData) (context.Context, *mongo.Collection, *mongo.Collection, *mongo.Collection) {
 	tb.Helper()
 
 	if *compatURLF == "" {
 		tb.Skip("-compat-url is empty, skipping benchmark")
 	}
-
-	// TODO insert data
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
@@ -177,17 +189,22 @@ func SetupBenchmark(tb testing.TB) (context.Context, *mongo.Collection, *mongo.C
 
 	compatClient := setupClient(tb, ctx, *compatURLF)
 
-	// TODO "compat" collection
-
 	tb.Cleanup(cancel)
 
-	dbName := tb.Name()
-	collName := "Benchmark"
+	//dbName := tb.Name()
+	//collName := "Benchmark"
 
-	return ctx,
-		targetClient.Database(dbName).Collection(collName),
-		targetNoPushdownClient.Database(dbName).Collection(collName),
-		compatClient.Database(dbName).Collection(collName)
+	var collections []*mongo.Collection
+
+	for _, client := range []*mongo.Client{
+		targetClient, targetNoPushdownClient, compatClient,
+	} {
+		coll := setupCollection(tb, ctx, client, &SetupOpts{})
+		require.NoError(tb, insert(ctx, coll))
+		collections = append(collections, coll)
+	}
+
+	return ctx, collections[0], collections[1], collections[2]
 }
 
 // Setup setups a single collection for all compatible providers, if the are present.

@@ -29,7 +29,7 @@ type QueryBenchmarkCase struct {
 }
 
 func BenchmarkFoo(b *testing.B) {
-	ctx, coll, collNoPushdown, _ := setup.SetupBenchmark(b)
+	ctx, coll, collNoPushdown, compatColl := setup.SetupBenchmark(b, setup.SimpleData)
 
 	for name, bm := range map[string]QueryBenchmarkCase{
 		"String": {
@@ -55,7 +55,15 @@ func BenchmarkFoo(b *testing.B) {
 					require.NoError(b, cur.All(ctx, &res))
 				}
 			})
+			b.Run("Compat", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					cur, err := compatColl.Find(ctx, bm.filter)
+					require.NoError(b, err)
 
+					var res []bson.D
+					require.NoError(b, cur.All(ctx, &res))
+				}
+			})
 		})
 	}
 }
