@@ -100,6 +100,16 @@ func AllProviders() Providers {
 // Providers are array of providers.
 type Providers []Provider
 
+// In returns true is name is in Providers.
+func (ps Providers) In(name string) bool {
+	m := make(map[string]bool)
+	for _, p := range ps {
+		m[p.Name()] = true
+	}
+
+	return m[name]
+}
+
 // Remove specified providers and return remaining providers.
 func (ps Providers) Remove(removeProviderNames ...string) Providers {
 	res := make([]Provider, 0, len(ps))
