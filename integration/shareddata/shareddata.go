@@ -100,11 +100,11 @@ func AllProviders() Providers {
 // Providers are array of providers.
 type Providers []Provider
 
-// In returns true if name is in Providers.
-func (ps Providers) In(name string) bool {
-	m := make(map[string]bool)
+// Get returns the Provider given a provider name.
+func (ps Providers) Get(name string) Provider {
+	m := make(map[string]Provider)
 	for _, p := range ps {
-		m[p.Name()] = true
+		m[p.Name()] = p
 	}
 
 	return m[name]

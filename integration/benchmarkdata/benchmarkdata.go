@@ -67,7 +67,7 @@ var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error
 
 	// XXX confirm that this gives a deterministic order.
 	for _, name := range names {
-		docs = append(docs, shareddata.Docs(ap.In(name))...)
+		docs = append(docs, shareddata.Docs(ap.Get(name))...)
 	}
 
 	ld := bson.M{}
