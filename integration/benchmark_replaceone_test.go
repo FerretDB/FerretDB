@@ -31,7 +31,6 @@ func BenchmarkReplaceOne(b *testing.B) {
 
 	b.Run("ReplaceWithFilter", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-
 			objectID := primitive.NewObjectID()
 			filter := bson.D{{"_id", objectID}}
 
@@ -40,10 +39,10 @@ func BenchmarkReplaceOne(b *testing.B) {
 
 			ior, err := coll.InsertOne(ctx, doc, nil)
 			require.NoError(b, err)
-
 			require.Equal(b, ior.InsertedID, objectID)
 
 			objectID = primitive.NewObjectID()
+
 			replacement, err := largeDocument(b, objectID)
 			require.NoError(b, err)
 
@@ -60,7 +59,8 @@ func largeDocument(b *testing.B, objectID primitive.ObjectID) ([]byte, error) {
 	ld["_id"] = objectID
 
 	// for now just concatenate all providers to create a large document.
-	// XXX: use external data for benchmarking in the future - https://www.percona.com/blog/sample-datasets-for-benchmarking-and-testing/
+	// XXX: use external data for benchmarking in the future -
+	// https://www.percona.com/blog/sample-datasets-for-benchmarking-and-testing/
 	docs := shareddata.Docs(shareddata.AllProviders()...)
 
 	i := 0
