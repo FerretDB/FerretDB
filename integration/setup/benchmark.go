@@ -17,24 +17,28 @@ package setup
 
 import (
 	"context"
+	"runtime/trace"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/benchmarkdata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
-type SetupBenchmarkResults struct {
+// SetupBenchmarkResult represents SetupBenchmark result.
+type SetupBenchmarkResult struct {
 	Ctx                        context.Context
-	TargetCollection           *mongo.Collection
-	TargetNoPushdownCollection *mongo.Collection
-	CompatCollection           *mongo.Collection
+	TargetCollection           *mongo.Collection // Target collection
+	TargetNoPushdownCollection *mongo.Collection // Target collection with pushdown disabled
+	CompatCollection           *mongo.Collection // Compat collection
 }
 
-// SetupBenchmark
-func SetupBenchmark(tb testing.TB, insertData benchmarkdata.Data) *SetupBenchmarkResults {
+// SetupBenchmark sets up in-process FerretDB targets with pushdown enabled and disabled,
+// establishes a connection to the compat database, and returns collections for each database.
+func SetupBenchmark(tb testing.TB, insertData benchmarkdata.Data) *SetupBenchmarkResult {
 	tb.Helper()
 
 	if *compatURLF == "" {
@@ -43,19 +47,25 @@ func SetupBenchmark(tb testing.TB, insertData benchmarkdata.Data) *SetupBenchmar
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
+	setupCtx, span := otel.Tracer("").Start(ctx, "SetupBenchmark")
+	defer span.End()
+
+	defer trace.StartRegion(setupCtx, "SetupBenchmark").End()
+
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
 	logger := testutil.Logger(tb, level)
 
-	targetClient, _ := setupListener(tb, ctx, logger)
-	targetNoPushdownClient, _ := setupListenerWithOpts(tb, ctx, &setupListenerOpts{
+	targetClient, _ := setupListener(tb, setupCtx, logger)
+
+	targetNoPushdownClient, _ := setupListenerWithOpts(tb, setupCtx, &setupListenerOpts{
 		Logger:          logger,
 		DisablePushdown: true,
 	})
 
-	compatClient := setupClient(tb, ctx, *compatURLF)
+	compatClient := setupClient(tb, setupCtx, *compatURLF)
 
 	tb.Cleanup(cancel)
 
@@ -66,12 +76,13 @@ func SetupBenchmark(tb testing.TB, insertData benchmarkdata.Data) *SetupBenchmar
 		targetNoPushdownClient,
 		compatClient,
 	} {
-		coll := setupCollection(tb, ctx, client, &SetupOpts{})
-		require.NoError(tb, insertData(ctx, coll))
+		coll := setupCollection(tb, setupCtx, client, &SetupOpts{})
+		require.NoError(tb, insertData(setupCtx, coll))
+
 		collections = append(collections, coll)
 	}
 
-	return &SetupBenchmarkResults{
+	return &SetupBenchmarkResult{
 		Ctx:                        ctx,
 		TargetCollection:           collections[0],
 		TargetNoPushdownCollection: collections[1],

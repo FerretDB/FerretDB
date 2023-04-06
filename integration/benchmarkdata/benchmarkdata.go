@@ -21,8 +21,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Data represents the benchmark dataset that is inserted into
+// the benchmark collection.
+//
+// It takes collection as an argument and inserts the benchmark data.
+// The function should produce determinisitic sets of documents, as
+// they are inserted to each benchmark target.
 type Data func(context.Context, *mongo.Collection) error
 
+// SimpleData is a set of 400 simple documents.
 var SimpleData Data = func(ctx context.Context, coll *mongo.Collection) error {
 	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
