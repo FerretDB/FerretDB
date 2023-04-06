@@ -29,7 +29,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 	ctx, coll := setup.Setup(b, shareddata.Composites)
 	defer setup.Shutdown()
 
-	b.Run("ReplaceWithFilter", func(b *testing.B) {
+	b.Run("ReplaceWithSelf", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			objectID := primitive.NewObjectID()
 			filter := bson.D{{"_id", objectID}}
@@ -41,14 +41,12 @@ func BenchmarkReplaceOne(b *testing.B) {
 			require.NoError(b, err)
 			require.Equal(b, ior.InsertedID, objectID)
 
-			objectID = primitive.NewObjectID()
-
 			replacement, err := largeDocument(b, objectID)
 			require.NoError(b, err)
 
 			res, err := coll.ReplaceOne(ctx, filter, replacement)
 			require.NoError(b, err)
-			require.Equal(b, 1, res.ModifiedCount)
+			require.Equal(b, int64(1), res.ModifiedCount)
 		}
 	})
 
