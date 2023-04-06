@@ -31,7 +31,7 @@ the table will be updated frequently.
 :::
 
 <!-- markdownlint-capture -->
-<!-- markdownlint-disable MD033 MD051 MD001 -->
+<!-- markdownlint-disable MD001 MD033 MD051 -->
 |            | Object   | Array   | Double                 | String   | Binary   | ObjectID   | Boolean   | Date   | Null   | Regex   | Integer   | Timestamp   | Long                   |
 | ---------- | -------- | ------- | --------               | -------- | -------- | ---------- | --------- | ------ | ------ | ------- | --------- | ----------- | ------                 |
 | `=`        | ✖️        | ✖️       | ⚠️ <sub>[[1]](#1)</sub> | ✅       | ✖️        | ✅         | ✅        | ✅     | ✖️      | ✖️       | ✅        | ✖️           | ⚠️ <sub>[[1]](#1)</sub> |
