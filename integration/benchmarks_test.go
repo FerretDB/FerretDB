@@ -29,7 +29,7 @@ type QueryBenchmarkCase struct {
 }
 
 func BenchmarkFoo(b *testing.B) {
-	ctx, coll, collNoPushdown := setup.SetupBenchmark(b)
+	ctx, coll, collNoPushdown, _ := setup.SetupBenchmark(b)
 
 	for name, bm := range map[string]QueryBenchmarkCase{
 		"String": {

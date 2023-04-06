@@ -155,27 +155,39 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-func SetupBenchmark(tb testing.TB) (context.Context, *mongo.Collection, *mongo.Collection) {
+func SetupBenchmark(tb testing.TB) (context.Context, *mongo.Collection, *mongo.Collection, *mongo.Collection) {
 	tb.Helper()
+
+	if *compatURLF == "" {
+		tb.Skip("-compat-url is empty, skipping benchmark")
+	}
 
 	// TODO insert data
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	target := SetupWithOpts(tb, &SetupOpts{
-		Providers: []shareddata.Provider{shareddata.Scalars},
-	})
+	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	if *debugSetupF {
+		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+	logger := testutil.Logger(tb, level)
 
-	targetNoPushdown := SetupWithOpts(tb, &SetupOpts{
-		Providers:       []shareddata.Provider{shareddata.Scalars},
-		DisablePushdown: true,
-	})
+	targetClient, _ := setupListener(tb, ctx, logger)
+	targetNoPushdownClient, _ := setupListener(tb, ctx, logger, listenerPushdownDisabled)
+
+	compatClient := setupClient(tb, ctx, *compatURLF)
 
 	// TODO "compat" collection
 
 	tb.Cleanup(cancel)
 
-	return ctx, target.Collection, targetNoPushdown.Collection
+	dbName := tb.Name()
+	collName := "Benchmark"
+
+	return ctx,
+		targetClient.Database(dbName).Collection(collName),
+		targetNoPushdownClient.Database(dbName).Collection(collName),
+		compatClient.Database(dbName).Collection(collName)
 }
 
 // Setup setups a single collection for all compatible providers, if the are present.
