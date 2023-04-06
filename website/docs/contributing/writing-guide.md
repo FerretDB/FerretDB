@@ -1,14 +1,41 @@
 ---
 sidebar_position: 99
-unlisted: true
+draft: true
 ---
 
 # Writing guide
+
+## Front matter
+
+The front matter represents the metadata for each page.
+It is written at the top of each page and must be enclosed by `---` on both sides.
+
+Example:
+
+```yaml
+---
+sidebar_position: 1
+description: How to write documentation
+---
+```
+
+Learn more about [front matter in Docusaurus](https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#markdown-front-matter).
 
 ## Names and URLs
 
 Use `kebab-case-with-dashes` instead of `snake_case_with_underscores` or spaces
 for file names, directory names, and slugs because URL paths typically use dashes.
+
+Ensure that the file name/URL path matches the title of the page.
+For example, if the title of your page is "Getting Started", then the file name/URL path should also be "getting-started" to maintain consistency.
+It is recommended to omit the `slug` field from the front matter, since the file name is used by default as the URL path.
+Only use the `slug` field in some special cases, such as when creating custom or external links, or for backward compatibility with existing links.
+
+## Sidebar position
+
+Use the `sidebar_position` in the front matter to set the order of the pages in the sidebar.
+Please ensure that the `sidebar_position` is unique for each page in that directory.
+For example, if there are several pages in the folder "Getting Started", let `sidebar_position` equal "1", "2", "3", "4", and so on to avoid duplication.
 
 ## Headers
 

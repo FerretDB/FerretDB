@@ -11,7 +11,7 @@ keywords:
   - keyword2
 image: /img/blog/post-cover-image.jpg
 tags: [tag1, tag2]
-unlisted: true
+draft: true
 ---
 
 Leave a space before starting article.
