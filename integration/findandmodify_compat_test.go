@@ -302,6 +302,27 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
+func TestFindAndModifyCompatExists(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"UpsertFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"replaced", true}}},
+			},
+		},
+		"UpsertTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"replaced", true}}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command bson.D
