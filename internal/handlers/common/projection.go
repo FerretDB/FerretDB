@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // validateProjection check projection document.
@@ -69,6 +70,9 @@ func validateProjection(projection *types.Document) error {
 			return lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
 
+		// set the value with boolean result to omit type assertion in the next iteration
+		projection.Set(key, result)
+
 		// if projectionVal is nil, it means that we are processing the first field
 		if projectionVal == nil {
 			projectionVal = &result
@@ -95,18 +99,20 @@ func validateProjection(projection *types.Document) error {
 	return nil
 }
 
-func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) (*types.Document, error) {
+func projectDocument(doc *types.Document, projection *types.Document) (*types.Document, error) {
 	if projection == nil {
 		return doc, nil
 	}
 
-	iter := doc.Iterator()
+	projected := types.MakeDocument(1)
+
+	projected.Set("_id", must.NotFail(doc.Get("_id")))
+
+	iter := projection.Iterator()
 	defer iter.Close()
 
-	projected := doc.DeepCopy()
-
 	for {
-		key, _, err := iter.Next()
+		key, value, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
@@ -115,37 +121,33 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 			return nil, lazyerrors.Error(err)
 		}
 
-		projectionVal, err := projection.Get(key)
+		path, err := types.NewPathFromString(key)
 		if err != nil {
-			if key == "_id" {
-				continue
-			}
-
-			continue
+			return nil, lazyerrors.Error(err)
 		}
 
-		switch projectionVal := projectionVal.(type) { // found in the projection
+		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
 			return nil, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrCommandNotFound,
 				fmt.Sprintf("projection %s is not supported",
-					types.FormatAnyValue(projectionVal),
+					types.FormatAnyValue(value),
 				),
 			)
 
-		case float64, int32, int64: // field: number
-			result := types.Compare(projectionVal, int32(0))
-			if result == types.Equal {
-				projected.Remove(key)
-			}
-
 		case bool: // field: bool
-			if !projectionVal {
-				projected.Remove(key)
+			// if projection value is false, we should skip the field
+			if !value {
+				projected.RemoveByPath(path)
+				continue
 			}
-
 		default:
-			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, projectionVal, projectionVal)
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
+		}
+
+		// if doc has field set it to the projected document
+		if doc.HasByPath(path) {
+			projected.SetByPath(path, must.NotFail(doc.GetByPath(path)))
 		}
 	}
 

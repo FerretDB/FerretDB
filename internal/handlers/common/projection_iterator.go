@@ -53,7 +53,7 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	projected, err := projectDocument(iter.inclusion, doc, iter.projection)
+	projected, err := projectDocument(doc, iter.projection)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}

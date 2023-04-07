@@ -44,9 +44,18 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"v", int32(0)}},
 		},
+		"DotNotationInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.array", true}},
+		},
+		"DotNotationExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", false}, {"v.array", false}},
+		},
 		"DotNotationIncludeExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", false}},
+			resultType: emptyResult,
 		},
 	}
 
