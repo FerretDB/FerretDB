@@ -160,7 +160,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			var value any
 			value = resultDoc
-			if hasFilterOperator(params.Query) {
+			if upserted && hasFilterOperator(params.Query) {
 				value = types.Null
 			}
 

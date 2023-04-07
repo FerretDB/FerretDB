@@ -304,18 +304,25 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 
 func TestFindAndModifyCompatFilterOperator(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
-		"ExistsFalse": {
+		"ExistsFalseID": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"_id", "replaced"}}},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrueID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
 		},
 		"ExistsTrue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"_id", "replaced"}}},
+				{"update", bson.D{{"v", "replaced"}}},
 			},
 		},
 		"And": {
