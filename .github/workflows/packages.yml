@@ -85,9 +85,6 @@ jobs:
         if: github.event_name == 'pull_request_target'
         run: git checkout -b ${{ github.head_ref }}
 
-      - name: Debug git status
-        run: git status
-
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
