@@ -79,11 +79,8 @@ jobs:
         if: github.event_name == 'pull_request_target'
         run: git checkout -b ${{ github.head_ref }}
 
-      # TODO https://github.com/FerretDB/FerretDB/issues/2368
       - name: Debug git status
-        run:
-          env
-          git status
+        run: git status
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

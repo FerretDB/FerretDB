@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 5
 
     # comment out to enable this job
-    # if: false
+    if: false
 
     steps:
       - name: Checkout code
