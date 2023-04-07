@@ -106,6 +106,10 @@ func isProjectionInclusion(projection *types.Document) (bool, error) {
 }
 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) (*types.Document, error) {
+	if projection == nil {
+		return doc, nil
+	}
+
 	iter := doc.Iterator()
 	defer iter.Close()
 

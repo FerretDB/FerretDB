@@ -37,6 +37,18 @@ func TestQueryProjectionCompat(t *testing.T) {
 			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
 			resultPushdown: true,
 		},
+		"IncludeField": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", int32(1)}},
+		},
+		"ExcludeField": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", int32(0)}},
+		},
+		"DotNotationIncludeExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.array", false}},
+		},
 	}
 
 	testQueryCompat(t, testCases)
