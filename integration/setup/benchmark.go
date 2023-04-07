@@ -17,75 +17,44 @@ package setup
 
 import (
 	"context"
-	"runtime/trace"
+	"errors"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/benchmarkdata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 )
-
-// SetupBenchmarkResult represents SetupBenchmark result.
-type SetupBenchmarkResult struct {
-	Ctx                        context.Context
-	TargetCollection           *mongo.Collection // Target collection
-	TargetNoPushdownCollection *mongo.Collection // Target collection with pushdown disabled
-	CompatCollection           *mongo.Collection // Compat collection
-}
 
 // SetupBenchmark sets up in-process FerretDB targets with pushdown enabled and disabled,
 // establishes a connection to the compat database, and returns collections for each database.
-func SetupBenchmark(tb testing.TB, insertData benchmarkdata.Data) *SetupBenchmarkResult {
+func SetupBenchmark(tb testing.TB, p shareddata.BenchmarkProvider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
-	if *compatURLF == "" {
-		tb.Skip("-compat-url is empty, skipping benchmark")
+	s := SetupWithOpts(tb, &SetupOpts{})
+
+	ctx := s.Ctx
+	coll := s.Collection
+
+	iter := p.Docs()
+	defer iter.Close()
+
+	for {
+		docs, err := iterator.ConsumeValuesN(iter, 10)
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			// TODO insert leftovers
+			break
+		}
+		require.NoError(tb, err)
+
+		var insertDocs []any = make([]any, len(docs))
+		for i, d := range docs {
+			insertDocs[i] = d
+		}
+
+		_, err = coll.InsertMany(ctx, insertDocs)
+		require.NoError(tb, err)
 	}
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
-
-	setupCtx, span := otel.Tracer("").Start(ctx, "SetupBenchmark")
-	defer span.End()
-
-	defer trace.StartRegion(setupCtx, "SetupBenchmark").End()
-
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
-	if *debugSetupF {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	}
-	logger := testutil.Logger(tb, level)
-
-	targetClient, _ := setupListener(tb, setupCtx, logger)
-
-	targetNoPushdownClient, _ := setupListenerWithOpts(tb, setupCtx, &setupListenerOpts{
-		Logger:          logger,
-		DisablePushdown: true,
-	})
-
-	compatClient := setupClient(tb, setupCtx, *compatURLF)
-
-	tb.Cleanup(cancel)
-
-	var collections []*mongo.Collection
-
-	for _, client := range []*mongo.Client{
-		targetClient,
-		targetNoPushdownClient,
-		compatClient,
-	} {
-		coll := setupCollection(tb, setupCtx, client, &SetupOpts{})
-		require.NoError(tb, insertData(setupCtx, coll))
-
-		collections = append(collections, coll)
-	}
-
-	return &SetupBenchmarkResult{
-		Ctx:                        ctx,
-		TargetCollection:           collections[0],
-		TargetNoPushdownCollection: collections[1],
-		CompatCollection:           collections[2],
-	}
+	return ctx, coll
 }

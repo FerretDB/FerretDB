@@ -20,17 +20,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/benchmarkdata"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func BenchmarkQuery(b *testing.B) {
-	s := setup.SetupBenchmark(b, benchmarkdata.SimpleData)
-	ctx := s.Ctx
-
-	coll := s.TargetCollection
-	collNoPushdown := s.TargetNoPushdownCollection
-	collCompat := s.CompatCollection
+	ctx, coll := setup.SetupBenchmark(b, shareddata.SimpleValuesProvider())
 
 	for name, bm := range map[string]struct {
 		filter bson.D
@@ -43,34 +38,15 @@ func BenchmarkQuery(b *testing.B) {
 		},
 	} {
 		b.Run(name, func(b *testing.B) {
-			b.Run("Pushdown", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					cur, err := coll.Find(ctx, bm.filter)
-					require.NoError(b, err)
+			for i := 0; i < b.N; i++ {
+				cur, err := coll.Find(ctx, bm.filter)
+				require.NoError(b, err)
 
-					var res []bson.D
-					require.NoError(b, cur.All(ctx, &res))
-				}
-				coll.Database().Client().Disconnect(ctx)
-			})
-			b.Run("NoPushdown", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					cur, err := collNoPushdown.Find(ctx, bm.filter)
-					require.NoError(b, err)
+				var res []bson.D
+				require.NoError(b, cur.All(ctx, &res))
+			}
 
-					var res []bson.D
-					require.NoError(b, cur.All(ctx, &res))
-				}
-			})
-			b.Run("Compat", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					cur, err := collCompat.Find(ctx, bm.filter)
-					require.NoError(b, err)
-
-					var res []bson.D
-					require.NoError(b, cur.All(ctx, &res))
-				}
-			})
+			coll.Database().Client().Disconnect(ctx)
 		})
 	}
 }
