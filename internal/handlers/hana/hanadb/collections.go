@@ -17,7 +17,6 @@ package hanadb
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	_ "github.com/SAP/go-hdb/driver"
 )
@@ -27,25 +26,19 @@ import (
 // It returns ErrAlreadyExist if collection already exist.
 func (hanaPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
 	sql := fmt.Sprintf("CREATE COLLECTION \"%s\".\"%s\"", db, collection)
-	_, err := hanaPool.ExecContext(ctx, sql)
-	if err != nil {
-		if strings.Contains(err.Error(), "288: cannot use duplicate table name") {
-			return ErrAlreadyExist
-		}
-	}
 
-	return err
+	_, err := hanaPool.ExecContext(ctx, sql)
+
+	return getHanaErrorIfExists(err)
 }
 
-// DropTable drops collection
+// DropCollection drops collection
 //
 // It returns ErrTableNotExist is collection does not exist.
 func (hanaPool *Pool) DropCollection(ctx context.Context, db, collection string) error {
 	sql := fmt.Sprintf("DROP COLLECTION \"%s\".\"%s\"", db, collection)
-	_, err := hanaPool.ExecContext(ctx, sql)
-	if err != nil {
-		return ErrTableNotExist
-	}
 
-	return err
+	_, err := hanaPool.ExecContext(ctx, sql)
+
+	return getHanaErrorIfExists(err)
 }

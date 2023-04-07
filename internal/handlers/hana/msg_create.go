@@ -54,7 +54,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"pipeline",
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -86,14 +86,13 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	h.L.Info("$db: '" + db + "', collection: '" + collection + "', Command: '" + command + "'")
-
 	err = dbPool.CreateSchema(ctx, db)
+
 	switch {
 	case err == nil:
 		// Success case
-	case errors.Is(err, hanadb.ErrAlreadyExist):
-		// Success case, collection anme might still be unique
+	case errors.Is(err, hanadb.ErrSchemaAlreadyExist):
+		// Success case, collection name might still be unique
 	case errors.Is(err, hanadb.ErrInvalidDatabaseName):
 		msg := fmt.Sprintf("Invalid Schema %s", db)
 		return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
@@ -102,14 +101,14 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = dbPool.CreateCollection(ctx, db, collection)
+
 	switch {
 	case err == nil:
 		// Success case
-	case errors.Is(err, hanadb.ErrAlreadyExist):
+	case errors.Is(err, hanadb.ErrCollectionAlreadyExist):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
 		return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
-
-	case errors.Is(err, hanadb.ErrInvalidDatabaseName):
+	case errors.Is(err, hanadb.ErrInvalidCollectionName):
 		msg := fmt.Sprintf("Invalid Collection %s.%s", db, collection)
 		return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
 	default:
