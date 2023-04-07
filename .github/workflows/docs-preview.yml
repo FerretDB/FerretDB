@@ -35,7 +35,7 @@ jobs:
 
     environment:
       name: cloudflare-dev
-      # url: ${{ steps.deploy.outputs.page_url }} TODO https://github.com/FerretDB/github-actions/issues/160
+      # url: ${{ steps.extract.outputs.url }} TODO https://github.com/FerretDB/github-actions/issues/160
 
     steps:
       # We can't easily download build results from the Docs workflow:
@@ -76,11 +76,12 @@ jobs:
           git status
           git diff --exit-code
 
-      # TODO https://github.com/FerretDB/github-actions/issues/160
       - name: Deploy to Cloudflare Pages
-        run: |
-          bin/task docs-cloudflare-preview | tee deploy.txt
-          cat deploy.txt
+        run: bin/task docs-cloudflare-preview | tee deploy.txt
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # TODO https://github.com/FerretDB/github-actions/issues/160
+      - name: Deploy to Cloudflare Pages
+        run: cat deploy.txt
