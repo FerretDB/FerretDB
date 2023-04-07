@@ -53,7 +53,7 @@ func validateProjection(projection *types.Document) error {
 		case *types.Document:
 			return commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
-				"projection expressions is not supported",
+				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
 
 		case float64, int32, int64:
