@@ -1396,6 +1396,11 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"v", int32(1)}}}},
 			},
 		},
+		"RemoveID": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"_id", int32(0)}}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)

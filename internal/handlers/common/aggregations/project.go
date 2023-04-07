@@ -18,10 +18,12 @@ import (
 	"context"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type projectStage struct {
-	projectExpression any
+	projection *types.Document
 }
 
 func newProject(stage *types.Document) (Stage, error) {
@@ -31,12 +33,22 @@ func newProject(stage *types.Document) (Stage, error) {
 	}
 
 	return &projectStage{
-		projectExpression: fields,
+		projection: fields,
 	}, nil
 }
 
 func (p *projectStage) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
-	return in, nil
+	iter, err := common.ProjectionIterator(iterator.Values(iterator.ForSlice(in)), p.projection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }
 
 func (p *projectStage) Type() StageType {
