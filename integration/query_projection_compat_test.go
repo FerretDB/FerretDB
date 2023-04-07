@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -55,8 +54,6 @@ func TestQueryProjectionCompat(t *testing.T) {
 }
 
 func TestQueryProjectionCompatCommand(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatCommandTestCase{
