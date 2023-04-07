@@ -54,12 +54,12 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	err = projectDocument(iter.inclusion, doc, iter.projection)
+	projected, err := projectDocument(iter.inclusion, doc, iter.projection)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	return unused, doc, nil
+	return unused, projected, nil
 }
 
 // Close implements iterator.Interface. See ProjectionIterator for details.

@@ -31,6 +31,8 @@ func isProjectionInclusion(projection *types.Document) (bool, error) {
 	var inclusion bool
 
 	iter := projection.Iterator()
+	defer iter.Close()
+
 	for {
 		key, value, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
@@ -103,9 +105,11 @@ func isProjectionInclusion(projection *types.Document) (bool, error) {
 	return inclusion, nil
 }
 
-func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
+func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) (*types.Document, error) {
 	iter := doc.Iterator()
 	defer iter.Close()
+
+	projected := doc.DeepCopy()
 
 	for {
 		key, _, err := iter.Next()
@@ -114,7 +118,7 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 		}
 
 		if err != nil {
-			return lazyerrors.Error(err)
+			return nil, lazyerrors.Error(err)
 		}
 
 		projectionVal, err := projection.Get(key)
@@ -123,50 +127,35 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 				continue
 			}
 			if inclusion { // k1 from doc is absent in projection, remove from doc only if projection type inclusion
-				doc.Remove(key)
+				projected.Remove(key)
 			}
 			continue
 		}
 
 		switch projectionVal := projectionVal.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			if err := applyComplexProjection(projectionVal); err != nil {
-				return err
-			}
+			return nil, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrCommandNotFound,
+				fmt.Sprintf("projection %s is not supported",
+					types.FormatAnyValue(projectionVal),
+				),
+			)
 
 		case float64, int32, int64: // field: number
 			result := types.Compare(projectionVal, int32(0))
 			if result == types.Equal {
-				doc.Remove(key)
+				projected.Remove(key)
 			}
 
 		case bool: // field: bool
 			if !projectionVal {
-				doc.Remove(key)
+				projected.Remove(key)
 			}
 
 		default:
-			return lazyerrors.Errorf("unsupported operation %s %v (%T)", key, projectionVal, projectionVal)
-		}
-	}
-	return nil
-}
-
-func applyComplexProjection(projectionVal *types.Document) error {
-	for _, projectionType := range projectionVal.Keys() {
-		switch projectionType {
-		case "$elemMatch", "$slice":
-			return commonerrors.NewCommandError(
-				commonerrors.ErrNotImplemented,
-				fmt.Errorf("projection of %s is not supported", projectionType),
-			)
-		default:
-			return commonerrors.NewCommandError(
-				commonerrors.ErrCommandNotFound,
-				fmt.Errorf("projection of %s is not supported", projectionType),
-			)
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, projectionVal, projectionVal)
 		}
 	}
 
-	return nil
+	return projected, nil
 }
