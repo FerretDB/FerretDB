@@ -26,7 +26,7 @@ import (
 // Close method closes the underlying iterator.
 // For that reason, there is no need to track both iterators.
 func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document) (types.DocumentsIterator, error) {
-	inclusion, err := isProjectionInclusion(projection)
+	err := validateProjection(projection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -34,7 +34,6 @@ func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document
 	return &projectionIterator{
 		iter:       iter,
 		projection: projection,
-		inclusion:  inclusion,
 	}, nil
 }
 

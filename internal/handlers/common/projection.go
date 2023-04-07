@@ -24,11 +24,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
-// Exception for the _id field.
-func isProjectionInclusion(projection *types.Document) (bool, error) {
-	var exclusion bool
-	var inclusion bool
+// validateProjection check projection document.
+// Document fields could be either included or excluded but not both.
+// Exception is for the _id field that could be included or excluded.
+func validateProjection(projection *types.Document) error {
+	var projectionVal *bool
 
 	iter := projection.Iterator()
 	defer iter.Close()
@@ -40,69 +40,59 @@ func isProjectionInclusion(projection *types.Document) (bool, error) {
 		}
 
 		if err != nil {
-			return false, lazyerrors.Error(err)
+			return lazyerrors.Error(err)
 		}
 
-		if key == "_id" { // _id is a special case and can be both
+		if key == "_id" { // _id is a special case and can be included or excluded
 			continue
 		}
 
+		var result bool
+
 		switch value := value.(type) {
 		case *types.Document:
-			return false, commonerrors.NewCommandErrorMsg(
+			return commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				"projection expressions is not supported",
 			)
 
 		case float64, int32, int64:
-			result := types.Compare(value, int32(0))
-			if result == types.Equal {
-				if inclusion {
-					return false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrProjectionExIn,
-						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
-						"projection",
-					)
-				}
-				exclusion = true
-			} else {
-				if exclusion {
-					return false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrProjectionInEx,
-						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
-						"projection",
-					)
-				}
-				inclusion = true
+			comparison := types.Compare(value, int32(0))
+			if comparison != types.Equal {
+				result = true
 			}
-
 		case bool:
 			if value {
-				if exclusion {
-					return false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrProjectionInEx,
-						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
-						"projection",
-					)
-				}
-				inclusion = true
-			} else {
-				if inclusion {
-					return false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrProjectionExIn,
-						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
-						"projection",
-					)
-				}
-				exclusion = true
+				result = true
 			}
-
 		default:
-			return false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
+			return lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
+		}
+
+		// if projectionVal is nil, it means that we are processing the first field
+		if projectionVal == nil {
+			projectionVal = &result
+			continue
+		}
+
+		if *projectionVal != result {
+			if *projectionVal {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrProjectionExIn,
+					fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
+					"projection",
+				)
+			} else {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrProjectionInEx,
+					fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
+					"projection",
+				)
+			}
 		}
 	}
 
-	return inclusion, nil
+	return nil
 }
 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) (*types.Document, error) {
@@ -127,12 +117,10 @@ func projectDocument(inclusion bool, doc *types.Document, projection *types.Docu
 
 		projectionVal, err := projection.Get(key)
 		if err != nil {
-			if key == "_id" { // if _id is not in projection map, do not do anything with it
+			if key == "_id" {
 				continue
 			}
-			if inclusion { // k1 from doc is absent in projection, remove from doc only if projection type inclusion
-				projected.Remove(key)
-			}
+
 			continue
 		}
 
