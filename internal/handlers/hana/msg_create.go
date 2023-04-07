@@ -29,8 +29,6 @@ import (
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	h.L.Info("#############################################  START\n" + msg.String())
-
 	dbPool, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -117,8 +115,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	default:
 		return nil, lazyerrors.Error(err)
 	}
-
-	h.L.Info("#############################################  END\n" + msg.String())
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
