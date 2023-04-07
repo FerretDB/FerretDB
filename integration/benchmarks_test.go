@@ -51,6 +51,7 @@ func BenchmarkQuery(b *testing.B) {
 					var res []bson.D
 					require.NoError(b, cur.All(ctx, &res))
 				}
+				coll.Database().Client().Disconnect(ctx)
 			})
 			b.Run("NoPushdown", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {

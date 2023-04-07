@@ -15,9 +15,14 @@
 package shareddata
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -43,6 +48,117 @@ type Provider interface {
 	// IsCompatible returns true if the given backend is compatible with this provider.
 	IsCompatible(backend string) bool
 }
+
+// TOOD
+type BenchmarkProvider interface {
+	// TODO
+	Hash() string
+
+	Docs() iterator.Interface[struct{}, bson.D]
+}
+
+type BenchmarkValues struct {
+	hash string
+	iter iterator.Interface[struct{}, bson.D]
+}
+
+func newBenchmarkIterator(ctx context.Context, fetchFunction func(i int) bson.D) iterator.Interface[struct{}, bson.D] {
+	iter := &benchmarkIterator{
+		ctx:   ctx,
+		token: resource.NewToken(),
+		gen:   fetchFunction,
+	}
+
+	resource.Track(iter, iter.token)
+
+	return iter
+}
+
+func NewBenchmarkValues(ctx context.Context) *BenchmarkValues {
+	b := BenchmarkValues{
+		hash: "",
+		iter: newBenchmarkIterator(ctx),
+	}
+
+	return &b
+}
+
+func (b *BenchmarkValues) Hash() string {
+	return b.hash
+}
+
+func (b *BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
+}
+
+type benchmarkIterator struct {
+	ctx context.Context
+
+	gen func(i int) bson.D
+
+	m sync.Mutex
+
+	token *resource.Token
+}
+
+func (iter *benchmarkIterator) Next() (struct{}, bson.D, error) {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	var unused struct{}
+
+	// ignore context error, if any, if iterator is already closed
+	if iter.rows == nil {
+		return unused, nil, iterator.ErrIteratorDone
+	}
+
+	if err := context.Cause(iter.ctx); err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	if !iter.rows.Next() {
+		if err := iter.rows.Err(); err != nil {
+			return unused, nil, lazyerrors.Error(err)
+		}
+
+		// to avoid context cancellation changing the next `Next()` error
+		// from `iterator.ErrIteratorDone` to `context.Canceled`
+		iter.close()
+
+		return unused, nil, iterator.ErrIteratorDone
+	}
+
+	var b []byte
+	if err := iter.rows.Scan(&b); err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	//doc := iter.docs[len(iter.docs)-1]
+	//iter.docs = iter.docs[:len(iter.docs)-1]
+
+	return unused, doc, nil
+}
+
+func (iter *benchmarkIterator) Close() {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	iter.close()
+}
+
+func (iter *benchmarkIterator) close() {
+	if iter.rows != nil {
+		iter.rows.Close()
+		iter.rows = nil
+	}
+
+	resource.Untrack(iter, iter.token)
+}
+
+func newIterator(docs []bson.D) benchmarkIterator {
+	return benchmarkIterator{}
+}
+
+var SimpleValues = BenchmarkValues{}
 
 // AllProviders returns all providers in random order.
 func AllProviders() Providers {

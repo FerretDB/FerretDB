@@ -78,6 +78,9 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
+
+	//
+	BenchmarkProviders []shareddata.BenchmarkProvider
 }
 
 // SetupResult represents setup results.
