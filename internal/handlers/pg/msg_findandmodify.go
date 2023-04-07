@@ -17,6 +17,8 @@ package pg
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -156,10 +158,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id")))
 			}
 
+			var value any
+			value = resultDoc
+			if hasFilterOperator(params.Query) {
+				value = types.Null
+			}
+
 			must.NoError(reply.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
 					"lastErrorObject", lastErrorObject,
-					"value", resultDoc,
+					"value", value,
 					"ok", float64(1),
 				))},
 			}))
@@ -228,11 +236,7 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 		}
 
 		if !upsert.Has("_id") {
-			if params.query.Has("_id") {
-				upsert.Set("_id", must.NotFail(params.query.Get("_id")))
-			} else {
-				upsert.Set("_id", types.NewObjectID())
-			}
+			upsert.Set("_id", getUpsertID(params.query))
 		}
 
 		if err := insertDocument(ctx, dbPool, params.queryParams, upsert); err != nil {
@@ -251,7 +255,18 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 		}
 	} else {
 		for _, k := range params.update.Keys() {
-			upsert.Set(k, must.NotFail(params.update.Get(k)))
+			v := must.NotFail(params.update.Get(k))
+			if k == "_id" {
+				return nil, false, commonerrors.NewCommandError(
+					commonerrors.ErrImmutableField,
+					fmt.Errorf(
+						"Plan executor error during findAndModify :: caused by :: After applying the update, "+
+							"the (immutable) field '_id' was found to have been altered to _id: \"%s\"",
+						v,
+					),
+				)
+			}
+			upsert.Set(k, v)
 		}
 	}
 
@@ -261,4 +276,49 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 	}
 
 	return upsert, false, nil
+}
+
+// getUpsertID gets id for upsert document
+func getUpsertID(query *types.Document) any {
+	id, err := query.Get("_id")
+	if err != nil {
+		return types.NewObjectID()
+	}
+
+	filter, ok := id.(*types.Document)
+	if !ok {
+		return id
+	}
+
+	if filter.Has("$exists") {
+		return types.NewObjectID()
+	}
+
+	return id
+}
+
+// hasFilterOperator returns true if query contains any operator
+func hasFilterOperator(query *types.Document) bool {
+	iter := query.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			return false
+		}
+
+		if strings.HasPrefix(k, "$") {
+			return true
+		}
+
+		doc, ok := v.(*types.Document)
+		if !ok {
+			continue
+		}
+
+		if hasFilterOperator(doc) {
+			return true
+		}
+	}
 }
