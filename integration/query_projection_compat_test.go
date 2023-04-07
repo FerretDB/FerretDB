@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,4 +40,20 @@ func TestQueryProjectionCompat(t *testing.T) {
 	}
 
 	testQueryCompat(t, testCases)
+}
+
+func TestQueryProjectionCompatCommand(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+
+	testCases := map[string]queryCompatCommandTestCase{
+		"FindProjectionIDExclusion": {
+			filter:         bson.D{{"_id", "document-composite"}},
+			projection:     bson.D{{"_id", false}, {"array", int32(1)}},
+			resultPushdown: true,
+		},
+	}
+
+	testQueryCompatCommand(t, testCases)
 }

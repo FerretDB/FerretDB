@@ -17,87 +17,90 @@ package common
 import (
 	"errors"
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
 // Exception for the _id field.
-func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
+func isProjectionInclusion(projection *types.Document) (bool, error) {
 	var exclusion bool
-	for _, k := range projection.Keys() {
-		if k == "_id" { // _id is a special case and can be both
+	var inclusion bool
+
+	iter := projection.Iterator()
+	for {
+		key, value, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		if key == "_id" { // _id is a special case and can be both
 			continue
 		}
-		v := must.NotFail(projection.Get(k))
-		switch v := v.(type) {
-		case *types.Document:
-			for _, projectionType := range v.Keys() {
-				err = commonerrors.NewCommandError(
-					commonerrors.ErrNotImplemented,
-					fmt.Errorf("projection of %s is not supported", projectionType),
-				)
 
-				return
-			}
+		switch value := value.(type) {
+		case *types.Document:
+			return false, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrNotImplemented,
+				"projection expressions is not supported",
+			)
 
 		case float64, int32, int64:
-			result := types.Compare(v, int32(0))
+			result := types.Compare(value, int32(0))
 			if result == types.Equal {
 				if inclusion {
-					err = commonerrors.NewCommandErrorMsgWithArgument(
+					return false, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrProjectionExIn,
-						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
+						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
 						"projection",
 					)
-					return
 				}
 				exclusion = true
 			} else {
 				if exclusion {
-					err = commonerrors.NewCommandErrorMsgWithArgument(
+					return false, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrProjectionInEx,
-						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
+						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
 						"projection",
 					)
-					return
 				}
 				inclusion = true
 			}
 
 		case bool:
-			if v {
+			if value {
 				if exclusion {
-					err = commonerrors.NewCommandErrorMsgWithArgument(
+					return false, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrProjectionInEx,
-						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
+						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
 						"projection",
 					)
-					return
 				}
 				inclusion = true
 			} else {
 				if inclusion {
-					err = commonerrors.NewCommandErrorMsgWithArgument(
+					return false, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrProjectionExIn,
-						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
+						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
 						"projection",
 					)
-					return
 				}
 				exclusion = true
 			}
 
 		default:
-			err = lazyerrors.Errorf("unsupported operation %s %v (%T)", k, v, v)
-			return
+			return false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
 	}
-	return
+
+	return inclusion, nil
 }
 
 func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
