@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/benchmarkdata"
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -86,40 +85,47 @@ func BenchmarkReplaceOne(b *testing.B) {
 		filter bson.D
 	}{
 		"NoFilter": { // there's only ever one document to replace.
-			filter: bson.D{{}},
+			filter: bson.D{},
 		},
 	} {
 		b.Run(name, func(b *testing.B) {
-			b.Run("WithNewObjectID", func(b *testing.B) {
+			b.Run("WithSelf", func(b *testing.B) {
+				// TODO create issue, we alter _id which is immutable
 				for i := 0; i < b.N; i++ {
 					res := bson.D{}
 					err := coll.FindOne(ctx, bm.filter).Decode(&res)
 					require.NoError(b, err)
 
 					m := res.Map()
-					m["_id"] = primitive.NewObjectID()
+					m["1"] = "foo"
+					m["2"] = "bar"
+					m["3"] = "buz"
+					m["4"] = "baz"
 					replacement, err := bson.Marshal(m)
 					require.NoError(b, err)
 
 					ures, err := coll.ReplaceOne(ctx, bm.filter, replacement)
 					require.NoError(b, err)
-					require.Equal(b, 1, ures.ModifiedCount)
+					require.Equal(b, int64(1), ures.ModifiedCount)
 				}
 			})
-			b.Run("CompatWithNewObjectID", func(b *testing.B) {
+			b.Run("CompatWithSelf", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					res := bson.D{}
 					err := collCompat.FindOne(ctx, bm.filter).Decode(&res)
 					require.NoError(b, err)
 
 					m := res.Map()
-					m["_id"] = primitive.NewObjectID()
+					m["1"] = "foo"
+					m["2"] = "bar"
+					m["3"] = "buz"
+					m["4"] = "baz"
 					replacement, err := bson.Marshal(m)
 					require.NoError(b, err)
 
 					ures, err := collCompat.ReplaceOne(ctx, bm.filter, replacement)
 					require.NoError(b, err)
-					require.Equal(b, 1, ures.ModifiedCount)
+					require.Equal(b, int64(1), ures.ModifiedCount)
 				}
 			})
 		})
