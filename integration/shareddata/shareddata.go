@@ -94,20 +94,20 @@ func AllProviders() Providers {
 		res[n] = p
 	}
 
+	apM = res
+
 	return maps.Values(res)
 }
 
 // Providers are array of providers.
 type Providers []Provider
 
-// Get retrieves the Provider associated with the given name.
-func (ps Providers) Get(name string) Provider {
-	m := make(map[string]Provider)
-	for _, p := range ps {
-		m[p.Name()] = p
-	}
+// To retrieve Provider by name.
+var apM = map[string]Provider{}
 
-	return m[name]
+// Get retrieves the Provider associated with the given name.
+func Get(name string) Provider {
+	return apM[name]
 }
 
 // Remove specified providers and return remaining providers.
