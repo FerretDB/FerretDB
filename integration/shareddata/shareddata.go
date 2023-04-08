@@ -100,7 +100,7 @@ func AllProviders() Providers {
 // Providers are array of providers.
 type Providers []Provider
 
-// Get returns a Provider with the given name.
+// Get retrieves the Provider associated with the given name.
 func (ps Providers) Get(name string) Provider {
 	m := make(map[string]Provider)
 	for _, p := range ps {
