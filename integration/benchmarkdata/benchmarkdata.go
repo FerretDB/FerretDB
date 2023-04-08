@@ -52,8 +52,7 @@ var SimpleData Data = func(ctx context.Context, coll *mongo.Collection) error {
 }
 
 // LargeDocument returns a document of size 43474B by concatenating
-// all providers. The order of fields is non-deterministic because AllProviders
-// returns all providers in a random order.
+// all providers. It ensures the deterministic ordering of fields.
 var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error {
 	var docs = shareddata.Docs()
 
@@ -65,19 +64,18 @@ var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error
 	}
 	sort.Strings(names)
 
-	// XXX confirm that this gives a deterministic order.
 	for _, name := range names {
-		docs = append(docs, shareddata.Docs(ap.Get(name))...)
+		docs = append(docs, shareddata.Docs(shareddata.Get(name))...)
 	}
 
-	ld := bson.M{}
-	ld["_id"] = primitive.NewObjectID()
+	ld := bson.D{}
+	ld = append(ld, bson.E{"_id", primitive.NewObjectID()})
 
 	i := 0
 	for _, doc := range docs {
 		doc := doc.(primitive.D).Map()
 		for _, v := range doc {
-			ld[strconv.Itoa(i)] = v
+			ld = append(ld, bson.E{strconv.Itoa(i), v})
 			i++
 		}
 	}
