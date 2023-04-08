@@ -52,7 +52,7 @@ var SimpleData Data = func(ctx context.Context, coll *mongo.Collection) error {
 }
 
 // LargeDocument returns a document of size 43474B by concatenating
-// all providers. It ensures the deterministic ordering of fields.
+// all providers. It ensures a deterministic ordering of fields.
 var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error {
 	var docs = shareddata.Docs()
 
