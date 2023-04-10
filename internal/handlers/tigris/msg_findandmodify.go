@@ -132,11 +132,11 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				if _, err = updateDocument(ctx, dbPool, &qp, upsert); err != nil {
 					return nil, err
 				}
+			}
 
-				resValue = resDocs[0]
-				if params.ReturnNewDocument {
-					resValue = upsert
-				}
+			resValue = resDocs[0]
+			if params.ReturnNewDocument {
+				resValue = upsert
 			}
 		}
 
