@@ -46,46 +46,9 @@ type Provider interface {
 
 // AllProviders returns all providers in random order.
 func AllProviders() Providers {
-	providers := []Provider{
-		Scalars,
-
-		Doubles,
-		OverflowVergeDoubles,
-		SmallDoubles,
-		Strings,
-		Binaries,
-		ObjectIDs,
-		Bools,
-		DateTimes,
-		Nulls,
-		Regexes,
-		Int32s,
-		Timestamps,
-		Int64s,
-		Unsets,
-		ObjectIDKeys,
-
-		Composites,
-		PostgresEdgeCases,
-
-		DocumentsDoubles,
-		DocumentsStrings,
-		DocumentsDocuments,
-
-		ArrayStrings,
-		ArrayDoubles,
-		ArrayInt32s,
-		ArrayRegexes,
-		ArrayDocuments,
-
-		Mixed,
-		// TODO https://github.com/FerretDB/FerretDB/issues/2291
-		// ArrayAndDocuments,
-	}
-
 	// check that names are unique and randomize order
-	res := make(map[string]Provider, len(providers))
-	for _, p := range providers {
+	res := make(map[string]Provider, len(allProviders))
+	for _, p := range allProviders {
 		n := p.Name()
 		if _, ok := res[n]; ok {
 			panic("duplicate provider name: " + n)
@@ -94,20 +57,57 @@ func AllProviders() Providers {
 		res[n] = p
 	}
 
-	apM = res
-
 	return maps.Values(res)
 }
 
 // Providers are array of providers.
 type Providers []Provider
 
-// To retrieve Provider by name.
-var apM = map[string]Provider{}
+var allProviders = Providers{
+	Scalars,
 
-// Get retrieves the Provider associated with the given name.
-func Get(name string) Provider {
-	return apM[name]
+	Doubles,
+	OverflowVergeDoubles,
+	SmallDoubles,
+	Strings,
+	Binaries,
+	ObjectIDs,
+	Bools,
+	DateTimes,
+	Nulls,
+	Regexes,
+	Int32s,
+	Timestamps,
+	Int64s,
+	Unsets,
+	ObjectIDKeys,
+
+	Composites,
+	PostgresEdgeCases,
+
+	DocumentsDoubles,
+	DocumentsStrings,
+	DocumentsDocuments,
+
+	ArrayStrings,
+	ArrayDoubles,
+	ArrayInt32s,
+	ArrayRegexes,
+	ArrayDocuments,
+
+	Mixed,
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	// ArrayAndDocuments,
+}
+
+// Map returns an unordered map of all Providers.
+func (ps Providers) Map() map[string]Provider {
+	apM := make(map[string]Provider, len(ps))
+	for _, p := range ps {
+		apM[p.Name()] = p
+	}
+
+	return apM
 }
 
 // Remove specified providers and return remaining providers.
