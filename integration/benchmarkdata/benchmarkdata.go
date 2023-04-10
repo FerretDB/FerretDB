@@ -52,7 +52,7 @@ var SimpleData Data = func(ctx context.Context, coll *mongo.Collection) error {
 }
 
 // LargeDocument returns a document of size 43474B by concatenating
-// all providers. It ensures a deterministic order of the elements.
+// all providers. It ensures a deterministic  order of the elements.
 var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error {
 	var docs = shareddata.Docs()
 
@@ -64,8 +64,10 @@ var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error
 	}
 	sort.Strings(names)
 
+	apM := ap.Map()
+
 	for _, name := range names {
-		docs = append(docs, shareddata.Docs(shareddata.Get(name))...)
+		docs = append(docs, shareddata.Docs(apM[name])...)
 	}
 
 	ld := bson.D{}
