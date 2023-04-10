@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+slug: /configuration/operation-modes/ # referenced in README.md
 ---
 
 # Operation modes
@@ -29,21 +30,20 @@ The `diff-normal` afterwards returns the response from FerretDB and `diff-proxy`
 
 Example diff output:
 
-```sh
+```diff
+Header diff:
 --- res header
 +++ proxy header
 @@ -1 +1 @@
--length:    87, id:    3, response_to:   69, opcode: OP_MSG
-+length:    87, id:  645, response_to:   69, opcode: OP_MSG
+-length:    63, id:   14, response_to:   24, opcode: OP_MSG
++length:    64, id:  229, response_to:   24, opcode: OP_MSG
 
 Body diff:
 --- res body
 +++ proxy body
-@@ -14,4 +14,4 @@
-         "estimate": false,
--        "size": 0,
--        "numObjects": 0,
-+        "size": 93,
-+        "numObjects": 3,
-         "millis": 0,
+@@ -10,3 +10,3 @@
+         ],
+-        "you": "127.0.0.1:57079",
++        "you": "172.19.0.1:59824",
+         "ok": {
 ```

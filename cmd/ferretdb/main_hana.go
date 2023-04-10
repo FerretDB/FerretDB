@@ -18,5 +18,5 @@ package main
 
 // init adds "hana" handler flags when "ferretdb_hana" build tag is provided.
 func init() {
-	cli.Plugins = append(cli.Plugins, &hanaFlags)
+	handlerFlags["hana"] = &hanaFlags
 }
