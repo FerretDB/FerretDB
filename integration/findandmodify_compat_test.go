@@ -225,7 +225,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertNew": {
 			command: bson.D{
@@ -257,7 +256,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertReplaceReturnNew": {
 			command: bson.D{
@@ -287,7 +285,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				{"query", bson.D{{"_id", "double"}}},
 				{"remove", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 		"RemoveEmptyQueryResult": {
 			command: bson.D{
@@ -303,7 +300,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				},
 				{"remove", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 	}
 
