@@ -17,8 +17,6 @@ package pg
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -92,19 +90,20 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		if params.Update != nil { // we have update part
-			var upsert *types.Document
-			var upserted bool
+			var resValue any
+			var insertedID any
 
 			if params.Upsert { //  we have upsert flag
-				p := &upsertParams{
-					hasUpdateOperators: params.HasUpdateOperators,
-					query:              params.Query,
-					update:             params.Update,
-					queryParams:        &queryParams,
-				}
-				upsert, upserted, err = upsertDocuments(ctx, dbPool, tx, resDocs, p)
+				var res *common.UpsertResult
+				res, err = upsertDocuments(ctx, dbPool, tx, resDocs, &queryParams, params)
 				if err != nil {
 					return err
+				}
+
+				resValue = res.ReturnValue
+
+				if res.Insert != nil {
+					insertedID = must.NotFail(res.Insert.Get("_id"))
 				}
 			} else { // process update as usual
 				if len(resDocs) == 0 {
@@ -119,14 +118,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil
 				}
 
+				var upsert *types.Document
+
 				if params.HasUpdateOperators {
 					upsert = resDocs[0].DeepCopy()
 					_, err = common.UpdateDocument(upsert, params.Update)
 					if err != nil {
-						return err
-					}
-
-					if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
 						return err
 					}
 				} else {
@@ -135,18 +132,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					if !upsert.Has("_id") {
 						upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 					}
-
-					if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
-						return err
-					}
 				}
-			}
 
-			var resultDoc *types.Document
-			if params.ReturnNewDocument || len(resDocs) == 0 {
-				resultDoc = upsert
-			} else {
-				resultDoc = resDocs[0]
+				if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
+					return err
+				}
+
+				resValue = resDocs[0]
+				if params.ReturnNewDocument {
+					resValue = upsert
+				}
 			}
 
 			lastErrorObject := must.NotFail(types.NewDocument(
@@ -154,20 +149,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				"updatedExisting", len(resDocs) > 0,
 			))
 
-			if upserted {
-				lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id")))
-			}
-
-			var value any
-			value = resultDoc
-			if upserted && hasFilterOperator(params.Query) {
-				value = types.Null
+			if insertedID != nil {
+				lastErrorObject.Set("upserted", insertedID)
 			}
 
 			must.NoError(reply.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
 					"lastErrorObject", lastErrorObject,
-					"value", value,
+					"value", resValue,
 					"ok", float64(1),
 				))},
 			}))
@@ -180,6 +169,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				must.NoError(reply.SetSections(wire.OpMsgSection{
 					Documents: []*types.Document{must.NotFail(types.NewDocument(
 						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+						"value", types.Null,
 						"ok", float64(1),
 					))},
 				}))
@@ -211,114 +201,25 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
-// upsertParams represent parameters for Handler.upsert method.
-type upsertParams struct {
-	hasUpdateOperators bool
-	query, update      *types.Document
-	queryParams        *pgdb.QueryParams
-}
-
 // upsertDocuments inserts new document if no documents in query result or updates given document.
-// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
-	// TODO split that block into own function since insert and update are very different
-	// (and one uses dbPool, while other uses tx)
-	if len(docs) == 0 {
-		upsert := must.NotFail(types.NewDocument())
-
-		if params.hasUpdateOperators {
-			_, err := common.UpdateDocument(upsert, params.update)
-			if err != nil {
-				return nil, false, err
-			}
-		} else {
-			upsert = params.update
-		}
-
-		if !upsert.Has("_id") {
-			upsert.Set("_id", getUpsertID(params.query))
-		}
-
-		if err := insertDocument(ctx, dbPool, params.queryParams, upsert); err != nil {
-			return nil, false, err
-		}
-
-		return upsert, true, nil
-	}
-
-	upsert := docs[0].DeepCopy()
-
-	if params.hasUpdateOperators {
-		_, err := common.UpdateDocument(upsert, params.update)
-		if err != nil {
-			return nil, false, err
-		}
-	} else {
-		for _, k := range params.update.Keys() {
-			v := must.NotFail(params.update.Get(k))
-			if k == "_id" {
-				return nil, false, commonerrors.NewCommandError(
-					commonerrors.ErrImmutableField,
-					fmt.Errorf(
-						"Plan executor error during findAndModify :: caused by :: After applying the update, "+
-							"the (immutable) field '_id' was found to have been altered to _id: \"%s\"",
-						v,
-					),
-				)
-			}
-			upsert.Set(k, v)
-		}
-	}
-
-	_, err := updateDocument(ctx, tx, params.queryParams, upsert)
+func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, query *pgdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertResult, error) { //nolint:lll // argument list is too long
+	res, err := common.UpsertDocument(docs, params)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	return upsert, false, nil
-}
+	if res.Insert != nil {
+		if err = insertDocument(ctx, dbPool, query, res.Insert); err != nil {
+			return nil, err
+		}
 
-// getUpsertID gets id for upsert document
-func getUpsertID(query *types.Document) any {
-	id, err := query.Get("_id")
+		return res, nil
+	}
+
+	_, err = updateDocument(ctx, tx, query, res.Update)
 	if err != nil {
-		return types.NewObjectID()
+		return nil, err
 	}
 
-	filter, ok := id.(*types.Document)
-	if !ok {
-		return id
-	}
-
-	if filter.Has("$exists") {
-		return types.NewObjectID()
-	}
-
-	return id
-}
-
-// hasFilterOperator returns true if query contains any operator
-func hasFilterOperator(query *types.Document) bool {
-	iter := query.Iterator()
-	defer iter.Close()
-
-	for {
-		k, v, err := iter.Next()
-		if err != nil {
-			return false
-		}
-
-		if strings.HasPrefix(k, "$") {
-			return true
-		}
-
-		doc, ok := v.(*types.Document)
-		if !ok {
-			continue
-		}
-
-		if hasFilterOperator(doc) {
-			return true
-		}
-	}
+	return res, nil
 }

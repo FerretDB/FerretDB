@@ -267,6 +267,14 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
+		"ExistsFalseID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+				{"new", true},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)

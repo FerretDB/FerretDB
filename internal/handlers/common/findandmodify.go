@@ -16,10 +16,13 @@ package common
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // FindAndModifyParams represent all findAndModify requests' fields.
@@ -28,7 +31,7 @@ type FindAndModifyParams struct {
 	DB, Collection, Comment               string
 	Query, Sort, Update                   *types.Document
 	Remove, Upsert                        bool
-	ReturnNewDocument, HasUpdateOperators bool
+	ReturnNewDocument, HasUpdateOperators bool // ReturnNewDocument returns modified document instead of original.
 	MaxTimeMS                             int32
 }
 
@@ -167,4 +170,135 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		HasUpdateOperators: hasUpdateOperators,
 		MaxTimeMS:          maxTimeMS,
 	}, nil
+}
+
+// UpsertResult returns resulted Insert or Update document and
+// ReturnValue of the operation.
+type UpsertResult struct {
+	Insert, Update *types.Document
+	ReturnValue    any
+}
+
+// UpsertDocument updates the first document if exists, or create an insert document from params.
+func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*UpsertResult, error) {
+	res := new(UpsertResult)
+	var err error
+
+	if len(docs) == 0 {
+		res.Insert, err = insertDocuments(params)
+
+		res.ReturnValue = types.Null
+		if params.ReturnNewDocument {
+			res.ReturnValue = res.Insert
+		}
+
+		return res, err
+	}
+
+	res.Update, err = updateDocuments(docs, params)
+	res.ReturnValue = docs[0]
+
+	if params.ReturnNewDocument {
+		res.ReturnValue = res.Update
+	}
+
+	return res, err
+}
+
+// insertDocuments inserts new document if no documents in query result or updates given document.
+// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
+func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
+	insert := must.NotFail(types.NewDocument())
+
+	if params.HasUpdateOperators {
+		_, err := UpdateDocument(insert, params.Update)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		insert = params.Update
+	}
+
+	if !insert.Has("_id") {
+		insert.Set("_id", getUpsertID(params.Query))
+	}
+
+	return insert, nil
+}
+
+// updateDocuments updates the document.
+func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) { //nolint:lll // argument list is too long
+	update := docs[0].DeepCopy()
+
+	if params.HasUpdateOperators {
+		_, err := UpdateDocument(update, params.Update)
+		if err != nil {
+			return nil, err
+		}
+
+		return update, nil
+	}
+
+	for _, k := range params.Update.Keys() {
+		v := must.NotFail(params.Update.Get(k))
+		if k == "_id" {
+			return nil, commonerrors.NewCommandError(
+				commonerrors.ErrImmutableField,
+				fmt.Errorf(
+					"Plan executor error during findAndModify :: caused by :: After applying the update, "+
+						"the (immutable) field '_id' was found to have been altered to _id: \"%s\"",
+					v,
+				),
+			)
+		}
+
+		update.Set(k, v)
+	}
+
+	return update, nil
+}
+
+// getUpsertID gets the _id for upsert document.
+func getUpsertID(query *types.Document) any {
+	id, err := query.Get("_id")
+	if err != nil {
+		return types.NewObjectID()
+	}
+
+	idFilter, ok := id.(*types.Document)
+	if !ok {
+		return id
+	}
+
+	if hasFilterOperator(idFilter) {
+		return types.NewObjectID()
+	}
+
+	return id
+}
+
+// hasFilterOperator returns true if query contains any operator.
+func hasFilterOperator(query *types.Document) bool {
+	iter := query.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			return false
+		}
+
+		if strings.HasPrefix(k, "$") {
+			return true
+		}
+
+		doc, ok := v.(*types.Document)
+		if !ok {
+			continue
+		}
+
+		if hasFilterOperator(doc) {
+			return true
+		}
+	}
 }

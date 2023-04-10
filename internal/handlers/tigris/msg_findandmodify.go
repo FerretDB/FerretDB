@@ -82,20 +82,20 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if params.Update != nil { // we have update part
-		var upsert *types.Document
-		var upserted bool
+		var resValue any
+		var insertedID any
 
 		if params.Upsert { //  we have upsert flag
-			p := &upsertParams{
-				hasUpdateOperators: params.HasUpdateOperators,
-				query:              params.Query,
-				update:             params.Update,
-				queryParams:        &qp,
-			}
-
-			upsert, upserted, err = upsertDocuments(ctx, dbPool, resDocs, p)
+			var res *common.UpsertResult
+			res, err = upsertDocuments(ctx, dbPool, resDocs, &qp, params)
 			if err != nil {
 				return nil, err
+			}
+
+			resValue = res.ReturnValue
+
+			if res.Insert != nil {
+				insertedID = must.NotFail(res.Insert.Get("_id"))
 			}
 		} else { // process update as usual
 			if len(resDocs) == 0 {
@@ -110,6 +110,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 				return &reply, nil
 			}
+
+			var upsert *types.Document
 
 			if params.HasUpdateOperators {
 				upsert = resDocs[0].DeepCopy()
@@ -130,14 +132,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				if _, err = updateDocument(ctx, dbPool, &qp, upsert); err != nil {
 					return nil, err
 				}
-			}
-		}
 
-		var resultDoc *types.Document
-		if params.ReturnNewDocument || len(resDocs) == 0 {
-			resultDoc = upsert
-		} else {
-			resultDoc = resDocs[0]
+				resValue = resDocs[0]
+				if params.ReturnNewDocument {
+					resValue = upsert
+				}
+			}
 		}
 
 		lastErrorObject := must.NotFail(types.NewDocument(
@@ -145,15 +145,15 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			"updatedExisting", len(resDocs) > 0,
 		))
 
-		if upserted {
-			lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id")))
+		if insertedID != nil {
+			lastErrorObject.Set("upserted", insertedID)
 		}
 
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"lastErrorObject", lastErrorObject,
-				"value", resultDoc,
+				"value", resValue,
 				"ok", float64(1),
 			))},
 		}))
@@ -167,6 +167,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			must.NoError(reply.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
 					"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+					"value", types.Null,
 					"ok", float64(1),
 				))},
 			}))
@@ -193,59 +194,25 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return nil, lazyerrors.New("bad flags combination")
 }
 
-// upsertParams represent parameters for Handler.upsert method.
-type upsertParams struct {
-	hasUpdateOperators bool
-	query, update      *types.Document
-	queryParams        *tigrisdb.QueryParams
-}
-
 // upsertDocuments inserts new document if no documents in query result or updates given document.
-// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
-	if len(docs) == 0 {
-		upsert := must.NotFail(types.NewDocument())
-
-		if params.hasUpdateOperators {
-			_, err := common.UpdateDocument(upsert, params.update)
-			if err != nil {
-				return nil, false, err
-			}
-		} else {
-			upsert = params.update
-		}
-
-		if !upsert.Has("_id") {
-			if params.query.Has("_id") {
-				upsert.Set("_id", must.NotFail(params.query.Get("_id")))
-			} else {
-				upsert.Set("_id", types.NewObjectID())
-			}
-		}
-
-		if err := insertDocument(ctx, dbPool, params.queryParams, upsert); err != nil {
-			return nil, false, err
-		}
-
-		return upsert, true, nil
+func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, query *tigrisdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertResult, error) { //nolint:lll // argument list is too long
+	res, err := common.UpsertDocument(docs, params)
+	if err != nil {
+		return nil, err
 	}
 
-	upsert := docs[0].DeepCopy()
+	if res.Insert != nil {
+		if err = insertDocument(ctx, dbPool, query, res.Insert); err != nil {
+			return nil, err
+		}
 
-	if params.hasUpdateOperators {
-		_, err := common.UpdateDocument(upsert, params.update)
-		if err != nil {
-			return nil, false, err
-		}
-	} else {
-		for _, k := range params.update.Keys() {
-			upsert.Set(k, must.NotFail(params.update.Get(k)))
-		}
+		return res, nil
 	}
 
-	if _, err := updateDocument(ctx, dbPool, params.queryParams, upsert); err != nil {
-		return nil, false, err
+	_, err = updateDocument(ctx, dbPool, query, res.Update)
+	if err != nil {
+		return nil, err
 	}
 
-	return upsert, false, nil
+	return res, nil
 }
