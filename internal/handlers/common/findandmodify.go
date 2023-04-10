@@ -31,8 +31,15 @@ type FindAndModifyParams struct {
 	DB, Collection, Comment               string
 	Query, Sort, Update                   *types.Document
 	Remove, Upsert                        bool
-	ReturnNewDocument, HasUpdateOperators bool // ReturnNewDocument returns modified document instead of original.
+	ReturnNewDocument, HasUpdateOperators bool
 	MaxTimeMS                             int32
+}
+
+// UpsertParams represents parameters for upsert, if the document exists Update is set.
+// Otherwise, Insert is set. It returns ReturnValue to return to the client.
+type UpsertParams struct {
+	Insert, Update *types.Document
+	ReturnValue    any
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
@@ -172,16 +179,10 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 	}, nil
 }
 
-// UpsertResult returns resulted Insert or Update document and
-// ReturnValue of the operation.
-type UpsertResult struct {
-	Insert, Update *types.Document
-	ReturnValue    any
-}
-
-// UpsertDocument updates the first document if exists, or create an insert document from params.
-func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*UpsertResult, error) {
-	res := new(UpsertResult)
+// UpsertDocument updates the first document if exists, or create an insert document
+// from params if no documents in query result or updates given document.
+func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*UpsertParams, error) {
+	res := new(UpsertParams)
 	var err error
 
 	if len(docs) == 0 {
@@ -205,14 +206,14 @@ func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*Upser
 	return res, err
 }
 
-// insertDocuments inserts new document if no documents in query result or updates given document.
-// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
+// insertDocuments creates an insert document from the parameter.
+// When inserting new document we must check that `_id` is present, so we must extract `_id`
+// from query or generate a new one.
 func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
 	insert := must.NotFail(types.NewDocument())
 
 	if params.HasUpdateOperators {
-		_, err := UpdateDocument(insert, params.Update)
-		if err != nil {
+		if _, err := UpdateDocument(insert, params.Update); err != nil {
 			return nil, err
 		}
 	} else {
@@ -226,13 +227,12 @@ func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
 	return insert, nil
 }
 
-// updateDocuments updates the document.
+// updateDocuments updates the first document with update parameters.
 func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) { //nolint:lll // argument list is too long
 	update := docs[0].DeepCopy()
 
 	if params.HasUpdateOperators {
-		_, err := UpdateDocument(update, params.Update)
-		if err != nil {
+		if _, err := UpdateDocument(update, params.Update); err != nil {
 			return nil, err
 		}
 
@@ -258,26 +258,29 @@ func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*type
 	return update, nil
 }
 
-// getUpsertID gets the _id for upsert document.
+// getUpsertID gets the _id to use for upsert document.
+// If query contains _id, that _id is assigned unless _id
+// contains operator. Otherwise, it generates an ID.
 func getUpsertID(query *types.Document) any {
 	id, err := query.Get("_id")
 	if err != nil {
 		return types.NewObjectID()
 	}
 
-	idFilter, ok := id.(*types.Document)
+	idDoc, ok := id.(*types.Document)
 	if !ok {
 		return id
 	}
 
-	if hasFilterOperator(idFilter) {
+	if hasFilterOperator(idDoc) {
 		return types.NewObjectID()
 	}
 
 	return id
 }
 
-// hasFilterOperator returns true if query contains any operator.
+// hasFilterOperator returns true if query or sub-query contains any key/operator
+// prefixed with $.
 func hasFilterOperator(query *types.Document) bool {
 	iter := query.Iterator()
 	defer iter.Close()

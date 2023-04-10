@@ -265,12 +265,47 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"ExistsFalseID": {
+		"ExistsNew": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 				{"new", true},
+			},
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrueID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+		"UnsetForNonExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "invalid"}}},
+			},
+		},
+		"UnsetForExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "invalid"}}},
 			},
 		},
 	}
@@ -299,44 +334,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 					}},
 				},
 				{"remove", true},
-			},
-		},
-	}
-
-	testFindAndModifyCompat(t, testCases)
-}
-
-func TestFindAndModifyCompatFilterOperator(t *testing.T) {
-	testCases := map[string]findAndModifyCompatTestCase{
-		"ExistsFalseID": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
-			},
-		},
-		"ExistsTrueID": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
-			},
-		},
-		"ExistsTrue": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-		},
-		"And": {
-			command: bson.D{
-				{"query", bson.D{{"$and", bson.A{
-					bson.D{{"v", bson.D{{"$gt", 0}}}},
-					bson.D{{"v", bson.D{{"$lt", 0}}}},
-				}}}},
-				{"upsert", true},
-				{"update", bson.D{{"_id", "replaced"}, {"v", int32(43)}}},
 			},
 		},
 	}

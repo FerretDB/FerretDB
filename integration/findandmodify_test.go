@@ -166,6 +166,39 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				{"updatedExisting", false},
 			},
 		},
+		"UpsertExpressionKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
+		"UpsertDocumentKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", "val"}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
+		"UpsertDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$exists", "val"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

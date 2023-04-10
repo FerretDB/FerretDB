@@ -86,16 +86,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		var insertedID any
 
 		if params.Upsert { //  we have upsert flag
-			var res *common.UpsertResult
-			res, err = upsertDocuments(ctx, dbPool, resDocs, &qp, params)
+			var upsertParams *common.UpsertParams
+			upsertParams, err = upsertDocuments(ctx, dbPool, resDocs, &qp, params)
 			if err != nil {
 				return nil, err
 			}
 
-			resValue = res.ReturnValue
+			resValue = upsertParams.ReturnValue
 
-			if res.Insert != nil {
-				insertedID = must.NotFail(res.Insert.Get("_id"))
+			if upsertParams.Insert != nil {
+				insertedID = must.NotFail(upsertParams.Insert.Get("_id"))
 			}
 		} else { // process update as usual
 			if len(resDocs) == 0 {
@@ -195,7 +195,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.
-func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, query *tigrisdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertResult, error) { //nolint:lll // argument list is too long
+func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, query *tigrisdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
 	res, err := common.UpsertDocument(docs, params)
 	if err != nil {
 		return nil, err

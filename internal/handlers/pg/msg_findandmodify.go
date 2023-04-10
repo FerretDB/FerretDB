@@ -54,7 +54,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	queryParams := pgdb.QueryParams{
+	qp := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -66,7 +66,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var reply wire.OpMsg
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var resDocs []*types.Document
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &queryParams, h.DisablePushdown})
+		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
 		if err != nil {
 			return err
 		}
@@ -94,16 +94,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			var insertedID any
 
 			if params.Upsert { //  we have upsert flag
-				var res *common.UpsertResult
-				res, err = upsertDocuments(ctx, dbPool, tx, resDocs, &queryParams, params)
+				var upsertParams *common.UpsertParams
+				upsertParams, err = upsertDocuments(ctx, dbPool, tx, resDocs, &qp, params)
 				if err != nil {
 					return err
 				}
 
-				resValue = res.ReturnValue
+				resValue = upsertParams.ReturnValue
 
-				if res.Insert != nil {
-					insertedID = must.NotFail(res.Insert.Get("_id"))
+				if upsertParams.Insert != nil {
+					insertedID = must.NotFail(upsertParams.Insert.Get("_id"))
 				}
 			} else { // process update as usual
 				if len(resDocs) == 0 {
@@ -134,8 +134,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					}
 				}
 
-				if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
-					return err
+				if _, err = updateDocument(ctx, tx, &qp, upsert); err != nil {
+					return lazyerrors.Error(err)
 				}
 
 				resValue = resDocs[0]
@@ -177,7 +177,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil
 			}
 
-			if _, err = deleteDocuments(ctx, dbPool, &queryParams, resDocs); err != nil {
+			if _, err = deleteDocuments(ctx, dbPool, &qp, resDocs); err != nil {
 				return err
 			}
 
@@ -202,24 +202,24 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 }
 
 // upsertDocuments inserts new document if no documents in query result or updates given document.
-func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, query *pgdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertResult, error) { //nolint:lll // argument list is too long
-	res, err := common.UpsertDocument(docs, params)
+func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, query *pgdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
+	upsertParams, err := common.UpsertDocument(docs, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if res.Insert != nil {
-		if err = insertDocument(ctx, dbPool, query, res.Insert); err != nil {
+	if upsertParams.Insert != nil {
+		if err = insertDocument(ctx, dbPool, query, upsertParams.Insert); err != nil {
 			return nil, err
 		}
 
-		return res, nil
+		return upsertParams, nil
 	}
 
-	_, err = updateDocument(ctx, tx, query, res.Update)
+	_, err = updateDocument(ctx, tx, query, upsertParams.Update)
 	if err != nil {
 		return nil, err
 	}
 
-	return res, nil
+	return upsertParams, nil
 }
