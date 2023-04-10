@@ -62,6 +62,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrDollarPrefixedFieldName indicates the field name is prefixed with $.
+	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
+
 	// ErrInvalidID indicates that _id field is invalid.
 	ErrInvalidID = ErrorCode(53) // InvalidID
 

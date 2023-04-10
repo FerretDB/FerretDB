@@ -122,6 +122,19 @@ func TestFindAndModifyErrors(t *testing.T) {
 			},
 			altMessage: "BSON field 'upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
+		"DollarPrefixedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    52,
+				Name:    "DollarPrefixedFieldName",
+				Message: "Plan executor error during findAndModify :: caused by :: _id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.",
+			},
+			altMessage: "Plan executor error during findAndModify :: caused by :: _id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -148,6 +161,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command         bson.D
 		lastErrorObject bson.D
+		skipForTigris   string
 	}{
 		"UpsertNoSuchDocumentNoIdInQuery": {
 			command: bson.D{
@@ -176,6 +190,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				{"n", int32(1)},
 				{"updatedExisting", false},
 			},
+			skipForTigris: "schema validation would fail",
 		},
 		"UpsertDocumentKey": {
 			command: bson.D{
@@ -187,21 +202,15 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				{"n", int32(1)},
 				{"updatedExisting", false},
 			},
-		},
-		"UpsertDocument": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$exists", "val"}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-			lastErrorObject: bson.D{
-				{"n", int32(1)},
-				{"updatedExisting", false},
-			},
+			skipForTigris: "schema validation would fail",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
+
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 

@@ -201,7 +201,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
-// upsertDocuments inserts new document if no documents in query result or updates given document.
+// upsertDocuments inserts new document if insert document is set in UpsertParameter,
+// or updates the document.
 func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, query *pgdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
 	upsertParams, err := common.UpsertDocument(docs, params)
 	if err != nil {

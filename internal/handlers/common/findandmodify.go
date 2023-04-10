@@ -180,7 +180,7 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 }
 
 // UpsertDocument updates the first document if exists, or create an insert document
-// from params if no documents in query result or updates given document.
+// from the params if no documents in query result docs.
 func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*UpsertParams, error) {
 	res := new(UpsertParams)
 	var err error
@@ -221,7 +221,12 @@ func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
 	}
 
 	if !insert.Has("_id") {
-		insert.Set("_id", getUpsertID(params.Query))
+		id, err := getUpsertID(params.Query)
+		if err != nil {
+			return nil, err
+		}
+
+		insert.Set("_id", id)
 	}
 
 	return insert, nil
@@ -261,38 +266,43 @@ func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*type
 // getUpsertID gets the _id to use for upsert document.
 // If query contains _id, that _id is assigned unless _id
 // contains operator. Otherwise, it generates an ID.
-func getUpsertID(query *types.Document) any {
+func getUpsertID(query *types.Document) (any, error) {
 	id, err := query.Get("_id")
 	if err != nil {
-		return types.NewObjectID()
+		return types.NewObjectID(), nil
 	}
 
 	idDoc, ok := id.(*types.Document)
 	if !ok {
-		return id
+		return id, nil
 	}
 
-	if hasFilterOperator(idDoc) {
-		return types.NewObjectID()
+	_, hasOp, err := hasFilterOperator(idDoc)
+	if err != nil {
+		return nil, err
 	}
 
-	return id
+	if hasOp {
+		return types.NewObjectID(), nil
+	}
+
+	return id, nil
 }
 
-// hasFilterOperator returns true if query or sub-query contains any key/operator
-// prefixed with $.
-func hasFilterOperator(query *types.Document) bool {
+// hasFilterOperator returns true if query contains filter operator among with its key.
+// When sub query contains any key/operator prefixed with $, it returns error.
+func hasFilterOperator(query *types.Document) (string, bool, error) {
 	iter := query.Iterator()
 	defer iter.Close()
 
 	for {
 		k, v, err := iter.Next()
 		if err != nil {
-			return false
+			return "", false, nil
 		}
 
 		if strings.HasPrefix(k, "$") {
-			return true
+			return k, true, nil
 		}
 
 		doc, ok := v.(*types.Document)
@@ -300,8 +310,19 @@ func hasFilterOperator(query *types.Document) bool {
 			continue
 		}
 
-		if hasFilterOperator(doc) {
-			return true
+		opKey, hasOp, err := hasFilterOperator(doc)
+		if err != nil {
+			return "", false, err
+		}
+
+		if hasOp {
+			return "", false, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrDollarPrefixedFieldName,
+				fmt.Sprintf("Plan executor error during findAndModify :: "+
+					"caused by :: _id fields may not contain '$'-prefixed fields: "+
+					"%s is not valid for storage.",
+					opKey,
+				))
 		}
 	}
 }
