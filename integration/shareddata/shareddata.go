@@ -47,8 +47,8 @@ type Provider interface {
 // AllProviders returns all providers in random order.
 func AllProviders() Providers {
 	// check that names are unique and randomize order
-	res := make(map[string]Provider, len(allProviders))
-	for _, p := range allProviders {
+	res := make(map[string]Provider, len(providers))
+	for _, p := range providers {
 		n := p.Name()
 		if _, ok := res[n]; ok {
 			panic("duplicate provider name: " + n)
@@ -63,7 +63,7 @@ func AllProviders() Providers {
 // Providers are array of providers.
 type Providers []Provider
 
-var allProviders = Providers{
+var providers = Providers{
 	Scalars,
 
 	Doubles,
