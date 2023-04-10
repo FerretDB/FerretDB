@@ -1,6 +1,6 @@
 ---
-sidebar_position: 9
-slug: /telemetry/
+sidebar_position: 8
+slug: /telemetry/ # referenced in many places; must not change
 ---
 
 # Telemetry reporting
@@ -21,7 +21,8 @@ The following data is collected:
   cloud provider region, or country derived from IP address (but the IP address itself)
 * Uptime
 * Backend (PostgreSQL or Tigris) version
-* Build configuration and installation type (Docker, package, self-built)
+* Installation type (Docker, package, cloud provider marketplace, self-built)
+* Build configuration (Go version, build flags and tags)
 * Command statistics:
   * protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
   * command names (e.g. `find`, `aggregate`);
@@ -114,7 +115,7 @@ Telemetry can be disabled using any of the following options:
    to modify its state via command.
    :::
 
-### Enable Telemetry
+### Enable telemetry
 
 Telemetry can be explicitly enabled (see [above](#configure-telemetry)) with the command-line flag `--telemetry`
 by setting one of the values:
