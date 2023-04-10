@@ -1,8 +1,0 @@
-{
-  "label": "Query Operators",
-  "position": 1,
-  "link": {
-    "type": "generated-index",
-    "description": "The list of all different types of query operators available on FerretDB, including comparison operators, logical operators, array operators, etc. "
-  }
-}
