@@ -142,5 +142,6 @@ FerretDB uses PostgreSQL as a database engine.
 #### Tigris
 
 A database platform used by FerretDB as a database engine.
+See <https://www.tigrisdata.com/> for more details.
 
 ---

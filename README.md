@@ -45,7 +45,7 @@ docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/all-in-one
 
 This command will start a container with FerretDB, PostgreSQL, and MongoDB Shell for testing and experiments.
 However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
-See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart_guide/docker/) for instructions
+See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart-guide/docker/) for instructions
 that don't have those problems.
 
 With that container running, you can:
@@ -62,7 +62,7 @@ With that container running, you can:
 You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions.
-See [our documentation](https://docs.ferretdb.io/category/quickstart/) for more details.
+See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more details.
 
 ## Building and packaging
 

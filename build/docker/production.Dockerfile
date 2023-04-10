@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.2-5 AS production-build
+FROM ghcr.io/ferretdb/golang:1.20.3-1 AS production-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -53,7 +53,7 @@ set -ex
 # check that stdlib was cached
 go install -v -race=false std
 
-go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris,ferretdb_hana ./cmd/ferretdb
+go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version

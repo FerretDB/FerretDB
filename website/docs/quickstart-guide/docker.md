@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+slug: /quickstart-guide/docker/ # referenced in README.md
 description: How to set up FerretDB using Docker
 ---
 
@@ -40,6 +41,7 @@ The following steps describe a quick local setup:
 
      ferretdb:
        image: ghcr.io/ferretdb/ferretdb
+       restart: on-failure
        ports:
          - 27017:27017
        environment:
@@ -77,3 +79,7 @@ You can improve that setup by:
 
 * [securing connections with TLS](../security.md#securing-connections-with-tls);
 * adding backups.
+
+Find out more about:
+
+* [Getting logs](../configuration/logging.md#docker-logs)
