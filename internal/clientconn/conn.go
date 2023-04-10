@@ -18,14 +18,15 @@ package clientconn
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
 	"runtime/trace"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -198,14 +199,41 @@ func (c *conn) run(ctx context.Context) (err error) {
 				c.l.Warn(e)
 			}
 
+			h := sha256.New()
+			if _, e := io.Copy(h, f); e != nil {
+				c.l.Warn(e)
+			}
+			hash := fmt.Sprintf("%x", h.Sum(nil))
+
 			if e := f.Close(); e != nil {
 				c.l.Warn(e)
 			}
 
-			path := filepath.Join(
-				c.testRecordsDir,
-				fmt.Sprintf("%s-%d.bin", time.Now().Format("2006.01.02.15.04.05.000"), rand.Uint64()),
-			)
+			var hashPath string
+			var hashFileName string
+			s := strings.Split(hash, "")
+			for i := 0; i < len(s); {
+				if len(s[i:]) < 3 {
+					hashFileName = strings.Join(s[i:], "")
+					break
+				}
+				if len(hashPath) != 0 {
+					hashPath += "/"
+				}
+
+				hashPath += strings.Join(s[i:i+2], "")
+
+				i += 2
+			}
+
+			c.l.Info(hashPath, hashFileName)
+
+			hashPath = filepath.Join(c.testRecordsDir, hashPath)
+			if e := os.MkdirAll(hashPath, 0o777); e != nil {
+				c.l.Warn(e)
+			}
+
+			path := filepath.Join(hashPath, fmt.Sprintf("%s.bin", hashFileName))
 			if e := os.Rename(f.Name(), path); e != nil {
 				c.l.Warn(e)
 			}
