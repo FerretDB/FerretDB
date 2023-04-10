@@ -64,7 +64,7 @@ var LargeDocument Data = func(ctx context.Context, coll *mongo.Collection) error
 	}
 	sort.Strings(names)
 
-	apM := ap.Map()
+	apM := shareddata.Map(ap...)
 
 	for _, name := range names {
 		docs = append(docs, shareddata.Docs(apM[name])...)
