@@ -197,8 +197,8 @@ func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*Upser
 	}
 
 	res.Update, err = updateDocuments(docs, params)
-	res.ReturnValue = docs[0]
 
+	res.ReturnValue = docs[0]
 	if params.ReturnNewDocument {
 		res.ReturnValue = res.Update
 	}
@@ -233,7 +233,7 @@ func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
 }
 
 // updateDocuments updates the first document with update parameters.
-func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) { //nolint:lll // argument list is too long
+func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) {
 	update := docs[0].DeepCopy()
 
 	if params.HasUpdateOperators {
@@ -250,8 +250,9 @@ func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*type
 			return nil, commonerrors.NewCommandError(
 				commonerrors.ErrImmutableField,
 				fmt.Errorf(
-					"Plan executor error during findAndModify :: caused by :: After applying the update, "+
-						"the (immutable) field '_id' was found to have been altered to _id: \"%s\"",
+					"Plan executor error during findAndModify :: caused "+
+						"by :: After applying the update, the (immutable) field "+
+						"'_id' was found to have been altered to _id: \"%s\"",
 					v,
 				),
 			)
@@ -263,9 +264,8 @@ func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*type
 	return update, nil
 }
 
-// getUpsertID gets the _id to use for upsert document.
-// If query contains _id, that _id is assigned unless _id
-// contains operator. Otherwise, it generates an ID.
+// getUpsertID gets the _id to use for upsert document. If query contains _id,
+// that _id is assigned unless _id contains operator. Otherwise, it generates an ID.
 func getUpsertID(query *types.Document) (any, error) {
 	id, err := query.Get("_id")
 	if err != nil {
@@ -318,9 +318,10 @@ func hasFilterOperator(query *types.Document) (string, bool, error) {
 		if hasOp {
 			return "", false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrDollarPrefixedFieldName,
-				fmt.Sprintf("Plan executor error during findAndModify :: "+
-					"caused by :: _id fields may not contain '$'-prefixed fields: "+
-					"%s is not valid for storage.",
+				fmt.Sprintf(
+					"Plan executor error during findAndModify :: "+
+						"caused by :: _id fields may not contain '$'-prefixed "+
+						"fields: %s is not valid for storage.",
 					opKey,
 				))
 		}
