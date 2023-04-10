@@ -100,8 +100,8 @@ var providers = Providers{
 	// ArrayAndDocuments,
 }
 
-// Map returns an unordered map of all Providers.
-func (ps Providers) Map() map[string]Provider {
+// Map returns an unordered map of Providers.
+func Map(ps ...Provider) map[string]Provider {
 	apM := make(map[string]Provider, len(ps))
 	for _, p := range ps {
 		apM[p.Name()] = p
