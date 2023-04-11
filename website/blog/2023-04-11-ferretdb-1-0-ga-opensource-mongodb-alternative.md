@@ -26,7 +26,7 @@ We are enabling [PostgreSQL](https://www.postgresql.org/) and other database bac
 ## How to get started
 
 We offer Docker images for production use and development, as well as RPM and DEB packages.
-If you would like to test FerretDB, we provide an All-in-one Docker image, containing everything you need to evaluate FerretDB with PostgresSQL.
+If you would like to test FerretDB, we provide an All-in-one Docker image, containing everything you need to evaluate FerretDB with PostgreSQL.
 [Get started with the All-in-one package here.](https://github.com/FerretDB/FerretDB#quickstart)
 
 Additionally, thanks to our partners, FerretDB is available on two cloud providers for testing:
