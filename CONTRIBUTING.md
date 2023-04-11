@@ -176,10 +176,12 @@ For example:
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
 > **Note**
+>
 > It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
 
 > **Warning**
+>
 > lala
 
 In general, we prefer integration tests over unit tests,
