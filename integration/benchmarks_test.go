@@ -89,29 +89,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 		},
 	} {
 		b.Run(name, func(b *testing.B) {
-			b.Run("WithSameDocument", func(b *testing.B) {
-				// TODO create issue, we alter _id which shoud be immutable
-				for i := 0; i < b.N; i++ {
-					res := bson.D{}
-					err := coll.FindOne(ctx, bm.filter).Decode(&res)
-					require.NoError(b, err)
-
-					ures, err := coll.ReplaceOne(ctx, bm.filter, res)
-					require.NoError(b, err)
-					require.Equal(b, int64(1), ures.ModifiedCount)
-				}
-			})
-			b.Run("CompatWithSameDocument", func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					res := bson.D{}
-					err := collCompat.FindOne(ctx, bm.filter).Decode(&res)
-					require.NoError(b, err)
-
-					ures, err := collCompat.ReplaceOne(ctx, bm.filter, res)
-					require.NoError(b, err)
-					require.Equal(b, int64(1), ures.ModifiedCount)
-				}
-			})
+			// TODO create issue, we can alter _id which shoud be immutable
 			b.Run("AlterFourElements", func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					res := bson.D{}
