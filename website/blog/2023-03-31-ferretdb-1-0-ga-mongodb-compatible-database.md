@@ -11,47 +11,79 @@ tags: [document database, mongodb alternative, mongodb compatible]
 ![Announcing FerretDB 1.0 GA - MongoDB compatibility](/img/blog/ferretdb-v1.0.jpg)
 
 After several months of development, [FerretDB](https://www.ferretdb.io/) is now production-ready.
-We are excited to announce the general availability of FerretDB 1.0.
+We are excited to announce the general availability of FerretDB, a truly Open Source MongoDB alternative, built on PostgreSQL.
 
-<!--truncate-->
-
-This release is a tremendous milestone representing all the efforts and hard work our amazing team has put in over the past year.
-
-Our mission remains the same: we are building FerretDB, an open source document database with MongoDB compatibility.
-For those who are new to our story, let me explain why:
-
-[MongoDB](https://www.mongodb.com/) is a technology with excellent developer experience and very strong ecosystem.
-However, since it was abruptly [moved from a fully open source license to a proprietary one (SSPL)](https://blog.ferretdb.io/open-source-is-in-danger/), the market has been searching for an alternative.
-While there is a wide selection of open source document databases, none of them are compatible with MongoDB.
-
-This is [why we founded FerretDB](https://blog.ferretdb.io/mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement/): we want to bring MongoDB database workloads back to its open source grounds.
+MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license). We want to bring MongoDB database workloads back to its open source grounds.
 We are enabling [PostgreSQL](https://www.postgresql.org/) and other database backends to run MongoDB workloads, retaining the opportunities provided by the existing ecosystem around MongoDB.
 
-We extend our sincerest thanks to our dedicated community for all the contributions and feedback leading to the FerretDB GA.
+## How to get started
 
-For their code contributions, special thanks go to: [seeforschauer](https://github.com/seeforschauer), [ribaraka](https://github.com/ribaraka), [ekalinin](https://github.com/ekalinin), [fenogentov](https://github.com/fenogentov), [OpenSauce](https://github.com/OpenSauce), [GinGin3203](https://github.com/GinGin3203), [DoodgeMatvey](https://github.com/DoodgeMatvey), [pboros](https://github.com/pboros), [lucboj](https://github.com/lucboj), [nicolascb](https://github.com/nicolascb), [ravilushqa](https://github.com/ravilushqa), [fcoury](https://github.com/fcoury), [AlphaB](https://github.com/AlphaB), [peakle](https://github.com/peakle), [jyz0309](https://github.com/jyz0309), [klokar](https://github.com/klokar), [thuan1412](https://github.com/thuan1412), [kropidlowsky](https://github.com/kropidlowsky), [yu-re-ka](https://github.com/yu-re-ka), [jkoenig134](https://github.com/jkoenig134), [ndkhangvl](https://github.com/ndkhangvl), [codingmickey](https://github.com/codingmickey), [zhiburt](https://github.com/zhiburt), [ronaudinho](https://github.com/ronaudinho), [si3nloong](https://github.com/si3nloong), [folex](https://github.com/folex), [GrandShow](https://github.com/GrandShow), [narqo](https://github.com/narqo), [taaraora](https://github.com/taaraora), [muyouming](https://github.com/muyouming), [junnplus](https://github.com/junnplus), [agneum](https://github.com/agneum), [radmirnovii](https://github.com/radmirnovii), [ae-govau](https://github.com/ae-govau), [hugojosefson](https://github.com/hugojosefson).
+We offer Docker images for production use and development, as well as RPM and DEB packages. [Get started here.](https://docs.ferretdb.io/quickstart-guide/).
 
-There are others, of course, who have helped in many ways by identifying bugs, providing feedback, and testing FerretDB, we thank you all!
+Additionally, thanks to our partners, FerretDB is available on two cloud providers for testing:
 
-We are happy to welcome new members to our growing community and encourage everyone to join us on [GitHub](https://github.com/FerretDB/FerretDB/), and explore the many possibilities FerretDB has to offer.
+* Scaleway ([see their blog post for more information](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/))
+* On the [https://www.civo.com/marketplace/FerretDB](Civo Marketplace)
+
+## Main feature additions to GA
+
+In this GA release, FerretDB now supports the `createIndexes` command.
+This will enable you to specify the fields you want to index, and also the type of index to use (e.g. ascending, descending, or hashed).
+
+For instance, suppose you have a `users` collection containing several fields, including "age", "name", and "email", and you want to create an index on the "age" field.
+You can now run the following command:
+
+```js
+db.users.createIndex({ age: 1 })
+```
+
+This will create an ascending index on the "age" field, which will speed up any queries that filter on that field.
+
+We've also added the `dropIndexes` command, which allows you to remove an index from a collection.
+Here's an example:
+
+```js
+db.users.dropIndex({ age: 1 })
+```
+
+This will remove the index from the "users" collection.
+
+We have expanded our aggregation pipeline functionality to include additional stages, such as `$unwind`, `$limit` and `$skip`, in addition to the `$sum` accumulator within the `$group` stage.
+With these additions, we can perform more refined calculations and manipulations of collection data.
+In addition to these, we also added support for `count` and `storageStats` fields in `$collStats` aggregation pipeline stage.
+
+To help you gather more information about your collections, databases, and server performance, we've enabled partial support for several server commands, including `collStats`, `dbStats`, and `dataSize`.
+
+To retrieve statistics about a collection, use the `collStats` command like this:
+
+```js
+db.runCommand({ collStats: "users" })
+```
+
+If the statistics is about the database, run the command below:
+
+```js
+db.runCommand({ dbStats: 1 })
+```
+
+For the total data size of a collection, run the following command:
+
+```js
+db.runCommand({ dataSize: "<database>.<collection>" })
+```
 
 ## So where are we now?
 
-With the release of FerretDB 1.0 GA, we are now production-ready!
-
-This means you can now use FerretDB in your production environments, and we'll be here to support you along the way.
-
-A bit more than a year since we started working on FerretDB full time, we've grown to a team of 9 people, working full-time and remotely from all over the world.
+With the release of FerretDB 1.0 GA, we are now production-ready, and no breaking changes will be introduced.
 
 We are also proud to announce that FerretDB now has:
 
-* 👨🏻‍💻 Over 30 code contributors with more than 130 merged pull requests from our community of contributors
-* ⭐️ over 5.3k Stars on GitHub
-* ⏫ More than 180 Docker hub downloads
-* 🔥 Over 60 running instances
-* ⏫ Over 10k FerretDB downloads
+* 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community (see our thank you notes below)
+* ⭐️ Over 5300 Stars and 200 Forks on GitHub
+* 🔥 Over 100 running instances
+* ⏫ Over 10000 FerretDB downloads
 
-And the best part: with the release of FerretDB 1.0, these numbers will only continue to grow.
+With the release of FerretDB 1.0, these numbers will only continue to grow.
 
 We are executing on our [roadmap](https://github.com/orgs/FerretDB/projects/2), and are planning to add more significant features in the coming months.
 Get started with FerretDB 1.0 GA [here](https://docs.ferretdb.io/quickstart-guide/).
@@ -67,10 +99,9 @@ Also, we are building an easy to use database offering the flexibility of docume
 
 FerretDB 1.0 GA includes all the essential features capable of running document-type workloads.
 
-Moreover, we are testing FerretDB against real-world applications, like [BigBlueButton](https://bigbluebutton.org/), [Strapi](https://strapi.io/), or frameworks such as [MeteorJS](https://www.meteor.com/), among others.
-We also confirmed that popular database management software such as [Mongosh/MongoDB Compass](https://www.mongodb.com/docs/compass/current/embedded-shell/), [NoSQL Booster](https://nosqlbooster.com/downloads), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
+Moreover, we are testing FerretDB against real-world applications, like [FastNetMon](https://fastnetmon.com/docs-fnm-advanced/using-fastnetmon-advanced-with-ferretdb-and-postgresql-instead-of-mongodb/), [the Enmeshed Connector](https://enmeshed.eu/blog/announcing-ferretdb-compatibility), [BigBlueButton](https://bigbluebutton.org/), [Strapi](https://strapi.io/), or frameworks such as [MeteorJS](https://www.meteor.com/), among others.
 
-[TODO - Add a Quote here]
+We also confirmed that popular database management software such as [Mongosh/MongoDB Compass](https://www.mongodb.com/docs/compass/current/embedded-shell/), [NoSQL Booster](https://nosqlbooster.com/downloads), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
 
 It’s like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
 We think this is insanely cool!
@@ -88,9 +119,7 @@ However, we recognize that we need to depart from this approach to increase perf
 
 ### Tigris
 
-We partnered with [Tigris Data](https://www.tigrisdata.com/) to add support for Tigris, a backend which offers a fully managed solution and [an alternative to MongoDB Atlas](https://blog.ferretdb.io/how-to-keep-control-of-your-infra-using-ferretdb-and-tigris/).
-
-[TODO - Add a Quote here]
+We partnered with [Tigris Data](https://www.tigrisdata.com/) to add support for Tigris, a backend which offers a fully managed solution and [an alternative to MongoDB Atlas](https://blog.ferretdb.io/how-to-keep-control-of-your-infra-using-ferretdb-and-tigris/). Backend support for Tigris is now maintained by Tigris Data.
 
 You can try it out on [their website](https://www.tigrisdata.com/).
 
@@ -102,17 +131,6 @@ It is also great to see SAP’s commitment to open source.
 ### Future database backends
 
 We are open to adding other backends, currently playing with the idea of adding basic support for [SQLite](https://www.sqlite.org/), opening the possibility of using FerretDB in a low footprint, embedded environment.
-
-## Where can I run FerretDB?
-
-FerretDB can be run locally, and we are also partnering with cloud providers to make it available to you as a preview.
-Since FerretDB is released under Apache 2.0, unlike MongoDB, it can be run anywhere for free.
-See [our guide on how to get started.](https://docs.ferretdb.io/category/quickstart/)
-
-## What features are you focusing on?
-
-We think that building out support for aggregation pipelines is our most important task, as the vast majority of MongoDB applications naturally expect this feature.
-Also, implementing support for indexes as any real database should have that feature.
 
 ## How can I help?
 
@@ -127,3 +145,15 @@ We are happy to work with you.
 
 We are available on our Community Slack, on GitHub, and we are also ready to jump on a call with you if you have ideas.
 [Contact us today.](https://docs.ferretdb.io/#community)
+
+## Thank you
+
+We extend our sincerest thanks to our dedicated community for all the contributions and feedback leading to the FerretDB GA.
+
+Thank you to [Instaclustr](https://www.instaclustr.com/) for their code contributions and feedback, and [Tigris](https://www.tigrisdata.com/) as a supporter and first user of FerretDB in production.
+
+Special thanks go to: [seeforschauer](https://github.com/seeforschauer), [ribaraka](https://github.com/ribaraka), [ekalinin](https://github.com/ekalinin), [fenogentov](https://github.com/fenogentov), [OpenSauce](https://github.com/OpenSauce), [GinGin3203](https://github.com/GinGin3203), [DoodgeMatvey](https://github.com/DoodgeMatvey), [pboros](https://github.com/pboros), [lucboj](https://github.com/lucboj), [nicolascb](https://github.com/nicolascb), [ravilushqa](https://github.com/ravilushqa), [fcoury](https://github.com/fcoury), [AlphaB](https://github.com/AlphaB), [peakle](https://github.com/peakle), [jyz0309](https://github.com/jyz0309), [klokar](https://github.com/klokar), [thuan1412](https://github.com/thuan1412), [kropidlowsky](https://github.com/kropidlowsky), [yu-re-ka](https://github.com/yu-re-ka), [jkoenig134](https://github.com/jkoenig134), [ndkhangvl](https://github.com/ndkhangvl), [codingmickey](https://github.com/codingmickey), [zhiburt](https://github.com/zhiburt), [ronaudinho](https://github.com/ronaudinho), [si3nloong](https://github.com/si3nloong), [folex](https://github.com/folex), [GrandShow](https://github.com/GrandShow), [narqo](https://github.com/narqo), [taaraora](https://github.com/taaraora), [muyouming](https://github.com/muyouming), [junnplus](https://github.com/junnplus), [agneum](https://github.com/agneum), [radmirnovii](https://github.com/radmirnovii), [ae-govau](https://github.com/ae-govau), [hugojosefson](https://github.com/hugojosefson).
+
+There are others, of course, who have helped in many ways by identifying bugs, providing feedback, and testing FerretDB, we thank you all!
+
+We are happy to welcome new members to our growing community and encourage everyone to join us on [GitHub](https://github.com/FerretDB/FerretDB/), and explore the many possibilities FerretDB has to offer.
