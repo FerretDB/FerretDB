@@ -31,6 +31,8 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
+	t.Parallel()
+
 	// Setups one collection for each data set for all backends.
 	t.Run("All", func(t *testing.T) {
 		for _, p := range shareddata.AllProviders() {

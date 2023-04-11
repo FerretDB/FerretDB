@@ -768,6 +768,8 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationServerStatus(t *testing.T) {
 	setup.SkipForTigris(t)
 
+	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D

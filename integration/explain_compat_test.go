@@ -130,6 +130,8 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 }
 
 func TestExplainCompatError(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]explainCompatTestCase{
 		"AggregateMissingPipeline": {
 			command: "aggregate",
