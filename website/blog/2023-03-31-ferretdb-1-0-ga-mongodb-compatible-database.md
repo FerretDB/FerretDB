@@ -1,5 +1,5 @@
 ---
-slug: ferretdb-1-0-ga-mongodb-compatible-database
+slug: ferretdb-1-0-ga-opensource-mongodb-alternative
 title: "Announcing FerretDB 1.0 GA - a truly Open Source MongoDB alternative"
 authors: [peter]
 description: >
