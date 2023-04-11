@@ -96,7 +96,9 @@ func BenchmarkReplaceOne(b *testing.B) {
 					err := coll.FindOne(ctx, bm.filter).Decode(&res)
 					require.NoError(b, err)
 
-					// XXX this breaks the ordering because we marshal a bson.M.
+					// XXX this breaks the ordering because we marshal a bson.M,
+					// but I suppose it doesn't matter because we're only inserting
+					// a document with no filter effectively doing a COLLSCAN.
 					m := res.Map()
 					m["1"] = "foo"
 					m["2"] = "bar"
