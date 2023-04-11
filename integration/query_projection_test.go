@@ -45,7 +45,7 @@ func TestQueryProjection(t *testing.T) {
 		},
 		"Invalid": {
 			filter:     bson.D{},
-			projection: bson.D{{"a", bson.A{}}},
+			projection: bson.D{{"a", "$"}},
 			err:        true,
 		},
 	} {
