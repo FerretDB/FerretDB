@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 6
 hide_table_of_contents: true
 ---
 
