@@ -17,7 +17,10 @@ package setup
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -41,22 +44,41 @@ func SetupBenchmark(tb testing.TB, p shareddata.BenchmarkProvider) (context.Cont
 
 	var done bool
 
+	hash := sha256.New()
+
 	for !done {
 		docs, err := iterator.ConsumeValuesN(iter, 10)
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			done = true
 		}
-
 		require.NoError(tb, err)
 
 		var insertDocs []any = make([]any, len(docs))
-		for i, d := range docs {
-			insertDocs[i] = d
+		for i, doc := range docs {
+
+			rawDoc := []byte(fmt.Sprintf("%x", doc))
+			currSum := hash.Sum(rawDoc)
+			hash.Reset()
+
+			if _, err := hash.Write(currSum); err != nil {
+				panic("Unexpected error: " + err.Error())
+			}
+
+			insertDocs[i] = doc
+		}
+
+		if len(docs) == 0 {
+			break
 		}
 
 		_, err = coll.InsertMany(ctx, insertDocs)
 		require.NoError(tb, err)
 	}
+
+	actualSum := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+
+	require.Equal(tb, p.Hash(), actualSum, "The checksum of inserted documents in BenchmarkProvider is different than specified.",
+		"If you didn't change any data, it could mean that provider generates different data or provides it in different order.")
 
 	return ctx, coll
 }

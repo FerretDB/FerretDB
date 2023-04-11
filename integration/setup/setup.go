@@ -79,7 +79,7 @@ type SetupOpts struct {
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
-	//
+	// BenchmarkProviders
 	BenchmarkProviders []shareddata.BenchmarkProvider
 }
 

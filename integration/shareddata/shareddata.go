@@ -17,10 +17,8 @@ package shareddata
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -55,46 +53,9 @@ type BenchmarkProvider interface {
 	Docs() iterator.Interface[struct{}, bson.D]
 }
 
-func SimpleValuesProvider() BenchmarkProvider {
-	values := []any{
-		"foo", 42, "42", bson.D{{"42", "hello"}},
-	}
-	valuesLen := len(values)
-
-	i := 0
-
-	gen := func() bson.D {
-		if i >= 400 {
-			return nil
-		}
-
-		v := values[i%valuesLen]
-
-		return bson.D{{"_id", i}, {"v", v}}
-	}
-
-	b := BenchmarkValues{
-		hash: "",
-		iter: newBenchmarkIterator(gen),
-	}
-
-	return b
-}
-
 type BenchmarkValues struct {
 	hash string
 	iter iterator.Interface[struct{}, bson.D]
-}
-
-func newBenchmarkIterator(generator func() bson.D) iterator.Interface[struct{}, bson.D] {
-	iter := &benchmarkIterator{
-		token: resource.NewToken(),
-		gen:   generator,
-	}
-
-	resource.Track(iter, iter.token)
-
-	return iter
 }
 
 func (b BenchmarkValues) Hash() string {
@@ -103,52 +64,6 @@ func (b BenchmarkValues) Hash() string {
 
 func (b BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
 	return b.iter
-}
-
-type benchmarkIterator struct {
-	gen func() bson.D
-
-	m sync.Mutex
-
-	token *resource.Token
-}
-
-func (iter *benchmarkIterator) Next() (struct{}, bson.D, error) {
-	iter.m.Lock()
-	defer iter.m.Unlock()
-
-	var unused struct{}
-
-	doc := iter.gen()
-	if doc == nil {
-		// to avoid context cancellation changing the next `Next()` error
-		// from `iterator.ErrIteratorDone` to `context.Canceled`
-		iter.close()
-
-		return unused, nil, iterator.ErrIteratorDone
-	}
-
-	return unused, doc, nil
-}
-
-func (iter *benchmarkIterator) Close() {
-	iter.m.Lock()
-	defer iter.m.Unlock()
-
-	iter.close()
-}
-
-func (iter *benchmarkIterator) close() {
-	//if iter.rows != nil {
-	//	iter.rows.Close()
-	//	iter.rows = nil
-	//}
-
-	resource.Untrack(iter, iter.token)
-}
-
-func newIterator(docs []bson.D) benchmarkIterator {
-	return benchmarkIterator{}
 }
 
 var SimpleValues = BenchmarkValues{}

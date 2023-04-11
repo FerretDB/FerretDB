@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,8 @@ import (
 )
 
 func BenchmarkQuery(b *testing.B) {
-	ctx, coll := setup.SetupBenchmark(b, shareddata.SimpleValuesProvider())
+	p := shareddata.SimpleBenchmarkValues
+	ctx, coll := setup.SetupBenchmark(b, p)
 
 	for name, bm := range map[string]struct {
 		filter bson.D
@@ -37,7 +39,7 @@ func BenchmarkQuery(b *testing.B) {
 			filter: bson.D{{"v.42", "hello"}},
 		},
 	} {
-		b.Run(name, func(b *testing.B) {
+		b.Run(fmt.Sprint(name, "_", p.Hash()), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				cur, err := coll.Find(ctx, bm.filter)
 				require.NoError(b, err)
@@ -45,8 +47,8 @@ func BenchmarkQuery(b *testing.B) {
 				var res []bson.D
 				require.NoError(b, cur.All(ctx, &res))
 			}
-
-			coll.Database().Client().Disconnect(ctx)
 		})
+
+		coll.Database().Client().Disconnect(ctx)
 	}
 }
