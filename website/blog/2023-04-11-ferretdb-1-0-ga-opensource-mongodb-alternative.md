@@ -13,16 +13,19 @@ tags: [document database, mongodb alternative, mongodb compatible]
 After several months of development, [FerretDB](https://www.ferretdb.io/) is now production-ready.
 We are excited to announce the general availability of FerretDB, a truly Open Source MongoDB alternative, built on PostgreSQL, and released under the Apache 2.0 license.
 
-MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license). We want to bring MongoDB database workloads back to its open source roots.
+MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license).
+We want to bring MongoDB database workloads back to its open source roots.
 We are enabling [PostgreSQL](https://www.postgresql.org/) and other database backends to run MongoDB workloads, retaining the opportunities provided by the existing ecosystem around MongoDB.
 
 * Deploy anywhere + stay in control of your data
 * Use it freely for your cloud-based projects
-* Use your existing PostgreSQL infra to run MongoDB workloads 
+* Use your existing PostgreSQL infra to run MongoDB workloads
 
 ## How to get started
 
-We offer Docker images for production use and development, as well as RPM and DEB packages. If you would like to test FerretDB, we provide an All-in-one Docker image, containing everything you need to evaluate FerretDB with PostgresSQL. [Get started with the All-in-one package here.](https://github.com/FerretDB/FerretDB#quickstart)
+We offer Docker images for production use and development, as well as RPM and DEB packages.
+If you would like to test FerretDB, we provide an All-in-one Docker image, containing everything you need to evaluate FerretDB with PostgresSQL.
+[Get started with the All-in-one package here.](https://github.com/FerretDB/FerretDB#quickstart)
 
 Additionally, thanks to our partners, FerretDB is available on two cloud providers for testing:
 
@@ -123,7 +126,8 @@ However, we recognize that we will need to depart from this approach to increase
 
 ### Tigris
 
-We partnered with [Tigris Data](https://www.tigrisdata.com/) to add support for Tigris, a backend which offers a fully managed solution and [an alternative to MongoDB Atlas](https://blog.ferretdb.io/how-to-keep-control-of-your-infra-using-ferretdb-and-tigris/). Backend support for Tigris is now maintained by Tigris Data.
+We partnered with [Tigris Data](https://www.tigrisdata.com/) to add support for Tigris, a backend which offers a fully managed solution and [an alternative to MongoDB Atlas](https://blog.ferretdb.io/how-to-keep-control-of-your-infra-using-ferretdb-and-tigris/).
+Backend support for Tigris is now maintained by Tigris Data.
 
 You can try it out on [their website](https://www.tigrisdata.com/).
 
@@ -134,7 +138,8 @@ It is also great to see SAP’s commitment to open source.
 
 ### SQLite and future database backends
 
-We are open to adding support to other backends. Currently, we are in the process of adding basic support for [SQLite](https://www.sqlite.org/).
+We are open to adding support to other backends.
+Currently, we are in the process of adding basic support for [SQLite](https://www.sqlite.org/).
 
 ## How can I help?
 
