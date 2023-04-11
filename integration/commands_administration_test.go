@@ -915,7 +915,6 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 
 			// MongoDB might be slow to update the status
 			var status any
-			var retry int64
 			for i := 0; i < 3; i++ {
 				var actual bson.D
 				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
@@ -932,9 +931,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 				if status == tc.expectedStatus {
 					break
 				}
-
-				retry++
-				ctxutil.SleepWithJitter(s.Ctx, time.Second, retry)
+				ctxutil.Sleep(s.Ctx, time.Second)
 			}
 
 			assert.Equal(t, tc.expectedStatus, status)
