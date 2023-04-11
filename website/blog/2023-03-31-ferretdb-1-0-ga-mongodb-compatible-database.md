@@ -11,7 +11,7 @@ tags: [document database, mongodb alternative, mongodb compatible]
 ![Announcing FerretDB 1.0 GA - MongoDB compatibility](/img/blog/ferretdb-v1.0.jpg)
 
 After several months of development, [FerretDB](https://www.ferretdb.io/) is now production-ready.
-We are excited to announce the general availability of FerretDB, a truly Open Source MongoDB alternative, built on PostgreSQL, and released under Apache 2.0
+We are excited to announce the general availability of FerretDB, a truly Open Source MongoDB alternative, built on PostgreSQL, and released under the Apache 2.0 license.
 
 MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license). We want to bring MongoDB database workloads back to its open source grounds.
 We are enabling [PostgreSQL](https://www.postgresql.org/) and other database backends to run MongoDB workloads, retaining the opportunities provided by the existing ecosystem around MongoDB.
