@@ -53,7 +53,5 @@ func BenchmarkQuery(b *testing.B) {
 				require.NoError(b, cur.All(ctx, &res))
 			}
 		})
-
-		coll.Database().Client().Disconnect(ctx)
 	}
 }
