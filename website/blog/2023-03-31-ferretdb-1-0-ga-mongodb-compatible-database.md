@@ -13,7 +13,7 @@ tags: [document database, mongodb alternative, mongodb compatible]
 After several months of development, [FerretDB](https://www.ferretdb.io/) is now production-ready.
 We are excited to announce the general availability of FerretDB, a truly Open Source MongoDB alternative, built on PostgreSQL, and released under the Apache 2.0 license.
 
-MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license). We want to bring MongoDB database workloads back to its open source grounds.
+MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license). We want to bring MongoDB database workloads back to its open source roots.
 We are enabling [PostgreSQL](https://www.postgresql.org/) and other database backends to run MongoDB workloads, retaining the opportunities provided by the existing ecosystem around MongoDB.
 
 * Deploy anywhere + stay in control of your data
@@ -22,12 +22,12 @@ We are enabling [PostgreSQL](https://www.postgresql.org/) and other database bac
 
 ## How to get started
 
-We offer Docker images for production use and development, as well as RPM and DEB packages. [Get started here.](https://docs.ferretdb.io/quickstart-guide/).
+We offer Docker images for production use and development, as well as RPM and DEB packages. If you would like to test FerretDB, we provide an All-in-one Docker image, containing everything you need to evaluate FerretDB with PostgresSQL. [Get started with the All-in-one package here.](https://github.com/FerretDB/FerretDB#quickstart)
 
 Additionally, thanks to our partners, FerretDB is available on two cloud providers for testing:
 
 * Scaleway ([see their blog post for more information](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/))
-* On the [https://www.civo.com/marketplace/FerretDB](Civo Marketplace)
+* On the [Civo Marketplace](https://www.civo.com/marketplace/FerretDB)
 
 ## Main feature additions to GA
 
@@ -84,42 +84,42 @@ We are also proud to announce that FerretDB now has:
 
 * 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community (see our thank you notes below)
 * ⭐️ Over 5300 Stars and 200 Forks on GitHub
-* 🔥 Over 100 running instances
+* 🔥 Over 100 running instances with [telemetry enabled](https://docs.ferretdb.io/telemetry/)
 * ⏫ Over 10000 FerretDB downloads
 
 With the release of FerretDB 1.0, these numbers will only continue to grow.
 
 We are executing on our [roadmap](https://github.com/orgs/FerretDB/projects/2), and are planning to add more significant features in the coming months.
-Get started with FerretDB 1.0 GA [here](https://docs.ferretdb.io/quickstart-guide/).
+Get started with FerretDB 1.0 GA [here](https://github.com/FerretDB/FerretDB#quickstart).
 
 ## Where are we headed?
 
-We would like to create a new standard for document databases, with [MongoDB compatibility](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/).
-FerretDB is a drop-in replacement for MongoDB, but it also aims to set a new standard which not only brings easy to use document databases back to its open source roots, but also enables different database engines to run document database workloads in a standardized way.
+We are creating a new standard for document databases with [MongoDB compatibility](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/).
+FerretDB is a drop-in replacement for MongoDB, but it also aims to set a new standard which not only brings easy to use document databases back to its open source roots, but also enables different database engines to run document database workloads in using a standardized interface.
 
-Also, we are building an easy to use database offering the flexibility of document databases, with the possibility to run queries on the same database using SQL.
+Also, FerretDB will offer the flexibility of document databases, with the possibility to run queries on the same data set using SQL.
 
 ## What is FerretDB GA capable of?
 
-FerretDB 1.0 GA includes all the essential features capable of running document-type workloads.
+FerretDB 1.0 GA includes all the essential features capable of running document database workloads.
 
-Moreover, we are testing FerretDB against real-world applications, like [FastNetMon](https://fastnetmon.com/docs-fnm-advanced/using-fastnetmon-advanced-with-ferretdb-and-postgresql-instead-of-mongodb/), [the Enmeshed Connector](https://enmeshed.eu/blog/announcing-ferretdb-compatibility), [BigBlueButton](https://bigbluebutton.org/), [Strapi](https://strapi.io/), or frameworks such as [MeteorJS](https://www.meteor.com/), among others.
+We are testing FerretDB against real-world applications, like [FastNetMon](https://fastnetmon.com/docs-fnm-advanced/using-fastnetmon-advanced-with-ferretdb-and-postgresql-instead-of-mongodb/), [the Enmeshed Connector](https://enmeshed.eu/blog/announcing-ferretdb-compatibility), [BigBlueButton](https://bigbluebutton.org/), [Strapi](https://strapi.io/), or frameworks such as [MeteorJS](https://www.meteor.com/), among others.
 
-We also confirmed that popular database management software such as [Mongosh/MongoDB Compass](https://www.mongodb.com/docs/compass/current/embedded-shell/), [NoSQL Booster](https://nosqlbooster.com/downloads), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
+We also confirmed that popular database management tools such as `mongosh`, [MongoDB Compass](https://www.mongodb.com/products/compass), [NoSQL Booster](https://nosqlbooster.com/), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
 
 It’s like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
 We think this is insanely cool!
 
 ## What database backends does FerretDB support?
 
-FerretDB offers a fully pluggable architecture, we support other backends as well, and these can be contributed by the community.
+FerretDB offers a fully pluggable architecture, we support other backends as well, and support for these can be contributed by the community.
 
 ### PostgreSQL
 
 We are building FerretDB on PostgreSQL and we envision that this is going to be our main database backend in the foreseeable future.
 This is the backend which will get the newest features of FerretDB.
-We are implementing features adding MongoDB compatibility to Postgres mainly using its JSON capabilities.
-However, we recognize that we need to depart from this approach to increase performance by creating our own extension or through other methods.
+We are implementing features adding MongoDB compatibility to Postgres mainly using its JSONB capabilities.
+However, we recognize that we will need to depart from this approach to increase performance by creating our own extension or through other methods.
 
 ### Tigris
 
@@ -132,9 +132,9 @@ You can try it out on [their website](https://www.tigrisdata.com/).
 Our friends at [SAP](https://www.sap.com/index.html) are currently working on adding [SAP HANA](https://www.sap.com/products/technology-platform/hana.html) compatibility to FerretDB, which we are very excited about.
 It is also great to see SAP’s commitment to open source.
 
-### Future database backends
+### SQLite and future database backends
 
-We are open to adding other backends, currently playing with the idea of adding basic support for [SQLite](https://www.sqlite.org/), opening the possibility of using FerretDB in a low footprint, embedded environment.
+We are open to adding support to other backends. Currently, we are in the process of adding basic support for [SQLite](https://www.sqlite.org/).
 
 ## How can I help?
 
@@ -144,15 +144,15 @@ We are open to adding other backends, currently playing with the idea of adding 
 
 We are working with software publishers, infrastructure providers and the maintainers of popular JS frameworks to create compatibility with their software.
 
-If you think that your software would benefit from having an alternative database solution it can run with - [please let us know](https://www.ferretdb.io/contact/).
+If you think that your software would benefit from having an alternative to MongoDB - [please let us know](https://www.ferretdb.io/contact/).
 We are happy to work with you.
 
-We are available on our Community Slack, on GitHub, and we are also ready to jump on a call with you if you have ideas.
+We are available on our Community Slack, on [GitHub](https://github.com/FerretDB/FerretDB), and we are also ready to jump on a call with you if you have ideas to discuss.
 [Contact us today.](https://docs.ferretdb.io/#community)
 
 ## Thank you
 
-We extend our sincerest thanks to our dedicated community for all the contributions and feedback leading to the FerretDB GA.
+We extend our sincerest thanks to our dedicated community for all the contributions and feedback leading to FerretDB GA.
 
 Thank you to [Instaclustr](https://www.instaclustr.com/) for their code contributions and feedback, and [Tigris](https://www.tigrisdata.com/) as a supporter and first user of FerretDB in production.
 
