@@ -39,12 +39,14 @@ func SetupBenchmark(tb testing.TB, p shareddata.BenchmarkProvider) (context.Cont
 	iter := p.Docs()
 	defer iter.Close()
 
-	for {
+	var done bool
+
+	for !done {
 		docs, err := iterator.ConsumeValuesN(iter, 10)
 		if errors.Is(err, iterator.ErrIteratorDone) {
-			// TODO insert leftovers
-			break
+			done = true
 		}
+
 		require.NoError(tb, err)
 
 		var insertDocs []any = make([]any, len(docs))
