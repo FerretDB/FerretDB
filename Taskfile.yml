@@ -227,8 +227,31 @@ tasks:
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem' | tee -a new.txt
-      - ../bin/benchstat{{exeExt}} old.txt new.txt
+      - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
+
+  bench-integration-pg-no-pushdown:
+    desc: "Run benchmarks for `pg` with query pushdown disabled"
+    dir: integration
+    cmds:
+      - >
+        go test -bench='Benchmark.*' -run=^#
+        -benchtime={{.BENCHTIME}}
+        -target-backend=ferretdb-pg
+        -target-tls
+        -disable-pushdown
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+      - ../bin/benchstat{{exeExt}} old-pg-no-pushdown.txt new-pg-no-pushdown.txt
+
+  bench-integration-mongodb:
+    desc: "Run benchmarks for MongoDB"
+    dir: integration
+    cmds:
+      - >
+        go test -bench='Benchmark.*' -run=^#
+        -benchtime={{.BENCHTIME}}
+        -target-backend=mongodb
+        -target-url=mongodb://127.0.0.1:47017/
+      - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt
 
   bench-short:
     desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
