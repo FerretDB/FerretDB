@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// Handler implements handlers.Interface on top of PostgreSQL.
+// Handler implements handlers.Interface on of PostgreSQL.
 type Handler struct {
 	*NewOpts
 
