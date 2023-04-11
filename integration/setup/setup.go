@@ -17,6 +17,8 @@ package setup
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"path/filepath"
@@ -33,6 +35,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -79,8 +82,8 @@ type SetupOpts struct {
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
-	// BenchmarkProviders
-	BenchmarkProviders []shareddata.BenchmarkProvider
+	// BenchmarkProvider
+	BenchmarkProvider shareddata.BenchmarkProvider
 }
 
 // SetupResult represents setup results.
@@ -193,48 +196,101 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		_ = database.Drop(ctx)
 	}
 
-	var inserted bool
-	for _, provider := range opts.Providers {
-		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
-			tb.Logf(
-				"Provider %q is not compatible with backend %q, skipping it.",
-				provider.Name(),
-				*targetBackendF,
-			)
+	if opts.BenchmarkProvider != nil {
+		require.Empty(tb, opts.Providers, "Both Providers and BenchmarkProviders were set")
 
-			continue
-		}
+		provider := opts.BenchmarkProvider
 
-		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
+		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Hash())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(provCtx, spanName)
 
-		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
-			copts := options.CreateCollection()
-			for key, value := range validators {
-				copts.SetValidator(bson.D{{key, value}})
+		iter := provider.Docs()
+
+		hash := sha256.New()
+		var done bool
+
+		for !done {
+			docs, err := iterator.ConsumeValuesN(iter, 10)
+			require.NoError(tb, err)
+
+			done = docs == nil
+
+			var insertDocs []any = make([]any, len(docs))
+
+			for i, doc := range docs {
+				rawDoc := []byte(fmt.Sprintf("%x", doc))
+				currSum := hash.Sum(rawDoc)
+				hash.Reset()
+
+				if _, err := hash.Write(currSum); err != nil {
+					panic("Unexpected error: " + err.Error())
+				}
+
+				insertDocs[i] = doc
 			}
 
-			require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
+			if len(docs) == 0 {
+				break
+			}
+
+			res, err := collection.InsertMany(provCtx, insertDocs)
+			require.NoError(tb, err, "provider %q", provider.Hash())
+			require.Len(tb, res.InsertedIDs, len(docs))
 		}
 
-		docs := shareddata.Docs(provider)
-		require.NotEmpty(tb, docs)
+		actualSum := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 
-		res, err := collection.InsertMany(provCtx, docs)
-		require.NoError(tb, err, "provider %q", provider.Name())
-		require.Len(tb, res.InsertedIDs, len(docs))
-		inserted = true
+		require.Equal(tb, provider.Hash(), actualSum, "The checksum of inserted documents in BenchmarkProvider is different than specified.",
+			"If you didn't change any data, it could mean that provider generates different data or provides it in different order")
 
 		region.End()
 		span.End()
-	}
 
-	if len(opts.Providers) == 0 {
-		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
 	} else {
-		require.True(tb, inserted, "all providers were not compatible")
+		var inserted bool
+		for _, provider := range opts.Providers {
+			if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
+				tb.Logf(
+					"Provider %q is not compatible with backend %q, skipping it.",
+					provider.Name(),
+					*targetBackendF,
+				)
+
+				continue
+			}
+
+			spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
+			provCtx, span := otel.Tracer("").Start(ctx, spanName)
+			region := trace.StartRegion(provCtx, spanName)
+
+			// if validators are set, create collection with them (otherwise collection will be created on first insert)
+			if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
+				copts := options.CreateCollection()
+				for key, value := range validators {
+					copts.SetValidator(bson.D{{key, value}})
+				}
+
+				require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
+			}
+
+			docs := shareddata.Docs(provider)
+			require.NotEmpty(tb, docs)
+
+			res, err := collection.InsertMany(provCtx, docs)
+			require.NoError(tb, err, "provider %q", provider.Name())
+			require.Len(tb, res.InsertedIDs, len(docs))
+			inserted = true
+
+			region.End()
+			span.End()
+		}
+
+		if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
+			tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
+		} else {
+			require.True(tb, inserted, "all providers were not compatible")
+		}
 	}
 
 	if ownCollection {

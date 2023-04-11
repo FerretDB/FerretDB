@@ -26,8 +26,13 @@ import (
 )
 
 func BenchmarkQuery(b *testing.B) {
-	p := shareddata.SimpleBenchmarkValues
-	ctx, coll := setup.SetupBenchmark(b, p)
+	provider := shareddata.SimpleBenchmarkValues
+
+	s := setup.SetupWithOpts(b, &setup.SetupOpts{
+		BenchmarkProvider: provider,
+	})
+
+	ctx, coll := s.Ctx, s.Collection
 
 	for name, bm := range map[string]struct {
 		filter bson.D
@@ -39,7 +44,7 @@ func BenchmarkQuery(b *testing.B) {
 			filter: bson.D{{"v.42", "hello"}},
 		},
 	} {
-		b.Run(fmt.Sprint(name, "_", p.Hash()), func(b *testing.B) {
+		b.Run(fmt.Sprint(name, "_", provider.Hash()), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				cur, err := coll.Find(ctx, bm.filter)
 				require.NoError(b, err)
