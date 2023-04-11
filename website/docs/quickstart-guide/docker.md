@@ -6,23 +6,27 @@ description: How to set up FerretDB using Docker
 
 # Docker
 
-## Provided images
-
-We provide three official Docker images:
+To run FerretDB as a Docker container you can choose one of the following images:
 
 * [Production image](https://ghcr.io/ferretdb/ferretdb) `ghcr.io/ferretdb/ferretdb`.
 * [Development image](https://ghcr.io/ferretdb/ferretdb-dev) `ghcr.io/ferretdb/ferretdb-dev`.
 * [All-in-one image](https://ghcr.io/ferretdb/all-in-one) `ghcr.io/ferretdb/all-in-one`.
 
-The last one is provided for quick testing and experiments and is unsuitable for production use cases.
-It is documented in the [FerretDB repository](https://github.com/FerretDB/FerretDB#quickstart).
+Read further to learn how to use each of these images.
 
-The development images contain the debug build of FerretDB with test coverage instrumentation, race detector,
-and other changes that make it more suitable for debugging problems.
+## All-in-one image
+
+Use all-in-one image (`ghcr.io/ferretdb/all-in-one`) for quick testing and experiments.
+It is unsuitable for production use cases.
+
+Its usage is documented in the [FerretDB repository](https://github.com/FerretDB/FerretDB#quickstart).
+
+## Production image
+
 In general, the production image should be used since it is faster and smaller.
-The following instructions use it, but the development image could be used in exactly the same way.
+The following instructions describe how to configure and run it:
 
-## Setup with Docker Compose
+### Setup with Docker Compose
 
 The following steps describe a quick local setup:
 
@@ -83,3 +87,9 @@ You can improve that setup by:
 Find out more about:
 
 * [Getting logs](../configuration/logging.md#docker-logs)
+
+## Development image
+
+The development image contain the debug build of FerretDB with test coverage instrumentation, race detector,
+and other changes that make it more suitable for debugging problems.
+It can be used exactly the same way as production image, lalal
