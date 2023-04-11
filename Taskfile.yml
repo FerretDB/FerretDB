@@ -64,15 +64,23 @@ tasks:
 
   env-up-detach:
     cmds:
+      - docker version
+      - docker compose version
+      # use -t instead of --timeout / --wait-timeout to be compatible with all versions:
+      # https://github.com/docker/compose/issues/10269#issuecomment-1495205234
       - >
-        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes -t 0 --detach
         --build --pull=always
         {{.SERVICES}}
 
   env-up-detach-offline:
     cmds:
+      - docker version
+      - docker compose version
+      # use -t instead of --timeout / --wait-timeout to be compatible with all versions:
+      # https://github.com/docker/compose/issues/10269#issuecomment-1495205234
       - >
-        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes --timeout=0 --detach
+        docker compose up --always-recreate-deps --force-recreate --remove-orphans --renew-anon-volumes -t 0 --detach
         {{.SERVICES}}
 
   env-setup:
@@ -104,7 +112,9 @@ tasks:
   env-down:
     desc: "Stop development environment"
     cmds:
-      - docker compose down --remove-orphans --timeout=0 --volumes
+      # use -t instead of --timeout / --wait-timeout to be compatible with all versions:
+      # https://github.com/docker/compose/issues/10269#issuecomment-1495205234
+      - docker compose down --remove-orphans -t 0 --volumes
 
   env-data:
     desc: "Fill `test` database with data for experiments"
@@ -409,12 +419,14 @@ tasks:
         /legacy-mongo-shell/test.js
 
   docker-init:
+    run: once
     cmds:
-      - docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+      - cmd: docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+        ignore_error: true
       - docker buildx ls
 
   docker-build:
-    deps: [gen-version]
+    deps: [gen-version, docker-init]
     cmds:
       - >
         docker buildx build --builder=ferretdb
@@ -434,7 +446,6 @@ tasks:
   # do not change that target much; see "Building and packaging" in README.md
   build-release:
     desc: "Build bin/ferretdb (production build)"
-    deps: [gen-version]
     cmds:
       - echo 'bin' > build/version/package.txt
       - task: docker-build

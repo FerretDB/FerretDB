@@ -5,6 +5,7 @@ name: Debug
 on:
   pull_request:
     types:
+      - labeled
       - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
       - opened
       - reopened
@@ -12,6 +13,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "*"
   schedule:
     - cron: "12 2 * * *"
 
@@ -30,6 +33,15 @@ jobs:
     if: false
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      - name: Debug git status
+        run: git status
+
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
         env:

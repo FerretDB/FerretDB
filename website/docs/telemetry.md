@@ -21,7 +21,8 @@ The following data is collected:
   cloud provider region, or country derived from IP address (but the IP address itself)
 * Uptime
 * Backend (PostgreSQL or Tigris) version
-* Build configuration and installation type (Docker, package, self-built)
+* Installation type (Docker, package, cloud provider marketplace, self-built)
+* Build configuration (Go version, build flags and tags)
 * Command statistics:
   * protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
   * command names (e.g. `find`, `aggregate`);
