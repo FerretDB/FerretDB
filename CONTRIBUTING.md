@@ -182,7 +182,7 @@ For example:
 
 > **Note**
 >
-> Due to the way, we use parallel subtests, `-failfast` flag could provide confusing results.
+> Due to the way we use parallel subtests, `-failfast` flag could provide confusing results.
 > Consider using `-run=TestName/TestCaseName -parallel=1` instead.
 
 In general, we prefer integration tests over unit tests,
