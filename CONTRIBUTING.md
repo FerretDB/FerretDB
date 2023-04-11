@@ -180,9 +180,10 @@ For example:
 > It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
 
-> **Warning**
+> **Note**
 >
-> lala
+> Due to the way, we use parallel subtests, `-failfast` flag could provide confusing results.
+> Consider using `-run=TestName/TestCaseName -parallel=1` instead.
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
