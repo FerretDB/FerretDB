@@ -80,8 +80,8 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 	}
 
 	if collection == "" {
-		return nil, NewCommandErrorMsg(
-			ErrInvalidNamespace,
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.'", db),
 		)
 	}
@@ -137,7 +137,10 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 
 	updateParam, err := doc.Get("update")
 	if err != nil && !remove {
-		return nil, NewCommandErrorMsg(ErrFailedToParse, "Either an update or remove=true must be specified")
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Either an update or remove=true must be specified",
+		)
 	}
 
 	if err == nil {
@@ -146,10 +149,14 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 			update = updateParam
 		case *types.Array:
 			// TODO aggregation pipeline stages metrics
-			return nil, NewCommandErrorMsgWithArgument(ErrNotImplemented, "Aggregation pipelines are not supported yet", "update")
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation pipelines are not supported yet",
+				"update",
+			)
 		default:
-			return nil, NewCommandErrorMsgWithArgument(
-				ErrFailedToParse,
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
 				"Update argument must be either an object or an array",
 				"update",
 			)
@@ -157,16 +164,22 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 	}
 
 	if update != nil && remove {
-		return nil, NewCommandErrorMsg(ErrFailedToParse, "Cannot specify both an update and remove=true")
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Cannot specify both an update and remove=true",
+		)
 	}
 
 	if upsert && remove {
-		return nil, NewCommandErrorMsg(ErrFailedToParse, "Cannot specify both upsert=true and remove=true")
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Cannot specify both upsert=true and remove=true",
+		)
 	}
 
 	if returnNewDocument && remove {
-		return nil, NewCommandErrorMsg(
-			ErrFailedToParse,
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
 			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
 		)
 	}
