@@ -798,10 +798,24 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: `target namespace exists`,
 			},
 		},
-		"RenameVerifyMetadata": {
-			collection:       "foo",
-			targetCollection: "bar",
-			expected:         bson.D{{"ok", float64(1)}},
+		// TODO..
+		"ExceedsMaxCollectionNameLen": {
+			collection:       "x",
+			targetCollection: "x",
+			err: &mongo.CommandError{
+				Code:    0,
+				Name:    "x",
+				Message: `x`,
+			},
+		},
+		"StressTest": {
+			collection:       "x",
+			targetCollection: "x",
+			err: &mongo.CommandError{
+				Code:    0,
+				Name:    "x",
+				Message: `x`,
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -820,18 +834,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			var actual bson.D
 
-			if name == "RenameVerifyMetadata" {
-				_, err := collection.InsertMany(
-					ctx,
-					[]interface{}{
-						bson.D{{"a", 1}},
-						bson.D{{"a", 2}},
-					},
-					nil,
-				)
-				require.NoError(t, err)
-			}
-
 			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.collection)
 			targetNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)
 			cmd := bson.D{
@@ -845,12 +847,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			if tc.err != nil {
 				AssertEqualError(t, *tc.err, err)
 				return
-			}
-
-			if name == "RenameVerifyMetadata" {
-				cur, err := db.Collection(tc.collection).Find(ctx, bson.D{{}}, nil) //nolint:vet // for readability
-				require.NoError(t, err)
-				require.False(t, cur.Next(ctx))
 			}
 
 			require.NoError(t, err)

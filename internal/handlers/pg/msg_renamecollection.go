@@ -53,7 +53,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	if dropTarget, err = common.GetOptionalParam(document, "dropTarget", false); err != nil {
 		return nil, err
 	}
-	_ = dropTarget
 
 	var qp pgdb.QueryParams
 
@@ -97,7 +96,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection)
+		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection, dropTarget)
 	})
 
 	switch {
