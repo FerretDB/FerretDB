@@ -49,14 +49,14 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		"StorageStatsWithScale": {
 			collStats: bson.D{{"storageStats", bson.D{{"scale", 1000}}}},
 		},
-		"StorageStatsWithNegativeScale": {
+		"StorageStatsNegativeScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", -1000}}}},
 			resultType: emptyResult,
 		},
-		"StorageStatsWithFloatScale": {
+		"StorageStatsFloatScale": {
 			collStats: bson.D{{"storageStats", bson.D{{"scale", 42.42}}}},
 		},
-		"StorageStatsWithInvalidScale": {
+		"StorageStatsInvalidScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", "invalid"}}}},
 			resultType: emptyResult,
 		},

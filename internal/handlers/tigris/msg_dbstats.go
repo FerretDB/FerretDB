@@ -103,7 +103,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"indexes", int32(0),
 			"indexSize", int32(0),
 			"totalSize", int32(0),
-			"scaleFactor", scale,
+			"scaleFactor", float64(scale),
 			"ok", float64(1),
 		))},
 	}))
