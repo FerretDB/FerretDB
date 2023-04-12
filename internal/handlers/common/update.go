@@ -75,8 +75,16 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$unset":
-			// Checked in processSetFieldExpression that updateV is a doc.
-			unsetDoc := updateV.(*types.Document)
+			unsetDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return false, commonerrors.NewCommandErrorMsg(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
+						"For example: {$mod: {<field>: ...}} not {$unset: \"%s\"}",
+						updateV,
+					),
+				)
+			}
 
 			for _, key := range unsetDoc.Keys() {
 				var path types.Path
