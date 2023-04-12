@@ -44,13 +44,28 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "writeConcern", "comment"); err != nil {
+	if err = common.Unimplemented(document, "writeConcern", "comment", "dropTarget"); err != nil {
 		return nil, err
 	}
 
-	var dropTarget bool
+	sourceNamespace, err := common.GetRequiredParam[string](document, document.Command())
+	if err != nil {
+		return nil, err
+	}
 
-	if dropTarget, err = common.GetOptionalParam(document, "dropTarget", false); err != nil {
+	sourceDB, collection, err := extractFromNamespace(sourceNamespace)
+	if err != nil {
+		return nil, err
+	}
+
+	targetNamespace, err := common.GetRequiredParam[string](document, "to")
+	if err != nil {
+		return nil, err
+	}
+
+	// we assume we cannot move a collection between databases, yet.
+	_, targetCollection, err := extractFromNamespace(targetNamespace)
+	if err != nil {
 		return nil, err
 	}
 
@@ -67,16 +82,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	sourceNamespace, err := common.GetRequiredParam[string](document, document.Command())
-	if err != nil {
-		return nil, err
-	}
-
-	targetNamespace, err := common.GetRequiredParam[string](document, "to")
-	if err != nil {
-		return nil, err
-	}
-
 	if sourceNamespace == targetNamespace {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrIllegalOperation,
@@ -84,19 +89,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	sourceDB, collection, err := extractFromNamespace(sourceNamespace)
-	if err != nil {
-		return nil, err
-	}
-
-	// we assume we cannot move a collection between databases, yet.
-	_, targetCollection, err := extractFromNamespace(targetNamespace)
-	if err != nil {
-		return nil, err
-	}
-
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection, dropTarget)
+		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection)
 	})
 
 	switch {

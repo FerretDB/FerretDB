@@ -193,11 +193,7 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 // Please use errors.Is to check the error.
 //
 // It returns ErrAlreadyExist if the target database or collection already exists.
-func RenameCollection(ctx context.Context, tx pgx.Tx, schema, from, to string, dropTarget bool) error {
-	if dropTarget {
-		_ = dropTarget // TODO handle this
-	}
-
+func RenameCollection(ctx context.Context, tx pgx.Tx, schema, from, to string) error {
 	return newMetadataStorage(tx, schema, from).renameCollection(ctx, to)
 }
 
