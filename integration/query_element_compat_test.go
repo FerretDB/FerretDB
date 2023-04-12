@@ -25,8 +25,12 @@ func TestQueryElementCompatExist(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"Exists": {
+		"IDExistsTrue": {
 			filter: bson.D{{"_id", bson.D{{"$exists", true}}}},
+		},
+		"IDExistsFalse": {
+			filter:     bson.D{{"_id", bson.D{{"$exists", false}}}},
+			resultType: emptyResult,
 		},
 		"ExistsSecondField": {
 			filter: bson.D{{"v", bson.D{{"$exists", true}}}},
