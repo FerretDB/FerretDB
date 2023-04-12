@@ -4,3 +4,10 @@ alex:
   title: FerretDB Team
   url: https://github.com/fashander
   image_url: https://github.com/fashander.png
+
+peter:
+  name: Peter Farkas
+  title: Co-Founder, CEO
+  url: https://www.linkedin.com/in/peter-farkas-2aa9b348
+  image_url: https://github.com/ptrfarkas.png
+  
