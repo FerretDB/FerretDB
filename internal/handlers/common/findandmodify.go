@@ -278,14 +278,15 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 	for _, k := range params.Update.Keys() {
 		v := must.NotFail(params.Update.Get(k))
 		if k == "_id" {
-			return nil, commonerrors.NewCommandError(
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrImmutableField,
-				fmt.Errorf(
+				fmt.Sprintf(
 					"Plan executor error during findAndModify :: caused "+
 						"by :: After applying the update, the (immutable) field "+
 						"'_id' was found to have been altered to _id: \"%s\"",
 					v,
 				),
+				"findAndModify",
 			)
 		}
 
@@ -349,14 +350,16 @@ func hasFilterOperator(query *types.Document) (string, bool, error) {
 		}
 
 		if hasOp {
-			return "", false, commonerrors.NewCommandErrorMsg(
+			return "", false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrDollarPrefixedFieldName,
 				fmt.Sprintf(
 					"Plan executor error during findAndModify :: "+
 						"caused by :: _id fields may not contain '$'-prefixed "+
 						"fields: %s is not valid for storage.",
 					opKey,
-				))
+				),
+				"findAndModify",
+			)
 		}
 	}
 }

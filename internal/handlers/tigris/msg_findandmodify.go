@@ -195,12 +195,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return nil, lazyerrors.New("bad flags combination")
 }
 
-// upsertDocuments inserts new document if insert document is set in UpsertParameter,
+// upsertDocuments inserts new document for insert operation,
 // or updates the document.
 func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, query *tigrisdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
 	res, err := common.PrepareDocumentForUpsert(docs, params)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	switch res.Operation {
@@ -213,7 +213,7 @@ func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*typ
 	case common.UpsertOperationUpdate:
 		_, err = updateDocument(ctx, dbPool, query, res.Upsert)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		return res, nil

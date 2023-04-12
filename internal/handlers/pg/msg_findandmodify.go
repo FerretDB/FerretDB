@@ -202,7 +202,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
-// upsertDocuments inserts new document if insert document is set in UpsertParameter,
+// upsertDocuments inserts new document for insert operation,
 // or updates the document.
 func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, query *pgdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
 	res, err := common.PrepareDocumentForUpsert(docs, params)
@@ -213,14 +213,14 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 	switch res.Operation {
 	case common.UpsertOperationInsert:
 		if err = insertDocument(ctx, dbPool, query, res.Upsert); err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		return res, nil
 	case common.UpsertOperationUpdate:
 		_, err = updateDocument(ctx, tx, query, res.Upsert)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		return res, nil
