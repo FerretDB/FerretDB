@@ -108,6 +108,21 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"maxTimeMS", "string"},
 			},
 		},
+		"DollarPrefixedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+		"DollarPrefixedNestedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$invalid", "val"}}}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			skipForTigris: "schema validation would fail",
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -225,7 +240,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
 				{"upsert", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertNew": {
 			command: bson.D{
@@ -257,7 +271,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertReplaceReturnNew": {
 			command: bson.D{
@@ -265,6 +278,49 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 				{"new", true},
+			},
+		},
+		"ExistsNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+				{"new", true},
+			},
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrueID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+		"UnsetForNonExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "invalid"}}},
+			},
+		},
+		"UnsetForExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "invalid"}}},
 			},
 		},
 	}
@@ -279,7 +335,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				{"query", bson.D{{"_id", "double"}}},
 				{"remove", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 		"RemoveEmptyQueryResult": {
 			command: bson.D{
@@ -295,7 +350,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				},
 				{"remove", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 	}
 
