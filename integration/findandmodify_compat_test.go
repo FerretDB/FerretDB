@@ -26,6 +26,8 @@ import (
 )
 
 func TestFindAndModifyCompatSimple(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"EmptyQueryRemove": {
 			command: bson.D{
@@ -81,6 +83,8 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 }
 
 func TestFindAndModifyCompatErrors(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"NotEnoughParameters": {
 			command: bson.D{},
@@ -129,6 +133,8 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 }
 
 func TestFindAndModifyCompatUpdate(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Replace": {
 			command: bson.D{
@@ -193,6 +199,8 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 //
 // TODO Add more tests for sort: https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"DotNotation": {
 			command: bson.D{
@@ -232,6 +240,8 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 		t,
 		"Tigris' schema doesn't fit for most of providers, upsert for Tigris is tested in TestFindAndModifyUpsert.",
 	)
+
+	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Upsert": {
@@ -329,6 +339,8 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 }
 
 func TestFindAndModifyCompatRemove(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Remove": {
 			command: bson.D{
