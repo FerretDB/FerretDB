@@ -41,9 +41,13 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	scale, err := common.GetScaleParam("collStats", document)
-	if err != nil {
-		return nil, err
+	scale := int32(1)
+
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = common.GetScaleParam("dbStats", s); err != nil {
+			return nil, err
+		}
 	}
 
 	stats, err := dbPool.Stats(ctx, db, "")

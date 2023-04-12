@@ -489,7 +489,7 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
 	// results in overflow with the MinInt64 as result.
 	case v1 == math.MinInt64 || v2 == math.MinInt64:
-		return 0, errLongExceededPositive // todo errLongExceeded negative
+		return 0, errLongExceededNegative
 	}
 
 	res := v1 * v2
