@@ -39,12 +39,14 @@ type storageStats struct {
 
 // newCollStats creates a new $collStats stage.
 func newCollStats(stage *types.Document) (Stage, error) {
+	command := "$collStats (stage)"
+
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCollStatsInvalidArg,
 			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(stage)),
-			"$collStats (stage)",
+			command,
 		)
 	}
 
@@ -62,10 +64,11 @@ func newCollStats(stage *types.Document) (Stage, error) {
 	if fields.Has("storageStats") {
 		cs.storageStats = new(storageStats)
 
-		// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
-		cs.storageStats.scale, err = common.GetScaleParam("collStats", fields)
-		if err != nil {
-			return nil, err
+		var s any
+		if s, err = fields.Get("scale"); err == nil {
+			if cs.storageStats.scale, err = common.GetScaleParam(command, s); err != nil {
+				return nil, err
+			}
 		}
 	}
 
