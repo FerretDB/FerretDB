@@ -143,7 +143,7 @@ func projectDocument(doc *types.Document, projection *types.Document) (*types.Do
 			}
 
 		default:
-			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, projectionVal, projectionVal)
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
 		}
 
 		// if doc has field set it to the projected document
@@ -152,5 +152,5 @@ func projectDocument(doc *types.Document, projection *types.Document) (*types.Do
 		}
 	}
 
-		return projected, nil
+	return projected, nil
 }
