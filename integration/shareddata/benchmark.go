@@ -18,6 +18,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// NewBenchmarkValues initializes BenchmarkValues with expected hash of all documents
+// and generator function.
 func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
 	return BenchmarkValues{
 		hash: hash,
@@ -25,12 +27,14 @@ func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
 	}
 }
 
+// SimpleBenchmarkValues contain documents with various types of values.
 var SimpleBenchmarkValues BenchmarkValues = NewBenchmarkValues(
 	"Ha59TmC9nwTXqEob73HIwqWUcx2Lp7aengCtNsqjWK0=",
-	GenerateSimpleValues(),
+	GenerateMixedValues(),
 )
 
-func GenerateSimpleValues() func() bson.D {
+// GenerateMixedValues returns generator that generates 400 documents with various types of values.
+func GenerateMixedValues() func() bson.D {
 	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
 	}

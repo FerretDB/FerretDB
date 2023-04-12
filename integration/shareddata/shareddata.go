@@ -45,29 +45,6 @@ type Provider interface {
 	IsCompatible(backend string) bool
 }
 
-// TOOD
-type BenchmarkProvider interface {
-	// TODO
-	Hash() string
-
-	Docs() iterator.Interface[struct{}, bson.D]
-}
-
-type BenchmarkValues struct {
-	hash string
-	iter iterator.Interface[struct{}, bson.D]
-}
-
-func (b BenchmarkValues) Hash() string {
-	return b.hash
-}
-
-func (b BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
-	return b.iter
-}
-
-var SimpleValues = BenchmarkValues{}
-
 // AllProviders returns all providers in random order.
 func AllProviders() Providers {
 	providers := []Provider{
@@ -225,3 +202,29 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 var (
 	_ Provider = (*Values[string])(nil)
 )
+
+// BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
+type BenchmarkProvider interface {
+	// Hash returns expected hash of all provider documents.
+	Hash() string
+
+	// Docs returns iterator that returns all documents from provider.
+	// They should be always in deterministic order.
+	Docs() iterator.Interface[struct{}, bson.D]
+}
+
+// BenchmarkValues returns shared data documents for benchmark in deterministic order.
+type BenchmarkValues struct {
+	hash string
+	iter iterator.Interface[struct{}, bson.D]
+}
+
+// Hash implements BenchmarkProvider interface.
+func (b BenchmarkValues) Hash() string {
+	return b.hash
+}
+
+// Docs implements BenchmarkProvider interface.
+func (b BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
+	return b.iter
+}
