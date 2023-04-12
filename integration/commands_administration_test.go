@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -767,7 +768,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	t.Parallel()
-	insertCollections := []string{"foo", "none"}
+	insertCollections := []string{"foo", "none", strings.Repeat("a", 63)}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collection       string
@@ -808,32 +809,13 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				bson.D{{"a", 2}},
 			},
 		},
-		// TODO..
-		"ExceedsMaxCollectionNameLen": {
-			collection:       "x",
-			targetCollection: "x",
+		"MaxTableLen": {
+			collection:       strings.Repeat("a", 63),
+			targetCollection: "bar",
 			err: &mongo.CommandError{
-				Code:    0,
-				Name:    "x",
-				Message: `x`,
-			},
-		},
-		"StressTest": {
-			collection:       "x",
-			targetCollection: "x",
-			err: &mongo.CommandError{
-				Code:    0,
-				Name:    "x",
-				Message: `x`,
-			},
-		},
-		"InvalidOption": {
-			collection:       "x",
-			targetCollection: "x",
-			err: &mongo.CommandError{
-				Code:    0,
-				Name:    "x",
-				Message: `x`,
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "",
 			},
 		},
 	} {
@@ -894,6 +876,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				err = db.Collection(tc.targetCollection).FindOne(
 					ctx, bson.D{{"bool-false", false}},
 				).Decode(&v)
+
 				require.ErrorIs(t, err, mongo.ErrNoDocuments)
 			}
 		})
