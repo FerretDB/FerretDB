@@ -209,6 +209,15 @@ type BenchmarkProvider interface {
 	Docs() iterator.Interface[struct{}, bson.D]
 }
 
+// NewBenchmarkValues initializes BenchmarkValues with expected hash of all documents
+// and generator function.
+func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
+	return BenchmarkValues{
+		hash: hash,
+		iter: newValuesIterator(gen),
+	}
+}
+
 // BenchmarkValues returns shared data documents for benchmark in deterministic order.
 type BenchmarkValues struct {
 	iter iterator.Interface[struct{}, bson.D]

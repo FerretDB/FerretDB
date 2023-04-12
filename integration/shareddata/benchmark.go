@@ -17,15 +17,6 @@ package shareddata
 
 import "go.mongodb.org/mongo-driver/bson"
 
-// NewBenchmarkValues initializes BenchmarkValues with expected hash of all documents
-// and generator function.
-func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
-	return BenchmarkValues{
-		hash: hash,
-		iter: newValuesIterator(gen),
-	}
-}
-
 // SimpleBenchmarkValues contain documents with various types of values.
 var SimpleBenchmarkValues BenchmarkValues = NewBenchmarkValues(
 	"Ha59TmC9nwTXqEob73HIwqWUcx2Lp7aengCtNsqjWK0=",
