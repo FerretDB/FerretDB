@@ -6,8 +6,8 @@ hide_table_of_contents: true
 # Query pushdown
 
 **Query pushdown** is the method of optimizing a query by reducing the amount of data read and processed.
-It saves memory space, network bandwidth, and reduces the query execution time by not prefetching
-unnecessary data to the database management system.
+It saves memory space, network bandwidth, and reduces the query execution time by moving some parts
+of the query execution closer to the data source.
 
 Initially FerretDB retrieved all data related to queried collection, and applies filters on its own, making
 it possible to implement complex logic safely and quickly.
