@@ -64,8 +64,10 @@ func newCollStats(stage *types.Document) (Stage, error) {
 	if fields.Has("storageStats") {
 		cs.storageStats = new(storageStats)
 
+		storageStatsFields := must.NotFail(fields.Get("storageStats")).(*types.Document)
+
 		var s any
-		if s, err = fields.Get("scale"); err == nil {
+		if s, err = storageStatsFields.Get("scale"); err == nil {
 			if cs.storageStats.scale, err = common.GetScaleParam(command, s); err != nil {
 				return nil, err
 			}
