@@ -774,7 +774,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		targetCollection string
 		expected         bson.D
 		err              *mongo.CommandError
-		toInsert         bson.D
+		toInsert         []interface{}
 	}{
 		"Rename": {
 			collection:       "foo",
@@ -802,7 +802,10 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		"InsertIntoOld": {
 			collection: "foo",
 			expected:   bson.D{{"ok", float64(1)}},
-			toInsert:   bson.D{{"a", 1}},
+			toInsert: []interface{}{
+				bson.D{{"a", 1}},
+				bson.D{{"a", 2}},
+			},
 		},
 		// TODO..
 		"ExceedsMaxCollectionNameLen": {
@@ -871,11 +874,11 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.NotContains(t, collections, tc.collection)
 
 			if tc.toInsert != nil {
-				_, err := db.Collection(tc.collection).InsertOne(ctx, tc.toInsert)
+				_, err := db.Collection(tc.collection).InsertMany(ctx, tc.toInsert)
 				require.NoError(t, err)
 
 				var v any
-				err = db.Collection(tc.collection).FindOne(ctx, bson.D{{"bool-false", false}}).Decode(&v)
+				err = db.Collection(tc.targetCollection).FindOne(ctx, bson.D{{"bool-false", false}}).Decode(&v)
 				require.ErrorIs(t, err, mongo.ErrNoDocuments)
 			}
 		})
