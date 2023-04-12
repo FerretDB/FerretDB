@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -62,7 +63,7 @@ func (h *Handler) MsgGetParameter(_ context.Context, msg *wire.OpMsg) (*wire.OpM
 	common.Ignored(document, h.L, "comment")
 
 	if resDoc.Len() < 2 {
-		return &reply, common.NewCommandErrorMsg(common.ErrorCode(0), "no option found to get")
+		return &reply, commonerrors.NewCommandErrorMsg(commonerrors.ErrorCode(0), "no option found to get")
 	}
 
 	return &reply, nil

@@ -141,8 +141,9 @@ func projectDocument(doc *types.Document, projection *types.Document) (*types.Do
 				projected.RemoveByPath(path)
 				continue
 			}
+
 		default:
-			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, projectionVal, projectionVal)
 		}
 
 		// if doc has field set it to the projected document
@@ -151,5 +152,5 @@ func projectDocument(doc *types.Document, projection *types.Document) (*types.Do
 		}
 	}
 
-	return projected, nil
+		return projected, nil
 }
