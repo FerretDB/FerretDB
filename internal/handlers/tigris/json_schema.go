@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -35,14 +36,14 @@ func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
 	}
 
 	if schema == "" {
-		return nil, common.NewCommandError(common.ErrBadValue, fmt.Errorf("empty schema is not allowed"))
+		return nil, commonerrors.NewCommandError(commonerrors.ErrBadValue, fmt.Errorf("empty schema is not allowed"))
 	}
 
 	sch := new(tjson.Schema)
 	err = sch.Unmarshal([]byte(schema))
 
 	if err != nil {
-		return nil, common.NewCommandError(common.ErrBadValue, err)
+		return nil, commonerrors.NewCommandError(commonerrors.ErrBadValue, err)
 	}
 
 	return sch, nil

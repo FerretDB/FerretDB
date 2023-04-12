@@ -257,7 +257,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
-			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
+			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrEmptyName, "An empty update path is not valid.")
 		}
 
 		// this is covered in validateRenameExpression

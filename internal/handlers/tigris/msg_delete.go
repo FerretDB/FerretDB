@@ -23,6 +23,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -75,15 +76,15 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
 
 	var deleted int32
-	var delErrors common.WriteErrors
+	var delErrors commonerrors.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
@@ -152,8 +153,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	// https://github.com/FerretDB/FerretDB/issues/2255
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrMissingField,
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 			"limit",
 		)
@@ -161,8 +162,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrFailedToParse,
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 			"limit",
 		)
