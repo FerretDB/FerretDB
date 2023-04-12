@@ -83,7 +83,7 @@ type SetupOpts struct {
 	Providers []shareddata.Provider
 
 	// BenchmarkProvider
-	BenchmarkProvider shareddata.BenchmarkProvider
+	BenchmarkProviders []shareddata.BenchmarkProvider
 }
 
 // SetupResult represents setup results.
@@ -196,12 +196,94 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		_ = database.Drop(ctx)
 	}
 
-	if opts.BenchmarkProvider != nil {
-		require.Empty(tb, opts.Providers, "Both Providers and BenchmarkProviders were set")
+	var inserted bool
+	if len(opts.Providers) != 0 {
+		require.Empty(tb, opts.BenchmarkProviders, "Both Providers and BenchmarkProviders were set")
+		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+	} else {
+		inserted = insertBenchmarkProviders(tb, ctx, collection, opts.BenchmarkProviders...)
+	}
 
-		provider := opts.BenchmarkProvider
+	if len(opts.Providers) == 0 && len(opts.BenchmarkProviders) == 0 {
+		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
+	} else {
+		require.True(tb, inserted, "all providers were not compatible")
+	}
 
-		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Hash())
+	if ownCollection {
+		// delete collection and (possibly) database unless test failed
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+				return
+			}
+
+			err := collection.Drop(ctx)
+			require.NoError(tb, err)
+
+			if ownDatabase {
+				err = database.Drop(ctx)
+				require.NoError(tb, err)
+			}
+		})
+	}
+
+	return collection
+}
+
+// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+	tb.Helper()
+
+	collectionName := collection.Name()
+	database := collection.Database()
+
+	for _, provider := range providers {
+		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
+			tb.Logf(
+				"Provider %q is not compatible with backend %q, skipping it.",
+				provider.Name(),
+				*targetBackendF,
+			)
+
+			continue
+		}
+
+		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
+		provCtx, span := otel.Tracer("").Start(ctx, spanName)
+		region := trace.StartRegion(provCtx, spanName)
+
+		// if validators are set, create collection with them (otherwise collection will be created on first insert)
+		if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
+			copts := options.CreateCollection()
+			for key, value := range validators {
+				copts.SetValidator(bson.D{{key, value}})
+			}
+
+			require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
+		}
+
+		docs := shareddata.Docs(provider)
+		require.NotEmpty(tb, docs)
+
+		res, err := collection.InsertMany(provCtx, docs)
+		require.NoError(tb, err, "provider %q", provider.Name())
+		require.Len(tb, res.InsertedIDs, len(docs))
+		inserted = true
+
+		region.End()
+		span.End()
+	}
+
+	return
+}
+
+// insertBenchmarkProviders inserts documents from specified BenchmarkProviders into collection. It returns true if any document was inserted.
+func insertBenchmarkProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.BenchmarkProvider) (inserted bool) {
+	tb.Helper()
+
+	for _, provider := range providers {
+		spanName := fmt.Sprintf("insertBenchmarkProviders/%s/%s", collection.Name(), provider.Hash())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(provCtx, spanName)
 
@@ -237,6 +319,8 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			res, err := collection.InsertMany(provCtx, insertDocs)
 			require.NoError(tb, err, "provider %q", provider.Hash())
 			require.Len(tb, res.InsertedIDs, len(docs))
+
+			inserted = true
 		}
 
 		actualSum := base64.StdEncoding.EncodeToString(hash.Sum(nil))
@@ -246,70 +330,6 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 		region.End()
 		span.End()
-
-	} else {
-		var inserted bool
-		for _, provider := range opts.Providers {
-			if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
-				tb.Logf(
-					"Provider %q is not compatible with backend %q, skipping it.",
-					provider.Name(),
-					*targetBackendF,
-				)
-
-				continue
-			}
-
-			spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
-			provCtx, span := otel.Tracer("").Start(ctx, spanName)
-			region := trace.StartRegion(provCtx, spanName)
-
-			// if validators are set, create collection with them (otherwise collection will be created on first insert)
-			if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
-				copts := options.CreateCollection()
-				for key, value := range validators {
-					copts.SetValidator(bson.D{{key, value}})
-				}
-
-				require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
-			}
-
-			docs := shareddata.Docs(provider)
-			require.NotEmpty(tb, docs)
-
-			res, err := collection.InsertMany(provCtx, docs)
-			require.NoError(tb, err, "provider %q", provider.Name())
-			require.Len(tb, res.InsertedIDs, len(docs))
-			inserted = true
-
-			region.End()
-			span.End()
-		}
-
-		if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
-			tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
-		} else {
-			require.True(tb, inserted, "all providers were not compatible")
-		}
 	}
-
-	if ownCollection {
-		// delete collection and (possibly) database unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
-				return
-			}
-
-			err := collection.Drop(ctx)
-			require.NoError(tb, err)
-
-			if ownDatabase {
-				err = database.Drop(ctx)
-				require.NoError(tb, err)
-			}
-		})
-	}
-
-	return collection
+	return
 }
