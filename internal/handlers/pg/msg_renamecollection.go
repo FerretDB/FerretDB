@@ -106,6 +106,11 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			commonerrors.ErrNamespaceNotFound,
 			"source namespace does not exist",
 		)
+	case errors.Is(err, pgdb.ErrInvalidCollectionName):
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrInvalidNamespace,
+			"collection is too long",
+		)
 	}
 
 	var reply wire.OpMsg
