@@ -26,6 +26,11 @@ import (
 )
 
 func BenchmarkQuery(b *testing.B) {
+	// if we want test case to contain a hash in name we should make possible to conatin only single provider in SetupOpts.
+	// To use multiple benchmarkProviders, one can always just create another provider that generates values from multiple generators.
+	//
+	// TODO remove mutliple BenchmarkValues
+	// TODO consider allowing multiple generators inside a single benchmarkIterator
 	provider := shareddata.SimpleBenchmarkValues
 
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
