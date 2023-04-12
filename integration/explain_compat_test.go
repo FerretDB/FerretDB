@@ -67,28 +67,28 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				explainParams := bson.D{
-					{tc.command, targetCollection.Name()},
-				}
+				explainTarget := bson.D{{tc.command, targetCollection.Name()}}
+				explainCompat := bson.D{{tc.command, compatCollection.Name()}}
 
 				if tc.filter != nil {
-					explainParams = bson.D{
-						{tc.command, targetCollection.Name()},
-						{"filter", tc.filter},
-					}
+					explainTarget = append(explainTarget, bson.E{Key: "filter", Value: tc.filter})
+					explainCompat = append(explainCompat, bson.E{Key: "filter", Value: tc.filter})
 				}
 
 				if tc.pipeline != nil {
-					explainParams = bson.D{
-						{tc.command, targetCollection.Name()},
-						{"pipeline", tc.pipeline},
-					}
+					explainTarget = append(explainTarget, bson.E{Key: "pipeline", Value: tc.pipeline})
+					explainCompat = append(explainCompat, bson.E{Key: "pipeline", Value: tc.pipeline})
 				}
 
-				explainCommand := bson.D{{"explain", explainParams}}
 				var targetRes, compatRes bson.D
-				targetErr := targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&targetRes)
-				compatErr := compatCollection.Database().RunCommand(ctx, explainCommand).Decode(&compatRes)
+				targetErr := targetCollection.Database().RunCommand(
+					ctx,
+					bson.D{{"explain", explainTarget}},
+				).Decode(&targetRes)
+				compatErr := compatCollection.Database().RunCommand(
+					ctx,
+					bson.D{{"explain", explainCompat}},
+				).Decode(&compatRes)
 
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
