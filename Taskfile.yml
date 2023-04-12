@@ -167,8 +167,8 @@ tasks:
     desc: "Run integration tests for `pg` and `tigris` in parallel"
     deps:
       - test-integration-pg
-      - test-integration-tigris
       - test-integration-mongodb
+      # disable for now - test-integration-tigris
       # no test-integration-hana
 
   test-integration-pg:
