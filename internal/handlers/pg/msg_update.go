@@ -76,15 +76,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.CreateCollectionIfNotExists(ctx, tx, qp.DB, qp.Collection)
 	})
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
-	default:
-		return nil, lazyerrors.Error(err)
+	if err != nil {
+		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
+			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
+			msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+		}
+		return nil, err
 	}
 
 	var matched, modified int32
