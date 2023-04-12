@@ -82,6 +82,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      # TODO https://github.com/FerretDB/github-actions/issues/160
       - name: Deploy to Cloudflare Pages
-        run: cat deploy.txt
+        run: |
+        content=$(cat deploy.txt)
+        regex="https?://[^ ]+"
+        if [[ $content =~ $regex ]]
+        then
+            url=${BASH_REMATCH[0]}
+            echo "::set-output name=url::$url"
+        else
+            echo "No URL found"
+        fi
