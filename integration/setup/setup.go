@@ -82,8 +82,8 @@ type SetupOpts struct {
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
-	// BenchmarkProvider
-	BenchmarkProviders []shareddata.BenchmarkProvider
+	// Benchmark data provider. If empty, collection is not created.
+	BenchmarkProvider shareddata.BenchmarkProvider
 }
 
 // SetupResult represents setup results.
@@ -198,13 +198,13 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 	if len(opts.Providers) != 0 {
-		require.Empty(tb, opts.BenchmarkProviders, "Both Providers and BenchmarkProviders were set")
+		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
 		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
 	} else {
-		inserted = insertBenchmarkProviders(tb, ctx, collection, opts.BenchmarkProviders...)
+		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
 
-	if len(opts.Providers) == 0 && len(opts.BenchmarkProviders) == 0 {
+	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
 		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
 	} else {
 		require.True(tb, inserted, "all providers were not compatible")
@@ -278,8 +278,8 @@ func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 	return
 }
 
-// insertBenchmarkProviders inserts documents from specified BenchmarkProviders into collection. It returns true if any document was inserted.
-func insertBenchmarkProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.BenchmarkProvider) (inserted bool) {
+// insertBenchmarkProvider inserts documents from specified BenchmarkProviders into collection. It returns true if any document was inserted.
+func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
 	for _, provider := range providers {

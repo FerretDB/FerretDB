@@ -23,7 +23,7 @@ import (
 func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
 	return BenchmarkValues{
 		hash: hash,
-		iter: newBenchmarkIterator(gen),
+		iter: newValuesIterator(gen),
 	}
 }
 

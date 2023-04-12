@@ -34,7 +34,7 @@ func BenchmarkQuery(b *testing.B) {
 	provider := shareddata.SimpleBenchmarkValues
 
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		BenchmarkProviders: []shareddata.BenchmarkProvider{provider},
+		BenchmarkProvider: provider,
 	})
 
 	ctx, coll := s.Ctx, s.Collection

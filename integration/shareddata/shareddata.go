@@ -198,11 +198,6 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	return slices.Contains(values.backends, backend)
 }
 
-// check interfaces
-var (
-	_ Provider = (*Values[string])(nil)
-)
-
 // BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
 type BenchmarkProvider interface {
 	// Hash returns expected hash of all provider documents.
@@ -228,3 +223,9 @@ func (b BenchmarkValues) Hash() string {
 func (b BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
 	return b.iter
 }
+
+// check interfaces
+var (
+	_ Provider          = (*Values[string])(nil)
+	_ BenchmarkProvider = (*BenchmarkValues)(nil)
+)
