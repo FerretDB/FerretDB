@@ -63,32 +63,10 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-type setupListenerOpts struct {
-	DisablePushdown bool //defaults to false
-	Logger          *zap.Logger
-}
-
 // setupListener starts in-process FerretDB server that runs until ctx is done.
 // It returns client and MongoDB URI of that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
-	return setupListenerWithOpts(tb, ctx, &setupListenerOpts{
-		Logger: logger,
-	})
-}
-
-// setupListenerWithOpts starts in-process FerretDB server that runs until ctx is done.
-// It returns client and MongoDB URI of that listener.
-func setupListenerWithOpts(tb testing.TB, ctx context.Context, opts *setupListenerOpts) (*mongo.Client, string) {
 	tb.Helper()
-
-	if opts == nil {
-		tb.Fatal("setupListenerWithOpts must be called with opts. Consider using setupListener.")
-	}
-
-	disablePushdown := *disablePushdownF || opts.DisablePushdown
-	logger := opts.Logger
-
-	require.False(tb, opts.DisablePushdown && *disablePushdownF, "-disable-pushdown flag mustn't be set with test that disables pushdown")
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
@@ -130,7 +108,7 @@ func setupListenerWithOpts(tb testing.TB, ctx context.Context, opts *setupListen
 		TigrisURL: nextTigrisUrl(),
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: disablePushdown,
+			DisablePushdown: *disablePushdownF,
 			EnableCursors:   *enableCursorsF,
 		},
 	}
