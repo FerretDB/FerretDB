@@ -768,7 +768,9 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	t.Parallel()
-	insertCollections := []string{"foo", "none", strings.Repeat("a", 63)}
+
+	maxNameLen := strings.Repeat("a", 63) // maxTableLen = 63
+	insertCollections := []string{"foo", "buz", maxNameLen}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collection       string
@@ -793,7 +795,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		},
 		"RenameDuplicate": {
 			collection:       "foo",
-			targetCollection: "none",
+			targetCollection: "buz",
 			err: &mongo.CommandError{
 				Code:    48,
 				Name:    "NamespaceExists",
@@ -810,12 +812,12 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"MaxTableLen": {
-			collection:       strings.Repeat("a", 63),
+			collection:       maxNameLen,
 			targetCollection: "bar",
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "",
+				Message: "collection is too long",
 			},
 		},
 	} {

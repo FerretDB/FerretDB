@@ -139,7 +139,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	tableName = collectionNameToTableName(ms.collection, int(ms.counter))
+	tableName = collectionNameToTableName(ms.collection)
 	m = &metadata{
 		collection: ms.collection,
 		table:      tableName,
@@ -185,8 +185,32 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	return metadata.table, nil
 }
 
+// func (ms *metadataStorage) checkTableName(tableName string) {
+// 	iterParams := &iteratorParams{
+// 		schema:    ms.db,
+// 		table:     dbMetadataTableName,
+// 		filter:    must.NotFail(types.NewDocument("table", tableName)),
+// 		forUpdate: false,
+// 	}
+
+// 	iter, err := buildIterator(ctx, ms.tx, iterParams)
+// 	if err != nil {
+// 		return nil, lazyerrors.Error(err)
+// 	}
+
+// 	//
+
+// }
+
 // renameCollection renames metadataStorage.collection.
 func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
+
+	// suggestedTableName := collectionNameToTableName(to)
+	// // check that suggestedTableName is not used yet
+	// // getMetadataByTableName(suggestedTableName)
+	// // suggestedTableName + `a`
+	// // getMetadataByTableName(suggestedTableName)
+
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -202,13 +226,15 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 	}
 
 	// if the metadata exists for to, we return ErrAlreadyExist.
-	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, false); !errors.Is(err, ErrTableNotExist) {
+	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); !errors.Is(err, ErrTableNotExist) {
 		if err == nil {
 			return ErrAlreadyExist
 		}
 
 		return lazyerrors.Error(err)
 	}
+
+	metadata.collection = fmt.Sprintf("%s%d", metadata.collection, ms.counter)
 
 	if len(metadata.collection) > maxTableNameLength {
 		return ErrInvalidCollectionName
@@ -387,7 +413,7 @@ func (ms *metadataStorage) remove(ctx context.Context) error {
 // It replaces special characters with `_`.
 //
 // Deprecated: this function usage is allowed for collection metadata creation only.
-func collectionNameToTableName(name string, i int) string {
+func collectionNameToTableName(name string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(name)))
 
@@ -400,7 +426,7 @@ func collectionNameToTableName(name string, i int) string {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x%d", hash32.Sum(nil), i)
+	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x%d", hash32.Sum(nil))
 }
 
 // setIndex sets the index info in the metadata table.
