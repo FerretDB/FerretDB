@@ -108,6 +108,20 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"maxTimeMS", "string"},
 			},
 		},
+		"DollarPrefixedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+		"DollarPrefixedNestedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$invalid", "val"}}}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)

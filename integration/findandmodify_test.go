@@ -122,32 +122,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 			},
 			altMessage: "BSON field 'upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
-		"DollarPrefixedFieldName": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    52,
-				Name:    "DollarPrefixedFieldName",
-				Message: "Plan executor error during findAndModify :: caused by :: _id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.",
-			},
-			altMessage: "Plan executor error during findAndModify :: caused by :: _id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.",
-		},
-		"DollarPrefixedNestedFieldName": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$invalid", "val"}}}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-			err: &mongo.CommandError{
-				Code:    52,
-				Name:    "DollarPrefixedFieldName",
-				Message: "Plan executor error during findAndModify :: caused by :: _id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.",
-			},
-			altMessage: "Plan executor error during findAndModify :: caused by :: _id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.",
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
