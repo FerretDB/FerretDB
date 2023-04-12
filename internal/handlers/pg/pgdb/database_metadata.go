@@ -210,6 +210,10 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 		return lazyerrors.Error(err)
 	}
 
+	if len(metadata.collection) > maxTableNameLength {
+		return ErrInvalidCollectionName
+	}
+
 	metadata.collection = to
 
 	return ms.set(ctx, metadata)
