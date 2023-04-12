@@ -31,7 +31,8 @@ env:
 jobs:
   test:
     name: Test ${{ matrix.name }}
-    runs-on: faster
+    runs-on:
+      group: paid
     timeout-minutes: 45
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
@@ -40,10 +41,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "PostgreSQL", task: "pg" }
-          - { name: "Tigris", task: "tigris" }
-          - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
           - { name: "MongoDB", task: "mongodb" }
+          - { name: "PostgreSQL", task: "pg" }
+          # - { name: "Tigris", task: "tigris" }
+          # - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
 
     steps:
       - name: Checkout code

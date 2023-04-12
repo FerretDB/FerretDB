@@ -49,6 +49,14 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
+	var scale int32
+
+	scale, err = common.GetOptionalPositiveNumber(document, "scale")
+	if err != nil || scale == 0 {
+		scale = 1
+	}
+
 	querier := dbPool.Driver.UseDatabase(db)
 
 	stats, err := tigrisdb.FetchStats(ctx, querier, collection)
@@ -61,11 +69,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
 			"count", stats.NumObjects,
-			"size", stats.Size,
-			"storageSize", stats.Size,
-			"totalIndexSize", int64(0),
-			"totalSize", stats.Size,
-			"scaleFactor", int32(1),
+			"size", int32(stats.Size)/scale,
+			"storageSize", int32(stats.Size)/scale,
+			"totalIndexSize", int32(0),
+			"totalSize", int32(stats.Size)/scale,
+			"scaleFactor", scale,
 			"ok", float64(1),
 		))},
 	}))

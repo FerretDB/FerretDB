@@ -19,8 +19,9 @@ import (
 	"errors"
 	"fmt"
 	"hash/fnv"
-	"math/rand"
 	"regexp"
+	"sync"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -56,6 +57,9 @@ type metadataStorage struct {
 	tx         pgx.Tx
 	db         string
 	collection string
+
+	mu      sync.Mutex // guards counter
+	counter uint32
 }
 
 // metadata stores information about FerretDB collection and indexes.
@@ -135,7 +139,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	tableName = collectionNameToTableName(ms.collection)
+	tableName = collectionNameToTableName(ms.collection, int(ms.counter))
 	m = &metadata{
 		collection: ms.collection,
 		table:      tableName,
@@ -183,6 +187,11 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 
 // renameCollection renames metadataStorage.collection.
 func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	atomic.AddUint32(&ms.counter, 1)
+
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -193,7 +202,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 	}
 
 	// if the metadata exists for to, we return ErrAlreadyExist.
-	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); !errors.Is(err, ErrTableNotExist) {
+	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, false); !errors.Is(err, ErrTableNotExist) {
 		if err == nil {
 			return ErrAlreadyExist
 		}
@@ -374,7 +383,7 @@ func (ms *metadataStorage) remove(ctx context.Context) error {
 // It replaces special characters with `_`.
 //
 // Deprecated: this function usage is allowed for collection metadata creation only.
-func collectionNameToTableName(name string) string {
+func collectionNameToTableName(name string, i int) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(name)))
 
@@ -386,8 +395,6 @@ func collectionNameToTableName(name string) string {
 	if truncateTo > nameSymbolsLeft {
 		truncateTo = nameSymbolsLeft
 	}
-
-	i := rand.Intn(100)
 
 	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x%d", hash32.Sum(nil), i)
 }

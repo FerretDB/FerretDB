@@ -34,8 +34,8 @@ type countCompatTestCase struct {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2255
 	// those two probably should be of the same type
-	limit   int64 // optional, limit option for the query, defaults to 0
 	optSkip any   // optional, skip option for the query, defaults to nil
+	limit   int64 // optional, limit option for the query, defaults to 0
 
 	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
@@ -76,14 +76,14 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"count", targetCollection.Name()},
 						{"query", filter},
-						{"limit", tc.limit},
 						{"skip", tc.optSkip},
+						{"limit", tc.limit},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"count", compatCollection.Name()},
 						{"query", filter},
-						{"limit", tc.limit},
 						{"skip", tc.optSkip},
+						{"limit", tc.limit},
 					}).Decode(&compatRes)
 
 					if targetErr != nil {

@@ -34,6 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -1009,17 +1010,26 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
 			require.NoError(t, res.Err())
 
-			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
-			require.NoError(t, err)
+			// MongoDB might be slow to update the status
+			var status any
+			for i := 0; i < 3; i++ {
+				var actual bson.D
+				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
+				require.NoError(t, err)
 
-			doc := ConvertDocument(t, actual)
+				doc := ConvertDocument(t, actual)
 
-			freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
-			assert.True(t, ok)
+				freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
+				assert.True(t, ok)
 
-			status, err := freeMonitoring.Get("state")
-			assert.NoError(t, err)
+				status, err = freeMonitoring.Get("state")
+				assert.NoError(t, err)
+
+				if status == tc.expectedStatus {
+					break
+				}
+				ctxutil.Sleep(s.Ctx, time.Second)
+			}
 
 			assert.Equal(t, tc.expectedStatus, status)
 		})

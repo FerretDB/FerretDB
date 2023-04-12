@@ -42,11 +42,15 @@ func _() {
 	_ = x[ErrSortBadValue-15974]
 	_ = x[ErrSortBadOrder-15975]
 	_ = x[ErrSortMissingKey-15976]
+	_ = x[ErrStageUnwindWrongType-15981]
 	_ = x[ErrPathContainsEmptyElement-15998]
+	_ = x[ErrFieldPathInvalidName-16410]
 	_ = x[ErrGroupInvalidFieldPath-16872]
 	_ = x[ErrGroupUndefinedVariable-17276]
 	_ = x[ErrInvalidArg-28667]
 	_ = x[ErrSliceFirstArg-28724]
+	_ = x[ErrStageUnwindNoPath-28812]
+	_ = x[ErrStageUnwindNoPrefix-28818]
 	_ = x[ErrProjectionInEx-31253]
 	_ = x[ErrProjectionExIn-31254]
 	_ = x[ErrStageCountNonString-40156]
@@ -60,16 +64,19 @@ func _() {
 	_ = x[ErrEmptyFieldPath-40352]
 	_ = x[ErrMissingField-40414]
 	_ = x[ErrFailedToParseInput-40415]
+	_ = x[ErrCollStatsIsNotFirstStage-40415]
 	_ = x[ErrFreeMonitoringDisabled-50840]
 	_ = x[ErrValueNegative-51024]
 	_ = x[ErrRegexOptions-51075]
 	_ = x[ErrRegexMissingParen-51091]
 	_ = x[ErrBadRegexOption-51108]
 	_ = x[ErrDuplicateField-4822819]
+	_ = x[ErrStageSkipBadValue-5107200]
 	_ = x[ErrStageLimitInvalidArg-5107201]
+	_ = x[ErrStageCollStatsInvalidArg-5447000]
 }
 
-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchIllegalOperationNamespaceNotFoundIndexNotFoundUnsuitableValueTypeConflictingUpdateOperatorsCursorNotFoundNamespaceExistsInvalidIDEmptyNameCommandNotFoundCannotCreateIndexInvalidOptionsInvalidNamespaceIndexOptionsConflictIndexKeySpecsConflictOperationFailedDocumentValidationFailureNotImplementedMechanismUnavailableLocation11000Location15947Location15948Location15955Location15958Location15959Location15973Location15974Location15975Location15976Location15998Location16872Location17276Location28667Location28724Location31253Location31254Location40156Location40157Location40158Location40160Location40234Location40237Location40238Location40323Location40352Location40414Location40415Location50840Location51024Location51075Location51091Location51108Location4822819Location5107201"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchNamespaceNotFoundIndexNotFoundUnsuitableValueTypeConflictingUpdateOperatorsCursorNotFoundNamespaceExistsInvalidIDEmptyNameCommandNotFoundCannotCreateIndexInvalidOptionsInvalidNamespaceIndexOptionsConflictIndexKeySpecsConflictOperationFailedDocumentValidationFailureNotImplementedMechanismUnavailableLocation11000Location15947Location15948Location15955Location15958Location15959Location15973Location15974Location15975Location15976Location15981Location15998Location16410Location16872Location17276Location28667Location28724Location28812Location28818Location31253Location31254Location40156Location40157Location40158Location40160Location40234Location40237Location40238Location40323Location40352Location40414Location40415Location50840Location51024Location51075Location51091Location51108Location4822819Location5107200Location5107201Location5447000"
 
 var _ErrorCode_map = map[ErrorCode]string{
 	0:       _ErrorCode_name[0:5],
@@ -77,60 +84,65 @@ var _ErrorCode_map = map[ErrorCode]string{
 	2:       _ErrorCode_name[18:26],
 	9:       _ErrorCode_name[26:39],
 	14:      _ErrorCode_name[39:51],
-	20:      _ErrorCode_name[51:67],
-	26:      _ErrorCode_name[67:84],
-	27:      _ErrorCode_name[84:97],
-	28:      _ErrorCode_name[97:116],
-	40:      _ErrorCode_name[116:142],
-	43:      _ErrorCode_name[142:156],
-	48:      _ErrorCode_name[156:171],
-	53:      _ErrorCode_name[171:180],
-	56:      _ErrorCode_name[180:189],
-	59:      _ErrorCode_name[189:204],
-	67:      _ErrorCode_name[204:221],
-	72:      _ErrorCode_name[221:235],
-	73:      _ErrorCode_name[235:251],
-	85:      _ErrorCode_name[251:271],
-	86:      _ErrorCode_name[271:292],
-	96:      _ErrorCode_name[292:307],
-	121:     _ErrorCode_name[307:332],
-	238:     _ErrorCode_name[332:346],
-	334:     _ErrorCode_name[346:366],
-	11000:   _ErrorCode_name[366:379],
-	15947:   _ErrorCode_name[379:392],
-	15948:   _ErrorCode_name[392:405],
-	15955:   _ErrorCode_name[405:418],
-	15958:   _ErrorCode_name[418:431],
-	15959:   _ErrorCode_name[431:444],
-	15973:   _ErrorCode_name[444:457],
-	15974:   _ErrorCode_name[457:470],
-	15975:   _ErrorCode_name[470:483],
-	15976:   _ErrorCode_name[483:496],
-	15998:   _ErrorCode_name[496:509],
-	16872:   _ErrorCode_name[509:522],
-	17276:   _ErrorCode_name[522:535],
-	28667:   _ErrorCode_name[535:548],
-	28724:   _ErrorCode_name[548:561],
-	31253:   _ErrorCode_name[561:574],
-	31254:   _ErrorCode_name[574:587],
-	40156:   _ErrorCode_name[587:600],
-	40157:   _ErrorCode_name[600:613],
-	40158:   _ErrorCode_name[613:626],
-	40160:   _ErrorCode_name[626:639],
-	40234:   _ErrorCode_name[639:652],
-	40237:   _ErrorCode_name[652:665],
-	40238:   _ErrorCode_name[665:678],
-	40323:   _ErrorCode_name[678:691],
-	40352:   _ErrorCode_name[691:704],
-	40414:   _ErrorCode_name[704:717],
-	40415:   _ErrorCode_name[717:730],
-	50840:   _ErrorCode_name[730:743],
-	51024:   _ErrorCode_name[743:756],
-	51075:   _ErrorCode_name[756:769],
-	51091:   _ErrorCode_name[769:782],
-	51108:   _ErrorCode_name[782:795],
-	4822819: _ErrorCode_name[795:810],
-	5107201: _ErrorCode_name[810:825],
+	26:      _ErrorCode_name[51:68],
+	27:      _ErrorCode_name[68:81],
+	28:      _ErrorCode_name[81:100],
+	40:      _ErrorCode_name[100:126],
+	43:      _ErrorCode_name[126:140],
+	48:      _ErrorCode_name[140:155],
+	53:      _ErrorCode_name[155:164],
+	56:      _ErrorCode_name[164:173],
+	59:      _ErrorCode_name[173:188],
+	67:      _ErrorCode_name[188:205],
+	72:      _ErrorCode_name[205:219],
+	73:      _ErrorCode_name[219:235],
+	85:      _ErrorCode_name[235:255],
+	86:      _ErrorCode_name[255:276],
+	96:      _ErrorCode_name[276:291],
+	121:     _ErrorCode_name[291:316],
+	238:     _ErrorCode_name[316:330],
+	334:     _ErrorCode_name[330:350],
+	11000:   _ErrorCode_name[350:363],
+	15947:   _ErrorCode_name[363:376],
+	15948:   _ErrorCode_name[376:389],
+	15955:   _ErrorCode_name[389:402],
+	15958:   _ErrorCode_name[402:415],
+	15959:   _ErrorCode_name[415:428],
+	15973:   _ErrorCode_name[428:441],
+	15974:   _ErrorCode_name[441:454],
+	15975:   _ErrorCode_name[454:467],
+	15976:   _ErrorCode_name[467:480],
+	15981:   _ErrorCode_name[480:493],
+	15998:   _ErrorCode_name[493:506],
+	16410:   _ErrorCode_name[506:519],
+	16872:   _ErrorCode_name[519:532],
+	17276:   _ErrorCode_name[532:545],
+	28667:   _ErrorCode_name[545:558],
+	28724:   _ErrorCode_name[558:571],
+	28812:   _ErrorCode_name[571:584],
+	28818:   _ErrorCode_name[584:597],
+	31253:   _ErrorCode_name[597:610],
+	31254:   _ErrorCode_name[610:623],
+	40156:   _ErrorCode_name[623:636],
+	40157:   _ErrorCode_name[636:649],
+	40158:   _ErrorCode_name[649:662],
+	40160:   _ErrorCode_name[662:675],
+	40234:   _ErrorCode_name[675:688],
+	40237:   _ErrorCode_name[688:701],
+	40238:   _ErrorCode_name[701:714],
+	40323:   _ErrorCode_name[714:727],
+	40352:   _ErrorCode_name[727:740],
+	40414:   _ErrorCode_name[740:753],
+	40415:   _ErrorCode_name[753:766],
+	50840:   _ErrorCode_name[766:779],
+	51024:   _ErrorCode_name[779:792],
+	51075:   _ErrorCode_name[792:805],
+	51091:   _ErrorCode_name[805:818],
+	51108:   _ErrorCode_name[818:831],
+	4822819: _ErrorCode_name[831:846],
+	5107200: _ErrorCode_name[846:861],
+	5107201: _ErrorCode_name[861:876],
+	5447000: _ErrorCode_name[876:891],
 }
 
 func (i ErrorCode) String() string {
