@@ -63,13 +63,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 		cs.storageStats = new(storageStats)
 
 		// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
-		cs.storageStats.scale, err = common.GetOptionalPositiveNumber(
-			must.NotFail(fields.Get("storageStats")).(*types.Document),
-			"scale",
-		)
-		if err != nil || cs.storageStats.scale == 0 {
-			cs.storageStats.scale = 1
-		}
+		cs.storageStats.scale, err = common.GetScaleParam("collStats", fields)
 	}
 
 	return &cs, nil
