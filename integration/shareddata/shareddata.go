@@ -197,6 +197,60 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	return slices.Contains(values.backends, backend)
 }
 
+// fields is a map of field name -> value.
+type fields map[string]any
+
+// TopLevelValues stores shared data documents as {"_id": key, "field1": value1, "field2": value2, ...} documents.
+type TopLevelValues[id comparable] struct {
+	name       string
+	backends   []string
+	validators map[string]map[string]any // backend -> validator name -> validator
+	data       map[id]fields
+}
+
+// Name implements Provider interface.
+func (t *TopLevelValues[id]) Name() string {
+	return t.name
+}
+
+// Validators implements Provider interface.
+func (t *TopLevelValues[id]) Validators(backend, collection string) map[string]any {
+	switch backend {
+	case "ferretdb-tigris":
+		validators := make(map[string]any, len(t.validators[backend]))
+		for key, value := range t.validators[backend] {
+			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
+		}
+		return validators
+	default:
+		return t.validators[backend]
+	}
+}
+
+// Docs implements Provider interface.
+func (t *TopLevelValues[id]) Docs() []bson.D {
+	ids := maps.Keys(t.data)
+
+	res := make([]bson.D, 0, len(t.data))
+	for _, id := range ids {
+		doc := bson.D{{"_id", id}}
+		fields := t.data[id]
+		if fields != nil {
+			for key, field := range fields {
+				doc = append(doc, bson.E{Key: key, Value: field})
+			}
+		}
+		res = append(res, doc)
+	}
+
+	return res
+}
+
+// IsCompatible implements Provider interface.
+func (t *TopLevelValues[id]) IsCompatible(backend string) bool {
+	return slices.Contains(t.backends, backend)
+}
+
 // check interfaces
 var (
 	_ Provider = (*Values[string])(nil)
