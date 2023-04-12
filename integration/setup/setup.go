@@ -197,7 +197,8 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	}
 
 	var inserted bool
-	if len(opts.Providers) != 0 {
+
+	if len(opts.Providers) > 0 {
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
 		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
 	} else {
@@ -278,58 +279,71 @@ func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 	return
 }
 
-// insertBenchmarkProvider inserts documents from specified BenchmarkProviders into collection. It returns true if any document was inserted.
-func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.BenchmarkProvider) (inserted bool) {
+// insertBenchmarkProvider inserts documents from specified BenchmarkProvider into collection.
+// It returns true if any document was inserted.
+//
+// The function calculates the checksum of all inserted documents and compare them with provider's hash.
+func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	for _, provider := range providers {
-		spanName := fmt.Sprintf("insertBenchmarkProviders/%s/%s", collection.Name(), provider.Hash())
-		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(provCtx, spanName)
+	if provider == nil {
+		return
+	}
 
-		iter := provider.Docs()
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collection.Name(), provider.Hash())
+	provCtx, span := otel.Tracer("").Start(ctx, spanName)
+	region := trace.StartRegion(provCtx, spanName)
 
-		hash := sha256.New()
-		var done bool
+	iter := provider.Docs()
+	hash := sha256.New()
 
-		for !done {
-			docs, err := iterator.ConsumeValuesN(iter, 10)
-			require.NoError(tb, err)
+	for {
+		docs, err := iterator.ConsumeValuesN(iter, 10)
+		require.NoError(tb, err)
 
-			done = docs == nil
-
-			var insertDocs []any = make([]any, len(docs))
-
-			for i, doc := range docs {
-				rawDoc := []byte(fmt.Sprintf("%x", doc))
-				currSum := hash.Sum(rawDoc)
-				hash.Reset()
-
-				if _, err := hash.Write(currSum); err != nil {
-					panic("Unexpected error: " + err.Error())
-				}
-
-				insertDocs[i] = doc
-			}
-
-			if len(docs) == 0 {
-				break
-			}
-
-			res, err := collection.InsertMany(provCtx, insertDocs)
-			require.NoError(tb, err, "provider %q", provider.Hash())
-			require.Len(tb, res.InsertedIDs, len(docs))
-
-			inserted = true
+		if len(docs) == 0 {
+			break
 		}
 
-		actualSum := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+		// convert []bson.D to []any, as mongodb requires.
+		var insertDocs []any = make([]any, len(docs))
 
-		require.Equal(tb, provider.Hash(), actualSum, "The checksum of inserted documents in BenchmarkProvider is different than specified.",
-			"If you didn't change any data, it could mean that provider generates different data or provides it in different order")
+		for i, doc := range docs {
+			rawDoc := []byte(fmt.Sprintf("%x", doc))
 
-		region.End()
-		span.End()
+			// append literal document to previous checksum.
+			//
+			// We don't just write all the documents and Sum at the end, to not
+			// store all documents in memory.
+			currSum := hash.Sum(rawDoc)
+
+			// remove old checksum
+			hash.Reset()
+
+			// write literal document with previous checksum to calculate new checksum
+			if _, err = hash.Write(currSum); err != nil {
+				panic("Unexpected error: " + err.Error())
+			}
+
+			insertDocs[i] = doc
+		}
+
+		res, err := collection.InsertMany(provCtx, insertDocs)
+		require.NoError(tb, err, "provider %q", provider.Hash())
+		require.Len(tb, res.InsertedIDs, len(docs))
+
+		inserted = true
 	}
+
+	actualSum := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+
+	msg := "The checksum of inserted documents in BenchmarkProvider is different than specified." +
+		" If you didn't change any data, it could mean that provider generates different data or provides it in different order"
+
+	require.Equal(tb, provider.Hash(), actualSum, msg)
+
+	region.End()
+	span.End()
+
 	return
 }

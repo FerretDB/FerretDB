@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // unset represents a field that should not be set.
@@ -210,8 +211,8 @@ type BenchmarkProvider interface {
 
 // BenchmarkValues returns shared data documents for benchmark in deterministic order.
 type BenchmarkValues struct {
-	hash string
 	iter iterator.Interface[struct{}, bson.D]
+	hash string
 }
 
 // Hash implements BenchmarkProvider interface.

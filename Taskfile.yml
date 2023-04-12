@@ -217,7 +217,7 @@ tasks:
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
 
-  bench-integration-pg:
+  bench-pg:
     desc: "Run benchmarks for `pg` handler"
     dir: integration
     cmds:
@@ -229,7 +229,7 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
 
-  bench-integration-pg-no-pushdown:
+  bench-pg-no-pushdown:
     desc: "Run benchmarks for `pg` with query pushdown disabled"
     dir: integration
     cmds:
@@ -242,7 +242,7 @@ tasks:
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
       - ../bin/benchstat{{exeExt}} old-pg-no-pushdown.txt new-pg-no-pushdown.txt
 
-  bench-integration-mongodb:
+  bench-mongodb:
     desc: "Run benchmarks for MongoDB"
     dir: integration
     cmds:
@@ -254,7 +254,7 @@ tasks:
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt
 
   bench-short:
-    desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
+    desc: "Benchmark internal package for about 25 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
       - echo 'Running five functions for {{.BENCHTIME}} each...'

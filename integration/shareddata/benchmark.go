@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import (
-	"go.mongodb.org/mongo-driver/bson"
-)
+import "go.mongodb.org/mongo-driver/bson"
 
 // NewBenchmarkValues initializes BenchmarkValues with expected hash of all documents
 // and generator function.
