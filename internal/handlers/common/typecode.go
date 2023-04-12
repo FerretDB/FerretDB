@@ -19,6 +19,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -62,9 +63,17 @@ func newTypeCode(code int32) (typeCode, error) {
 		typeCodeNull, typeCodeRegex, typeCodeInt, typeCodeTimestamp, typeCodeLong, typeCodeNumber:
 		return c, nil
 	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
-		return 0, NewCommandErrorMsgWithArgument(ErrNotImplemented, fmt.Sprintf(`Type code %v not implemented`, code), "$type")
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf(`Type code %v not implemented`, code),
+			"$type",
+		)
 	default:
-		return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Invalid numerical type code: %d`, code), "$type")
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf(`Invalid numerical type code: %d`, code),
+			"$type",
+		)
 	}
 }
 

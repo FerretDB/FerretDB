@@ -28,7 +28,7 @@ import (
 
 // TestCreateCompat tests collection creation compatibility for the cases that are not covered by tests setup.
 func TestCreateCompat(t *testing.T) {
-	t.Helper()
+	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                []shareddata.Provider{}, // collections are not needed for this test
