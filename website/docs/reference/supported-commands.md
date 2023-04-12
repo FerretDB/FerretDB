@@ -622,7 +622,7 @@ db.aggregate()
 |                                   | `writeConcern`                 |                           | ⚠️      |                                                           |
 |                                   | `commitQuorum`                 |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
-| `currentOp`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/161)  |
+| `currentOp`                       |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/2399) |
 |                                   | `$ownOps`                      |                           | ⚠️      |                                                           |
 |                                   | `$all`                         |                           | ⚠️      |                                                           |
 |                                   | `comment`                      |                           | ⚠️      |                                                           |
