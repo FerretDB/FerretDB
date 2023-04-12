@@ -54,7 +54,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
-		if scale, err = common.GetScaleParam("collStats", s); err != nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
 			return nil, err
 		}
 	}

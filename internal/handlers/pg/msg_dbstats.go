@@ -36,6 +36,8 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	command := document.Command()
+
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
@@ -45,7 +47,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
-		if scale, err = common.GetScaleParam("dbStats", s); err != nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
 			return nil, err
 		}
 	}

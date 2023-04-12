@@ -39,15 +39,20 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	command := document.Command()
+
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	m := document.Map()
-	scale, ok := m["scale"].(float64)
-	if !ok {
-		scale = 1
+	scale := int32(1)
+
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
+			return nil, err
+		}
 	}
 
 	stats, err := dbPool.Driver.DescribeDatabase(ctx, db)
