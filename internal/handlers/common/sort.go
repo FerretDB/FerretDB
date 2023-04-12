@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -134,13 +135,17 @@ func getSortType(key string, value any) (types.SortType, error) {
 				value = "null"
 			}
 
-			return 0, NewCommandErrorMsgWithArgument(
-				ErrSortBadValue,
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrSortBadValue,
 				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
 				"$sort",
 			)
 		case errors.Is(err, errNotWholeNumber):
-			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, "$sort must be a whole number", "$sort")
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$sort must be a whole number",
+				"$sort",
+			)
 		default:
 			return 0, err
 		}
@@ -152,8 +157,8 @@ func getSortType(key string, value any) (types.SortType, error) {
 	case -1:
 		return types.Descending, nil
 	default:
-		return 0, NewCommandErrorMsgWithArgument(
-			ErrSortBadOrder,
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrSortBadOrder,
 			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
 			"$sort",
 		)

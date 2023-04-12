@@ -73,7 +73,16 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$unset":
-			unsetDoc := updateV.(*types.Document)
+			unsetDoc, ok := updateV.(*types.Document)
+			if !ok {
+				return false, commonerrors.NewCommandErrorMsg(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
+						"For example: {$mod: {<field>: ...}} not {$unset: \"%s\"}",
+						updateV,
+					),
+				)
+			}
 
 			for _, key := range unsetDoc.Keys() {
 				var path types.Path
@@ -257,7 +266,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
-			return changed, NewWriteErrorMsg(ErrEmptyName, "An empty update path is not valid.")
+			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrEmptyName, "An empty update path is not valid.")
 		}
 
 		// this is covered in validateRenameExpression

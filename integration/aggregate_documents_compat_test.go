@@ -787,6 +787,8 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatLimit(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Zero": {
 			pipeline: bson.A{
@@ -1211,6 +1213,8 @@ func TestAggregateCompatSort(t *testing.T) {
 }
 
 func TestAggregateCompatUnwind(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Simple": {
 			pipeline: bson.A{
@@ -1315,6 +1319,8 @@ func TestAggregateCompatUnwind(t *testing.T) {
 }
 
 func TestAggregateCompatSkip(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Document": {
 			pipeline:   bson.A{bson.D{{"$skip", bson.D{}}}},
