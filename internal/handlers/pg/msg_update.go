@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -60,8 +61,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -79,7 +80,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
 			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
 			msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
-			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 		}
 		return nil, err
 	}
@@ -233,5 +234,5 @@ func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		return res, nil
 	}
 
-	return 0, common.CheckError(err)
+	return 0, commonerrors.CheckError(err)
 }

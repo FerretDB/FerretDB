@@ -56,8 +56,8 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	var ok bool
 	if res.Collection, ok = collection.(string); !ok {
-		return nil, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collection)),
 			doc.Command(),
 		)
@@ -68,8 +68,8 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	}
 
 	if res.Sort, err = GetOptionalParam(doc, "sort", res.Sort); err != nil {
-		return nil, NewCommandErrorMsgWithArgument(
-			ErrTypeMismatch,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
 			"Expected field sort to be of type object",
 			"sort",
 		)
@@ -100,7 +100,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	}
 
 	if res.BatchSize < 0 {
-		return nil, NewCommandError(
+		return nil, commonerrors.NewCommandError(
 			commonerrors.ErrValueNegative,
 			fmt.Errorf("BSON field 'batchSize' value must be >= 0, actual value '%d'", res.BatchSize),
 		)

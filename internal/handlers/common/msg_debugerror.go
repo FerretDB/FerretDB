@@ -19,6 +19,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -39,7 +40,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	// check if parameter is an error code
 	if n, err := strconv.Atoi(expected); err == nil {
-		errCode := ErrorCode(n)
+		errCode := commonerrors.ErrorCode(n)
 		return nil, errors.New(errCode.String())
 	}
 
