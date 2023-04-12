@@ -24,7 +24,7 @@ If filter uses type and operator, that's marked as pushdown-supported on this li
 FerretDB will prefetch less data, resulting with more performent query.
 
 If your application requires better performance for specific operation,
-feel free to share this with us on [FerretDB Slack](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A)!
+feel free to share this with us in our [community](/#community)!
 
 :::tip
 As query pushdown allows developers to implement query optimizations separately from the features,
