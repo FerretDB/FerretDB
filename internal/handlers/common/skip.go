@@ -67,8 +67,14 @@ func GetSkipParam(command string, value any) (int64, error) {
 		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
 		return int64(math.Floor(value.(float64))), nil
 
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, errLongExceededPositive):
 		return math.MaxInt64, nil
+
+	case errors.Is(err, errLongExceededNegative):
+		return 0, commonerrors.NewCommandError(
+			commonerrors.ErrValueNegative,
+			fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
+		)
 
 	default:
 		return 0, lazyerrors.Error(err)

@@ -424,7 +424,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errLongExceeded:
+		case errLongExceededPositive:
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -725,7 +725,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceeded):
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(

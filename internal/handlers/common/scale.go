@@ -20,6 +20,7 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -38,11 +39,19 @@ func GetScaleParam(command string, value any) (int32, error) {
 			)
 		}
 
+		if scaleValue > math.MaxInt32 {
+			return math.MaxInt32, nil
+		}
+
 		return int32(scaleValue), nil
 	}
 
 	switch {
 	case errors.Is(err, errUnexpectedType):
+		if _, ok := value.(types.NullType); ok {
+			return 1, nil
+		}
+
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
@@ -55,15 +64,21 @@ func GetScaleParam(command string, value any) (int32, error) {
 		if math.Signbit(value.(float64)) {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'scale' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
+				fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", int(math.Ceil(value.(float64)))),
 			)
 		}
 
 		// for non-integer numbers, scale value is rounded to the greatest integer value less than the given value.
 		return int32(math.Floor(value.(float64))), nil
 
-	// case errors.Is(err, errLongExceeded):
-	//	return math.MaxInt64, nil
+	case errors.Is(err, errLongExceededPositive):
+		return math.MaxInt32, nil
+
+	case errors.Is(err, errLongExceededNegative):
+		return 0, commonerrors.NewCommandError(
+			commonerrors.ErrValueNegative,
+			fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", math.MinInt32),
+		)
 
 	default:
 		return 0, lazyerrors.Error(err)

@@ -121,7 +121,8 @@ var (
 	errNotBinaryMask         = fmt.Errorf("not a binary mask")
 	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
-	errLongExceeded          = fmt.Errorf("long exceeded")
+	errLongExceededPositive  = fmt.Errorf("long exceeded - positive value")
+	errLongExceededNegative  = fmt.Errorf("long exceeded - negative value")
 	errIntExceeded           = fmt.Errorf("int exceeded")
 	errInfinity              = fmt.Errorf("infinity")
 )
@@ -132,16 +133,14 @@ func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
-		if math.IsInf(value, 1) {
+		switch {
+		case math.IsInf(value, 1):
 			return 0, errInfinity
-		}
-
-		if value > float64(math.MaxInt64) ||
-			value < float64(math.MinInt64) {
-			return 0, errLongExceeded
-		}
-
-		if value != math.Trunc(value) {
+		case value > float64(math.MaxInt64):
+			return 0, errLongExceededPositive
+		case value < float64(math.MinInt64):
+			return 0, errLongExceededNegative
+		case value != math.Trunc(value):
 			return 0, errNotWholeNumber
 		}
 
@@ -174,12 +173,13 @@ func GetLimitStageParam(value any) (int64, error) {
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, errLongExceededPositive):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
+		// TODO long exceeded negative
 	default:
 		return 0, lazyerrors.Error(err)
 	}
@@ -215,7 +215,13 @@ func GetSkipStageParam(value any) (int64, error) {
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, errLongExceededPositive):
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageSkipBadValue,
+			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
+			"$skip (stage)",
+		)
+	case errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
@@ -359,11 +365,11 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if int64(v1) > math.MaxInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededPositive
 				}
 			} else {
 				if int64(v1) < math.MinInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededPositive
 				}
 			}
 
@@ -390,11 +396,11 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if v1 > math.MaxInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededPositive
 				}
 			} else {
 				if v1 < math.MinInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededPositive
 				}
 			}
 
@@ -479,12 +485,12 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
 	// results in overflow with the MinInt64 as result.
 	case v1 == math.MinInt64 || v2 == math.MinInt64:
-		return 0, errLongExceeded
+		return 0, errLongExceededPositive // todo errLongExceeded negative
 	}
 
 	res := v1 * v2
 	if res/v2 != v1 {
-		return 0, errLongExceeded
+		return 0, errLongExceededPositive
 	}
 
 	return res, nil

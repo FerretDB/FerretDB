@@ -19,11 +19,10 @@ import (
 	"math"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -34,25 +33,32 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                []shareddata.Provider{shareddata.DocumentsStrings},
+		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments},
 		AddNonExistentCollection: true,
 	})
 
 	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
 		resultType compatTestCaseResultType
 		altMessage string
 	}{
 		"scaleOne":      {scale: int32(1)},
 		"scaleBig":      {scale: int64(1000)},
-		"scaleMaxInt":   {scale: math.MaxInt},
+		"scaleMaxInt":   {scale: math.MaxInt64},
 		"scaleZero":     {scale: int32(0), resultType: emptyResult},
 		"scaleNegative": {scale: int32(-100), resultType: emptyResult},
 		"scaleFloat":    {scale: 2.8},
+		"scaleMinFloat": {scale: -math.MaxFloat64, resultType: emptyResult},
+		"scaleMaxFloat": {scale: math.MaxFloat64},
 		"scaleString": {
 			scale:      "1",
+			resultType: emptyResult,
+			altMessage: `BSON field 'collStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
+		},
+		"scaleObject": {
+			scale:      bson.D{{"a", 1}},
 			resultType: emptyResult,
 			altMessage: `BSON field 'collStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double]'`,
 		},
@@ -75,6 +81,9 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 
 			if tc.resultType == emptyResult {
 				require.Error(t, compatErr)
+
+				targetErr = UnsetRaw(t, targetErr)
+				compatErr = UnsetRaw(t, compatErr)
 
 				if tc.altMessage != "" {
 					var expectedErr mongo.CommandError
