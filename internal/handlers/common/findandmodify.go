@@ -25,6 +25,21 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+//go:generate ../../../bin/stringer -linecomment -type UpsertOperation
+
+// UpsertOperation represents operation type of upsert.
+type UpsertOperation uint8
+
+const (
+	_ UpsertOperation = iota
+
+	// UpsertOperationInsert indicates that upsert is an insert operation.
+	UpsertOperationInsert
+
+	// UpsertOperationUpdate indicates that upsert is a update operation.
+	UpsertOperationUpdate
+)
+
 // FindAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type FindAndModifyParams struct {
@@ -38,8 +53,16 @@ type FindAndModifyParams struct {
 // UpsertParams represents parameters for upsert, if the document exists Update is set.
 // Otherwise, Insert is set. It returns ReturnValue to return to the client.
 type UpsertParams struct {
-	Insert, Update *types.Document
-	ReturnValue    any
+	// ReturnValue is the value set on the command response.
+	// It returns original document for update operation, and null for insert operation.
+	// If FindAndModifyParams.ReturnNewDocument is true, it returns upserted document.
+	ReturnValue any
+
+	// Upsert is a document used for insert or update operation.
+	Upsert *types.Document
+
+	// Operation is the type of upsert to perform.
+	Operation UpsertOperation
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
@@ -179,37 +202,45 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 	}, nil
 }
 
-// UpsertDocument updates the first document if exists, or create an insert document
-// from the params if no documents in query result docs.
-func UpsertDocument(docs []*types.Document, params *FindAndModifyParams) (*UpsertParams, error) {
+// PrepareDocumentForUpsert prepares the document used for upsert operation.
+// If docs is empty it prepares a document for insert using params.
+// Otherwise, it takes the first document of docs and prepare document for update.
+// It sets the value to return on the command response using ReturnNewDocument param.
+func PrepareDocumentForUpsert(docs []*types.Document, params *FindAndModifyParams) (*UpsertParams, error) {
 	res := new(UpsertParams)
 	var err error
 
 	if len(docs) == 0 {
-		res.Insert, err = insertDocuments(params)
+		res.Operation = UpsertOperationInsert
+		res.Upsert, err = prepareDocumentForInsert(params)
 
+		// insert operation returns null since no document existed before upsert.
 		res.ReturnValue = types.Null
 		if params.ReturnNewDocument {
-			res.ReturnValue = res.Insert
+			// if return ReturnNewDocument is set, return newly inserted doc.
+			res.ReturnValue = res.Upsert
 		}
 
 		return res, err
 	}
 
-	res.Update, err = updateDocuments(docs, params)
+	res.Operation = UpsertOperationUpdate
+	res.Upsert, err = prepareDocumentForUpdate(docs, params)
 
+	// update operation returns the document before updated was applied.
 	res.ReturnValue = docs[0]
 	if params.ReturnNewDocument {
-		res.ReturnValue = res.Update
+		// if return ReturnNewDocument is set, return updated doc.
+		res.ReturnValue = res.Upsert
 	}
 
 	return res, err
 }
 
-// insertDocuments creates an insert document from the parameter.
+// prepareDocumentForInsert creates an insert document from the parameter.
 // When inserting new document we must check that `_id` is present, so we must extract `_id`
 // from query or generate a new one.
-func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
+func prepareDocumentForInsert(params *FindAndModifyParams) (*types.Document, error) {
 	insert := must.NotFail(types.NewDocument())
 
 	if params.HasUpdateOperators {
@@ -232,8 +263,8 @@ func insertDocuments(params *FindAndModifyParams) (*types.Document, error) {
 	return insert, nil
 }
 
-// updateDocuments updates the first document with update parameters.
-func updateDocuments(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) {
+// prepareDocumentForUpdate takes the first document of docs and apply update params.
+func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) {
 	update := docs[0].DeepCopy()
 
 	if params.HasUpdateOperators {
@@ -283,6 +314,8 @@ func getUpsertID(query *types.Document) (any, error) {
 	}
 
 	if hasOp {
+		// if there is an operator in the query, the _id of the query cannot be used.
+		// generate a new one.
 		return types.NewObjectID(), nil
 	}
 

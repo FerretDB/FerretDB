@@ -121,6 +121,7 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"v", "replaced"}}},
 			},
+			skipForTigris: "schema validation would fail",
 		},
 	}
 

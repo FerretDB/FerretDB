@@ -17,6 +17,7 @@ package tigris
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -94,8 +95,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			resValue = upsertParams.ReturnValue
 
-			if upsertParams.Insert != nil {
-				insertedID = must.NotFail(upsertParams.Insert.Get("_id"))
+			if upsertParams.Operation == common.UpsertOperationInsert {
+				insertedID = must.NotFail(upsertParams.Upsert.Get("_id"))
 			}
 		} else { // process update as usual
 			if len(resDocs) == 0 {
@@ -197,23 +198,26 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 // upsertDocuments inserts new document if insert document is set in UpsertParameter,
 // or updates the document.
 func upsertDocuments(ctx context.Context, dbPool *tigrisdb.TigrisDB, docs []*types.Document, query *tigrisdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
-	res, err := common.UpsertDocument(docs, params)
+	res, err := common.PrepareDocumentForUpsert(docs, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if res.Insert != nil {
-		if err = insertDocument(ctx, dbPool, query, res.Insert); err != nil {
+	switch res.Operation {
+	case common.UpsertOperationInsert:
+		if err = insertDocument(ctx, dbPool, query, res.Upsert); err != nil {
 			return nil, err
 		}
 
 		return res, nil
-	}
+	case common.UpsertOperationUpdate:
+		_, err = updateDocument(ctx, dbPool, query, res.Upsert)
+		if err != nil {
+			return nil, err
+		}
 
-	_, err = updateDocument(ctx, dbPool, query, res.Update)
-	if err != nil {
-		return nil, err
+		return res, nil
+	default:
+		panic(fmt.Sprintf("unsupported upsert operation %s", res.Operation.String()))
 	}
-
-	return res, nil
 }
