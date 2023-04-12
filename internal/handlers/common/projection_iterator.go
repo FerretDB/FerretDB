@@ -41,7 +41,6 @@ func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document
 type projectionIterator struct {
 	iter       types.DocumentsIterator
 	projection *types.Document
-	inclusion  bool
 }
 
 // Next implements iterator.Interface. See ProjectionIterator for details.

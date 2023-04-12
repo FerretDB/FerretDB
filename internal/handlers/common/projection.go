@@ -104,7 +104,8 @@ func projectDocument(doc *types.Document, projection *types.Document) (*types.Do
 		return doc, nil
 	}
 
-	projected := types.MakeDocument(1)
+	var projected *types.Document
+	projected = types.MakeDocument(1)
 
 	projected.Set("_id", must.NotFail(doc.Get("_id")))
 

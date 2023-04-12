@@ -25,16 +25,12 @@ func TestQueryProjectionCompat(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"FindProjectionInclusions": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"foo", int32(1)}, {"42", true}},
-			skipForTigris:  "Tigris does not support field names started from numbers (`42`)",
-			resultPushdown: true,
+			filter:     bson.D{},
+			projection: bson.D{{"foo", int32(1)}, {"bar", true}},
 		},
 		"FindProjectionExclusions": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"foo", int32(0)}, {"array", false}},
-			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
-			resultPushdown: true,
+			filter:     bson.D{},
+			projection: bson.D{{"foo", int32(0)}, {"bar", false}},
 		},
 		"IncludeField": {
 			filter:     bson.D{},

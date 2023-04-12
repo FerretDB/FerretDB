@@ -81,6 +81,8 @@ func AllProviders() Providers {
 		Mixed,
 		// TODO https://github.com/FerretDB/FerretDB/issues/2291
 		// ArrayAndDocuments,
+
+		TopLevelFieldsIntegers,
 	}
 
 	// check that names are unique and randomize order

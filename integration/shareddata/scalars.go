@@ -434,6 +434,30 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 	},
 }
 
+var TopLevelFieldsIntegers = &TopLevelValues[string]{
+	name:     "TopLevelFieldsIntegers",
+	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	validators: map[string]map[string]any{
+		"ferretdb-tigris": {
+			"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"foo": {"type": "integer", "format": "int32"},
+					"bar": {"type": "integer", "format": "int32"},
+					"_id": {"type": "string"}
+				}
+			}`,
+		},
+	},
+	data: map[string]fields{
+		"int32-two": {
+			"foo": int32(1),
+			"bar": int32(2),
+		},
+	},
+}
+
 // tigrisSchema returns a tigris schema for the given type.
 // In addition to the "v" field, it also sets "foo" field with the same type, so it can be used
 // for test cases where multiple fields need to be supported (for example, $rename).
