@@ -774,6 +774,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		targetCollection string
 		expected         bson.D
 		err              *mongo.CommandError
+		toInsert         bson.D
 	}{
 		"Rename": {
 			collection:       "foo",
@@ -797,6 +798,11 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Name:    "NamespaceExists",
 				Message: `target namespace exists`,
 			},
+		},
+		"InsertIntoOld": {
+			collection: "foo",
+			expected:   bson.D{{"ok", float64(1)}},
+			toInsert:   bson.D{{"a", 1}},
 		},
 		// TODO..
 		"ExceedsMaxCollectionNameLen": {
@@ -825,7 +831,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			ctx, collection := setup.Setup(t, shareddata.Bools)
 
 			db := collection.Database()
-			require.NoError(t, db.Drop(ctx))
 
 			require.NotEmpty(t, insertCollections)
 			for _, coll := range insertCollections {
@@ -836,10 +841,12 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.collection)
 			targetNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)
+
 			cmd := bson.D{
 				{"renameCollection", sourceNamespace},
 				{"to", targetNamespace},
 			}
+
 			err := collection.Database().Client().Database("admin").RunCommand(
 				ctx, cmd,
 			).Decode(&actual)
@@ -862,6 +869,15 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			require.Contains(t, collections, tc.targetCollection)
 			require.NotContains(t, collections, tc.collection)
+
+			if tc.toInsert != nil {
+				_, err := db.Collection(tc.collection).InsertOne(ctx, tc.toInsert)
+				require.NoError(t, err)
+
+				var v any
+				err = db.Collection(tc.collection).FindOne(ctx, bson.D{{"bool-false", false}}).Decode(&v)
+				require.ErrorIs(t, err, mongo.ErrNoDocuments)
+			}
 		})
 	}
 }
