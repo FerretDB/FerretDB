@@ -17,6 +17,7 @@ package common
 import (
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -55,8 +56,8 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		switch v := v.(type) {
 		case *types.Document:
 			for _, projectionType := range v.Keys() {
-				err = NewCommandError(
-					ErrNotImplemented,
+				err = commonerrors.NewCommandError(
+					commonerrors.ErrNotImplemented,
 					fmt.Errorf("projection of %s is not supported", projectionType),
 				)
 
@@ -67,7 +68,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 			result := types.Compare(v, int32(0))
 			if result == types.Equal {
 				if inclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionExIn,
+					err = commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrProjectionExIn,
 						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
 						"projection",
 					)
@@ -76,7 +77,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 				exclusion = true
 			} else {
 				if exclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionInEx,
+					err = commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrProjectionInEx,
 						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
 						"projection",
 					)
@@ -88,7 +89,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 		case bool:
 			if v {
 				if exclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionInEx,
+					err = commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrProjectionInEx,
 						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
 						"projection",
 					)
@@ -97,7 +98,7 @@ func isProjectionInclusion(projection *types.Document) (inclusion bool, err erro
 				inclusion = true
 			} else {
 				if inclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionExIn,
+					err = commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrProjectionExIn,
 						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
 						"projection",
 					)
@@ -157,13 +158,13 @@ func applyComplexProjection(projectionVal *types.Document) error {
 	for _, projectionType := range projectionVal.Keys() {
 		switch projectionType {
 		case "$elemMatch", "$slice":
-			return NewCommandError(
-				ErrNotImplemented,
+			return commonerrors.NewCommandError(
+				commonerrors.ErrNotImplemented,
 				fmt.Errorf("projection of %s is not supported", projectionType),
 			)
 		default:
-			return NewCommandError(
-				ErrCommandNotFound,
+			return commonerrors.NewCommandError(
+				commonerrors.ErrCommandNotFound,
 				fmt.Errorf("projection of %s is not supported", projectionType),
 			)
 		}

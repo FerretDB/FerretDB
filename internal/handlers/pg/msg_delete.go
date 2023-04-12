@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v4"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -71,8 +72,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -84,7 +85,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	var deleted int32
-	var delErrors common.WriteErrors
+	var delErrors commonerrors.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
@@ -156,8 +157,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	// https://github.com/FerretDB/FerretDB/issues/2255
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrMissingField,
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 			"limit",
 		)
@@ -165,8 +166,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrFailedToParse,
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 			"limit",
 		)
@@ -271,7 +272,7 @@ func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam
 	})
 	if err != nil {
 		// TODO check error code
-		return 0, common.NewCommandError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+		return 0, commonerrors.NewCommandError(commonerrors.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
 
 	return rowsDeleted, nil
