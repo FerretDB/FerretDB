@@ -20,11 +20,10 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// GetScaleParam validates the given scale value for collStat command.
+// GetScaleParam validates the given scale value for collStats and dbStats command.
 //
 // If the value is valid, it returns its int32 representation,
 // otherwise it returns a command error with the given command being mentioned.
@@ -32,10 +31,10 @@ func GetScaleParam(command string, value any) (int32, error) {
 	scaleValue, err := GetWholeNumberParam(value)
 
 	if err == nil {
-		if scaleValue < 0 {
+		if scaleValue <= 0 {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'scale' value must be >= 0, actual value '%d'", scaleValue),
+				fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", scaleValue),
 			)
 		}
 
@@ -44,10 +43,6 @@ func GetScaleParam(command string, value any) (int32, error) {
 
 	switch {
 	case errors.Is(err, errUnexpectedType):
-		if _, ok := value.(types.NullType); ok {
-			return 0, nil
-		}
-
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(

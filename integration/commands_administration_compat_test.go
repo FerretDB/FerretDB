@@ -15,8 +15,11 @@
 package integration
 
 import (
+	"errors"
 	"math"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +48,7 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 		"scaleOne":      {scale: int32(1)},
 		"scaleBig":      {scale: int64(1000)},
 		"scaleMaxInt":   {scale: math.MaxInt},
+		"scaleZero":     {scale: int32(0), resultType: emptyResult},
 		"scaleNegative": {scale: int32(-100), resultType: emptyResult},
 		"scaleFloat":    {scale: 2.8},
 		"scaleString": {
@@ -71,7 +75,15 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 
 			if tc.resultType == emptyResult {
 				require.Error(t, compatErr)
-				require.Equal(t, compatErr, targetErr)
+
+				if tc.altMessage != "" {
+					var expectedErr mongo.CommandError
+					require.True(t, errors.As(compatErr, &expectedErr))
+					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+				} else {
+					assert.Equal(t, compatErr, targetErr)
+				}
+
 				return
 			}
 
