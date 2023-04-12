@@ -800,8 +800,9 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"InsertIntoOld": {
-			collection: "foo",
-			expected:   bson.D{{"ok", float64(1)}},
+			collection:       "foo",
+			targetCollection: "bar",
+			expected:         bson.D{{"ok", float64(1)}},
 			toInsert: []interface{}{
 				bson.D{{"a", 1}},
 				bson.D{{"a", 2}},
@@ -818,6 +819,15 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"StressTest": {
+			collection:       "x",
+			targetCollection: "x",
+			err: &mongo.CommandError{
+				Code:    0,
+				Name:    "x",
+				Message: `x`,
+			},
+		},
+		"InvalidOption": {
 			collection:       "x",
 			targetCollection: "x",
 			err: &mongo.CommandError{
@@ -874,11 +884,16 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.NotContains(t, collections, tc.collection)
 
 			if tc.toInsert != nil {
+				require.Equal(t, "bar", tc.targetCollection)
+				require.NoError(t, db.CreateCollection(ctx, tc.collection))
+
 				_, err := db.Collection(tc.collection).InsertMany(ctx, tc.toInsert)
 				require.NoError(t, err)
 
 				var v any
-				err = db.Collection(tc.targetCollection).FindOne(ctx, bson.D{{"bool-false", false}}).Decode(&v)
+				err = db.Collection(tc.targetCollection).FindOne(
+					ctx, bson.D{{"bool-false", false}},
+				).Decode(&v)
 				require.ErrorIs(t, err, mongo.ErrNoDocuments)
 			}
 		})
