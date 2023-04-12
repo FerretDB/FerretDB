@@ -213,6 +213,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2045
 			// just ignore it for now, don't return error
 
+		case "background":
+			// ignore deprecated options
+
 		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
 			"bits", "min", "max", "bucketSize", "collation", "wildcardProjection":
