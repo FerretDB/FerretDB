@@ -52,7 +52,9 @@ jobs:
 
       # for Wrangler / Cloudflare Pages on pull_request_target
       - name: Name branch
-        run: git checkout -b ${{ github.head_ref }}
+        env:
+          BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        run: git checkout -b $BRANCH
 
       # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
 
