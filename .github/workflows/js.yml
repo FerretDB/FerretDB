@@ -79,13 +79,16 @@ jobs:
       - name: Run testjs for FerretDB
         run: bin/task testjs
 
+      - name: Compress FerretDB log before upload
+        run: zip -r -q ferretdb-log.zip ferretdb.log
+
       # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload FerretDB log
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.log
-          path: ferretdb.log
+          name: ferretdb-log.zip
+          path: ferretdb-log.zip
           retention-days: 1
           if-no-files-found: error
 
