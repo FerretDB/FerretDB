@@ -17,7 +17,6 @@ package hanadb
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	_ "github.com/SAP/go-hdb/driver"
 )
@@ -25,14 +24,10 @@ import (
 // CreateSchema creates a schema in SAP HANA JSON Document Store.
 func (hanaPool *Pool) CreateSchema(ctx context.Context, db string) error {
 	sqlStmt := fmt.Sprintf("CREATE SCHEMA \"%s\"", db)
-	_, err := hanaPool.ExecContext(ctx, sqlStmt)
-	if err != nil {
-		if strings.Contains(err.Error(), "386: cannot use duplicate schema name") {
-			return ErrAlreadyExist
-		}
-	}
 
-	return err
+	_, err := hanaPool.ExecContext(ctx, sqlStmt)
+
+	return getHanaErrorIfExists(err)
 }
 
 // DropSchema drops database
@@ -40,14 +35,8 @@ func (hanaPool *Pool) CreateSchema(ctx context.Context, db string) error {
 // It returns ErrSchemaNotExist if schema does not exist.
 func (hanaPool *Pool) DropSchema(ctx context.Context, db string) error {
 	sql := fmt.Sprintf("DROP SCHEMA \"%s\" CASCADE", db)
+
 	_, err := hanaPool.ExecContext(ctx, sql)
-	if err == nil {
-		return nil
-	}
 
-	if strings.Contains(err.Error(), "362: invalid schema name") {
-		return ErrSchemaNotExist
-	}
-
-	return err
+	return getHanaErrorIfExists(err)
 }

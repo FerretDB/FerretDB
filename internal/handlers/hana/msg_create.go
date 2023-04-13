@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,8 +30,6 @@ import (
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	h.L.Info("#############################################  START\n" + msg.String())
-
 	dbPool, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -56,7 +55,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"pipeline",
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -88,37 +87,34 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	h.L.Info("$db: '" + db + "', collection: '" + collection + "', Command: '" + command + "'")
-
 	err = dbPool.CreateSchema(ctx, db)
+
 	switch {
 	case err == nil:
 		// Success case
-	case errors.Is(err, hanadb.ErrAlreadyExist):
-		// Success case, collection anme might still be unique
+	case errors.Is(err, hanadb.ErrSchemaAlreadyExist):
+		// Success case, collection name might still be unique
 	case errors.Is(err, hanadb.ErrInvalidDatabaseName):
 		msg := fmt.Sprintf("Invalid Schema %s", db)
-		return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 	default:
 		return nil, lazyerrors.Error(err)
 	}
 
 	err = dbPool.CreateCollection(ctx, db, collection)
+
 	switch {
 	case err == nil:
 		// Success case
-	case errors.Is(err, hanadb.ErrAlreadyExist):
+	case errors.Is(err, hanadb.ErrCollectionAlreadyExist):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-		return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
-
-	case errors.Is(err, hanadb.ErrInvalidDatabaseName):
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
+	case errors.Is(err, hanadb.ErrInvalidCollectionName):
 		msg := fmt.Sprintf("Invalid Collection %s.%s", db, collection)
-		return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 	default:
 		return nil, lazyerrors.Error(err)
 	}
-
-	h.L.Info("#############################################  END\n" + msg.String())
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

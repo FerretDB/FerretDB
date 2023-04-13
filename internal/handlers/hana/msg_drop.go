@@ -19,7 +19,8 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -53,11 +54,12 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	err = dbPool.DropCollection(ctx, db, collection)
+
 	switch {
 	case err == nil:
 		// Success case
-	case errors.Is(err, pgdb.ErrTableNotExist):
-		return nil, common.NewCommandErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+	case errors.Is(err, hanadb.ErrTableNotExist):
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceNotFound, "ns not found")
 	default:
 		return nil, lazyerrors.Error(err)
 	}
