@@ -21,6 +21,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -253,12 +255,7 @@ func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats,
 		// return this error as is because it can be handled by the caller
 		return nil, err
 	default:
-		// just log it for now
-		// TODO https://github.com/FerretDB/FerretDB/issues/1346
-		pgPool.p.Config().ConnConfig.Logger.Log(
-			ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
-			map[string]any{"err": err},
-		)
+		return nil, lazyerrors.Error(err)
 	}
 
 	return res, nil
