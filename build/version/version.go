@@ -43,8 +43,10 @@
 //   - The default logging level is set to debug.
 //
 // Debug builds are orthogonal to production releases, development releases, and local/host builds.
-// For example, the host build could be made non-debug, and the production release could be a debug build,
-// although that's not common.
+// For example, the host build could be made non-debug, and the production release, in theory, could be a debug build.
+//
+// Currently, our production releases are non-debug builds,
+// and all other builds and releases (development releases, all-in-one releases, local builds, etc.) are debug builds.
 package version
 
 import (

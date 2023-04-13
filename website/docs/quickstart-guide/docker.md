@@ -6,25 +6,21 @@ description: How to set up FerretDB using Docker
 
 # Docker
 
-To run FerretDB as a Docker container you can choose one of the following images:
+You provide three Docker images for various deployments:
+"all-in-one" for quick testing and experiments,
+a development image for debugging problems,
+and a production image for all other cases.
 
-* [Production image](https://ghcr.io/ferretdb/ferretdb) `ghcr.io/ferretdb/ferretdb`.
-* [Development image](https://ghcr.io/ferretdb/ferretdb-dev) `ghcr.io/ferretdb/ferretdb-dev`.
-* [All-in-one image](https://ghcr.io/ferretdb/all-in-one) `ghcr.io/ferretdb/all-in-one`.
-
-Read further to learn how to use each of these images.
-
-## All-in-one image
-
-Use all-in-one image (`ghcr.io/ferretdb/all-in-one`) for quick testing and experiments.
-It is unsuitable for production use cases.
-
-Its usage is documented in the [FerretDB repository](https://github.com/FerretDB/FerretDB#quickstart).
+All-in-one image is documented in the
+[README.md file in the repository](https://github.com/FerretDB/FerretDB#quickstart).
+The rest are covered below.
 
 ## Production image
 
-In general, the production image should be used since it is faster and smaller.
-The following instructions describe how to configure and run it:
+Our [production image](https://ghcr.io/ferretdb/ferretdb) `ghcr.io/ferretdb/ferretdb`
+is recommended for most deployments.
+It does not include PostgreSQL or other backends, so you must run them separately.
+You can do that with Docker Compose, Kubernetes, or other means.
 
 ### Setup with Docker Compose
 
@@ -90,6 +86,7 @@ Find out more about:
 
 ## Development image
 
-The development image contain the debug build of FerretDB with test coverage instrumentation, race detector,
+The development image contains the [debug build](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds)
+of FerretDB with test coverage instrumentation, race detector,
 and other changes that make it more suitable for debugging problems.
-It can be used exactly the same way as production image, lalal
+It can be used exactly the same way as the production image, as described above.

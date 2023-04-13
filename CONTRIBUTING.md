@@ -230,9 +230,9 @@ Also, we should use driver methods as much as possible instead of testing comman
 Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
-Typical test cases include:
-   * happy paths;
-   * dot notation for existing and non-existent paths.
+   Typical test cases include:
+     * happy paths;
+     * dot notation for existing and non-existent paths.
 2. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (functions, types, etc).
