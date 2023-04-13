@@ -17,12 +17,12 @@ package common
 import (
 	"errors"
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 var (
@@ -113,6 +113,7 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 // projectDocument applies projection to the copy of the document.
 func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
 	var projected *types.Document
+
 	if inclusion {
 		projected = types.MakeDocument(1)
 
@@ -149,21 +150,75 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			)
 
 		case bool: // field: bool
-			// if projection value is false, we should skip the field
-			if !value {
-				projected.RemoveByPath(path)
+
+			// process top level fields
+			if path.Len() == 1 {
+				if inclusion {
+					if doc.Has(key) {
+						projected.Set(key, must.NotFail(doc.Get(key)))
+					}
+				} else {
+					projected.Remove(key)
+				}
+
 				continue
 			}
 
+			// process nested fields
+			projected = walkProjectionPath(path, value, projected, doc)
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
-		}
-
-		// if doc has field set it to the projected document
-		if doc.HasByPath(path) {
-			projected.SetByPath(path, must.NotFail(doc.GetByPath(path)))
 		}
 	}
 
 	return projected, nil
+}
+
+func walkProjectionPath(path types.Path, inclusion bool, projected, doc *types.Document) *types.Document {
+	next := types.NewStaticPath(path.Slice()...)
+
+	for next.Len() > 1 {
+		_, err := doc.GetByPath(next)
+		if err == nil {
+			break
+		}
+
+		next = next.TrimSuffix()
+	}
+
+	if inclusion {
+		if path.Len() == next.Len() {
+			projected.SetByPath(path, must.NotFail(doc.GetByPath(next)))
+
+			return projected
+		}
+
+		value, err := doc.GetByPath(next)
+		if err != nil {
+			return projected
+		}
+
+		switch value.(type) {
+		case *types.Document:
+			if next.Len() > 1 {
+				projected.SetByPath(next.TrimSuffix(), types.MakeDocument(0))
+			} else {
+				projected.Set(next.Prefix(), types.MakeDocument(0))
+			}
+		case *types.Array:
+			if next.Len() > 1 {
+				projected.SetByPath(next.TrimSuffix(), types.MakeArray(0))
+			} else {
+				projected.Set(next.Prefix(), types.MakeArray(0))
+			}
+		default:
+			if next.Len() > 1 {
+				projected.SetByPath(next.TrimSuffix(), types.MakeDocument(0))
+			}
+		}
+	} else {
+		projected.RemoveByPath(next)
+	}
+
+	return projected
 }
