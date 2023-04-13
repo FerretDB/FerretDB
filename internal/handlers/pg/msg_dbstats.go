@@ -17,6 +17,10 @@ package pg
 import (
 	"context"
 
+	"github.com/jackc/pgx/v4"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -49,26 +53,34 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		scale = 1
 	}
 
-	stats, err := dbPool.Stats(ctx, db, "")
-	if err != nil {
+	var stats *pgdb.DBStats
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateDBStats(ctx, tx, db)
+		return err
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	/*stats, err := dbPool.Stats(ctx, db, "")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}*/
+
 	var avgObjSize float64
-	if stats.CountRows > 0 {
-		avgObjSize = float64(stats.SizeRelation) / float64(stats.CountRows)
+	if stats.CountObjects > 0 {
+		avgObjSize = float64(stats.SizeCollections) / float64(stats.CountObjects)
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"db", db,
-			"collections", stats.CountTables,
+			"collections", stats.CountCollections,
 			// TODO https://github.com/FerretDB/FerretDB/issues/176
 			"views", int32(0),
-			"objects", stats.CountRows,
+			"objects", stats.CountObjects,
 			"avgObjSize", avgObjSize,
-			"dataSize", float64(stats.SizeRelation/int64(scale)),
+			"dataSize", float64(stats.SizeCollections/int64(scale)),
 			"indexes", stats.CountIndexes,
 			"indexSize", float64(stats.SizeIndexes/int64(scale)),
 			"totalSize", float64(stats.SizeTotal/int64(scale)),

@@ -16,10 +16,8 @@ package pg
 
 import (
 	"context"
-	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,10 +26,10 @@ import (
 
 // MsgCollStats implements HandlerInterface.
 func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	//dbPool, err := h.DBPool(ctx)
+	//if err != nil {
+	//	return nil, lazyerrors.Error(err)
+	//}
 
 	document, err := msg.Document()
 	if err != nil {
@@ -58,7 +56,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		scale = 1
 	}
 
-	stats, err := dbPool.Stats(ctx, db, collection)
+	/*stats, err := dbPool.Calc(ctx, db, collection)
 
 	switch {
 	case err == nil:
@@ -68,17 +66,17 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		stats = new(pgdb.DBStats)
 	default:
 		return nil, lazyerrors.Error(err)
-	}
+	}*/
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
-			"count", stats.CountRows,
-			"size", int32(stats.SizeTotal)/scale,
-			"storageSize", int32(stats.SizeRelation)/scale,
-			"totalIndexSize", int32(stats.SizeIndexes)/scale,
-			"totalSize", int32(stats.SizeTotal)/scale,
+			//"count", stats.CountRows,
+			//"size", int32(stats.SizeTotal)/scale,
+			//"storageSize", int32(stats.SizeRelation)/scale,
+			//"totalIndexSize", int32(stats.SizeIndexes)/scale,
+			//"totalSize", int32(stats.SizeTotal)/scale,
 			"scaleFactor", scale,
 			"ok", float64(1),
 		))},

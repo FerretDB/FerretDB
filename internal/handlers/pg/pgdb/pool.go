@@ -16,12 +16,9 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zapadapter"
@@ -43,17 +40,6 @@ const (
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
 	p *pgxpool.Pool
-}
-
-// DBStats describes statistics for a database.
-type DBStats struct {
-	Name         string
-	CountTables  int32
-	CountRows    int32
-	SizeTotal    int64
-	SizeIndexes  int64
-	SizeRelation int64
-	CountIndexes int32
 }
 
 // NewPool returns a new concurrency-safe connection pool.
@@ -201,62 +187,4 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// Stats returns a set of statistics for FerretDB server, database, collection
-// - or, in terms of PostgreSQL, database, schema, table.
-//
-// It returns ErrTableNotExist is the given collection does not exist, and ignores other errors.
-func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
-	res := &DBStats{
-		Name: db,
-	}
-
-	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		sql := `
-	SELECT COUNT(distinct t.table_name)                                                         AS CountTables,
-		COALESCE(SUM(s.n_live_tup), 0)                                                          AS CountRows,
-		COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0) AS SizeTotal,
-		COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeIndexes,
-		COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)       AS SizeRelation,
-		COUNT(distinct i.indexname)                                                             AS CountIndexes
-	FROM information_schema.tables AS t
-		LEFT OUTER JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema AND s.relname = t.table_name
-		LEFT OUTER JOIN pg_indexes          AS i ON i.schemaname = t.table_schema AND i.tablename = t.table_name`
-
-		// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
-
-		var args []any
-
-		if db != "" {
-			sql += " WHERE t.table_schema = $1"
-			args = append(args, db)
-
-			if collection != "" {
-				metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
-				if err != nil {
-					return err
-				}
-
-				sql += " AND t.table_name = $2"
-				args = append(args, metadata.table)
-			}
-		}
-
-		row := tx.QueryRow(ctx, sql, args...)
-
-		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
-	})
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, ErrTableNotExist):
-		// return this error as is because it can be handled by the caller
-		return nil, err
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
 }
