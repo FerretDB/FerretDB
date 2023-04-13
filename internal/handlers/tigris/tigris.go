@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// Handler implements handlers.Interface on of Tigris.
+// Handler implements handlers.Interface on Tigris.
 //
 //nolint:vet // for readability
 type Handler struct {
