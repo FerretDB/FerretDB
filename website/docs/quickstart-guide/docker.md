@@ -86,7 +86,8 @@ Find out more about:
 
 ## Development image
 
-The development image contains the [debug build](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds)
+The [development image](https://ghcr.io/ferretdb/ferretdb-dev)
+contains the [debug build](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds)
 of FerretDB with test coverage instrumentation, race detector,
 and other changes that make it more suitable for debugging problems.
 It can be used exactly the same way as the production image, as described above.
