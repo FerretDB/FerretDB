@@ -76,8 +76,8 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, NewWriteErrorMsg(
-				ErrTypeMismatch,
+			return false, commonerrors.NewWriteErrorMsg(
+				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
 			)
 		}

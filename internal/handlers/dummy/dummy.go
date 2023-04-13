@@ -21,12 +21,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
 
 // notImplemented returns error for stub command handlers.
 func notImplemented(command string) error {
-	return common.NewCommandErrorMsg(common.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
+	return commonerrors.NewCommandErrorMsg(
+		commonerrors.ErrNotImplemented,
+		"I'm a stub, not a real handler for "+command,
+	)
 }
 
 // Handler implements handlers.Interface by stubbing all methods except the following handler-independent commands:
