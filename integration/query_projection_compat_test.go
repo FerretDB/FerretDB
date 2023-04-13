@@ -42,9 +42,17 @@ func TestQueryProjectionCompat(t *testing.T) {
 		},
 		"DotNotationInclude": {
 			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}},
+		},
+		"DotNotationIncludeTwo": {
+			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", true}},
 		},
 		"DotNotationExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", false}},
+		},
+		"DotNotationExcludeTwo": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", false}, {"v.array", false}},
 		},

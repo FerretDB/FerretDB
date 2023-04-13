@@ -33,9 +33,11 @@ var (
 // validateProjection check projection document.
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
-func validateProjection(projection *types.Document) (bool, error) {
+func validateProjection(projection *types.Document) (*types.Document, bool, error) {
+	validated := types.MakeDocument(0)
+
 	if projection == nil {
-		return false, errProjectionEmpty
+		return nil, false, errProjectionEmpty
 	}
 
 	var projectionVal *bool
@@ -50,7 +52,7 @@ func validateProjection(projection *types.Document) (bool, error) {
 		}
 
 		if err != nil {
-			return false, lazyerrors.Error(err)
+			return nil, false, lazyerrors.Error(err)
 		}
 
 		if key == "_id" { // _id is a special case and can be included or excluded
@@ -61,7 +63,7 @@ func validateProjection(projection *types.Document) (bool, error) {
 
 		switch value := value.(type) {
 		case *types.Document:
-			return false, commonerrors.NewCommandErrorMsg(
+			return nil, false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
@@ -76,11 +78,11 @@ func validateProjection(projection *types.Document) (bool, error) {
 				result = true
 			}
 		default:
-			return false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
+			return nil, false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
 
 		// set the value with boolean result to omit type assertion when we will apply projection
-		projection.Set(key, result)
+		validated.Set(key, result)
 
 		// if projectionVal is nil we are processing the first field
 		if projectionVal == nil {
@@ -90,13 +92,13 @@ func validateProjection(projection *types.Document) (bool, error) {
 
 		if *projectionVal != result {
 			if *projectionVal {
-				return false, commonerrors.NewCommandErrorMsgWithArgument(
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrProjectionExIn,
 					fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
 					"projection",
 				)
 			} else {
-				return false, commonerrors.NewCommandErrorMsgWithArgument(
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrProjectionInEx,
 					fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
 					"projection",
@@ -105,7 +107,7 @@ func validateProjection(projection *types.Document) (bool, error) {
 		}
 	}
 
-	return *projectionVal == true, nil
+	return validated, *projectionVal == true, nil
 }
 
 // projectDocument applies projection to the copy of the document.
