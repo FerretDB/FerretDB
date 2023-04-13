@@ -59,7 +59,7 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
 
-	var attempts = int64(1)
+	attempts := int64(1)
 	for ctx.Err() == nil {
 		conn, err := net.Dial("tcp", addr)
 		if err == nil {
@@ -99,7 +99,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	var pgPool *pgdb.Pool
 
-	var attempts = int64(1)
+	attempts := int64(1)
 	for ctx.Err() == nil {
 		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), p); err == nil {
 			break
@@ -167,7 +167,7 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 
 	var db *tigrisdb.TigrisDB
 
-	var attempts = int64(1)
+	attempts := int64(1)
 	for ctx.Err() == nil {
 		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
 			break
