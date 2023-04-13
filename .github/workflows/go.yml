@@ -251,7 +251,7 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
         working-directory: source
 
-      - name: Compress Linux log before upload
+      - name: Compress Linux logs before upload
         if: failure()
         run: zip -r -q -9 linux-logs.zip /tmp/logs
 
