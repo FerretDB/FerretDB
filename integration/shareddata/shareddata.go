@@ -220,11 +220,15 @@ func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
 
 // BenchmarkValues returns shared data documents for benchmark in deterministic order.
 type BenchmarkValues struct {
+	// iter returns all documents in deterministic order.
 	iter iterator.Interface[struct{}, bson.D]
+	// hash is the checksum of all documents produced by iter.
+	// Any change in documents or order will result in different hash.
 	hash string
 }
 
 // Hash implements BenchmarkProvider interface.
+// It returns expected hash of all documents produced by BenchmarkValues.
 func (b BenchmarkValues) Hash() string {
 	return b.hash
 }
