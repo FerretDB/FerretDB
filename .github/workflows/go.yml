@@ -251,16 +251,13 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
         working-directory: source
 
-      - name: Compress Linux logs before upload
-        if: failure()
-        run: zip -r -q -9 linux-logs.zip /tmp/logs
-
+      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: linux-logs
-          path: linux-logs.zip
+          path: /tmp/logs
           retention-days: 1
           if-no-files-found: error
 
