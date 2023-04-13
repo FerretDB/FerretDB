@@ -321,9 +321,8 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 			hash.Reset()
 
 			// write literal document with previous checksum to calculate new checksum
-			if _, err = hash.Write(currSum); err != nil {
-				panic("Unexpected error: " + err.Error())
-			}
+			_, err = hash.Write(currSum)
+			require.NoError(tb, err)
 
 			insertDocs[i] = doc
 		}
