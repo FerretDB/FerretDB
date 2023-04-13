@@ -81,14 +81,13 @@ jobs:
 
       - name: Compress FerretDB log before upload
         if: failure()
-        run: zip -q ferretdb-log.zip ferretdb.log
+        run: zip -q -9 ferretdb-log.zip ferretdb.log
 
-      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload FerretDB log
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb-log.zip
+          name: ferretdb-log
           path: ferretdb-log.zip
           retention-days: 1
           if-no-files-found: error

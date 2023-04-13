@@ -253,14 +253,13 @@ jobs:
 
       - name: Compress Linux log before upload
         if: failure()
-        run: zip -r -q linux-logs.zip /tmp/logs
+        run: zip -r -q -9 linux-logs.zip /tmp/logs
 
-      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: linux-logs.zip
+          name: linux-logs
           path: linux-logs.zip
           retention-days: 1
           if-no-files-found: error

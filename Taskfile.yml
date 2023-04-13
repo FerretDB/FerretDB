@@ -255,6 +255,7 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
     cmds:
+      - exit 1 # test go.yml
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus generated {{.FUZZCORPUS}}
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus seed {{.FUZZCORPUS}}
       - go run {{.RACEFLAG}} ./cmd/fuzztool corpus {{.FUZZCORPUS}} generated
