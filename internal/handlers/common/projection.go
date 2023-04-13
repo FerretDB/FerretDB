@@ -79,10 +79,10 @@ func validateProjection(projection *types.Document) (bool, error) {
 			return false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
 
-		// set the value with boolean result to omit type assertion in the next iteration
+		// set the value with boolean result to omit type assertion when we will apply projection
 		projection.Set(key, result)
 
-		// if projectionVal is nil, it means that we are processing the first field
+		// if projectionVal is nil we are processing the first field
 		if projectionVal == nil {
 			projectionVal = &result
 			continue
