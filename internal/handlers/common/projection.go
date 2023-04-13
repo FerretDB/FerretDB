@@ -108,7 +108,8 @@ func validateProjection(projection *types.Document) (bool, error) {
 	return *projectionVal == true, nil
 }
 
-func projectDocument(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
+// projectDocument applies projection to the copy of the document.
+func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
 	var projected *types.Document
 	if inclusion {
 		projected = types.MakeDocument(1)
