@@ -61,13 +61,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$set":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), false)
+			changed, err = processSetFieldExpression(doc, updateV, false)
 			if err != nil {
 				return false, err
 			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), true)
+			changed, err = processSetFieldExpression(doc, updateV, true)
 			if err != nil {
 				return false, err
 			}
@@ -199,8 +199,20 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.
 // If the document was changed it returns true.
-func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
+func processSetFieldExpression(doc *types.Document, setVal any, setOnInsert bool) (bool, error) {
 	var changed bool
+
+	setDoc, ok := setVal.(*types.Document)
+	if !ok {
+		return false, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
+			fmt.Sprintf(
+				"Modifiers operate on fields but we found type string instead. "+
+					"For example: {$mod: {<field>: ...}} not {$set: \"%s\"}",
+				setVal,
+			),
+		)
+	}
 
 	setDocKeys := setDoc.Keys()
 	sort.Strings(setDocKeys)

@@ -190,6 +190,42 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
+		"SetForNonExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"SetForExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"UnsetForNonExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"UnsetForExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"UnsetForNonExistingInvalid": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$unset", "non-existent-field"}}},
+			},
+		},
+		"UnsetForExistingInvalid": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$unset", "non-existent-field"}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -317,6 +353,27 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+		"SetInvalidValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", "invalid"}}},
+			},
+		},
+		"SetForNonExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"SetForExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
 			},
 		},
 		"UnsetForNonExisting": {
