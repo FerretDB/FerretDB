@@ -15,6 +15,7 @@
 package common
 
 import (
+	"errors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -27,6 +28,10 @@ import (
 // For that reason, there is no need to track both iterators.
 func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document) (types.DocumentsIterator, error) {
 	inclusion, err := validateProjection(projection)
+	if errors.Is(err, errProjectionEmpty) {
+		return iter, nil
+	}
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

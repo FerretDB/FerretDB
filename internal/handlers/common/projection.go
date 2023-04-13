@@ -25,10 +25,19 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+var (
+	// errProjectionEmpty is returned when projection document is empty.
+	errProjectionEmpty = errors.New("projection is empty")
+)
+
 // validateProjection check projection document.
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
 func validateProjection(projection *types.Document) (bool, error) {
+	if projection == nil {
+		return false, errProjectionEmpty
+	}
+
 	var projectionVal *bool
 
 	iter := projection.Iterator()
@@ -100,10 +109,6 @@ func validateProjection(projection *types.Document) (bool, error) {
 }
 
 func projectDocument(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
-	if projection == nil {
-		return doc, nil
-	}
-
 	var projected *types.Document
 	if inclusion {
 		projected = types.MakeDocument(1)
