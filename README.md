@@ -76,10 +76,10 @@ FerretDB could also be built as any other Go program,
 but a few generated files and build tags could affect it.
 See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for more details.
 
-## Managed FerretDB at cloud providers
+## Managed FerretDB at Cloud providers
 
-* [Civo](https://www.civo.com) (see [here](https://www.civo.com/marketplace/FerretDB)).
-* [Scaleway](https://www.scaleway.com/) (request access [here](https://www.scaleway.com/en/betas/#managed-document-database)).
+* [Civo](https://www.civo.com/marketplace/FerretDB)
+* Scaleway ([request access here](https://www.scaleway.com/en/betas/#managed-document-database))
 
 ## Documentation
 
