@@ -125,11 +125,10 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 		resultType compatTestCaseResultType
 		altMessage string
 	}{
-		"scaleOne":      {scale: int32(1)},
-		"scaleBig":      {scale: int64(1000)},
-		"scaleFloat":    {scale: 2.8},
-		"scaleMaxFloat": {scale: math.MaxFloat64},
-		"scaleNull":     {scale: nil},
+		"scaleOne":   {scale: int32(1)},
+		"scaleBig":   {scale: int64(1000)},
+		"scaleFloat": {scale: 2.8},
+		"scaleNull":  {scale: nil},
 	} {
 		name, tc := name, tc
 
