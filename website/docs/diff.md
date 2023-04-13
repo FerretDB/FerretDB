@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 slug: /diff/ # referenced in README.md and beacon
 ---
 
