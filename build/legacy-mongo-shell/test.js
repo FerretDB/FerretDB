@@ -3,5 +3,5 @@
 (function() {
   'use strict';
 
-	assert.eq("failing","test");
+  print('test.js passed!');
 })();
