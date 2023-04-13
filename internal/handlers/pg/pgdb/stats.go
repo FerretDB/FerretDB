@@ -63,6 +63,8 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	res.SizeTotal = *schemaSize
 
 	// For the rest of the stats, we need to filter out FerretDB metadata relations by its reserved prefix.
+	// https://wiki.postgresql.org/wiki/Count_estimate
+	// https://www.postgresql.org/docs/15/catalog-pg-class.html - reltuples (could be negative)
 	sql = `
 	SELECT 
 	    COUNT(distinct t.tablename)                                                                     AS CountTables,
@@ -71,8 +73,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		COALESCE(SUM(pg_table_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))), 0) 	AS SizeTables,
 		COALESCE(SUM(pg_indexes_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))), 0) AS SizeIndexes
 	FROM pg_tables AS t
-	    JOIN pg_namespace AS n ON n.nspname = t.schemaname
-		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = n.oid
+		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = (quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))::regclass
 		LEFT OUTER JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 	WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
