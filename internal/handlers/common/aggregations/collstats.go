@@ -39,14 +39,12 @@ type storageStats struct {
 
 // newCollStats creates a new $collStats stage.
 func newCollStats(stage *types.Document) (Stage, error) {
-	command := "$collStats (stage)"
-
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCollStatsInvalidArg,
 			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(stage)),
-			command,
+			"$collStats (stage)",
 		)
 	}
 
@@ -68,7 +66,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 
 		var s any
 		if s, err = storageStatsFields.Get("scale"); err == nil {
-			if cs.storageStats.scale, err = common.GetScaleParam(command, s); err != nil {
+			if cs.storageStats.scale, err = common.GetScaleParam("$collStats.storageStats", s); err != nil {
 				return nil, err
 			}
 		}

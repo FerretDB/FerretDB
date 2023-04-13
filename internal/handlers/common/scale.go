@@ -33,9 +33,10 @@ func GetScaleParam(command string, value any) (int32, error) {
 
 	if err == nil {
 		if scaleValue <= 0 {
-			return 0, commonerrors.NewCommandError(
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", scaleValue),
+				fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", scaleValue),
+				"scale",
 			)
 		}
 
@@ -75,9 +76,10 @@ func GetScaleParam(command string, value any) (int32, error) {
 		return math.MaxInt32, nil
 
 	case errors.Is(err, errLongExceededNegative):
-		return 0, commonerrors.NewCommandError(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", math.MinInt32),
+			fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", math.MinInt32),
+			"scale",
 		)
 
 	default:
