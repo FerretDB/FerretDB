@@ -80,7 +80,8 @@ jobs:
         run: bin/task testjs
 
       - name: Compress FerretDB log before upload
-        run: zip -r -q ferretdb-log.zip ferretdb.log
+        if: failure()
+        run: zip -q ferretdb-log.zip ferretdb.log
 
       # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
       - name: Upload FerretDB log
