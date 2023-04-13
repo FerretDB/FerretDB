@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 10
 slug: /security/ # referenced in README.md
 description: TLS and authentication
 ---
