@@ -24,17 +24,21 @@ func TestQueryProjectionCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"FindProjectionInclusions": {
+		"Include1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", int32(1)}},
+		},
+		"Exclude1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", int32(0)}},
+		},
+		"Include2Fields": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", int32(1)}, {"bar", true}},
 		},
-		"FindProjectionExclusions": {
+		"Exclude2Fields": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", int32(0)}, {"bar", false}},
-		},
-		"IncludeField": {
-			filter:     bson.D{},
-			projection: bson.D{{"v", int32(1)}},
 		},
 		"IncludeID": {
 			filter:     bson.D{},
@@ -44,9 +48,13 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"_id", false}},
 		},
-		"ExcludeField": {
+		"IncludeFieldExcludeID": {
 			filter:     bson.D{},
-			projection: bson.D{{"v", int32(0)}},
+			projection: bson.D{{"_id", false}, {"array", true}},
+		},
+		"ExcludeFieldIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"array", false}},
 		},
 		"DotNotationInclude": {
 			filter:     bson.D{},
@@ -82,18 +90,4 @@ func TestQueryProjectionCompat(t *testing.T) {
 	}
 
 	testQueryCompat(t, testCases)
-}
-
-func TestQueryProjectionCompatCommand(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]queryCompatCommandTestCase{
-		"FindProjectionIDExclusion": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"_id", false}, {"array", int32(1)}},
-			resultPushdown: true,
-		},
-	}
-
-	testQueryCompatCommand(t, testCases)
 }

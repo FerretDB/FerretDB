@@ -18,6 +18,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -67,9 +69,7 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 				result = true
 			}
 		case bool:
-			if value {
-				result = true
-			}
+			result = value
 		default:
 			return nil, false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
@@ -79,6 +79,10 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		// if projectionVal is nil we are processing the first field
 		if projectionVal == nil {
+			if key == "_id" {
+				continue
+			}
+
 			projectionVal = &result
 			continue
 		}
@@ -100,17 +104,69 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 	}
 
+	if projection.Len() == 1 && projection.Has("_id") {
+		projectionVal = pointer.ToBool(false)
+	}
+
 	return validated, *projectionVal, nil
 }
 
 // projectDocument applies projection to the copy of the document.
 func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
+	projected := types.MakeDocument(1)
+
+	if projection.Has("_id") {
+		idValue := must.NotFail(projection.Get("_id"))
+
+		var set bool
+
+		switch idValue := idValue.(type) {
+		case *types.Document: // field: { $elemMatch: { field2: value }}
+			return nil, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrCommandNotFound,
+				fmt.Sprintf("projection %s is not supported",
+					types.FormatAnyValue(idValue),
+				),
+			)
+		case bool:
+			set = idValue
+		default:
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", "_id", idValue, idValue)
+		}
+
+		if set {
+			projected.Set("_id", must.NotFail(doc.Get("_id")))
+		}
+	} else {
+		if inclusion {
+			projected.Set("_id", must.NotFail(doc.Get("_id")))
+		}
+	}
+
+	projectionWithoutID := projection.DeepCopy()
+
+	projectionWithoutID.Remove("_id")
+
+	docWithoutID := doc.DeepCopy()
+	docWithoutID.Remove("_id")
+
+	projectedWithoutID, err := projectDoc(docWithoutID, projectionWithoutID, inclusion)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, key := range projectedWithoutID.Keys() {
+		projected.Set(key, must.NotFail(projectedWithoutID.Get(key)))
+	}
+
+	return projected, nil
+}
+
+func projectDoc(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
 	var projected *types.Document
 
 	if inclusion {
-		projected = types.MakeDocument(1)
-
-		projected.Set("_id", must.NotFail(doc.Get("_id")))
+		projected = types.MakeDocument(0)
 	} else {
 		projected = doc.DeepCopy()
 	}
