@@ -69,7 +69,7 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 					zap.String("db", db), zap.Int("retry", retry), zap.Error(err),
 				)
 
-				ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(retry))
+				ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(i+1))
 				continue
 			}
 
