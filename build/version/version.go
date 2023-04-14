@@ -43,8 +43,10 @@
 //   - The default logging level is set to debug.
 //
 // Debug builds are orthogonal to production releases, development releases, and local/host builds.
-// For example, the host build could be made non-debug, and the production release could be a debug build,
-// although that's not common.
+// For example, the host build could be made non-debug, and the production release, in theory, could be a debug build.
+//
+// Currently, our production releases are non-debug builds,
+// and all other builds and releases (development releases, all-in-one releases, local builds, etc.) are debug builds.
 package version
 
 import (
@@ -106,9 +108,9 @@ func init() {
 	if len(parts) != 4 {
 		panic("invalid mongodb.txt")
 	}
-	major := must.NotFail(strconv.Atoi(parts[1]))
-	minor := must.NotFail(strconv.Atoi(parts[2]))
-	patch := must.NotFail(strconv.Atoi(parts[3]))
+	major := must.NotFail(strconv.ParseInt(parts[1], 10, 32))
+	minor := must.NotFail(strconv.ParseInt(parts[2], 10, 32))
+	patch := must.NotFail(strconv.ParseInt(parts[3], 10, 32))
 	mongoDBVersion := fmt.Sprintf("%d.%d.%d", major, minor, patch)
 	mongoDBVersionArray := must.NotFail(types.NewArray(int32(major), int32(minor), int32(patch), int32(0)))
 

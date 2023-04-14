@@ -52,6 +52,11 @@ jobs:
       - name: Scan
         run: bin/task --exit-code security
 
+      - name: Check dependencies
+        uses: actions/dependency-review-action@v3
+        with:
+          allow-licenses: Apache-2.0, BSD-3-Clause, MIT
+
       # Workaround for `hashFiles` issue.
       # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.
       - name: Clean

@@ -6,23 +6,23 @@ description: How to set up FerretDB using Docker
 
 # Docker
 
-## Provided images
+We provide three Docker images for various deployments:
+**"all-in-one"** for quick testing and experiments,
+**a development image** for debugging problems,
+and **a production image** for all other cases.
 
-We provide three official Docker images:
+All-in-one image is documented in the
+[README.md file in the repository](https://github.com/FerretDB/FerretDB#quickstart).
+The rest are covered below.
 
-* [Production image](https://ghcr.io/ferretdb/ferretdb) `ghcr.io/ferretdb/ferretdb`.
-* [Development image](https://ghcr.io/ferretdb/ferretdb-dev) `ghcr.io/ferretdb/ferretdb-dev`.
-* [All-in-one image](https://ghcr.io/ferretdb/all-in-one) `ghcr.io/ferretdb/all-in-one`.
+## Production image
 
-The last one is provided for quick testing and experiments and is unsuitable for production use cases.
-It is documented in the [FerretDB repository](https://github.com/FerretDB/FerretDB#quickstart).
+Our [production image](https://ghcr.io/ferretdb/ferretdb) `ghcr.io/ferretdb/ferretdb`
+is recommended for most deployments.
+It does not include PostgreSQL or other backends, so you must run them separately.
+You can do that with Docker Compose, Kubernetes, or other means.
 
-The development images contain the debug build of FerretDB with test coverage instrumentation, race detector,
-and other changes that make it more suitable for debugging problems.
-In general, the production image should be used since it is faster and smaller.
-The following instructions use it, but the development image could be used in exactly the same way.
-
-## Setup with Docker Compose
+### Setup with Docker Compose
 
 The following steps describe a quick local setup:
 
@@ -83,3 +83,11 @@ You can improve that setup by:
 Find out more about:
 
 * [Getting logs](../configuration/logging.md#docker-logs)
+
+## Development image
+
+The [development image](https://ghcr.io/ferretdb/ferretdb-dev)
+contains the [debug build](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds)
+of FerretDB with test coverage instrumentation, race detector,
+and other changes that make it more suitable for debugging problems.
+It can be used exactly the same way as the production image, as described above.
