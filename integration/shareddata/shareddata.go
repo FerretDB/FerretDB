@@ -203,6 +203,8 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 type fields map[string]any
 
 // TopLevelValues stores shared data documents as {"_id": key, "field1": value1, "field2": value2, ...} documents.
+//
+//nolint:vet // for readability
 type TopLevelValues[id comparable] struct {
 	name       string
 	backends   []string
@@ -220,9 +222,11 @@ func (t *TopLevelValues[id]) Validators(backend, collection string) map[string]a
 	switch backend {
 	case "ferretdb-tigris":
 		validators := make(map[string]any, len(t.validators[backend]))
+
 		for key, value := range t.validators[backend] {
 			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
 		}
+
 		return validators
 	default:
 		return t.validators[backend]
@@ -234,14 +238,16 @@ func (t *TopLevelValues[id]) Docs() []bson.D {
 	ids := maps.Keys(t.data)
 
 	res := make([]bson.D, 0, len(t.data))
+
 	for _, id := range ids {
 		doc := bson.D{{"_id", id}}
+
 		fields := t.data[id]
-		if fields != nil {
-			for key, field := range fields {
-				doc = append(doc, bson.E{Key: key, Value: field})
-			}
+
+		for key, field := range fields {
+			doc = append(doc, bson.E{Key: key, Value: field})
 		}
+
 		res = append(res, doc)
 	}
 

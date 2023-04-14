@@ -434,6 +434,7 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 	},
 }
 
+// TopLevelFieldsIntegers contains documents with several top level fields with integer values.
 var TopLevelFieldsIntegers = &TopLevelValues[string]{
 	name:     "TopLevelFieldsIntegers",
 	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
