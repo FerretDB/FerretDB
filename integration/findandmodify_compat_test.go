@@ -369,13 +369,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
 			},
 		},
-		"SetForExisting": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
-			},
-		},
 		"UnsetForNonExisting": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},

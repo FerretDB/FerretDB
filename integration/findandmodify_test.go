@@ -191,6 +191,17 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
+		"SetForExisting": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

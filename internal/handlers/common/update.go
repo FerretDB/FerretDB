@@ -824,76 +824,72 @@ func validateUpdateOperators(update *types.Document, newErr func(errCode commone
 		return err
 	}
 
-	currentDate, err := extractValueFromUpdateOperator("$currentDate", update)
+	currentDate, err := extractValueFromUpdateOperator("$currentDate", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	inc, err := extractValueFromUpdateOperator("$inc", update)
+	inc, err := extractValueFromUpdateOperator("$inc", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	max, err := extractValueFromUpdateOperator("$max", update)
+	max, err := extractValueFromUpdateOperator("$max", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	min, err := extractValueFromUpdateOperator("$min", update)
+	min, err := extractValueFromUpdateOperator("$min", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	mul, err := extractValueFromUpdateOperator("$mul", update)
+	mul, err := extractValueFromUpdateOperator("$mul", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	set, err := extractValueFromUpdateOperator("$set", update)
+	set, err := extractValueFromUpdateOperator("$set", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	if err = validateUnsetExpression(update, newErr); err != nil {
-		return err
-	}
-
-	unset, err := extractValueFromUpdateOperator("$unset", update)
+	unset, err := extractValueFromUpdateOperator("$unset", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update)
+	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$rename", update)
+	_, err = extractValueFromUpdateOperator("$rename", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	pop, err := extractValueFromUpdateOperator("$pop", update)
+	pop, err := extractValueFromUpdateOperator("$pop", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	push, err := extractValueFromUpdateOperator("$push", update)
+	push, err := extractValueFromUpdateOperator("$push", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	addToSet, err := extractValueFromUpdateOperator("$addToSet", update)
+	addToSet, err := extractValueFromUpdateOperator("$addToSet", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	pullAll, err := extractValueFromUpdateOperator("$pullAll", update)
+	pullAll, err := extractValueFromUpdateOperator("$pullAll", update, newErr)
 	if err != nil {
 		return err
 	}
 
-	pull, err := extractValueFromUpdateOperator("$pull", update)
+	pull, err := extractValueFromUpdateOperator("$pull", update, newErr)
 	if err != nil {
 		return err
 	}
@@ -1010,7 +1006,7 @@ func checkConflictingChanges(a, b *types.Document) error {
 //	bson.D{{"v", nil}}.
 //
 // It also checks for path collisions and returns the error if there's any.
-func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
+func extractValueFromUpdateOperator(op string, update *types.Document, newErr func(errCode commonerrors.ErrorCode, msg string) error) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
 	}
@@ -1018,15 +1014,19 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
-		return nil, commonerrors.NewWriteErrorMsg(
+		return nil, newErr(
 			commonerrors.ErrFailedToParse,
-			"Modifiers operate on fields but we found another type instead",
+			fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
+				"For example: {$mod: {<field>: ...}} not {%s: \"%s\"}",
+				op,
+				updateExpression,
+			),
 		)
 	}
 
 	duplicate, ok := doc.FindDuplicateKey()
 	if ok {
-		return nil, commonerrors.NewWriteErrorMsg(
+		return nil, newErr(
 			commonerrors.ErrConflictingUpdateOperators,
 			fmt.Sprintf(
 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
@@ -1166,27 +1166,6 @@ func validateCurrentDateExpression(update *types.Document) error {
 				),
 			)
 		}
-	}
-
-	return nil
-}
-
-func validateUnsetExpression(update *types.Document, newErr func(errCode commonerrors.ErrorCode, msg string) error) error {
-	updateExpression, err := update.Get("$unset")
-	if err != nil {
-		// the update is not $unset operator, that's find
-		return nil
-	}
-
-	_, ok := updateExpression.(*types.Document)
-	if !ok {
-		return newErr(
-			commonerrors.ErrFailedToParse,
-			fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
-				"For example: {$mod: {<field>: ...}} not {$unset: \"%s\"}",
-				updateExpression,
-			),
-		)
 	}
 
 	return nil
