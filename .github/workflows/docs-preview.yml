@@ -84,6 +84,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Set deployment URL
+      - name: Set GitHub deployment URL
         id: extract
         uses: FerretDB/github-actions/extract-first-url@main
