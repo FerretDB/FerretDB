@@ -25,9 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
-	errProjectionEmpty = errors.New("projection is empty")
-)
+var errProjectionEmpty = errors.New("projection is empty")
 
 // validateProjection check projection document.
 // Document fields could be either included or excluded but not both.
