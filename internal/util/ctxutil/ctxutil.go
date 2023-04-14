@@ -61,18 +61,22 @@ func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
 	<-sleepCtx.Done()
 }
 
-// DurationWithJitter returns an exponential backoff duration based on retry with random jitter.
-// The maximum sleep is the cap. The minimum duration is at least 100 milliseconds.
+// DurationWithJitter returns a duration
+// based including some random jitter.
+// The maximum sleep is the input duration.
 //
-// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
-func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
+// The minimum duration is at least 100 milliseconds.
+//
+// Math/rand is good enough because we don't need
+// the randomness to be cryptographically secure.
+func DurationWithJitter(cap time.Duration, attempts int64) time.Duration {
 	const base = time.Millisecond * 100
 
-	if retry < 1 {
-		panic("retry must be nonzero positive number")
+	if attempts < 1 {
+		attempts = 1
 	}
 
-	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
+	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(attempts))
 	capMilliseconds := float64(cap.Milliseconds())
 	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds))
 
