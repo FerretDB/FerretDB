@@ -59,7 +59,7 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
 
-	var retry int64
+	attempts := int64(1)
 	for ctx.Err() == nil {
 		conn, err := net.Dial("tcp", addr)
 		if err == nil {
@@ -69,8 +69,8 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 
 		logger.Infof("%s: %s", addr, err)
 
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+		ctxutil.SleepWithJitter(ctx, time.Second, attempts)
+		attempts++
 	}
 
 	return fmt.Errorf("failed to connect to %s", addr)
@@ -99,16 +99,15 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	var pgPool *pgdb.Pool
 
-	var retry int64
+	attempts := int64(1)
 	for ctx.Err() == nil {
 		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), p); err == nil {
 			break
 		}
 
 		logger.Infof("%s: %s", uri, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+		ctxutil.SleepWithJitter(ctx, time.Second, attempts)
+		attempts++
 	}
 
 	defer pgPool.Close()
@@ -168,16 +167,15 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 
 	var db *tigrisdb.TigrisDB
 
-	var retry int64
+	attempts := int64(1)
 	for ctx.Err() == nil {
 		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
 			break
 		}
 
 		logger.Infof("%s: %s", cfg.URL, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+		ctxutil.SleepWithJitter(ctx, time.Second, attempts)
+		attempts++
 	}
 
 	defer db.Driver.Close()
