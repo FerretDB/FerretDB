@@ -373,7 +373,7 @@ func addNumbers(v1, v2 any) (any, error) {
 				}
 			} else {
 				if int64(v1) < math.MinInt64-v2 {
-					return nil, errLongExceededPositive
+					return nil, errLongExceededNegative
 				}
 			}
 
@@ -404,7 +404,7 @@ func addNumbers(v1, v2 any) (any, error) {
 				}
 			} else {
 				if v1 < math.MinInt64-v2 {
-					return nil, errLongExceededPositive
+					return nil, errLongExceededNegative
 				}
 			}
 
