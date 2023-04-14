@@ -54,10 +54,6 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 			return nil, false, lazyerrors.Error(err)
 		}
 
-		if key == "_id" { // _id is a special case and can be included or excluded
-			continue
-		}
-
 		var result bool
 
 		switch value := value.(type) {

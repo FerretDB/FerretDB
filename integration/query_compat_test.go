@@ -41,6 +41,7 @@ type queryCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
+	skipIDCheck   bool   // skip check collected IDs, check results only
 	skip          string // skip test for all handlers, must have issue number mentioned
 	skipForTigris string // skip test for Tigris
 }
@@ -151,8 +152,11 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					require.NoError(t, targetCursor.All(ctx, &targetRes))
 					require.NoError(t, compatCursor.All(ctx, &compatRes))
 
-					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
-					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+					if tc.skipIDCheck {
+						t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+						t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+					}
+
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
 					if len(targetRes) > 0 || len(compatRes) > 0 {
