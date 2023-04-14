@@ -352,6 +352,21 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
+		"UpsertNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "43"}}}}},
+			},
+		},
+		"UpsertNewNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "43"}}}}},
+				{"new", true},
+			},
+		},
 		"UpsertNoSuchDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
