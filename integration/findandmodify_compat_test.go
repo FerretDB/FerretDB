@@ -226,6 +226,21 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"update", bson.D{{"$unset", "non-existent-field"}}},
 			},
 		},
+		"InvalidOperator": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$invalid", "non-existent-field"}}},
+			},
+		},
+		"OperatorConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)

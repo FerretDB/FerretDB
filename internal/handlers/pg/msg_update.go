@@ -128,7 +128,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			if u != nil {
-				if err = common.ValidateUpdateOperators(u); err != nil {
+				if err = common.ValidateUpdateOperators(document.Command(), u); err != nil {
 					return err
 				}
 			}

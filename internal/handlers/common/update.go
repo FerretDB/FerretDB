@@ -33,8 +33,7 @@ import (
 
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
-// To validate update document, call ValidateUpdateOperators or
-// ValidateFindAndModifyOperators before calling this.
+// To validate update document, call ValidateUpdateOperators before UpdateDocument.
 func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
@@ -807,98 +806,88 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 	return changed, nil
 }
 
-// ValidateFindAndModifyOperator validates update statement and returns NewCommandErrorMsg upon error.
-func ValidateFindAndModifyOperator(update *types.Document) error {
-	return validateUpdateOperators(update, commonerrors.NewCommandErrorMsg)
-}
-
-// ValidateUpdateOperators validates update statement and returns NewWriteErrorMsg upon error.
-func ValidateUpdateOperators(update *types.Document) error {
-	return validateUpdateOperators(update, commonerrors.NewWriteErrorMsg)
-}
-
 // validateUpdateOperators validates update statement.
-func validateUpdateOperators(update *types.Document, newErr func(errCode commonerrors.ErrorCode, msg string) error) error {
+func ValidateUpdateOperators(command string, update *types.Document) error {
 	var err error
-	if _, err = HasSupportedUpdateModifiers(update); err != nil {
+	if _, err = HasSupportedUpdateModifiers(command, update); err != nil {
 		return err
 	}
 
-	currentDate, err := extractValueFromUpdateOperator("$currentDate", update, newErr)
+	currentDate, err := extractValueFromUpdateOperator(command, "$currentDate", update)
 	if err != nil {
 		return err
 	}
 
-	inc, err := extractValueFromUpdateOperator("$inc", update, newErr)
+	inc, err := extractValueFromUpdateOperator(command, "$inc", update)
 	if err != nil {
 		return err
 	}
 
-	max, err := extractValueFromUpdateOperator("$max", update, newErr)
+	max, err := extractValueFromUpdateOperator(command, "$max", update)
 	if err != nil {
 		return err
 	}
 
-	min, err := extractValueFromUpdateOperator("$min", update, newErr)
+	min, err := extractValueFromUpdateOperator(command, "$min", update)
 	if err != nil {
 		return err
 	}
 
-	mul, err := extractValueFromUpdateOperator("$mul", update, newErr)
+	mul, err := extractValueFromUpdateOperator(command, "$mul", update)
 	if err != nil {
 		return err
 	}
 
-	set, err := extractValueFromUpdateOperator("$set", update, newErr)
+	set, err := extractValueFromUpdateOperator(command, "$set", update)
 	if err != nil {
 		return err
 	}
 
-	unset, err := extractValueFromUpdateOperator("$unset", update, newErr)
+	unset, err := extractValueFromUpdateOperator(command, "$unset", update)
 	if err != nil {
 		return err
 	}
 
-	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update, newErr)
+	setOnInsert, err := extractValueFromUpdateOperator(command, "$setOnInsert", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$rename", update, newErr)
+	_, err = extractValueFromUpdateOperator(command, "$rename", update)
 	if err != nil {
 		return err
 	}
 
-	pop, err := extractValueFromUpdateOperator("$pop", update, newErr)
+	pop, err := extractValueFromUpdateOperator(command, "$pop", update)
 	if err != nil {
 		return err
 	}
 
-	push, err := extractValueFromUpdateOperator("$push", update, newErr)
+	push, err := extractValueFromUpdateOperator(command, "$push", update)
 	if err != nil {
 		return err
 	}
 
-	addToSet, err := extractValueFromUpdateOperator("$addToSet", update, newErr)
+	addToSet, err := extractValueFromUpdateOperator(command, "$addToSet", update)
 	if err != nil {
 		return err
 	}
 
-	pullAll, err := extractValueFromUpdateOperator("$pullAll", update, newErr)
+	pullAll, err := extractValueFromUpdateOperator(command, "$pullAll", update)
 	if err != nil {
 		return err
 	}
 
-	pull, err := extractValueFromUpdateOperator("$pull", update, newErr)
+	pull, err := extractValueFromUpdateOperator(command, "$pull", update)
 	if err != nil {
 		return err
 	}
 
-	if err = checkConflictingChanges(set, inc); err != nil {
+	if err = checkConflictingChanges(command, set, inc); err != nil {
 		return err
 	}
 
-	if err = checkConflictingOperators(
+	if err = checkConflictingOperators(command,
 		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll, pull,
 	); err != nil {
 		return err
@@ -918,7 +907,7 @@ func validateUpdateOperators(update *types.Document, newErr func(errCode commone
 // HasSupportedUpdateModifiers checks that update document contains supported update operators.
 // If no update operators are found it returns false.
 // If update document contains unsupported update operators it returns an error.
-func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
+func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case // field update operators:
@@ -932,12 +921,13 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newErr(
 					commonerrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
 							"update specified as an array", updateOp,
 					),
+					command,
 				)
 			}
 
@@ -948,8 +938,17 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 	return false, nil
 }
 
+// newErr returns CommandError for findAndModify command, other cases return WriteError.
+func newErr(code commonerrors.ErrorCode, msg, command string) error {
+	if command == "findAndModify" {
+		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
+	}
+
+	return commonerrors.NewWriteErrorMsg(code, msg)
+}
+
 // checkConflictingOperators checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
+func checkConflictingOperators(command string, a *types.Document, bs ...*types.Document) error {
 	if a == nil {
 		return nil
 	}
@@ -957,11 +956,12 @@ func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
 	for _, key := range a.Keys() {
 		for _, b := range bs {
 			if b != nil && b.Has(key) {
-				return commonerrors.NewWriteErrorMsg(
+				return newErr(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
 						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
 					),
+					command,
 				)
 			}
 		}
@@ -971,7 +971,7 @@ func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
 }
 
 // checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingChanges(a, b *types.Document) error {
+func checkConflictingChanges(command string, a, b *types.Document) error {
 	if a == nil {
 		return nil
 	}
@@ -981,11 +981,12 @@ func checkConflictingChanges(a, b *types.Document) error {
 
 	for _, key := range a.Keys() {
 		if b.Has(key) {
-			return commonerrors.NewWriteErrorMsg(
+			return newErr(
 				commonerrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf(
 					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
 				),
+				command,
 			)
 		}
 	}
@@ -1006,7 +1007,7 @@ func checkConflictingChanges(a, b *types.Document) error {
 //	bson.D{{"v", nil}}.
 //
 // It also checks for path collisions and returns the error if there's any.
-func extractValueFromUpdateOperator(op string, update *types.Document, newErr func(errCode commonerrors.ErrorCode, msg string) error) (*types.Document, error) {
+func extractValueFromUpdateOperator(command, op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
 	}
@@ -1021,6 +1022,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document, newErr fu
 				op,
 				updateExpression,
 			),
+			command,
 		)
 	}
 
@@ -1031,6 +1033,7 @@ func extractValueFromUpdateOperator(op string, update *types.Document, newErr fu
 			fmt.Sprintf(
 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
 			),
+			command,
 		)
 	}
 
