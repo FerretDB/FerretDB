@@ -14,8 +14,32 @@
 
 package ctxutil
 
-import "testing"
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestDummy(t *testing.T) {
 	// we need at least one test per package to correctly calculate coverage
+}
+
+func TestDurationWithJitter(t *testing.T) {
+	t.Parallel()
+
+	t.Run("larger or equal then 1ms", func(t *testing.T) {
+		sleep := DurationWithJitter(time.Second, 1)
+		assert.GreaterOrEqual(t, sleep, time.Millisecond)
+	})
+
+	t.Run("less or equal then duration input", func(t *testing.T) {
+		sleep := DurationWithJitter(time.Second, 100000)
+		assert.LessOrEqual(t, sleep, time.Second)
+	})
+
+	t.Run("attempt cannot be less then 1", func(t *testing.T) {
+		sleep := DurationWithJitter(time.Second, 0)
+		assert.LessOrEqual(t, sleep, time.Second)
+	})
 }
