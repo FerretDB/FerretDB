@@ -806,7 +806,7 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 	return changed, nil
 }
 
-// validateUpdateOperators validates update statement.
+// ValidateUpdateOperators validates update statement.
 func ValidateUpdateOperators(command string, update *types.Document) error {
 	var err error
 	if _, err = HasSupportedUpdateModifiers(command, update); err != nil {

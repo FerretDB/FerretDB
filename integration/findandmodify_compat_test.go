@@ -190,6 +190,18 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
+		"NonExistentExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
 		"SetForNonExisting": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
@@ -396,6 +408,13 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"$unset", "invalid"}}},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
 			},
 		},
 	}
