@@ -44,5 +44,5 @@ type Interface[K, V any] interface {
 	//
 	// Close must be concurrency-safe and may be called multiple times.
 	// All calls after the first should have no observable effect.
-	Close()
+	Closer
 }

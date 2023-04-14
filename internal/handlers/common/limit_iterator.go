@@ -24,13 +24,13 @@ import (
 )
 
 // LimitIterator returns an iterator that limits a number of documents returned by the underlying iterator.
+// It will added to the given closer.
 //
 // Next method returns the next document until the limit is reached,
 // then it returns iterator.ErrIteratorDone.
 //
 // Close method closes the underlying iterator.
-// For that reason, there is no need to track both iterators.
-func LimitIterator(iter types.DocumentsIterator, limit int64) types.DocumentsIterator {
+func LimitIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, limit int64) types.DocumentsIterator {
 	switch {
 	case limit == 0:
 		return iter
@@ -39,10 +39,13 @@ func LimitIterator(iter types.DocumentsIterator, limit int64) types.DocumentsIte
 		// TODO https://github.com/FerretDB/FerretDB/issues/2255
 		panic(fmt.Sprintf("invalid limit value: %d", limit))
 	default:
-		return &limitIterator{
+		res := &limitIterator{
 			iter:  iter,
 			limit: uint32(limit),
 		}
+		closer.Add(res)
+
+		return res
 	}
 }
 
