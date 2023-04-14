@@ -10,7 +10,9 @@
 
 /internal/handlers/hana/    @AlekSi
 
-/website/                   @FerretDB/doc
+# @AlekSi for engineering, @ptrfarkas for marketing.
+# See also Mergify configuration.
+/website/                   @AlekSi @ptrfarkas
 
 /build/                     @AlekSi
 /build/legacy-mongo-shell/  @FerretDB/specops
