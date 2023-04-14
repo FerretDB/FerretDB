@@ -44,6 +44,8 @@ type Stage interface {
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
 
 	// Type returns the type of the stage.
+	//
+	// TODO Remove it? https://github.com/FerretDB/FerretDB/issues/2423
 	Type() StageType
 }
 
