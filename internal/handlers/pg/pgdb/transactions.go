@@ -137,7 +137,7 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 				map[string]any{"err": err, "attempt": attempts, "delay": delay},
 			)
 
-			ctxutil.Sleep(ctx, delay)
+			ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(attempts))
 
 		default:
 			return lazyerrors.Errorf("non-retriable error: %w", err)
