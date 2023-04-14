@@ -6,7 +6,7 @@ description: How to set up FerretDB using Docker
 
 # Docker
 
-You provide three Docker images for various deployments:
+We provide three Docker images for various deployments:
 "all-in-one" for quick testing and experiments,
 a development image for debugging problems,
 and a production image for all other cases.
