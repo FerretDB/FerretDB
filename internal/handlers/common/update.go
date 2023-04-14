@@ -74,7 +74,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$unset":
-			// Checked in validateUnsetExpression that updateV is a doc.
+			// Checked in processSetFieldExpression that updateV is a doc.
 			unsetDoc := updateV.(*types.Document)
 
 			for _, key := range unsetDoc.Keys() {
@@ -881,7 +881,7 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
-	if err = validateCurrentDateExpression(update); err != nil {
+	if err = validateCurrentDateExpression(command, update); err != nil {
 		return err
 	}
 
@@ -909,7 +909,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, newErr(
+				return false, newUpdateError(
 					commonerrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
@@ -926,8 +926,8 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 	return false, nil
 }
 
-// newErr returns CommandError for findAndModify command, other cases return WriteError.
-func newErr(code commonerrors.ErrorCode, msg, command string) error {
+// newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
+func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 	if command == "findAndModify" {
 		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
 	}
@@ -944,7 +944,7 @@ func checkConflictingOperators(command string, a *types.Document, bs ...*types.D
 	for _, key := range a.Keys() {
 		for _, b := range bs {
 			if b != nil && b.Has(key) {
-				return newErr(
+				return newUpdateError(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
 						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
@@ -969,7 +969,7 @@ func checkConflictingChanges(command string, a, b *types.Document) error {
 
 	for _, key := range a.Keys() {
 		if b.Has(key) {
-			return newErr(
+			return newUpdateError(
 				commonerrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf(
 					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
@@ -1003,12 +1003,13 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
-		return nil, newErr(
+		return nil, newUpdateError(
 			commonerrors.ErrFailedToParse,
-			fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
-				"For example: {$mod: {<field>: ...}} not {%s: \"%s\"}",
+			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
+				AliasFromType(updateExpression),
 				op,
-				updateExpression,
+				types.FormatAnyValue(updateExpression),
 			),
 			command,
 		)
@@ -1016,7 +1017,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 
 	duplicate, ok := doc.FindDuplicateKey()
 	if ok {
-		return nil, newErr(
+		return nil, newUpdateError(
 			commonerrors.ErrConflictingUpdateOperators,
 			fmt.Sprintf(
 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
@@ -1100,19 +1101,14 @@ func validateRenameExpression(update *types.Document) error {
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
-func validateCurrentDateExpression(update *types.Document) error {
+func validateCurrentDateExpression(command string, update *types.Document) error {
 	currentDateTopField, err := update.Get("$currentDate")
 	if err != nil {
 		return nil // it is ok: key is absent
 	}
 
-	currentDateExpression, ok := currentDateTopField.(*types.Document)
-	if !ok {
-		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrFailedToParse,
-			"Modifiers operate on fields but we found another type instead",
-		)
-	}
+	// currentDateExpression is document, checked in processSetFieldExpression.
+	currentDateExpression := currentDateTopField.(*types.Document)
 
 	for _, field := range currentDateExpression.Keys() {
 		setValue := must.NotFail(currentDateExpression.Get(field))
@@ -1121,9 +1117,10 @@ func validateCurrentDateExpression(update *types.Document) error {
 		case *types.Document:
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
-					return commonerrors.NewWriteErrorMsg(
+					return newUpdateError(
 						commonerrors.ErrBadValue,
 						fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+						command,
 					)
 				}
 			}
@@ -1133,16 +1130,12 @@ func validateCurrentDateExpression(update *types.Document) error {
 			}
 
 			currentDateTypeString, ok := currentDateType.(string)
-			if !ok {
-				return commonerrors.NewWriteErrorMsg(
+			if !ok || !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
+				return newUpdateError(
 					commonerrors.ErrBadValue,
-					"The '$type' string field is required to be 'date' or 'timestamp'",
-				)
-			}
-			if !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
-				return commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrBadValue,
-					"The '$type' string field is required to be 'date' or 'timestamp'",
+					"The '$type' string field is required to be 'date' or 'timestamp': "+
+						"{$currentDate: {field : {$type: 'date'}}}",
+					command,
 				)
 			}
 
@@ -1150,11 +1143,12 @@ func validateCurrentDateExpression(update *types.Document) error {
 			continue
 
 		default:
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
 					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
 				),
+				command,
 			)
 		}
 	}

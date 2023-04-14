@@ -47,7 +47,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if params.Update != nil {
-		if err := common.ValidateUpdateOperators(document.Command(), params.Update); err != nil {
+		if err = common.ValidateUpdateOperators(document.Command(), params.Update); err != nil {
 			return nil, err
 		}
 	}

@@ -253,6 +253,36 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				}},
 			},
 		},
+		"CurrentDateNotDoc": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$currentDate", 1}}},
+			},
+		},
+		"CurrentDateUnknownOption": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"foo", int32(1)}}}}}}},
+			},
+		},
+		"CurrentDateNotDate": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", int32(1)}}}}}}},
+			},
+		},
+		"CurrentDateUnknownType": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "unknown"}}}}}}},
+			},
+		},
+		"CurrentDateInvalidType": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", 1}}}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
