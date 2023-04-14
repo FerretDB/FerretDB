@@ -43,27 +43,33 @@ func TestQueryProjectionCompat(t *testing.T) {
 		"DotNotationInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationIncludeTwo": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", true}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", false}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationExcludeTwo": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", false}, {"v.array", false}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationExcludeSecondLevel": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.array.42", false}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationIncludeExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", false}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 	}
 
