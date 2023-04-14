@@ -20,11 +20,12 @@ import "go.mongodb.org/mongo-driver/bson"
 // SimpleBenchmarkValues contain documents with various types of values.
 var SimpleBenchmarkValues BenchmarkValues = NewBenchmarkValues(
 	"Ha59TmC9nwTXqEob73HIwqWUcx2Lp7aengCtNsqjWK0=",
-	GenerateMixedValues(),
+	generateMixedValues(),
 )
 
-// GenerateMixedValues returns generator that generates 400 documents with various types of values.
-func GenerateMixedValues() func() bson.D {
+// generateMixedValues returns generator that generates deterministic set
+// of 400 documents that contains string, double, and object types.
+func generateMixedValues() func() bson.D {
 	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
 	}
