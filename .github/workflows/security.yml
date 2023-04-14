@@ -52,8 +52,7 @@ jobs:
       - name: Scan
         run: bin/task --exit-code security
 
-      - name: Check dependencies for PRs
-        if: github.event_name == 'pull_request'
+      - name: Check dependencies
         uses: actions/dependency-review-action@v3
         with:
           allow-licenses: Apache-2.0, BSD-3-Clause, MIT
