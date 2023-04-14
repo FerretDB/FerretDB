@@ -23,7 +23,7 @@ import (
 )
 
 // SkipIterator returns an iterator that skips a number of documents returned by the underlying iterator.
-// It will added to the given closer.
+// It will be added to the given closer.
 //
 // Next method returns the next document after skipping a number of documents.
 //

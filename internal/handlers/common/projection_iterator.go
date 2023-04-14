@@ -21,7 +21,7 @@ import (
 )
 
 // ProjectionIterator returns an iterator that projects documents returned by the underlying iterator.
-// It will added to the given closer.
+// It will be added to the given closer.
 //
 // Next method returns the next projected document.
 //

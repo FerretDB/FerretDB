@@ -24,7 +24,7 @@ import (
 )
 
 // LimitIterator returns an iterator that limits a number of documents returned by the underlying iterator.
-// It will added to the given closer.
+// It will be added to the given closer.
 //
 // Next method returns the next document until the limit is reached,
 // then it returns iterator.ErrIteratorDone.

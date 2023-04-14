@@ -21,7 +21,7 @@ import (
 )
 
 // SortIterator returns an iterator of sorted documents.
-// It will added to the given closer.
+// It will be added to the given closer.
 //
 // Since sorting iterator is impossible, this function fully consumes and closes the underlying iterator,
 // sorts documents in memory and returns a new iterator over the sorted slice.

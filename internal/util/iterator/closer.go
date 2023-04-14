@@ -14,7 +14,9 @@
 
 package iterator
 
-// Closer is an interface for closing iterators.
+import "github.com/FerretDB/FerretDB/internal/util/resource"
+
+// Closer is a part of Interface for closing iterators.
 type Closer interface {
 	Close()
 }
@@ -22,11 +24,16 @@ type Closer interface {
 // MultiCloser is a helper for closing multiple closers.
 type MultiCloser struct {
 	closers []Closer
+	token   *resource.Token
 }
 
 // NewMultiCloser returns a new MultiCloser for non-nil closers.
 func NewMultiCloser(closers ...Closer) *MultiCloser {
-	mc := new(MultiCloser)
+	mc := &MultiCloser{
+		token: resource.NewToken(),
+	}
+	resource.Track(mc, mc.token)
+
 	mc.Add(closers...)
 
 	return mc
@@ -34,6 +41,10 @@ func NewMultiCloser(closers ...Closer) *MultiCloser {
 
 // Add adds non-nil closers to the MultiCloser.
 func (mc *MultiCloser) Add(closers ...Closer) {
+	if mc == nil || mc.token == nil {
+		panic("use NewMultiCloser")
+	}
+
 	for _, c := range closers {
 		if c != nil {
 			mc.closers = append(mc.closers, c)
@@ -46,4 +57,6 @@ func (mc *MultiCloser) Close() {
 	for _, c := range mc.closers {
 		c.Close()
 	}
+
+	resource.Untrack(mc, mc.token)
 }

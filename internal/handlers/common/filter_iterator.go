@@ -21,7 +21,7 @@ import (
 )
 
 // FilterIterator returns an iterator that filters out documents that don't match the filter.
-// It will added to the given closer.
+// It will be added to the given closer.
 //
 // Next method returns the next document that matches the filter.
 //
