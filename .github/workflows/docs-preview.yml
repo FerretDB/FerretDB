@@ -35,7 +35,7 @@ jobs:
 
     environment:
       name: cloudflare-dev
-      url: ${{ steps.extract.outputs.deployment_url || steps.extract.outputs.extracted_url}}
+      url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
       # We can't easily download build results from the Docs workflow:
