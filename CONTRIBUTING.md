@@ -255,7 +255,7 @@ Also, we should use driver methods as much as possible instead of testing comman
    **Do not** leave original commit messages in the squashed commit body.
    ( NOTE: If you're not familiar with this routine, you can refer to a merged PR. )
 
-For more details about long-term contribution, please read [PROCESS.md](.github/PROCESS.md)
+For more details about long-term contributions, please read [PROCESS.md](.github/PROCESS.md)
 
 ## Reporting a bug
 
