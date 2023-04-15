@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
-	"sync"
-	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -57,9 +55,6 @@ type metadataStorage struct {
 	tx         pgx.Tx
 	db         string
 	collection string
-
-	mu      sync.Mutex // guards counter
-	counter uint32
 }
 
 // metadata stores information about FerretDB collection and indexes.
@@ -175,7 +170,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
-// If such metadata doesn't exist, it returns ErrTableNotExist.
+// If such metadata don't exist, it returns ErrTableNotExist.
 func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	metadata, err := ms.get(ctx, false)
 	if err != nil {
@@ -211,11 +206,6 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 	// // suggestedTableName + `a`
 	// // getMetadataByTableName(suggestedTableName)
 
-	ms.mu.Lock()
-	defer ms.mu.Unlock()
-
-	atomic.AddUint32(&ms.counter, 1)
-
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -233,8 +223,6 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 
 		return lazyerrors.Error(err)
 	}
-
-	metadata.collection = fmt.Sprintf("%s%d", metadata.collection, ms.counter)
 
 	if len(metadata.collection) > maxTableNameLength {
 		return ErrInvalidCollectionName
@@ -426,7 +414,7 @@ func collectionNameToTableName(name string) string {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x%d", hash32.Sum(nil))
+	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
 }
 
 // setIndex sets the index info in the metadata table.
