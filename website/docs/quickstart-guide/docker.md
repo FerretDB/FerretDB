@@ -45,7 +45,7 @@ The following steps describe a quick local setup:
        ports:
          - 27017:27017
        environment:
-         - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
+         - FERRETDB_POSTGRESQL_URL=postgres://username:password@postgres:5432/ferretdb
 
    networks:
      default:
