@@ -23,8 +23,8 @@ type Closer interface {
 
 // MultiCloser is a helper for closing multiple closers.
 type MultiCloser struct {
-	closers []Closer
 	token   *resource.Token
+	closers []Closer
 }
 
 // NewMultiCloser returns a new MultiCloser for non-nil closers.
