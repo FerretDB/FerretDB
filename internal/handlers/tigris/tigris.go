@@ -54,8 +54,8 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisablePushdown bool
-	EnableCursors   bool
+	DisableFilterPushdown bool
+	EnableCursors         bool
 }
 
 // AuthParams represents authentication parameters.
