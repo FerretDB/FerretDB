@@ -73,14 +73,13 @@ For FerretDB Inc. engineers and long-term contributors, besides the guides in [C
    (because [words like "refs" do not link PR to the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)),
    but don't forget to reopen the issue once PR is merged,
    but the issue as a whole is not done.
-5. (This point is for FerretDB Inc. engineers only.)
-   Please create a draft pull request as soon as you start working on an issue; that is needed for our process tooling.
+5. Please create a draft pull request as soon as you start working on an issue; that is needed for our process tooling.
    Once it is ready for review, please mark it as such.
    After that, there is no need to switch between draft and non-draft states.
 6. Pull requests should be merged by an auto-merge that the author should enable.
-   If the pull request is not ready to be merged for some reason (but ready to be reviewed as usual),
-   the description should explain why, and the `do not merge` label should be applied.
-   Even in that case, auto-merge should still be enabled by the author.
+    If the pull request is not ready to be merged for some reason (but ready to be reviewed as usual),
+    the description should explain why, and the `do not merge` label should be applied.
+    Even in that case, auto-merge should still be enabled by the author.
 7. Ultimately, the author is responsible for doing everything to ensure that the pull request is merged and done.
 
 One can see all pull requests that await review [there](https://github.com/pulls/review-requested?q=user%3AFerretDB+is%3Aopen).
