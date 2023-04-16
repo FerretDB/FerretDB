@@ -137,10 +137,6 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 		if set {
 			projected.Set("_id", must.NotFail(doc.Get("_id")))
 		}
-	} else {
-		if inclusion {
-			projected.Set("_id", must.NotFail(doc.Get("_id")))
-		}
 	}
 
 	projectionWithoutID := projection.DeepCopy()
@@ -149,6 +145,10 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 	docWithoutID := doc.DeepCopy()
 	docWithoutID.Remove("_id")
+
+	if projection.Len() == 1 && projection.Has("_id") {
+		return projected, nil
+	}
 
 	projectedWithoutID, err := projectDoc(docWithoutID, projectionWithoutID, inclusion)
 	if err != nil {
@@ -163,12 +163,10 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 }
 
 func projectDoc(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
-	var projected *types.Document
+	projected := doc.DeepCopy()
 
 	if inclusion {
 		projected = types.MakeDocument(0)
-	} else {
-		projected = doc.DeepCopy()
 	}
 
 	iter := projection.Iterator()
@@ -205,11 +203,11 @@ func projectDoc(doc *types.Document, projection *types.Document, inclusion bool)
 					if doc.Has(key) {
 						projected.Set(key, must.NotFail(doc.Get(key)))
 					}
-				} else {
-					projected.Remove(key)
+
+					continue
 				}
 
-				continue
+				projected.Remove(key)
 			}
 
 			// TODO: process dot notation here https://github.com/FerretDB/FerretDB/issues/2430
