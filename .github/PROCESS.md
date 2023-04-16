@@ -59,6 +59,8 @@ Try to estimate on the planning as best as you can.
 
 ## Pull requests
 
+For FerretDB Inc. engineers and long-term contributors, besides the guides in [CONTRIBUTING.md](../CONTRIBUTING.md), please follow these notes below when you working with pull request:
+
 1. Send pull requests from forks; do not make personal branches in the main repository.
    This way, we are similar to community members and could notice similar problems that we could fix for everyone,
    not just for us.
@@ -74,12 +76,11 @@ Try to estimate on the planning as best as you can.
 5. Please create a draft pull request as soon as you start working on an issue; that is needed for our process tooling.
    Once it is ready for review, please mark it as such.
    After that, there is no need to switch between draft and non-draft states.
-6. Please don't forget to click "re-request review" buttons once PR is ready for re-review.
-7. Pull requests should be merged by an auto-merge that the author should enable.
+6. Pull requests should be merged by an auto-merge that the author should enable.
     If the pull request is not ready to be merged for some reason (but ready to be reviewed as usual),
     the description should explain why, and the `do not merge` label should be applied.
     Even in that case, auto-merge should still be enabled by the author.
-8. Ultimately, the author is responsible for doing everything to ensure that the pull request is merged and done.
+7. Ultimately, the author is responsible for doing everything to ensure that the pull request is merged and done.
 
 One can see all pull requests that await review [there](https://github.com/pulls/review-requested?q=user%3AFerretDB+is%3Aopen).
 We also have [#devlog channel](https://ferretdb.slack.com/archives/C02P0MR7VJS)
