@@ -90,6 +90,8 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
+	version.Get().Package = "embedded"
+
 	if config.Listener.TCP == "" &&
 		config.Listener.Unix == "" &&
 		config.Listener.TLS == "" {
