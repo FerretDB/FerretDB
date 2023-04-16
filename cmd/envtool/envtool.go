@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
