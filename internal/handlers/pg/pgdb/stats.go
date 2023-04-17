@@ -45,7 +45,8 @@ type CollStats struct {
 func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, error) {
 	var res DBStats
 
-	// Call ANALYZE to update the statistics, see https://wiki.postgresql.org/wiki/Count_estimate.
+	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
+	// see https://wiki.postgresql.org/wiki/Count_estimate.
 	sql := `ANALYZE`
 	if _, err := tx.Exec(ctx, sql); err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	// It also includes the size of FerretDB metadata relations.
 	sql = `
 		SELECT 
-		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))) 
+		    SUM(pg_total_relation_size(schemaname || '.' || tablename)) 
 		FROM pg_tables 
 		WHERE schemaname = $1`
 	args := []any{db}
@@ -74,17 +75,18 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	res.SizeTotal = *schemaSize
 
-	// For the rest of the stats, we need to filter out FerretDB metadata relations by its reserved prefix.
+	// In this query we select all the tables in the given schema, but we exclude FerretDB metadata table (by reserved prefix).
+	//
 	sql = `
 	SELECT 
-	    COUNT(distinct t.tablename)                                                                     AS CountTables,
-		COUNT(distinct i.indexname)                                                                     AS CountIndexes,
-		COALESCE(SUM(c.reltuples), 0)                                                                   AS CountRows,
-		COALESCE(SUM(pg_table_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))), 0) 	AS SizeTables,
-		COALESCE(SUM(pg_indexes_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))), 0) AS SizeIndexes
+	    COUNT(distinct t.tablename)              AS CountTables,
+		COUNT(distinct i.indexname)              AS CountIndexes,
+		COALESCE(SUM(c.reltuples), 0)            AS CountRows,
+		COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
+		COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 	FROM pg_tables AS t
-		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = (quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))::regclass
-		LEFT OUTER JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
+		JOIN pg_class AS c ON c.relname = t.tablename AND c.oid = (t.schemaname || '.' || t.tablename)::regclass
+		JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 	WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
 
