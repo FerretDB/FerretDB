@@ -57,12 +57,11 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 		var result bool
 
 		switch value := value.(type) {
-		case *types.Document:
+		case *types.Document, *types.Array:
 			return nil, false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
-
 		case float64, int32, int64:
 			comparison := types.Compare(value, int32(0))
 			if comparison != types.Equal {
