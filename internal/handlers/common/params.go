@@ -214,13 +214,7 @@ func GetSkipStageParam(value any) (int64, error) {
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
-	case errors.Is(err, errLongExceededPositive):
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageSkipBadValue,
-			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
-			"$skip (stage)",
-		)
-	case errors.Is(err, errLongExceededNegative):
+	case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
