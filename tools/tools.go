@@ -41,6 +41,7 @@ import (
 
 //go:generate go run check.go
 
+//go:generate go build -v -o ../bin/ ./checkdocs
 //go:generate go build -v -o ../bin/ ./checkswitch
 
 //go:generate go build -v -o ../bin/ github.com/BurntSushi/go-sumtype

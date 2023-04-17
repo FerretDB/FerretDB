@@ -9,6 +9,7 @@ require (
 	github.com/goreleaser/nfpm/v2 v2.28.0
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
+	github.com/stretchr/testify v1.8.2
 	golang.org/x/perf v0.0.0-20230227161431-f7320a6d63e8
 	golang.org/x/tools v0.8.0
 	golang.org/x/vuln v0.0.0-20230411201117-aaaefcd264f6
@@ -212,7 +213,6 @@ require (
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/t-yuki/gocover-cobertura v0.0.0-20180217150009-aaee18c8195c // indirect
 	github.com/tdakkota/asciicheck v0.2.0 // indirect
