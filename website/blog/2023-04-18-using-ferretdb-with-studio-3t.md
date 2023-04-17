@@ -28,6 +28,8 @@ In this article, we'll dive into how to use FerretDB with Studio 3T and show you
 
 ### FerretDB Setup
 
+FerretDB is now available for installation and testing on two cloud providers: [Scaleway](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/) and [Civo Marketplace](https://www.civo.com/marketplace/FerretDB).
+
 For this tutorial, we’ll be using Docker to set up FerretDB.
 We can follow the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/) for more instructions.
 
