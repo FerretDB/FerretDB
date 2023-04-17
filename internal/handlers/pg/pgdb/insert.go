@@ -18,9 +18,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
