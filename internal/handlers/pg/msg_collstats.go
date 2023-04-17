@@ -61,6 +61,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var stats *pgdb.CollStats
+
 	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		stats, err = pgdb.CalculateCollStats(ctx, tx, db, collection)
 		return err

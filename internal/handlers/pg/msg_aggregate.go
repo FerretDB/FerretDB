@@ -241,10 +241,15 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	// var dbStats *pgdb.DBStats
+	var collStats *pgdb.CollStats
 
 	if hasCount || hasStorage {
-		// dbStats, err = p.dbPool.(ctx, p.db, p.collection)
+		if err = p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
+			return err
+		}); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
 		switch {
 		case err == nil:
@@ -261,34 +266,34 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	if hasStorage {
-		//var avgObjSize int32
-		//if dbStats.CountRows > 0 {
-		//	avgObjSize = int32(dbStats.SizeRelation) / dbStats.CountRows
-		//}
-		//
-		//doc.Set(
-		//	"storageStats", must.NotFail(types.NewDocument(
-		//		"size", int32(dbStats.SizeTotal),
-		//		"count", dbStats.CountRows,
-		//		"avgObjSize", avgObjSize,
-		//		"storageSize", int32(dbStats.SizeRelation),
-		//		"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-		//		"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
-		//		"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-		//		"nindexes", dbStats.CountIndexes,
-		//		"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-		//		"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-		//		"totalIndexSize", int32(dbStats.SizeIndexes),
-		//		"totalSize", int32(dbStats.SizeTotal),
-		//		"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-		//	)),
-		//	)
+		var avgObjSize int32
+		if collStats.CountObjects > 0 {
+			avgObjSize = int32(collStats.SizeCollection) / collStats.CountObjects
+		}
+
+		doc.Set(
+			"storageStats", must.NotFail(types.NewDocument(
+				"size", int32(collStats.SizeTotal),
+				"count", collStats.CountObjects,
+				"avgObjSize", avgObjSize,
+				"storageSize", int32(collStats.SizeCollection),
+				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"nindexes", collStats.CountIndexes,
+				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"totalIndexSize", int32(collStats.SizeIndexes),
+				"totalSize", int32(collStats.SizeTotal),
+				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+			)),
+		)
 	}
 
 	if hasCount {
-		//doc.Set(
-		//	//"count", dbStats.CountRows,
-		//)
+		doc.Set(
+			"count", collStats.CountObjects,
+		)
 	}
 
 	// Process the retrieved statistics through the stages.

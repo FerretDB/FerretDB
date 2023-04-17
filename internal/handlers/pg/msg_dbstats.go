@@ -53,6 +53,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var stats *pgdb.DBStats
+
 	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		stats, err = pgdb.CalculateDBStats(ctx, tx, db)
 		return err

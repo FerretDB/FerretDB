@@ -16,6 +16,7 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -48,7 +49,7 @@ type CollStats struct {
 
 // CalculateDBStats returns statistics for the given FerretDB database.
 //
-// If the collection does not exist, it returns an object filled with the given db name and zeros for all the other fields.
+// If the collection does not exist, it returns an object filled with zeros for all the fields.
 func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, error) {
 	var res DBStats
 
@@ -97,7 +98,9 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	args = []any{db, reservedPrefix + "%"}
 
 	row = tx.QueryRow(ctx, sql, args...)
-	if err := row.Scan(&res.CountCollections, &res.CountIndexes, &res.CountObjects, &res.SizeCollections, &res.SizeIndexes); err != nil {
+	if err := row.Scan(
+		&res.CountCollections, &res.CountIndexes, &res.CountObjects, &res.SizeCollections, &res.SizeIndexes,
+	); err != nil {
 		return nil, err
 	}
 
@@ -106,11 +109,18 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 // CalculateCollStats returns statistics for the given FerretDB collection in the given database.
 //
-// If the collection does not exist, it returns an object filled with the given db name and zeros for all the other fields.
+// If the collection does not exist, it returns an object filled with zeros for all the fields.
 func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (*CollStats, error) {
+	var res CollStats
+
 	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
-	if err != nil {
-		return nil, err
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, ErrTableNotExist):
+		return &res, nil
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
@@ -120,8 +130,6 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	var res CollStats
-
 	sql = fmt.Sprintf(`
 	SELECT
 		COALESCE(reltuples, 0)                   AS CountRows,
@@ -129,8 +137,11 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		COALESCE(pg_table_size(oid), 0) 	     AS SizeTable,
 		COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
 	FROM pg_class 
-	WHERE oid = %s::regclass`, quoteString(db+"."+metadata.table))
+	WHERE oid = %s::regclass`,
+		quoteString(db+"."+metadata.table),
+	)
 	row := tx.QueryRow(ctx, sql)
+
 	if err := row.Scan(&res.CountObjects, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -141,6 +152,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	WHERE schemaname = $1 AND tablename = $2`
 	args := []any{db, metadata.table}
 	row = tx.QueryRow(ctx, sql, args...)
+
 	if err := row.Scan(&res.CountIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
