@@ -34,6 +34,7 @@ import (
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 // To validate update document, call ValidateUpdateOperators before UpdateDocument.
+// TODO findAndModify returns CommandError https://github.com/FerretDB/FerretDB/issues/2440
 func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
