@@ -24,6 +24,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// ServerStats describes statistics for all the FerretDB databases.
+type ServerStats struct {
+	CountCollections int32
+}
+
 // DBStats describes statistics for a FerretDB database (PostgreSQL schema).
 //
 // TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
@@ -45,6 +50,25 @@ type CollStats struct {
 	SizeTotal      int64
 	SizeIndexes    int64
 	SizeCollection int64
+}
+
+// CalculateServerStats returns statistics for all the FerretDB databases on the server.
+func CalculateServerStats(ctx context.Context, tx pgx.Tx) (*ServerStats, error) {
+	var res ServerStats
+
+	// Count the number of collections in all FerretDB databases excluding FerretDB metadata tables (by reserved prefix).
+	sql := `
+	SELECT COUNT(tablename)
+	FROM pg_tables
+	WHERE tablename NOT LIKE $1`
+	args := []any{reservedPrefix + "%"}
+	row := tx.QueryRow(ctx, sql, args...)
+
+	if err := row.Scan(&res.CountCollections); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &res, nil
 }
 
 // CalculateDBStats returns statistics for the given FerretDB database.
@@ -114,6 +138,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	var res CollStats
 
 	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
+
 	switch {
 	case err == nil:
 		// do nothing

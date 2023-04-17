@@ -17,7 +17,10 @@ package pg
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,29 +29,34 @@ import (
 
 // MsgServerStatus implements HandlerInterface.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	//dbPool, err := h.DBPool(ctx)
-	//if err != nil {
-	//	return nil, lazyerrors.Error(err)
-	//}
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	res, err := common.ServerStatus(h.StateProvider.Get(), h.Metrics)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	//stats, err := dbPool.Stats(ctx, "", "")
-	//if err != nil {
-	//	return nil, lazyerrors.Error(err)
-	//}
-	//
-	//res.Set("catalogStats", must.NotFail(types.NewDocument(
-	//	"collections", stats.CountTables,
-	//	"capped", int32(0),
-	//	"timeseries", int32(0),
-	//	"views", int32(0),
-	//	"internalCollections", int32(0),
-	//	"internalViews", int32(0),
-	//)))
+	var stats *pgdb.ServerStats
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateServerStats(ctx, tx)
+		return err
+	}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.Set("catalogStats", must.NotFail(types.NewDocument(
+		"collections", stats.CountCollections,
+		"capped", int32(0),
+		"clustered", int32(0),
+		"timeseries", int32(0),
+		"views", int32(0),
+		"internalCollections", int32(0),
+		"internalViews", int32(0),
+	)))
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
