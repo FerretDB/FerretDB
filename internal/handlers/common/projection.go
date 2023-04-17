@@ -74,8 +74,16 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 		// set the value with boolean result to omit type assertion when we will apply projection
 		validated.Set(key, result)
 
+		if projection.Len() == 1 && key == "_id" {
+			return validated, result, nil
+		}
+
 		// if projectionVal is nil we are processing the first field
 		if projectionVal == nil {
+			if key == "_id" {
+				continue
+			}
+
 			projectionVal = &result
 
 			continue
