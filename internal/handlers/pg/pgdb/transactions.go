@@ -20,7 +20,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/tracelog"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -75,8 +76,8 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		}
 
 		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.p.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelError, "failed to perform rollback",
+			pgPool.logger.Log(
+				ctx, tracelog.LogLevelError, "failed to perform rollback",
 				map[string]any{"err": rerr},
 			)
 
@@ -132,12 +133,12 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
 			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
 
-			pgPool.p.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelWarn, "attempt failed, retrying",
+			pgPool.logger.Log(
+				ctx, tracelog.LogLevelWarn, "attempt failed, retrying",
 				map[string]any{"err": err, "attempt": attempts, "delay": delay},
 			)
 
-			ctxutil.Sleep(ctx, delay)
+			ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(attempts))
 
 		default:
 			return lazyerrors.Errorf("non-retriable error: %w", err)

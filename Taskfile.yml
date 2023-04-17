@@ -567,7 +567,7 @@ tasks:
         docker compose run --rm
         --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
         wrangler
-      - docker compose run --rm wrangler pages deployment create --project-name=docs website/build
+      - docker compose run --rm --service-ports wrangler pages deployment create --project-name=docs website/build
 
   blog-dev:
     desc: "Start blog development server"

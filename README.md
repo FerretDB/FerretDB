@@ -43,7 +43,7 @@ and [contributing guidelines](CONTRIBUTING.md).
 docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/all-in-one
 ```
 
-This command will start a container with FerretDB, PostgreSQL, and MongoDB Shell for testing and experiments.
+This command will start a container with FerretDB, PostgreSQL, and MongoDB Shell for quick testing and experiments.
 However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
 See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart-guide/docker/) for instructions
 that don't have those problems.
@@ -75,6 +75,11 @@ see our [instructions for contributors](CONTRIBUTING.md) for more details.
 FerretDB could also be built as any other Go program,
 but a few generated files and build tags could affect it.
 See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for more details.
+
+## Managed FerretDB at cloud providers
+
+* [Civo](https://www.civo.com) (see [here](https://www.civo.com/marketplace/FerretDB)).
+* [Scaleway](https://www.scaleway.com/) (request access [here](https://www.scaleway.com/en/betas/#managed-document-database)).
 
 ## Documentation
 

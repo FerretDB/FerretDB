@@ -17,7 +17,7 @@ package pgdb
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 // DBStats describes statistics for a FerretDB database (PostgreSQL schema).

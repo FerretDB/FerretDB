@@ -17,6 +17,8 @@ package ctxutil
 
 import (
 	"context"
+	"math"
+	"math/rand"
 	"time"
 )
 
@@ -50,4 +52,33 @@ func Sleep(ctx context.Context, d time.Duration) {
 	sleepCtx, cancel := context.WithTimeout(ctx, d)
 	defer cancel()
 	<-sleepCtx.Done()
+}
+
+// SleepWithJitter pauses the current goroutine until d + jitter has passed or ctx is canceled.
+func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
+	sleepCtx, cancel := context.WithTimeout(ctx, DurationWithJitter(d, attempts))
+	defer cancel()
+	<-sleepCtx.Done()
+}
+
+// DurationWithJitter returns a duration
+// based including some random jitter.
+// The maximum sleep is the input duration.
+//
+// The minimum duration is at least 100 milliseconds.
+//
+// Math/rand is good enough because we don't need
+// the randomness to be cryptographically secure.
+func DurationWithJitter(cap time.Duration, attempts int64) time.Duration {
+	const base = time.Millisecond * 100
+
+	if attempts < 1 {
+		attempts = 1
+	}
+
+	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(attempts))
+	capMilliseconds := float64(cap.Milliseconds())
+	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds))
+
+	return time.Duration(rand.Int63n(lowestValue)) * time.Millisecond
 }

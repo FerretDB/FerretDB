@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
