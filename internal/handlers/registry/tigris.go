@@ -35,8 +35,8 @@ func init() {
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown: opts.DisablePushdown,
-			EnableCursors:   opts.EnableCursors,
+			DisableFilterPushdown: opts.DisableFilterPushdown,
+			EnableCursors:         opts.EnableCursors,
 		}
 		return tigris.New(handlerOpts)
 	}
