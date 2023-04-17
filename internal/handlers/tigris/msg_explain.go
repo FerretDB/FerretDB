@@ -89,7 +89,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		filter = aggregations.GetPushdownQuery(stagesDocs)
 	}
 
-	if h.DisablePushdown {
+	if h.DisableFilterPushdown {
 		filter = nil
 	}
 
