@@ -34,6 +34,10 @@ func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiClos
 		return iter, nil
 	}
 
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	res := &projectionIterator{
 		iter:       iter,
 		projection: projectionValidated,
