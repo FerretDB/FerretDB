@@ -22,26 +22,38 @@ import (
 
 // DBStats describes statistics for a FerretDB database (PostgreSQL schema).
 type DBStats struct {
-	Name             string
 	CountCollections int32
 	CountObjects     int32
+	CountIndexes     int32
 	SizeTotal        int64
 	SizeIndexes      int64
 	SizeCollections  int64
-	CountIndexes     int32
+}
+
+// CollStats describes statistics for a FerretDB collection (PostgreSQL table).
+type CollStats struct {
+	CountObjects   int32
+	CountIndexes   int32
+	SizeTotal      int64
+	SizeIndexes    int64
+	SizeCollection int64
 }
 
 // CalculateDBStats returns statistics for the given FerretDB database.
 //
-// If the database does not exist, it returns an object filled with the given db name and zeros for all the other fields.
+// If the collection does not exist, it returns an object filled with the given db name and zeros for all the other fields.
 func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, error) {
-	res := DBStats{
-		Name: db,
+	var res DBStats
+
+	// Call ANALYZE to update the statistics, see https://wiki.postgresql.org/wiki/Count_estimate.
+	sql := `ANALYZE`
+	if _, err := tx.Exec(ctx, sql); err != nil {
+		return nil, err
 	}
 
 	// Total size is the disk space used by all the relations in the given schema, including tables, indexes and TOAST data.
 	// It also includes the size of FerretDB metadata relations.
-	sql := `
+	sql = `
 		SELECT 
 		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))) 
 		FROM pg_tables 
@@ -55,16 +67,14 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		return nil, err
 	}
 
+	// If the schema size is nil, it means the schema does not exist or empty, no need to check other stats.
 	if schemaSize == nil {
-		// If the schema size is nil, it means the schema does not exist or empty, no need to check other stats.
 		return &res, nil
 	}
 
 	res.SizeTotal = *schemaSize
 
 	// For the rest of the stats, we need to filter out FerretDB metadata relations by its reserved prefix.
-	// https://wiki.postgresql.org/wiki/Count_estimate
-	// https://www.postgresql.org/docs/15/catalog-pg-class.html - reltuples (could be negative)
 	sql = `
 	SELECT 
 	    COUNT(distinct t.tablename)                                                                     AS CountTables,
@@ -80,6 +90,44 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	row = tx.QueryRow(ctx, sql, args...)
 	if err := row.Scan(&res.CountCollections, &res.CountIndexes, &res.CountObjects, &res.SizeCollections, &res.SizeIndexes); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+// CalculateCollStats returns statistics for the given FerretDB collection in the given database.
+//
+// If the database does not exist, it returns an object filled with the given db name and zeros for all the other fields.
+func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (*CollStats, error) {
+	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// Call ANALYZE to update the statistics, see https://wiki.postgresql.org/wiki/Count_estimate.
+	sql := `ANALYZE ` + pgx.Identifier{db, metadata.table}.Sanitize()
+	if _, err := tx.Exec(ctx, sql); err != nil {
+		return nil, err
+	}
+
+	var res CollStats
+
+	sql = `
+	SELECT 
+		COUNT(distinct i.indexname)                                                                     AS CountIndexes,
+		COALESCE(SUM(c.reltuples), 0)                                                                   AS CountRows,
+		COALESCE(pg_total_relation_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename)))  AS SizeTotal,
+		COALESCE(pg_table_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename)), 0) 	    AS SizeTable,
+		COALESCE(pg_indexes_size(quote_ident(t.schemaname) || '.' || quote_ident(t.tablename)), 0)      AS SizeIndexes
+	FROM pg_tables AS t
+		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = (quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))::regclass
+		LEFT OUTER JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
+	WHERE t.schemaname = $1 AND t.tablename = $2`
+	args := []any{db, metadata.table}
+
+	row := tx.QueryRow(ctx, sql, args...)
+	if err := row.Scan(&res.CountIndexes, &res.CountObjects, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
 		return nil, err
 	}
 
