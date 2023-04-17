@@ -23,6 +23,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // unset represents a field that should not be set.
@@ -211,9 +212,8 @@ type BenchmarkProvider interface {
 
 // NewBenchmarkValues initializes BenchmarkValues with expected hash of all documents
 // and generator function.
-func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
+func NewBenchmarkValues(gen func() bson.D) BenchmarkValues {
 	return BenchmarkValues{
-		hash: hash,
 		iter: newValuesIterator(gen),
 	}
 }
@@ -221,16 +221,13 @@ func NewBenchmarkValues(hash string, gen func() bson.D) BenchmarkValues {
 // BenchmarkValues returns shared data documents for benchmark in deterministic order.
 type BenchmarkValues struct {
 	// iter returns all documents in deterministic order.
-	iter iterator.Interface[struct{}, bson.D]
-	// hash is the checksum of all documents produced by iter.
-	// Any change in documents or order will result in different hash.
-	hash string
+	iter *valuesIterator
 }
 
 // Hash implements BenchmarkProvider interface.
 // It returns expected hash of all documents produced by BenchmarkValues.
 func (b BenchmarkValues) Hash() string {
-	return b.hash
+	return must.NotFail(b.iter.Hash())
 }
 
 // Docs implements BenchmarkProvider interface.

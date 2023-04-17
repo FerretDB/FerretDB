@@ -15,6 +15,11 @@
 package shareddata
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"hash"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,10 +32,11 @@ import (
 // by generator function.
 // Generator should return next bson.D document on every execution.
 // To stop iterator, generator must return nil.
-func newValuesIterator(generator func() bson.D) iterator.Interface[struct{}, bson.D] {
+func newValuesIterator(generator func() bson.D) *valuesIterator {
 	iter := &valuesIterator{
 		token:     resource.NewToken(),
 		generator: generator,
+		hash:      sha256.New(),
 	}
 
 	resource.Track(iter, iter.token)
@@ -44,7 +50,9 @@ type valuesIterator struct {
 	token     *resource.Token
 	// m Mutex protects generator function from parallel calls.
 	// It's not placed on top of struct fields because of alignment.
-	m sync.Mutex
+	m      sync.Mutex
+	hash   hash.Hash
+	closed bool
 }
 
 // Next implements iterator.Interface.
@@ -54,9 +62,29 @@ func (iter *valuesIterator) Next() (struct{}, bson.D, error) {
 
 	var unused struct{}
 
+	if iter.generator == nil {
+		return unused, nil, iterator.ErrIteratorDone
+	}
+
 	doc := iter.generator()
 	if doc == nil {
 		return unused, nil, iterator.ErrIteratorDone
+	}
+
+	rawDoc := []byte(fmt.Sprintf("%x", doc))
+
+	// append literal document to previous checksum.
+	//
+	// We don't just write all the documents and Sum at the end, to not
+	// store all documents in memory.
+	currSum := iter.hash.Sum(rawDoc)
+
+	// remove old checksum
+	iter.hash.Reset()
+
+	// write literal document with previous checksum to calculate new checksum
+	if _, err := iter.hash.Write(currSum); err != nil {
+		return unused, doc, err
 	}
 
 	return unused, doc, nil
@@ -68,4 +96,14 @@ func (iter *valuesIterator) Close() {
 	defer iter.m.Unlock()
 
 	resource.Untrack(iter, iter.token)
+	iter.generator = nil
+}
+
+func (iter *valuesIterator) Hash() (string, error) {
+	if iter.generator != nil {
+		return "", errors.New("Hash needs to be called on closed iterator")
+	}
+
+	sum := iter.hash.Sum(nil)
+	return base64.StdEncoding.EncodeToString(sum), nil
 }

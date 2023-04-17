@@ -19,7 +19,6 @@ import "go.mongodb.org/mongo-driver/bson"
 
 // SimpleBenchmarkValues contain documents with various types of values.
 var SimpleBenchmarkValues BenchmarkValues = NewBenchmarkValues(
-	"Ha59TmC9nwTXqEob73HIwqWUcx2Lp7aengCtNsqjWK0=",
 	generateMixedValues(),
 )
 

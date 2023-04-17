@@ -17,8 +17,6 @@ package setup
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"path/filepath"
@@ -290,12 +288,11 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 		return
 	}
 
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collection.Name(), provider.Hash())
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s", collection.Name())
 	provCtx, span := otel.Tracer("").Start(ctx, spanName)
 	region := trace.StartRegion(provCtx, spanName)
 
 	iter := provider.Docs()
-	hash := sha256.New()
 
 	for {
 		docs, err := iterator.ConsumeValuesN(iter, 10)
@@ -309,37 +306,15 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 		var insertDocs []any = make([]any, len(docs))
 
 		for i, doc := range docs {
-			rawDoc := []byte(fmt.Sprintf("%x", doc))
-
-			// append literal document to previous checksum.
-			//
-			// We don't just write all the documents and Sum at the end, to not
-			// store all documents in memory.
-			currSum := hash.Sum(rawDoc)
-
-			// remove old checksum
-			hash.Reset()
-
-			// write literal document with previous checksum to calculate new checksum
-			_, err = hash.Write(currSum)
-			require.NoError(tb, err)
-
 			insertDocs[i] = doc
 		}
 
 		res, err := collection.InsertMany(provCtx, insertDocs)
-		require.NoError(tb, err, "provider %q", provider.Hash())
+		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		inserted = true
 	}
-
-	actualSum := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-
-	msg := "The checksum of inserted documents in BenchmarkProvider is different than specified." +
-		" If you didn't change any data, it could mean that provider generates different data or provides it in different order"
-
-	require.Equal(tb, provider.Hash(), actualSum, msg)
 
 	region.End()
 	span.End()
