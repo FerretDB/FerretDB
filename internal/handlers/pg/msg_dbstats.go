@@ -61,11 +61,6 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	/*stats, err := dbPool.Stats(ctx, db, "")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}*/
-
 	var avgObjSize float64
 	if stats.CountObjects > 0 {
 		avgObjSize = float64(stats.SizeCollections) / float64(stats.CountObjects)

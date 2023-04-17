@@ -81,7 +81,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	// see https://wiki.postgresql.org/wiki/Count_estimate.
 	sql := `ANALYZE`
 	if _, err := tx.Exec(ctx, sql); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	// Total size is the disk space used by all the relations in the given schema, including tables, indexes and TOAST data.
@@ -97,7 +97,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	var schemaSize *int64
 	if err := row.Scan(&schemaSize); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	// If the query gave nil, it means the schema does not exist or empty, no need to check other stats.
@@ -116,7 +116,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
 		COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 	FROM pg_tables AS t
-		LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regclass
+		LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
 		LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 	WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
@@ -125,7 +125,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	if err := row.Scan(
 		&res.CountCollections, &res.CountIndexes, &res.CountObjects, &res.SizeCollections, &res.SizeIndexes,
 	); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil

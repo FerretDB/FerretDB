@@ -632,7 +632,7 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	assert.InDelta(t, float64(16), must.NotFail(doc.Get("size")), 16)
-	assert.InDelta(t, float64(8), must.NotFail(doc.Get("storageSize")), 8)
+	assert.InDelta(t, float64(24), must.NotFail(doc.Get("storageSize")), 8)
 	assert.InDelta(t, float64(8), must.NotFail(doc.Get("totalIndexSize")), 8)
 	assert.InDelta(t, float64(24), must.NotFail(doc.Get("totalSize")), 24)
 }
