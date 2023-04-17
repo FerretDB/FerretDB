@@ -31,7 +31,7 @@ jobs:
     if: >
       contains(github.event.pull_request.labels.*.name, 'trust') &&
       !contains(github.event.pull_request.labels.*.name, 'no ci') &&
-      contains(github.event.pull_request.labels.*.name, 'blog/')
+      startsWith(github.event.pull_request.labels.*.name, 'blog/')
 
     environment:
       name: cloudflare-dev
