@@ -16,6 +16,11 @@ package pg
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -26,10 +31,10 @@ import (
 
 // MsgCollStats implements HandlerInterface.
 func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	//dbPool, err := h.DBPool(ctx)
-	//if err != nil {
-	//	return nil, lazyerrors.Error(err)
-	//}
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	document, err := msg.Document()
 	if err != nil {
@@ -56,27 +61,33 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		scale = 1
 	}
 
-	/*stats, err := dbPool.Calc(ctx, db, collection)
+	var stats *pgdb.CollStats
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateCollStats(ctx, tx, db, collection)
+		return err
+	}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, pgdb.ErrTableNotExist):
 		// Return empty stats for non-existent collections.
-		stats = new(pgdb.DBStats)
+		stats = new(pgdb.CollStats)
 	default:
 		return nil, lazyerrors.Error(err)
-	}*/
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ns", db+"."+collection,
-			//"count", stats.CountRows,
-			//"size", int32(stats.SizeTotal)/scale,
-			//"storageSize", int32(stats.SizeRelation)/scale,
-			//"totalIndexSize", int32(stats.SizeIndexes)/scale,
-			//"totalSize", int32(stats.SizeTotal)/scale,
+			"count", stats.CountObjects,
+			"size", int32(stats.SizeTotal)/scale,
+			"storageSize", int32(stats.SizeTotal)/scale,
+			"totalIndexSize", int32(stats.SizeIndexes)/scale,
+			"totalSize", int32(stats.SizeTotal)/scale,
 			"scaleFactor", scale,
 			"ok", float64(1),
 		))},

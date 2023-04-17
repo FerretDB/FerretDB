@@ -16,8 +16,11 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // DBStats describes statistics for a FerretDB database (PostgreSQL schema).
@@ -85,7 +88,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
 		COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 	FROM pg_tables AS t
-		JOIN pg_class AS c ON c.relname = t.tablename AND c.oid = (t.schemaname || '.' || t.tablename)::regclass
+		JOIN pg_class AS c ON c.oid = (t.schemaname || '.' || t.tablename)::regclass
 		JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 	WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
@@ -107,30 +110,36 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		return nil, err
 	}
 
-	// Call ANALYZE to update the statistics, see https://wiki.postgresql.org/wiki/Count_estimate.
+	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
+	// see https://wiki.postgresql.org/wiki/Count_estimate.
 	sql := `ANALYZE ` + pgx.Identifier{db, metadata.table}.Sanitize()
 	if _, err := tx.Exec(ctx, sql); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	var res CollStats
 
-	sql = `
-	SELECT 
-		COUNT(distinct i.indexname)                                                                     AS CountIndexes,
-		COALESCE(SUM(c.reltuples), 0)                                                                   AS CountRows,
-		COALESCE(pg_total_relation_size(` + pgx.Identifier{db, metadata.table}.Sanitize() + `)  AS SizeTotal,
-		COALESCE(pg_table_size(` + pgx.Identifier{db, metadata.table}.Sanitize() + `), 0) 	    AS SizeTable,
-		COALESCE(pg_indexes_size(` + pgx.Identifier{db, metadata.table}.Sanitize() + `), 0)      AS SizeIndexes
-	FROM pg_tables AS t
-		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = ` + pgx.Identifier{db, metadata.table}.Sanitize() + `::regclass
-		LEFT OUTER JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
-	WHERE t.schemaname = $1 AND t.tablename = $2`
-	args := []any{db, metadata.table}
+	sql = fmt.Sprintf(`
+	SELECT
+		COALESCE(reltuples, 0)                   AS CountRows,
+		COALESCE(pg_total_relation_size(oid), 0) AS SizeTotal,
+		COALESCE(pg_table_size(oid), 0) 	     AS SizeTable,
+		COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
+	FROM pg_class 
+	WHERE oid = %s::regclass`, quoteString(db+"."+metadata.table))
+	row := tx.QueryRow(ctx, sql)
+	if err := row.Scan(&res.CountObjects, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	row := tx.QueryRow(ctx, sql, args...)
-	if err := row.Scan(&res.CountIndexes, &res.CountObjects, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
-		return nil, err
+	sql = `
+	SELECT COUNT(indexname)
+	FROM pg_indexes
+	WHERE schemaname = $1 AND tablename = $2`
+	args := []any{db, metadata.table}
+	row = tx.QueryRow(ctx, sql, args...)
+	if err := row.Scan(&res.CountIndexes); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil
