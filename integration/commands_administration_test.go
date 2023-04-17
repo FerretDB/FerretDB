@@ -589,6 +589,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("count"))) // No documents
 	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 8_012)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
@@ -610,6 +611,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
 	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 36_000)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 36_000)
 	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 36_000)
@@ -631,6 +633,7 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
 	assert.InDelta(t, float64(16), must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, float64(24), must.NotFail(doc.Get("storageSize")), 24)
 	assert.InDelta(t, float64(8), must.NotFail(doc.Get("totalIndexSize")), 8)
