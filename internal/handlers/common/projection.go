@@ -18,8 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -57,7 +55,7 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 		var result bool
 
 		switch value := value.(type) {
-		case *types.Document, *types.Array:
+		case *types.Document, *types.Array, string:
 			return nil, false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
@@ -78,9 +76,9 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		// if projectionVal is nil we are processing the first field
 		if projectionVal == nil {
-			if key == "_id" {
-				continue
-			}
+			//if key == "_id" {
+			//	continue
+			//}
 
 			projectionVal = &result
 			continue
@@ -101,10 +99,6 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 				)
 			}
 		}
-	}
-
-	if projection.Len() == 1 && projection.Has("_id") {
-		projectionVal = pointer.ToBool(must.NotFail(projection.Get("_id")).(bool))
 	}
 
 	return validated, *projectionVal, nil

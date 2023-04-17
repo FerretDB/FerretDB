@@ -34,7 +34,7 @@ func TestQueryProjectionCompat(t *testing.T) {
 		},
 		"Include2Fields": {
 			filter:     bson.D{},
-			projection: bson.D{{"foo", int32(1)}, {"bar", true}},
+			projection: bson.D{{"foo", 1.24}, {"bar", true}},
 		},
 		"Exclude2Fields": {
 			filter:     bson.D{},
@@ -42,7 +42,7 @@ func TestQueryProjectionCompat(t *testing.T) {
 		},
 		"IncludeID": {
 			filter:     bson.D{},
-			projection: bson.D{{"_id", true}},
+			projection: bson.D{{"_id", int64(-1)}},
 		},
 		"ExcludeID": {
 			filter:     bson.D{},
