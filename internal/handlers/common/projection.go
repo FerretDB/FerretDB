@@ -113,7 +113,10 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 
 // projectDocument applies projection to the copy of the document.
 func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
-	projected := types.MakeDocument(1)
+	projected, err := types.NewDocument("_id", must.NotFail(doc.Get("_id")))
+	if err != nil {
+		return nil, err
+	}
 
 	if projection.Has("_id") {
 		idValue := must.NotFail(projection.Get("_id"))
@@ -134,8 +137,8 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", "_id", idValue, idValue)
 		}
 
-		if set {
-			projected.Set("_id", must.NotFail(doc.Get("_id")))
+		if !set {
+			projected.Remove("_id")
 		}
 	}
 
@@ -163,10 +166,10 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 }
 
 func projectDoc(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
-	projected := doc.DeepCopy()
+	projected := types.MakeDocument(0)
 
 	if inclusion {
-		projected = types.MakeDocument(0)
+		projected = doc.DeepCopy()
 	}
 
 	iter := projection.Iterator()
