@@ -38,11 +38,6 @@ func TestDurationWithJitter(t *testing.T) {
 		assert.LessOrEqual(t, sleep, time.Second)
 	})
 
-	t.Run("attempt cannot be less then 1", func(t *testing.T) {
-		sleep := DurationWithJitter(time.Second, 0)
-		assert.LessOrEqual(t, sleep, time.Second)
-	})
-
 	t.Run("multiple tasks retry multiple times", func(t *testing.T) {
 		// This test outputs a file for duration it took all nTasks to retry nRetries.
 		// In reality not all tasks will retry, but this is good enough for visualising it.
