@@ -885,7 +885,7 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
-	if err = validateRenameExpression(update); err != nil {
+	if err = validateRenameExpression(command, update); err != nil {
 		return err
 	}
 
@@ -1030,20 +1030,15 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 }
 
 // validateRenameExpression validates $rename input on correctness.
-func validateRenameExpression(update *types.Document) error {
+func validateRenameExpression(command string, update *types.Document) error {
 	if !update.Has("$rename") {
 		return nil
 	}
 
 	updateExpression := must.NotFail(update.Get("$rename"))
 
-	doc, ok := updateExpression.(*types.Document)
-	if !ok {
-		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrFailedToParse,
-			"Modifiers operate on fields but we found another type instead",
-		)
-	}
+	// updateExpression is document, checked in processSetFieldExpression.
+	doc := updateExpression.(*types.Document)
 
 	iter := doc.Iterator()
 	defer iter.Close()
@@ -1062,35 +1057,39 @@ func validateRenameExpression(update *types.Document) error {
 
 		var vStr string
 
-		vStr, ok = v.(string)
+		vStr, ok := v.(string)
 		if !ok {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
+				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, v),
+				command,
 			)
 		}
 
 		// disallow fields where key is equal to the target
 		if k == vStr {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
+				fmt.Sprintf(`The source and target field for $rename must differ: %s: "%[1]s"`, k, vStr),
+				command,
 			)
 		}
 
 		if _, ok = keys[k]; ok {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrConflictingUpdateOperators,
-				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
+				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", k, k),
+				command,
 			)
 		}
 
 		keys[k] = struct{}{}
 
 		if _, ok = keys[vStr]; ok {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrConflictingUpdateOperators,
-				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
+				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", vStr, vStr),
+				command,
 			)
 		}
 
