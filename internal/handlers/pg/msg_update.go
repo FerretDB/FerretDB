@@ -76,6 +76,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.CreateCollectionIfNotExists(ctx, tx, qp.DB, qp.Collection)
 	})
+
 	switch {
 	case err == nil:
 		// do nothing
