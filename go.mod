@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/kong v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
+	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.14.0
@@ -22,8 +23,6 @@ require (
 	golang.org/x/net v0.9.0
 	golang.org/x/sys v0.7.0
 )
-
-require github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
 
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect
