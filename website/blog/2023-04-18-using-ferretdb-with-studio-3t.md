@@ -28,58 +28,56 @@ In this article, we'll dive into how to use FerretDB with Studio 3T and show you
 
 ### FerretDB Setup
 
-FerretDB is now available for installation and testing on two cloud providers: [Scaleway](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/) and [Civo Marketplace](https://www.civo.com/marketplace/FerretDB).
-
 For this tutorial, we’ll be using Docker to set up FerretDB.
 We can follow the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/) for more instructions.
 
 1. Install Docker on your machine if you haven't already done so.
 2. Create a docker-compose file with the following configurations:
 
-   ```yaml
-   services:
-     postgres:
-       image: postgres
-       environment:
-         - POSTGRES_USER=username
-         - POSTGRES_PASSWORD=password
-         - POSTGRES_DB=ferretdb
-       volumes:
-         - ./data:/var/lib/postgresql/data
-     ferretdb:
-       image: ghcr.io/ferretdb/ferretdb
-       restart: on-failure
-       ports:
-         - 27017:27017
-       environment:
-         - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
-   networks:
-     default:
-       name: ferretdb
-   ```
+    ```yml
+    services:
+    postgres:
+        image: postgres
+        environment:
+        - POSTGRES_USER=username
+        - POSTGRES_PASSWORD=password
+        - POSTGRES_DB=ferretdb
+        volumes:
+        - ./data:/var/lib/postgresql/data
+    ferretdb:
+        image: ghcr.io/ferretdb/ferretdb
+        restart: on-failure
+        ports:
+        - 27017:27017
+        environment:
+        - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
+    networks:
+    default:
+        name: ferretdb
+    ```
 
-   The `postgres` service in the docker compose file runs a PostgreSQL database that will store its data in the "./data" directory on the host machine, which is mounted as a volume in the container.
+    The `postgres` service in the docker compose file runs a PostgreSQL database that will store its data in the "./data" directory on the host machine, which is mounted as a volume in the container.
 
-   Please update the `username` and `password` with your authentication credentials.
+    Please update the `username` and `password` with your authentication credentials.
 
 3. Run the following command to start the services:
 
-   ```sh
-   docker compose up -d
-   ```
+    ```sh
+    docker compose up -d
+    ```
 
 4. For those with mongosh installed, you can run FerretDB with the following command:
 
-   ```sh
-   mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
-   ```
+    ```sh
+    mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
+    ```
 
-   If you don’t have mongosh installed on your system (like me), you can execute it inside a temporary MongoDB container by running the following command:
+    If you don’t have mongosh installed on your system (like me), you can execute it inside a temporary MongoDB container by running the following command:
 
-   ```sh
-   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
-   "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
-   ```
+    ```sh
+    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
+    "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
+    ```
 
 And that’s all we need to set up FerretDB on Docker.
 
