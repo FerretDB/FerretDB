@@ -15,8 +15,6 @@
 package common
 
 import (
-	"errors"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,11 +27,7 @@ import (
 //
 // Close method closes the underlying iterator.
 func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	projectionValidated, inclusion, err := validateProjection(projection)
-	if errors.Is(err, errProjectionEmpty) {
-		return iter, nil
-	}
-
+	inclusion, err := isProjectionInclusion(projection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
