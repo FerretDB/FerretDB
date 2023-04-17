@@ -173,13 +173,12 @@ func GetLimitStageParam(value any) (int64, error) {
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errLongExceededPositive):
+	case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
-		// TODO long exceeded negative
 	default:
 		return 0, lazyerrors.Error(err)
 	}
