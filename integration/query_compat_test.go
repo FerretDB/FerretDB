@@ -152,7 +152,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					require.NoError(t, targetCursor.All(ctx, &targetRes))
 					require.NoError(t, compatCursor.All(ctx, &compatRes))
 
-					if tc.skipIDCheck {
+					if !tc.skipIDCheck {
 						t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 						t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
 					}

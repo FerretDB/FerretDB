@@ -49,20 +49,23 @@ func TestQueryProjectionCompat(t *testing.T) {
 			projection: bson.D{{"_id", int64(-1)}},
 		},
 		"ExcludeID": {
-			filter:     bson.D{},
-			projection: bson.D{{"_id", false}},
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}},
+			skipIDCheck: true,
 		},
 		"IncludeFieldExcludeID": {
-			filter:     bson.D{},
-			projection: bson.D{{"_id", false}, {"v", true}},
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}, {"v", true}},
+			skipIDCheck: true,
 		},
 		"ExcludeFieldIncludeID": {
 			filter:     bson.D{},
 			projection: bson.D{{"_id", true}, {"v", false}},
 		},
 		"ExcludeFieldExcludeID": {
-			filter:     bson.D{},
-			projection: bson.D{{"_id", false}, {"v", false}},
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}, {"v", false}},
+			skipIDCheck: true,
 		},
 		"IncludeFieldIncludeID": {
 			filter:     bson.D{},
