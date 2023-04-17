@@ -76,11 +76,8 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		// if projectionVal is nil we are processing the first field
 		if projectionVal == nil {
-			//if key == "_id" {
-			//	continue
-			//}
-
 			projectionVal = &result
+
 			continue
 		}
 
