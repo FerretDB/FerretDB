@@ -15,15 +15,15 @@
 package ctxutil
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
-
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
-}
 
 func TestDurationWithJitter(t *testing.T) {
 	t.Parallel()
@@ -41,5 +41,39 @@ func TestDurationWithJitter(t *testing.T) {
 	t.Run("attempt cannot be less then 1", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 0)
 		assert.LessOrEqual(t, sleep, time.Second)
+	})
+
+	t.Run("multiple tasks retry multiple times", func(t *testing.T) {
+		// This test outputs a file for duration it took all nTasks to retry nRetries.
+		// In reality not all tasks will retry, but this is good enough for visualising it.
+
+		nTasks := 100
+		nRetries := 5
+
+		durations := make([][]time.Duration, nTasks) // task -> retry count -> duration
+
+		for i := 0; i < nTasks; i++ {
+			durations[i] = make([]time.Duration, nRetries)
+			for j := 0; j < nRetries; j++ {
+				durations[i][j] = DurationWithJitter(time.Second, int64(j+1))
+			}
+		}
+
+		dir := filepath.Join("result")
+		err := os.MkdirAll(dir, 0o666)
+		require.NoError(t, err)
+
+		filename := filepath.Join(dir, "multiple-retry-jitter.txt")
+		f, err := os.Create(filename)
+		require.NoError(t, err)
+
+		defer f.Close()
+
+		for _, task := range durations {
+			for j, duration := range task {
+				// each line has retry count (j+1) and duration waited in milliseconds.
+				fmt.Fprintln(f, j+1, duration.Milliseconds())
+			}
+		}
 	})
 }
