@@ -44,4 +44,5 @@ func (iter *withClose[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[any, any] = (*withClose[any, any])(nil)
+	_ Closer              = (*withClose[any, any])(nil)
 )
