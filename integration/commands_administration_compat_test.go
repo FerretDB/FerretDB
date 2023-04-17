@@ -44,14 +44,15 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 		resultType compatTestCaseResultType
 		altMessage string
 	}{
-		"scaleOne":      {scale: int32(1)},
-		"scaleBig":      {scale: int64(1000)},
-		"scaleMaxInt":   {scale: math.MaxInt64},
-		"scaleZero":     {scale: int32(0), resultType: emptyResult},
-		"scaleNegative": {scale: int32(-100), resultType: emptyResult},
-		"scaleFloat":    {scale: 2.8},
-		"scaleMinFloat": {scale: -math.MaxFloat64, resultType: emptyResult},
-		"scaleMaxFloat": {scale: math.MaxFloat64},
+		"scaleOne":           {scale: int32(1)},
+		"scaleBig":           {scale: int64(1000)},
+		"scaleMaxInt":        {scale: math.MaxInt64},
+		"scaleZero":          {scale: int32(0), resultType: emptyResult},
+		"scaleNegative":      {scale: int32(-100), resultType: emptyResult},
+		"scaleFloat":         {scale: 2.8},
+		"scaleFloatNegative": {scale: -2.8, resultType: emptyResult},
+		"scaleMinFloat":      {scale: -math.MaxFloat64, resultType: emptyResult},
+		"scaleMaxFloat":      {scale: math.MaxFloat64},
 		"scaleString": {
 			scale:      "1",
 			resultType: emptyResult,
