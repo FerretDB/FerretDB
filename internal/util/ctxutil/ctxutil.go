@@ -69,14 +69,14 @@ func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
 //
 // Math/rand is good enough because we don't need
 // the randomness to be cryptographically secure.
-func DurationWithJitter(cap time.Duration, attempts int64) time.Duration {
+func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
 	const base = time.Millisecond * 100
 
-	if attempts < 1 {
-		attempts = 1
+	if retry < 1 {
+		panic("retry must be nonzero positive number")
 	}
 
-	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(attempts))
+	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
 	capMilliseconds := float64(cap.Milliseconds())
 	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds))
 
