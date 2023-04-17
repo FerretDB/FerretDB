@@ -26,7 +26,7 @@ import (
 )
 
 func BenchmarkQuery(b *testing.B) {
-	provider := shareddata.SimpleBenchmarkValues
+	provider := shareddata.MixedBenchmarkValues
 
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
 		BenchmarkProvider: provider,

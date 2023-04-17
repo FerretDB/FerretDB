@@ -17,10 +17,11 @@ package shareddata
 
 import "go.mongodb.org/mongo-driver/bson"
 
-// SimpleBenchmarkValues contain documents with various types of values.
-var SimpleBenchmarkValues BenchmarkValues = NewBenchmarkValues(
-	generateMixedValues(),
-)
+// MixedBenchmarkValues contain documents with various types of values.
+var MixedBenchmarkValues = BenchmarkValues{
+	name: "MixedBenchmarkValues",
+	iter: newValuesIterator(generateMixedValues()),
+}
 
 // generateMixedValues returns generator that generates deterministic set
 // of 400 documents that contains string, double, and object types.

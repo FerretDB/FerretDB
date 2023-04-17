@@ -288,7 +288,7 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 		return
 	}
 
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s", collection.Name())
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collection.Name(), provider.Name())
 	provCtx, span := otel.Tracer("").Start(ctx, spanName)
 	region := trace.StartRegion(provCtx, spanName)
 

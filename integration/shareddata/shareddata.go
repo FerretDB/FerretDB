@@ -203,6 +203,9 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 // BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
 // It also calculates checksum of all provided documents.
 type BenchmarkProvider interface {
+	// Name returns benchmark provider name.
+	Name() string
+
 	// Hash returns actual hash of all provider documents.
 	// It should be called after closing iterator.
 	Hash() string
@@ -213,17 +216,18 @@ type BenchmarkProvider interface {
 	Docs() iterator.Interface[struct{}, bson.D]
 }
 
-// NewBenchmarkValues initializes BenchmarkValues with provided generator function.
-func NewBenchmarkValues(generator func() bson.D) BenchmarkValues {
-	return BenchmarkValues{
-		iter: newValuesIterator(generator),
-	}
-}
-
 // BenchmarkValues returns shared data documents for benchmark in deterministic order.
 type BenchmarkValues struct {
 	// iter returns all documents in deterministic order.
 	iter *valuesIterator
+
+	// name represents the name of the benchmark values set.
+	name string
+}
+
+// Name implements BenchmarkProvider interface.
+func (b BenchmarkValues) Name() string {
+	return b.name
 }
 
 // Hash implements BenchmarkProvider interface.
