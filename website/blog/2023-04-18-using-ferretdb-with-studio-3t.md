@@ -4,12 +4,12 @@ title: "Using FerretDB 1.0 with Studio 3T"
 authors: [alex]
 description: >
     Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.
-image: /img/blog/ferretdb-studio3t.jpg
+image: /img/blog/ferretdb-studio3t.png
 keywords: [FerretDB, Studio 3T, mongodb gui]
 tags: [mongodb alternative, mongodb compatible, mongodb gui, compatible applications]
 ---
 
-![Using FerretDB with Studio 3T](/img/blog/ferretdb-studio3t.jpg)
+![Using FerretDB with Studio 3T](/img/blog/ferretdb-studio3t.png)
 
 If you're new to [FerretDB](https://www.ferretdb.io/) and [Studio 3T](https://studio3t.com/), FerretDB 1.0 GA is a truly open-source replacement for MongoDB, allowing developers to use the same MongoDB wire protocol and query language, making it an excellent option for MongoDB GUI applications like Studio 3T.
 
