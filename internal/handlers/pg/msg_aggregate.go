@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -245,23 +244,24 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 	if hasCount || hasStorage {
 		if err = p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+			var exists bool
+
+			if exists, err = pgdb.CollectionExists(ctx, tx, p.db, p.collection); err != nil {
+				return err
+			}
+
+			if !exists {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrNamespaceNotFound,
+					fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
+					"aggregate",
+				)
+			}
+
 			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
 			return err
 		}); err != nil {
 			return nil, lazyerrors.Error(err)
-		}
-
-		switch {
-		case err == nil:
-		// do nothing
-		case errors.Is(err, pgdb.ErrTableNotExist):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNamespaceNotFound,
-				fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
-				"aggregate",
-			)
-		default:
-			return nil, err
 		}
 	}
 
