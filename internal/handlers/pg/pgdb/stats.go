@@ -121,7 +121,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		COALESCE(pg_table_size(` + pgx.Identifier{db, metadata.table}.Sanitize() + `), 0) 	    AS SizeTable,
 		COALESCE(pg_indexes_size(` + pgx.Identifier{db, metadata.table}.Sanitize() + `), 0)      AS SizeIndexes
 	FROM pg_tables AS t
-		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = (quote_ident(t.schemaname) || '.' || quote_ident(t.tablename))::regclass
+		LEFT OUTER JOIN pg_class   AS c ON c.relname = t.tablename AND c.oid = ` + pgx.Identifier{db, metadata.table}.Sanitize() + `::regclass
 		LEFT OUTER JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 	WHERE t.schemaname = $1 AND t.tablename = $2`
 	args := []any{db, metadata.table}
