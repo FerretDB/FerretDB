@@ -17,6 +17,7 @@ package pgdb
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -125,10 +126,12 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 				return lazyerrors.Errorf("giving up after %d retries: %w", retry, err)
 			}
 
-			retry++
+			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
+			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
+
 			pgPool.logger.Log(
 				ctx, tracelog.LogLevelWarn, "attempt failed, retrying",
-				map[string]any{"err": err, "retry": retry},
+				map[string]any{"err": err, "attempt": attempts, "delay": delay},
 			)
 
 			ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(attempts))
