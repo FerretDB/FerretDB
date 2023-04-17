@@ -37,8 +37,12 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 
 	res, ok := v.(T)
 	if !ok {
-		msg := fmt.Sprintf("required parameter %q has type %T (expected %T)", key, v, zero)
-		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
+			key, AliasFromType(v), AliasFromType(zero),
+		)
+
+		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
 	}
 
 	return res, nil
