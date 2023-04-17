@@ -42,7 +42,9 @@ func newValuesIterator(generator func() bson.D) iterator.Interface[struct{}, bso
 type valuesIterator struct {
 	generator func() bson.D
 	token     *resource.Token
-	m         sync.Mutex
+	// m Mutex protects generator function from parallel calls.
+	// It's not placed on top of struct fields because of alignment.
+	m sync.Mutex
 }
 
 // Next implements iterator.Interface.
