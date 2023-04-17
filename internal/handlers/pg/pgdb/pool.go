@@ -21,9 +21,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/log/zapadapter"
-	"github.com/jackc/pgx/v4/pgxpool"
+	zapadapter "github.com/jackc/pgx-zap"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -40,7 +41,8 @@ const (
 
 // Pool represents PostgreSQL concurrency-safe connection pool.
 type Pool struct {
-	p *pgxpool.Pool
+	p      *pgxpool.Pool
+	logger *zapadapter.Logger
 }
 
 // DBStats describes statistics for a database.
@@ -103,17 +105,22 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 	config.ConnConfig.RuntimeParams["application_name"] = "FerretDB"
 	config.ConnConfig.RuntimeParams["search_path"] = ""
 
-	// try to log everything; logger's configuration will skip extra levels if needed
-	config.ConnConfig.LogLevel = pgx.LogLevelTrace
-	config.ConnConfig.Logger = zapadapter.NewLogger(logger.Named("pgdb"))
+	pgdbLogger := zapadapter.NewLogger(logger.Named("pgdb"))
 
-	pool, err := pgxpool.ConnectConfig(ctx, config)
+	// try to log everything; logger's configuration will skip extra levels if needed
+	config.ConnConfig.Tracer = &tracelog.TraceLog{
+		Logger:   pgdbLogger,
+		LogLevel: tracelog.LogLevelTrace,
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
 	}
 
 	res := &Pool{
-		p: pool,
+		p:      pool,
+		logger: pgdbLogger,
 	}
 
 	if err = res.checkConnection(ctx); err != nil {
@@ -147,8 +154,6 @@ func isValidUTF8Locale(setting string) bool {
 
 // checkConnection checks PostgreSQL settings.
 func (pgPool *Pool) checkConnection(ctx context.Context) error {
-	logger := pgPool.p.Config().ConnConfig.Logger
-
 	rows, err := pgPool.p.Query(ctx, "SHOW ALL")
 	if err != nil {
 		return fmt.Errorf("pgdb.checkConnection: %w", err)
@@ -186,8 +191,8 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 			continue
 		}
 
-		if logger != nil {
-			logger.Log(ctx, pgx.LogLevelDebug, "PostgreSQL setting", map[string]any{
+		if pgPool.logger != nil {
+			pgPool.logger.Log(ctx, tracelog.LogLevelDebug, "PostgreSQL setting", map[string]any{
 				"name":    name,
 				"setting": setting,
 			})
@@ -255,10 +260,7 @@ func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats,
 	default:
 		// just log it for now
 		// TODO https://github.com/FerretDB/FerretDB/issues/1346
-		pgPool.p.Config().ConnConfig.Logger.Log(
-			ctx, pgx.LogLevelError, "pgdb.Stats: failed to get stats",
-			map[string]any{"err": err},
-		)
+		pgPool.logger.Log(ctx, tracelog.LogLevelError, "pgdb.Stats: failed to get stats", map[string]any{"err": err})
 	}
 
 	return res, nil

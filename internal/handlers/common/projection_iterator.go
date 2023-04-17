@@ -18,30 +18,30 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // ProjectionIterator returns an iterator that projects documents returned by the underlying iterator.
+// It will be added to the given closer.
 //
 // Next method returns the next projected document.
 //
 // Close method closes the underlying iterator.
-// For that reason, there is no need to track both iterators.
-func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document) (types.DocumentsIterator, error) {
+func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	projectionValidated, inclusion, err := validateProjection(projection)
 	if errors.Is(err, errProjectionEmpty) {
 		return iter, nil
 	}
 
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &projectionIterator{
+	res := &projectionIterator{
 		iter:       iter,
 		projection: projectionValidated,
 		inclusion:  inclusion,
-	}, nil
+	}
+	closer.Add(res)
+
+	return res, nil
 }
 
 // projectionIterator is returned by ProjectionIterator.

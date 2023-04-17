@@ -19,7 +19,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -82,15 +82,17 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		var iter types.DocumentsIterator
 
-		if iter, err = pgdb.QueryDocuments(ctx, tx, qp); err != nil {
+		iter, err = pgdb.QueryDocuments(ctx, tx, qp)
+		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		defer iter.Close()
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
 
-		iter = common.FilterIterator(iter, params.Filter)
+		iter = common.FilterIterator(iter, closer, params.Filter)
 
-		iter, err = common.SortIterator(iter, params.Sort)
+		iter, err = common.SortIterator(iter, closer, params.Sort)
 		if err != nil {
 			var pathErr *types.DocumentPathError
 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
@@ -104,14 +106,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
-		// SortIterator should be closed
-		defer iter.Close()
+		iter = common.SkipIterator(iter, closer, params.Skip)
 
-		iter = common.SkipIterator(iter, params.Skip)
+		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		iter = common.LimitIterator(iter, params.Limit)
-
-		if iter, err = common.ProjectionIterator(iter, params.Projection); err != nil {
+		iter, err = common.ProjectionIterator(iter, closer, params.Projection)
+		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -186,9 +186,10 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 		return nil, err
 	}
 
-	defer iter.Close()
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
-	f := common.FilterIterator(iter, filter)
+	f := common.FilterIterator(iter, closer, filter)
 
 	return iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](f))
 }
