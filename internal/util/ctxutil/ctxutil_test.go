@@ -55,7 +55,7 @@ func TestDurationWithJitter(t *testing.T) {
 		}
 
 		dir := filepath.Join("result")
-		err := os.MkdirAll(dir, 0o666)
+		err := os.MkdirAll(dir, 0o777)
 		require.NoError(t, err)
 
 		filename := filepath.Join(dir, "multiple-retry-jitter.txt")
