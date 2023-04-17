@@ -100,7 +100,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisablePushdown, limited})
+		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisableFilterPushdown, limited})
 		if err == nil {
 			deleted += del
 			continue
@@ -174,10 +174,10 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 // deleteParams contains parameters for execDelete function.
 type deleteParams struct {
-	dbPool          *tigrisdb.TigrisDB
-	qp              *tigrisdb.QueryParams
-	disablePushdown bool
-	limited         bool
+	dbPool                *tigrisdb.TigrisDB
+	qp                    *tigrisdb.QueryParams
+	disableFilterPushdown bool
+	limited               bool
 }
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
@@ -193,7 +193,7 @@ func execDelete(ctx context.Context, dp *deleteParams) (int32, error) {
 	// qp.Filter is used to filter documents on the Tigris side (query pushdown).
 	filter := dp.qp.Filter
 
-	if dp.disablePushdown {
+	if dp.disableFilterPushdown {
 		dp.qp.Filter = nil
 	}
 
