@@ -24,6 +24,8 @@ import (
 )
 
 // DBStats describes statistics for a FerretDB database (PostgreSQL schema).
+//
+// TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
 type DBStats struct {
 	CountCollections int32
 	CountObjects     int32
@@ -34,6 +36,8 @@ type DBStats struct {
 }
 
 // CollStats describes statistics for a FerretDB collection (PostgreSQL table).
+//
+// TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
 type CollStats struct {
 	CountObjects   int32
 	CountIndexes   int32
@@ -57,13 +61,13 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	// Total size is the disk space used by all the relations in the given schema, including tables, indexes and TOAST data.
 	// It also includes the size of FerretDB metadata relations.
+	//  See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT
 	sql = `
 		SELECT 
 		    SUM(pg_total_relation_size(schemaname || '.' || tablename)) 
 		FROM pg_tables 
 		WHERE schemaname = $1`
 	args := []any{db}
-
 	row := tx.QueryRow(ctx, sql, args...)
 
 	var schemaSize *int64
@@ -71,7 +75,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		return nil, err
 	}
 
-	// If the schema size is nil, it means the schema does not exist or empty, no need to check other stats.
+	// If the query gave nil, it means the schema does not exist or empty, no need to check other stats.
 	if schemaSize == nil {
 		return &res, nil
 	}
@@ -79,17 +83,16 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	res.SizeTotal = *schemaSize
 
 	// In this query we select all the tables in the given schema, but we exclude FerretDB metadata table (by reserved prefix).
-	//
 	sql = `
 	SELECT 
-	    COUNT(distinct t.tablename)              AS CountTables,
-		COUNT(distinct i.indexname)              AS CountIndexes,
+	    COUNT(t.tablename)                       AS CountTables,
+		COUNT(i.indexname)                       AS CountIndexes,
 		COALESCE(SUM(c.reltuples), 0)            AS CountRows,
 		COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
 		COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 	FROM pg_tables AS t
-		JOIN pg_class AS c ON c.oid = (t.schemaname || '.' || t.tablename)::regclass
-		JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
+		LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regclass
+		LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 	WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
 
@@ -103,7 +106,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 // CalculateCollStats returns statistics for the given FerretDB collection in the given database.
 //
-// If the database does not exist, it returns an object filled with the given db name and zeros for all the other fields.
+// If the collection does not exist, it returns an object filled with the given db name and zeros for all the other fields.
 func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (*CollStats, error) {
 	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
 	if err != nil {
@@ -144,65 +147,3 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 
 	return &res, nil
 }
-
-/*
-// Stats returns a set of statistics for FerretDB server, database, collection
-// - or, in terms of PostgreSQL, database, schema, table.
-//
-// It returns ErrTableNotExist is the given collection does not exist, and ignores other errors.
-func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
-	res := &DBStats{
-		Name: db,
-	}
-
-	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		// See https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT
-
-		sql := `
-	SELECT COUNT(distinct t.table_name)                                                         AS CountTables,
-		COALESCE(SUM(s.n_live_tup), 0)                                                          AS CountRows,
-		COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0) AS SizeTotal,
-		COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeIndexes,
-		COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)       AS SizeRelation,
-		COUNT(distinct i.indexname)                                                             AS CountIndexes
-	FROM information_schema.tables AS t
-		LEFT OUTER JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema AND s.relname = t.table_name
-		LEFT OUTER JOIN pg_indexes          AS i ON i.schemaname = t.table_schema AND i.tablename = t.table_name`
-
-		// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
-
-		var args []any
-
-		if db != "" {
-			sql += " WHERE t.table_schema = $1"
-			args = append(args, db)
-
-			if collection != "" {
-				metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
-				if err != nil {
-					return err
-				}
-
-				sql += " AND t.table_name = $2"
-				args = append(args, metadata.table)
-			}
-		}
-
-		row := tx.QueryRow(ctx, sql, args...)
-
-		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
-	})
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, ErrTableNotExist):
-		// return this error as is because it can be handled by the caller
-		return nil, err
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
-}
-*/
