@@ -63,13 +63,14 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 				return false, nil
 			}
 
+			retry := i + 1
 			if isOtherCreationInFlight(err) {
 				tdb.l.Warn(
 					"createDatabaseIfNotExists failed, retrying",
-					zap.String("db", db), zap.Error(err),
+					zap.String("db", db), zap.Int("retry", retry), zap.Error(err),
 				)
 
-				ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(i+1))
+				ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(retry))
 				continue
 			}
 

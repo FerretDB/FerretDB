@@ -127,12 +127,12 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 				return lazyerrors.Errorf("giving up after %d retries: %w", retry, err)
 			}
 
+			retry++
 			pgPool.logger.Log(
 				ctx, tracelog.LogLevelWarn, "attempt failed, retrying",
 				map[string]any{"err": err, "retry": retry},
 			)
 
-			retry++
 			ctxutil.SleepWithJitter(ctx, retryDelayMax, retry)
 
 		default:
