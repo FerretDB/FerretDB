@@ -105,7 +105,7 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 	}
 
 	if projection.Len() == 1 && projection.Has("_id") {
-		projectionVal = pointer.ToBool(false)
+		projectionVal = pointer.ToBool(must.NotFail(projection.Get("_id")).(bool))
 	}
 
 	return validated, *projectionVal, nil
@@ -143,15 +143,10 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 	}
 
 	projectionWithoutID := projection.DeepCopy()
-
 	projectionWithoutID.Remove("_id")
 
 	docWithoutID := doc.DeepCopy()
 	docWithoutID.Remove("_id")
-
-	if projection.Len() == 1 && projection.Has("_id") {
-		return projected, nil
-	}
 
 	projectedWithoutID, err := projectDoc(docWithoutID, projectionWithoutID, inclusion)
 	if err != nil {
@@ -168,7 +163,7 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 func projectDoc(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
 	projected := types.MakeDocument(0)
 
-	if inclusion {
+	if !inclusion {
 		projected = doc.DeepCopy()
 	}
 
