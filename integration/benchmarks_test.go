@@ -29,7 +29,7 @@ func BenchmarkQuery(b *testing.B) {
 	provider := shareddata.MixedBenchmarkValues
 
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		BenchmarkProvider: provider,
+		BenchmarkProvider: &provider,
 	})
 
 	ctx, coll := s.Ctx, s.Collection

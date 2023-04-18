@@ -226,19 +226,19 @@ type BenchmarkValues struct {
 }
 
 // Name implements BenchmarkProvider interface.
-func (b BenchmarkValues) Name() string {
+func (b *BenchmarkValues) Name() string {
 	return b.name
 }
 
 // Hash implements BenchmarkProvider interface.
 // It returns actual hash of all documents produced by BenchmarkValues.
 // It will panic if iterator was not closed.
-func (b BenchmarkValues) Hash() string {
+func (b *BenchmarkValues) Hash() string {
 	return must.NotFail(b.iter.Hash())
 }
 
 // Docs implements BenchmarkProvider interface.
-func (b BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
+func (b *BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
 	return b.iter
 }
 

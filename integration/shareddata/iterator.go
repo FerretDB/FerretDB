@@ -17,8 +17,8 @@ package shareddata
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"hash"
 	"sync"
 
@@ -72,19 +72,13 @@ func (iter *valuesIterator) Next() (struct{}, bson.D, error) {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	rawDoc := []byte(fmt.Sprintf("%x", doc))
-
-	// append literal document to previous checksum.
-	//
-	// We don't just write all the documents and Sum at the end, to not
-	// store all documents in memory.
-	currSum := iter.hash.Sum(rawDoc)
-
-	// remove old checksum
-	iter.hash.Reset()
+	jsonDoc, err := json.Marshal(doc)
+	if err != nil {
+		return unused, nil, err
+	}
 
 	// write literal document with previous checksum to calculate new checksum
-	if _, err := iter.hash.Write(currSum); err != nil {
+	if _, err := iter.hash.Write(jsonDoc); err != nil {
 		return unused, doc, err
 	}
 
@@ -103,6 +97,9 @@ func (iter *valuesIterator) Close() {
 // Hash returns calculated checksum of all returned by valuesIterator documents.
 // It must be called after closing iterator, otherwise it returns the error.
 func (iter *valuesIterator) Hash() (string, error) {
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
 	if iter.generator != nil {
 		return "", errors.New("Hash needs to be called on closed iterator")
 	}
