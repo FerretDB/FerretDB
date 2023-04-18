@@ -26,6 +26,7 @@ import (
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -95,10 +96,20 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 
 	pgdbLogger := zapadapter.NewLogger(logger.Named("pgdb"))
 
-	// try to log everything; logger's configuration will skip extra levels if needed
-	config.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   pgdbLogger,
-		LogLevel: tracelog.LogLevelTrace,
+	tracers := []pgx.QueryTracer{
+		// try to log everything; logger's configuration will skip extra levels if needed
+		&tracelog.TraceLog{
+			Logger:   pgdbLogger,
+			LogLevel: tracelog.LogLevelTrace,
+		},
+	}
+
+	if debugbuild.Enabled {
+		tracers = append(tracers, &DebugTracer{})
+	}
+
+	config.ConnConfig.Tracer = &MultiQueryTracer{
+		Tracers: tracers,
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
