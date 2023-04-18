@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -29,8 +29,8 @@ type sort struct {
 	fields *types.Document
 }
 
-// newSort creates a new $sort stage.
-func newSort(stage *types.Document) (Stage, error) {
+// NewSort creates a new $sort stage.
+func NewSort(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

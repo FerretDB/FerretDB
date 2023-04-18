@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -37,8 +37,8 @@ type storageStats struct {
 	scale int32
 }
 
-// newCollStats creates a new $collStats stage.
-func newCollStats(stage *types.Document) (Stage, error) {
+// NewCollStats creates a new $collStats stage.
+func NewCollStats(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

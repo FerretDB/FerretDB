@@ -12,26 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package operators
 
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// sumAccumulator represents $sum accumulator for $group.
-type sumAccumulator struct {
+// sum represents $sum accumulator for $group.
+type sum struct {
 	expression types.Expression
 	number     any
 }
 
-// newSumAccumulator creates a new $sum accumulator for $group.
-func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
+// newSum creates a new $sum accumulator for $group.
+func newSum(accumulation *types.Document) (Accumulator, error) {
 	expr := must.NotFail(accumulation.Get("$sum"))
-	accumulator := new(sumAccumulator)
+	accumulator := new(sum)
 
 	switch expr := expr.(type) {
 	case *types.Array:
@@ -59,7 +60,7 @@ func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+func (a *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	if a.expression != nil {
 		var values []any
 
@@ -68,7 +69,7 @@ func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []
 			values = append(values, v)
 		}
 
-		return sumNumbers(values...), nil
+		return aggregations.SumNumbers(values...), nil
 	}
 
 	switch number := a.number.(type) {
@@ -81,7 +82,7 @@ func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []
 			numbers[i] = number
 		}
 
-		return sumNumbers(numbers...), nil
+		return aggregations.SumNumbers(numbers...), nil
 	}
 
 	// $sum returns 0 on non-existent and non-numeric field.
@@ -90,5 +91,5 @@ func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []
 
 // check interfaces
 var (
-	_ Accumulator = (*sumAccumulator)(nil)
+	_ Accumulator = (*sum)(nil)
 )

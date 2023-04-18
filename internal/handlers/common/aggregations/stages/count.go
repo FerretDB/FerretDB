@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -24,13 +24,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// countStage represents $count stage.
-type countStage struct {
+// count represents $count stage.
+type count struct {
 	field string
 }
 
-// newCount creates a new $count stage.
-func newCount(stage *types.Document) (Stage, error) {
+// NewCount creates a new $count stage.
+func NewCount(stage *types.Document) (Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -72,13 +72,13 @@ func newCount(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	return &countStage{
+	return &count{
 		field: field,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (c *countStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	if len(in) == 0 {
 		return nil, nil
 	}
@@ -89,11 +89,11 @@ func (c *countStage) Process(ctx context.Context, in []*types.Document) ([]*type
 }
 
 // Type implements Stage interface.
-func (c *countStage) Type() StageType {
+func (c *count) Type() StageType {
 	return StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*countStage)(nil)
+	_ Stage = (*count)(nil)
 )

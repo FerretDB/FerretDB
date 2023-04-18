@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -27,8 +27,8 @@ type match struct {
 	filter *types.Document
 }
 
-// newMatch creates a new $match stage.
-func newMatch(stage *types.Document) (Stage, error) {
+// NewMatch creates a new $match stage.
+func NewMatch(stage *types.Document) (Stage, error) {
 	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

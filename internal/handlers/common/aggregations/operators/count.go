@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package operators
 
 import (
 	"context"
@@ -22,11 +22,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// countAccumulator represents $count accumulator for $group.
-type countAccumulator struct{}
+// count represents $count accumulator for $group.
+type count struct{}
 
-// newCountAccumulator creates a new $count accumulator for $group.
-func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
+// newCount creates a new $count operator for $group.
+func newCount(accumulation *types.Document) (Accumulator, error) {
 	expression, err := common.GetRequiredParam[*types.Document](accumulation, "$count")
 	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -36,15 +36,15 @@ func newCountAccumulator(accumulation *types.Document) (Accumulator, error) {
 		)
 	}
 
-	return new(countAccumulator), nil
+	return new(count), nil
 }
 
 // Accumulate implements Accumulator interface.
-func (c *countAccumulator) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+func (c *count) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	return int32(len(grouped)), nil
 }
 
 // check interfaces
 var (
-	_ Accumulator = (*countAccumulator)(nil)
+	_ Accumulator = (*count)(nil)
 )

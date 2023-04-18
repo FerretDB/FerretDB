@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -32,8 +32,8 @@ type unwind struct {
 	field types.Expression
 }
 
-// newUnwind creates a new $unwind stage.
-func newUnwind(stage *types.Document) (Stage, error) {
+// NewUnwind creates a new $unwind stage.
+func NewUnwind(stage *types.Document) (Stage, error) {
 	field, err := stage.Get("$unwind")
 	if err != nil {
 		return nil, err

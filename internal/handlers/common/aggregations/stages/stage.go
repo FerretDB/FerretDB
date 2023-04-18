@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+// Package stages provides aggregation stages.
+package stages
 
 import (
 	"context"
@@ -49,17 +50,17 @@ type Stage interface {
 	Type() StageType
 }
 
-// stages maps all supported aggregation stages.
-var stages = map[string]newStageFunc{
+// aggregationStages maps all supported aggregation stages.
+var aggregationStages = map[string]newStageFunc{
 	// sorted alphabetically
-	"$collStats": newCollStats,
-	"$count":     newCount,
-	"$group":     newGroup,
-	"$limit":     newLimit,
-	"$match":     newMatch,
-	"$skip":      newSkip,
-	"$sort":      newSort,
-	"$unwind":    newUnwind,
+	"$collStats": NewCollStats,
+	"$count":     NewCount,
+	"$group":     NewGroup,
+	"$limit":     NewLimit,
+	"$match":     NewMatch,
+	"$skip":      NewSkip,
+	"$sort":      NewSort,
+	"$unwind":    NewUnwind,
 	// please keep sorted alphabetically
 }
 
@@ -112,7 +113,7 @@ func NewStage(stage *types.Document) (Stage, error) {
 
 	name := stage.Command()
 
-	f, ok := stages[name]
+	f, ok := aggregationStages[name]
 	if !ok {
 		if _, ok := unsupportedStages[name]; ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -27,8 +27,8 @@ type skip struct {
 	value int64
 }
 
-// newSkip creates a new $skip stage.
-func newSkip(stage *types.Document) (Stage, error) {
+// NewSkip creates a new $skip stage.
+func NewSkip(stage *types.Document) (Stage, error) {
 	value, err := stage.Get("$skip")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

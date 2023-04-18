@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -27,8 +27,8 @@ type limit struct {
 	limit int64
 }
 
-// newLimit creates a new $limit stage.
-func newLimit(stage *types.Document) (Stage, error) {
+// NewLimit creates a new $limit stage.
+func NewLimit(stage *types.Document) (Stage, error) {
 	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

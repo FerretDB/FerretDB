@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -20,29 +20,13 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
-
-// newAccumulatorFunc is a type for a function that creates an accumulator.
-type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
-
-// Accumulator is a common interface for accumulation.
-type Accumulator interface {
-	// Accumulate documents and returns the result of applying accumulation operator.
-	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
-}
-
-// accumulators maps all supported $group accumulators.
-var accumulators = map[string]newAccumulatorFunc{
-	// sorted alphabetically
-	"$count": newCountAccumulator,
-	"$sum":   newSumAccumulator,
-	// please keep sorted alphabetically
-}
 
 // groupStage represents $group stage.
 //
@@ -63,8 +47,8 @@ type groupBy struct {
 	outputField string
 }
 
-// newGroup creates a new $group stage.
-func newGroup(stage *types.Document) (Stage, error) {
+// NewGroup creates a new $group stage.
+func NewGroup(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -116,7 +100,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 
 		operator := accumulation.Command()
 
-		newAccumulator, ok := accumulators[operator]
+		newAccumulator, ok := operators.Accumulators[operator]
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

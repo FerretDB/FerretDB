@@ -25,7 +25,7 @@ import (
 // and int64 is converted to float64. It ignores non-number values.
 // This should only be used for aggregation, aggregation does not return
 // error on overflow.
-func sumNumbers(vs ...any) any {
+func SumNumbers(vs ...any) any {
 	// use big.Int to accumulate values larger than math.MaxInt64.
 	intSum := big.NewInt(0)
 
