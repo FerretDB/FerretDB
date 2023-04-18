@@ -64,27 +64,31 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var avgObjSize float64
-	if stats.CountObjects > 0 {
-		avgObjSize = float64(stats.SizeCollections) / float64(stats.CountObjects)
+	pairs := []any{
+		"db", db,
+		"collections", stats.CountCollections,
+		// TODO https://github.com/FerretDB/FerretDB/issues/176
+		"views", int32(0),
+		"objects", stats.CountObjects,
 	}
+
+	if stats.CountObjects > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
+	}
+
+	pairs = append(pairs,
+		"dataSize", stats.SizeCollections/scale,
+		"storageSize", stats.SizeCollections/scale,
+		"indexes", stats.CountIndexes,
+		"indexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
+		"scaleFactor", float64(scale),
+		"ok", float64(1),
+	)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"db", db,
-			"collections", stats.CountCollections,
-			// TODO https://github.com/FerretDB/FerretDB/issues/176
-			"views", int32(0),
-			"objects", stats.CountObjects,
-			"avgObjSize", avgObjSize,
-			"dataSize", float64(stats.SizeCollections/int64(scale)),
-			"indexes", stats.CountIndexes,
-			"indexSize", float64(stats.SizeIndexes/int64(scale)),
-			"totalSize", float64(stats.SizeTotal/int64(scale)),
-			"scaleFactor", float64(scale),
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

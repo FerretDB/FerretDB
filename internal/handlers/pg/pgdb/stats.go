@@ -36,9 +36,9 @@ type DBStats struct {
 	CountCollections int32
 	CountObjects     int32
 	CountIndexes     int32
-	SizeTotal        int64
-	SizeIndexes      int64
-	SizeCollections  int64
+	SizeTotal        int32
+	SizeIndexes      int32
+	SizeCollections  int32
 }
 
 // CollStats describes statistics for a FerretDB collection (PostgreSQL table).
@@ -95,7 +95,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	args := []any{db}
 	row := tx.QueryRow(ctx, sql, args...)
 
-	var schemaSize *int64
+	var schemaSize *int32
 	if err := row.Scan(&schemaSize); err != nil {
 		return nil, lazyerrors.Error(err)
 	}

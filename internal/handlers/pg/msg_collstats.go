@@ -80,27 +80,29 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := must.NotFail(types.NewDocument(
-		"ns", db+"."+collection,
-		"size", stats.SizeCollection/scale,
+	pairs := []any{
+		"ns", db + "." + collection,
+		"size", stats.SizeCollection / scale,
 		"count", stats.CountObjects,
-	))
+	}
 
 	// If there are objects in the collection, calculate the average object size.
 	if stats.CountObjects > 0 {
-		res.Set("avgObjSize", stats.SizeCollection/stats.CountObjects)
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
-	res.Set("storageSize", stats.SizeTotal/scale)
-	res.Set("nindexes", stats.CountIndexes)
-	res.Set("totalIndexSize", stats.SizeIndexes/scale)
-	res.Set("totalSize", stats.SizeTotal/scale)
-	res.Set("scaleFactor", scale)
-	res.Set("ok", float64(1))
+	pairs = append(pairs,
+		"storageSize", stats.SizeTotal/scale,
+		"nindexes", stats.CountIndexes,
+		"totalIndexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
+		"scaleFactor", scale,
+		"ok", float64(1),
+	)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

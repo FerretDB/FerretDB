@@ -629,17 +629,18 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.InDelta(t, int32(16), must.NotFail(doc.Get("size")), 16)
 	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
-	assert.InDelta(t, float64(16), must.NotFail(doc.Get("size")), 16)
-	assert.InDelta(t, float64(24), must.NotFail(doc.Get("storageSize")), 24)
-	assert.InDelta(t, float64(8), must.NotFail(doc.Get("totalIndexSize")), 8)
-	assert.InDelta(t, float64(24), must.NotFail(doc.Get("totalSize")), 24)
+	assert.InDelta(t, int32(2_400), must.NotFail(doc.Get("avgObjSize")), 2_370)
+	assert.InDelta(t, int32(24), must.NotFail(doc.Get("storageSize")), 24)
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, int32(8), must.NotFail(doc.Get("totalIndexSize")), 8)
+	assert.InDelta(t, int32(24), must.NotFail(doc.Get("totalSize")), 24)
+	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
@@ -661,7 +662,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.InDelta(t, float64(200), must.NotFail(doc.Get("millis")), 200)
 	})
 
-	t.Run("NonExisting", func(t *testing.T) {
+	t.Run("NonExistent", func(t *testing.T) {
 		t.Parallel()
 		ctx, collection := setup.Setup(t)
 
@@ -687,15 +688,17 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
-
-	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.Equal(t, int32(1), doc.Remove("collections"))
+	assert.Equal(t, int32(6), doc.Remove("objects")) // Number of documents in DocumentsStrings
+	assert.InDelta(t, int32(37_500), doc.Remove("avgObjSize"), 37_460)
+	assert.InDelta(t, int32(37_500), doc.Remove("dataSize"), 37_450)
+	assert.InDelta(t, int32(37_500), doc.Remove("storageSize"), 37_450)
+	assert.InDelta(t, int32(49_152), doc.Remove("totalSize"), 49_100)
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
-
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
-	assert.InDelta(t, float64(49152), doc.Remove("totalSize"), 49152)
+	assert.Equal(t, float64(1), doc.Remove("ok"))
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
