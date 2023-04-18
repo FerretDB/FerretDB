@@ -73,7 +73,7 @@ func CalculateServerStats(ctx context.Context, tx pgx.Tx) (*ServerStats, error) 
 
 // CalculateDBStats returns statistics for the given FerretDB database.
 //
-// If the collection does not exist, it returns an object filled with zeros for all the fields.
+// If the database does not exist, it returns an object filled with zeros for all the fields.
 func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, error) {
 	var res DBStats
 
