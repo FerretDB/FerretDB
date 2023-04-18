@@ -271,9 +271,9 @@ func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
 				{"update", bson.D{{"$unset", "v"}}},
 			},
 		},
-		"ExistsFalseNonExistentField": {
+		"UnsetNonExistentField": {
 			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"query", bson.D{{"_id", "double"}}},
 				{"update", bson.D{{"$unset", "non-existent-field"}}},
 			},
 		},
@@ -559,9 +559,9 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 				{"update", bson.D{{"$unset", "v"}}},
 			},
 		},
-		"ExistsFalseNonExistentField": {
+		"UnsetNonExistentField": {
 			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"query", bson.D{{"_id", "double"}}},
 				{"upsert", true},
 				{"update", bson.D{{"$unset", "non-existent-field"}}},
 			},
