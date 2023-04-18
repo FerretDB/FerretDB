@@ -15,11 +15,11 @@
 package ctxutil
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-)
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,24 +70,5 @@ func TestDurationWithJitter(t *testing.T) {
 				fmt.Fprintln(f, j+1, duration.Milliseconds())
 			}
 		}
-	})
-}
-
-func TestDurationWithJitter(t *testing.T) {
-	t.Parallel()
-
-	t.Run("larger or equal then 1ms", func(t *testing.T) {
-		sleep := DurationWithJitter(time.Second, 1)
-		assert.GreaterOrEqual(t, sleep, time.Millisecond)
-	})
-
-	t.Run("less or equal then duration input", func(t *testing.T) {
-		sleep := DurationWithJitter(time.Second, 100000)
-		assert.LessOrEqual(t, sleep, time.Second)
-	})
-
-	t.Run("attempt cannot be less then 1", func(t *testing.T) {
-		sleep := DurationWithJitter(time.Second, 0)
-		assert.LessOrEqual(t, sleep, time.Second)
 	})
 }
