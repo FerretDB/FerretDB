@@ -50,8 +50,8 @@ type Stage interface {
 	Type() StageType
 }
 
-// aggregationStages maps all supported aggregation stages.
-var aggregationStages = map[string]newStageFunc{
+// stages maps all supported aggregation stages.
+var stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$collStats": newCollStats,
 	"$count":     newCount,
@@ -113,7 +113,7 @@ func NewStage(stage *types.Document) (Stage, error) {
 
 	name := stage.Command()
 
-	f, ok := aggregationStages[name]
+	f, ok := stages[name]
 	if !ok {
 		if _, ok := unsupportedStages[name]; ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
