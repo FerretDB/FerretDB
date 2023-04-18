@@ -148,4 +148,3 @@ jobs:
       - name: Set GitHub deployment URL
         id: extract
         uses: FerretDB/github-actions/extract-first-url@main
-
