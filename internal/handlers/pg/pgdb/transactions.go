@@ -17,7 +17,6 @@ package pgdb
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -106,15 +105,12 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 // If f returns (possibly wrapped) *transactionConflictError, the transaction is retried multiple times with delays.
 // If the transaction still fails after that, the last error is returned.
 func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) error {
-	// TODO use exponential backoff with jitter instead
-	// https://github.com/FerretDB/FerretDB/issues/1720
 	const (
-		attemptsMax   = 30
-		retryDelayMin = 100 * time.Millisecond
+		retriesMax    = 30
 		retryDelayMax = 200 * time.Millisecond
 	)
 
-	var attempts int
+	var retry int64
 
 	for {
 		err := pgPool.InTransaction(ctx, f)
@@ -125,20 +121,17 @@ func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error
 			return nil
 
 		case errors.As(err, &tcErr):
-			attempts++
-			if attempts >= attemptsMax {
-				return lazyerrors.Errorf("giving up after %d attempts: %w", attempts, err)
+			if retry >= retriesMax {
+				return lazyerrors.Errorf("giving up after %d retries: %w", retry, err)
 			}
 
-			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
-			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
-
+			retry++
 			pgPool.logger.Log(
 				ctx, tracelog.LogLevelWarn, "attempt failed, retrying",
-				map[string]any{"err": err, "attempt": attempts, "delay": delay},
+				map[string]any{"err": err, "retry": retry},
 			)
 
-			ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(attempts))
+			ctxutil.SleepWithJitter(ctx, retryDelayMax, retry)
 
 		default:
 			return lazyerrors.Errorf("non-retriable error: %w", err)

@@ -51,12 +51,12 @@ func TestMultiplyLongSafely(t *testing.T) {
 		"OverflowLarge": {
 			v1:  1 << 60,
 			v2:  42,
-			err: errLongExceeded,
+			err: errLongExceededPositive,
 		},
 		"OverflowMax": {
 			v1:  math.MaxInt64,
 			v2:  2,
-			err: errLongExceeded,
+			err: errLongExceededPositive,
 		},
 		"MaxMinusOne": {
 			v1:       math.MaxInt64,
@@ -66,17 +66,17 @@ func TestMultiplyLongSafely(t *testing.T) {
 		"OverflowMaxMinusTwo": {
 			v1:  math.MaxInt64,
 			v2:  -2,
-			err: errLongExceeded,
+			err: errLongExceededPositive,
 		},
 		"OverflowMin": {
 			v1:  math.MinInt64,
 			v2:  2,
-			err: errLongExceeded,
+			err: errLongExceededNegative,
 		},
 		"OverflowMinMinusOne": {
 			v1:  math.MinInt64,
 			v2:  -1,
-			err: errLongExceeded,
+			err: errLongExceededNegative,
 		},
 	} {
 		name, tc := name, tc
