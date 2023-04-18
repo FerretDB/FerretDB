@@ -142,13 +142,7 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 		}
 	}
 
-	projectionWithoutID := projection.DeepCopy()
-	projectionWithoutID.Remove("_id")
-
-	docWithoutID := doc.DeepCopy()
-	docWithoutID.Remove("_id")
-
-	projectedWithoutID, err := projectDocumentWithoutID(docWithoutID, projectionWithoutID, inclusion)
+	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
 	if err != nil {
 		return nil, err
 	}
@@ -160,14 +154,22 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 	return projected, nil
 }
 
+// projectDocumentWithoutID applies projection to the copy of the document and returns projected document.
+// It ignores _id field in the projection.
 func projectDocumentWithoutID(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
+	projectionWithoutID := projection.DeepCopy()
+	projectionWithoutID.Remove("_id")
+
+	docWithoutID := doc.DeepCopy()
+	docWithoutID.Remove("_id")
+
 	projected := types.MakeDocument(0)
 
 	if !inclusion {
-		projected = doc.DeepCopy()
+		projected = docWithoutID.DeepCopy()
 	}
 
-	iter := projection.Iterator()
+	iter := projectionWithoutID.Iterator()
 	defer iter.Close()
 
 	for {
@@ -198,8 +200,8 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			// process top level fields
 			if path.Len() == 1 {
 				if inclusion {
-					if doc.Has(key) {
-						projected.Set(key, must.NotFail(doc.Get(key)))
+					if docWithoutID.Has(key) {
+						projected.Set(key, must.NotFail(docWithoutID.Get(key)))
 					}
 
 					continue
