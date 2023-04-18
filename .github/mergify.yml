@@ -18,6 +18,34 @@ pull_request_rules:
     actions:
       update:
 
+  - name: "Request review for engineering blogs posts"
+    conditions:
+      - "label = 'blog/engineering'"
+    actions:
+      request_reviews:
+        users: ["AlekSi", "Fashander", "ptrfarkas"]
+        teams: ["@FerretDB/leads", "@FerretDB/core"]
+        users_from_teams: ["@FerretDB/leads", "@FerretDB/core"]
+      comment:
+        message: "Engineering blog posts should be reviewed by other engineers and @Fashander."
+
+  - name: "Request review for marketing blogs posts"
+    conditions:
+      - "label = 'blog/marketing'"
+    actions:
+      request_reviews:
+        users: ["ptrfarkas", "AlekSi"]
+      comment:
+        message: "Marketing blog posts should be reviewed by @ptrfarkas and @AlekSi."
+
+  - name: "Assign PRs"
+    conditions:
+      - "-closed"
+      - "#assignee = 0"
+    actions:
+      assign:
+        add_users: ["{{ author }}"]
+
   - name: "Add label on conflicts"
     conditions:
       - "conflict"
