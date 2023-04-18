@@ -17,7 +17,10 @@ package pg
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,32 +55,40 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
-	stats, err := dbPool.Stats(ctx, db, "")
-	if err != nil {
+	var stats *pgdb.DBStats
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateDBStats(ctx, tx, db)
+		return err
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var avgObjSize float64
-	if stats.CountRows > 0 {
-		avgObjSize = float64(stats.SizeRelation) / float64(stats.CountRows)
+	pairs := []any{
+		"db", db,
+		"collections", stats.CountCollections,
+		// TODO https://github.com/FerretDB/FerretDB/issues/176
+		"views", int32(0),
+		"objects", stats.CountObjects,
 	}
+
+	if stats.CountObjects > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
+	}
+
+	pairs = append(pairs,
+		"dataSize", stats.SizeCollections/scale,
+		"storageSize", stats.SizeCollections/scale,
+		"indexes", stats.CountIndexes,
+		"indexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
+		"scaleFactor", float64(scale),
+		"ok", float64(1),
+	)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"db", db,
-			"collections", stats.CountTables,
-			// TODO https://github.com/FerretDB/FerretDB/issues/176
-			"views", int32(0),
-			"objects", stats.CountRows,
-			"avgObjSize", avgObjSize,
-			"dataSize", float64(stats.SizeRelation/int64(scale)),
-			"indexes", stats.CountIndexes,
-			"indexSize", float64(stats.SizeIndexes/int64(scale)),
-			"totalSize", float64(stats.SizeTotal/int64(scale)),
-			"scaleFactor", float64(scale),
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

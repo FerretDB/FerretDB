@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -241,45 +240,51 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var dbStats *pgdb.DBStats
+	var collStats *pgdb.CollStats
 
 	if hasCount || hasStorage {
-		dbStats, err = p.dbPool.Stats(ctx, p.db, p.collection)
+		if err = p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+			var exists bool
 
-		switch {
-		case err == nil:
-		// do nothing
-		case errors.Is(err, pgdb.ErrTableNotExist):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNamespaceNotFound,
-				fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
-				"aggregate",
-			)
-		default:
-			return nil, err
+			if exists, err = pgdb.CollectionExists(ctx, tx, p.db, p.collection); err != nil {
+				return err
+			}
+
+			if !exists {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrNamespaceNotFound,
+					fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
+					"aggregate",
+				)
+			}
+
+			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
+			return err
+		}); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
 	if hasStorage {
 		var avgObjSize int32
-		if dbStats.CountRows > 0 {
-			avgObjSize = int32(dbStats.SizeRelation) / dbStats.CountRows
+		if collStats.CountObjects > 0 {
+			avgObjSize = int32(collStats.SizeCollection) / collStats.CountObjects
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(dbStats.SizeTotal),
-				"count", dbStats.CountRows,
+				"size", int32(collStats.SizeTotal),
+				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(dbStats.SizeRelation),
+				"storageSize", int32(collStats.SizeCollection),
 				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", dbStats.CountIndexes,
+				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", int32(dbStats.SizeIndexes),
-				"totalSize", int32(dbStats.SizeTotal),
+				"totalIndexSize", int32(collStats.SizeIndexes),
+				"totalSize", int32(collStats.SizeTotal),
 				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
 		)
@@ -287,7 +292,7 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 	if hasCount {
 		doc.Set(
-			"count", dbStats.CountRows,
+			"count", collStats.CountObjects,
 		)
 	}
 
