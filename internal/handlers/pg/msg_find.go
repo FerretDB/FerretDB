@@ -70,7 +70,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	if !h.DisablePushdown {
+	if !h.DisableFilterPushdown {
 		qp.Filter = params.Filter
 	}
 
@@ -166,9 +166,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 // fetchParams is used to pass parameters to fetchAndFilterDocs.
 type fetchParams struct {
-	tx              pgx.Tx
-	qp              *pgdb.QueryParams
-	disablePushdown bool
+	tx                    pgx.Tx
+	qp                    *pgdb.QueryParams
+	disableFilterPushdown bool
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
@@ -177,7 +177,7 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
 	filter := fp.qp.Filter
 
-	if fp.disablePushdown {
+	if fp.disableFilterPushdown {
 		fp.qp.Filter = nil
 	}
 

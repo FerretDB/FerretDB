@@ -161,10 +161,17 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var name, setting, description string
-		if err := rows.Scan(&name, &setting, &description); err != nil {
+		// handle variable number of columns as a workaround for https://github.com/cockroachdb/cockroach/issues/101715
+		values, err := rows.Values()
+		if err != nil {
 			return fmt.Errorf("pgdb.checkConnection: %w", err)
 		}
+
+		if len(values) < 2 {
+			return fmt.Errorf("pgdb.checkConnection: invalid row: %#v", values)
+		}
+		name := values[0].(string)
+		setting := values[1].(string)
 
 		switch name {
 		case "server_encoding":
