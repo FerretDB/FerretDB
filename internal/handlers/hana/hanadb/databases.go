@@ -17,13 +17,11 @@ package hanadb
 import (
 	"context"
 	"fmt"
-
-	_ "github.com/SAP/go-hdb/driver"
 )
 
 // CreateSchema creates a schema in SAP HANA JSON Document Store.
 func (hanaPool *Pool) CreateSchema(ctx context.Context, db string) error {
-	sqlStmt := fmt.Sprintf("CREATE SCHEMA \"%s\"", db)
+	sqlStmt := fmt.Sprintf("CREATE SCHEMA %q", db)
 
 	_, err := hanaPool.ExecContext(ctx, sqlStmt)
 
@@ -34,7 +32,7 @@ func (hanaPool *Pool) CreateSchema(ctx context.Context, db string) error {
 //
 // It returns ErrSchemaNotExist if schema does not exist.
 func (hanaPool *Pool) DropSchema(ctx context.Context, db string) error {
-	sql := fmt.Sprintf("DROP SCHEMA \"%s\" CASCADE", db)
+	sql := fmt.Sprintf("DROP SCHEMA %q CASCADE", db)
 
 	_, err := hanaPool.ExecContext(ctx, sql)
 

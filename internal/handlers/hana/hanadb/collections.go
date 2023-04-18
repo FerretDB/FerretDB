@@ -17,15 +17,13 @@ package hanadb
 import (
 	"context"
 	"fmt"
-
-	_ "github.com/SAP/go-hdb/driver"
 )
 
 // CreateCollection creates a new SAP HANA JSON Document Store collection.
 //
 // It returns ErrAlreadyExist if collection already exist.
 func (hanaPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	sql := fmt.Sprintf("CREATE COLLECTION \"%s\".\"%s\"", db, collection)
+	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", db, collection)
 
 	_, err := hanaPool.ExecContext(ctx, sql)
 
@@ -36,7 +34,7 @@ func (hanaPool *Pool) CreateCollection(ctx context.Context, db, collection strin
 //
 // It returns ErrTableNotExist is collection does not exist.
 func (hanaPool *Pool) DropCollection(ctx context.Context, db, collection string) error {
-	sql := fmt.Sprintf("DROP COLLECTION \"%s\".\"%s\"", db, collection)
+	sql := fmt.Sprintf("DROP COLLECTION %q.%q", db, collection)
 
 	_, err := hanaPool.ExecContext(ctx, sql)
 
