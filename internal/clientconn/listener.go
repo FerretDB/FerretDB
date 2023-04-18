@@ -243,7 +243,7 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 
 // acceptLoop runs listener's connection accepting loop.
 func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
-	attempts := int64(1)
+	var retry int64
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
@@ -256,8 +256,8 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			logger.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
-				ctxutil.SleepWithJitter(ctx, time.Second, attempts)
-				attempts++
+				retry++
+				ctxutil.SleepWithJitter(ctx, time.Second, retry)
 			}
 			continue
 		}
