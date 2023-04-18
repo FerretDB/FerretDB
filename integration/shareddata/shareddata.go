@@ -197,14 +197,16 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	return slices.Contains(values.backends, backend)
 }
 
+// field represents a field in a document.
 type field struct {
-	Key   string
 	Value any
+	Key   string
 }
 
 // Fields is a map of field name -> value.
 type Fields []field
 
+// NewTopLevelFieldsProvider creates a new TopLevelValues provider.
 func NewTopLevelFieldsProvider[id comparable](name string, backends []string, validators map[string]map[string]any, data map[id]Fields) *TopLevelValues[id] {
 	return &TopLevelValues[id]{
 		name:       name,

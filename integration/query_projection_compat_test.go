@@ -44,8 +44,8 @@ func TestQueryProjectionCompat(t *testing.T) {
 		},
 		map[string]shareddata.Fields{
 			"int32-two": {
-				{"foo", int32(1)},
-				{"bar", int32(2)},
+				{Key: "foo", Value: int32(1)},
+				{Key: "bar", Value: int32(2)},
 			},
 		},
 	)
