@@ -8,8 +8,7 @@ vars:
 tasks:
   tools-test:
     cmds:
-      - go test -short {{.RACEFLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkswitch/...
-      - go test ./checkdocs/
+      - go test -short {{.RACEFLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkdocs/... ./checkswitch/...
 
   tools-lint:
     cmds:
