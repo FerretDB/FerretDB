@@ -80,18 +80,27 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	res := must.NotFail(types.NewDocument(
+		"ns", db+"."+collection,
+		"size", stats.SizeCollection/scale,
+		"count", stats.CountObjects,
+	))
+
+	// If there are objects in the collection, calculate the average object size.
+	if stats.CountObjects > 0 {
+		res.Set("avgObjSize", stats.SizeCollection/stats.CountObjects)
+	}
+
+	res.Set("storageSize", stats.SizeTotal/scale)
+	res.Set("nindexes", stats.CountIndexes)
+	res.Set("totalIndexSize", stats.SizeIndexes/scale)
+	res.Set("totalSize", stats.SizeTotal/scale)
+	res.Set("scaleFactor", scale)
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ns", db+"."+collection,
-			"count", stats.CountObjects,
-			"size", int32(stats.SizeTotal)/scale,
-			"storageSize", int32(stats.SizeTotal)/scale,
-			"totalIndexSize", int32(stats.SizeIndexes)/scale,
-			"totalSize", int32(stats.SizeTotal)/scale,
-			"scaleFactor", scale,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{res},
 	}))
 
 	return &reply, nil

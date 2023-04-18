@@ -583,17 +583,17 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
+	// Expected result is to have empty statistics (neither the database nor the collection exists)
 	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("storageSize")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("nindexes")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("totalIndexSize")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("totalSize")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("count"))) // No documents
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 8_012)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
@@ -605,17 +605,19 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
-	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("size")), 39_900)
+	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
+	assert.InDelta(t, int32(2_400), must.NotFail(doc.Get("avgObjSize")), 2_370)
+	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("storageSize")), 39_900)
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, int32(12_000), must.NotFail(doc.Get("totalIndexSize")), 11_000)
+	assert.InDelta(t, int32(32_000), must.NotFail(doc.Get("totalSize")), 30_000)
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {

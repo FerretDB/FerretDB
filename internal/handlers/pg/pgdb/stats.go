@@ -47,9 +47,9 @@ type DBStats struct {
 type CollStats struct {
 	CountObjects   int32
 	CountIndexes   int32
-	SizeTotal      int64
-	SizeIndexes    int64
-	SizeCollection int64
+	SizeTotal      int32
+	SizeIndexes    int32
+	SizeCollection int32
 }
 
 // CalculateServerStats returns statistics for all the FerretDB databases on the server.
