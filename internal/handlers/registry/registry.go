@@ -61,8 +61,8 @@ type NewHandlerOpts struct {
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisablePushdown bool
-	EnableCursors   bool
+	DisableFilterPushdown bool
+	EnableCursors         bool
 }
 
 // NewHandler constructs a new handler.
@@ -100,8 +100,8 @@ func init() {
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown: opts.DisablePushdown,
-			EnableCursors:   opts.EnableCursors,
+			DisableFilterPushdown: opts.DisableFilterPushdown,
+			EnableCursors:         opts.EnableCursors,
 		}
 		return pg.New(handlerOpts)
 	}
