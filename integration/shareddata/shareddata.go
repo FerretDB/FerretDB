@@ -242,7 +242,6 @@ func (b *BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
 	return b.iter
 }
 
-
 // field represents a field in a document.
 type field struct {
 	Value any
@@ -321,7 +320,7 @@ func (t *TopLevelValues[id]) IsCompatible(backend string) bool {
 
 // check interfaces
 var (
-	_ Provider = (*Values[string])(nil)
+	_ Provider          = (*Values[string])(nil)
 	_ BenchmarkProvider = (*BenchmarkValues)(nil)
-  _ Provider = (*TopLevelValues[string])(nil)
+	_ Provider          = (*TopLevelValues[string])(nil)
 )
