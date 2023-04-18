@@ -61,7 +61,9 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
 		case float64, int32, int64:
+			// projection treats 0 as false and any other value as true
 			comparison := types.Compare(value, int32(0))
+
 			if comparison != types.Equal {
 				result = true
 			}
