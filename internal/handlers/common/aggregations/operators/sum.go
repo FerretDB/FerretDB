@@ -23,43 +23,43 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// sum represents $sum accumulator for $group.
+// sum represents $sum aggregation operator.
 type sum struct {
 	expression types.Expression
 	number     any
 }
 
-// newSum creates a new $sum accumulator for $group.
-func newSum(accumulation *types.Document) (Accumulator, error) {
-	expr := must.NotFail(accumulation.Get("$sum"))
-	accumulator := new(sum)
+// newSum creates a new $sum aggregation operator.
+func newSum(expr *types.Document) (Operator, error) {
+	expression := must.NotFail(expr.Get("$sum"))
+	operator := new(sum)
 
-	switch expr := expr.(type) {
+	switch expr := expression.(type) {
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
-			"The $sum accumulator is a unary operator",
-			"$sum (accumulator)",
+			"The $sum operator is a unary operator",
+			"$sum (operator)",
 		)
 	case float64:
-		accumulator.number = expr
+		operator.number = expr
 	case string:
 		var err error
-		if accumulator.expression, err = types.NewExpression(expr); err != nil {
+		if operator.expression, err = types.NewExpression(expr); err != nil {
 			// $sum returns 0 on non-existent field.
-			accumulator.number = int32(0)
+			operator.number = int32(0)
 		}
 	case int32, int64:
-		accumulator.number = expr
+		operator.number = expr
 	default:
-		accumulator.number = int32(0)
+		operator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}
 
-	return accumulator, nil
+	return operator, nil
 }
 
-// Accumulate implements Accumulator interface.
+// Accumulate implements Operator interface.
 func (a *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	if a.expression != nil {
 		var values []any
@@ -91,5 +91,5 @@ func (a *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Docu
 
 // check interfaces
 var (
-	_ Accumulator = (*sum)(nil)
+	_ Operator = (*sum)(nil)
 )

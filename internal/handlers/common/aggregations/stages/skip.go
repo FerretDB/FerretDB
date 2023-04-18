@@ -27,8 +27,8 @@ type skip struct {
 	value int64
 }
 
-// NewSkip creates a new $skip stage.
-func NewSkip(stage *types.Document) (Stage, error) {
+// newSkip creates a new $skip stage.
+func newSkip(stage *types.Document) (Stage, error) {
 	value, err := stage.Get("$skip")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -19,7 +19,7 @@ import (
 	"math/big"
 )
 
-// sumNumbers accumulate numbers and returns the result of summation.
+// SumNumbers accumulate numbers and returns the result of summation.
 // The result has the same type as the input, except when the result
 // cannot be presented accurately. Then int32 is converted to int64,
 // and int64 is converted to float64. It ignores non-number values.

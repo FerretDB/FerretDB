@@ -53,14 +53,14 @@ type Stage interface {
 // aggregationStages maps all supported aggregation stages.
 var aggregationStages = map[string]newStageFunc{
 	// sorted alphabetically
-	"$collStats": NewCollStats,
-	"$count":     NewCount,
-	"$group":     NewGroup,
-	"$limit":     NewLimit,
-	"$match":     NewMatch,
-	"$skip":      NewSkip,
-	"$sort":      NewSort,
-	"$unwind":    NewUnwind,
+	"$collStats": newCollStats,
+	"$count":     newCount,
+	"$group":     newGroup,
+	"$limit":     newLimit,
+	"$match":     newMatch,
+	"$skip":      newSkip,
+	"$sort":      newSort,
+	"$unwind":    newUnwind,
 	// please keep sorted alphabetically
 }
 

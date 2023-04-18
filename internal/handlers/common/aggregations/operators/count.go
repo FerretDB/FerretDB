@@ -22,12 +22,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// count represents $count accumulator for $group.
+// count represents $count operator.
 type count struct{}
 
-// newCount creates a new $count operator for $group.
-func newCount(accumulation *types.Document) (Accumulator, error) {
-	expression, err := common.GetRequiredParam[*types.Document](accumulation, "$count")
+// newCount creates a new $count aggregation operator.
+func newCount(expr *types.Document) (Operator, error) {
+	expression, err := common.GetRequiredParam[*types.Document](expr, "$count")
 	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
@@ -39,12 +39,12 @@ func newCount(accumulation *types.Document) (Accumulator, error) {
 	return new(count), nil
 }
 
-// Accumulate implements Accumulator interface.
+// Accumulate implements Operator interface.
 func (c *count) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	return int32(len(grouped)), nil
 }
 
 // check interfaces
 var (
-	_ Accumulator = (*count)(nil)
+	_ Operator = (*count)(nil)
 )

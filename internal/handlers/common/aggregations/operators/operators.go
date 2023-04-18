@@ -21,17 +21,17 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// newAccumulatorFunc is a type for a function that creates an accumulator.
-type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
+// newOperatorFunc is a type for a function that creates an operator.
+type newOperatorFunc func(expression *types.Document) (Operator, error)
 
-// Accumulator is a common interface for accumulation.
-type Accumulator interface {
+// Operator is a common interface for aggregation operators.
+type Operator interface {
 	// Accumulate documents and returns the result of applying accumulation operator.
 	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
 }
 
-// Accumulators maps all supported $group accumulators.
-var Accumulators = map[string]newAccumulatorFunc{
+// GroupOperators maps supported operators of $group aggregation stage.
+var GroupOperators = map[string]newOperatorFunc{
 	// sorted alphabetically
 	"$count": newCount,
 	"$sum":   newSum,

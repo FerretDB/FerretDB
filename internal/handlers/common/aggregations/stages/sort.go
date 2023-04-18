@@ -29,8 +29,8 @@ type sort struct {
 	fields *types.Document
 }
 
-// NewSort creates a new $sort stage.
-func NewSort(stage *types.Document) (Stage, error) {
+// newSort creates a new $sort stage.
+func newSort(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

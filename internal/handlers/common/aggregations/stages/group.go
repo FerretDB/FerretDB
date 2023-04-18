@@ -47,8 +47,8 @@ type groupBy struct {
 	outputField string
 }
 
-// NewGroup creates a new $group stage.
-func NewGroup(stage *types.Document) (Stage, error) {
+// newGroup creates a new $group stage.
+func newGroup(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -100,7 +100,7 @@ func NewGroup(stage *types.Document) (Stage, error) {
 
 		operator := accumulation.Command()
 
-		newAccumulator, ok := operators.Accumulators[operator]
+		newAccumulator, ok := operators.GroupOperators[operator]
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

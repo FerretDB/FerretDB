@@ -27,8 +27,8 @@ type match struct {
 	filter *types.Document
 }
 
-// NewMatch creates a new $match stage.
-func NewMatch(stage *types.Document) (Stage, error) {
+// newMatch creates a new $match stage.
+func newMatch(stage *types.Document) (Stage, error) {
 	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

@@ -37,8 +37,8 @@ type storageStats struct {
 	scale int32
 }
 
-// NewCollStats creates a new $collStats stage.
-func NewCollStats(stage *types.Document) (Stage, error) {
+// newCollStats creates a new $collStats stage.
+func newCollStats(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

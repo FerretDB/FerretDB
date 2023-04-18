@@ -27,8 +27,8 @@ type limit struct {
 	limit int64
 }
 
-// NewLimit creates a new $limit stage.
-func NewLimit(stage *types.Document) (Stage, error) {
+// newLimit creates a new $limit stage.
+func newLimit(stage *types.Document) (Stage, error) {
 	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

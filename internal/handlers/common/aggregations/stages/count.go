@@ -29,8 +29,8 @@ type count struct {
 	field string
 }
 
-// NewCount creates a new $count stage.
-func NewCount(stage *types.Document) (Stage, error) {
+// newCount creates a new $count stage.
+func newCount(stage *types.Document) (Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
