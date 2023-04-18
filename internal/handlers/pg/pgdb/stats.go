@@ -159,7 +159,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		SELECT
 			COALESCE(reltuples, 0)                   AS CountRows,
 			COALESCE(pg_total_relation_size(oid), 0) AS SizeTotal,
-			COALESCE(pg_table_size(oid), 0) 	     AS SizeTable,
+			COALESCE(pg_table_size(oid), 0)          AS SizeTable,
 			COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
 		FROM pg_class 
 		WHERE oid = %s::regclass`,
