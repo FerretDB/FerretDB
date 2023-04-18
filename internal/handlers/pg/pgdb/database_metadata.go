@@ -186,7 +186,7 @@ func (ms *metadataStorage) tableNameExists(ctx context.Context, tableName string
 	iterParams := &iteratorParams{
 		schema:    ms.db,
 		table:     dbMetadataTableName,
-		filter:    must.NotFail(types.NewDocument("table", tableName)),
+		filter:    must.NotFail(types.NewDocument("table", collectionNameToTableName(tableName))),
 		forUpdate: false,
 	}
 
@@ -199,15 +199,15 @@ func (ms *metadataStorage) tableNameExists(ctx context.Context, tableName string
 
 	for {
 		_, doc, err := iter.Next()
-		if doc.Has(tableName) { // XXX why are we panicking here...
-			return true, nil
-		}
-
 		switch {
 		case err == nil:
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
 			return false, nil
+		}
+
+		if doc.Has(tableName) {
+			return true, nil
 		}
 	}
 }
@@ -232,21 +232,17 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 		return lazyerrors.Error(err)
 	}
 
-	var tableName = collectionNameToTableName(to)
-
 	var i *uint32
-
-	for {
-		exists, err := ms.tableNameExists(ctx, tableName)
+	if exists, err := ms.tableNameExists(ctx, to); exists {
 		if err != nil {
-			return err
+			panic(err)
 		}
 
-		if !exists {
-			break
-		}
+		tableName := fmt.Sprintf(
+			"%s%d", collectionNameToTableName(to), atomic.AddUint32(i, 1),
+		)
 
-		tableName = fmt.Sprintf("%s%d", tableName, atomic.AddUint32(i, 1))
+		metadata.table = tableName
 	}
 
 	metadata.collection = to
