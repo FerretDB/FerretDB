@@ -166,10 +166,10 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("pgdb.checkConnection: %w", err)
 		}
+
 		if len(values) < 2 {
 			return fmt.Errorf("pgdb.checkConnection: invalid row: %#v", values)
 		}
-
 		name := values[0].(string)
 		setting := values[1].(string)
 
