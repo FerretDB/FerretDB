@@ -276,4 +276,5 @@ func (t *TopLevelValues[id]) IsCompatible(backend string) bool {
 // check interfaces
 var (
 	_ Provider = (*Values[string])(nil)
+	_ Provider = (*TopLevelValues[string])(nil)
 )
