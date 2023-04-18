@@ -105,8 +105,6 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 // If f returns (possibly wrapped) *transactionConflictError, the transaction is retried multiple times with delays.
 // If the transaction still fails after that, the last error is returned.
 func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) error {
-	// TODO use exponential backoff with jitter instead
-	// https://github.com/FerretDB/FerretDB/issues/1720
 	const (
 		retriesMax    = 30
 		retryDelayMax = 200 * time.Millisecond

@@ -43,7 +43,6 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 	// but keep in mind that it can be created in concurrent connection.
 	// If we detect that other creation is in flight, we give up to retriesMax attempts to create the database.
 	// TODO https://github.com/FerretDB/FerretDB/issues/1341
-	// TODO https://github.com/FerretDB/FerretDB/issues/1720
 	const (
 		retriesMax    = 5
 		retryDelayMax = 200 * time.Millisecond
