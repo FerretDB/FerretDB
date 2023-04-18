@@ -60,19 +60,19 @@ func newSum(expr *types.Document) (Operator, error) {
 }
 
 // Accumulate implements Operator interface.
-func (a *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
-	if a.expression != nil {
+func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+	if s.expression != nil {
 		var values []any
 
 		for _, doc := range grouped {
-			v := a.expression.Evaluate(doc)
+			v := s.expression.Evaluate(doc)
 			values = append(values, v)
 		}
 
 		return aggregations.SumNumbers(values...), nil
 	}
 
-	switch number := a.number.(type) {
+	switch number := s.number.(type) {
 	case float64, int32, int64:
 		// Below is equivalent of len(grouped)*number,
 		// with conversion handling upon overflow of int32 and int64.

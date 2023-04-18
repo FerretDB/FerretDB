@@ -26,7 +26,7 @@ type newOperatorFunc func(expression *types.Document) (Operator, error)
 
 // Operator is a common interface for aggregation operators.
 type Operator interface {
-	// Accumulate documents and returns the result of applying accumulation operator.
+	// Accumulate documents and returns the result of applying operator.
 	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
 }
 
