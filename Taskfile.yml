@@ -217,8 +217,8 @@ tasks:
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
 
-  bench-short:
-    desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
+  bench-unit-short:
+    desc: "Benchmark internal package for about 25 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
       - echo 'Running five functions for {{.BENCHTIME}} each...'

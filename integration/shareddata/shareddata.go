@@ -21,6 +21,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // unset represents a field that should not be set.
@@ -197,7 +200,50 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	return slices.Contains(values.backends, backend)
 }
 
+// BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
+// It also calculates checksum of all provided documents.
+type BenchmarkProvider interface {
+	// Name returns benchmark provider name.
+	Name() string
+
+	// Hash returns actual hash of all provider documents.
+	// It should be called after closing iterator.
+	Hash() string
+
+	// Docs returns iterator that returns all documents from provider.
+	// They should be always in deterministic order.
+	// The iterator calculates the checksum of all documents on go.
+	Docs() iterator.Interface[struct{}, bson.D]
+}
+
+// BenchmarkValues returns shared data documents for benchmark in deterministic order.
+type BenchmarkValues struct {
+	// iter returns all documents in deterministic order.
+	iter *valuesIterator
+
+	// name represents the name of the benchmark values set.
+	name string
+}
+
+// Name implements BenchmarkProvider interface.
+func (b *BenchmarkValues) Name() string {
+	return b.name
+}
+
+// Hash implements BenchmarkProvider interface.
+// It returns actual hash of all documents produced by BenchmarkValues.
+// It will panic if iterator was not closed.
+func (b *BenchmarkValues) Hash() string {
+	return must.NotFail(b.iter.Hash())
+}
+
+// Docs implements BenchmarkProvider interface.
+func (b *BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
+	return b.iter
+}
+
 // check interfaces
 var (
-	_ Provider = (*Values[string])(nil)
+	_ Provider          = (*Values[string])(nil)
+	_ BenchmarkProvider = (*BenchmarkValues)(nil)
 )
