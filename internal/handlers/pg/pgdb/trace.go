@@ -24,23 +24,30 @@ import (
 
 var tracer = otel.Tracer("internal/handlers/pg/pgdb")
 
-type DebugTracer struct{}
+// debugTracer implements pgx.QueryTracer. It is used to add traces to Query,
+// QueryRow, and Exec calls in debug builds.
+type debugTracer struct{}
 
-func (t *DebugTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryStartData) context.Context {
+// TraceQueryStart adds a span to Query, QueryRow, and Exec calls.
+func (t *debugTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryStartData) context.Context {
 	ctx, _ = tracer.Start(ctx, "TraceQueryStart")
 	return ctx
 }
 
-func (t *DebugTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryEndData) {
+// TraceQueryEnd ends the span started by TraceQueryStart.
+func (t *debugTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryEndData) {
 	span := trace.SpanFromContext(ctx)
 	span.End()
 }
 
-type MultiQueryTracer struct {
+// multiQueryTracer implements pgx.QueryTracer. It can be used to add
+// multiple tracers.
+type multiQueryTracer struct {
 	Tracers []pgx.QueryTracer
 }
 
-func (m *MultiQueryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+// TraceQueryStart starts all the tracers.
+func (m *multiQueryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	for _, t := range m.Tracers {
 		ctx = t.TraceQueryStart(ctx, conn, data)
 	}
@@ -48,7 +55,8 @@ func (m *MultiQueryTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, 
 	return ctx
 }
 
-func (m *MultiQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+// TraceQueryEnd ends all the tracers.
+func (m *multiQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
 	for _, t := range m.Tracers {
 		t.TraceQueryEnd(ctx, conn, data)
 	}

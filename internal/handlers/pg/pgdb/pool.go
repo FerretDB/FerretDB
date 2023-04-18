@@ -105,10 +105,10 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 	}
 
 	if debugbuild.Enabled {
-		tracers = append(tracers, &DebugTracer{})
+		tracers = append(tracers, new(debugTracer))
 	}
 
-	config.ConnConfig.Tracer = &MultiQueryTracer{
+	config.ConnConfig.Tracer = &multiQueryTracer{
 		Tracers: tracers,
 	}
 
