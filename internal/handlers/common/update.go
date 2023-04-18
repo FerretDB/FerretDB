@@ -407,8 +407,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
-		switch err {
-		case errUnexpectedLeftOpType:
+		switch {
+		case errors.Is(err, errUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -417,7 +417,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					incValue,
 				),
 			)
-		case errUnexpectedRightOpType:
+		case errors.Is(err, errUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -433,7 +433,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errLongExceeded:
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -442,7 +442,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errIntExceeded:
+		case errors.Is(err, errIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -452,7 +452,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				),
 			)
 		default:
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 	}
 
@@ -734,7 +734,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceeded):
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(

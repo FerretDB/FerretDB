@@ -29,6 +29,8 @@ slug: /diff/ # referenced in README.md and beacon
    * database name cannot contain capital letters;
 9. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
     The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
+10. FerretDB offers the same validation rules for the `scale` parameter in both the `collStats` and `dbStats` commands.
+    If an invalid `scale` value is provided in the `dbStats` command, the same error codes will be triggered as with the `collStats` command.
 
 If you encounter some other difference in behavior,
 please [join our community](/#community) to report a problem.

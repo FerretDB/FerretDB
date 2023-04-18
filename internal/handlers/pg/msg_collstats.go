@@ -50,12 +50,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
-	var scale int32
+	scale := int32(1)
 
-	scale, err = common.GetOptionalPositiveNumber(document, "scale")
-	if err != nil || scale == 0 {
-		scale = 1
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
+			return nil, err
+		}
 	}
 
 	stats, err := dbPool.Stats(ctx, db, collection)

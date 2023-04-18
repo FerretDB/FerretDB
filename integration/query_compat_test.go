@@ -318,6 +318,11 @@ func TestQueryCompatSkip(t *testing.T) {
 			optSkip:    pointer.ToInt64(math.MaxInt64),
 			resultType: emptyResult,
 		},
+		"MinInt64": {
+			filter:     bson.D{},
+			optSkip:    pointer.ToInt64(math.MinInt64),
+			resultType: emptyResult,
+		},
 	}
 
 	testQueryCompat(t, testCases)
