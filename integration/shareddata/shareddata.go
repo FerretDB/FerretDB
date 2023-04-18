@@ -81,8 +81,6 @@ func AllProviders() Providers {
 		Mixed,
 		// TODO https://github.com/FerretDB/FerretDB/issues/2291
 		// ArrayAndDocuments,
-
-		TopLevelFieldsIntegers,
 	}
 
 	// check that names are unique and randomize order
@@ -199,8 +197,22 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	return slices.Contains(values.backends, backend)
 }
 
-// fields is a map of field name -> value.
-type fields map[string]any
+type field struct {
+	Key   string
+	Value any
+}
+
+// Fields is a map of field name -> value.
+type Fields []field
+
+func NewTopLevelFieldsProvider[id comparable](name string, backends []string, validators map[string]map[string]any, data map[id]Fields) *TopLevelValues[id] {
+	return &TopLevelValues[id]{
+		name:       name,
+		backends:   backends,
+		validators: validators,
+		data:       data,
+	}
+}
 
 // TopLevelValues stores shared data documents as {"_id": key, "field1": value1, "field2": value2, ...} documents.
 //
@@ -209,7 +221,7 @@ type TopLevelValues[id comparable] struct {
 	name       string
 	backends   []string
 	validators map[string]map[string]any // backend -> validator name -> validator
-	data       map[id]fields
+	data       map[id]Fields
 }
 
 // Name implements Provider interface.
@@ -244,8 +256,8 @@ func (t *TopLevelValues[id]) Docs() []bson.D {
 
 		fields := t.data[id]
 
-		for key, field := range fields {
-			doc = append(doc, bson.E{Key: key, Value: field})
+		for _, field := range fields {
+			doc = append(doc, bson.E{Key: field.Key, Value: field.Value})
 		}
 
 		res = append(res, doc)

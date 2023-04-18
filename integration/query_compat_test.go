@@ -46,13 +46,18 @@ type queryCompatTestCase struct {
 	skipForTigris string // skip test for Tigris
 }
 
-// testQueryCompat tests query compatibility test cases.
-func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]queryCompatTestCase) {
 	t.Helper()
+
+	require.NotEmpty(t, providers)
 
 	// Use shared setup because find queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: providers,
+	})
+
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -175,6 +180,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 		})
 	}
+}
+
+// testQueryCompat tests query compatibility test cases.
+func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+	t.Helper()
+
+	testQueryCompatWithProviders(t, shareddata.AllProviders(), testCases)
 }
 
 func TestQueryCompatFilter(t *testing.T) {

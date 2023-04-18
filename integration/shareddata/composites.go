@@ -382,28 +382,3 @@ var ArrayDocuments = &Values[string]{
 		},
 	},
 }
-
-// TopLevelFieldsIntegers contains documents with several top level fields with integer values.
-var TopLevelFieldsIntegers = &TopLevelValues[string]{
-	name:     "TopLevelFieldsIntegers",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"foo": {"type": "integer", "format": "int32"},
-					"bar": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
-	data: map[string]fields{
-		"int32-two": {
-			"foo": int32(1),
-			"bar": int32(2),
-		},
-	},
-}
