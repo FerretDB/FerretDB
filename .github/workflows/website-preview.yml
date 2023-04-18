@@ -35,7 +35,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'blog/marketing'))
 
     environment:
-      name: cloudflare-dev-blog
+      name: cloudflare-dev
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
@@ -57,7 +57,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: website-preview
+          cache-key: blog-preview
 
       - name: Install Task
         run: go generate -x
@@ -95,7 +95,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'documentation')
 
     environment:
-      name: cloudflare-dev-docs
+      name: cloudflare-dev
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
@@ -122,7 +122,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: website-preview
+          cache-key: docs-preview
 
       - name: Install Task
         run: go generate -x
