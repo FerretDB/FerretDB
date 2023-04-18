@@ -237,7 +237,7 @@ Before submitting a pull request, please make sure that:
      * dot notation for existing and non-existent paths.
 2. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
-   new and changed top-level declarations (functions, types, etc).
+   new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).
 3. Comments are rendered correctly in the `task godocs` output.
 4. `task all` passes.
 
