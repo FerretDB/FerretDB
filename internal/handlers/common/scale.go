@@ -24,75 +24,65 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// GetSkipParam validates the given skip value for find and count commands.
+// GetScaleParam validates the given scale value for collStats and dbStats command.
 //
-// If the value is valid, it returns its int64 representation,
+// If the value is valid, it returns its int32 representation,
 // otherwise it returns a command error with the given command being mentioned.
-func GetSkipParam(command string, value any) (int64, error) {
-	skipValue, err := GetWholeNumberParam(value)
+func GetScaleParam(command string, value any) (int32, error) {
+	scaleValue, err := GetWholeNumberParam(value)
 
 	if err == nil {
-		if skipValue < 0 {
-			return 0, commonerrors.NewCommandError(
+		if scaleValue <= 0 {
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", skipValue),
+				fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", scaleValue),
+				"scale",
 			)
 		}
 
-		return skipValue, nil
+		if scaleValue > math.MaxInt32 {
+			return math.MaxInt32, nil
+		}
+
+		return int32(scaleValue), nil
 	}
 
 	switch {
 	case errors.Is(err, errUnexpectedType):
 		if _, ok := value.(types.NullType); ok {
-			return 0, nil
+			return 1, nil
 		}
 
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
-				`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+				`BSON field '%s.scale' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
 				command, AliasFromType(value),
 			),
-			"skip",
+			"scale",
 		)
 	case errors.Is(err, errNotWholeNumber):
 		if math.Signbit(value.(float64)) {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
+				fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", int(math.Ceil(value.(float64)))),
 			)
 		}
 
-		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
-		return int64(math.Floor(value.(float64))), nil
+		// for non-integer numbers, scale value is rounded to the greatest integer value less than the given value.
+		return int32(math.Floor(value.(float64))), nil
 
 	case errors.Is(err, errLongExceededPositive):
-		return math.MaxInt64, nil
+		return math.MaxInt32, nil
 
 	case errors.Is(err, errLongExceededNegative):
-		return 0, commonerrors.NewCommandError(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
+			fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", math.MinInt32),
+			"scale",
 		)
 
 	default:
 		return 0, lazyerrors.Error(err)
-	}
-}
-
-// SkipDocuments returns a subslice of given documents according to the given skip value.
-func SkipDocuments(docs []*types.Document, skip int64) ([]*types.Document, error) {
-	switch {
-	case skip == 0:
-		return docs, nil
-	case skip > 0:
-		if int64(len(docs)) < skip {
-			return []*types.Document{}, nil
-		}
-
-		return docs[skip:], nil
-	default:
-		return nil, lazyerrors.Errorf("unexpected skip value: %d", skip)
 	}
 }

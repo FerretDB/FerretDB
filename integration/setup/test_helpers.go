@@ -68,5 +68,5 @@ func TigrisOnlyWithReason(tb testing.TB, reason string) {
 
 // IsPushdownDisabled returns if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
-	return *disablePushdownF
+	return *disableFilterPushdownF
 }
