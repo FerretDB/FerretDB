@@ -18,7 +18,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -99,7 +99,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = aggregations.GetPushdownQuery(stagesDocs)
 	}
 
-	if h.DisablePushdown {
+	if h.DisableFilterPushdown {
 		qp.Filter = nil
 	}
 

@@ -16,6 +16,10 @@ linters-settings:
       - github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb
       - github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson
       - github.com/FerretDB/FerretDB/internal/types/fjson
+      - github.com/jackc/pgconn
+      - github.com/jackc/pgproto3
+      - github.com/jackc/pgtype
+      - github.com/jackc/pgx/v4
       - github.com/tigrisdata/tigris-client-go/api/client/v1/api
       - github.com/tigrisdata/tigris-client-go/filter # We use our own filter without generics (see tigris/tigrisdb/filter)
   exhaustive:
@@ -78,6 +82,8 @@ linters-settings:
         alias: api
       - pkg: github.com/prometheus/client_model/go
         alias: dto
+      - pkg: github.com/jackc/pgx-zap
+        alias: zapadapter
   # ineffassign
   lll:
     line-length: 130

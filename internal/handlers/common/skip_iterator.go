@@ -19,15 +19,16 @@ import (
 	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // SkipIterator returns an iterator that skips a number of documents returned by the underlying iterator.
+// It will be added to the given closer.
 //
 // Next method returns the next document after skipping a number of documents.
 //
 // Close method closes the underlying iterator.
-// For that reason, there is no need to track both iterators.
-func SkipIterator(iter types.DocumentsIterator, skip int64) types.DocumentsIterator {
+func SkipIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, skip int64) types.DocumentsIterator {
 	switch {
 	case skip == 0:
 		return iter
@@ -35,10 +36,13 @@ func SkipIterator(iter types.DocumentsIterator, skip int64) types.DocumentsItera
 		// handled by GetSkipParam
 		panic(fmt.Sprintf("invalid skip value: %d", skip))
 	default:
-		return &skipIterator{
+		res := &skipIterator{
 			iter: iter,
 			skip: uint32(skip),
 		}
+		closer.Add(res)
+
+		return res
 	}
 }
 

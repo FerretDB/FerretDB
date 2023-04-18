@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -106,7 +106,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := execDelete(ctx, &execDeleteParams{dbPool, &qp, h.DisablePushdown, limited})
+		del, err := execDelete(ctx, &execDeleteParams{dbPool, &qp, h.DisableFilterPushdown, limited})
 		if err == nil {
 			deleted += del
 			continue
@@ -178,10 +178,10 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 // execDeleteParams contains parameters for execDelete function.
 type execDeleteParams struct {
-	dbPool          *pgdb.Pool
-	qp              *pgdb.QueryParams
-	disablePushdown bool
-	limited         bool
+	dbPool                *pgdb.Pool
+	qp                    *pgdb.QueryParams
+	disableFilterPushdown bool
+	limited               bool
 }
 
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
@@ -194,7 +194,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
 	filter := dp.qp.Filter
 
-	if dp.disablePushdown {
+	if dp.disableFilterPushdown {
 		dp.qp.Filter = nil
 	}
 
