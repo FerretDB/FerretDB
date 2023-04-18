@@ -58,9 +58,9 @@ func CalculateServerStats(ctx context.Context, tx pgx.Tx) (*ServerStats, error) 
 
 	// Count the number of collections in all FerretDB databases excluding FerretDB metadata tables (by reserved prefix).
 	sql := `
-	SELECT COUNT(tablename)
-	FROM pg_tables
-	WHERE tablename NOT LIKE $1`
+		SELECT COUNT(tablename)
+		FROM pg_tables
+		WHERE tablename NOT LIKE $1`
 	args := []any{reservedPrefix + "%"}
 	row := tx.QueryRow(ctx, sql, args...)
 
@@ -109,16 +109,16 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	// In this query we select all the tables in the given schema, but we exclude FerretDB metadata table (by reserved prefix).
 	sql = `
-	SELECT 
-	    COUNT(t.tablename)                       AS CountTables,
-		COUNT(i.indexname)                       AS CountIndexes,
-		COALESCE(SUM(c.reltuples), 0)            AS CountRows,
-		COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
-		COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
-	FROM pg_tables AS t
-		LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
-		LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
-	WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
+		SELECT 
+			COUNT(t.tablename)                       AS CountTables,
+			COUNT(i.indexname)                       AS CountIndexes,
+			COALESCE(SUM(c.reltuples), 0)            AS CountRows,
+			COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
+			COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
+		FROM pg_tables AS t
+			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
+			LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
+		WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
 
 	row = tx.QueryRow(ctx, sql, args...)
@@ -156,13 +156,13 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	}
 
 	sql = fmt.Sprintf(`
-	SELECT
-		COALESCE(reltuples, 0)                   AS CountRows,
-		COALESCE(pg_total_relation_size(oid), 0) AS SizeTotal,
-		COALESCE(pg_table_size(oid), 0) 	     AS SizeTable,
-		COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
-	FROM pg_class 
-	WHERE oid = %s::regclass`,
+		SELECT
+			COALESCE(reltuples, 0)                   AS CountRows,
+			COALESCE(pg_total_relation_size(oid), 0) AS SizeTotal,
+			COALESCE(pg_table_size(oid), 0) 	     AS SizeTable,
+			COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
+		FROM pg_class 
+		WHERE oid = %s::regclass`,
 		quoteString(db+"."+metadata.table),
 	)
 	row := tx.QueryRow(ctx, sql)
@@ -172,9 +172,9 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	}
 
 	sql = `
-	SELECT COUNT(indexname)
-	FROM pg_indexes
-	WHERE schemaname = $1 AND tablename = $2`
+		SELECT COUNT(indexname)
+		FROM pg_indexes
+		WHERE schemaname = $1 AND tablename = $2`
 	args := []any{db, metadata.table}
 	row = tx.QueryRow(ctx, sql, args...)
 
