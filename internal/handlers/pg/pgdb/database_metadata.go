@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -180,32 +181,39 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	return metadata.table, nil
 }
 
-// func (ms *metadataStorage) checkTableName(tableName string) {
-// 	iterParams := &iteratorParams{
-// 		schema:    ms.db,
-// 		table:     dbMetadataTableName,
-// 		filter:    must.NotFail(types.NewDocument("table", tableName)),
-// 		forUpdate: false,
-// 	}
+// tableNameExists returns true if the table name already exists for metadata.
+func (ms *metadataStorage) tableNameExists(ctx context.Context, tableName string) (bool, error) {
+	iterParams := &iteratorParams{
+		schema:    ms.db,
+		table:     dbMetadataTableName,
+		filter:    must.NotFail(types.NewDocument("table", tableName)),
+		forUpdate: false,
+	}
 
-// 	iter, err := buildIterator(ctx, ms.tx, iterParams)
-// 	if err != nil {
-// 		return nil, lazyerrors.Error(err)
-// 	}
+	iter, err := buildIterator(ctx, ms.tx, iterParams)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
-// 	//
+	defer iter.Close()
 
-// }
+	for {
+		_, doc, err := iter.Next()
+		if doc.Has(tableName) { // XXX why are we panicking here...
+			return true, nil
+		}
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			return false, nil
+		}
+	}
+}
 
 // renameCollection renames metadataStorage.collection.
 func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
-
-	// suggestedTableName := collectionNameToTableName(to)
-	// // check that suggestedTableName is not used yet
-	// // getMetadataByTableName(suggestedTableName)
-	// // suggestedTableName + `a`
-	// // getMetadataByTableName(suggestedTableName)
-
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -216,7 +224,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 	}
 
 	// if the metadata exists for to, we return ErrAlreadyExist.
-	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, true); !errors.Is(err, ErrTableNotExist) {
+	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, false); !errors.Is(err, ErrTableNotExist) {
 		if err == nil {
 			return ErrAlreadyExist
 		}
@@ -224,18 +232,35 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 		return lazyerrors.Error(err)
 	}
 
-	if len(metadata.collection) > maxTableNameLength {
-		return ErrInvalidCollectionName
+	var tableName = collectionNameToTableName(to)
+
+	var i *uint32
+
+	for {
+		exists, err := ms.tableNameExists(ctx, tableName)
+		if err != nil {
+			return err
+		}
+
+		if !exists {
+			break
+		}
+
+		tableName = fmt.Sprintf("%s%d", tableName, atomic.AddUint32(i, 1))
 	}
 
 	metadata.collection = to
+
+	if len(metadata.collection) > maxTableNameLength {
+		return ErrInvalidCollectionName
+	}
 
 	return ms.set(ctx, metadata)
 }
 
 // get returns metadata stored in the metadata table.
 //
-// If such metadata don't exist, it returns ErrTableNotExist.
+// If such metadata does not exist, it returns ErrTableNotExist.
 func (ms *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, error) {
 	metadataExist, err := tableExists(ctx, ms.tx, ms.db, dbMetadataTableName)
 	if err != nil {
@@ -382,7 +407,7 @@ func metadataToDocument(metadata *metadata) *types.Document {
 
 // remove removes metadata.
 //
-// If such metadata don't exist, it doesn't return an error.
+// If such metadata does not exist, it doesn't return an error.
 func (ms *metadataStorage) remove(ctx context.Context) error {
 	_, err := deleteByIDs(ctx, ms.tx, execDeleteParams{
 		schema: ms.db,
