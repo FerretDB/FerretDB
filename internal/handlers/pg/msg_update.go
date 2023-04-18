@@ -76,13 +76,15 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.CreateCollectionIfNotExists(ctx, tx, qp.DB, qp.Collection)
 	})
-	if err != nil {
-		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
-			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
-			msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
-			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
-		}
-		return nil, err
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	var matched, modified int32
@@ -143,7 +145,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			qp.Filter = q
 
-			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
+			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
 			if err != nil {
 				return err
 			}
@@ -203,7 +205,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	res := must.NotFail(types.NewDocument(

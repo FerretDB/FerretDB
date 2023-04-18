@@ -39,17 +39,20 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	command := document.Command()
+
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
-	var scale int32
+	scale := int32(1)
 
-	scale, err = common.GetOptionalPositiveNumber(document, "scale")
-	if err != nil || scale == 0 {
-		scale = 1
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
+			return nil, err
+		}
 	}
 
 	var stats *pgdb.DBStats

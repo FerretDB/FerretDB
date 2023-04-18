@@ -16,20 +16,24 @@ package common
 
 import (
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // FilterIterator returns an iterator that filters out documents that don't match the filter.
+// It will be added to the given closer.
 //
 // Next method returns the next document that matches the filter.
 //
 // Close method closes the underlying iterator.
-// For that reason, there is no need to track both iterators.
-func FilterIterator(iter types.DocumentsIterator, filter *types.Document) types.DocumentsIterator {
-	return &filterIterator{
+func FilterIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, filter *types.Document) types.DocumentsIterator {
+	res := &filterIterator{
 		iter:   iter,
 		filter: filter,
 	}
+	closer.Add(res)
+
+	return res
 }
 
 // filterIterator is returned by FilterIterator.
