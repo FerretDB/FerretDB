@@ -136,7 +136,9 @@ The `internal` subpackages contain most of the FerretDB code:
   BSON type information is preserved either in the schema (where possible) or in the values themselves.
   It is used by `tigris` handler.
 
-Those packages are tested by "unit" tests that are placed inside those packages.
+#### Running tests
+
+`internal` packages are tested by "unit" tests that are placed inside those packages.
 Some of them are truly hermetic and test only the package that contains them;
 you can run those "short" tests with `go test -short` or `task test-unit-short`,
 but that's typically not required.
