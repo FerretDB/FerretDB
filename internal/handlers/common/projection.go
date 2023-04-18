@@ -148,7 +148,7 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 	docWithoutID := doc.DeepCopy()
 	docWithoutID.Remove("_id")
 
-	projectedWithoutID, err := projectDoc(docWithoutID, projectionWithoutID, inclusion)
+	projectedWithoutID, err := projectDocumentWithoutID(docWithoutID, projectionWithoutID, inclusion)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 	return projected, nil
 }
 
-func projectDoc(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
+func projectDocumentWithoutID(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
 	projected := types.MakeDocument(0)
 
 	if !inclusion {
