@@ -303,7 +303,7 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 		}
 
 		// convert []bson.D to []any, as mongodb requires.
-		var insertDocs []any = make([]any, len(docs))
+		insertDocs := make([]any, len(docs))
 
 		for i, doc := range docs {
 			insertDocs[i] = doc
