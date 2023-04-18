@@ -31,8 +31,8 @@ jobs:
     if: >
       contains(github.event.pull_request.labels.*.name, 'trust') &&
       !contains(github.event.pull_request.labels.*.name, 'no ci') &&
-      contains(fromJson(github.event.pull_request.labels.*.name), 'blog/engineering')
-      contains(fromJson(github.event.pull_request.labels.*.name), 'blog/marketing')
+      (contains(fromJson(github.event.pull_request.labels.*.name), 'blog/engineering') ||
+      contains(fromJson(github.event.pull_request.labels.*.name), 'blog/marketing'))
 
     environment:
       name: cloudflare-dev
