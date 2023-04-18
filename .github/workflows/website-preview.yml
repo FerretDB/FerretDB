@@ -1,5 +1,5 @@
 ---
-name: Webpage Preview
+name: Website Preview
 on:
   pull_request_target:
     types:
