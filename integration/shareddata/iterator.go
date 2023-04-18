@@ -77,7 +77,7 @@ func (iter *valuesIterator) Next() (struct{}, bson.D, error) {
 		return unused, nil, err
 	}
 
-	// write literal document with previous checksum to calculate new checksum
+	// write json representation of document to calculate hash later
 	if _, err := iter.hash.Write(jsonDoc); err != nil {
 		return unused, doc, err
 	}
