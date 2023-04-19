@@ -100,7 +100,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 
 		operator := accumulation.Command()
 
-		newAccumulator, ok := operators.GroupOperators[operator]
+		newAccumulator, ok := operators.GroupAccumulators[operator]
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

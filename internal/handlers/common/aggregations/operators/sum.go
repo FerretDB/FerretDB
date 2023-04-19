@@ -29,36 +29,36 @@ type sum struct {
 }
 
 // newSum creates a new $sum aggregation operator.
-func newSum(expr *types.Document) (Operator, error) {
-	expression := must.NotFail(expr.Get("$sum"))
-	operator := new(sum)
+func newSum(accumulation *types.Document) (Accumulator, error) {
+	expression := must.NotFail(accumulation.Get("$sum"))
+	accumulator := new(sum)
 
 	switch expr := expression.(type) {
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
-			"The $sum operator is a unary operator",
-			"$sum (operator)",
+			"The $sum accumulator is a unary accumulator",
+			"$sum (accumulator)",
 		)
 	case float64:
-		operator.number = expr
+		accumulator.number = expr
 	case string:
 		var err error
-		if operator.expression, err = types.NewExpression(expr); err != nil {
+		if accumulator.expression, err = types.NewExpression(expr); err != nil {
 			// $sum returns 0 on non-existent field.
-			operator.number = int32(0)
+			accumulator.number = int32(0)
 		}
 	case int32, int64:
-		operator.number = expr
+		accumulator.number = expr
 	default:
-		operator.number = int32(0)
+		accumulator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}
 
-	return operator, nil
+	return accumulator, nil
 }
 
-// Accumulate implements Operator interface.
+// Accumulate implements Accumulator interface.
 func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	if s.expression != nil {
 		var values []any
@@ -90,5 +90,5 @@ func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Docu
 
 // check interfaces
 var (
-	_ Operator = (*sum)(nil)
+	_ Accumulator = (*sum)(nil)
 )

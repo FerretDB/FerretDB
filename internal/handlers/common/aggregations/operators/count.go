@@ -26,7 +26,7 @@ import (
 type count struct{}
 
 // newCount creates a new $count aggregation operator.
-func newCount(expr *types.Document) (Operator, error) {
+func newCount(expr *types.Document) (Accumulator, error) {
 	expression, err := common.GetRequiredParam[*types.Document](expr, "$count")
 	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -39,12 +39,12 @@ func newCount(expr *types.Document) (Operator, error) {
 	return new(count), nil
 }
 
-// Accumulate implements Operator interface.
+// Accumulate implements Accumulator interface.
 func (c *count) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
 	return int32(len(grouped)), nil
 }
 
 // check interfaces
 var (
-	_ Operator = (*count)(nil)
+	_ Accumulator = (*count)(nil)
 )
