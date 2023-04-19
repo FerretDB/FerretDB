@@ -41,17 +41,23 @@ type queryCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
+	skipIDCheck   bool   // skip check collected IDs, use it when no ids returned from query
 	skip          string // skip test for all handlers, must have issue number mentioned
 	skipForTigris string // skip test for Tigris
 }
 
-// testQueryCompat tests query compatibility test cases.
-func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]queryCompatTestCase) {
 	t.Helper()
+
+	require.NotEmpty(t, providers)
 
 	// Use shared setup because find queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: providers,
+	})
+
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -151,8 +157,11 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 					require.NoError(t, targetCursor.All(ctx, &targetRes))
 					require.NoError(t, compatCursor.All(ctx, &compatRes))
 
-					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
-					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+					if !tc.skipIDCheck {
+						t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
+						t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
+					}
+
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
 					if len(targetRes) > 0 || len(compatRes) > 0 {
@@ -171,6 +180,13 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 			}
 		})
 	}
+}
+
+// testQueryCompat tests query compatibility test cases.
+func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
+	t.Helper()
+
+	testQueryCompatWithProviders(t, shareddata.AllProviders(), testCases)
 }
 
 func TestQueryCompatFilter(t *testing.T) {
