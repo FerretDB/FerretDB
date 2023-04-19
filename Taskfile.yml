@@ -553,7 +553,7 @@ tasks:
     desc: "Format and lint documentation"
     deps: [init-tools]
     cmds:
-      - bin/checkdocs -i "website/blog"
+      - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 

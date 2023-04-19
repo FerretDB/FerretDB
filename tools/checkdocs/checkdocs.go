@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"io"
 	"io/fs"
 	"log"
@@ -17,17 +16,18 @@ type FileSlug struct {
 }
 
 func main() {
-	dir := flag.String("i", "website/blog", "root of website blog directory")
-
-	fs, err := os.ReadDir(*dir)
+    dir := filepath.Join("website","blog")
+	fs, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	slugs := GetBlogSlugs(fs)
 	for _, slug := range slugs {
-		fo, err := os.Open(filepath.Join(*dir, slug.fileName))
+
+		fo, err := os.Open(filepath.Join(dir, slug.fileName))
 		defer fo.Close()
+        
 		if err != nil {
 			log.Fatalf("Couldn't open file: %s", slug.fileName)
 			continue
