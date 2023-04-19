@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM golang:1.20.3 AS production-build
+FROM golang:1.20.3 AS build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -65,7 +65,7 @@ FROM gcr.io/distroless/static-debian11:debug AS production
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
-COPY --from=production-build /src/bin/ferretdb /ferretdb
+COPY --from=build /src/bin/ferretdb /ferretdb
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]

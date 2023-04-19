@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM golang:1.20.3 AS development-build
+FROM golang:1.20.3 AS build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -30,6 +30,9 @@ ENV GOPATH /gocache/gopath
 ENV GOCACHE /gocache/gocache
 ENV GOMODCACHE /gocache/gomodcache
 
+# to make caching easier
+ENV GOFLAGS -modcacherw
+
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
@@ -41,18 +44,18 @@ ENV GOARM=7
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-# TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage;
-# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-RUN --mount=type=cache,target=/gocache \
-    go mod download
-
 # Do not trim paths to make debugging with delve easier.
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-RUN --mount=type=cache,target=/gocache <<EOF
+RUN --mount=type=bind,source=./tmp/docker/gocache,target=/gocache-host \
+    --mount=type=cache,target=/gocache \
+<<EOF
 set -ex
+
+cp -R /gocache-host/* /gocache
+
+go mod download
 
 RACE=false
 if test "$TARGETARCH" = "amd64" -o "$TARGETARCH" = "arm64"
@@ -71,6 +74,14 @@ bin/ferretdb --version
 EOF
 
 
+# export cache stage
+# use busybox and tar to export less files faster
+
+FROM busybox AS export-cache
+
+RUN --mount=type=cache,target=/gocache tar cf /gocache.tar gocache
+
+
 # final stage
 
 FROM golang:1.20.3 AS development
@@ -78,7 +89,7 @@ FROM golang:1.20.3 AS development
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
-COPY --from=development-build /src/bin/ferretdb /ferretdb
+COPY --from=build /src/bin/ferretdb /ferretdb
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]

@@ -123,14 +123,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore BuildKit cache
-        uses: actions/cache@v3
-        with:
-          path: tmp/docker/buildkit
-          key: packages-buildkit-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
-          restore-keys: |
-            packages-buildkit-${{ steps.setup.outputs.cache_week }}-
-
       - name: Restore Go caches
         uses: actions/cache@v3
         with:

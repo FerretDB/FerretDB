@@ -15,3 +15,5 @@
 
 # additional files for Docker images
 !build/docker
+
+!tmp/docker/gocache

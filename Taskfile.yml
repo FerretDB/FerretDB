@@ -442,17 +442,28 @@ tasks:
   docker-build:
     deps: [gen-version, docker-init]
     cmds:
+      - rm -fr tmp/docker/gocache-export
+      - mkdir -p tmp/docker/gocache
+      - echo '{{now | unixEpoch}}' > tmp/docker/gocache/cache-bust.txt
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
         --platform={{default "linux" .PLATFORM}}
-        --cache-to=type=local,mode=max,dest=tmp/docker/buildkit
-        --cache-from=type=local,src=tmp/docker/buildkit
         {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --output={{.OUTPUT}}
         .
+      - >
+        docker buildx build --builder=ferretdb
+        --file=build/docker/{{.FILE}}.Dockerfile
+        --build-arg=LABEL_VERSION={{.VERSION}}
+        --build-arg=LABEL_COMMIT={{.COMMIT}}
+        --platform={{default "linux" .PLATFORM}}
+        --target=export-cache
+        --output=type=local,dest=tmp/docker/gocache-export
+        .
+      - tar xf tmp/docker/gocache-export/gocache.tar -C tmp/docker
     vars:
       VERSION:
         sh: cat build/version/version.txt

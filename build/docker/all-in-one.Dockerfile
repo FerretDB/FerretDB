@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM golang:1.20.3 AS all-in-one-build
+FROM golang:1.20.3 AS build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -78,13 +78,13 @@ FROM postgres:15.2 AS all-in-one
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
-COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
+COPY --from=build /src/bin/ferretdb /ferretdb
 
 # all-in-one hacks start there
 
-COPY --from=all-in-one-build /src/build/docker/all-in-one/ferretdb.sh /etc/service/ferretdb/run
-COPY --from=all-in-one-build /src/build/docker/all-in-one/postgresql.sh /etc/service/postgresql/run
-COPY --from=all-in-one-build /src/build/docker/all-in-one/entrypoint.sh /entrypoint.sh
+COPY --from=build /src/build/docker/all-in-one/ferretdb.sh /etc/service/ferretdb/run
+COPY --from=build /src/build/docker/all-in-one/postgresql.sh /etc/service/postgresql/run
+COPY --from=build /src/build/docker/all-in-one/entrypoint.sh /entrypoint.sh
 
 RUN <<EOF
 set -ex
