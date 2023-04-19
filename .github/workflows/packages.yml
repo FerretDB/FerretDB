@@ -126,10 +126,10 @@ jobs:
       - name: Restore Go caches
         uses: actions/cache@v3
         with:
-          path: tmp/docker/gocache
-          key: packages-gocache-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
+          path: tmp/docker/gocaches
+          key: packages-gocaches-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
           restore-keys: |
-            packages-gocache-${{ steps.setup.outputs.cache_week }}-
+            packages-gocaches-${{ steps.setup.outputs.cache_week }}-
 
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''
