@@ -27,6 +27,7 @@ func main() {
 	slugs := GetBlogSlugs(fs)
 	for _, slug := range slugs {
 		fo, err := os.Open(filepath.Join(*dir, slug.fileName))
+		defer fo.Close()
 		if err != nil {
 			log.Fatalf("Couldn't open file: %s", slug.fileName)
 			continue
