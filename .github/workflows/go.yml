@@ -123,7 +123,7 @@ jobs:
           verbose: true
 
       - name: Coveralls Github Action
-        uses: coverallsapp/github-action@v2.1.2
+        uses: coverallsapp/github-action@v2
         with:
           flag-name: Unit
           file: cover.txt
