@@ -59,7 +59,7 @@ RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
 RACE=false
-if test "$TARGETARCH" = "amd64"
+if test "$TARGETARCH" = "amd64" -o "$TARGETARCH" = "arm64"
 then
     RACE=true
 fi

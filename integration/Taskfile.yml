@@ -4,7 +4,7 @@ version: 3
 
 vars:
   BENCHTIME: 5s
-  RACEFLAG: -race={{ne OS "windows"}}
+  RACEFLAG: -race={{and (ne OS "windows") (or (eq ARCH "amd64") (eq ARCH "arm64"))}}
 
 tasks:
   env-data:
