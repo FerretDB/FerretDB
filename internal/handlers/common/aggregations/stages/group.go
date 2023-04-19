@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -27,24 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// newAccumulatorFunc is a type for a function that creates an accumulator.
-type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
-
-// Accumulator is a common interface for accumulation.
-type Accumulator interface {
-	// Accumulate documents and returns the result of applying accumulation operator.
-	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
-}
-
-// accumulators maps all supported $group accumulators.
-var accumulators = map[string]newAccumulatorFunc{
-	// sorted alphabetically
-	"$count": newCountAccumulator,
-	"$sum":   newSumAccumulator,
-	// please keep sorted alphabetically
-}
-
-// groupStage represents $group stage.
+// group represents $group stage.
 //
 //	{ $group: {
 //		_id: <groupExpression>,
@@ -52,7 +36,7 @@ var accumulators = map[string]newAccumulatorFunc{
 //		...
 //		<groupBy[N].outputField>: {accumulatorN: expressionN},
 //	}}
-type groupStage struct {
+type group struct {
 	groupExpression any
 	groupBy         []groupBy
 }
@@ -116,7 +100,7 @@ func newGroup(stage *types.Document) (Stage, error) {
 
 		operator := accumulation.Command()
 
-		newAccumulator, ok := accumulators[operator]
+		newAccumulator, ok := operators.GroupAccumulators[operator]
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
@@ -144,14 +128,14 @@ func newGroup(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	return &groupStage{
+	return &group{
 		groupExpression: groupKey,
 		groupBy:         groups,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	groupedDocuments, err := g.groupDocuments(ctx, in)
 	if err != nil {
 		return nil, err
@@ -187,7 +171,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 }
 
 // groupDocuments groups documents by group expression.
-func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
+func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
 	groupKey, ok := g.groupExpression.(string)
 	if !ok {
 		// non-string key aggregates values of all `in` documents into one aggregated document.
@@ -282,11 +266,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 }
 
 // Type implements Stage interface.
-func (g *groupStage) Type() StageType {
+func (g *group) Type() StageType {
 	return StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*groupStage)(nil)
+	_ Stage = (*group)(nil)
 )

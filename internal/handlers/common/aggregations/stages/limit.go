@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -22,39 +22,44 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// skip represents $skip stage.
-type skip struct {
-	value int64
+// limit represents $limit stage.
+type limit struct {
+	limit int64
 }
 
-// newSkip creates a new $skip stage.
-func newSkip(stage *types.Document) (Stage, error) {
-	value, err := stage.Get("$skip")
+// newLimit creates a new $limit stage.
+func newLimit(stage *types.Document) (Stage, error) {
+	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	skipValue, err := common.GetSkipStageParam(value)
+	l, err := common.GetLimitStageParam(doc)
 	if err != nil {
 		return nil, err
 	}
 
-	return &skip{
-		value: skipValue,
+	return &limit{
+		limit: l,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (s *skip) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
-	return common.SkipDocuments(in, s.value)
+func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+	doc, err := common.LimitDocuments(in, l.limit)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return doc, nil
 }
 
 // Type implements Stage interface.
-func (s *skip) Type() StageType {
+func (l *limit) Type() StageType {
 	return StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*skip)(nil)
+	_ Stage = (*limit)(nil)
 )
