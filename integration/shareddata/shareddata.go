@@ -248,7 +248,7 @@ type field struct {
 	Key   string
 }
 
-// Fields is a map of field name -> value.
+// Fields is a slice of ordered field name value pair. To avoid fields being inserted in different order between compat and target, use a slice instead of a map.
 type Fields []field
 
 // NewTopLevelFieldsProvider creates a new TopLevelValues provider.
