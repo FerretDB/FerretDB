@@ -16,7 +16,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
