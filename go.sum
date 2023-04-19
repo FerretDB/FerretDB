@@ -194,8 +194,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.28 h1:bzzPjYuDGmdDI/sxyl/FsbjNotwJ03LE5c1DGM+sIU8=
-github.com/tigrisdata/tigris-client-go v1.0.0-beta.28/go.mod h1:sT5YZVA9AwI31vIKv0WHqOQYE9pi41HDQ2GDHBo4i3s=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.29 h1:Acv8E3y+Y8yg2gznUnn7Q6ykBm2jEwYUY3wOyThdqFM=
+github.com/tigrisdata/tigris-client-go v1.0.0-beta.29/go.mod h1:+0L8NNdNpaw9vWwGKc+S3P75f+Sru3KktpW0oUtZSJw=
 github.com/ugorji/go v1.2.7 h1:qYhyWUUd6WbiM+C6JZAUkIJt/1WrjzNHY9+KCIjVqTo=
 github.com/ugorji/go v1.2.7/go.mod h1:nF9osbDWLy6bDVv/Rtoh6QgnvNDpmCalQV5urGCCS6M=
 github.com/ugorji/go/codec v1.2.7 h1:YPXUKf7fYbp/y8xloBqZOw2qaVggbfwMlI8WM3wZUJ0=
