@@ -122,13 +122,11 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
-      - name: Convert Go coverage to lcov format
-        run: bin/gcov2lcov -infile=cover.txt -outfile=cover.lcov
-
       - name: Coveralls Github Action
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.1.2
         with:
           flag-name: Unit
+          file: cover.txt
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
