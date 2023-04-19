@@ -602,8 +602,8 @@ db.aggregate()
 |                                   |                                | `key`                     | ✅      |                                                                   |
 |                                   |                                | `name`                    | ✅️      |                                                                   |
 |                                   |                                | `unique`                  | ❌      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2045) |
-|                                   |                                | `partialFilterExpression` | ❌      | Unimplemented                                                     |
-|                                   |                                | `sparse`                  | ❌      | Unimplemented                                                     |
+|                                   |                                | `partialFilterExpression` | ❌      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2448) |
+|                                   |                                | `sparse`                  | ❌      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2448) |
 |                                   |                                | `expireAfterSeconds`      | ❌      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2415) |
 |                                   |                                | `hidden`                  | ❌      | Unimplemented                                                     |
 |                                   |                                | `storageEngine`           | ❌      | Unimplemented                                                     |
