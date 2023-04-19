@@ -122,6 +122,11 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+      - name: Coveralls Github Action
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: Unit
+
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
