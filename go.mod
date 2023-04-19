@@ -4,22 +4,22 @@ go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.2.0
+	github.com/SAP/go-hdb v1.2.1
 	github.com/alecthomas/kong v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/prometheus/client_golang v1.14.0
+	github.com/prometheus/client_golang v1.15.0
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.42.0
 	github.com/stretchr/testify v1.8.2
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.28
+	github.com/tigrisdata/tigris-client-go v1.0.0-beta.29
 	go.opentelemetry.io/otel v1.14.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.7.0 // indirect; always use @latest
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
+	golang.org/x/crypto v0.8.0 // indirect; always use @latest
+	golang.org/x/exp v0.0.0-20230418202329-0354be287a23
 	golang.org/x/net v0.9.0
 	golang.org/x/sys v0.7.0
 )
