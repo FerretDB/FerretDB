@@ -184,7 +184,7 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		)
 	}
 
-	hasUpdateOperators, err := HasSupportedUpdateModifiers(update)
+	hasUpdateOperators, err := HasSupportedUpdateModifiers(command, update)
 	if err != nil {
 		return nil, err
 	}

@@ -59,3 +59,12 @@ updates:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
+  - package-ecosystem: "gomod"
+    directory: "/tools/golangci"
+    labels: ["deps", "no ci"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
