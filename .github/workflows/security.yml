@@ -63,4 +63,4 @@ jobs:
       # Workaround for `hashFiles` issue.
       # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.
       - name: Clean
-        run: sudo rm -fr .cache
+        run: sudo rm -fr tmp

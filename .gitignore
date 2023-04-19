@@ -6,7 +6,6 @@ bin/
 
 # caches
 .task/
-.cache/
 vendor/
 
 # development and build artifacts, temporary files, etc

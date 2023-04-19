@@ -65,7 +65,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - rm -fr .cache .task tools/.task integration/.task tmp
+      - rm -fr .task tools/.task integration/.task tmp
       - task: env-pull
       - task: init
 
@@ -381,7 +381,7 @@ tasks:
         docker compose run --rm trivy filesystem .
         --secret-config=./build/trivy-secret.yml
         --ignorefile=./build/.trivyignore
-        --cache-dir=./.cache/trivy
+        --cache-dir=./tmp/trivy
         --exit-code=1
 
   security-govulncheck:
@@ -448,6 +448,8 @@ tasks:
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
         --platform={{default "linux" .PLATFORM}}
+        --cache-to=type=local,mode=max,dest=tmp/buildkit
+        --cache-from=type=local,src=tmp/buildkit
         {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --output={{.OUTPUT}}
         .

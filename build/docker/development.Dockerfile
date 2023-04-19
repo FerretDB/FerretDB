@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.3-2 AS development-build
+FROM golang:1.20.3 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -29,10 +29,6 @@ COPY . .
 ENV GOPATH /cache/gopath
 ENV GOCACHE /cache/gocache
 ENV GOMODCACHE /cache/gomodcache
-
-# copy cached stdlib builds from the image
-RUN --mount=type=cache,target=/cache \
-    rsync -v -a /root/.cache/go-build/ /cache/gocache
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
@@ -64,8 +60,8 @@ then
     RACE=true
 fi
 
-# check that stdlib was cached
-env GODEBUG=gocachehash=1 go install -v -race=$RACE std
+# build stdlib separately to check if it was cached
+go install -v -race=$RACE std
 
 go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
 go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb

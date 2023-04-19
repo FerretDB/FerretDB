@@ -122,6 +122,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Restore BuildKit cache
+        uses: actions/cache@v3
+        with:
+          path: tmp/buildkit
+          key: packages-buildkit-${{ hashFiles('**/go.mod') }}
+
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''
         run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.extract.outputs.all_in_one_images }}
