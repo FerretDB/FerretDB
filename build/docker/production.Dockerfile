@@ -19,6 +19,8 @@ ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
+ARG TARGETARCH
+
 # see .dockerignore
 WORKDIR /src
 COPY . .
@@ -27,6 +29,9 @@ COPY . .
 ENV GOPATH /gocaches/gopath
 ENV GOCACHE /gocaches/gocache
 ENV GOMODCACHE /gocaches/gomodcache
+
+# to make caching easier
+ENV GOFLAGS -modcacherw
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
@@ -37,8 +42,13 @@ ENV GOARM=7
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-RUN --mount=type=cache,target=/gocaches <<EOF
+RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
+    --mount=type=cache,target=/gocaches \
+<<EOF
+
 set -ex
+
+cp -R /gocaches-host/* /gocaches
 
 go mod download
 
@@ -49,7 +59,16 @@ go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
+
 EOF
+
+
+# export cache stage
+# use busybox and tar to export less files faster
+
+FROM busybox AS export-cache
+
+RUN --mount=type=cache,target=/gocaches tar cf /gocaches.tar gocaches
 
 
 # final stage

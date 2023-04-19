@@ -51,6 +51,7 @@ ENV GOAMD64=v1
 RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
     --mount=type=cache,target=/gocaches \
 <<EOF
+
 set -ex
 
 cp -R /gocaches-host/* /gocaches
@@ -71,6 +72,7 @@ go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover
 
 go version -m bin/ferretdb
 bin/ferretdb --version
+
 EOF
 
 

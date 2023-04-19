@@ -30,6 +30,9 @@ ENV GOPATH /gocaches/gopath
 ENV GOCACHE /gocaches/gocache
 ENV GOMODCACHE /gocaches/gomodcache
 
+# to make caching easier
+ENV GOFLAGS -modcacherw
+
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
@@ -45,8 +48,13 @@ ENV GOAMD64=v1
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-RUN --mount=type=cache,target=/gocaches <<EOF
+RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
+    --mount=type=cache,target=/gocaches \
+<<EOF
+
 set -ex
+
+cp -R /gocaches-host/* /gocaches
 
 go mod download
 
@@ -64,7 +72,16 @@ go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover
 
 go version -m bin/ferretdb
 bin/ferretdb --version
+
 EOF
+
+
+# export cache stage
+# use busybox and tar to export less files faster
+
+FROM busybox AS export-cache
+
+RUN --mount=type=cache,target=/gocaches tar cf /gocaches.tar gocaches
 
 
 # final stage
