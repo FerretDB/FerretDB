@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package operators
 
 import (
 	"context"
@@ -22,22 +22,22 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// sumAccumulator represents $sum accumulator for $group.
-type sumAccumulator struct {
+// sum represents $sum aggregation operator.
+type sum struct {
 	expression types.Expression
 	number     any
 }
 
-// newSumAccumulator creates a new $sum accumulator for $group.
-func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
-	expr := must.NotFail(accumulation.Get("$sum"))
-	accumulator := new(sumAccumulator)
+// newSum creates a new $sum aggregation operator.
+func newSum(accumulation *types.Document) (Accumulator, error) {
+	expression := must.NotFail(accumulation.Get("$sum"))
+	accumulator := new(sum)
 
-	switch expr := expr.(type) {
+	switch expr := expression.(type) {
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
-			"The $sum accumulator is a unary operator",
+			"The $sum accumulator is a unary accumulator",
 			"$sum (accumulator)",
 		)
 	case float64:
@@ -59,19 +59,19 @@ func newSumAccumulator(accumulation *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
-	if a.expression != nil {
+func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+	if s.expression != nil {
 		var values []any
 
 		for _, doc := range grouped {
-			v := a.expression.Evaluate(doc)
+			v := s.expression.Evaluate(doc)
 			values = append(values, v)
 		}
 
 		return sumNumbers(values...), nil
 	}
 
-	switch number := a.number.(type) {
+	switch number := s.number.(type) {
 	case float64, int32, int64:
 		// Below is equivalent of len(grouped)*number,
 		// with conversion handling upon overflow of int32 and int64.
@@ -90,5 +90,5 @@ func (a *sumAccumulator) Accumulate(ctx context.Context, groupID any, grouped []
 
 // check interfaces
 var (
-	_ Accumulator = (*sumAccumulator)(nil)
+	_ Accumulator = (*sum)(nil)
 )

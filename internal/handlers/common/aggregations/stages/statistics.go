@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 // Statistic represents a statistic that can be fetched from the DB.
 type Statistic int32
@@ -32,7 +32,7 @@ func GetStatistics(stages []Stage) map[Statistic]struct{} {
 
 	for _, stage := range stages {
 		switch st := stage.(type) {
-		case *collStatsStage:
+		case *collStats:
 			if st.count {
 				stats[StatisticCount] = struct{}{}
 			}
