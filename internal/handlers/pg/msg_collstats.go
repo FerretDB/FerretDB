@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -59,30 +61,48 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	stats, err := dbPool.Stats(ctx, db, collection)
+	var stats *pgdb.CollStats
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateCollStats(ctx, tx, db, collection)
+		return err
+	}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, pgdb.ErrTableNotExist):
 		// Return empty stats for non-existent collections.
-		stats = new(pgdb.DBStats)
+		stats = new(pgdb.CollStats)
 	default:
 		return nil, lazyerrors.Error(err)
 	}
 
+	pairs := []any{
+		"ns", db + "." + collection,
+		"size", stats.SizeCollection / scale,
+		"count", stats.CountObjects,
+	}
+
+	// If there are objects in the collection, calculate the average object size.
+	if stats.CountObjects > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
+	}
+
+	pairs = append(pairs,
+		"storageSize", stats.SizeTotal/scale,
+		"nindexes", stats.CountIndexes,
+		"totalIndexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
+		"scaleFactor", scale,
+		"ok", float64(1),
+	)
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ns", db+"."+collection,
-			"count", stats.CountRows,
-			"size", int32(stats.SizeTotal)/scale,
-			"storageSize", int32(stats.SizeRelation)/scale,
-			"totalIndexSize", int32(stats.SizeIndexes)/scale,
-			"totalSize", int32(stats.SizeTotal)/scale,
-			"scaleFactor", scale,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

@@ -1,5 +1,5 @@
 ---
-name: Docs Preview
+name: Website Preview
 on:
   pull_request_target:
     types:
@@ -23,7 +23,68 @@ env:
   GOPROXY: https://proxy.golang.org
 
 jobs:
-  preview:
+  blog-preview:
+    name: Preview blog
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    if: >
+      contains(github.event.pull_request.labels.*.name, 'trust') &&
+      !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+      (contains(github.event.pull_request.labels.*.name, 'blog/engineering') ||
+      contains(github.event.pull_request.labels.*.name, 'blog/marketing'))
+
+    environment:
+      name: cloudflare-dev-blog
+      url: ${{ steps.extract.outputs.extracted_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for wrangler to work
+          lfs: true
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for Wrangler / Cloudflare Pages on pull_request_target
+      - name: Name branch
+        env:
+          BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        run: git checkout -b $BRANCH
+
+      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: website-preview
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Build tools
+        run: bin/task env-pull
+
+      - name: Build blog
+        run: bin/task blog
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
+      - name: Deploy to Cloudflare Pages
+        run: bin/task blog-cloudflare-preview | tee deploy.txt
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Set GitHub deployment URL
+        id: extract
+        uses: FerretDB/github-actions/extract-first-url@main
+
+  docs-preview:
     name: Preview docs
     runs-on: ubuntu-22.04
     timeout-minutes: 10
@@ -34,7 +95,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'documentation')
 
     environment:
-      name: cloudflare-dev
+      name: cloudflare-dev-docs
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
@@ -61,7 +122,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: docs-preview
+          cache-key: website-preview
 
       - name: Install Task
         run: go generate -x
