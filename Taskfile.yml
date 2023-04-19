@@ -428,7 +428,14 @@ tasks:
   docker-init:
     run: once
     cmds:
-      - cmd: docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+      - cmd: >
+          docker buildx create
+          --name=ferretdb
+          --bootstrap=true
+          --use=false
+          --driver=docker-container
+          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=-1
+          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
         ignore_error: true
       - docker buildx ls
 
