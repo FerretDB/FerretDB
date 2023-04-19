@@ -19,6 +19,7 @@ import (
 	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetBlogSlugs(t *testing.T) {
@@ -38,7 +39,8 @@ Caddy will listen on both HTTP and
 `),
 		},
 	}
-	dirs, _ := m.ReadDir(".")
+	dirs,err := m.ReadDir(".")
+    require.NoError(t,err)
 	slugs := GetBlogSlugs(dirs)
 	tSlug := FileSlug{fileName: "2022-05-16-using-cla-assistant-with-ferretdb.md", slug: "using-cla-assistant-with-ferretdb"}
 	assert.Equal(t, slugs[0], tSlug, "should be equal")
@@ -65,5 +67,5 @@ Caddy will listen on both HTTP and HTTPS ports,
 	slugs := GetBlogSlugs(dirs)
 	f, _ := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
 	err := VerifySlug(slugs[0], f)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
