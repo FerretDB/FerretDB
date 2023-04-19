@@ -409,21 +409,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"Upsert": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-				{"upsert", true},
-			},
-		},
-		"UpsertNew": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-				{"upsert", true},
-				{"new", true},
-			},
-		},
 		"UpsertNoSuchDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
@@ -484,18 +469,101 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"v", "replaced"}}},
 			},
 		},
-		"UnsetForNonExisting": {
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpsertSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Upsert": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+			},
+		},
+		"UpsertNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"UpsertNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "43"}}}}},
+			},
+		},
+		"UpsertNewNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "43"}}}}},
+				{"new", true},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"ExistsTrue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "invalid"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
 			},
 		},
-		"UnsetForExisting": {
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NonExistentExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"ExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "invalid"}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"UnsetNonExistentField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "non-existent-field"}}},
 			},
 		},
 	}
