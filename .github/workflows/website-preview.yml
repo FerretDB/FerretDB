@@ -57,7 +57,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: blog-preview
+          cache-key: website-preview
 
       - name: Install Task
         run: go generate -x
@@ -122,7 +122,7 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: docs-preview
+          cache-key: website-preview
 
       - name: Install Task
         run: go generate -x
