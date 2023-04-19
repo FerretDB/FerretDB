@@ -458,19 +458,20 @@ tasks:
         --output={{.OUTPUT}}
         .
 
-      # export Go caches tarball to local directory
+      # export Go caches tarballs to local directory
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
+        --build-arg=BUILDKIT_MULTI_PLATFORM=true
         --platform={{default "linux" .PLATFORM}}
         --target=export-cache
         --output=type=local,dest=tmp/docker/gocaches-export
         .
 
-      # unpack tarball back to tmp/docker/gocaches
-      - tar xf tmp/docker/gocaches-export/gocaches.tar -C tmp/docker
+      # unpack tarballs back to tmp/docker/gocaches
+      - find tmp/docker/gocaches-export -name '*.tar' -print -exec tar xf {} -C tmp/docker \;
     vars:
       VERSION:
         sh: cat build/version/version.txt
