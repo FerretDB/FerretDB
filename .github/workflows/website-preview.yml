@@ -35,7 +35,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'blog/marketing'))
 
     environment:
-      name: cloudflare-dev-blog
+      name: cloudflare-dev
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
@@ -95,7 +95,7 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'documentation')
 
     environment:
-      name: cloudflare-dev-docs
+      name: cloudflare-dev
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
