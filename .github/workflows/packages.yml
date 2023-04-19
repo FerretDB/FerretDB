@@ -88,6 +88,7 @@ jobs:
         run: git checkout -b $BRANCH
 
       - name: Setup Go
+        id: setup
         uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: packages
@@ -125,8 +126,18 @@ jobs:
       - name: Restore BuildKit cache
         uses: actions/cache@v3
         with:
-          path: tmp/buildkit
-          key: packages-buildkit-${{ hashFiles('**/go.mod') }}
+          path: tmp/docker/buildkit
+          key: packages-buildkit-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
+          restore-keys: |
+            packages-buildkit-${{ steps.setup.outputs.cache_week }}-
+
+      - name: Restore Go caches
+        uses: actions/cache@v3
+        with:
+          path: tmp/docker/gocache
+          key: packages-gocache-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
+          restore-keys: |
+            packages-gocache-${{ steps.setup.outputs.cache_week }}-
 
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''

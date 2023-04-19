@@ -26,9 +26,9 @@ WORKDIR /src
 COPY . .
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH /gocache/gopath
+ENV GOCACHE /gocache/gocache
+ENV GOMODCACHE /gocache/gomodcache
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
@@ -44,14 +44,14 @@ ENV GOAMD64=v1
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
 # see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-RUN --mount=type=cache,target=/cache \
+RUN --mount=type=cache,target=/gocache \
     go mod download
 
 # Do not trim paths to make debugging with delve easier.
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-RUN --mount=type=cache,target=/cache <<EOF
+RUN --mount=type=cache,target=/gocache <<EOF
 set -ex
 
 RACE=false

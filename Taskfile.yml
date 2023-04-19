@@ -448,8 +448,8 @@ tasks:
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
         --platform={{default "linux" .PLATFORM}}
-        --cache-to=type=local,mode=max,dest=tmp/buildkit
-        --cache-from=type=local,src=tmp/buildkit
+        --cache-to=type=local,mode=max,dest=tmp/docker/buildkit
+        --cache-from=type=local,src=tmp/docker/buildkit
         {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --output={{.OUTPUT}}
         .
