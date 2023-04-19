@@ -62,3 +62,224 @@ func TestDatabaseMetadata(t *testing.T) {
 	})
 	require.NoError(t, err)
 }
+
+func TestRenameCollection(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	pool := getPool(ctx, t)
+
+	t.Run("Simple", func(t *testing.T) {
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		const newCollectionName = "new_name"
+		setupDatabase(ctx, t, pool, databaseName)
+
+		var tableName string
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+
+			md, err := newMetadataStorage(tx, databaseName, collectionName).get(ctx, false)
+			require.NoError(t, err)
+			assert.Equal(t, collectionName, md.collection)
+
+			tableName = md.table
+			require.NotEmpty(t, tableName)
+
+			return nil
+		})
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			ms := newMetadataStorage(tx, databaseName, collectionName)
+			err := ms.renameCollection(ctx, newCollectionName)
+			require.NoError(t, err)
+
+			return nil
+		})
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			exists, err := CollectionExists(ctx, tx, databaseName, newCollectionName)
+			require.NoError(t, err)
+			assert.True(t, exists)
+
+			exists, err = CollectionExists(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+			assert.False(t, exists)
+
+			ms := newMetadataStorage(tx, databaseName, newCollectionName)
+			md, err := ms.get(ctx, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, newCollectionName, md.collection)
+			assert.Equal(t, tableName, md.table)
+
+			ms = newMetadataStorage(tx, databaseName, collectionName)
+			_, err = ms.get(ctx, false)
+			require.Equal(t, ErrTableNotExist, err)
+
+			return nil
+		})
+	})
+
+	t.Run("AlreadyExist", func(t *testing.T) {
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		const existingCollectionName = "existing_name"
+		setupDatabase(ctx, t, pool, databaseName)
+
+		var existingTableName, tableName string
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := CreateCollection(ctx, tx, databaseName, existingCollectionName)
+			require.NoError(t, err)
+
+			md, err := newMetadataStorage(tx, databaseName, existingCollectionName).get(ctx, false)
+			require.NoError(t, err)
+			assert.Equal(t, existingCollectionName, md.collection)
+
+			existingTableName = md.table
+			require.NotEmpty(t, existingTableName)
+
+			err = CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+
+			md, err = newMetadataStorage(tx, databaseName, collectionName).get(ctx, false)
+			require.NoError(t, err)
+			assert.Equal(t, collectionName, md.collection)
+
+			tableName = md.table
+			require.NotEmpty(t, tableName)
+
+			return nil
+		})
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			ms := newMetadataStorage(tx, databaseName, collectionName)
+			err := ms.renameCollection(ctx, existingCollectionName)
+			require.Equal(t, ErrAlreadyExist, err)
+
+			return nil
+		})
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			exists, err := CollectionExists(ctx, tx, databaseName, existingCollectionName)
+			require.NoError(t, err)
+			assert.True(t, exists)
+
+			exists, err = CollectionExists(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+			assert.True(t, exists)
+
+			ms := newMetadataStorage(tx, databaseName, existingCollectionName)
+			md, err := ms.get(ctx, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, existingCollectionName, md.collection)
+			assert.Equal(t, existingTableName, md.table)
+
+			ms = newMetadataStorage(tx, databaseName, collectionName)
+			md, err = ms.get(ctx, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, collectionName, md.collection)
+			assert.Equal(t, tableName, md.table)
+
+			return nil
+		})
+	})
+
+	t.Run("NotExist", func(t *testing.T) {
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		const newCollectionName = "new_name"
+		setupDatabase(ctx, t, pool, databaseName)
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			ms := newMetadataStorage(tx, databaseName, collectionName)
+			err := ms.renameCollection(ctx, newCollectionName)
+			require.ErrorIs(t, err, ErrTableNotExist)
+
+			return nil
+		})
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			exists, err := CollectionExists(ctx, tx, databaseName, newCollectionName)
+			require.NoError(t, err)
+			assert.False(t, exists)
+
+			exists, err = CollectionExists(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+			assert.False(t, exists)
+
+			return nil
+		})
+	})
+
+	t.Run("Serial", func(t *testing.T) {
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		const newCollectionName = "existing_name"
+		setupDatabase(ctx, t, pool, databaseName)
+
+		var tableName string
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+
+			md, err := newMetadataStorage(tx, databaseName, collectionName).get(ctx, false)
+			require.NoError(t, err)
+			assert.Equal(t, collectionName, md.collection)
+
+			tableName = md.table
+			require.NotEmpty(t, tableName)
+
+			return nil
+		})
+
+		var newTableName string
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			ms := newMetadataStorage(tx, databaseName, collectionName)
+			err := ms.renameCollection(ctx, newCollectionName)
+			require.NoError(t, err)
+
+			err = CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+
+			md, err := newMetadataStorage(tx, databaseName, collectionName).get(ctx, false)
+			require.NoError(t, err)
+			assert.Equal(t, collectionName, md.collection)
+
+			newTableName = md.table
+			require.NotEmpty(t, newTableName)
+			require.NotEqual(t, tableName, newTableName)
+
+			return nil
+		})
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			exists, err := CollectionExists(ctx, tx, databaseName, newCollectionName)
+			require.NoError(t, err)
+			assert.True(t, exists)
+
+			exists, err = CollectionExists(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+			assert.True(t, exists)
+
+			ms := newMetadataStorage(tx, databaseName, newCollectionName)
+			md, err := ms.get(ctx, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, newCollectionName, md.collection)
+			assert.Equal(t, tableName, md.table)
+
+			ms = newMetadataStorage(tx, databaseName, collectionName)
+			md, err = ms.get(ctx, false)
+			require.NoError(t, err)
+
+			assert.Equal(t, collectionName, md.collection)
+			assert.Equal(t, newTableName, md.table)
+
+			return nil
+		})
+
+	})
+}

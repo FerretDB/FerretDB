@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"regexp"
-	"sync/atomic"
 
 	"github.com/jackc/pgx/v4"
 
@@ -83,9 +82,9 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 
 // store returns PostgreSQL table name for the given FerretDB database and collection names.
 //
-// If the metadata for the given settings don't exist, it creates them, including the creation
+// If the metadata for the given settings does not exist, it creates them, including the creation
 // of the PostgreSQL schema if needed.
-// If metadata were created, it returns true as the second return value. If metadata already existed, it returns false.
+// If metadata was created, it returns true as the second return value. If metadata already existed, it returns false.
 //
 // It makes a document with _id and table fields and stores it in the dbMetadataTableName table.
 // The given FerretDB collection name is stored in the _id field,
@@ -129,6 +128,13 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
+	// possible way: a separate table for database metadata where we store the globala counter that is increased
+	// every time when createCollection is called. so then this number is unique for each new createCollection call.
+	// pg table: _ferretdb_counter -> {"counter": 10}
+	// counter := getUniqueCounter()
+
+	// oid - big number generated each operation. ...
+
 	// Index to ensure that collection name is unique
 	key := IndexKey{{Field: `_id`, Order: types.Ascending}}
 	if err = createPgIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, key, true); err != nil {
@@ -140,8 +146,10 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		collection: ms.collection,
 		indexes:    []metadataIndex{},
 	}
-	atomic.AddUint32(&m.i, 1)
-	tableName = collectionNameToTableName(ms.collection) + fmt.Sprintf("%d", m.i)
+
+	tableName = collectionNameToTableName(ms.collection) +
+		fmt.Sprintf("%d", counter)
+
 	m.table = tableName
 
 	err = insert(ctx, ms.tx, &insertParams{
@@ -171,6 +179,39 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	}
 }
 
+// XXX WIP...
+func (ms *metadataStorage) mustAlter(ctx context.Context, tableName string) (bool, error) {
+	shortName := collectionNameToTableName(tableName)
+
+	iterParams := &iteratorParams{
+		schema:    ms.db,
+		table:     dbMetadataTableName,
+		filter:    must.NotFail(types.NewDocument("table", shortName)),
+		forUpdate: false,
+	}
+
+	iter, err := buildIterator(ctx, ms.tx, iterParams)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	defer iter.Close()
+
+	for {
+		_, doc, err := iter.Next()
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			return false, nil
+		}
+
+		if doc.Has(shortName) {
+			return true, nil
+		}
+	}
+}
+
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If such metadata don't exist, it returns ErrTableNotExist.
@@ -184,30 +225,26 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 }
 
 // renameCollection renames metadataStorage.collection.
+//
+// If the metadata for the collection that needs to be renamed doesn't exist, ErrTableNotExist is returned.
+// If the to collection aleady exists, ErrAlreadyExist is returned.
 func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if metadata.table == "" || metadata.collection == "" {
-		return ErrTableNotExist
+	// if the metadata exists for to, we return ErrAlreadyExist.
+	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, false); err == nil {
+		return ErrAlreadyExist
 	}
 
-	// if the metadata exists for to, we return ErrAlreadyExist.
-	if _, err = newMetadataStorage(ms.tx, ms.db, to).get(ctx, false); !errors.Is(err, ErrTableNotExist) {
-		if err == nil {
-			return ErrAlreadyExist
-		}
-
+	// we expect error to be TableNotExist as such metadata doesn't exist.
+	if err != ErrTableNotExist {
 		return lazyerrors.Error(err)
 	}
 
 	metadata.collection = to
-
-	if len(metadata.collection) > maxTableNameLength {
-		return ErrInvalidCollectionName
-	}
 
 	return ms.set(ctx, metadata)
 }
