@@ -65,6 +65,7 @@ func BenchmarkQueryLargeDocument(b *testing.B) {
 	ctx, coll := s.Ctx, s.Collection
 
 	filter := bson.D{{"_id", 0}}
+	runsCount := 1
 
 	b.Run(provider.Hash(), func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
@@ -75,12 +76,13 @@ func BenchmarkQueryLargeDocument(b *testing.B) {
 			require.NoError(b, cur.All(ctx, &res))
 
 			doc := res[0]
-			doc[(i%100)+1].Value = (i + 1) * 11111
+			doc[runsCount].Value = i * 11111
 
 			updateRes, err := coll.ReplaceOne(ctx, filter, doc)
 			require.NoError(b, err)
 
-			require.Equal(b, int64(1), updateRes.ModifiedCount, i)
+			require.Equal(b, int64(1), updateRes.ModifiedCount)
 		}
+		runsCount++
 	})
 }
