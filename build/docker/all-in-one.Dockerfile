@@ -27,7 +27,7 @@ COPY . .
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /gocaches/gopath
-ENV GOCACHE /gocaches/${TARGETARCH}/gocache
+ENV GOCACHE /gocaches/gocache-${TARGETARCH}
 ENV GOMODCACHE /gocaches/gomodcache
 
 # to make caching easier
