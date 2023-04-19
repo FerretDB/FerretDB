@@ -24,7 +24,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "42 2 * * *" # after Go workflow
+    - cron: "12 0 * * 1" # on Mondays to pre-fill cache
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag
