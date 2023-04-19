@@ -100,6 +100,28 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"_id", true}, {"v", true}},
 		},
+		"Assign1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"foo", "baz"}},
+		},
+		"AssignID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", "foo"}},
+			skipIDCheck: true,
+		},
+		"Assign1FieldIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"foo", "baz"}},
+		},
+		"Assign2FieldsIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"foo", "baz"}, {"bar", "qux"}},
+		},
+		"Assign1FieldExcludeID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}, {"foo", "baz"}},
+			skipIDCheck: true,
+		},
 		"DotNotationInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}},
