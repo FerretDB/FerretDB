@@ -442,9 +442,12 @@ tasks:
   docker-build:
     deps: [gen-version, docker-init]
     cmds:
-      - rm -fr tmp/docker/gocache-export
-      - mkdir -p tmp/docker/gocache
-      - echo '{{now | unixEpoch}}' > tmp/docker/gocache/cache-bust.txt
+      # disable BuildKit layer cache
+      - rm -fr tmp/docker/gocaches-export
+      - mkdir -p tmp/docker/gocaches
+      - echo '{{now | unixEpoch}}' > tmp/docker/gocaches/bust.txt
+
+      # main build command with Go caches at tmp/docker/gocaches
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/{{.FILE}}.Dockerfile
@@ -454,6 +457,8 @@ tasks:
         {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
         --output={{.OUTPUT}}
         .
+
+      # export Go caches tarball to local directory
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/{{.FILE}}.Dockerfile
@@ -461,9 +466,11 @@ tasks:
         --build-arg=LABEL_COMMIT={{.COMMIT}}
         --platform={{default "linux" .PLATFORM}}
         --target=export-cache
-        --output=type=local,dest=tmp/docker/gocache-export
+        --output=type=local,dest=tmp/docker/gocaches-export
         .
-      - tar xf tmp/docker/gocache-export/gocache.tar -C tmp/docker
+
+      # unpack tarball back to tmp/docker/gocaches
+      - tar xf tmp/docker/gocaches-export/gocaches.tar -C tmp/docker
     vars:
       VERSION:
         sh: cat build/version/version.txt

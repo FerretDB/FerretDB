@@ -26,9 +26,9 @@ WORKDIR /src
 COPY . .
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /gocache/gopath
-ENV GOCACHE /gocache/gocache
-ENV GOMODCACHE /gocache/gomodcache
+ENV GOPATH /gocaches/gopath
+ENV GOCACHE /gocaches/gocache
+ENV GOMODCACHE /gocaches/gomodcache
 
 # to make caching easier
 ENV GOFLAGS -modcacherw
@@ -48,12 +48,12 @@ ENV GOAMD64=v1
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-RUN --mount=type=bind,source=./tmp/docker/gocache,target=/gocache-host \
-    --mount=type=cache,target=/gocache \
+RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
+    --mount=type=cache,target=/gocaches \
 <<EOF
 set -ex
 
-cp -R /gocache-host/* /gocache
+cp -R /gocaches-host/* /gocaches
 
 go mod download
 
@@ -79,7 +79,7 @@ EOF
 
 FROM busybox AS export-cache
 
-RUN --mount=type=cache,target=/gocache tar cf /gocache.tar gocache
+RUN --mount=type=cache,target=/gocaches tar cf /gocaches.tar gocaches
 
 
 # final stage
