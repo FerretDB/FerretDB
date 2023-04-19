@@ -80,7 +80,7 @@ func newCount(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (c *count) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+func (c *count) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var n int32
 
 	for {

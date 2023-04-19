@@ -82,7 +82,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 //
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
-func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	_, res, err := iter.Next()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

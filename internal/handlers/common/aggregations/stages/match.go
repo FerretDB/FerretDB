@@ -45,10 +45,7 @@ func newMatch(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (m *match) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
-
+func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	return common.FilterIterator(iter, closer, m.filter), nil
 }
 

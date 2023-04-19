@@ -59,10 +59,7 @@ func newSort(stage *types.Document) (Stage, error) {
 // Process implements Stage interface.
 //
 // If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
-func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
-
+func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var err error
 	if iter, err = common.SortIterator(iter, closer, s.fields); err != nil {
 		var pathErr *types.DocumentPathError

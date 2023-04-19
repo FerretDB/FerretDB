@@ -18,6 +18,7 @@ package stages
 import (
 	"context"
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -42,7 +43,7 @@ const (
 // https://github.com/FerretDB/FerretDB/issues/1889.
 type Stage interface {
 	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
-	Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error)
+	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 
 	// Type returns the type of the stage.
 	//

@@ -191,14 +191,15 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) (type
 		return nil, err
 	}
 
-	defer iter.Close()
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
 	if err != nil {
 		return nil, err
 	}
 
 	for _, s := range p.stages {
-		if iter, err = s.Process(ctx, iter); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
@@ -294,8 +295,11 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) (types.Docume
 	// Process the retrieved statistics through the stages.
 	iter := stages.AccumulationIterator(doc)
 
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
+
 	for _, s := range p.stages {
-		if iter, err = s.Process(ctx, iter); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
