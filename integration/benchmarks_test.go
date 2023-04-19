@@ -56,12 +56,12 @@ func BenchmarkQuery(b *testing.B) {
 	}
 }
 
-func BenchmarkQueryLargeDocument(b *testing.B) {
+func BenchmarkReplaceLargeDocument(b *testing.B) {
 	provider := shareddata.LargeDocumentBenchmarkValues
+
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
 		BenchmarkProvider: &provider,
 	})
-
 	ctx, coll := s.Ctx, s.Collection
 
 	filter := bson.D{{"_id", 0}}
@@ -69,13 +69,10 @@ func BenchmarkQueryLargeDocument(b *testing.B) {
 
 	b.Run(provider.Hash(), func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, filter)
+			var doc bson.D
+			err := coll.FindOne(ctx, filter).Decode(&doc)
 			require.NoError(b, err)
 
-			var res []bson.D
-			require.NoError(b, cur.All(ctx, &res))
-
-			doc := res[0]
 			doc[runsCount].Value = i * 11111
 
 			updateRes, err := coll.ReplaceOne(ctx, filter, doc)

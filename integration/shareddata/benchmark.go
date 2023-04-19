@@ -59,6 +59,8 @@ func generateMixedValues() func() bson.D {
 	return gen
 }
 
+// generateLargeDocument returns generator that generates single deterministic document
+// with 200 elements that contain simple strings, doubles and objects.
 func generateLargeDocument() func() bson.D {
 	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
