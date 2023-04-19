@@ -91,6 +91,11 @@ jobs:
           flags: integration,${{ matrix.task }}
           fail_ci_if_error: true
           verbose: true
+      
+      - name: Coveralls Github Action
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: Integration-${{ matrix.task }}
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
