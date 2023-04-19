@@ -44,10 +44,6 @@ ENV GOARM=7
 # do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
 ENV GOAMD64=v1
 
-# Do not trim paths to make debugging with delve easier.
-#
-# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
-# (and that happens on GitHub-hosted Actions runners).
 RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
     --mount=type=cache,target=/gocaches \
 <<EOF
@@ -58,8 +54,10 @@ cp -R /gocaches-host/* /gocaches
 
 go mod download
 
+# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
+# (and that happens on GitHub-hosted Actions runners).
 RACE=false
-if test "$TARGETARCH" = "amd64" -o "$TARGETARCH" = "arm64"
+if test "$TARGETARCH" = "amd64"
 then
     RACE=true
 fi
@@ -67,6 +65,7 @@ fi
 # build stdlib separately to check if it was cached
 go install -v -race=$RACE std
 
+# Do not use -trimpath to make debugging with delve easier.
 go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
 go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
 

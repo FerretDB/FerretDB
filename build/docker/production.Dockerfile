@@ -55,6 +55,7 @@ go mod download
 # build stdlib separately to check if it was cached
 go install -v -race=false std
 
+# Do not use -trimpath for better caching and faster building.
 go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris ./cmd/ferretdb
 
 go version -m bin/ferretdb
