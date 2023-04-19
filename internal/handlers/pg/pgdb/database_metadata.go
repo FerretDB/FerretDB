@@ -63,6 +63,7 @@ type metadata struct {
 	collection string // _id
 	table      string
 	indexes    []metadataIndex
+	i          uint32
 }
 
 // metadataIndex stores information about FerretDB index.
@@ -135,12 +136,13 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	tableName = collectionNameToTableName(ms.collection)
 	m = &metadata{
 		collection: ms.collection,
-		table:      tableName,
 		indexes:    []metadataIndex{},
 	}
+	atomic.AddUint32(&m.i, 1)
+	tableName = collectionNameToTableName(ms.collection) + fmt.Sprintf("%d", m.i)
+	m.table = tableName
 
 	err = insert(ctx, ms.tx, &insertParams{
 		schema: ms.db,
@@ -181,37 +183,6 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	return metadata.table, nil
 }
 
-// tableNameExists returns true if the table name already exists for metadata.
-func (ms *metadataStorage) tableNameExists(ctx context.Context, tableName string) (bool, error) {
-	iterParams := &iteratorParams{
-		schema:    ms.db,
-		table:     dbMetadataTableName,
-		filter:    must.NotFail(types.NewDocument("table", collectionNameToTableName(tableName))),
-		forUpdate: false,
-	}
-
-	iter, err := buildIterator(ctx, ms.tx, iterParams)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	defer iter.Close()
-
-	for {
-		_, doc, err := iter.Next()
-		switch {
-		case err == nil:
-			// do nothing
-		case errors.Is(err, iterator.ErrIteratorDone):
-			return false, nil
-		}
-
-		if doc.Has(tableName) {
-			return true, nil
-		}
-	}
-}
-
 // renameCollection renames metadataStorage.collection.
 func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
 	metadata, err := ms.get(ctx, true)
@@ -230,19 +201,6 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 		}
 
 		return lazyerrors.Error(err)
-	}
-
-	var i *uint32
-	if exists, err := ms.tableNameExists(ctx, to); exists {
-		if err != nil {
-			panic(err)
-		}
-
-		tableName := fmt.Sprintf(
-			"%s%d", collectionNameToTableName(to), atomic.AddUint32(i, 1),
-		)
-
-		metadata.table = tableName
 	}
 
 	metadata.collection = to
