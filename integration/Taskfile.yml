@@ -68,8 +68,8 @@ tasks:
         go test -bench={{.BENCHNAME}} -run=XXX
         -benchtime={{.BENCHTIME}}
         -target-backend=ferretdb-pg
-        -disable-pushdown
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb | tee new-pg-no-pushdown.txt
+        -- -disable-pushdown
       - ../bin/benchstat{{exeExt}} old-pg-no-pushdown.txt new-pg-no-pushdown.txt
 
   bench-mongodb:
