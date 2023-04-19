@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -58,8 +59,12 @@ func newSort(stage *types.Document) (Stage, error) {
 // Process implements Stage interface.
 //
 // If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
-func (s *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	if err := common.SortDocuments(in, s.fields); err != nil {
+func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
+
+	var err error
+	if iter, err = common.SortIterator(iter, closer, s.fields); err != nil {
 		var pathErr *types.DocumentPathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -72,7 +77,7 @@ func (s *sort) Process(ctx context.Context, in []*types.Document) ([]*types.Docu
 		return nil, lazyerrors.Error(err)
 	}
 
-	return in, nil
+	return iter, nil
 }
 
 // Type  implements Stage interface.

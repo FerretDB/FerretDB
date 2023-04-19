@@ -16,11 +16,14 @@ package stages
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -79,13 +82,11 @@ func newCollStats(stage *types.Document) (Stage, error) {
 //
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
-func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	// For non-shared collections, the input must be an array with a single document.
-	if len(in) != 1 {
-		panic(fmt.Sprintf("collStatsStage: Process: expected 1 document, got %d", len(in)))
+func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+	_, res, err := iter.Next()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
-
-	res := in[0]
 
 	if c.storageStats != nil {
 		scale := c.storageStats.scale
@@ -102,7 +103,12 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 		must.NoError(res.SetByPath(types.NewStaticPath("storageStats", "scaleFactor"), scale))
 	}
 
-	return []*types.Document{res}, nil
+	if _, _, err := iter.Next(); !errors.Is(err, iterator.ErrIteratorDone) {
+		// For non-shared collections, the input must be an array with a single document.
+		panic("collStatsStage: Process: expected 1 document, got more")
+	}
+
+	return AccumulationIterator(res), nil
 }
 
 // Type implements Stage interface.

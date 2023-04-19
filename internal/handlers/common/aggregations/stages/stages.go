@@ -42,7 +42,7 @@ const (
 // https://github.com/FerretDB/FerretDB/issues/1889.
 type Stage interface {
 	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
-	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
+	Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error)
 
 	// Type returns the type of the stage.
 	//

@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -45,8 +46,11 @@ func newSkip(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (s *skip) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
-	return common.SkipDocuments(in, s.value)
+func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
+
+	return common.SkipIterator(iter, closer, s.value), nil
 }
 
 // Type implements Stage interface.

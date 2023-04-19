@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -45,13 +46,11 @@ func newLimit(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	doc, err := common.LimitDocuments(in, l.limit)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
-	return doc, nil
+	return common.LimitIterator(iter, closer, l.limit), nil
 }
 
 // Type implements Stage interface.

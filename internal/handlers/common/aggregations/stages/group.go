@@ -135,8 +135,13 @@ func newGroup(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	groupedDocuments, err := g.groupDocuments(ctx, in)
+func (g *group) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	groupedDocuments, err := g.groupDocuments(ctx, docs)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +172,7 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 		res = append(res, doc)
 	}
 
-	return res, nil
+	return iterator.Values(iterator.ForSlice(res)), nil
 }
 
 // groupDocuments groups documents by group expression.

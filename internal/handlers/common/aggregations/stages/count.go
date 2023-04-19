@@ -16,11 +16,13 @@ package stages
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -78,14 +80,28 @@ func newCount(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	if len(in) == 0 {
-		return nil, nil
+func (c *count) Process(ctx context.Context, iter types.DocumentsIterator) (types.DocumentsIterator, error) {
+	var n int32
+
+	for {
+		_, _, err := iter.Next()
+
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		n++
 	}
 
-	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
+	if n == 0 {
+		// this returns iterator with empty value.
+		return new(accumulationIterator), nil
+	}
 
-	return []*types.Document{res}, nil
+	return AccumulationIterator(must.NotFail(types.NewDocument(c.field, n))), nil
 }
 
 // Type implements Stage interface.
