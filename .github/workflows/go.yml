@@ -122,6 +122,9 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+      - name: Convert Go coverage to lcov format
+        run: bin/gcov2lcov -infile=cover.txt -outfile=cover.lcov
+
       - name: Coveralls Github Action
         uses: coverallsapp/github-action@v2
         with:
