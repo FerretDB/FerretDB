@@ -486,10 +486,10 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
-          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/ferretdb bin/ferretdb
+      - mv tmp/build/linux_{{ARCH}}/ferretdb bin/ferretdb
 
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"

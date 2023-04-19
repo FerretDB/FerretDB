@@ -27,7 +27,7 @@ COPY . .
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /gocaches/gopath
-ENV GOCACHE /gocaches/gocache
+ENV GOCACHE /gocaches/${TARGETARCH}/gocache
 ENV GOMODCACHE /gocaches/gomodcache
 
 # to make caching easier
@@ -51,6 +51,7 @@ set -ex
 cp -R /gocaches-host/* /gocaches
 
 go mod download
+go mod verify
 
 # build stdlib separately to check if it was cached
 go install -v -race=false std

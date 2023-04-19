@@ -27,7 +27,7 @@ COPY . .
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /gocaches/gopath
-ENV GOCACHE /gocaches/gocache
+ENV GOCACHE /gocaches/${TARGETARCH}/gocache
 ENV GOMODCACHE /gocaches/gomodcache
 
 # to make caching easier
@@ -53,6 +53,7 @@ set -ex
 cp -R /gocaches-host/* /gocaches
 
 go mod download
+go mod verify
 
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
