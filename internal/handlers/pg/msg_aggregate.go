@@ -24,7 +24,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -141,7 +140,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     aggregations.GetPushdownQuery(aggregationStages),
+			Filter:     stages.GetPushdownQuery(aggregationStages),
 		}
 
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})

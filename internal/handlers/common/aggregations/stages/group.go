@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// groupStage represents $group stage.
+// group represents $group stage.
 //
 //	{ $group: {
 //		_id: <groupExpression>,
@@ -36,7 +36,7 @@ import (
 //		...
 //		<groupBy[N].outputField>: {accumulatorN: expressionN},
 //	}}
-type groupStage struct {
+type group struct {
 	groupExpression any
 	groupBy         []groupBy
 }
@@ -128,14 +128,14 @@ func newGroup(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	return &groupStage{
+	return &group{
 		groupExpression: groupKey,
 		groupBy:         groups,
 	}, nil
 }
 
 // Process implements Stage interface.
-func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	groupedDocuments, err := g.groupDocuments(ctx, in)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (g *groupStage) Process(ctx context.Context, in []*types.Document) ([]*type
 }
 
 // groupDocuments groups documents by group expression.
-func (g *groupStage) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
+func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
 	groupKey, ok := g.groupExpression.(string)
 	if !ok {
 		// non-string key aggregates values of all `in` documents into one aggregated document.
@@ -266,11 +266,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 }
 
 // Type implements Stage interface.
-func (g *groupStage) Type() StageType {
+func (g *group) Type() StageType {
 	return StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*groupStage)(nil)
+	_ Stage = (*group)(nil)
 )

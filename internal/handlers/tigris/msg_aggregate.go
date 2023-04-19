@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -137,10 +136,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := tigrisdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     aggregations.GetPushdownQuery(aggregationStages),
+			Filter:     stages.GetPushdownQuery(aggregationStages),
 		}
 
-		qp.Filter = aggregations.GetPushdownQuery(aggregationStages)
+		qp.Filter = stages.GetPushdownQuery(aggregationStages)
 
 		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
 			dbPool, &qp, stagesDocuments,

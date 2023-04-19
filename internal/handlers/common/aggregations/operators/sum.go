@@ -17,7 +17,6 @@ package operators
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -69,7 +68,7 @@ func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Docu
 			values = append(values, v)
 		}
 
-		return aggregations.SumNumbers(values...), nil
+		return sumNumbers(values...), nil
 	}
 
 	switch number := s.number.(type) {
@@ -82,7 +81,7 @@ func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Docu
 			numbers[i] = number
 		}
 
-		return aggregations.SumNumbers(numbers...), nil
+		return sumNumbers(numbers...), nil
 	}
 
 	// $sum returns 0 on non-existent and non-numeric field.

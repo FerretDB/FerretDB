@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package operators
 
 import (
 	"math"
 	"math/big"
 )
 
-// SumNumbers accumulate numbers and returns the result of summation.
+// sumNumbers accumulate numbers and returns the result of summation.
 // The result has the same type as the input, except when the result
 // cannot be presented accurately. Then int32 is converted to int64,
 // and int64 is converted to float64. It ignores non-number values.
 // This should only be used for aggregation, aggregation does not return
 // error on overflow.
-func SumNumbers(vs ...any) any {
+func sumNumbers(vs ...any) any {
 	// use big.Int to accumulate values larger than math.MaxInt64.
 	intSum := big.NewInt(0)
 
