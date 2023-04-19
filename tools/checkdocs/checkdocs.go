@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -23,6 +24,7 @@ func main() {
 	}
 
 	slugs := GetBlogSlugs(fs)
+    pass := true
 	for _, slug := range slugs {
 
 		fo, err := os.Open(filepath.Join(dir, slug.fileName))
@@ -33,8 +35,19 @@ func main() {
 			continue
 		}
 
-		VerifySlug(slug, fo)
+        serr := VerifySlug(slug, fo)
+
+        if serr != nil {
+            log.Print(serr)
+            pass = false
+        }
+        
 	}
+    
+    if !pass {
+        log.Fatal("One or more blog posts are not correctly formated")
+    }
+
 }
 
 func GetBlogSlugs(fs []fs.DirEntry) []FileSlug {
@@ -67,7 +80,7 @@ func GetBlogSlugs(fs []fs.DirEntry) []FileSlug {
 	return fileSlugs
 }
 
-func VerifySlug(fS FileSlug, f io.Reader) {
+func VerifySlug(fS FileSlug, f io.Reader) error {
 	r := regexp.MustCompile("^slug: (.*)")
 
 	pass := false
@@ -81,6 +94,8 @@ func VerifySlug(fS FileSlug, f io.Reader) {
 	}
 
 	if !pass {
-		log.Fatalf("Slug is not correctly formated in file: %s", fS.fileName)
+        return fmt.Errorf("Slug is not correctly formated in file %s",fS.fileName)
 	}
+
+    return nil
 }
