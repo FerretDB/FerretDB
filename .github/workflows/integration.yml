@@ -97,6 +97,7 @@ jobs:
         with:
           file: ./integration/integration-${{ matrix.task }}.txt
           flag-name: integration-${{ matrix.task }}
+          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -107,6 +108,12 @@ jobs:
         run: |
           git status
           git diff --exit-code
+
+      - name: Submit coveralls
+        if: always()
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
 
   env-data:
     name: env-data
