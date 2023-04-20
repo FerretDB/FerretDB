@@ -39,10 +39,8 @@ const (
 )
 
 // Stage is a common interface for all aggregation stages.
-// TODO use iterators instead of slices of documents
-// https://github.com/FerretDB/FerretDB/issues/1889.
 type Stage interface {
-	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
+	// Process applies an aggregate stage on documents from iterator.
 	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 
 	// Type returns the type of the stage.

@@ -34,8 +34,8 @@ func LimitIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, l
 	case limit == 0:
 		return iter
 	case limit < 0:
-		// that should be handled by GetLimitParam
-		// aggregation allows limit of math.MaxInt64
+		// limit parameter range should be handled by GetLimitParam.
+		// aggregation limit stage allows limit of math.MaxInt64.
 		// TODO https://github.com/FerretDB/FerretDB/issues/2255
 		panic(fmt.Sprintf("invalid limit value: %d", limit))
 	default:

@@ -84,14 +84,12 @@ func newCollStats(stage *types.Document) (Stage, error) {
 // and the data is modified according to the given request.
 func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	_, res, err := iter.Next()
-
-	switch {
-	case err == nil:
-		break
-	case errors.Is(err, iterator.ErrIteratorDone):
+	if errors.Is(err, iterator.ErrIteratorDone) {
 		// For non-shared collections, it must contain a single document.
 		panic("collStatsStage: Process: expected 1 document, got none")
-	default:
+	}
+
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
