@@ -58,9 +58,11 @@ func (iter *countIterator) Next() (struct{}, *types.Document, error) {
 	n := iter.n.Add(1) - 1
 
 	if n >= 1 {
+		// subsequent calls return error.
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
+	// only first call reaches here, safe to use local variable for count.
 	var count int32
 
 	for {
