@@ -128,7 +128,7 @@ jobs:
           git diff --exit-code
 
   submit-coveralls:
-    name: submit-coveralls
+    name: Submit coveralls
     runs-on: ubuntu-22.04
 
     needs: test

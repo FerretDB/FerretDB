@@ -146,7 +146,7 @@ jobs:
         run: bin/task env-data
 
   submit-coveralls:
-    name: submit-coveralls
+    name: Submit coveralls
     runs-on: ubuntu-22.04
 
     needs: test
