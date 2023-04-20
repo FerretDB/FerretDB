@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"runtime"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
 )
@@ -62,6 +63,12 @@ func Example_tcp() {
 }
 
 func Example_unix() {
+	if runtime.GOOS == "windows" {
+		// Unix sockets are not supported on Windows.
+		fmt.Printf("mongodb://%s/\n", "%2Ftmp%2Fferretdb.sock")
+		return
+	}
+
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			Unix: "/tmp/ferretdb.sock",
