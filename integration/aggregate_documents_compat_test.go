@@ -835,6 +835,13 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", math.MaxInt64}},
 			},
 		},
+		"MinInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", math.MinInt64}},
+			},
+			resultType: emptyResult,
+		},
 		"Negative": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -1364,6 +1371,13 @@ func TestAggregateCompatSkip(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MaxInt64}},
+			},
+			resultType: emptyResult,
+		},
+		"MinInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", math.MinInt64}},
 			},
 			resultType: emptyResult,
 		},

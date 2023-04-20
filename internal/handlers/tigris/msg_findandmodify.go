@@ -46,6 +46,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	if params.Update != nil {
+		if err = common.ValidateUpdateOperators(document.Command(), params.Update); err != nil {
+			return nil, err
+		}
+	}
+
 	if params.MaxTimeMS != 0 {
 		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 		defer cancel()
@@ -59,7 +65,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		Filter:     params.Query,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
+	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})
 	if err != nil {
 		return nil, err
 	}
