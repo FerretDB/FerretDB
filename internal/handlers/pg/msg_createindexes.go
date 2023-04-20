@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -212,6 +212,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "unique":
 			// TODO https://github.com/FerretDB/FerretDB/issues/2045
 			// just ignore it for now, don't return error
+
+		case "background":
+			// ignore deprecated options
 
 		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",

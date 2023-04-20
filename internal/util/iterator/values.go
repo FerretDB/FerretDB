@@ -105,4 +105,5 @@ func (iter *valuesIterator[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[struct{}, any] = (*valuesIterator[any, any])(nil)
+	_ Closer                   = (*valuesIterator[any, any])(nil)
 )

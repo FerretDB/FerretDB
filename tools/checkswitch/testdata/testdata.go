@@ -16,16 +16,17 @@
 package testdata
 
 import (
-	"./types"
 	"time"
+
+	"./types"
 )
 
-func test(v any) {
+func testCorrect(v any) {
 	switch v.(type) {
 	case *types.Document:
 	case *types.Array:
 	case float64, int32, int64: // multiple types
-	case int8: // unknown
+	case int8: // unexpected type
 	case string:
 	case types.Binary:
 	case types.ObjectID:
@@ -34,38 +35,25 @@ func test(v any) {
 	case types.NullType:
 	case types.Regex:
 	case types.Timestamp:
-	default:
 	}
+}
 
+func testIncorrectSimple(v any) {
 	switch v.(type) { // want "Document should go before Array in the switch"
 	case *types.Array:
 	case *types.Document:
-	case float64:
-	case string:
-	case types.Binary:
-	case types.ObjectID:
-	case bool:
-	case time.Time:
-	case types.NullType:
-	case types.Regex:
-	case int32:
-	case types.Timestamp:
-	case int64:
-	default:
 	}
+}
 
-	switch v.(type) { // want "int32 should go before int64 in the switch"
-	case *types.Document:
-	case *types.Array:
-	case float64, int64, int32:
-	case string:
-	case types.Binary:
-	case types.ObjectID:
-	case bool:
+func testIncorrectMixed(v any) {
+	switch v.(type) { // want "Document should go before Time in the switch"
 	case time.Time:
-	case types.NullType:
-	case types.Regex:
-	case types.Timestamp:
-	default:
+	case *types.Document:
+	}
+}
+
+func testIncorrectMultiple(v any) {
+	switch v.(type) { // want "int32 should go before int64 in the switch"
+	case float64, int64, int32:
 	}
 }

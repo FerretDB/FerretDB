@@ -787,6 +787,8 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatLimit(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Zero": {
 			pipeline: bson.A{
@@ -832,6 +834,13 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", math.MaxInt64}},
 			},
+		},
+		"MinInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$limit", math.MinInt64}},
+			},
+			resultType: emptyResult,
 		},
 		"Negative": {
 			pipeline: bson.A{
@@ -1211,6 +1220,8 @@ func TestAggregateCompatSort(t *testing.T) {
 }
 
 func TestAggregateCompatUnwind(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Simple": {
 			pipeline: bson.A{
@@ -1315,6 +1326,8 @@ func TestAggregateCompatUnwind(t *testing.T) {
 }
 
 func TestAggregateCompatSkip(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Document": {
 			pipeline:   bson.A{bson.D{{"$skip", bson.D{}}}},
@@ -1358,6 +1371,13 @@ func TestAggregateCompatSkip(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MaxInt64}},
+			},
+			resultType: emptyResult,
+		},
+		"MinInt64": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$skip", math.MinInt64}},
 			},
 			resultType: emptyResult,
 		},

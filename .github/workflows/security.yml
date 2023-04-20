@@ -11,7 +11,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
@@ -51,6 +51,14 @@ jobs:
 
       - name: Scan
         run: bin/task --exit-code security
+
+      # disabled until https://github.com/actions/dependency-review-action/issues/459 is resolved
+      - name: Check dependencies for PRs
+        # if: github.event_name == 'pull_request'
+        if: false
+        uses: actions/dependency-review-action@v3
+        with:
+          allow-licenses: Apache-2.0, BSD-3-Clause, MIT
 
       # Workaround for `hashFiles` issue.
       # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.

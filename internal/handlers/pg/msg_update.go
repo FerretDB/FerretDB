@@ -19,9 +19,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -60,8 +61,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -75,13 +76,15 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.CreateCollectionIfNotExists(ctx, tx, qp.DB, qp.Collection)
 	})
-	if err != nil {
-		if errors.Is(err, pgdb.ErrInvalidCollectionName) ||
-			errors.Is(err, pgdb.ErrInvalidDatabaseName) {
-			msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
-			return nil, common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
-		}
-		return nil, err
+
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	var matched, modified int32
@@ -127,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			if u != nil {
-				if err = common.ValidateUpdateOperators(u); err != nil {
+				if err = common.ValidateUpdateOperators(document.Command(), u); err != nil {
 					return err
 				}
 			}
@@ -142,7 +145,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			qp.Filter = q
 
-			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisablePushdown})
+			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
 			if err != nil {
 				return err
 			}
@@ -202,7 +205,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	res := must.NotFail(types.NewDocument(
@@ -233,5 +236,5 @@ func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		return res, nil
 	}
 
-	return 0, common.CheckError(err)
+	return 0, commonerrors.CheckError(err)
 }

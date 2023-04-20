@@ -15,159 +15,206 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// ProjectDocuments modifies given documents in places according to the given projection.
-func ProjectDocuments(docs []*types.Document, projection *types.Document) error {
-	if projection.Len() == 0 {
-		return nil
+var errProjectionEmpty = errors.New("projection is empty")
+
+// validateProjection check projection document.
+// Document fields could be either included or excluded but not both.
+// Exception is for the _id field that could be included or excluded.
+func validateProjection(projection *types.Document) (*types.Document, bool, error) {
+	validated := types.MakeDocument(0)
+
+	if projection == nil {
+		return nil, false, errProjectionEmpty
 	}
 
-	inclusion, err := isProjectionInclusion(projection)
-	if err != nil {
-		return err
-	}
+	var projectionVal *bool
 
-	for i := 0; i < len(docs); i++ {
-		err = projectDocument(inclusion, docs[i], projection)
+	iter := projection.Iterator()
+	defer iter.Close()
+
+	for {
+		key, value, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
 		if err != nil {
-			return err
+			return nil, false, lazyerrors.Error(err)
 		}
-	}
 
-	return nil
-}
+		var result bool
 
-// isProjectionInclusion: projection can be only inclusion or exclusion. Validate and return true if inclusion.
-// Exception for the _id field.
-func isProjectionInclusion(projection *types.Document) (inclusion bool, err error) {
-	var exclusion bool
-	for _, k := range projection.Keys() {
-		if k == "_id" { // _id is a special case and can be both
-			continue
-		}
-		v := must.NotFail(projection.Get(k))
-		switch v := v.(type) {
-		case *types.Document:
-			for _, projectionType := range v.Keys() {
-				err = NewCommandError(
-					ErrNotImplemented,
-					fmt.Errorf("projection of %s is not supported", projectionType),
-				)
-
-				return
-			}
-
+		switch value := value.(type) {
+		case *types.Document, *types.Array, string:
+			return nil, false, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
+			)
 		case float64, int32, int64:
-			result := types.Compare(v, int32(0))
-			if result == types.Equal {
-				if inclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionExIn,
-						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
-						"projection",
-					)
-					return
-				}
-				exclusion = true
-			} else {
-				if exclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionInEx,
-						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
-						"projection",
-					)
-					return
-				}
-				inclusion = true
-			}
+			// projection treats 0 as false and any other value as true
+			comparison := types.Compare(value, int32(0))
 
+			if comparison != types.Equal {
+				result = true
+			}
 		case bool:
-			if v {
-				if exclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionInEx,
-						fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", k),
-						"projection",
-					)
-					return
-				}
-				inclusion = true
-			} else {
-				if inclusion {
-					err = NewCommandErrorMsgWithArgument(ErrProjectionExIn,
-						fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", k),
-						"projection",
-					)
-					return
-				}
-				exclusion = true
-			}
-
+			result = value
 		default:
-			err = lazyerrors.Errorf("unsupported operation %s %v (%T)", k, v, v)
-			return
+			return nil, false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
-	}
-	return
-}
 
-func projectDocument(inclusion bool, doc *types.Document, projection *types.Document) error {
-	projectionMap := projection.Map()
+		// set the value with boolean result to omit type assertion when we will apply projection
+		validated.Set(key, result)
 
-	for k1 := range doc.Map() {
-		projectionVal, ok := projectionMap[k1]
-		if !ok {
-			if k1 == "_id" { // if _id is not in projection map, do not do anything with it
+		if projection.Len() == 1 && key == "_id" {
+			return validated, result, nil
+		}
+
+		// if projectionVal is nil we are processing the first field
+		if projectionVal == nil {
+			if key == "_id" {
 				continue
 			}
-			if inclusion { // k1 from doc is absent in projection, remove from doc only if projection type inclusion
-				doc.Remove(k1)
-			}
+
+			projectionVal = &result
+
 			continue
 		}
 
-		switch projectionVal := projectionVal.(type) { // found in the projection
-		case *types.Document: // field: { $elemMatch: { field2: value }}
-			if err := applyComplexProjection(projectionVal); err != nil {
-				return err
+		if *projectionVal != result {
+			if *projectionVal {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrProjectionExIn,
+					fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
+					"projection",
+				)
 			}
 
-		case float64, int32, int64: // field: number
-			result := types.Compare(projectionVal, int32(0))
-			if result == types.Equal {
-				doc.Remove(k1)
-			}
-
-		case bool: // field: bool
-			if !projectionVal {
-				doc.Remove(k1)
-			}
-
-		default:
-			return lazyerrors.Errorf("unsupported operation %s %v (%T)", k1, projectionVal, projectionVal)
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrProjectionInEx,
+				fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
+				"projection",
+			)
 		}
 	}
-	return nil
+
+	return validated, *projectionVal, nil
 }
 
-func applyComplexProjection(projectionVal *types.Document) error {
-	for _, projectionType := range projectionVal.Keys() {
-		switch projectionType {
-		case "$elemMatch", "$slice":
-			return NewCommandError(
-				ErrNotImplemented,
-				fmt.Errorf("projection of %s is not supported", projectionType),
+// projectDocument applies projection to the copy of the document.
+func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
+	projected, err := types.NewDocument("_id", must.NotFail(doc.Get("_id")))
+	if err != nil {
+		return nil, err
+	}
+
+	if projection.Has("_id") {
+		idValue := must.NotFail(projection.Get("_id"))
+
+		var set bool
+
+		switch idValue := idValue.(type) {
+		case *types.Document: // field: { $elemMatch: { field2: value }}
+			return nil, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrCommandNotFound,
+				fmt.Sprintf("projection %s is not supported",
+					types.FormatAnyValue(idValue),
+				),
 			)
+		case bool:
+			set = idValue
 		default:
-			return NewCommandError(
-				ErrCommandNotFound,
-				fmt.Errorf("projection of %s is not supported", projectionType),
-			)
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", "_id", idValue, idValue)
+		}
+
+		if !set {
+			projected.Remove("_id")
 		}
 	}
 
-	return nil
+	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, key := range projectedWithoutID.Keys() {
+		projected.Set(key, must.NotFail(projectedWithoutID.Get(key)))
+	}
+
+	return projected, nil
+}
+
+// projectDocumentWithoutID applies projection to the copy of the document and returns projected document.
+// It ignores _id field in the projection.
+func projectDocumentWithoutID(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
+	projectionWithoutID := projection.DeepCopy()
+	projectionWithoutID.Remove("_id")
+
+	docWithoutID := doc.DeepCopy()
+	docWithoutID.Remove("_id")
+
+	projected := types.MakeDocument(0)
+
+	if !inclusion {
+		projected = docWithoutID.DeepCopy()
+	}
+
+	iter := projectionWithoutID.Iterator()
+	defer iter.Close()
+
+	for {
+		key, value, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch value := value.(type) { // found in the projection
+		case *types.Document: // field: { $elemMatch: { field2: value }}
+			return nil, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrCommandNotFound,
+				fmt.Sprintf("projection %s is not supported",
+					types.FormatAnyValue(value),
+				),
+			)
+
+		case bool: // field: bool
+			// process top level fields
+			if path.Len() == 1 {
+				if inclusion {
+					if docWithoutID.Has(key) {
+						projected.Set(key, must.NotFail(docWithoutID.Get(key)))
+					}
+
+					continue
+				}
+
+				projected.Remove(key)
+			}
+
+			// TODO: process dot notation here https://github.com/FerretDB/FerretDB/issues/2430
+		default:
+			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
+		}
+	}
+
+	return projected, nil
 }

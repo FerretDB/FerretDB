@@ -32,13 +32,13 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	v, err := doc.Get(key)
 	if err != nil {
 		msg := fmt.Sprintf("required parameter %q is missing", key)
-		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
+		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
 	}
 
 	res, ok := v.(T)
 	if !ok {
 		msg := fmt.Sprintf("required parameter %q has type %T (expected %T)", key, v, zero)
-		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
+		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
 	}
 
 	return res, nil
@@ -58,7 +58,7 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 			key, AliasFromType(v), AliasFromType(defaultValue),
 		)
 
-		return defaultValue, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
+		return defaultValue, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
 	}
 
 	return res, nil
@@ -92,7 +92,7 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 			AliasFromType(v),
 		)
 
-		return false, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
+		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
 	}
 }
 
@@ -102,13 +102,13 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 //
 //	d, ok := value.(*types.Document)
 //	if !ok {
-//	  return NewCommandErrorMsg(ErrBadValue, "expected document")
+//	  return commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, "expected document")
 //	}
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
 		msg := fmt.Sprintf("got type %T, expected %T", value, res)
-		return res, NewCommandErrorMsg(ErrBadValue, msg)
+		return res, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, msg)
 	}
 
 	return res, nil
@@ -121,7 +121,8 @@ var (
 	errNotBinaryMask         = fmt.Errorf("not a binary mask")
 	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
 	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
-	errLongExceeded          = fmt.Errorf("long exceeded")
+	errLongExceededPositive  = fmt.Errorf("long exceeded - positive value")
+	errLongExceededNegative  = fmt.Errorf("long exceeded - negative value")
 	errIntExceeded           = fmt.Errorf("int exceeded")
 	errInfinity              = fmt.Errorf("infinity")
 )
@@ -132,16 +133,14 @@ func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
-		if math.IsInf(value, 1) {
+		switch {
+		case math.IsInf(value, 1):
 			return 0, errInfinity
-		}
-
-		if value > float64(math.MaxInt64) ||
-			value < float64(math.MinInt64) {
-			return 0, errLongExceeded
-		}
-
-		if value != math.Trunc(value) {
+		case value > float64(math.MaxInt64):
+			return 0, errLongExceededPositive
+		case value < float64(math.MinInt64):
+			return 0, errLongExceededNegative
+		case value != math.Trunc(value):
 			return 0, errNotWholeNumber
 		}
 
@@ -174,7 +173,7 @@ func GetLimitStageParam(value any) (int64, error) {
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
@@ -215,7 +214,7 @@ func GetSkipStageParam(value any) (int64, error) {
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
@@ -249,15 +248,15 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, NewCommandError(
-					ErrBadValue,
+				return 0, commonerrors.NewCommandError(
+					commonerrors.ErrBadValue,
 					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
 				)
 			}
 
 			if b < 0 {
-				return 0, NewCommandError(
-					ErrBadValue,
+				return 0, commonerrors.NewCommandError(
+					commonerrors.ErrBadValue,
 					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
 				)
 			}
@@ -320,7 +319,11 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 func parseTypeCode(alias string) (typeCode, error) {
 	code, ok := aliasToTypeCode[alias]
 	if !ok {
-		return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias), "$type")
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf(`Unknown type name alias: %s`, alias),
+			"$type",
+		)
 	}
 
 	return code, nil
@@ -359,11 +362,11 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if int64(v1) > math.MaxInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededPositive
 				}
 			} else {
 				if int64(v1) < math.MinInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededNegative
 				}
 			}
 
@@ -390,11 +393,11 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if v1 > math.MaxInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededPositive
 				}
 			} else {
 				if v1 < math.MinInt64-v2 {
-					return nil, errLongExceeded
+					return nil, errLongExceededNegative
 				}
 			}
 
@@ -479,12 +482,12 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
 	// results in overflow with the MinInt64 as result.
 	case v1 == math.MinInt64 || v2 == math.MinInt64:
-		return 0, errLongExceeded
+		return 0, errLongExceededNegative
 	}
 
 	res := v1 * v2
 	if res/v2 != v1 {
-		return 0, errLongExceeded
+		return 0, errLongExceededPositive
 	}
 
 	return res, nil
@@ -501,25 +504,33 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 	if err != nil {
 		switch err {
 		case errUnexpectedType:
-			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s must be a number", key), key)
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s must be a number", key),
+				key,
+			)
 		case errNotWholeNumber:
 			if _, ok := v.(float64); ok {
-				return 0, NewCommandErrorMsgWithArgument(
-					ErrBadValue,
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
 					fmt.Sprintf("%v has non-integral value", key),
 					key,
 				)
 			}
 
-			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s must be a whole number", key), key)
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s must be a whole number", key),
+				key,
+			)
 		default:
 			return 0, err
 		}
 	}
 
 	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
-		return 0, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
 			key,
 		)
@@ -527,8 +538,8 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 
 	value := int32(wholeNumberParam)
 	if value < 0 {
-		return 0, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", value, key),
 			key,
 		)
