@@ -95,8 +95,8 @@ jobs:
       - name: Upload coverage information to coveralls
         uses: coverallsapp/github-action@v2
         with:
-          flag-name: Integration-${{ matrix.task }}
           file: ./integration/integration-${{ matrix.task }}.txt
+          flag-name: integration-${{ matrix.task }}
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
