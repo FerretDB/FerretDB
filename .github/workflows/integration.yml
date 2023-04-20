@@ -109,11 +109,6 @@ jobs:
           git status
           git diff --exit-code
 
-      - name: Submit coveralls
-        if: always()
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
 
   env-data:
     name: env-data
@@ -149,3 +144,16 @@ jobs:
 
       - name: Run env-data
         run: bin/task env-data
+
+  submit-coveralls:
+    name: submit-coveralls
+    runs-on: ubuntu-22.04
+
+    needs: test
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Submit coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true

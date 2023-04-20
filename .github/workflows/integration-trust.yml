@@ -127,8 +127,15 @@ jobs:
           git status
           git diff --exit-code
 
+  submit-coveralls:
+    name: submit-coveralls
+    runs-on: ubuntu-22.04
+
+    needs: test
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
       - name: Submit coveralls
-        if: always()
         uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
