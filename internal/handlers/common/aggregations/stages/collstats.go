@@ -84,6 +84,17 @@ func newCollStats(stage *types.Document) (Stage, error) {
 // and the data is modified according to the given request.
 func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	_, res, err := iter.Next()
+
+	switch {
+	case err == nil:
+		break
+	case errors.Is(err, iterator.ErrIteratorDone):
+		// For non-shared collections, the input must be an array with a single document.
+		panic("collStatsStage: Process: expected 1 document, got more")
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -103,12 +114,12 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 		must.NoError(res.SetByPath(types.NewStaticPath("storageStats", "scaleFactor"), scale))
 	}
 
-	if _, _, err := iter.Next(); !errors.Is(err, iterator.ErrIteratorDone) {
-		// For non-shared collections, the input must be an array with a single document.
+	if _, _, err := iter.Next(); err == nil || !errors.Is(err, iterator.ErrIteratorDone) {
+		// For non-shared collections input contains only a single document, iterator must be done.
 		panic("collStatsStage: Process: expected 1 document, got more")
 	}
 
-	return AccumulationIterator(res), nil
+	return SingleValueIterator(res), nil
 }
 
 // Type implements Stage interface.

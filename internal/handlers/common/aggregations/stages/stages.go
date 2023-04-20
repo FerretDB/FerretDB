@@ -18,10 +18,10 @@ package stages
 import (
 	"context"
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // newStageFunc is a type for a function that creates a new aggregation stage.

@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -91,17 +92,17 @@ func (c *count) Process(ctx context.Context, iter types.DocumentsIterator, close
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 		n++
 	}
 
 	if n == 0 {
 		// this returns iterator with empty value.
-		return new(accumulationIterator), nil
+		return EmptyIterator(), nil
 	}
 
-	return AccumulationIterator(must.NotFail(types.NewDocument(c.field, n))), nil
+	return SingleValueIterator(must.NotFail(types.NewDocument(c.field, n))), nil
 }
 
 // Type implements Stage interface.

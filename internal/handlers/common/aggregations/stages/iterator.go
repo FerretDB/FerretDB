@@ -21,19 +21,25 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
+// accumulationIterator iterates on single or no value.
 type accumulationIterator struct {
 	value *types.Document
 	n     atomic.Uint32
 }
 
-// AccumulationIterator creates an iterator for single value.
-func AccumulationIterator(value *types.Document) types.DocumentsIterator {
+// EmptyIterator creates an iterator without any value.
+func EmptyIterator() types.DocumentsIterator {
+	return new(accumulationIterator)
+}
+
+// SingleValueIterator creates an iterator for single value.
+func SingleValueIterator(value *types.Document) types.DocumentsIterator {
 	return &accumulationIterator{value: value}
 }
 
 // Next implements Iterator interface.
-// It returns the single value set on the iterator on the first time,
-// ErrIteratorDone on subsequent. If value is not set, returns ErrIteratorDone.
+// It returns the value of the iterator on the first call,
+// ErrIteratorDone on subsequent calls. If value is not set, returns ErrIteratorDone.
 func (iter *accumulationIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
