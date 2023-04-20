@@ -58,7 +58,6 @@ func (p *project) Process(_ context.Context, in []*types.Document) ([]*types.Doc
 
 	for _, doc := range in {
 		projected, err := common.ProjectDocument(doc, p.projection, p.inclusion)
-
 		if err != nil {
 			return nil, err
 		}
