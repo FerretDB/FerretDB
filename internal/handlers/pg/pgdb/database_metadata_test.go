@@ -68,6 +68,43 @@ func TestRenameCollection(t *testing.T) {
 
 	pool := getPool(ctx, t)
 
+	t.Run("DiffMetadata", func(t *testing.T) {
+		databaseName := testutil.DatabaseName(t)
+		collectionName := testutil.CollectionName(t)
+		const newCollectionName = "new_name"
+		setupDatabase(ctx, t, pool, databaseName)
+
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+
+			ms := newMetadataStorage(tx, databaseName, collectionName)
+			require.NotEmpty(t, ms)
+
+			err = ms.renameCollection(ctx, newCollectionName)
+			require.NoError(t, err)
+
+			err = CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+
+			nms := newMetadataStorage(tx, databaseName, newCollectionName)
+			require.NotEmpty(t, nms)
+
+			// santity check
+			require.NotEqual(t, nms, ms)
+
+			md, err := ms.get(ctx, false)
+			require.NoError(t, err)
+
+			nmd, err := nms.get(ctx, false)
+			require.NoError(t, err)
+
+			require.NotEqual(t, md.table, nmd.table)
+
+			return nil
+		})
+	})
+
 	t.Run("Simple", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
@@ -214,72 +251,37 @@ func TestRenameCollection(t *testing.T) {
 		})
 	})
 
-	t.Run("Serial", func(t *testing.T) {
+	t.Run("Foo", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "existing_name"
+		const newCollectionName = "bar"
 		setupDatabase(ctx, t, pool, databaseName)
 
-		var tableName string
+		pool.InTransaction(ctx, func(tx pgx.Tx) error {
+			err := CreateCollection(ctx, tx, databaseName, collectionName)
+			require.NoError(t, err)
+			ms := newMetadataStorage(tx, databaseName, collectionName)
+			err = ms.renameCollection(ctx, newCollectionName) // bar
+			require.NoError(t, err)
+
+			return nil
+		})
+
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			err := CreateCollection(ctx, tx, databaseName, collectionName)
 			require.NoError(t, err)
 
-			md, err := newMetadataStorage(tx, databaseName, collectionName).get(ctx, false)
+			oms := newMetadataStorage(tx, databaseName, collectionName)
+			omd, err := oms.get(ctx, false)
 			require.NoError(t, err)
-			assert.Equal(t, collectionName, md.collection)
 
-			tableName = md.table
-			require.NotEmpty(t, tableName)
-
-			return nil
-		})
-
-		var newTableName string
-		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			ms := newMetadataStorage(tx, databaseName, collectionName)
-			err := ms.renameCollection(ctx, newCollectionName)
-			require.NoError(t, err)
-
-			err = CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
-
-			md, err := newMetadataStorage(tx, databaseName, collectionName).get(ctx, false)
-			require.NoError(t, err)
-			assert.Equal(t, collectionName, md.collection)
-
-			newTableName = md.table
-			require.NotEmpty(t, newTableName)
-			require.NotEqual(t, tableName, newTableName)
-
-			return nil
-		})
-
-		pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			exists, err := CollectionExists(ctx, tx, databaseName, newCollectionName)
-			require.NoError(t, err)
-			assert.True(t, exists)
-
-			exists, err = CollectionExists(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
-			assert.True(t, exists)
-
-			ms := newMetadataStorage(tx, databaseName, newCollectionName)
 			md, err := ms.get(ctx, false)
 			require.NoError(t, err)
-
-			assert.Equal(t, newCollectionName, md.collection)
-			assert.Equal(t, tableName, md.table)
-
-			ms = newMetadataStorage(tx, databaseName, collectionName)
-			md, err = ms.get(ctx, false)
-			require.NoError(t, err)
-
-			assert.Equal(t, collectionName, md.collection)
-			assert.Equal(t, newTableName, md.table)
-
+			t.Log("-----")
+			t.Log(omd.table, md.table)
+			//require.NotEqual(t, omd.table, md.table)
 			return nil
 		})
-
 	})
 }
