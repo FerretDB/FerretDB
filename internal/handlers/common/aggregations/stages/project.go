@@ -69,6 +69,7 @@ func (p *project) Process(_ context.Context, in []*types.Document) ([]*types.Doc
 	return out, nil
 }
 
+// Type implements Stage interface.
 func (p *project) Type() StageType {
 	return StageTypeDocuments
 }
