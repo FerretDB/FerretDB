@@ -24,7 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // unwind represents $unwind stage.
@@ -105,49 +104,7 @@ func newUnwind(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var out []*types.Document
-
-	if u.field == nil {
-		return nil, nil
-	}
-
-	key := u.field.GetExpressionSuffix()
-
-	for _, doc := range docs {
-		d := u.field.Evaluate(doc)
-		switch d := d.(type) {
-		case *types.Array:
-			iter := d.Iterator()
-			defer iter.Close()
-
-			id := must.NotFail(doc.Get("_id"))
-
-			for {
-				_, v, err := iter.Next()
-				if err != nil {
-					if errors.Is(err, iterator.ErrIteratorDone) {
-						break
-					}
-
-					return nil, err
-				}
-
-				newDoc := must.NotFail(types.NewDocument("_id", id, key, v))
-				out = append(out, newDoc)
-			}
-		case types.NullType:
-			// Ignore Nulls
-		default:
-			out = append(out, doc)
-		}
-	}
-
-	return iterator.Values(iterator.ForSlice(out)), nil
+	return newUnwindIterator(iter, closer, u.field), nil
 }
 
 // Type implements Stage interface.
