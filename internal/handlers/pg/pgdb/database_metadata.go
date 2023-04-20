@@ -175,6 +175,8 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 }
+
+// getAllTableNames returns all PostgreSQL table names for the given FerretDB database and collection.
 func (ms *metadataStorage) getAllTableNames(ctx context.Context) []string {
 	iterParams := &iteratorParams{
 		schema:    ms.db,
@@ -209,7 +211,7 @@ func (ms *metadataStorage) getAllTableNames(ctx context.Context) []string {
 
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
-// If such metadata don't exist, it returns ErrTableNotExist.
+// If the metadata doesn't exist, it returns ErrTableNotExist.
 func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	metadata, err := ms.get(ctx, false)
 	if err != nil {
@@ -246,7 +248,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 
 // get returns metadata stored in the metadata table.
 //
-// If such metadata does not exist, it returns ErrTableNotExist.
+// If the metadata doesn't exist, it returns ErrTableNotExist.
 func (ms *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, error) {
 	metadataExist, err := tableExists(ctx, ms.tx, ms.db, dbMetadataTableName)
 	if err != nil {
@@ -393,7 +395,7 @@ func metadataToDocument(metadata *metadata) *types.Document {
 
 // remove removes metadata.
 //
-// If such metadata does not exist, it doesn't return an error.
+// If the metadata doesn't exist, no error will be returned.
 func (ms *metadataStorage) remove(ctx context.Context) error {
 	_, err := deleteByIDs(ctx, ms.tx, execDeleteParams{
 		schema: ms.db,
