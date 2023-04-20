@@ -89,8 +89,8 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 	case err == nil:
 		break
 	case errors.Is(err, iterator.ErrIteratorDone):
-		// For non-shared collections, the input must be an array with a single document.
-		panic("collStatsStage: Process: expected 1 document, got more")
+		// For non-shared collections, it must contain a single document.
+		panic("collStatsStage: Process: expected 1 document, got none")
 	default:
 		return nil, lazyerrors.Error(err)
 	}
@@ -111,11 +111,11 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 	}
 
 	if _, _, err := iter.Next(); err == nil || !errors.Is(err, iterator.ErrIteratorDone) {
-		// For non-shared collections input contains only a single document, iterator must be done.
+		// For non-shared collections, it contains only a single document.
 		panic("collStatsStage: Process: expected 1 document, got more")
 	}
 
-	return SingleValueIterator(res), nil
+	return iterator.Values(iterator.ForSlice([]*types.Document{res})), nil
 }
 
 // Type implements Stage interface.
