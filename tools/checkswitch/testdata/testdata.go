@@ -16,8 +16,9 @@
 package testdata
 
 import (
-	"./types"
 	"time"
+
+	"./types"
 )
 
 func testCorrect(v any) {

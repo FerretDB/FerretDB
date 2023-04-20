@@ -126,7 +126,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           flag-name: Unit
-          file: cover.txt
+          file: ./cover.txt
 
       # we don't want them on CI
       - name: Clean test and fuzz caches

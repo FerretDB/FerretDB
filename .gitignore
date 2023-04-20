@@ -11,7 +11,6 @@ vendor/
 
 # development and build artifacts, temporary files, etc
 *.txt
-*.lcov
 *.out
 **/testdata/fuzz/
 state.json

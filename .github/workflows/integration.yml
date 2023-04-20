@@ -96,7 +96,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           flag-name: Integration-${{ matrix.task }}
-          file: cover.txt
+          file: ./integration/integration-${{ matrix.task }}.txt
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
