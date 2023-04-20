@@ -17,6 +17,7 @@ package integration
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1433,6 +1434,89 @@ func TestAggregateCompatProject(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"_id", false}}}},
+			},
+		},
+		"Include2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", 1.24}, {"bar", true}}}},
+			},
+		},
+		"Exclude2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+
+				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", false}}}},
+			},
+		},
+		"Include1FieldExclude1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+
+				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", true}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Exclude1FieldInclude1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+
+				bson.D{{"$project", bson.D{{"foo", int32(1)}, {"bar", false}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IncludeFieldExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", true}}}},
+			},
+		},
+		"ExcludeFieldIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"v", false}}}},
+			},
+		},
+		"ExcludeFieldExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", false}}}},
+			},
+		},
+		"IncludeFieldIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"v", true}}}},
+			},
+		},
+		"Assign1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", primitive.NewObjectID()}}}},
+			},
+		},
+		"AssignID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+			},
+		},
+		"Assign1FieldIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			},
+		},
+		"Assign2FieldsIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", nil}, {"bar", "qux"}}}},
+			},
+		},
+		"Assign1FieldExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
 		},
 	}

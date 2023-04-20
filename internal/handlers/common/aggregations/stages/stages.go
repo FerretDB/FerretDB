@@ -86,7 +86,6 @@ var unsupportedStages = map[string]struct{}{
 	"$merge":                  {},
 	"$out":                    {},
 	"$planCacheStats":         {},
-	"$project":                {},
 	"$redact":                 {},
 	"$replaceRoot":            {},
 	"$replaceWith":            {},
