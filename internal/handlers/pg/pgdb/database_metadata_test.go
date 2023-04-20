@@ -250,38 +250,4 @@ func TestRenameCollection(t *testing.T) {
 			return nil
 		})
 	})
-
-	t.Run("Foo", func(t *testing.T) {
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "bar"
-		setupDatabase(ctx, t, pool, databaseName)
-
-		pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			err := CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
-			ms := newMetadataStorage(tx, databaseName, collectionName)
-			err = ms.renameCollection(ctx, newCollectionName) // bar
-			require.NoError(t, err)
-
-			return nil
-		})
-
-		pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			err := CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
-
-			oms := newMetadataStorage(tx, databaseName, collectionName)
-			omd, err := oms.get(ctx, false)
-			require.NoError(t, err)
-
-			ms := newMetadataStorage(tx, databaseName, collectionName)
-			md, err := ms.get(ctx, false)
-			require.NoError(t, err)
-			t.Log("-----")
-			t.Log(omd.table, md.table)
-			//require.NotEqual(t, omd.table, md.table)
-			return nil
-		})
-	})
 }
