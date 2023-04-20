@@ -115,7 +115,6 @@ jobs:
         with:
           file: ./integration/integration-${{ matrix.task }}.txt
           flag-name: integration-${{ matrix.task }}
-          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
