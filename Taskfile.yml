@@ -58,7 +58,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - rm -fr .cache .task tools/.task integration/.task tmp
+      - rm -r .cache .task tools/.task integration/.task tmp
       - task: env-pull
       - task: init
 
