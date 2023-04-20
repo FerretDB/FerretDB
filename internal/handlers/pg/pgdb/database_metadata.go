@@ -136,7 +136,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 
 	tableName = collectionNameToTableName(ms.collection)
 
-	for i, tn := range ms.getAllTableNames(ctx) {
+	for i, tn := range ms.getAllTableHashes(ctx) {
 		if tableName == tn {
 			tableName = tableName + fmt.Sprintf("%d", i)
 		}
@@ -175,8 +175,8 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	}
 }
 
-// getAllTableNames returns all PostgreSQL table names for the given FerretDB database.
-func (ms *metadataStorage) getAllTableNames(ctx context.Context) []string {
+// getAllTableHashes returns all hashed table names for the given FerretDB database.
+func (ms *metadataStorage) getAllTableHashes(ctx context.Context) []string {
 	iterParams := &iteratorParams{
 		schema:    ms.db,
 		table:     dbMetadataTableName,
