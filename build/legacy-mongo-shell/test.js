@@ -30,9 +30,7 @@
 
   const res = t.runCommand({'find': coll, 'filter': filter, 'projection': proj});
 
-  // command must fail as we don't support $ projection
-  // we also seem to project the _id field
-  assert.commandFailed(res);
+  assert.commandFailed(res); // command must fail as we don't support $ projection
 
   print('test.js passed!');
 })();
