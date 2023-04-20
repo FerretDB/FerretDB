@@ -80,13 +80,11 @@ func TestRenameCollection(t *testing.T) {
 
 			ms := newMetadataStorage(tx, databaseName, collectionName)
 			require.NotEmpty(t, ms)
-
 			err = ms.renameCollection(ctx, newCollectionName)
 			require.NoError(t, err)
 
 			err = CreateCollection(ctx, tx, databaseName, collectionName)
 			require.NoError(t, err)
-
 			nms := newMetadataStorage(tx, databaseName, newCollectionName)
 			require.NotEmpty(t, nms)
 
@@ -95,7 +93,6 @@ func TestRenameCollection(t *testing.T) {
 
 			md, err := ms.get(ctx, false)
 			require.NoError(t, err)
-
 			nmd, err := nms.get(ctx, false)
 			require.NoError(t, err)
 
