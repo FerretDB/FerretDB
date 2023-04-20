@@ -22,6 +22,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -60,8 +61,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -105,7 +106,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 		if u != nil {
-			if err = common.ValidateUpdateOperators(u); err != nil {
+			if err = common.ValidateUpdateOperators(document.Command(), u); err != nil {
 				return nil, err
 			}
 		}
@@ -118,7 +119,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisablePushdown})
+		resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})
 		if err != nil {
 			return nil, err
 		}
@@ -204,10 +205,10 @@ func updateDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 	case err == nil:
 		return 1, nil
 	case errors.As(err, &valErr):
-		return 0, common.NewCommandErrorMsg(common.ErrBadValue, err.Error())
+		return 0, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, err.Error())
 	case errors.As(err, &driverErr):
 		if tigrisdb.IsInvalidArgument(err) {
-			return 0, common.NewCommandErrorMsg(common.ErrDocumentValidationFailure, err.Error())
+			return 0, commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
 		}
 
 		return 0, lazyerrors.Error(err)

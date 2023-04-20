@@ -11,7 +11,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
@@ -251,13 +251,16 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
         working-directory: source
 
-      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
+      - name: Compress Linux logs before upload
+        if: failure()
+        run: zip -r -q -9 linux-logs.zip /tmp/logs
+
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: linux-logs
-          path: /tmp/logs
+          path: linux-logs.zip
           retention-days: 1
           if-no-files-found: error
 

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,50 +25,33 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func BenchmarkPushdowns(b *testing.B) {
-	ctx, coll := setup.Setup(b, shareddata.AllProviders()...)
+func BenchmarkQuery(b *testing.B) {
+	provider := shareddata.MixedBenchmarkValues
 
-	res, err := coll.InsertOne(ctx, bson.D{{}})
-	require.NoError(b, err)
-
-	id := res.InsertedID
-
-	b.Run("ObjectID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"_id", id}})
-			require.NoError(b, err)
-
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
-
-			require.NotEmpty(b, res)
-		}
+	s := setup.SetupWithOpts(b, &setup.SetupOpts{
+		BenchmarkProvider: &provider,
 	})
 
-	b.Run("StringID", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"_id", "string"}})
-			require.NoError(b, err)
+	ctx, coll := s.Ctx, s.Collection
 
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
+	for name, bm := range map[string]struct {
+		filter bson.D
+	}{
+		"String": {
+			filter: bson.D{{"v", "foo"}},
+		},
+		"DotNotation": {
+			filter: bson.D{{"v.42", "hello"}},
+		},
+	} {
+		b.Run(fmt.Sprint(name, "_", provider.Hash()), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				cur, err := coll.Find(ctx, bm.filter)
+				require.NoError(b, err)
 
-			require.NotEmpty(b, res)
-		}
-	})
-
-	b.Run("NoPushdown", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			cur, err := coll.Find(ctx, bson.D{{"v", bson.D{{"$eq", 42.0}}}})
-			require.NoError(b, err)
-
-			var res []bson.D
-			err = cur.All(ctx, &res)
-			require.NoError(b, err)
-
-			require.NotEmpty(b, res)
-		}
-	})
+				var res []bson.D
+				require.NoError(b, cur.All(ctx, &res))
+			}
+		})
+	}
 }

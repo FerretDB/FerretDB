@@ -523,6 +523,8 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 }
 
 func TestUpdateFieldCompatRename(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]updateCompatTestCase{
 		"Simple": {
 			update: bson.D{{"$rename", bson.D{{"v", "foo"}}}},

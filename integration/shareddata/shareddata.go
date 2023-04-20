@@ -21,6 +21,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // unset represents a field that should not be set.
@@ -197,7 +200,127 @@ func (values *Values[idType]) IsCompatible(backend string) bool {
 	return slices.Contains(values.backends, backend)
 }
 
+// BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
+// It also calculates checksum of all provided documents.
+type BenchmarkProvider interface {
+	// Name returns benchmark provider name.
+	Name() string
+
+	// Hash returns actual hash of all provider documents.
+	// It should be called after closing iterator.
+	Hash() string
+
+	// Docs returns iterator that returns all documents from provider.
+	// They should be always in deterministic order.
+	// The iterator calculates the checksum of all documents on go.
+	Docs() iterator.Interface[struct{}, bson.D]
+}
+
+// BenchmarkValues returns shared data documents for benchmark in deterministic order.
+type BenchmarkValues struct {
+	// iter returns all documents in deterministic order.
+	iter *valuesIterator
+
+	// name represents the name of the benchmark values set.
+	name string
+}
+
+// Name implements BenchmarkProvider interface.
+func (b *BenchmarkValues) Name() string {
+	return b.name
+}
+
+// Hash implements BenchmarkProvider interface.
+// It returns actual hash of all documents produced by BenchmarkValues.
+// It will panic if iterator was not closed.
+func (b *BenchmarkValues) Hash() string {
+	return must.NotFail(b.iter.Hash())
+}
+
+// Docs implements BenchmarkProvider interface.
+func (b *BenchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
+	return b.iter
+}
+
+// field represents a field in a document.
+type field struct {
+	Value any
+	Key   string
+}
+
+// Fields is a slice of ordered field name value pair. To avoid fields being inserted in different order between compat and target, use a slice instead of a map.
+type Fields []field
+
+// NewTopLevelFieldsProvider creates a new TopLevelValues provider.
+func NewTopLevelFieldsProvider[id comparable](name string, backends []string, validators map[string]map[string]any, data map[id]Fields) *TopLevelValues[id] {
+	return &TopLevelValues[id]{
+		name:       name,
+		backends:   backends,
+		validators: validators,
+		data:       data,
+	}
+}
+
+// TopLevelValues stores shared data documents as {"_id": key, "field1": value1, "field2": value2, ...} documents.
+//
+//nolint:vet // for readability
+type TopLevelValues[id comparable] struct {
+	name       string
+	backends   []string
+	validators map[string]map[string]any // backend -> validator name -> validator
+	data       map[id]Fields
+}
+
+// Name implements Provider interface.
+func (t *TopLevelValues[id]) Name() string {
+	return t.name
+}
+
+// Validators implements Provider interface.
+func (t *TopLevelValues[id]) Validators(backend, collection string) map[string]any {
+	switch backend {
+	case "ferretdb-tigris":
+		validators := make(map[string]any, len(t.validators[backend]))
+
+		for key, value := range t.validators[backend] {
+			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
+		}
+
+		return validators
+	default:
+		return t.validators[backend]
+	}
+}
+
+// Docs implements Provider interface.
+func (t *TopLevelValues[id]) Docs() []bson.D {
+	ids := maps.Keys(t.data)
+
+	res := make([]bson.D, 0, len(t.data))
+
+	for _, id := range ids {
+		doc := bson.D{{"_id", id}}
+
+		fields := t.data[id]
+
+		for _, field := range fields {
+			doc = append(doc, bson.E{Key: field.Key, Value: field.Value})
+		}
+
+		res = append(res, doc)
+	}
+
+	return res
+}
+
+// IsCompatible implements Provider interface.
+func (t *TopLevelValues[id]) IsCompatible(backend string) bool {
+	return slices.Contains(t.backends, backend)
+}
+
 // check interfaces
 var (
-	_ Provider = (*Values[string])(nil)
+	_ Provider          = (*Values[string])(nil)
+	_ BenchmarkProvider = (*BenchmarkValues)(nil)
+	_ Provider          = (*TopLevelValues[string])(nil)
 )

@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+// Package stages provides aggregation stages.
+package stages
 
 import (
 	"context"
@@ -44,6 +45,8 @@ type Stage interface {
 	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
 
 	// Type returns the type of the stage.
+	//
+	// TODO Remove it? https://github.com/FerretDB/FerretDB/issues/2423
 	Type() StageType
 }
 

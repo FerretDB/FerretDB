@@ -23,6 +23,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -75,15 +76,15 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var ok bool
 	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
 
 	var deleted int32
-	var delErrors common.WriteErrors
+	var delErrors commonerrors.WriteErrors
 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
@@ -99,7 +100,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisablePushdown, limited})
+		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisableFilterPushdown, limited})
 		if err == nil {
 			deleted += del
 			continue
@@ -152,8 +153,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	// https://github.com/FerretDB/FerretDB/issues/2255
 	l, err := deleteDoc.Get("limit")
 	if err != nil {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrMissingField,
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
 			"BSON field 'delete.deletes.limit' is missing but a required field",
 			"limit",
 		)
@@ -161,8 +162,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	var limit int64
 	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrFailedToParse,
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
 			"limit",
 		)
@@ -173,10 +174,10 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 // deleteParams contains parameters for execDelete function.
 type deleteParams struct {
-	dbPool          *tigrisdb.TigrisDB
-	qp              *tigrisdb.QueryParams
-	disablePushdown bool
-	limited         bool
+	dbPool                *tigrisdb.TigrisDB
+	qp                    *tigrisdb.QueryParams
+	disableFilterPushdown bool
+	limited               bool
 }
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
@@ -192,7 +193,7 @@ func execDelete(ctx context.Context, dp *deleteParams) (int32, error) {
 	// qp.Filter is used to filter documents on the Tigris side (query pushdown).
 	filter := dp.qp.Filter
 
-	if dp.disablePushdown {
+	if dp.disableFilterPushdown {
 		dp.qp.Filter = nil
 	}
 

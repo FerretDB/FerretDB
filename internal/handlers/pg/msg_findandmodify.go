@@ -17,9 +17,10 @@ package pg
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -47,6 +48,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	if params.Update != nil {
+		if err = common.ValidateUpdateOperators(document.Command(), params.Update); err != nil {
+			return nil, err
+		}
+	}
+
 	if params.MaxTimeMS != 0 {
 		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 		defer cancel()
@@ -54,7 +61,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		ctx = ctxWithTimeout
 	}
 
-	queryParams := pgdb.QueryParams{
+	qp := pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
 		Comment:    params.Comment,
@@ -66,7 +73,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var reply wire.OpMsg
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var resDocs []*types.Document
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &queryParams, h.DisablePushdown})
+		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
 		if err != nil {
 			return err
 		}
@@ -90,19 +97,20 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		if params.Update != nil { // we have update part
-			var upsert *types.Document
-			var upserted bool
+			var resValue any
+			var insertedID any
 
 			if params.Upsert { //  we have upsert flag
-				p := &upsertParams{
-					hasUpdateOperators: params.HasUpdateOperators,
-					query:              params.Query,
-					update:             params.Update,
-					queryParams:        &queryParams,
-				}
-				upsert, upserted, err = upsertDocuments(ctx, dbPool, tx, resDocs, p)
+				var upsertParams *common.UpsertParams
+				upsertParams, err = upsertDocuments(ctx, dbPool, tx, resDocs, &qp, params)
 				if err != nil {
 					return err
+				}
+
+				resValue = upsertParams.ReturnValue
+
+				if upsertParams.Operation == common.UpsertOperationInsert {
+					insertedID = must.NotFail(upsertParams.Upsert.Get("_id"))
 				}
 			} else { // process update as usual
 				if len(resDocs) == 0 {
@@ -117,14 +125,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil
 				}
 
+				var upsert *types.Document
+
 				if params.HasUpdateOperators {
 					upsert = resDocs[0].DeepCopy()
 					_, err = common.UpdateDocument(upsert, params.Update)
 					if err != nil {
-						return err
-					}
-
-					if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
 						return err
 					}
 				} else {
@@ -133,18 +139,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					if !upsert.Has("_id") {
 						upsert.Set("_id", must.NotFail(resDocs[0].Get("_id")))
 					}
-
-					if _, err = updateDocument(ctx, tx, &queryParams, upsert); err != nil {
-						return err
-					}
 				}
-			}
 
-			var resultDoc *types.Document
-			if params.ReturnNewDocument || len(resDocs) == 0 {
-				resultDoc = upsert
-			} else {
-				resultDoc = resDocs[0]
+				if _, err = updateDocument(ctx, tx, &qp, upsert); err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				resValue = resDocs[0]
+				if params.ReturnNewDocument {
+					resValue = upsert
+				}
 			}
 
 			lastErrorObject := must.NotFail(types.NewDocument(
@@ -152,14 +156,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				"updatedExisting", len(resDocs) > 0,
 			))
 
-			if upserted {
-				lastErrorObject.Set("upserted", must.NotFail(resultDoc.Get("_id")))
+			if insertedID != nil {
+				lastErrorObject.Set("upserted", insertedID)
 			}
 
 			must.NoError(reply.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
 					"lastErrorObject", lastErrorObject,
-					"value", resultDoc,
+					"value", resValue,
 					"ok", float64(1),
 				))},
 			}))
@@ -172,6 +176,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				must.NoError(reply.SetSections(wire.OpMsgSection{
 					Documents: []*types.Document{must.NotFail(types.NewDocument(
 						"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+						"value", types.Null,
 						"ok", float64(1),
 					))},
 				}))
@@ -179,7 +184,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil
 			}
 
-			if _, err = deleteDocuments(ctx, dbPool, &queryParams, resDocs); err != nil {
+			if _, err = deleteDocuments(ctx, dbPool, &qp, resDocs); err != nil {
 				return err
 			}
 
@@ -203,62 +208,29 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
-// upsertParams represent parameters for Handler.upsert method.
-type upsertParams struct {
-	hasUpdateOperators bool
-	query, update      *types.Document
-	queryParams        *pgdb.QueryParams
-}
-
-// upsertDocuments inserts new document if no documents in query result or updates given document.
-// When inserting new document we must check that `_id` is present, so we must extract `_id` from query or generate a new one.
-func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, params *upsertParams) (*types.Document, bool, error) { //nolint:lll // argument list is too long
-	// TODO split that block into own function since insert and update are very different
-	// (and one uses dbPool, while other uses tx)
-	if len(docs) == 0 {
-		upsert := must.NotFail(types.NewDocument())
-
-		if params.hasUpdateOperators {
-			_, err := common.UpdateDocument(upsert, params.update)
-			if err != nil {
-				return nil, false, err
-			}
-		} else {
-			upsert = params.update
-		}
-
-		if !upsert.Has("_id") {
-			if params.query.Has("_id") {
-				upsert.Set("_id", must.NotFail(params.query.Get("_id")))
-			} else {
-				upsert.Set("_id", types.NewObjectID())
-			}
-		}
-
-		if err := insertDocument(ctx, dbPool, params.queryParams, upsert); err != nil {
-			return nil, false, err
-		}
-
-		return upsert, true, nil
-	}
-
-	upsert := docs[0].DeepCopy()
-
-	if params.hasUpdateOperators {
-		_, err := common.UpdateDocument(upsert, params.update)
-		if err != nil {
-			return nil, false, err
-		}
-	} else {
-		for _, k := range params.update.Keys() {
-			upsert.Set(k, must.NotFail(params.update.Get(k)))
-		}
-	}
-
-	_, err := updateDocument(ctx, tx, params.queryParams, upsert)
+// upsertDocuments inserts new document for insert operation,
+// or updates the document.
+func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*types.Document, query *pgdb.QueryParams, params *common.FindAndModifyParams) (*common.UpsertParams, error) { //nolint:lll // argument list is too long
+	res, err := common.PrepareDocumentForUpsert(docs, params)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
-	return upsert, false, nil
+	switch res.Operation {
+	case common.UpsertOperationInsert:
+		if err = insertDocument(ctx, dbPool, query, res.Upsert); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return res, nil
+	case common.UpsertOperationUpdate:
+		_, err = updateDocument(ctx, tx, query, res.Upsert)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return res, nil
+	default:
+		panic(fmt.Sprintf("unsupported upsert operation %s", res.Operation.String()))
+	}
 }
