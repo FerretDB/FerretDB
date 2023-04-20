@@ -27,7 +27,7 @@ var MixedBenchmarkValues = BenchmarkValues{
 	iter: newValuesIterator(generateMixedValues()),
 }
 
-// LargeDocumentBenchmarkValues contains a signle large document with various types of values.
+// LargeDocumentBenchmarkValues contains a single large document with various types of values.
 var LargeDocumentBenchmarkValues = BenchmarkValues{
 	name: "LargeDocumentBenchmarkValues",
 	iter: newValuesIterator(generateLargeDocument()),
