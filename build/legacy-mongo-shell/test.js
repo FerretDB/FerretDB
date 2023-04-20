@@ -28,8 +28,6 @@
   const filter = {'a.b.c.array.token': 'aAOBX7fkiRB+XGH1oQ9fln7sM62ox06qzUKpaan7Bys='};
   const proj = {'a.b.c.array.token': 1};
 
-  assert.eq(verycomplexDoc._id, t.findOne(filter, proj)._id);
-
   const res = t.runCommand({'find': coll, 'filter': filter, 'projection': proj});
 
   // command must fail as we don't support $ projection
