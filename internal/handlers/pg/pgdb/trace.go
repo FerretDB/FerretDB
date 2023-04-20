@@ -16,9 +16,11 @@ package pgdb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -29,14 +31,27 @@ var tracer = otel.Tracer("internal/handlers/pg/pgdb")
 type debugTracer struct{}
 
 // TraceQueryStart adds a span to Query, QueryRow, and Exec calls.
-func (t *debugTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryStartData) context.Context {
-	ctx, _ = tracer.Start(ctx, "TraceQueryStart")
+func (t *debugTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	ctx, _ = tracer.Start(ctx, data.SQL, trace.WithAttributes(
+		attribute.String("args", fmt.Sprintf("%v", data.Args)),
+	))
+
 	return ctx
 }
 
 // TraceQueryEnd ends the span started by TraceQueryStart.
-func (t *debugTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryEndData) {
+func (t *debugTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
 	span := trace.SpanFromContext(ctx)
+
+	kvs := []attribute.KeyValue{
+		attribute.String("commandTag", data.CommandTag.String()),
+	}
+
+	if data.Err != nil {
+		kvs = append(kvs, attribute.String("err", data.Err.Error()))
+	}
+
+	span.SetAttributes(kvs...)
 	span.End()
 }
 
