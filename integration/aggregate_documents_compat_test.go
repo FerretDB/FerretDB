@@ -1411,14 +1411,28 @@ func TestAggregateCompatProject(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"ReturnField": {
+		"Include1Field": {
 			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"v", int32(1)}}}},
 			},
 		},
-		"RemoveID": {
+		"Exclude1Field": {
 			pipeline: bson.A{
-				bson.D{{"$project", bson.D{{"_id", int32(0)}}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", int64(0)}}}},
+			},
+		},
+		"IncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", 1.42}}}},
+			},
+		},
+		"ExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}}}},
 			},
 		},
 	}

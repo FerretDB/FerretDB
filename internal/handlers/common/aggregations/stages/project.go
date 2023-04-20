@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type projectStage struct {
+type project struct {
 	projection *types.Document
+	inclusion  bool
 }
 
 func newProject(stage *types.Document) (Stage, error) {
@@ -32,25 +31,32 @@ func newProject(stage *types.Document) (Stage, error) {
 		return nil, err
 	}
 
-	return &projectStage{
-		projection: fields,
+	validated, inclusion, err := common.ValidateProjection(fields)
+	if err != nil {
+		return nil, err
+	}
+
+	return &project{
+		projection: validated,
+		inclusion:  inclusion,
 	}, nil
 }
 
-func (p *projectStage) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
-	iter, err := common.ProjectionIterator(iterator.Values(iterator.ForSlice(in)), p.projection)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+func (p *project) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
+	var out []*types.Document
+
+	for _, doc := range in {
+		projected, err := common.ProjectDocument(doc, p.projection, p.inclusion)
+		if err != nil {
+			return nil, err
+		}
+
+		out = append(out, projected)
 	}
 
-	res, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
+	return out, nil
 }
 
-func (p *projectStage) Type() StageType {
+func (p *project) Type() StageType {
 	return StageTypeDocuments
 }
