@@ -769,8 +769,8 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	t.Parallel()
 
-	maxNameLen := strings.Repeat("a", 63) // maxTableLen = 63
-	insertCollections := []string{"foo", "buz", maxNameLen}
+	maxTableLen := strings.Repeat("a", 63) // maxTableLen = 63
+	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		collection       string
@@ -812,8 +812,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"MaxTableLen": {
-			collection:       maxNameLen,
-			targetCollection: "bar",
+			collection:       "foo",
+			targetCollection: maxTableLen + "a",
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
