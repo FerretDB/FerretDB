@@ -21,11 +21,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// project represents $project stage.
+//
+//	{
+//	  $project: {
+//	    <output field1>: <expression1>,
+//	    ...
+//	    <output fieldN>: <expressionN>
+//	  }
 type project struct {
 	projection *types.Document
 	inclusion  bool
 }
 
+// newProject validates projection document and creates a new $project stage.
 func newProject(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
@@ -43,6 +52,7 @@ func newProject(stage *types.Document) (Stage, error) {
 	}, nil
 }
 
+// Process implements Stage interface.
 func (p *project) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
 	var out []*types.Document
 
