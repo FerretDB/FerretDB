@@ -175,7 +175,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	}
 }
 
-// getAllTableNames returns all PostgreSQL table names for the given FerretDB database and collection.
+// getAllTableNames returns all PostgreSQL table names for the given FerretDB database.
 func (ms *metadataStorage) getAllTableNames(ctx context.Context) []string {
 	iterParams := &iteratorParams{
 		schema:    ms.db,
@@ -189,10 +189,11 @@ func (ms *metadataStorage) getAllTableNames(ctx context.Context) []string {
 	}
 
 	tables := []string{}
+
 	for {
 		_, doc, err := iter.Next()
-		keys := doc.Keys()
-		for _, k := range keys {
+
+		for _, k := range doc.Keys() {
 			if k == "table" {
 				v, _ := doc.Get(k)
 				tables = append(tables, v.(string))
@@ -236,7 +237,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 	}
 
 	// we expect the error to be ErrTableNotExist if metadata doesn't exist.
-	if err != ErrTableNotExist {
+	if !errors.Is(err, ErrTableNotExist) {
 		return lazyerrors.Error(err)
 	}
 
