@@ -24,7 +24,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "42 2 * * *" # after Go workflow
+    - cron: "12 0 * * 1" # on Mondays to pre-fill cache
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag
@@ -88,6 +88,7 @@ jobs:
         run: git checkout -b $BRANCH
 
       - name: Setup Go
+        id: setup
         uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: packages
@@ -121,6 +122,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Go caches
+        uses: actions/cache@v3
+        with:
+          path: tmp/docker/gocaches
+          key: packages-gocaches-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
+          restore-keys: |
+            packages-gocaches-${{ steps.setup.outputs.cache_week }}-
 
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''

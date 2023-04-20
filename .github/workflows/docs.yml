@@ -11,7 +11,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "42 3 * * *" # after Integration workflow
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change or branch push
 # to prevent concurrent deployments to GitHub Pages.
