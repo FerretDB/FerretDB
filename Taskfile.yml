@@ -149,7 +149,9 @@ tasks:
   fmt-yaml:
     desc: "Format yaml"
     cmds:
+      - find . -name "*.yml" -exec chmod o+w {} \;
       - docker run --rm -v $(pwd):/work tmknom/prettier --write --parser=yaml "./**/*.yml"
+      - find . -name "*.yml" -exec chmod o-w {} \;
 
   test:
     desc: "Run all unit and integration tests in parallel"
