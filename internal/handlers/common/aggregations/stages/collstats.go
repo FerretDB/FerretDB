@@ -82,7 +82,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 //
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
-func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	_, res, err := iter.Next()
 
 	switch {
@@ -92,10 +92,6 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 		// For non-shared collections, the input must be an array with a single document.
 		panic("collStatsStage: Process: expected 1 document, got more")
 	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

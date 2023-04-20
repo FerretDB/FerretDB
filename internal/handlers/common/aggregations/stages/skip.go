@@ -46,7 +46,7 @@ func newSkip(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.SkipIterator(iter, closer, s.value), nil
 }
 

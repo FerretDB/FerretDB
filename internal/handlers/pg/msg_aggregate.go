@@ -199,7 +199,6 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 		defer closer.Close()
 
 		for _, s := range p.stages {
-			var err error
 			if iter, err = s.Process(ctx, iter, closer); err != nil {
 				return err
 			}

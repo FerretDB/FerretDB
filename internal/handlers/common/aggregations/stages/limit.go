@@ -46,7 +46,7 @@ func newLimit(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.LimitIterator(iter, closer, l.limit), nil
 }
 
