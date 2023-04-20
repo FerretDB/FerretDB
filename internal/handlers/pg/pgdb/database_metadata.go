@@ -128,13 +128,6 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	// possible way: a separate table for database metadata where we store the globala counter that is increased
-	// every time when createCollection is called. so then this number is unique for each new createCollection call.
-	// pg table: _ferretdb_counter -> {"counter": 10}
-	// counter := getUniqueCounter()
-
-	// oid - big number generated each operation. ...
-
 	// Index to ensure that collection name is unique
 	key := IndexKey{{Field: `_id`, Order: types.Ascending}}
 	if err = createPgIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, key, true); err != nil {
@@ -142,15 +135,19 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	m = &metadata{
-		collection: ms.collection,
-		indexes:    []metadataIndex{},
+	tableName = collectionNameToTableName(ms.collection)
+
+	for i, tn := range ms.getAllTableNames(ctx) {
+		if tableName == tn {
+			tableName = tableName + fmt.Sprintf("%d", i)
+		}
 	}
 
-	tableName = collectionNameToTableName(ms.collection) +
-		fmt.Sprintf("%d", counter)
-
-	m.table = tableName
+	m = &metadata{
+		collection: ms.collection,
+		table:      tableName,
+		indexes:    []metadataIndex{},
+	}
 
 	err = insert(ctx, ms.tx, &insertParams{
 		schema: ms.db,
@@ -178,36 +175,34 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 }
-
-// XXX WIP...
-func (ms *metadataStorage) mustAlter(ctx context.Context, tableName string) (bool, error) {
-	shortName := collectionNameToTableName(tableName)
-
+func (ms *metadataStorage) getAllTableNames(ctx context.Context) []string {
 	iterParams := &iteratorParams{
 		schema:    ms.db,
 		table:     dbMetadataTableName,
-		filter:    must.NotFail(types.NewDocument("table", shortName)),
 		forUpdate: false,
 	}
 
 	iter, err := buildIterator(ctx, ms.tx, iterParams)
 	if err != nil {
-		return false, lazyerrors.Error(err)
+		return nil
 	}
 
-	defer iter.Close()
-
+	tables := []string{}
 	for {
 		_, doc, err := iter.Next()
+		keys := doc.Keys()
+		for _, k := range keys {
+			if k == "table" {
+				v, _ := doc.Get(k)
+				tables = append(tables, v.(string))
+			}
+		}
+
 		switch {
 		case err == nil:
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
-			return false, nil
-		}
-
-		if doc.Has(shortName) {
-			return true, nil
+			return tables
 		}
 	}
 }
@@ -239,7 +234,7 @@ func (ms *metadataStorage) renameCollection(ctx context.Context, to string) erro
 		return ErrAlreadyExist
 	}
 
-	// we expect error to be TableNotExist as such metadata doesn't exist.
+	// we expect the error to be ErrTableNotExist if metadata doesn't exist.
 	if err != ErrTableNotExist {
 		return lazyerrors.Error(err)
 	}
