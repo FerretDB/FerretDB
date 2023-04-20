@@ -62,7 +62,6 @@ type metadata struct {
 	collection string // _id
 	table      string
 	indexes    []metadataIndex
-	i          uint32
 }
 
 // metadataIndex stores information about FerretDB index.
