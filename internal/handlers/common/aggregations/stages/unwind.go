@@ -105,6 +105,7 @@ func newUnwind(stage *types.Document) (Stage, error) {
 
 // Process implements Stage interface.
 func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	// TODO https://github.com/FerretDB/FerretDB/issues/2490
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
