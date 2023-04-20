@@ -45,8 +45,8 @@ func CountIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, f
 // countIterator is returned by CountIterator.
 type countIterator struct {
 	iter  types.DocumentsIterator
-	n     atomic.Uint32
 	field string
+	n     atomic.Uint32
 }
 
 // Next implements Iterator interface.

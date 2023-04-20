@@ -127,7 +127,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	var iter types.DocumentsIterator
+	var resDocs []*types.Document
 
 	// At this point we have a list of stages to apply to the documents or stats.
 	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
@@ -141,7 +141,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		qp.Filter = stages.GetPushdownQuery(aggregationStages)
 
-		if iter, err = processStagesDocuments(ctx, &stagesDocumentsParams{
+		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
 			dbPool, &qp, stagesDocuments,
 		}); err != nil {
 			return nil, err
@@ -149,7 +149,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	} else {
 		statistics := stages.GetStatistics(stagesStats)
 
-		if iter, err = processStagesStats(ctx, &stagesStatsParams{
+		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
 			dbPool, db, collection, statistics, stagesStats,
 		}); err != nil {
 			return nil, err
@@ -157,9 +157,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1892
-	firstBatch, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
+		firstBatch.Append(doc)
 	}
 
 	var reply wire.OpMsg
@@ -185,7 +185,7 @@ type stagesDocumentsParams struct {
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
-func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*types.Document, error) { //nolint:lll // for readability
 	iter, err := p.dbPool.QueryDocuments(ctx, p.qp)
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) (type
 		}
 	}
 
-	return iter, nil
+	return iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 }
 
 // stagesStatsParams contains the parameters for processStagesStats.
@@ -217,7 +217,7 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
-func processStagesStats(ctx context.Context, p *stagesStatsParams) (types.DocumentsIterator, error) {
+func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Document, error) {
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]
 	_, hasStorage := p.statistics[stages.StatisticStorage]
@@ -304,5 +304,5 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) (types.Docume
 		}
 	}
 
-	return iter, nil
+	return iterator.ConsumeValues(iter)
 }

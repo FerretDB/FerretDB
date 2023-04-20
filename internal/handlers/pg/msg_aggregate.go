@@ -205,11 +205,7 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 		}
 
 		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		return nil
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -314,10 +310,5 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 		}
 	}
 
-	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return docs, nil
+	return iterator.ConsumeValues(iter)
 }
