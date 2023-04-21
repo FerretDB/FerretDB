@@ -1412,6 +1412,13 @@ func TestAggregateCompatProject(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
 		"Include1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},

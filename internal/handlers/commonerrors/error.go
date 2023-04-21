@@ -122,6 +122,9 @@ const (
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
 
+	// ErrProjectBadExpression indicates projection value wrong type.
+	ErrProjectBadExpression = ErrorCode(15969) // Location15969
+
 	// ErrSortBadExpression indicates sort expression is not object.
 	ErrSortBadExpression = ErrorCode(15973) // Location15973
 

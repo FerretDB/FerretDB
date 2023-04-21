@@ -16,8 +16,11 @@ package stages
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -38,10 +41,24 @@ type project struct {
 func newProject(stage *types.Document) (Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrProjectBadExpression,
+			"$project specification must be an object",
+			"$project (stage)",
+		)
 	}
 
+	var cmdErr *commonerrors.CommandError
+
 	validated, inclusion, err := common.ValidateProjection(fields)
+	if errors.As(err, &cmdErr) {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			cmdErr.Code(),
+			fmt.Sprintf("Invalid $project :: caused by :: %s", cmdErr.Unwrap()),
+			"$project (stage)",
+		)
+	}
+
 	if err != nil {
 		return nil, err
 	}
