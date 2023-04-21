@@ -63,7 +63,7 @@ tasks:
       - cmd: docker buildx prune --all
         ignore_error: true # build container may not exist
       - docker system prune --all --volumes
-      - bin/golangci-lint{{exeExt}} cache clean
+      - bin/golangci-lint cache clean
       - go clean -cache -testcache -modcache -fuzzcache
       - rm -r .cache .task tools/.task integration/.task tmp
       - task: env-pull
@@ -126,7 +126,7 @@ tasks:
   env-data:
     desc: "Fill `test` database with data for experiments"
     cmds:
-      - bin/task{{exeExt}} -d integration env-data
+      - bin/task -d integration env-data
 
   gen-version:
     run: once
@@ -134,24 +134,24 @@ tasks:
       - go generate -x ./build/version
 
   build-host:
-    desc: "Build bin/ferretdb{{exeExt}} on the host for development"
+    desc: "Build bin/ferretdb on the host for development"
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) code"
     cmds:
       - go generate -x ./...
-      - bin/task{{exeExt}} -d integration integration-gen
+      - bin/task -d integration integration-gen
       - task: fmt
 
   fmt:
     desc: "Format code"
     cmds:
-      - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
-      - bin/gofumpt{{exeExt}} -w .
+      - bin/goimports -format-only -local=github.com/FerretDB/FerretDB -w .
+      - bin/gofumpt -w .
 
   test:
     desc: "Run all unit and integration tests in parallel"
@@ -161,14 +161,14 @@ tasks:
     desc: "Run short unit tests (with caching)"
     cmds:
       - go test -short {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - bin/task{{exeExt}} -d tools tools-test
+      - bin/task -d tools tools-test
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
       - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -bench=. -benchtime=1x ./...
-      - bin/task{{exeExt}} -d tools tools-test
+      - bin/task -d tools tools-test
 
   test-integration:
     desc: "Run integration tests for `pg` and `tigris` in parallel"
@@ -234,7 +234,7 @@ tasks:
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
-      - bin/benchstat{{exeExt}} old.txt new.txt
+      - bin/benchstat old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
   # But good enough for us.
@@ -271,7 +271,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -284,7 +284,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -298,7 +298,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -310,7 +310,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -328,7 +328,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb -test.coverprofile=cover.txt --
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -345,7 +345,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb -test.coverprofile=cover.txt --
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
@@ -356,13 +356,13 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
-      - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
-      - bin/go-sumtype{{exeExt}} ./...
-      - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
-      - bin/task{{exeExt}} -d integration integration-lint
-      - bin/task{{exeExt}} -d tools tools-lint
+      - bin/golangci-lint run --config=.golangci.yml
+      - bin/golangci-lint run --config=.golangci-new.yml
+      - bin/go-consistent -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
+      - bin/go-sumtype ./...
+      - go vet -vettool=./bin/checkswitch ./...
+      - bin/task -d integration integration-lint
+      - bin/task -d tools tools-lint
     sources:
       - "**/*.go"
       - "**/go.mod"
@@ -386,15 +386,15 @@ tasks:
 
   security-govulncheck:
     cmds:
-      - bin/govulncheck{{exeExt}} -v -test ./...
-      - bin/task{{exeExt}} -d integration integration-security
+      - bin/govulncheck -v -test ./...
+      - bin/task -d integration integration-security
 
   godocs:
     desc: "Serve godoc documentation"
     cmds:
       - cmd: open http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all
         ignore_error: true # open might not work on that platform
-      - bin/godoc{{exeExt}} -http=127.0.0.1:6060
+      - bin/godoc -http=127.0.0.1:6060
 
   psql:
     desc: "Run psql"
@@ -519,7 +519,7 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
+      - cmd: bin/nfpm package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
         env:
           ARCH: amd64
           VERSION:
@@ -536,7 +536,7 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
+      - cmd: bin/nfpm package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
         env:
           ARCH: amd64
           VERSION:
