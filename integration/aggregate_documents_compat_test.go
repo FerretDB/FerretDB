@@ -607,48 +607,14 @@ func TestAggregateCompatGroup(t *testing.T) {
 func TestAggregateCompatGroupDotNotation(t *testing.T) {
 	t.Parallel()
 
-	// Providers Composites, ArrayAndDocuments and Mixed
-	// cannot be used due to sorting difference.
-	// FerretDB always sorts empty array is less than null.
-	// In compat, for `.sort()` an empty array is less than null.
-	// In compat, for aggregation `$sort` null is less than an empty array.
-	// https://github.com/FerretDB/FerretDB/issues/2276
-
-	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
+	providers := shareddata.AllProviders().
+		// Providers Composites, ArrayAndDocuments and Mixed
+		// cannot be used due to sorting difference.
+		// FerretDB always sorts empty array is less than null.
+		// In compat, for `.sort()` an empty array is less than null.
+		// In compat, for aggregation `$sort` null is less than an empty array.
+		// https://github.com/FerretDB/FerretDB/issues/2276
+		Remove(shareddata.Composites, shareddata.ArrayAndDocuments, shareddata.Mixed)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DocDotNotation": {
@@ -684,47 +650,13 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
 	t.Parallel()
 
-	// Providers Composites and Mixed cannot be used due to sorting difference.
-	// FerretDB always sorts empty array is less than null.
-	// In compat, for `.sort()` an empty array is less than null.
-	// In compat, for aggregation `$sort` null is less than an empty array.
-	// https://github.com/FerretDB/FerretDB/issues/2276
-
-	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		shareddata.ArrayAndDocuments,
-	}
+	providers := shareddata.AllProviders().
+		// Providers Composites and Mixed cannot be used due to sorting difference.
+		// FerretDB always sorts empty array is less than null.
+		// In compat, for `.sort()` an empty array is less than null.
+		// In compat, for aggregation `$sort` null is less than an empty array.
+		// https://github.com/FerretDB/FerretDB/issues/2276
+		Remove(shareddata.Composites, shareddata.Mixed)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DocDotNotation": {
@@ -908,14 +840,14 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
-		Remove("Composites").
-		Remove("ArrayStrings").
-		Remove("ArrayInt32s").
-		Remove("Mixed").
-		Remove("ArrayAndDocuments").
+		Remove(shareddata.Composites).
+		Remove(shareddata.ArrayStrings).
+		Remove(shareddata.ArrayInt32s).
+		Remove(shareddata.Mixed).
+		Remove(shareddata.ArrayAndDocuments).
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles")
+		Remove(shareddata.Doubles)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1104,6 +1036,10 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 func TestAggregateCompatMatch(t *testing.T) {
 	t.Parallel()
 
+	providers := shareddata.AllProviders().
+		// skipped due to https://github.com/FerretDB/FerretDB/issues/2291
+		Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
@@ -1151,7 +1087,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 	}
 
-	testAggregateStagesCompat(t, testCases)
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
