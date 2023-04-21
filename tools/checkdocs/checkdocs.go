@@ -34,6 +34,7 @@ type FileSlug struct {
 
 func main() {
 	dir := filepath.Join("website", "blog")
+
 	fs, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
@@ -45,6 +46,7 @@ func main() {
 
 	for _, slug := range slugs {
 		fo, err := os.Open(filepath.Join(dir, slug.fileName))
+
 		if err != nil {
 			log.Fatalf("Couldn't open file: %s", slug.fileName)
 			continue
