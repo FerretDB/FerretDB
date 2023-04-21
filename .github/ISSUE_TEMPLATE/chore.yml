@@ -33,7 +33,7 @@ body:
         - unit tests added/updated;
         - integration/compatibility tests added/updated;
         - spot refactorings done;
-        - user documentation updated or issue to update documentation created;
+        - user documentation updated or an issue to create documentation created;
         - something else?
     validations:
       required: true
