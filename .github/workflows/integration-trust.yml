@@ -14,7 +14,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "12 3 * * *" # after Docker workflow
+    - cron: "12 2 * * *" # after integration workflow to reuse cache
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to save some resources.
