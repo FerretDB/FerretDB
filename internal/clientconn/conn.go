@@ -180,6 +180,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// write to temporary file first, then rename to avoid partial files
 
 		var f *os.File
+		h := sha256.New()
 
 		// use local directory so os.Rename below always works
 		if f, err = os.CreateTemp(c.testRecordsDir, "_*.partial"); err != nil {
@@ -200,47 +201,37 @@ func (c *conn) run(ctx context.Context) (err error) {
 				c.l.Warn(e)
 			}
 
-			h := sha256.New()
-			if _, e := io.Copy(h, f); e != nil {
-				c.l.Warn(e)
-			}
-			hash := fmt.Sprintf("%x", h.Sum(nil))
-
 			if e := f.Close(); e != nil {
 				c.l.Warn(e)
 			}
 
 			var hashPath string
-			var hashFileName string
+
+			hash := fmt.Sprintf("%64x", h.Sum(nil))
 			s := strings.Split(hash, "")
+
 			for i := 0; i < len(s); {
-				if len(s[i:]) < 3 {
-					hashFileName = strings.Join(s[i:], "")
-					break
-				}
 				if len(hashPath) != 0 {
 					hashPath += "/"
 				}
 
 				hashPath += strings.Join(s[i:i+2], "")
-
 				i += 2
 			}
 
-			c.l.Info(hashPath, hashFileName)
-
-			hashPath = filepath.Join(c.testRecordsDir, hashPath)
-			if e := os.MkdirAll(hashPath, 0o777); e != nil {
+			makePath := filepath.Join(c.testRecordsDir, hashPath[:92])
+			if e := os.MkdirAll(makePath, 0o777); e != nil {
 				c.l.Warn(e)
 			}
 
-			path := filepath.Join(hashPath, fmt.Sprintf("%s.bin", hashFileName))
+			path := filepath.Join(c.testRecordsDir, fmt.Sprintf("%s.bin", hashPath))
 			if e := os.Rename(f.Name(), path); e != nil {
 				c.l.Warn(e)
 			}
 		}()
 
-		r := io.TeeReader(c.netConn, f)
+		mw := io.MultiWriter(f, h)
+		r := io.TeeReader(c.netConn, mw)
 		bufr = bufio.NewReader(r)
 	}
 

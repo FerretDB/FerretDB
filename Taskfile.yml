@@ -277,7 +277,7 @@ tasks:
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        --test-records-dir=tmp/records
+        --test-records-dir=./tmp/records
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
@@ -290,7 +290,7 @@ tasks:
         --mode=diff-normal
         --handler=tigris
         --tigris-url=127.0.0.1:8081
-        --test-records-dir=tmp/records
+        --test-records-dir=./tmp/records
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
@@ -303,7 +303,7 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=hana
-        --test-records-dir=tmp/records
+        --test-records-dir=./tmp/records
 
   run-secured:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
@@ -320,7 +320,7 @@ tasks:
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://127.0.0.1:5433/ferretdb
-        --test-records-dir=tmp/records
+        --test-records-dir=./tmp/records
 
   # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
   run-tigris-secured:
@@ -338,7 +338,7 @@ tasks:
         --mode=diff-normal
         --handler=tigris
         --tigris-url=api.preview.tigrisdata.cloud
-        --test-records-dir=tmp/records
+        --test-records-dir=./tmp/records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
@@ -351,7 +351,7 @@ tasks:
         --mode=diff-proxy
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        --test-records-dir=tmp/records
+        --test-records-dir=./tmp/records
 
   lint:
     desc: "Run linters"
