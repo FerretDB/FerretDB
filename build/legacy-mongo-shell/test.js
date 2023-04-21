@@ -26,7 +26,7 @@
   assert.commandWorked(t.insert(verycomplexDoc));
 
   const filter = {'a.b.c.array.token': 'aAOBX7fkiRB+XGH1oQ9fln7sM62ox06qzUKpaan7Bys='};
-  const proj = {'a.b.c.array.token.$': 1};
+  const proj = {'a.b.c.array.token.$': 1}; // add $ operator
 
   const res = t.runCommand({'find': coll, 'filter': filter, 'projection': proj});
 
