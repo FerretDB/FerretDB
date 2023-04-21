@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+// Package stages provides aggregation stages.
+package stages
 
 import (
 	"context"
@@ -57,6 +58,7 @@ var stages = map[string]newStageFunc{
 	"$group":     newGroup,
 	"$limit":     newLimit,
 	"$match":     newMatch,
+	"$project":   newProject,
 	"$skip":      newSkip,
 	"$sort":      newSort,
 	"$unwind":    newUnwind,
@@ -84,7 +86,6 @@ var unsupportedStages = map[string]struct{}{
 	"$merge":                  {},
 	"$out":                    {},
 	"$planCacheStats":         {},
-	"$project":                {},
 	"$redact":                 {},
 	"$replaceRoot":            {},
 	"$replaceWith":            {},

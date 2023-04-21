@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -27,6 +26,7 @@ import (
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -43,17 +43,6 @@ const (
 type Pool struct {
 	p      *pgxpool.Pool
 	logger *zapadapter.Logger
-}
-
-// DBStats describes statistics for a database.
-type DBStats struct {
-	Name         string
-	CountTables  int32
-	CountRows    int32
-	SizeTotal    int64
-	SizeIndexes  int64
-	SizeRelation int64
-	CountIndexes int32
 }
 
 // NewPool returns a new concurrency-safe connection pool.
@@ -107,10 +96,20 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 
 	pgdbLogger := zapadapter.NewLogger(logger.Named("pgdb"))
 
-	// try to log everything; logger's configuration will skip extra levels if needed
-	config.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   pgdbLogger,
-		LogLevel: tracelog.LogLevelTrace,
+	tracers := []pgx.QueryTracer{
+		// try to log everything; logger's configuration will skip extra levels if needed
+		&tracelog.TraceLog{
+			Logger:   pgdbLogger,
+			LogLevel: tracelog.LogLevelTrace,
+		},
+	}
+
+	if debugbuild.Enabled {
+		tracers = append(tracers, new(debugTracer))
+	}
+
+	config.ConnConfig.Tracer = &multiQueryTracer{
+		Tracers: tracers,
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
@@ -161,10 +160,17 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	defer rows.Close()
 
 	for rows.Next() {
-		var name, setting, description string
-		if err := rows.Scan(&name, &setting, &description); err != nil {
+		// handle variable number of columns as a workaround for https://github.com/cockroachdb/cockroach/issues/101715
+		values, err := rows.Values()
+		if err != nil {
 			return fmt.Errorf("pgdb.checkConnection: %w", err)
 		}
+
+		if len(values) < 2 {
+			return fmt.Errorf("pgdb.checkConnection: invalid row: %#v", values)
+		}
+		name := values[0].(string)
+		setting := values[1].(string)
 
 		switch name {
 		case "server_encoding":
@@ -204,64 +210,4 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// Stats returns a set of statistics for FerretDB server, database, collection
-// - or, in terms of PostgreSQL, database, schema, table.
-//
-// It returns ErrTableNotExist is the given collection does not exist, and ignores other errors.
-func (pgPool *Pool) Stats(ctx context.Context, db, collection string) (*DBStats, error) {
-	res := &DBStats{
-		Name: db,
-	}
-
-	err := pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		sql := `
-	SELECT COUNT(distinct t.table_name)                                                         AS CountTables,
-		COALESCE(SUM(s.n_live_tup), 0)                                                          AS CountRows,
-		COALESCE(SUM(pg_total_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0) AS SizeTotal,
-		COALESCE(SUM(pg_indexes_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)        AS SizeIndexes,
-		COALESCE(SUM(pg_relation_size('"'||t.table_schema||'"."'||t.table_name||'"')), 0)       AS SizeRelation,
-		COUNT(distinct i.indexname)                                                             AS CountIndexes
-	FROM information_schema.tables AS t
-		LEFT OUTER JOIN pg_stat_user_tables AS s ON s.schemaname = t.table_schema AND s.relname = t.table_name
-		LEFT OUTER JOIN pg_indexes          AS i ON i.schemaname = t.table_schema AND i.tablename = t.table_name`
-
-		// TODO Exclude service schemas from the query above https://github.com/FerretDB/FerretDB/issues/1068
-
-		var args []any
-
-		if db != "" {
-			sql += " WHERE t.table_schema = $1"
-			args = append(args, db)
-
-			if collection != "" {
-				metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
-				if err != nil {
-					return err
-				}
-
-				sql += " AND t.table_name = $2"
-				args = append(args, metadata.table)
-			}
-		}
-
-		row := tx.QueryRow(ctx, sql, args...)
-
-		return row.Scan(&res.CountTables, &res.CountRows, &res.SizeTotal, &res.SizeIndexes, &res.SizeRelation, &res.CountIndexes)
-	})
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, ErrTableNotExist):
-		// return this error as is because it can be handled by the caller
-		return nil, err
-	default:
-		// just log it for now
-		// TODO https://github.com/FerretDB/FerretDB/issues/1346
-		pgPool.logger.Log(ctx, tracelog.LogLevelError, "pgdb.Stats: failed to get stats", map[string]any{"err": err})
-	}
-
-	return res, nil
 }
