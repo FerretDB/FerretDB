@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package contains linter for blog posts
+// Package contains linter for blog posts.
 package main
 
 import (
@@ -35,7 +35,6 @@ type FileSlug struct {
 func main() {
 	dir := filepath.Join("website", "blog")
 	fs, err := os.ReadDir(dir)
-
 	if err != nil {
 		log.Fatal(err)
 	}
