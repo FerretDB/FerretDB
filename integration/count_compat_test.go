@@ -16,6 +16,7 @@ package integration
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -208,6 +209,11 @@ func TestCountCompat(t *testing.T) {
 		"SkipNegativeDoubleCeil": {
 			filter:     bson.D{},
 			optSkip:    -1.888,
+			resultType: emptyResult,
+		},
+		"SkipMinFloat": {
+			filter:     bson.D{},
+			optSkip:    -math.MaxFloat64,
 			resultType: emptyResult,
 		},
 		"SkipNull": {

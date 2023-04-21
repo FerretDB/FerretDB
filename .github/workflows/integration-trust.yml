@@ -14,7 +14,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "12 3 * * *" # after Docker workflow
+    - cron: "12 2 * * *" # after integration workflow to reuse cache
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to save some resources.
@@ -67,7 +67,9 @@ jobs:
       # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
       - name: Name branch
         if: github.event_name == 'pull_request_target'
-        run: git checkout -b ${{ github.head_ref }}
+        env:
+          BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        run: git checkout -b $BRANCH
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

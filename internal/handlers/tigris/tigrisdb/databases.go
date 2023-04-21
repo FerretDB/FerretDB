@@ -17,7 +17,6 @@ package tigrisdb
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"time"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
@@ -44,14 +43,12 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 	// but keep in mind that it can be created in concurrent connection.
 	// If we detect that other creation is in flight, we give up to retriesMax attempts to create the database.
 	// TODO https://github.com/FerretDB/FerretDB/issues/1341
-	// TODO https://github.com/FerretDB/FerretDB/issues/1720
 	const (
 		retriesMax    = 5
-		retryDelayMin = 100 * time.Millisecond
 		retryDelayMax = 200 * time.Millisecond
 	)
 
-	for i := 0; i < retriesMax; i++ {
+	for i := 0; i <= retriesMax; i++ {
 		_, err = tdb.Driver.CreateProject(ctx, db)
 		tdb.l.Debug("createDatabaseIfNotExists", zap.String("db", db), zap.Error(err))
 
@@ -65,16 +62,14 @@ func (tdb *TigrisDB) createDatabaseIfNotExists(ctx context.Context, db string) (
 				return false, nil
 			}
 
+			retry := i + 1
 			if isOtherCreationInFlight(err) {
-				deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
-				delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
-
 				tdb.l.Warn(
 					"createDatabaseIfNotExists failed, retrying",
-					zap.String("db", db), zap.Error(err), zap.Duration("delay", delay),
+					zap.String("db", db), zap.Int("retry", retry), zap.Error(err),
 				)
 
-				ctxutil.Sleep(ctx, delay)
+				ctxutil.SleepWithJitter(ctx, retryDelayMax, int64(retry))
 				continue
 			}
 

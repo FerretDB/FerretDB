@@ -33,6 +33,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -54,8 +55,8 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
-	enableCursorsF   = flag.Bool("enable-cursors", false, "enable cursors")
+	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableCursorsF         = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.
@@ -78,6 +79,9 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
+
+	// Benchmark data provider. If empty, collection is not created.
+	BenchmarkProvider shareddata.BenchmarkProvider
 }
 
 // SetupResult represents setup results.
@@ -191,7 +195,49 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	}
 
 	var inserted bool
-	for _, provider := range opts.Providers {
+
+	if len(opts.Providers) > 0 {
+		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
+		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+	} else {
+		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
+	}
+
+	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
+		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
+	} else {
+		require.True(tb, inserted, "all providers were not compatible")
+	}
+
+	if ownCollection {
+		// delete collection and (possibly) database unless test failed
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+				return
+			}
+
+			err := collection.Drop(ctx)
+			require.NoError(tb, err)
+
+			if ownDatabase {
+				err = database.Drop(ctx)
+				require.NoError(tb, err)
+			}
+		})
+	}
+
+	return collection
+}
+
+// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+	tb.Helper()
+
+	collectionName := collection.Name()
+	database := collection.Database()
+
+	for _, provider := range providers {
 		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
 			tb.Logf(
 				"Provider %q is not compatible with backend %q, skipping it.",
@@ -202,7 +248,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			continue
 		}
 
-		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
+		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(provCtx, spanName)
 
@@ -228,29 +274,50 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		span.End()
 	}
 
-	if len(opts.Providers) == 0 {
-		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
-	} else {
-		require.True(tb, inserted, "all providers were not compatible")
+	return
+}
+
+// insertBenchmarkProvider inserts documents from specified BenchmarkProvider into collection.
+// It returns true if any document was inserted.
+//
+// The function calculates the checksum of all inserted documents and compare them with provider's hash.
+func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
+	tb.Helper()
+
+	if provider == nil {
+		return
 	}
 
-	if ownCollection {
-		// delete collection and (possibly) database unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
-				return
-			}
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collection.Name(), provider.Name())
+	provCtx, span := otel.Tracer("").Start(ctx, spanName)
+	region := trace.StartRegion(provCtx, spanName)
 
-			err := collection.Drop(ctx)
-			require.NoError(tb, err)
+	iter := provider.Docs()
 
-			if ownDatabase {
-				err = database.Drop(ctx)
-				require.NoError(tb, err)
-			}
-		})
+	for {
+		docs, err := iterator.ConsumeValuesN(iter, 10)
+		require.NoError(tb, err)
+
+		if len(docs) == 0 {
+			break
+		}
+
+		// convert []bson.D to []any, as mongodb requires.
+		insertDocs := make([]any, len(docs))
+
+		for i, doc := range docs {
+			insertDocs[i] = doc
+		}
+
+		res, err := collection.InsertMany(provCtx, insertDocs)
+		require.NoError(tb, err)
+		require.Len(tb, res.InsertedIDs, len(docs))
+
+		inserted = true
 	}
 
-	return collection
+	region.End()
+	span.End()
+
+	return
 }

@@ -24,7 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
 
 // TestDeleteSimple checks simple cases of doc deletion.
@@ -69,8 +69,8 @@ func TestDeleteLimitErrors(t *testing.T) {
 		"NotSet": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
 			expectedErr: &mongo.CommandError{
-				Code:    int32(common.ErrMissingField),
-				Name:    common.ErrMissingField.String(),
+				Code:    int32(commonerrors.ErrMissingField),
+				Name:    commonerrors.ErrMissingField.String(),
 				Message: "BSON field 'delete.deletes.limit' is missing but a required field",
 			},
 		},
@@ -84,16 +84,16 @@ func TestDeleteLimitErrors(t *testing.T) {
 		"InvalidFloat": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 42.13}}},
 			expectedErr: &mongo.CommandError{
-				Code:    int32(common.ErrFailedToParse),
-				Name:    common.ErrFailedToParse.String(),
+				Code:    int32(commonerrors.ErrFailedToParse),
+				Name:    commonerrors.ErrFailedToParse.String(),
 				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
 			},
 		},
 		"InvalidInt": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
 			expectedErr: &mongo.CommandError{
-				Code:    int32(common.ErrFailedToParse),
-				Name:    common.ErrFailedToParse.String(),
+				Code:    int32(commonerrors.ErrFailedToParse),
+				Name:    commonerrors.ErrFailedToParse.String(),
 				Message: "The limit field in delete objects must be 0 or 1. Got 100",
 			},
 		},

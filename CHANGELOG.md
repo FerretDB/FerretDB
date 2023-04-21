@@ -48,7 +48,7 @@ We are delighted to announce the release of FerretDB 1.0 GA!
 ### New Features 🎉
 * Support dot notation in sorting by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2156
 * Add support for `$each` modifier to `$addToSet` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2187
-* Add  support for `$each` modifier to `$push` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2202
+* Add support for `$each` modifier to `$push` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2202
 * Add support for `$pull` array update operator by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2222
 
 ### Fixed Bugs 🐛
@@ -213,7 +213,7 @@ We are delighted to announce the release of FerretDB 1.0 GA!
 * Refactor integration tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/1925
 * Simplify fields sorting, add TODO by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2039
 * Run `task testjs` on CI by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2031
-* Return a proper error when a document with duplicate `_id`  is sent for `insert` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2024
+* Return a proper error when a document with duplicate `_id` is sent for `insert` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2024
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/31?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v0.9.1...v0.9.2).
@@ -1114,7 +1114,7 @@ We plan to reach parity with our PostgreSQL backend in the next release.
 * Better `-0` handling in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/616
 * Bump github.com/golangci/golangci-lint from 1.46.1 to 1.46.2 in /tools by @dependabot in https://github.com/FerretDB/FerretDB/pull/617
 * Bump PostgreSQL and MongoDB versions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/599
-* Rename `OP_*` constants to `OpCode*` constants  by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/620
+* Rename `OP_*` constants to `OpCode*` constants by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/620
 * Bump gopkg.in/yaml.v3 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/646
 * Bump gopkg.in/yaml.v3 in tools by @AlekSi in https://github.com/FerretDB/FerretDB/pull/648
 * Make `Path` type by @w84thesun in https://github.com/FerretDB/FerretDB/pull/635
@@ -1354,7 +1354,7 @@ In short, we want FerretDB to be compatible with MongoDB first and fast second, 
 * Filter documents using Go code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/370
 * Projection: `<field>: <1 or true>` and `<field>: <0 or false>` by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/377
 * Fix small issues after rewrite by @AlekSi in https://github.com/FerretDB/FerretDB/pull/380
-* Projection: `<field>: <1 or true>` and `<field>: <0 or false>`: error messages formatting  by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/382
+* Projection: `<field>: <1 or true>` and `<field>: <0 or false>`: error messages formatting by @seeforschauer in https://github.com/FerretDB/FerretDB/pull/382
 * Bump dependecnies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/387
 * Fix some fluky tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/351
 * Minor CI and build tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/390

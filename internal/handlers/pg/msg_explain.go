@@ -18,11 +18,11 @@ import (
 	"context"
 	"os"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -96,10 +96,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			}
 		}
 
-		qp.Filter = aggregations.GetPushdownQuery(stagesDocs)
+		qp.Filter = stages.GetPushdownQuery(stagesDocs)
 	}
 
-	if h.DisablePushdown {
+	if h.DisableFilterPushdown {
 		qp.Filter = nil
 	}
 

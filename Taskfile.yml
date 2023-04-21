@@ -9,7 +9,7 @@ vars:
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
-  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
@@ -36,6 +36,13 @@ tasks:
       - go mod verify
       - go generate -x
 
+  init-tools-golangci:
+    dir: tools/golangci
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - go generate -x
+
   init-integration:
     dir: integration
     cmds:
@@ -44,7 +51,7 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [gen-version, init-tools, init-integration]
+    deps: [gen-version, init-tools, init-tools-golangci, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
@@ -167,8 +174,8 @@ tasks:
     desc: "Run integration tests for `pg` and `tigris` in parallel"
     deps:
       - test-integration-pg
-      - test-integration-tigris
       - test-integration-mongodb
+      # disable for now - test-integration-tigris
       # no test-integration-hana
 
   test-integration-pg:
@@ -217,8 +224,8 @@ tasks:
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
 
-  bench-short:
-    desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
+  bench-unit-short:
+    desc: "Benchmark internal package for about 25 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
       - echo 'Running five functions for {{.BENCHTIME}} each...'
@@ -567,9 +574,18 @@ tasks:
         docker compose run --rm
         --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
         wrangler
-      - docker compose run --rm wrangler pages deployment create --project-name=docs website/build
+      - docker compose run --rm --service-ports wrangler pages deployment create --project-name=docs website/build
 
   blog-dev:
     desc: "Start blog development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0 --port=3001
+
+  blog-cloudflare-preview:
+    cmds:
+      # for debugging
+      - >
+        docker compose run --rm
+        --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
+        wrangler
+      - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build

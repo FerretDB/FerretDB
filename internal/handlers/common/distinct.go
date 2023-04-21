@@ -20,6 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -64,8 +65,8 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 
 	var ok bool
 	if dp.Collection, ok = collectionParam.(string); !ok {
-		return nil, NewCommandErrorMsgWithArgument(
-			ErrInvalidNamespace,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
 			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collectionParam)),
 			document.Command(),
 		)
@@ -76,7 +77,10 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	}
 
 	if dp.Key == "" {
-		return nil, NewCommandErrorMsg(ErrEmptyFieldPath, "FieldPath cannot be constructed with empty string")
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrEmptyFieldPath,
+			"FieldPath cannot be constructed with empty string",
+		)
 	}
 
 	if dp.Filter, err = GetOptionalParam(document, "query", dp.Filter); err != nil {

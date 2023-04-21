@@ -68,6 +68,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrDollarPrefixedFieldName indicates the field name is prefixed with $.
+	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
+
 	// ErrInvalidID indicates that _id field is invalid.
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
@@ -79,6 +82,9 @@ const (
 
 	// ErrInvalidOptions indicates that _id index cannot be deleted.
 	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
+
+	// ErrImmutableField indicates that _id field is immutable.
+	ErrImmutableField = ErrorCode(66) // ImmutableField
 
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex

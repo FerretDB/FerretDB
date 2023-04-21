@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package stages
 
 import (
 	"context"
@@ -24,8 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// collStatsStage represents $collStats stage.
-type collStatsStage struct {
+// collStats represents $collStats stage.
+type collStats struct {
 	storageStats   *storageStats
 	count          bool
 	latencyStats   bool
@@ -48,7 +48,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	var cs collStatsStage
+	var cs collStats
 
 	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
 	cs.count = fields.Has("count")
@@ -62,13 +62,13 @@ func newCollStats(stage *types.Document) (Stage, error) {
 	if fields.Has("storageStats") {
 		cs.storageStats = new(storageStats)
 
-		// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
-		cs.storageStats.scale, err = common.GetOptionalPositiveNumber(
-			must.NotFail(fields.Get("storageStats")).(*types.Document),
-			"scale",
-		)
-		if err != nil || cs.storageStats.scale == 0 {
-			cs.storageStats.scale = 1
+		storageStatsFields := must.NotFail(fields.Get("storageStats")).(*types.Document)
+
+		var s any
+		if s, err = storageStatsFields.Get("scale"); err == nil {
+			if cs.storageStats.scale, err = common.GetScaleParam("$collStats.storageStats", s); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -79,7 +79,7 @@ func newCollStats(stage *types.Document) (Stage, error) {
 //
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
-func (c *collStatsStage) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
 	// For non-shared collections, the input must be an array with a single document.
 	if len(in) != 1 {
 		panic(fmt.Sprintf("collStatsStage: Process: expected 1 document, got %d", len(in)))
@@ -106,11 +106,11 @@ func (c *collStatsStage) Process(ctx context.Context, in []*types.Document) ([]*
 }
 
 // Type implements Stage interface.
-func (c *collStatsStage) Type() StageType {
+func (c *collStats) Type() StageType {
 	return StageTypeStats
 }
 
 // check interfaces
 var (
-	_ Stage = (*collStatsStage)(nil)
+	_ Stage = (*collStats)(nil)
 )
