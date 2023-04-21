@@ -145,6 +145,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 			allTables[tableName] = true
 			break
 		}
+		i++
 	}
 
 	m = &metadata{
