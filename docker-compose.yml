@@ -216,6 +216,7 @@ services:
       - CLOUDFLARE_ACCOUNT_ID
       - CLOUDFLARE_API_TOKEN
       - WRANGLER_SEND_METRICS=false
+      # - WRANGLER_LOG=debug # TODO https://github.com/cloudflare/workers-sdk/issues/3073
     volumes:
       - .:/workdir # mount everything for wrangler to pick up branch name, commit hash, etc from git
   docusaurus-docs:
