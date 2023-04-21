@@ -46,7 +46,7 @@ func CountIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, f
 type countIterator struct {
 	iter  types.DocumentsIterator
 	field string
-	n     atomic.Uint32
+	done  atomic.Bool
 }
 
 // Next implements Iterator interface.
@@ -55,9 +55,8 @@ type countIterator struct {
 func (iter *countIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
-	n := iter.n.Add(1) - 1
-
-	if n >= 1 {
+	done := iter.done.Swap(true)
+	if !done {
 		// subsequent calls return error.
 		return unused, nil, iterator.ErrIteratorDone
 	}
