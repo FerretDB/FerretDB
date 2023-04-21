@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// package contains linter for blog posts
 package main
 
 import (
@@ -34,12 +35,15 @@ type FileSlug struct {
 func main() {
 	dir := filepath.Join("website", "blog")
 	fs, err := os.ReadDir(dir)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	slugs := GetBlogSlugs(fs)
+
 	pass := true
+
 	for _, slug := range slugs {
 		fo, err := os.Open(filepath.Join(dir, slug.fileName))
 		if err != nil {
@@ -53,6 +57,7 @@ func main() {
 
 		if serr != nil {
 			log.Print(serr)
+
 			pass = false
 		}
 	}
@@ -68,7 +73,9 @@ func GetBlogSlugs(fs []fs.DirEntry) []FileSlug {
 	// then - and either 0 [1-9] or [1 or 2][0-9] or 3[0 or 1] - slug(any) and end with .md.
 	fnRegex := regexp.MustCompile(`^\d{4}\-(?:0[1-9]|1[012])\-(?:0[1-9]|[12][0-9]|3[01])-(.*).md$`)
 	mdRegex := regexp.MustCompile(`.md$`)
+
 	var fileSlugs []FileSlug
+
 	for _, f := range fs {
 		fn := f.Name()
 
@@ -77,6 +84,7 @@ func GetBlogSlugs(fs []fs.DirEntry) []FileSlug {
 		}
 
 		sm := fnRegex.FindStringSubmatch(fn)
+
 		if len(sm) > 2 {
 			log.Fatalf("File %s is not correctly formated (yyyy-mm-dd-'slug'.md)", fn)
 			continue
@@ -95,6 +103,7 @@ func VerifySlug(fS FileSlug, f io.Reader) error {
 	pass := false
 
 	scanner := bufio.NewScanner(f)
+
 	for scanner.Scan() {
 		sm := r.FindStringSubmatch(scanner.Text())
 		if len(sm) > 1 && sm[len(sm)-1] == fS.slug {

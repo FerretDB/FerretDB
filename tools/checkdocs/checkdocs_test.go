@@ -39,6 +39,7 @@ Caddy will listen on both HTTP and
 `),
 		},
 	}
+
 	dirs, err := m.ReadDir(".")
 	require.NoError(t, err)
 
@@ -69,6 +70,7 @@ Caddy will listen on both HTTP and HTTPS ports,
 	require.NoError(t, err)
 
 	slugs := GetBlogSlugs(dirs)
+
 	f, oerr := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
 	require.NoError(t, oerr)
 
