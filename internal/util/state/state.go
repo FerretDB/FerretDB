@@ -21,14 +21,14 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
 
-	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // State represents FerretDB process state.
 type State struct {
-	UUID      string `json:"uuid"`
-	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
+	UUID              string `json:"uuid"`
+	Telemetry         *bool  `json:"telemetry,omitempty"` // nil for undecided
+	IsUpdateAvailable bool   `json:"update_available"`
 
 	// never persisted
 	TelemetryLocked bool      `json:"-"`
@@ -57,12 +57,7 @@ func (s *State) UpdateAvailable() bool {
 		return false
 	}
 
-	// if we don't know yet
-	if s.LatestVersion == "" {
-		return false
-	}
-
-	return s.LatestVersion != version.Get().Version
+	return s.IsUpdateAvailable
 }
 
 // fill replaces all unset or invalid values with default.
