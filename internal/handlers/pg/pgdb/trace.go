@@ -34,7 +34,7 @@ type debugTracer struct{}
 // TraceQueryStart adds a span to Query, QueryRow, and Exec calls.
 func (t *debugTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	ctx, _ = tracer.Start(ctx, data.SQL, trace.WithAttributes(
-		attribute.String("args", fmt.Sprintf("%v", data.Args)),
+		attribute.String("args", fmt.Sprintf("%#v", data.Args)),
 	))
 
 	return ctx
