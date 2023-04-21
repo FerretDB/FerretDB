@@ -150,7 +150,7 @@ tasks:
     desc: "Format yaml"
     cmds:
       - find . -name "*.yml" -exec chmod o+w {} \;
-      - docker run --rm -v $(pwd):/work tmknom/prettier --write --parser=yaml "./**/*.yml"
+      - docker compose run --rm -v $(pwd):/work prettier --write --parser=yaml "./**/*.yml"
       - find . -name "*.yml" -exec chmod o-w {} \;
 
   test:
