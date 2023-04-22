@@ -17,6 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -27,10 +28,10 @@ import (
 
 var errProjectionEmpty = errors.New("projection is empty")
 
-// validateProjection check projection document.
+// ValidateProjection check projection document.
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
-func validateProjection(projection *types.Document) (*types.Document, bool, error) {
+func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
 	if projection == nil {
@@ -55,11 +56,16 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 		var result bool
 
 		switch value := value.(type) {
-		case *types.Document, *types.Array, string:
+		case *types.Document:
 			return nil, false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
+		case *types.Array, string, types.Binary, types.ObjectID,
+			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+			result = true
+
+			validated.Set(key, value)
 		case float64, int32, int64:
 			// projection treats 0 as false and any other value as true
 			comparison := types.Compare(value, int32(0))
@@ -67,14 +73,17 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 			if comparison != types.Equal {
 				result = true
 			}
+
+			// set the value with boolean result to omit type assertion when we will apply projection
+			validated.Set(key, result)
 		case bool:
 			result = value
+
+			// set the value with boolean result to omit type assertion when we will apply projection
+			validated.Set(key, result)
 		default:
 			return nil, false, lazyerrors.Errorf("unsupported operation %s %value (%T)", key, value, value)
 		}
-
-		// set the value with boolean result to omit type assertion when we will apply projection
-		validated.Set(key, result)
 
 		if projection.Len() == 1 && key == "_id" {
 			return validated, result, nil
@@ -111,8 +120,8 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 	return validated, *projectionVal, nil
 }
 
-// projectDocument applies projection to the copy of the document.
-func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
+// ProjectDocument applies projection to the copy of the document.
+func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
 	projected, err := types.NewDocument("_id", must.NotFail(doc.Get("_id")))
 	if err != nil {
 		return nil, err
@@ -131,8 +140,15 @@ func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 					types.FormatAnyValue(idValue),
 				),
 			)
+
+		case *types.Array, string, types.Binary, types.ObjectID,
+			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+			projected.Set("_id", idValue)
+
+			set = true
 		case bool:
 			set = idValue
+
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", "_id", idValue, idValue)
 		}
@@ -195,6 +211,10 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 					types.FormatAnyValue(value),
 				),
 			)
+
+		case *types.Array, string, types.Binary, types.ObjectID,
+			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+			projected.Set(key, value)
 
 		case bool: // field: bool
 			// process top level fields
