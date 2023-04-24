@@ -17,7 +17,6 @@ package integration
 import (
 	"fmt"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -112,7 +111,8 @@ func TestCreateStress(t *testing.T) {
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1341")
 	ctx, collection := setup.Setup(t)
-	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
+	// do not toLower() db name as it may contain uppercase letters
+	db := collection.Database().Client().Database(t.Name())
 
 	collNum := runtime.GOMAXPROCS(-1) * 10
 	collPrefix := "stress_same_collection"
@@ -149,7 +149,8 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 	ctx, collection := setup.Setup(t)
-	db := collection.Database().Client().Database(strings.ToLower(t.Name()))
+	// do not toLower() db name as it may contain uppercase letters
+	db := collection.Database().Client().Database(t.Name())
 
 	collNum := runtime.GOMAXPROCS(-1) * 10
 	collPrefix := "stress_diff_collection_"
