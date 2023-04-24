@@ -199,7 +199,8 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 func RenameCollection(ctx context.Context, tx pgx.Tx, db, from, to string) error {
 	if !validateCollectionNameRe.MatchString(to) ||
 		strings.HasPrefix(to, reservedPrefix) ||
-		!utf8.ValidString(to) {
+		!utf8.ValidString(to) ||
+		len(to) > maxIndexNameLength {
 		return ErrInvalidCollectionName
 	}
 
