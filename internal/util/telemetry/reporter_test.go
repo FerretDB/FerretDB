@@ -15,7 +15,6 @@
 package telemetry
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestNewReporterLock(t *testing.T) {
@@ -105,15 +105,15 @@ func TestReporterReport(t *testing.T) {
 	}{
 		"UpdateAvailable": {
 			f:                &Flag{v: pointer.ToBool(true)},
-			updateAvailable:  true,
-			latestVersion:    "0.3.4",
 			reporterResponse: `{"update_available": true, "latest_version": "0.3.4"}`,
+			latestVersion:    "0.3.4",
+			updateAvailable:  true,
 		},
 		"UpdateUnavailable": {
 			f:                &Flag{v: pointer.ToBool(true)},
-			updateAvailable:  false,
-			latestVersion:    "",
 			reporterResponse: `{"update_available": false, "latest_version": "0.3.4"}`,
+			latestVersion:    "",
+			updateAvailable:  false,
 		},
 	} {
 		name, tc := name, tc
@@ -142,12 +142,11 @@ func TestReporterReport(t *testing.T) {
 			r, err := NewReporter(&opts)
 			assert.NoError(t, err)
 
-			ctx := context.Background()
-			r.report(ctx)
+			r.report(testutil.Ctx(t))
 
 			s := r.P.Get()
 
-			require.Equal(t, s.UpdateAvailable(), s.UpdateAvailable())
+			require.Equal(t, tc.updateAvailable, s.UpdateAvailable())
 			require.Equal(t, tc.latestVersion, s.LatestVersion)
 		})
 	}

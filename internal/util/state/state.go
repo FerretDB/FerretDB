@@ -32,7 +32,7 @@ type State struct {
 	// never persisted
 	TelemetryLocked   bool      `json:"-"`
 	Start             time.Time `json:"-"`
-	LatestVersion     string    `json:"-"` // may be empty
+	LatestVersion     string    `json:"-"` // empty if IsUpdateAvailable is false
 	HandlerVersion    string    `json:"-"` // may be empty
 	IsUpdateAvailable bool      `json:"-"`
 }
