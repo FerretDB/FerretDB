@@ -810,13 +810,16 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: `target namespace exists`,
 			},
 		},
+		// this confirms that after we rename foo to bar and then create foo again,
+		// 1. bool-false doesn't exist
+		// 2. the newly inserted documents exist
 		"InsertIntoOld": {
 			collection:       "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
 			toInsert: []interface{}{
-				bson.D{{"a", 1}},
-				bson.D{{"a", 2}},
+				bson.D{{"_id", 1}},
+				bson.D{{"_id", 2}},
 			},
 		},
 		"MaxTableLen": {
@@ -879,8 +882,13 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				require.Equal(t, "bar", tc.targetCollection)
 				require.NoError(t, db.CreateCollection(ctx, tc.collection))
 
-				_, err := db.Collection(tc.collection).InsertMany(ctx, tc.toInsert)
+				res, err := db.Collection(tc.collection).InsertMany(ctx, tc.toInsert)
 				require.NoError(t, err)
+				require.Equal(
+					t,
+					&mongo.InsertManyResult{[]interface{}{int32(1), int32(2)}},
+					res,
+				)
 
 				var v any
 				err = db.Collection(tc.targetCollection).FindOne(
