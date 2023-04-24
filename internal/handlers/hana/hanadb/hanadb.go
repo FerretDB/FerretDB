@@ -55,7 +55,7 @@ var Errors = map[int]error{
 
 // getHanaErrorIfExists converts 'err' to formatted version if it exists
 //
-// Returns one of the errors above or the original error if the formatted version doesn't exist
+// Returns one of the errors above or the original error if the formatted version doesn't exist.
 func getHanaErrorIfExists(err error) error {
 	var dbError driver.Error
 	if errors.As(err, &dbError) {
