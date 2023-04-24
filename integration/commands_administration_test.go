@@ -910,6 +910,57 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	}
 }
 
+func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
+
+	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
+	client := collection.Database().Client()
+	db := client.Database("admin")
+
+	collNum := runtime.GOMAXPROCS(-1) * 10
+
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
+
+	var wg sync.WaitGroup
+	for i := 0; i < collNum; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			ready <- struct{}{}
+
+			<-start
+
+			dbName := fmt.Sprintf("%s_stress_%d", collection.Database().Name(), i)
+			collName := fmt.Sprintf("stress_%d", i)
+
+			err := db.CreateCollection(ctx, collName)
+			assert.NoError(t, err)
+
+			sourceNamespace := fmt.Sprintf("%s.%s", dbName, collName)
+			targetNamespace := fmt.Sprintf("%s.%d", dbName, i)
+			command := bson.D{
+				{"renameCollection", sourceNamespace},
+				{"to", targetNamespace},
+			}
+			var actual bson.D
+			err = db.RunCommand(ctx, command).Decode(&actual)
+
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
+}
+
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
 	setup.SkipForTigris(t)
