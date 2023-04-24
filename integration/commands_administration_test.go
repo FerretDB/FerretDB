@@ -913,6 +913,40 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
 	// TODO implemented stress test for renames with recurring names.
+
+	allProviders := shareddata.AllProviders()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+		Providers:    allProviders,
+	})
+
+	k := len(allProviders)
+
+	N := runtime.GOMAXPROCS(-1) * 1
+
+	var wg sync.WaitGroup
+	for i := 0; i < N; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			sourceNamespace := fmt.Sprintf("%s.%s", "admin", s.Collection.Name())
+			targetNamespace := fmt.Sprintf("%s.%s", "admin", allProviders[N%k].Name())
+
+			var res bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx,
+				bson.D{
+					{"renameCollection", sourceNamespace},
+					{"to", targetNamespace},
+				},
+			).Decode(&res)
+			if err != nil {
+				t.Log(err)
+			}
+
+		}(i)
+	}
 }
 
 //nolint:paralleltest // we test a global server status
