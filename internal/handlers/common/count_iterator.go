@@ -56,7 +56,7 @@ func (iter *countIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
 	done := iter.done.Swap(true)
-	if !done {
+	if done {
 		// subsequent calls return error.
 		return unused, nil, iterator.ErrIteratorDone
 	}
