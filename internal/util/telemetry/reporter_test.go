@@ -15,7 +15,12 @@
 package telemetry
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
@@ -85,6 +90,65 @@ func TestNewReporterLock(t *testing.T) {
 			s := provider.Get()
 			assert.Equal(t, tc.t, s.Telemetry)
 			assert.Equal(t, tc.locked, s.TelemetryLocked)
+		})
+	}
+}
+
+func TestReporterReport(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		f                *Flag
+		reporterResponse string
+		latestVersion    string
+		updateAvailable  bool
+	}{
+		"UpdateAvailable": {
+			f:                &Flag{v: pointer.ToBool(true)},
+			updateAvailable:  true,
+			latestVersion:    "0.3.4",
+			reporterResponse: `{"update_available": true, "latest_version": "0.3.4"}`,
+		},
+		"UpdateUnavailable": {
+			f:                &Flag{v: pointer.ToBool(true)},
+			updateAvailable:  false,
+			latestVersion:    "",
+			reporterResponse: `{"update_available": false, "latest_version": "0.3.4"}`,
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusCreated)
+				fmt.Fprintln(w, tc.reporterResponse)
+			}))
+			defer ts.Close()
+
+			provider, err := state.NewProvider("")
+			require.NoError(t, err)
+
+			opts := NewReporterOpts{
+				URL:           ts.URL,
+				F:             tc.f,
+				ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
+				P:             provider,
+				L:             zap.L(),
+				ReportTimeout: 1 * time.Minute,
+			}
+
+			r, err := NewReporter(&opts)
+			assert.NoError(t, err)
+
+			ctx := context.Background()
+			r.report(ctx)
+
+			s := r.P.Get()
+
+			require.Equal(t, s.UpdateAvailable(), s.UpdateAvailable())
+			require.Equal(t, tc.latestVersion, s.LatestVersion)
 		})
 	}
 }

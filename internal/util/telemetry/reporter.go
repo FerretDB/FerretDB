@@ -61,7 +61,8 @@ type request struct {
 
 // response represents telemetry response.
 type response struct {
-	LatestVersion string `json:"latest_version"`
+	LatestVersion   string `json:"latest_version"`
+	UpdateAvailable bool   `json:"update_available"`
 }
 
 // Reporter sends telemetry reports if telemetry is enabled.
@@ -284,15 +285,16 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if response.LatestVersion != s.LatestVersion {
-		err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
-		if err != nil {
+	if response.UpdateAvailable {
+		if err = r.P.Update(func(s *state.State) {
+			s.LatestVersion = response.LatestVersion
+			s.IsUpdateAvailable = response.UpdateAvailable
+		}); err != nil {
 			r.L.Error("Failed to update state with latest version.", zap.Error(err))
 			return
 		}
-	}
 
-	if s = r.P.Get(); s.UpdateAvailable() {
+		s = r.P.Get()
 		r.L.Info(
 			"A new version available!",
 			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),

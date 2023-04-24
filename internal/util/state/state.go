@@ -26,15 +26,15 @@ import (
 
 // State represents FerretDB process state.
 type State struct {
-	UUID              string `json:"uuid"`
-	Telemetry         *bool  `json:"telemetry,omitempty"` // nil for undecided
-	IsUpdateAvailable bool   `json:"update_available"`
+	UUID      string `json:"uuid"`
+	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	TelemetryLocked bool      `json:"-"`
-	Start           time.Time `json:"-"`
-	LatestVersion   string    `json:"-"` // may be empty
-	HandlerVersion  string    `json:"-"` // may be empty
+	TelemetryLocked   bool      `json:"-"`
+	Start             time.Time `json:"-"`
+	LatestVersion     string    `json:"-"` // may be empty
+	HandlerVersion    string    `json:"-"` // may be empty
+	IsUpdateAvailable bool      `json:"-"`
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -79,11 +79,12 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:            s.UUID,
-		Telemetry:       telemetry,
-		TelemetryLocked: s.TelemetryLocked,
-		Start:           s.Start,
-		LatestVersion:   s.LatestVersion,
-		HandlerVersion:  s.HandlerVersion,
+		UUID:              s.UUID,
+		Telemetry:         telemetry,
+		TelemetryLocked:   s.TelemetryLocked,
+		Start:             s.Start,
+		LatestVersion:     s.LatestVersion,
+		HandlerVersion:    s.HandlerVersion,
+		IsUpdateAvailable: s.IsUpdateAvailable,
 	}
 }
