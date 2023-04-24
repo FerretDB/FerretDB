@@ -98,7 +98,7 @@ The returned indexes should look like this, showing the default index, single fi
 
 You can also drop all the indexes or a particular index in a specified collection, except the default index (`_id`).
 
-FerretDB supports the use of `dropIndex()` and `dropIndexes() command.
+FerretDB supports the use of `dropIndex()` and `dropIndexes()` command.
 
 Use the `dropIndex()` command to drop a particular index from a collection.
 Using the returned indexes above, let's drop the index with the name `price_1`.
