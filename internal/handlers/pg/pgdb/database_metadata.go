@@ -142,7 +142,6 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	for allTables[tableName] {
 		tableName = tableName + fmt.Sprintf("%d", i)
 		if !allTables[tableName] {
-			allTables[tableName] = true
 			break
 		}
 		i++
