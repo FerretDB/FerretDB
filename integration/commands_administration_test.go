@@ -810,6 +810,15 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: `target namespace exists`,
 			},
 		},
+		"SoureDoesNotExist": {
+			collection:       "none",
+			targetCollection: "bar",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "source namespace does not exist",
+			},
+		},
 		// this confirms that after we rename foo to bar and then create foo again,
 		// 1. bool-false doesn't exist
 		// 2. the newly inserted documents exist
@@ -822,7 +831,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				bson.D{{"_id", 2}},
 			},
 		},
-		"MaxTableLen": {
+		"RenameMaxTableLen": {
 			collection:       "foo",
 			targetCollection: maxTableLen + "a",
 			err: &mongo.CommandError{
