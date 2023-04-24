@@ -92,7 +92,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		    SUM(pg_total_relation_size(schemaname || '.' || tablename)) 
 		FROM pg_tables 
 		WHERE schemaname = $1`
-	args := []any{db}
+	args := []any{pgx.Identifier{db}.Sanitize()}
 	row := tx.QueryRow(ctx, sql, args...)
 
 	var schemaSize *int32
@@ -163,7 +163,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 			COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
 		FROM pg_class 
 		WHERE oid = %s::regclass`,
-		quoteString(db+"."+metadata.table),
+		quoteString(pgx.Identifier{db}.Sanitize()+"."+metadata.table),
 	)
 	row := tx.QueryRow(ctx, sql)
 
