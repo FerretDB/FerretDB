@@ -121,6 +121,7 @@ func TestReporterReport(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			// use httptest.NewServer so http request on ts.URL returns tc.reporterResponse body
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusCreated)
 				fmt.Fprintln(w, tc.reporterResponse)
