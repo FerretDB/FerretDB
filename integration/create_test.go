@@ -234,7 +234,7 @@ func TestCreateStressSameCollection(t *testing.T) {
 					mongo.CommandError{
 						Code:    48,
 						Name:    "NamespaceExists",
-						Message: `Collection testcreatestresssamecollection.stress_same_collection already exists.`,
+						Message: `Collection TestCreateStressSameCollection.stress_same_collection already exists.`,
 					},
 					err,
 				)
