@@ -68,10 +68,10 @@ func TestRenameCollection(t *testing.T) {
 
 	pool := getPool(ctx, t)
 
-	t.Run("DiffMetadata", func(t *testing.T) {
+	t.Run("CheckForNewMetadata", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "new_name"
+		const newCollectionName = "newName"
 		setupDatabase(ctx, t, pool, databaseName)
 
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -88,9 +88,6 @@ func TestRenameCollection(t *testing.T) {
 			nms := newMetadataStorage(tx, databaseName, newCollectionName)
 			require.NotEmpty(t, nms)
 
-			// santity check
-			require.NotEqual(t, nms, ms)
-
 			md, err := ms.get(ctx, false)
 			require.NoError(t, err)
 			nmd, err := nms.get(ctx, false)
@@ -105,7 +102,7 @@ func TestRenameCollection(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "new_name"
+		const newCollectionName = "newName"
 		setupDatabase(ctx, t, pool, databaseName)
 
 		var tableName string
@@ -158,7 +155,7 @@ func TestRenameCollection(t *testing.T) {
 	t.Run("AlreadyExist", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const existingCollectionName = "existing_name"
+		const existingCollectionName = "existingName"
 		setupDatabase(ctx, t, pool, databaseName)
 
 		var existingTableName, tableName string
@@ -224,7 +221,7 @@ func TestRenameCollection(t *testing.T) {
 	t.Run("NotExist", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "new_name"
+		const newCollectionName = "newName"
 		setupDatabase(ctx, t, pool, databaseName)
 
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {

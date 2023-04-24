@@ -200,7 +200,7 @@ func RenameCollection(ctx context.Context, tx pgx.Tx, db, from, to string) error
 	if !validateCollectionNameRe.MatchString(to) ||
 		strings.HasPrefix(to, reservedPrefix) ||
 		!utf8.ValidString(to) ||
-		len(to) > maxIndexNameLength {
+		len(to) > maxTableNameLength {
 		return ErrInvalidCollectionName
 	}
 
