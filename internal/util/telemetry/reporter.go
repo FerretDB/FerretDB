@@ -285,19 +285,21 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if response.UpdateAvailable {
-		if err = r.P.Update(func(s *state.State) {
-			s.LatestVersion = response.LatestVersion
-			s.IsUpdateAvailable = response.UpdateAvailable
-		}); err != nil {
-			r.L.Error("Failed to update state with latest version.", zap.Error(err))
-			return
-		}
-
-		s = r.P.Get()
-		r.L.Info(
-			"A new version available!",
-			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
-		)
+	if !response.UpdateAvailable {
+		return
 	}
+
+	if err = r.P.Update(func(s *state.State) {
+		s.LatestVersion = response.LatestVersion
+		s.IsUpdateAvailable = response.UpdateAvailable
+	}); err != nil {
+		r.L.Error("Failed to update state with latest version.", zap.Error(err))
+		return
+	}
+
+	s = r.P.Get()
+	r.L.Info(
+		"A new version available!",
+		zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
+	)
 }
