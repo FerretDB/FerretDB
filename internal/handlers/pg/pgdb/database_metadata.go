@@ -199,6 +199,7 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) map[string]boo
 	for {
 		_, doc, err := iter.Next()
 		i := 0
+
 		for _, k := range doc.Keys() {
 			if k == "table" {
 				v, _ := doc.Get(k)
