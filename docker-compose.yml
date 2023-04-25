@@ -13,7 +13,7 @@ services:
       -c log_min_error_statement=WARNING
       -c log_min_messages=WARNING
       -c max_connections=200
-      #-c max_wal_size=8GB
+      -c max_wal_size=8GB
     ports:
       - 5432:5432
     extra_hosts:
