@@ -61,12 +61,13 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:    qp.DB,
-		table:     table,
-		comment:   qp.Comment,
-		explain:   qp.Explain,
-		filter:    qp.Filter,
-		unmarshal: unmarshalExplain,
+		schema:     qp.DB,
+		table:      table,
+		comment:    qp.Comment,
+		explain:    qp.Explain,
+		filter:     qp.Filter,
+		unmarshal:  unmarshalExplain,
+		nativeSort: qp.NativeSort,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -119,11 +120,12 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.Docu
 	}
 
 	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:  qp.DB,
-		table:   table,
-		comment: qp.Comment,
-		explain: qp.Explain,
-		filter:  qp.Filter,
+		schema:     qp.DB,
+		table:      table,
+		comment:    qp.Comment,
+		explain:    qp.Explain,
+		filter:     qp.Filter,
+		nativeSort: qp.NativeSort,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
