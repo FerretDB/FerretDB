@@ -532,24 +532,9 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 		},
 		"UpsertID": {
 			command: bson.D{
-				{"upsert", true},
-				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
-			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
-		},
-		"UpsertExistingID": {
-			command: bson.D{
-				{"query", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+				{"query", bson.D{{"_id", "non-existent"}}},
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
-			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
-		},
-		"UpsertIDForFound": {
-			command: bson.D{
-				{"query", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
 			},
 			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
 		},
