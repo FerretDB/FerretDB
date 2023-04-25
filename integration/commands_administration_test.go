@@ -990,7 +990,7 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 
 	wg.Wait()
 
-	require.Equal(t, collNum-1, errNum) // expected to have errors for all the rename attempts apart from the first one
+	require.Equal(t, *atomic.NewInt32(int32(collNum - 1)), errNum) // expected to have errors for all the rename attempts apart from the first one
 
 	mx.Lock()
 	renamedCollectionsCount := len(renamedCollections)
