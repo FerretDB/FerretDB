@@ -890,6 +890,10 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
+	if err = validateSetExpression(command, update); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1028,6 +1032,28 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 	}
 
 	return doc, nil
+}
+
+// validateSetExpression validates $set expression input.
+func validateSetExpression(command string, update *types.Document) error {
+	if !update.Has("$set") {
+		return nil
+	}
+
+	updateExpression := must.NotFail(update.Get("$set"))
+
+	// updateExpression is document, checked in processSetFieldExpression.
+	doc := updateExpression.(*types.Document)
+
+	if doc.Has("_id") {
+		return newUpdateError(
+			commonerrors.ErrImmutableField,
+			"Performing an update on the path '_id' would modify the immutable field '_id'",
+			command,
+		)
+	}
+
+	return nil
 }
 
 // validateRenameExpression validates $rename input on correctness.
