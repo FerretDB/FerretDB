@@ -164,7 +164,9 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	where, args, err := prepareWhereClause(p.filter)
+	var placeholder Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, p.filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -176,7 +178,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 	}
 
 	if p.nativeSort {
-		sort, arg, err := prepareSortClause(p.filter, asc)
+		sort, arg, err := prepareSortClause(&placeholder, p.filter, asc)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -202,7 +204,7 @@ const (
 	asc  order = 1
 )
 
-func prepareSortClause(sqlFilters *types.Document, o order) (string, any, error) {
+func prepareSortClause(p *Placeholder, sqlFilters *types.Document, o order) (string, any, error) {
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
 
@@ -242,14 +244,13 @@ func prepareSortClause(sqlFilters *types.Document, o order) (string, any, error)
 		panic(fmt.Sprint("forbidden order:", o))
 	}
 
-	return " ORDER BY $1" + sqlOrder, key, nil
+	return fmt.Sprintf(" ORDER BY %s %s", p.Next(), sqlOrder), key, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
+func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
-	var p Placeholder
 
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
@@ -307,7 +308,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch k {
 				case "$eq":
-					if f, a := filterEqual(&p, rootKey, v); f != "" {
+					if f, a := filterEqual(p, rootKey, v); f != "" {
 						filters = append(filters, f)
 						args = append(args, a...)
 					}
@@ -349,7 +350,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			if f, a := filterEqual(&p, rootKey, v); f != "" {
+			if f, a := filterEqual(p, rootKey, v); f != "" {
 				filters = append(filters, f)
 				args = append(args, a...)
 			}
