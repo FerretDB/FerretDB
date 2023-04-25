@@ -26,7 +26,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -208,23 +207,16 @@ func (c *conn) run(ctx context.Context) (err error) {
 			var hashPath string
 
 			hash := fmt.Sprintf("%64x", h.Sum(nil))
-			s := strings.Split(hash, "")
-
-			for i := 0; i < len(s); {
-				if len(hashPath) != 0 {
-					hashPath += "/"
-				}
-
-				hashPath += strings.Join(s[i:i+2], "")
-				i += 2
+			for i := 0; i < len(hash); i += 2 {
+				hashPath = filepath.Join(hashPath, hash[i:i+2])
 			}
 
-			makePath := filepath.Join(c.testRecordsDir, hashPath[:92])
+			makePath := filepath.Join(c.testRecordsDir, hashPath[:len(hashPath)-2])
 			if e := os.MkdirAll(makePath, 0o777); e != nil {
 				c.l.Warn(e)
 			}
 
-			path := filepath.Join(c.testRecordsDir, fmt.Sprintf("%s.bin", hashPath))
+			path := filepath.Join(c.testRecordsDir, hashPath+".bin")
 			if e := os.Rename(f.Name(), path); e != nil {
 				c.l.Warn(e)
 			}
