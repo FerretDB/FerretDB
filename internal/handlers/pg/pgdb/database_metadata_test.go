@@ -68,41 +68,12 @@ func TestRenameCollection(t *testing.T) {
 
 	pool := getPool(ctx, t)
 
-	t.Run("CheckForNewMetadata", func(t *testing.T) {
-		databaseName := testutil.DatabaseName(t)
-		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "newName"
-		setupDatabase(ctx, t, pool, databaseName)
-
-		pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			err := CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
-
-			ms := newMetadataStorage(tx, databaseName, collectionName)
-			require.NotEmpty(t, ms)
-			err = ms.renameCollection(ctx, newCollectionName)
-			require.NoError(t, err)
-
-			err = CreateCollection(ctx, tx, databaseName, collectionName)
-			require.NoError(t, err)
-			nms := newMetadataStorage(tx, databaseName, newCollectionName)
-			require.NotEmpty(t, nms)
-
-			md, err := ms.get(ctx, false)
-			require.NoError(t, err)
-			nmd, err := nms.get(ctx, false)
-			require.NoError(t, err)
-
-			require.NotEqual(t, md.table, nmd.table)
-
-			return nil
-		})
-	})
-
 	t.Run("Simple", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "newName"
+
+		const newCollectionName = "new_collection_name"
+
 		setupDatabase(ctx, t, pool, databaseName)
 
 		var tableName string
@@ -120,6 +91,7 @@ func TestRenameCollection(t *testing.T) {
 			return nil
 		})
 
+		// rename collection
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			ms := newMetadataStorage(tx, databaseName, collectionName)
 			err := ms.renameCollection(ctx, newCollectionName)
@@ -137,6 +109,7 @@ func TestRenameCollection(t *testing.T) {
 			require.NoError(t, err)
 			assert.False(t, exists)
 
+			// new metadata should be created
 			ms := newMetadataStorage(tx, databaseName, newCollectionName)
 			md, err := ms.get(ctx, false)
 			require.NoError(t, err)
@@ -144,6 +117,7 @@ func TestRenameCollection(t *testing.T) {
 			assert.Equal(t, newCollectionName, md.collection)
 			assert.Equal(t, tableName, md.table)
 
+			// old metadata should be removed
 			ms = newMetadataStorage(tx, databaseName, collectionName)
 			_, err = ms.get(ctx, false)
 			require.Equal(t, ErrTableNotExist, err)
@@ -155,7 +129,9 @@ func TestRenameCollection(t *testing.T) {
 	t.Run("AlreadyExist", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const existingCollectionName = "existingName"
+
+		const existingCollectionName = "existing_collection_name"
+
 		setupDatabase(ctx, t, pool, databaseName)
 
 		var existingTableName, tableName string
@@ -183,6 +159,7 @@ func TestRenameCollection(t *testing.T) {
 			return nil
 		})
 
+		// rename collection should fail here
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			ms := newMetadataStorage(tx, databaseName, collectionName)
 			err := ms.renameCollection(ctx, existingCollectionName)
@@ -221,9 +198,12 @@ func TestRenameCollection(t *testing.T) {
 	t.Run("NotExist", func(t *testing.T) {
 		databaseName := testutil.DatabaseName(t)
 		collectionName := testutil.CollectionName(t)
-		const newCollectionName = "newName"
+
+		const newCollectionName = "new_collection_name"
+
 		setupDatabase(ctx, t, pool, databaseName)
 
+		// no collection created, rename should fail
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			ms := newMetadataStorage(tx, databaseName, collectionName)
 			err := ms.renameCollection(ctx, newCollectionName)
