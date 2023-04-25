@@ -119,7 +119,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
 			LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 		WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
-	args = []any{db, reservedPrefix + "%"}
+	args = []any{pgx.Identifier{db}.Sanitize(), reservedPrefix + "%"}
 
 	row = tx.QueryRow(ctx, sql, args...)
 	if err := row.Scan(
@@ -175,7 +175,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		SELECT COUNT(indexname)
 		FROM pg_indexes
 		WHERE schemaname = $1 AND tablename = $2`
-	args := []any{db, metadata.table}
+	args := []any{pgx.Identifier{db}.Sanitize(), metadata.table}
 	row = tx.QueryRow(ctx, sql, args...)
 
 	if err := row.Scan(&res.CountIndexes); err != nil {
