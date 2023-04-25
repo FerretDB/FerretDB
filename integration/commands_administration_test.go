@@ -31,6 +31,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/atomic"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -928,42 +929,88 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 }
 
 func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
-	// TODO implemented stress test for renames with recurring names.
+	setup.SkipForTigrisWithReason(t, "Rename is not supported for Tigris")
 
-	allProviders := shareddata.AllProviders()
+	ctx, collection := setup.Setup(t) // no providers there, we will create collections that are needed
+	db := collection.Database()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName: "admin",
-		Providers:    allProviders,
-	})
+	collNum := runtime.GOMAXPROCS(-1) * 10
 
-	k := len(allProviders)
+	// create collections that we will attempt to rename later
+	for i := 0; i < collNum; i++ {
+		collName := fmt.Sprintf("rename_collection_stress_%d", i)
+		err := db.CreateCollection(ctx, collName)
+		require.NoError(t, err)
+	}
 
-	const sameNewname = "Bools"
+	ready := make(chan struct{}, collNum)
+	start := make(chan struct{})
+
+	var errNum atomic.Int32
+	renamedCollections := map[string]struct{}{}
+	mx := new(sync.Mutex)
 
 	var wg sync.WaitGroup
-	for i := 0; i < 20; i++ {
+	for i := 0; i < collNum; i++ {
 		wg.Add(1)
+
 		go func(i int) {
 			defer wg.Done()
 
-			sourceNamespace := fmt.Sprintf("%s.%s", "admin", allProviders[i%k].Name())
-			targetNamespace := fmt.Sprintf("%s.%s", "admin", sameNewname)
+			ready <- struct{}{}
+
+			<-start
+
+			renameFrom := fmt.Sprintf("%s.rename_collection_stress_%d", db.Name(), i)
+			renameTo := fmt.Sprintf("%s.rename_collection_stress_renamed", db.Name())
 
 			var res bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx,
+			err := db.RunCommand(ctx,
 				bson.D{
-					{"renameCollection", sourceNamespace},
-					{"to", targetNamespace},
+					{"renameCollection", renameFrom},
+					{"to", renameTo},
 				},
 			).Decode(&res)
-			if err != nil {
-				t.Log(err)
-			}
 
+			if err != nil {
+				errNum.Add(1)
+			} else {
+				mx.Lock()
+				renamedCollections[renameFrom] = struct{}{}
+				mx.Unlock()
+			}
 		}(i)
 	}
+
+	for i := 0; i < collNum; i++ {
+		<-ready
+	}
+
+	close(start)
+
+	wg.Wait()
+
+	require.Equal(t, collNum-1, errNum) // expected to have errors for all the rename attempts apart from the first one
+
+	mx.Lock()
+	renamedCollectionsCount := len(renamedCollections)
+	mx.Unlock()
+
+	require.Equal(t, 1, renamedCollectionsCount)
+
+	colls, err := db.ListCollectionNames(ctx, bson.D{})
+	require.NoError(t, err)
+	require.Len(t, colls, collNum)
+
+	var found bool
+	for _, coll := range colls {
+		if coll == "rename_collection_stress_renamed" {
+			found = true
+			break
+		}
+	}
+
+	require.True(t, found)
 }
 
 //nolint:paralleltest // we test a global server status
