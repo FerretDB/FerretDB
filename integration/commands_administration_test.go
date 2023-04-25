@@ -781,6 +781,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
+		db               string
 		collection       string
 		targetCollection string
 		expected         bson.D
@@ -788,11 +789,13 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		toInsert         []interface{}
 	}{
 		"Rename": {
+			db:               "admin",
 			collection:       "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
+			db:               "admin",
 			collection:       "foo",
 			targetCollection: "foo",
 			err: &mongo.CommandError{
@@ -802,6 +805,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
+			db:               "admin",
 			collection:       "foo",
 			targetCollection: "buz",
 			err: &mongo.CommandError{
@@ -811,6 +815,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"SoureDoesNotExist": {
+			db:               "admin",
 			collection:       "none",
 			targetCollection: "bar",
 			err: &mongo.CommandError{
@@ -823,6 +828,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		// 1. bool-false doesn't exist
 		// 2. the newly inserted documents exist
 		"InsertIntoOld": {
+			db:               "admin",
 			collection:       "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
@@ -832,12 +838,23 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameMaxTableLen": {
+			db:               "admin",
 			collection:       "foo",
 			targetCollection: maxTableLen + "a",
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
 				Message: "collection is too long",
+			},
+		},
+		"RenameOnNonAdminDB": {
+			db:               "test",
+			collection:       "foo",
+			targetCollection: "bar",
+			err: &mongo.CommandError{
+				Code:    13,
+				Name:    "Unauthorized",
+				Message: "renameCollection may only be run against the admin database.",
 			},
 		},
 	} {
@@ -864,7 +881,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				{"to", targetNamespace},
 			}
 
-			err := collection.Database().Client().Database("admin").RunCommand(
+			err := collection.Database().Client().Database(tc.db).RunCommand(
 				ctx, cmd,
 			).Decode(&actual)
 
@@ -923,16 +940,16 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 
 	k := len(allProviders)
 
-	N := runtime.GOMAXPROCS(-1) * 1
+	const sameNewname = "Bools"
 
 	var wg sync.WaitGroup
-	for i := 0; i < N; i++ {
+	for i := 0; i < 20; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 
-			sourceNamespace := fmt.Sprintf("%s.%s", "admin", s.Collection.Name())
-			targetNamespace := fmt.Sprintf("%s.%s", "admin", allProviders[N%k].Name())
+			sourceNamespace := fmt.Sprintf("%s.%s", "admin", allProviders[i%k].Name())
+			targetNamespace := fmt.Sprintf("%s.%s", "admin", sameNewname)
 
 			var res bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx,
