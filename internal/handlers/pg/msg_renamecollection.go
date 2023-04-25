@@ -69,19 +69,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	if qp.DB != "admin" {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrUnauthorized,
-			"renameCollection may only be run against the admin database.",
-		)
-	}
-
 	if sourceNamespace == targetNamespace {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrIllegalOperation,
