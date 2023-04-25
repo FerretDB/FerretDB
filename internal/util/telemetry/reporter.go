@@ -234,7 +234,9 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 	}
 }
 
-// report sends telemetry report unless telemetry is disabled.
+// report sends http POST request to telemetry unless telemetry is disabled.
+// It fetches available update and the latest version, then updates the state of provider
+// with update available and latest version if any update is available.
 func (r *Reporter) report(ctx context.Context) {
 	s := r.P.Get()
 	if s.Telemetry != nil && !*s.Telemetry {

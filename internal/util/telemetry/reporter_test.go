@@ -99,21 +99,26 @@ func TestReporterReport(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		f                *Flag
-		reporterResponse string
+		telemetryReponse string
 		latestVersion    string
 		updateAvailable  bool
 	}{
 		"UpdateAvailable": {
 			f:                &Flag{v: pointer.ToBool(true)},
-			reporterResponse: `{"update_available": true, "latest_version": "0.3.4"}`,
+			telemetryReponse: `{"update_available": true, "latest_version": "0.3.4"}`,
 			latestVersion:    "0.3.4",
 			updateAvailable:  true,
 		},
 		"UpdateUnavailable": {
 			f:                &Flag{v: pointer.ToBool(true)},
-			reporterResponse: `{"update_available": false, "latest_version": "0.3.4"}`,
+			telemetryReponse: `{"update_available": false, "latest_version": "0.3.4"}`,
 			latestVersion:    "",
 			updateAvailable:  false,
+		},
+		"TelemetryDisabled": {
+			f:               &Flag{v: pointer.ToBool(false)},
+			latestVersion:   "",
+			updateAvailable: false,
 		},
 	} {
 		name, tc := name, tc
@@ -121,10 +126,12 @@ func TestReporterReport(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// use httptest.NewServer so http request on ts.URL returns tc.reporterResponse body
+			// use httptest.NewServer to mock telemetry response for http POST.
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusCreated)
-				fmt.Fprintln(w, tc.reporterResponse)
+				if r.Method == http.MethodPost {
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprintln(w, tc.telemetryReponse)
+				}
 			}))
 			defer ts.Close()
 
@@ -143,10 +150,17 @@ func TestReporterReport(t *testing.T) {
 			r, err := NewReporter(&opts)
 			assert.NoError(t, err)
 
+			// check initial state of provider, it has not called telemetry yet,
+			// no update is available and unaware of the latest version.
+			s := r.P.Get()
+			require.False(t, s.UpdateAvailable())
+			require.Equal(t, "", s.LatestVersion)
+
+			// call report to update the state of provider from telemetry.
 			r.report(testutil.Ctx(t))
 
-			s := r.P.Get()
-
+			// get updated the state of provider.
+			s = r.P.Get()
 			require.Equal(t, tc.updateAvailable, s.UpdateAvailable())
 			require.Equal(t, tc.latestVersion, s.LatestVersion)
 		})
