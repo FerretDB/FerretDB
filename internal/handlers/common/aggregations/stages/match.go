@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -29,7 +30,7 @@ type match struct {
 
 // newMatch creates a new $match stage.
 func newMatch(stage *types.Document) (Stage, error) {
-	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
+	filter, err := commonparams.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrMatchBadExpression,

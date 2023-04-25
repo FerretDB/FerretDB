@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -34,7 +35,7 @@ func newSkip(stage *types.Document) (Stage, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	skipValue, err := common.GetSkipStageParam(value)
+	skipValue, err := commonparams.GetSkipStageParam(value)
 	if err != nil {
 		return nil, err
 	}

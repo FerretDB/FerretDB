@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -55,7 +56,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	var qp tigrisdb.QueryParams
 
-	if qp.Filter, err = common.GetOptionalParam(document, "query", qp.Filter); err != nil {
+	if qp.Filter, err = commonparams.GetOptionalParam(document, "query", qp.Filter); err != nil {
 		return nil, err
 	}
 
@@ -73,7 +74,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		}
 	}
 
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = commonparams.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -86,7 +87,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}

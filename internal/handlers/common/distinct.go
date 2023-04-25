@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -54,7 +55,7 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 
 	var dp DistinctParams
 
-	if dp.DB, err = GetRequiredParam[string](document, "$db"); err != nil {
+	if dp.DB, err = commonparams.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -67,12 +68,12 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	if dp.Collection, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
 
-	if dp.Key, err = GetRequiredParam[string](document, "key"); err != nil {
+	if dp.Key, err = commonparams.GetRequiredParam[string](document, "key"); err != nil {
 		return nil, err
 	}
 
@@ -83,11 +84,11 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 		)
 	}
 
-	if dp.Filter, err = GetOptionalParam(document, "query", dp.Filter); err != nil {
+	if dp.Filter, err = commonparams.GetOptionalParam(document, "query", dp.Filter); err != nil {
 		return nil, err
 	}
 
-	if dp.Comment, err = GetOptionalParam(document, "comment", dp.Comment); err != nil {
+	if dp.Comment, err = commonparams.GetOptionalParam(document, "comment", dp.Comment); err != nil {
 		return nil, err
 	}
 

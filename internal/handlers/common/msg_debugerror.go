@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -33,7 +34,7 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	expected, err := GetRequiredParam[string](document, document.Command())
+	expected, err := commonparams.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}

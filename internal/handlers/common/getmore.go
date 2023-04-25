@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -33,17 +34,17 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	db, err := GetRequiredParam[string](document, "$db")
+	db, err := commonparams.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := GetRequiredParam[string](document, "collection")
+	collection, err := commonparams.GetRequiredParam[string](document, "collection")
 	if err != nil {
 		return nil, err
 	}
 
-	cursorID, err := GetRequiredParam[int64](document, document.Command())
+	cursorID, err := commonparams.GetRequiredParam[int64](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +59,7 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	}
 
 	// TODO this logic should be tested
-	batchSize, _ := GetOptionalParam(document, "batchSize", cursor.BatchSize)
+	batchSize, _ := commonparams.GetOptionalParam(document, "batchSize", cursor.BatchSize)
 	if batchSize < 0 {
 		batchSize = 101
 	}

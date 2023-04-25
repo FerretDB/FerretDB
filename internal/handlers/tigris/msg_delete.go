@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -52,12 +53,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
-	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
+	if deletes, err = commonparams.GetOptionalParam(document, "deletes", deletes); err != nil {
 		return nil, err
 	}
 
 	ordered := true
-	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
+	if ordered, err = commonparams.GetOptionalParam(document, "ordered", ordered); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +66,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var qp tigrisdb.QueryParams
 
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = commonparams.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -78,7 +79,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
@@ -89,7 +90,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// process every delete filter
 	for i := 0; i < deletes.Len(); i++ {
 		// get document with filter
-		deleteDoc, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
+		deleteDoc, err := commonparams.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +144,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 
 	// get filter from document
 	var filter *types.Document
-	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
+	if filter, err = commonparams.GetOptionalParam(deleteDoc, "q", filter); err != nil {
 		return nil, false, err
 	}
 
@@ -161,7 +162,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	}
 
 	var limit int64
-	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
+	if limit, err = commonparams.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
 		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),

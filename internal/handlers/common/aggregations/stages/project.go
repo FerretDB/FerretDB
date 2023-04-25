@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -39,7 +40,7 @@ type project struct {
 
 // newProject validates projection document and creates a new $project stage.
 func newProject(stage *types.Document) (Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
+	fields, err := commonparams.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrProjectBadExpression,

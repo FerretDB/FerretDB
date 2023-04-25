@@ -19,9 +19,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -49,7 +49,7 @@ type groupBy struct {
 
 // newGroup creates a new $group stage.
 func newGroup(stage *types.Document) (Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
+	fields, err := commonparams.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidFields,

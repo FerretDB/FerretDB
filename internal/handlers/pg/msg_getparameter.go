@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -130,11 +131,11 @@ func extractParam(document *types.Document) (showDetails, allParameters bool, er
 	}
 
 	if param, ok := getPrm.(*types.Document); ok {
-		showDetails, err = common.GetBoolOptionalParam(param, "showDetails")
+		showDetails, err = commonparams.GetBoolOptionalParam(param, "showDetails")
 		if err != nil {
 			return false, false, lazyerrors.Error(err)
 		}
-		allParameters, err = common.GetBoolOptionalParam(param, "allParameters")
+		allParameters, err = commonparams.GetBoolOptionalParam(param, "allParameters")
 		if err != nil {
 			return false, false, lazyerrors.Error(err)
 		}

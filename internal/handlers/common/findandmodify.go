@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -69,12 +70,12 @@ type UpsertParams struct {
 func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
 	command := doc.Command()
 
-	db, err := GetRequiredParam[string](doc, "$db")
+	db, err := commonparams.GetRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := GetRequiredParam[string](doc, command)
+	collection, err := commonparams.GetRequiredParam[string](doc, command)
 	if err != nil {
 		return nil, err
 	}
@@ -86,32 +87,32 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		)
 	}
 
-	remove, err := GetBoolOptionalParam(doc, "remove")
+	remove, err := commonparams.GetBoolOptionalParam(doc, "remove")
 	if err != nil {
 		return nil, err
 	}
 
-	returnNewDocument, err := GetBoolOptionalParam(doc, "new")
+	returnNewDocument, err := commonparams.GetBoolOptionalParam(doc, "new")
 	if err != nil {
 		return nil, err
 	}
 
-	upsert, err := GetBoolOptionalParam(doc, "upsert")
+	upsert, err := commonparams.GetBoolOptionalParam(doc, "upsert")
 	if err != nil {
 		return nil, err
 	}
 
-	query, err := GetOptionalParam(doc, "query", new(types.Document))
+	query, err := commonparams.GetOptionalParam(doc, "query", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
 
-	sort, err := GetOptionalParam(doc, "sort", new(types.Document))
+	sort, err := commonparams.GetOptionalParam(doc, "sort", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
 
-	maxTimeMS, err := GetOptionalPositiveNumber(doc, "maxTimeMS")
+	maxTimeMS, err := commonparams.GetOptionalPositiveNumber(doc, "maxTimeMS")
 	if err != nil {
 		return nil, err
 	}
@@ -191,12 +192,12 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 
 	var comment string
 	// get comment from a "comment" field
-	if comment, err = GetOptionalParam(doc, "comment", comment); err != nil {
+	if comment, err = commonparams.GetOptionalParam(doc, "comment", comment); err != nil {
 		return nil, err
 	}
 
 	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-	if comment, err = GetOptionalParam(query, "$comment", comment); err != nil {
+	if comment, err = commonparams.GetOptionalParam(query, "$comment", comment); err != nil {
 		return nil, err
 	}
 

@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -31,7 +32,7 @@ type sort struct {
 
 // newSort creates a new $sort stage.
 func newSort(stage *types.Document) (Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
+	fields, err := commonparams.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadExpression,

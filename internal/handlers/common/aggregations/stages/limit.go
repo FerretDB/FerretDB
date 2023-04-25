@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -34,7 +35,7 @@ func newLimit(stage *types.Document) (Stage, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	l, err := common.GetLimitStageParam(doc)
+	l, err := commonparams.GetLimitStageParam(doc)
 	if err != nil {
 		return nil, err
 	}
