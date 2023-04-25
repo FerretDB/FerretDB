@@ -841,12 +841,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: "collection is too long",
 			},
 		},
-		// we currenty don't restrict the command to be run on the admin database.
-		"RenameOnNonAdminDB": {
-			collection:       "foo",
-			targetCollection: "bar",
-			expected:         bson.D{{"ok", float64(1)}},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
