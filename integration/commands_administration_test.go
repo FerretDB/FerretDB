@@ -782,7 +782,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		db               string
 		collection       string
 		targetCollection string
 		expected         bson.D
@@ -790,13 +789,11 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		toInsert         []interface{}
 	}{
 		"Rename": {
-			db:               "admin",
 			collection:       "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
-			db:               "admin",
 			collection:       "foo",
 			targetCollection: "foo",
 			err: &mongo.CommandError{
@@ -806,7 +803,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
-			db:               "admin",
 			collection:       "foo",
 			targetCollection: "buz",
 			err: &mongo.CommandError{
@@ -816,7 +812,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"SoureDoesNotExist": {
-			db:               "admin",
 			collection:       "none",
 			targetCollection: "bar",
 			err: &mongo.CommandError{
@@ -829,7 +824,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		// 1. bool-false doesn't exist
 		// 2. the newly inserted documents exist
 		"InsertIntoOld": {
-			db:               "admin",
 			collection:       "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
@@ -839,7 +833,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameMaxTableLen": {
-			db:               "admin",
 			collection:       "foo",
 			targetCollection: maxTableLen + "a",
 			err: &mongo.CommandError{
@@ -848,15 +841,11 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: "collection is too long",
 			},
 		},
+		// we currenty don't restrict the command to be run on the admin database.
 		"RenameOnNonAdminDB": {
-			db:               "test",
 			collection:       "foo",
 			targetCollection: "bar",
-			err: &mongo.CommandError{
-				Code:    13,
-				Name:    "Unauthorized",
-				Message: "renameCollection may only be run against the admin database.",
-			},
+			expected:         bson.D{{"ok", float64(1)}},
 		},
 	} {
 		name, tc := name, tc
@@ -882,7 +871,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				{"to", targetNamespace},
 			}
 
-			err := collection.Database().Client().Database(tc.db).RunCommand(
+			err := collection.Database().Client().Database(db.Name()).RunCommand(
 				ctx, cmd,
 			).Decode(&actual)
 
