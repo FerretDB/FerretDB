@@ -16,6 +16,7 @@ package integration
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 
@@ -173,6 +174,61 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatFactor := must.NotFail(compatDoc.Get("scaleFactor"))
 
 			assert.Equal(t, compatFactor, targetFactor)
+		})
+	}
+}
+
+func TestCommandsAdministrationRenameCollectionCompat(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments},
+		AddNonExistentCollection: true,
+	})
+
+	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+
+	for name, tc := range map[string]struct {
+		renameTo   string
+		resultType compatTestCaseResultType
+	}{
+		"renameToEmpty":  {renameTo: "", resultType: emptyResult},
+		"renameToSimple": {renameTo: "simple"},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			t.Parallel()
+
+			var targetRes bson.D
+			targetCommand := bson.D{
+				{"renameCollection", fmt.Sprintf("%s.%s", targetCollection.Database().Name(), targetCollection.Name())},
+				{"to", fmt.Sprintf("%s.%s", targetCollection.Database().Name(), tc.renameTo)},
+			}
+			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
+
+			var compatRes bson.D
+			compatCommand := bson.D{
+				{"renameCollection", fmt.Sprintf("%s.%s", compatCollection.Database().Name(), compatCollection.Name())},
+				{"to", fmt.Sprintf("%s.%s", compatCollection.Database().Name(), tc.renameTo)},
+			}
+			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
+
+			if tc.resultType == emptyResult {
+				require.Error(t, compatErr)
+
+				targetErr = UnsetRaw(t, targetErr)
+				compatErr = UnsetRaw(t, compatErr)
+
+				assert.Equal(t, compatErr, targetErr)
+
+				return
+			}
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
 		})
 	}
 }
