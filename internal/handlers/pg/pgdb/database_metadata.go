@@ -196,7 +196,6 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) (map[string]bo
 	if err != nil {
 		return nil, err
 	}
-
 	defer iter.Close()
 
 	tables := make(map[string]bool)
