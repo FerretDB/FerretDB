@@ -63,6 +63,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	qp.Explain = true
 
+	qp.NativeSort = true
+
 	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
