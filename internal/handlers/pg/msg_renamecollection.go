@@ -64,19 +64,28 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	// we assume we cannot move a collection between databases, yet.
-	_, targetCollection, err := extractFromNamespace(targetNamespace)
+	targetDB, targetCollection, err := extractFromNamespace(targetNamespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if sourceNamespace == targetNamespace {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrIllegalOperation,
-			"Can't rename a collection to itself",
+	if targetDB != sourceDB {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"Can't rename a collection to another database",
+			document.Command(),
 		)
 	}
 
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	if sourceNamespace == targetNamespace {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIllegalOperation,
+			"Can't rename a collection to itself",
+			document.Command(),
+		)
+	}
+
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection)
 	})
 

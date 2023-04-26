@@ -784,6 +784,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		sourceCollection string
 		targetCollection string
+		to               string
 		expected         bson.D
 		err              *mongo.CommandError
 		toInsert         []any
@@ -791,11 +792,13 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		"Rename": {
 			sourceCollection: "foo",
 			targetCollection: "bar",
+			to:               "to",
 			expected:         bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
 			sourceCollection: "foo",
 			targetCollection: "foo",
+			to:               "to",
 			err: &mongo.CommandError{
 				Code:    20,
 				Name:    "IllegalOperation",
@@ -805,6 +808,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		"RenameDuplicate": {
 			sourceCollection: "foo",
 			targetCollection: "buz",
+			to:               "to",
 			err: &mongo.CommandError{
 				Code:    48,
 				Name:    "NamespaceExists",
@@ -814,6 +818,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		"SoureDoesNotExist": {
 			sourceCollection: "none",
 			targetCollection: "bar",
+			to:               "to",
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
@@ -826,6 +831,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		"InsertIntoOld": {
 			sourceCollection: "foo",
 			targetCollection: "bar",
+			to:               "to",
 			expected:         bson.D{{"ok", float64(1)}},
 			toInsert: []interface{}{
 				bson.D{{"_id", 1}},
@@ -835,10 +841,21 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		"RenameMaxTableLen": {
 			sourceCollection: "foo",
 			targetCollection: maxTableLen + "a",
+			to:               "to",
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
 				Message: "collection is too long",
+			},
+		},
+		"BadParamTo": {
+			sourceCollection: "foo",
+			targetCollection: "bar",
+			to:               "f",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "required parameter \"to\" is missing",
 			},
 		},
 	} {
@@ -862,7 +879,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			cmd := bson.D{
 				{"renameCollection", sourceNamespace},
-				{"to", targetNamespace},
+				{tc.to, targetNamespace},
 			}
 
 			err := collection.Database().Client().Database(db.Name()).RunCommand(
