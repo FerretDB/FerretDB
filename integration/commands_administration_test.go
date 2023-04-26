@@ -944,7 +944,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Rename is not supported for Tigris")
 	// no providers needed as we will create collections ourselves.
-	// but CI complains no providers so we will use shareddata.Bools.
+	// but CI complains about no providers so we will use shareddata.Bools.
 	s := setup.SetupWithOpts(
 		t, &setup.SetupOpts{
 			DatabaseName: "admin", Providers: []shareddata.Provider{shareddata.Bools},
