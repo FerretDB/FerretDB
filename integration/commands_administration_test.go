@@ -805,6 +805,16 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: `Can't rename a collection to itself`,
 			},
 		},
+		"TargetAlreadyExists": {
+			sourceCollection: "foo",
+			targetCollection: "buz",
+			to:               "to",
+			err: &mongo.CommandError{
+				Code:    48,
+				Name:    "NamespaceExists",
+				Message: `target namespace exists`,
+			},
+		},
 		"RenameDuplicate": {
 			sourceCollection: "foo",
 			targetCollection: "buz",
