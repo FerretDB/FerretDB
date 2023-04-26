@@ -825,9 +825,9 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: "source namespace does not exist",
 			},
 		},
-		// this confirms that after we rename foo to bar and then re-create foo again,
-		// 1. bool-false doesn't exist
-		// 2. the newly inserted documents exist
+		// this confirms that after we rename foo to bar and then recreate foo again,
+		// 1. the newly inserted documents exist
+		// 2. bool-false doesn't exist
 		"InsertIntoOld": {
 			sourceCollection: "foo",
 			targetCollection: "bar",
