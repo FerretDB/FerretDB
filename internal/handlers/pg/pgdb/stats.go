@@ -92,7 +92,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))) 
 		FROM pg_tables 
 		WHERE schemaname = $1`
-	args := []any{pgx.Identifier{db}.Sanitize()}
+	args := []any{db}
 	row := tx.QueryRow(ctx, sql, args...)
 
 	var schemaSize *int32
@@ -116,10 +116,10 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 			COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
 			COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 		FROM pg_tables AS t
-			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
+			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
 			LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 		WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
-	args = []any{pgx.Identifier{db}.Sanitize(), reservedPrefix + "%"}
+	args = []any{db, reservedPrefix + "%"}
 
 	row = tx.QueryRow(ctx, sql, args...)
 	if err := row.Scan(
