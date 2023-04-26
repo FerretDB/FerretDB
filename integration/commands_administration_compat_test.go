@@ -16,7 +16,6 @@ package integration
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"testing"
 
@@ -174,59 +173,6 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatFactor := must.NotFail(compatDoc.Get("scaleFactor"))
 
 			assert.Equal(t, compatFactor, targetFactor)
-		})
-	}
-}
-
-func TestCommandsAdministrationCompatRenameCollection(t *testing.T) {
-	t.Parallel()
-
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers: []shareddata.Provider{shareddata.Bools},
-	})
-
-	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
-
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		sourceCollection string
-		targetCollection string
-		to               string
-		resultType       compatTestCaseResultType
-		altMessage       string
-	}{
-		"Invalid": {
-			sourceCollection: "Bools",
-			targetCollection: "bar",
-			to:               "f",
-			resultType:       emptyResult,
-			altMessage:       "BSON field 'renameCollection.f' is an unknown field",
-		},
-	} {
-		name, tc := name, tc
-
-		t.Log("Running test case: ", name)
-
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
-			t.Parallel()
-
-			var targetRes bson.D
-
-			sourceNamespace := fmt.Sprintf(
-				"%s.%s", targetCollection.Database().Name(), tc.sourceCollection,
-			)
-			targetNamespace := fmt.Sprintf(
-				"%s.%s", targetCollection.Database().Name(), tc.targetCollection,
-			)
-			targetCommand := bson.D{{"renameCollection", sourceNamespace}, {tc.to, targetNamespace}}
-			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatCommand := bson.D{{"renameCollection", sourceNamespace}, {tc.to, targetNamespace}}
-			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
-
-			t.Log(targetErr, compatErr)
 		})
 	}
 }
