@@ -83,3 +83,23 @@ func BenchmarkReplaceLargeDocument(b *testing.B) {
 		runsCount++
 	})
 }
+
+func BenchmarkInsertMany(b *testing.B) {
+
+	ctx,coll := setup.Setup(b)
+
+    b.Run("InsertMany-D5",func(b *testing.B) {
+        for i := 0; i < b.N; i++ {
+            _,err := coll.InsertMany(ctx,[]any{
+                bson.D{{"test","test1"}},
+                bson.D{{"test","test2"}},
+                bson.D{{"test","test3"}},
+                bson.D{{"test","test4"}},
+                bson.D{{"test","test5"}},
+            })
+
+            require.NoError(b,err)
+        }
+
+    })
+}
