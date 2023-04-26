@@ -279,6 +279,20 @@ tasks:
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         --test-records-dir=tmp/records
 
+  run-sort:
+    desc: "Run FerretDB with `pg` handler"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=pg
+        --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        --test-records-dir=tmp/records
+        --test-enable-sorting-pushdown
+
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
     deps: [build-host]
