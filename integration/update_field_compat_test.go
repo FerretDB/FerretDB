@@ -855,6 +855,10 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:        bson.D{{"$set", bson.D{{"v.100.bar", int32(1)}}}},
 			skipForTigris: "Schema validation would fail for this case. ",
 		},
+		"ID": {
+			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
