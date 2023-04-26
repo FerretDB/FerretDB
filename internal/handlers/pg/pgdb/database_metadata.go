@@ -136,7 +136,11 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 
 	tableName = collectionNameToTableName(ms.collection)
 
-	allTables := ms.getAllTableHashes(ctx)
+	allTables, err := ms.getAllTableHashes(ctx)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
 
 	i := 0
 	for allTables[tableName] {
@@ -181,7 +185,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 }
 
 // getAllTableHashes returns all hashed table names for the given FerretDB database.
-func (ms *metadataStorage) getAllTableHashes(ctx context.Context) map[string]bool {
+func (ms *metadataStorage) getAllTableHashes(ctx context.Context) (map[string]bool, error) {
 	iterParams := &iteratorParams{
 		schema:    ms.db,
 		table:     dbMetadataTableName,
@@ -190,13 +194,23 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) map[string]boo
 
 	iter, err := buildIterator(ctx, ms.tx, iterParams)
 	if err != nil {
-		return nil
+		return nil, err
 	}
+
+	defer iter.Close()
 
 	tables := make(map[string]bool)
 
 	for {
 		_, doc, err := iter.Next()
+
+		switch {
+		case err == nil:
+			// do nothing
+		case errors.Is(err, iterator.ErrIteratorDone):
+			return tables, nil
+		}
+
 		i := 0
 
 		for _, k := range doc.Keys() {
@@ -205,13 +219,6 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) map[string]boo
 				tables[v.(string)] = true
 				i++
 			}
-		}
-
-		switch {
-		case err == nil:
-			// do nothing
-		case errors.Is(err, iterator.ErrIteratorDone):
-			return tables
 		}
 	}
 }
