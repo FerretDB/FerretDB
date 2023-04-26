@@ -787,7 +787,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		to               string
 		expected         bson.D
 		err              *mongo.CommandError
-		toInsert         []any
+		recreateOld      bool // this indicates that the old collection should be recreated
 	}{
 		"Rename": {
 			sourceCollection: "foo",
@@ -825,7 +825,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: "source namespace does not exist",
 			},
 		},
-		// this confirms that after we rename foo to bar and then create foo again,
+		// this confirms that after we rename foo to bar and then re-create foo again,
 		// 1. bool-false doesn't exist
 		// 2. the newly inserted documents exist
 		"InsertIntoOld": {
@@ -833,10 +833,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			targetCollection: "bar",
 			to:               "to",
 			expected:         bson.D{{"ok", float64(1)}},
-			toInsert: []interface{}{
-				bson.D{{"_id", 1}},
-				bson.D{{"_id", 2}},
-			},
+			recreateOld:      true,
 		},
 		"RenameMaxTableLen": {
 			sourceCollection: "foo",
@@ -905,11 +902,17 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.Contains(t, collections, tc.targetCollection)
 			require.NotContains(t, collections, tc.sourceCollection)
 
-			if tc.toInsert != nil {
+			if tc.recreateOld {
 				require.Equal(t, "bar", tc.targetCollection)
+
+				// we effectively recreate foo, the old collection.
 				require.NoError(t, db.CreateCollection(ctx, tc.sourceCollection))
 
-				res, err := db.Collection(tc.sourceCollection).InsertMany(ctx, tc.toInsert)
+				res, err := db.Collection(tc.sourceCollection).InsertMany(ctx, []any{
+					bson.D{{"_id", 1}},
+					bson.D{{"_id", 2}},
+				})
+
 				require.NoError(t, err)
 				require.Equal(
 					t,
