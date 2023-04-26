@@ -89,7 +89,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	//  See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT
 	sql = `
 		SELECT 
-		    SUM(pg_total_relation_size(schemaname || '.' || tablename)) 
+		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))) 
 		FROM pg_tables 
 		WHERE schemaname = $1`
 	args := []any{pgx.Identifier{db}.Sanitize()}
@@ -162,8 +162,8 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 			COALESCE(pg_table_size(oid), 0)          AS SizeTable,
 			COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
 		FROM pg_class 
-		WHERE oid = %s::regclass`,
-		quoteString(pgx.Identifier{db}.Sanitize()+"."+metadata.table),
+		WHERE oid = '%s'::regclass`,
+		pgx.Identifier{db, metadata.table}.Sanitize(),
 	)
 	row := tx.QueryRow(ctx, sql)
 
@@ -175,7 +175,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 		SELECT COUNT(indexname)
 		FROM pg_indexes
 		WHERE schemaname = $1 AND tablename = $2`
-	args := []any{pgx.Identifier{db}.Sanitize(), metadata.table}
+	args := []any{db, metadata.table}
 	row = tx.QueryRow(ctx, sql, args...)
 
 	if err := row.Scan(&res.CountIndexes); err != nil {
