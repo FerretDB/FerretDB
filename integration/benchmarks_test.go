@@ -115,7 +115,7 @@ func BenchmarkInsertMany(b *testing.B) {
 				id = id + 15
 			}
 			b.StopTimer()
-			coll.Drop(ctx)
+			require.NoError(b, coll.Drop(ctx))
 			coll = db.Collection(coll.Name())
 		}
 	})
