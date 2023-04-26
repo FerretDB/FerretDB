@@ -214,7 +214,7 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) (map[string]bo
 
 		for _, k := range doc.Keys() {
 			if k == "table" {
-				v, _ := doc.Get(k)
+				v := must.NotFail(doc.Get(k))
 				tables[v.(string)] = true
 				i++
 			}
