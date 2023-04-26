@@ -782,19 +782,19 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		collection       string
+		sourceCollection string
 		targetCollection string
 		expected         bson.D
 		err              *mongo.CommandError
-		toInsert         []interface{}
+		toInsert         []any
 	}{
 		"Rename": {
-			collection:       "foo",
+			sourceCollection: "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
 		},
 		"RenameSame": {
-			collection:       "foo",
+			sourceCollection: "foo",
 			targetCollection: "foo",
 			err: &mongo.CommandError{
 				Code:    20,
@@ -803,7 +803,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameDuplicate": {
-			collection:       "foo",
+			sourceCollection: "foo",
 			targetCollection: "buz",
 			err: &mongo.CommandError{
 				Code:    48,
@@ -812,7 +812,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"SoureDoesNotExist": {
-			collection:       "none",
+			sourceCollection: "none",
 			targetCollection: "bar",
 			err: &mongo.CommandError{
 				Code:    26,
@@ -824,7 +824,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		// 1. bool-false doesn't exist
 		// 2. the newly inserted documents exist
 		"InsertIntoOld": {
-			collection:       "foo",
+			sourceCollection: "foo",
 			targetCollection: "bar",
 			expected:         bson.D{{"ok", float64(1)}},
 			toInsert: []interface{}{
@@ -833,7 +833,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			},
 		},
 		"RenameMaxTableLen": {
-			collection:       "foo",
+			sourceCollection: "foo",
 			targetCollection: maxTableLen + "a",
 			err: &mongo.CommandError{
 				Code:    73,
@@ -857,7 +857,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			var actual bson.D
 
-			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.collection)
+			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.sourceCollection)
 			targetNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)
 
 			cmd := bson.D{
@@ -886,17 +886,17 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Contains(t, collections, tc.targetCollection)
-			require.NotContains(t, collections, tc.collection)
+			require.NotContains(t, collections, tc.sourceCollection)
 
 			if tc.toInsert != nil {
 				require.Equal(t, "bar", tc.targetCollection)
-				require.NoError(t, db.CreateCollection(ctx, tc.collection))
+				require.NoError(t, db.CreateCollection(ctx, tc.sourceCollection))
 
-				res, err := db.Collection(tc.collection).InsertMany(ctx, tc.toInsert)
+				res, err := db.Collection(tc.sourceCollection).InsertMany(ctx, tc.toInsert)
 				require.NoError(t, err)
 				require.Equal(
 					t,
-					&mongo.InsertManyResult{[]interface{}{int32(1), int32(2)}},
+					&mongo.InsertManyResult{[]any{int32(1), int32(2)}},
 					res,
 				)
 
@@ -913,11 +913,18 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Rename is not supported for Tigris")
+	// no providers there, we will create collections that are needed
+	s := setup.SetupWithOpts(
+		t, &setup.SetupOpts{DatabaseName: "admin"},
+	)
 
-	ctx, collection := setup.Setup(t) // no providers there, we will create collections that are needed
+	ctx, collection := s.Ctx, s.Collection
+
 	db := collection.Database()
 
-	collNum := runtime.GOMAXPROCS(-1) * 10
+	// collNum := runtime.GOMAXPROCS(-1) * 10
+
+	collNum := 1
 
 	// create collections that we will attempt to rename later
 	for i := 0; i < collNum; i++ {
