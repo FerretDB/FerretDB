@@ -40,7 +40,7 @@ var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
 func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
-	// TODO use metadata storage there
+	// TODO https://github.com/FerretDB/FerretDB/issues/2519
 
 	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
 	if err != nil {
@@ -192,8 +192,6 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 // RenameCollection changes the name of an existing collection.
 //
 // It returns ErrTableNotExist if either source database or collection does not exist.
-// Please use errors.Is to check the error.
-//
 // It returns ErrAlreadyExist if the target database or collection already exists.
 // It returns ErrInvalidCollectionName if collection name is not valid.
 func RenameCollection(ctx context.Context, tx pgx.Tx, db, from, to string) error {
