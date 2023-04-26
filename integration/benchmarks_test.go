@@ -116,7 +116,7 @@ func BenchmarkInsertMany(b *testing.B) {
 			}
 			b.StopTimer()
 			coll.Drop(ctx)
-			coll = db.Collection("Benchmark/InsertMany-D10")
+			coll = db.Collection(coll.Name())
 		}
 	})
 }
