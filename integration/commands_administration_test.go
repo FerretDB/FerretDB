@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -31,7 +32,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/atomic"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -1012,7 +1012,9 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 
 	wg.Wait()
 
-	require.Equal(t, *atomic.NewInt32(int32(collNum - 1)), errNum) // expected to have errors for all the rename attempts apart from the first one
+	val := atomic.Int32{}
+	val.Add(int32(collNum - 1))
+	require.Equal(t, val, errNum) // expected to have errors for all the rename attempts apart from the first one
 
 	mx.Lock()
 	renamedCollectionsCount := len(renamedCollections)
