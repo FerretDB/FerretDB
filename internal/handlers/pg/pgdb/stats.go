@@ -89,7 +89,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	//  See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT
 	sql = `
 		SELECT 
-		    SUM(pg_total_relation_size(schemaname || '.' || tablename)) 
+		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))) 
 		FROM pg_tables 
 		WHERE schemaname = $1`
 	args := []any{db}
@@ -116,7 +116,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 			COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
 			COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 		FROM pg_tables AS t
-			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
+			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
 			LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 		WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
@@ -162,8 +162,8 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 			COALESCE(pg_table_size(oid), 0)          AS SizeTable,
 			COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
 		FROM pg_class 
-		WHERE oid = %s::regclass`,
-		quoteString(db+"."+metadata.table),
+		WHERE oid = '%s'::regclass`,
+		pgx.Identifier{db, metadata.table}.Sanitize(),
 	)
 	row := tx.QueryRow(ctx, sql)
 
