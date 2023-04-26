@@ -165,3 +165,17 @@ func TestQueryProjectionCompat(t *testing.T) {
 
 	testQueryCompatWithProviders(t, providers, testCases)
 }
+
+func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"PositionalOperator": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 45.5}}}},
+			projection: bson.D{{"v.$", true}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1709",
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
