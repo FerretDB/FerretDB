@@ -153,6 +153,13 @@ tasks:
       - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
 
+  fmt-yaml:
+    desc: "Format yaml"
+    cmds:
+      - find . -name "*.yml" -exec chmod o+w {} \;
+      - docker compose run --rm -v $(pwd):/work prettier --write --parser=yaml "./**/*.yml"
+      - find . -name "*.yml" -exec chmod o-w {} \;
+
   test:
     desc: "Run all unit and integration tests in parallel"
     deps: [test-unit, test-integration]
