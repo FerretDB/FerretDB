@@ -605,9 +605,15 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
-
 	doc := ConvertDocument(t, actual)
+
+	// For Tigris, we check that the keys are present
+	/*if setup.IsTigris(t) {
+		assert.True(t, doc.Has("nindexes"))
+		return
+	}*/
+
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("size")), 39_900)
 	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
