@@ -778,7 +778,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	t.Parallel()
 
-	maxTableLen := strings.Repeat("a", 63) // maxTableLen = 63
+	maxTableLen := strings.Repeat("a", 63)
 	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
