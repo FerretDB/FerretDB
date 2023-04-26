@@ -86,20 +86,36 @@ func BenchmarkReplaceLargeDocument(b *testing.B) {
 
 func BenchmarkInsertMany(b *testing.B) {
 
-	ctx,coll := setup.Setup(b)
-
-    b.Run("InsertMany-D5",func(b *testing.B) {
+    id := 0
+    ctx,coll := setup.Setup(b)
+    db := coll.Database()
+    b.Run("InsertMany-D10",func(b *testing.B) {
         for i := 0; i < b.N; i++ {
-            _,err := coll.InsertMany(ctx,[]any{
-                bson.D{{"test","test1"}},
-                bson.D{{"test","test2"}},
-                bson.D{{"test","test3"}},
-                bson.D{{"test","test4"}},
-                bson.D{{"test","test5"}},
-            })
-
-            require.NoError(b,err)
+            b.StartTimer()
+            for j := 0; j < 40; j++{
+                _,err := coll.InsertMany(ctx,[]any{
+                    bson.D{{"_id",id},{"test","test1"}},
+                    bson.D{{"_id",(id + 1)},{"test","test2"}},
+                    bson.D{{"_id",(id + 2)},{"test","test3"}},
+                    bson.D{{"_id",(id + 3)},{"test","test4"}},
+                    bson.D{{"_id",(id + 4)},{"test","test5"}},
+                    bson.D{{"_id",(id + 5)},{"test","test6"}},
+                    bson.D{{"_id",(id + 6)},{"test","test7"}},
+                    bson.D{{"_id",(id + 7)},{"test","test8"}},
+                    bson.D{{"_id",(id + 8)},{"test","test9"}},
+                    bson.D{{"_id",(id + 9)},{"test","test10"}},
+                    bson.D{{"_id",(id + 10)},{"test","test11"}},
+                    bson.D{{"_id",(id + 11)},{"test","test12"}},
+                    bson.D{{"_id",(id + 12)},{"test","test13"}},
+                    bson.D{{"_id",(id + 13)},{"test","test14"}},
+                    bson.D{{"_id",(id + 14)},{"test","test15"}},
+                })
+                require.NoError(b,err)
+                id = id + 15
+            }
+            b.StopTimer()
+            coll.Drop(ctx)
+            coll = db.Collection("Benchmark/InsertMany-D10")
         }
-
     })
 }
