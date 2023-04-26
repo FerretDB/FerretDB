@@ -945,16 +945,16 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Rename is not supported for Tigris")
 	// no providers there, we will create collections that are needed
 	s := setup.SetupWithOpts(
-		t, &setup.SetupOpts{DatabaseName: "admin"},
+		t, &setup.SetupOpts{
+			DatabaseName: "admin", Providers: []shareddata.Provider{shareddata.Bools},
+		},
 	)
 
 	ctx, collection := s.Ctx, s.Collection
 
 	db := collection.Database()
 
-	// collNum := runtime.GOMAXPROCS(-1) * 10
-
-	collNum := 1
+	collNum := runtime.GOMAXPROCS(-1) * 10
 
 	// create collections that we will attempt to rename later
 	for i := 0; i < collNum; i++ {
@@ -966,6 +966,7 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	ready := make(chan struct{}, collNum)
 	start := make(chan struct{})
 
+	// we can't use a sync.Map because it doesn't have a Len method.
 	var errNum atomic.Int32
 	renamedCollections := map[string]struct{}{}
 	mx := new(sync.Mutex)
@@ -1020,7 +1021,6 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
-	require.Len(t, colls, collNum)
 
 	var found bool
 	for _, coll := range colls {
@@ -1031,6 +1031,15 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	}
 
 	require.True(t, found)
+
+	// dropping the admin database is prohibited, so we do this instead.
+	// unsure if necessary for CI, but it's a good idea to clean up after ourselves.
+	for _, coll := range colls {
+		if coll == "system.version" {
+			continue
+		}
+		require.NoError(t, db.Collection(coll).Drop(ctx))
+	}
 }
 
 //nolint:paralleltest // we test a global server status
