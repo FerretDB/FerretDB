@@ -17,6 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -51,6 +52,13 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		if err != nil {
 			return nil, false, lazyerrors.Error(err)
+		}
+
+		if strings.Contains(key, "$") {
+			return nil, false, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("projection operator $ is not supported in %s", key),
+			)
 		}
 
 		var result bool
