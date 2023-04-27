@@ -161,7 +161,7 @@ tasks:
         {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o+w {} \;{{end}}
       - docker compose run --rm -v $(pwd):/work prettier --write --parser=yaml "./**/*.yml"
       - >
-        {{if eq OS "linux"}} find . -name "*.yml" -exec chmod o-w {} \;{{end}}
+        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o-w {} \;{{end}}
 
   test:
     desc: "Run all unit and integration tests in parallel"
