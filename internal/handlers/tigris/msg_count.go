@@ -43,7 +43,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	unimplementedFields := []string{
 		"collation",
 	}
-	if err := commonparams.Unimplemented(document, unimplementedFields...); err != nil {
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -52,7 +52,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"readConcern",
 		"comment",
 	}
-	commonparams.Ignored(document, h.L, ignoredFields...)
+	common.Ignored(document, h.L, ignoredFields...)
 
 	var qp tigrisdb.QueryParams
 
@@ -63,13 +63,13 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	var skip, limit int64
 
 	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = commonparams.GetSkipParam("count", s); err != nil {
+		if skip, err = common.GetSkipParam("count", s); err != nil {
 			return nil, err
 		}
 	}
 
 	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = commonparams.GetLimitParam("count", l); err != nil {
+		if limit, err = common.GetLimitParam("count", l); err != nil {
 			return nil, err
 		}
 	}

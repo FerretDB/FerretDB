@@ -44,14 +44,14 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	unimplementedFields := []string{
 		"collation",
 	}
-	if err = commonparams.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
 	ignoredFields := []string{
 		"readConcern",
 	}
-	commonparams.Ignored(document, l, ignoredFields...)
+	Ignored(document, l, ignoredFields...)
 
 	var dp DistinctParams
 

@@ -123,7 +123,7 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		"arrayFilters",
 		"let",
 	}
-	if err = commonparams.Unimplemented(doc, unimplementedFields...); err != nil {
+	if err = Unimplemented(doc, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		"writeConcern",
 		"hint",
 	}
-	commonparams.Ignored(doc, l, ignoredFields...)
+	Ignored(doc, l, ignoredFields...)
 
 	var update *types.Document
 

@@ -17,7 +17,7 @@ package tigris
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -32,7 +32,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	commonparams.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
+	common.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

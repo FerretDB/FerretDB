@@ -46,11 +46,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := commonparams.Unimplemented(document, "let"); err != nil {
+	if err := common.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
 
-	commonparams.Ignored(document, h.L, "writeConcern")
+	common.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
 	if deletes, err = commonparams.GetOptionalParam(document, "deletes", deletes); err != nil {
@@ -62,7 +62,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	commonparams.Ignored(document, h.L, "comment")
+	common.Ignored(document, h.L, "comment")
 
 	var qp tigrisdb.QueryParams
 
@@ -136,11 +136,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
 	var err error
 
-	if err = commonparams.Unimplemented(deleteDoc, "collation"); err != nil {
+	if err = common.Unimplemented(deleteDoc, "collation"); err != nil {
 		return nil, false, err
 	}
 
-	commonparams.Ignored(deleteDoc, h.L, "hint")
+	common.Ignored(deleteDoc, h.L, "hint")
 
 	// get filter from document
 	var filter *types.Document
@@ -148,7 +148,7 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 		return nil, false, err
 	}
 
-	commonparams.Ignored(filter, h.L, "$comment")
+	common.Ignored(filter, h.L, "$comment")
 
 	// TODO use `GetLimitParam`
 	// https://github.com/FerretDB/FerretDB/issues/2255

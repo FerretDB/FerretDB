@@ -21,6 +21,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -54,11 +55,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"pipeline",
 		"collation",
 	}
-	if err := commonparams.Unimplemented(document, unimplementedFields...); err != nil {
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
-	if err = commonparams.UnimplementedNonDefault(document, "capped", func(v any) bool {
+	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
 		b, ok := v.(bool)
 		return ok && !b
 	}); err != nil {
@@ -72,7 +73,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"writeConcern",
 		"comment",
 	}
-	commonparams.Ignored(document, h.L, ignoredFields...)
+	common.Ignored(document, h.L, ignoredFields...)
 
 	command := document.Command()
 

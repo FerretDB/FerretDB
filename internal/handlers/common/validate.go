@@ -33,7 +33,7 @@ func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	commonparams.Ignored(document, l, "full", "repair", "metadata")
+	Ignored(document, l, "full", "repair", "metadata")
 
 	command := document.Command()
 

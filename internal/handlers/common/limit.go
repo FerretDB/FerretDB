@@ -15,9 +15,31 @@
 package common
 
 import (
+	"math"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+// GetLimitParam validates the given limit value for find, count, and delete commands.
+func GetLimitParam(command string, value any) (int64, error) {
+	l, err := commonparams.GetWholeNumberParam(value)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	// TODO return proper errors
+	// https://github.com/FerretDB/FerretDB/issues/2255
+	switch {
+	case l < 0:
+		return 0, lazyerrors.Errorf("invalid %s limit value: %d", command, l)
+	case l > math.MaxUint32:
+		return 0, lazyerrors.Errorf("invalid %s limit value: %d", command, l)
+	default:
+		return l, nil
+	}
+}
 
 // LimitDocuments returns a subslice of given documents according to the given limit value.
 func LimitDocuments(docs []*types.Document, limit int64) ([]*types.Document, error) {

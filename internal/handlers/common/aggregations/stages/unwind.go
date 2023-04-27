@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,7 +43,7 @@ func newUnwind(stage *types.Document) (Stage, error) {
 
 	switch field := field.(type) {
 	case *types.Document:
-		return nil, commonparams.Unimplemented(stage, "$unwind")
+		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
 		if field == "" {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

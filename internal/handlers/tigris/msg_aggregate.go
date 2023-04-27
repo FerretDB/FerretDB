@@ -20,6 +20,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
@@ -44,13 +45,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1892
-	commonparams.Ignored(document, h.L, "cursor", "lsid")
+	common.Ignored(document, h.L, "cursor", "lsid")
 
-	if err = commonparams.Unimplemented(document, "explain", "collation", "let"); err != nil {
+	if err = common.Unimplemented(document, "explain", "collation", "let"); err != nil {
 		return nil, err
 	}
 
-	commonparams.Ignored(
+	common.Ignored(
 		document, h.L,
 		"allowDiskUse", "maxTimeMS", "bypassDocumentValidation", "readConcern", "hint", "comment", "writeConcern",
 	)

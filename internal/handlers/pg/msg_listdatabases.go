@@ -45,7 +45,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	commonparams.Ignored(document, h.L, "comment", "authorizedDatabases")
+	common.Ignored(document, h.L, "comment", "authorizedDatabases")
 
 	nameOnly, err := commonparams.GetBoolOptionalParam(document, "nameOnly")
 	if err != nil {

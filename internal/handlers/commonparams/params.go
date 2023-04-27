@@ -239,14 +239,14 @@ func GetBinaryMaskParam(mask any) (uint64, error) {
 			if !ok {
 				return 0, commonerrors.NewCommandError(
 					commonerrors.ErrBadValue,
-					fmt.Errorf(`Failed to Unmarshal bit position. Expected a number in: %d: %#v`, i, val),
+					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
 				)
 			}
 
 			if b < 0 {
 				return 0, commonerrors.NewCommandError(
 					commonerrors.ErrBadValue,
-					fmt.Errorf("Failed to Unmarshal bit position. Expected a non-negative number in: %d: %d", i, b),
+					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
 				)
 			}
 
