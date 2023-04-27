@@ -28,7 +28,7 @@ import (
 )
 
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
-var validateDatabaseNameRe = regexp.MustCompile("^[a-z_-][a-z0-9_-]{0,62}$")
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
 
 // Databases returns a sorted list of FerretDB databases / PostgreSQL schemas.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {

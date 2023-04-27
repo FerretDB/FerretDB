@@ -76,7 +76,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	expectedErr = mongo.CommandError{
 		Code:    48,
 		Name:    "NamespaceExists",
-		Message: `Collection testcommandsadministrationcreatedroplist.TestCommandsAdministrationCreateDropList already exists.`,
+		Message: `Collection TestCommandsAdministrationCreateDropList.TestCommandsAdministrationCreateDropList already exists.`,
 	}
 	AssertEqualError(t, expectedErr, err)
 
