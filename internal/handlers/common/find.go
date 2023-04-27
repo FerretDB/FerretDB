@@ -27,17 +27,17 @@ import (
 //
 //nolint:vet // for readability
 type FindParams struct {
-	DB          string
-	Collection  string
-	Filter      *types.Document
-	Sort        *types.Document
-	Projection  *types.Document
-	Skip        int64
-	Limit       int64
-	BatchSize   int32
-	SingleBatch bool
-	Comment     string
-	MaxTimeMS   int32
+	DB          string          `name:"$db"`
+	Collection  string          `name:"collection"`
+	Filter      *types.Document `name:"filter,opt"`
+	Sort        *types.Document `name:"sort,opt"`
+	Projection  *types.Document `name:"projection,opt"`
+	Skip        int64           `name:"skip"`
+	Limit       int64           `name:"limit"`
+	BatchSize   int32           `name:"batchSize"`
+	SingleBatch bool            `name:"singleBatch"`
+	Comment     string          `name:"comment"`
+	MaxTimeMS   int32           `name:"maxTimeMS"`
 }
 
 // GetFindParams returns `find` command parameters.
