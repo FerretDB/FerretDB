@@ -30,6 +30,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+type CountParams struct {
+	DB          string          `name:"$db"`
+	Collection  string          `name:"collection"`
+	Collation   any             `name:"collation,unimplemented"`
+	Hint        any             `name:"hint,ignored"`
+	ReadConcern any             `name:"readConcern,ignored"`
+	Comment     any             `name:"comment,ignored"`
+	Filter      *types.Document `name:"query"`
+	Skip        int64           `name:"skip"`
+	Limit       int64           `name:"limit"`
+}
+
 // MsgCount implements HandlerInterface.
 func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	dbPool, err := h.DBPool(ctx)
@@ -42,19 +54,11 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"collation",
-	}
-	if err := commonparams.Unimplemented(document, unimplementedFields...); err != nil {
+	if err := commonparams.Unimplemented(document, "collation"); err != nil {
 		return nil, err
 	}
 
-	ignoredFields := []string{
-		"hint",
-		"readConcern",
-		"comment",
-	}
-	commonparams.Ignored(document, h.L, ignoredFields...)
+	commonparams.Ignored(document, h.L, "hint", "readConcern", "comment")
 
 	var filter *types.Document
 	if filter, err = commonparams.GetOptionalParam(document, "query", filter); err != nil {
