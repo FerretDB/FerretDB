@@ -19,7 +19,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -37,12 +36,12 @@ func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg,
 
 	command := document.Command()
 
-	db, err := commonparams.GetRequiredParam[string](document, "$db")
+	db, err := GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := commonparams.GetRequiredParam[string](document, command)
+	collection, err := GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}

@@ -17,20 +17,20 @@ package tigris
 import (
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // getJSONSchema returns a marshaled JSON schema received from validator -> $jsonSchema.
 func getJSONSchema(doc *types.Document) (*tjson.Schema, error) {
-	v, err := commonparams.GetRequiredParam[*types.Document](doc, "validator")
+	v, err := common.GetRequiredParam[*types.Document](doc, "validator")
 	if err != nil {
 		return nil, err
 	}
 
-	schema, err := commonparams.GetRequiredParam[string](v, "$tigrisSchemaString")
+	schema, err := common.GetRequiredParam[string](v, "$tigrisSchemaString")
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -47,36 +46,36 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var qp pgdb.QueryParams
 
-	if qp.DB, err = commonparams.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	common.Ignored(document, h.L, "verbosity")
 
-	command, err := commonparams.GetRequiredParam[*types.Document](document, document.Command())
+	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if qp.Collection, err = commonparams.GetRequiredParam[string](command, command.Command()); err != nil {
+	if qp.Collection, err = common.GetRequiredParam[string](command, command.Command()); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	qp.Explain = true
 
-	explain, err := commonparams.GetRequiredParam[*types.Document](document, "explain")
+	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	qp.Filter, err = commonparams.GetOptionalParam[*types.Document](explain, "filter", nil)
+	qp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if command.Command() == "aggregate" {
 		var pipeline *types.Array
-		pipeline, err = commonparams.GetRequiredParam[*types.Array](explain, "pipeline")
+		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
 
 		if err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

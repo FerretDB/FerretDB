@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commonparams
+package common
 
 import (
 	"testing"
@@ -55,7 +55,7 @@ func TestHasSameTypeElements(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			result := HasSameTypeElements(tc.array)
+			result := hasSameTypeElements(tc.array)
 			assert.Equal(t, tc.same, result)
 		})
 	}

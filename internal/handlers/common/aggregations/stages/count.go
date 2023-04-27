@@ -18,8 +18,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
@@ -31,7 +31,7 @@ type count struct {
 
 // newCount creates a new $count stage.
 func newCount(stage *types.Document) (Stage, error) {
-	field, err := commonparams.GetRequiredParam[string](stage, "$count")
+	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonString,

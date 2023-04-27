@@ -17,8 +17,8 @@ package operators
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -27,7 +27,7 @@ type count struct{}
 
 // newCount creates a new $count aggregation operator.
 func newCount(expr *types.Document) (Accumulator, error) {
-	expression, err := commonparams.GetRequiredParam[*types.Document](expr, "$count")
+	expression, err := common.GetRequiredParam[*types.Document](expr, "$count")
 	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,

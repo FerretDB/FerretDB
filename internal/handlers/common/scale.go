@@ -20,7 +20,6 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -30,7 +29,7 @@ import (
 // If the value is valid, it returns its int32 representation,
 // otherwise it returns a command error with the given command being mentioned.
 func GetScaleParam(command string, value any) (int32, error) {
-	scaleValue, err := commonparams.GetWholeNumberParam(value)
+	scaleValue, err := GetWholeNumberParam(value)
 
 	if err == nil {
 		if scaleValue <= 0 {
@@ -49,7 +48,7 @@ func GetScaleParam(command string, value any) (int32, error) {
 	}
 
 	switch {
-	case errors.Is(err, commonerrors.ErrUnexpectedType):
+	case errors.Is(err, errUnexpectedType):
 		if _, ok := value.(types.NullType); ok {
 			return 1, nil
 		}
@@ -58,11 +57,11 @@ func GetScaleParam(command string, value any) (int32, error) {
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field '%s.scale' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				command, commonparams.AliasFromType(value),
+				command, AliasFromType(value),
 			),
 			"scale",
 		)
-	case errors.Is(err, commonerrors.ErrNotWholeNumber):
+	case errors.Is(err, errNotWholeNumber):
 		if math.Signbit(value.(float64)) {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
@@ -73,10 +72,10 @@ func GetScaleParam(command string, value any) (int32, error) {
 		// for non-integer numbers, scale value is rounded to the greatest integer value less than the given value.
 		return int32(math.Floor(value.(float64))), nil
 
-	case errors.Is(err, commonerrors.ErrLongExceededPositive):
+	case errors.Is(err, errLongExceededPositive):
 		return math.MaxInt32, nil
 
-	case errors.Is(err, commonerrors.ErrLongExceededNegative):
+	case errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
 			fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", math.MinInt32),

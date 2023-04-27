@@ -17,14 +17,13 @@ package common
 import (
 	"math"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // GetLimitParam validates the given limit value for find, count, and delete commands.
 func GetLimitParam(command string, value any) (int64, error) {
-	l, err := commonparams.GetWholeNumberParam(value)
+	l, err := GetWholeNumberParam(value)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}

@@ -19,9 +19,9 @@ import (
 	"os"
 
 	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -43,29 +43,29 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	db, err := commonparams.GetRequiredParam[string](document, "$db")
+	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	command, err := commonparams.GetRequiredParam[*types.Document](document, document.Command())
+	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	explain, err := commonparams.GetRequiredParam[*types.Document](document, "explain")
+	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter, err := commonparams.GetOptionalParam[*types.Document](explain, "filter", nil)
+	filter, err := common.GetOptionalParam[*types.Document](explain, "filter", nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if command.Command() == "aggregate" {
 		var pipeline *types.Array
-		pipeline, err = commonparams.GetRequiredParam[*types.Array](explain, "pipeline")
+		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
 
 		if err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

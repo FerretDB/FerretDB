@@ -21,7 +21,6 @@ import (
 	"github.com/AlekSi/pointer"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -42,8 +41,7 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 
 	command := document.Command()
 	var action string
-
-	if action, err = commonparams.GetRequiredParam[string](document, "action"); err != nil {
+	if action, err = GetRequiredParam[string](document, "action"); err != nil {
 		return nil, err
 	}
 

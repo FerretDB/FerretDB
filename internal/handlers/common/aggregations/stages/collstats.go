@@ -21,7 +21,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,7 +42,7 @@ type storageStats struct {
 
 // newCollStats creates a new $collStats stage.
 func newCollStats(stage *types.Document) (Stage, error) {
-	fields, err := commonparams.GetRequiredParam[*types.Document](stage, "$collStats")
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCollStatsInvalidArg,

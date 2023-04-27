@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -48,17 +47,17 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	command := document.Command()
 
-	db, err := commonparams.GetRequiredParam[string](document, "$db")
+	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := commonparams.GetRequiredParam[string](document, command)
+	collection, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}
 
-	idxArr, err := commonparams.GetRequiredParam[*types.Array](document, "indexes")
+	idxArr, err := common.GetRequiredParam[*types.Array](document, "indexes")
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +157,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		// Process required param "key"
 		var keyDoc *types.Document
 
-		keyDoc, err = commonparams.GetRequiredParam[*types.Document](indexDoc, "key")
+		keyDoc, err = common.GetRequiredParam[*types.Document](indexDoc, "key")
 		if err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
@@ -181,7 +180,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			var order int64
 
 			if val, err = keyDoc.Get("_id"); err == nil {
-				if order, err = commonparams.GetWholeNumberParam(val); err == nil && order == -1 {
+				if order, err = common.GetWholeNumberParam(val); err == nil && order == -1 {
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrBadValue,
 						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
@@ -197,7 +196,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		}
 
 		// Process required param "name"
-		index.Name, err = commonparams.GetRequiredParam[string](indexDoc, "name")
+		index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
 		if err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
@@ -272,7 +271,7 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 
 		var orderParam int64
 
-		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
+		if orderParam, err = common.GetWholeNumberParam(order); err != nil {
 			// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

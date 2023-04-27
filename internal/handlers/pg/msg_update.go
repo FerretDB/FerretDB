@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -51,7 +50,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var qp pgdb.QueryParams
 
-	if qp.DB, err = commonparams.GetRequiredParam[string](document, "$db"); err != nil {
+	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -64,13 +63,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if qp.Collection, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
 
 	var updates *types.Array
-	if updates, err = commonparams.GetOptionalParam(document, "updates", updates); err != nil {
+	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
 		return nil, err
 	}
 
@@ -92,10 +91,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	var upserted types.Array
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var update *types.Document
-
 		for i := 0; i < updates.Len(); i++ {
-			update, err = commonparams.AssertType[*types.Document](must.NotFail(updates.Get(i)))
+			update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
 			if err != nil {
 				return err
 			}
@@ -114,21 +111,21 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			var q, u *types.Document
 			var upsert bool
 			var multi bool
-			if q, err = commonparams.GetOptionalParam(update, "q", q); err != nil {
+			if q, err = common.GetOptionalParam(update, "q", q); err != nil {
 				return err
 			}
-			if u, err = commonparams.GetOptionalParam(update, "u", u); err != nil {
+			if u, err = common.GetOptionalParam(update, "u", u); err != nil {
 				// TODO check if u is an array of aggregation pipeline stages
 				return err
 			}
 
 			// get comment from options.Update().SetComment() method
-			if qp.Comment, err = commonparams.GetOptionalParam(document, "comment", qp.Comment); err != nil {
+			if qp.Comment, err = common.GetOptionalParam(document, "comment", qp.Comment); err != nil {
 				return err
 			}
 
 			// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-			if qp.Comment, err = commonparams.GetOptionalParam(q, "$comment", qp.Comment); err != nil {
+			if qp.Comment, err = common.GetOptionalParam(q, "$comment", qp.Comment); err != nil {
 				return err
 			}
 
@@ -138,11 +135,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 			}
 
-			if upsert, err = commonparams.GetOptionalParam(update, "upsert", upsert); err != nil {
+			if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
 				return err
 			}
 
-			if multi, err = commonparams.GetOptionalParam(update, "multi", multi); err != nil {
+			if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
 				return err
 			}
 

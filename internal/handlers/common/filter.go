@@ -25,7 +25,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -933,22 +932,22 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 
 // filterFieldExprSize handles {field: {$size: sizeValue}} filter.
 func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
-	size, err := commonparams.GetWholeNumberParam(sizeValue)
+	size, err := GetWholeNumberParam(sizeValue)
 	if err != nil {
 		switch err {
-		case commonerrors.ErrUnexpectedType:
+		case errUnexpectedType:
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case commonerrors.ErrNotWholeNumber:
+		case errNotWholeNumber:
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case commonerrors.ErrInfinity:
+		case errInfinity:
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -1028,7 +1027,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 			return false, nil
 		}
 
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
 		}
@@ -1044,7 +1043,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
 		}
@@ -1052,7 +1051,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	case int64:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
 		}
@@ -1072,7 +1071,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 			return false, nil
 		}
 
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
 		}
@@ -1088,7 +1087,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
 		}
@@ -1096,7 +1095,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case int64:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
 		}
@@ -1116,7 +1115,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 			return false, nil
 		}
 
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
 		}
@@ -1132,7 +1131,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
 		}
@@ -1140,7 +1139,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case int64:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
 		}
@@ -1160,7 +1159,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 			return false, nil
 		}
 
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
 		}
@@ -1176,14 +1175,14 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
 		}
 		return (uint64(value) & bitmask) != 0, nil
 
 	case int64:
-		bitmask, err := commonparams.GetBinaryMaskParam(maskValue)
+		bitmask, err := getBinaryMaskParam(maskValue)
 		if err != nil {
 			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
 		}
@@ -1357,7 +1356,7 @@ func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
 	case *types.Array:
-		hasSameType := commonparams.HasSameTypeElements(exprValue)
+		hasSameType := hasSameTypeElements(exprValue)
 
 		for i := 0; i < exprValue.Len(); i++ {
 			exprValue := must.NotFail(exprValue.Get(i))
@@ -1379,7 +1378,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					)
 				}
 
-				code, err := commonparams.NewTypeCode(int32(exprValue))
+				code, err := newTypeCode(int32(exprValue))
 				if err != nil {
 					return false, err
 				}
@@ -1397,7 +1396,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				}
 
 			case string:
-				code, err := commonparams.ParseTypeCode(exprValue)
+				code, err := parseTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -1409,7 +1408,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			case int32:
-				code, err := commonparams.NewTypeCode(exprValue)
+				code, err := newTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -1451,7 +1450,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 			)
 		}
 
-		code, err := commonparams.NewTypeCode(int32(exprValue))
+		code, err := newTypeCode(int32(exprValue))
 		if err != nil {
 			return false, err
 		}
@@ -1459,7 +1458,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	case string:
-		code, err := commonparams.ParseTypeCode(exprValue)
+		code, err := parseTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
@@ -1467,7 +1466,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	case int32:
-		code, err := commonparams.NewTypeCode(exprValue)
+		code, err := newTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
@@ -1484,9 +1483,9 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 }
 
 // filterFieldValueByTypeCode filters fieldValue by given type code.
-func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (bool, error) {
+func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	// check types.Array elements for match to given code.
-	if array, ok := fieldValue.(*types.Array); ok && code != commonparams.TypeCodeArray {
+	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
 		for i := 0; i < array.Len(); i++ {
 			value, err := array.Get(i)
 			if err != nil {
@@ -1510,67 +1509,67 @@ func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (boo
 	}
 
 	switch code {
-	case commonparams.TypeCodeArray:
+	case typeCodeArray:
 		if _, ok := fieldValue.(*types.Array); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeObject:
+	case typeCodeObject:
 		if _, ok := fieldValue.(*types.Document); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeDouble:
+	case typeCodeDouble:
 		if _, ok := fieldValue.(float64); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeString:
+	case typeCodeString:
 		if _, ok := fieldValue.(string); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeBinData:
+	case typeCodeBinData:
 		if _, ok := fieldValue.(types.Binary); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeObjectID:
+	case typeCodeObjectID:
 		if _, ok := fieldValue.(types.ObjectID); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeBool:
+	case typeCodeBool:
 		if _, ok := fieldValue.(bool); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeDate:
+	case typeCodeDate:
 		if _, ok := fieldValue.(time.Time); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeNull:
+	case typeCodeNull:
 		if _, ok := fieldValue.(types.NullType); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeRegex:
+	case typeCodeRegex:
 		if _, ok := fieldValue.(types.Regex); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeInt:
+	case typeCodeInt:
 		if _, ok := fieldValue.(int32); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeTimestamp:
+	case typeCodeTimestamp:
 		if _, ok := fieldValue.(types.Timestamp); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeLong:
+	case typeCodeLong:
 		if _, ok := fieldValue.(int64); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeNumber:
-		// TypeCodeNumber should match int32, int64 and float64 types
+	case typeCodeNumber:
+		// typeCodeNumber should match int32, int64 and float64 types
 		switch fieldValue.(type) {
 		case float64, int32, int64:
 			return true, nil
 		default:
 			return false, nil
 		}
-	case commonparams.TypeCodeDecimal, commonparams.TypeCodeMinKey, commonparams.TypeCodeMaxKey:
+	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			fmt.Sprintf(`Type code %v not implemented`, code),
@@ -1652,14 +1651,14 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 // Mask value used in error message.
 func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	switch {
-	case errors.Is(err, commonerrors.ErrNotWholeNumber):
+	case errors.Is(err, errNotWholeNumber):
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
 			operator,
 		)
 
-	case errors.Is(err, commonerrors.ErrNegativeNumber):
+	case errors.Is(err, errNegativeNumber):
 		if _, ok := maskValue.(float64); ok {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
@@ -1674,7 +1673,7 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 			operator,
 		)
 
-	case errors.Is(err, commonerrors.ErrNotBinaryMask):
+	case errors.Is(err, errNotBinaryMask):
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),

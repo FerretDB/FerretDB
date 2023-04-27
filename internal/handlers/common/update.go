@@ -25,7 +25,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -365,7 +364,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, err
 		}
 
-		incremented, err := commonparams.AddNumbers(incValue, docValue)
+		incremented, err := addNumbers(incValue, docValue)
 		if err == nil {
 			if err = doc.SetByPath(path, incremented); err != nil {
 				return false, lazyerrors.Error(err)
@@ -386,7 +385,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		}
 
 		switch {
-		case errors.Is(err, commonerrors.ErrUnexpectedLeftOpType):
+		case errors.Is(err, errUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -395,7 +394,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					incValue,
 				),
 			)
-		case errors.Is(err, commonerrors.ErrUnexpectedRightOpType):
+		case errors.Is(err, errUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -408,10 +407,10 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					commonparams.AliasFromType(docValue),
+					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, commonerrors.ErrLongExceededPositive), errors.Is(err, commonerrors.ErrLongExceededNegative):
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -420,7 +419,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errors.Is(err, commonerrors.ErrIntExceeded):
+		case errors.Is(err, errIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -575,7 +574,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
-				commonparams.AliasFromType(updateV),
+				AliasFromType(updateV),
 			),
 		)
 	}
@@ -635,7 +634,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		}
 
 		var multiplied any
-		multiplied, err = commonparams.MultiplyNumbers(mulValue, docValue)
+		multiplied, err = multiplyNumbers(mulValue, docValue)
 
 		switch {
 		case err == nil:
@@ -667,7 +666,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 			continue
 
-		case errors.Is(err, commonerrors.ErrUnexpectedLeftOpType):
+		case errors.Is(err, errUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -676,7 +675,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					mulValue,
 				),
 			)
-		case errors.Is(err, commonerrors.ErrUnexpectedRightOpType):
+		case errors.Is(err, errUnexpectedRightOpType):
 			k := mulKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -689,10 +688,10 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					commonparams.AliasFromType(docValue),
+					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, commonerrors.ErrLongExceededPositive), errors.Is(err, commonerrors.ErrLongExceededNegative):
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -701,7 +700,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errors.Is(err, commonerrors.ErrIntExceeded):
+		case errors.Is(err, errIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -975,7 +974,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
-				commonparams.AliasFromType(updateExpression),
+				AliasFromType(updateExpression),
 				op,
 				types.FormatAnyValue(updateExpression),
 			),
@@ -1135,7 +1134,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 			return newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-					"or a $type expression ({$type: 'timestamp/date'}).", commonparams.AliasFromType(setValue),
+					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
 				),
 				command,
 			)

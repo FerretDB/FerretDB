@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -30,7 +29,7 @@ func SASLStartPlain(doc *types.Document) (string, string, error) {
 	var payload []byte
 
 	// some drivers send payload as a string
-	stringPayload, err := commonparams.GetRequiredParam[string](doc, "payload")
+	stringPayload, err := GetRequiredParam[string](doc, "payload")
 	if err == nil {
 		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
 			return "", "", lazyerrors.Error(err)
@@ -38,7 +37,7 @@ func SASLStartPlain(doc *types.Document) (string, string, error) {
 	}
 
 	// most drivers follow spec and send payload as a binary
-	binaryPayload, err := commonparams.GetRequiredParam[types.Binary](doc, "payload")
+	binaryPayload, err := GetRequiredParam[types.Binary](doc, "payload")
 	if err == nil {
 		payload = binaryPayload.B
 	}

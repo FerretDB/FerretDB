@@ -20,7 +20,6 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -30,7 +29,7 @@ import (
 // If the value is valid, it returns its int64 representation,
 // otherwise it returns a command error with the given command being mentioned.
 func GetSkipParam(command string, value any) (int64, error) {
-	skipValue, err := commonparams.GetWholeNumberParam(value)
+	skipValue, err := GetWholeNumberParam(value)
 
 	if err == nil {
 		if skipValue < 0 {
@@ -44,7 +43,7 @@ func GetSkipParam(command string, value any) (int64, error) {
 	}
 
 	switch {
-	case errors.Is(err, commonerrors.ErrUnexpectedType):
+	case errors.Is(err, errUnexpectedType):
 		if _, ok := value.(types.NullType); ok {
 			return 0, nil
 		}
@@ -53,11 +52,11 @@ func GetSkipParam(command string, value any) (int64, error) {
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				command, commonparams.AliasFromType(value),
+				command, AliasFromType(value),
 			),
 			"skip",
 		)
-	case errors.Is(err, commonerrors.ErrNotWholeNumber):
+	case errors.Is(err, errNotWholeNumber):
 		if math.Signbit(value.(float64)) {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
@@ -68,10 +67,10 @@ func GetSkipParam(command string, value any) (int64, error) {
 		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
 		return int64(math.Floor(value.(float64))), nil
 
-	case errors.Is(err, commonerrors.ErrLongExceededPositive):
+	case errors.Is(err, errLongExceededPositive):
 		return math.MaxInt64, nil
 
-	case errors.Is(err, commonerrors.ErrLongExceededNegative):
+	case errors.Is(err, errLongExceededNegative):
 		return 0, commonerrors.NewCommandError(
 			commonerrors.ErrValueNegative,
 			fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),

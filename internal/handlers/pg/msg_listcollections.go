@@ -21,7 +21,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -42,18 +41,18 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	var filter *types.Document
-	if filter, err = commonparams.GetOptionalParam(document, "filter", filter); err != nil {
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
 		return nil, err
 	}
 
 	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
-	db, err := commonparams.GetRequiredParam[string](document, "$db")
+	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	nameOnly, err := commonparams.GetBoolOptionalParam(document, "nameOnly")
+	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
 	if err != nil {
 		return nil, err
 	}

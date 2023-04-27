@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -44,7 +43,7 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 			return false, lazyerrors.Error(err)
 		}
 
-		popValue, err := commonparams.GetWholeNumberParam(popValueRaw)
+		popValue, err := GetWholeNumberParam(popValueRaw)
 		if err != nil {
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrFailedToParse,
@@ -79,7 +78,7 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 		if !ok {
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
-				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, commonparams.AliasFromType(val)),
+				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, AliasFromType(val)),
 			)
 		}
 
@@ -172,7 +171,7 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 						commonerrors.ErrBadValue,
 						fmt.Sprintf(
 							"The argument to $each in $push must be an array but it was of type: %s",
-							commonparams.AliasFromType(eachRaw),
+							AliasFromType(eachRaw),
 						),
 					)
 				}
@@ -207,7 +206,7 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, commonparams.AliasFromType(val), must.NotFail(doc.Get("_id")),
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
 				),
 			)
 		}
@@ -261,7 +260,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 						commonerrors.ErrTypeMismatch,
 						fmt.Sprintf(
 							"The argument to $each in $addToSet must be an array but it was of type %s",
-							commonparams.AliasFromType(eachRaw),
+							AliasFromType(eachRaw),
 						),
 					)
 				}
@@ -296,7 +295,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, commonparams.AliasFromType(val), must.NotFail(doc.Get("_id")),
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
 				),
 			)
 		}
@@ -370,7 +369,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, commonparams.AliasFromType(val), must.NotFail(doc.Get("_id")),
+					key, AliasFromType(val), must.NotFail(doc.Get("_id")),
 				),
 			)
 		}
@@ -381,7 +380,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s'",
-					key, commonparams.AliasFromType(pullAllValueRaw),
+					key, AliasFromType(pullAllValueRaw),
 				),
 			)
 		}
