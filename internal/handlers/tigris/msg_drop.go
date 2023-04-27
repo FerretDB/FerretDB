@@ -19,7 +19,6 @@ import (
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -41,7 +40,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	commonparams.Ignored(document, h.L, "writeConcern", "comment")
 
 	command := document.Command()
 

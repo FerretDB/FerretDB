@@ -46,7 +46,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "comment", "authorizedCollections")
+	commonparams.Ignored(document, h.L, "comment", "authorizedCollections")
 
 	db, err := commonparams.GetRequiredParam[string](document, "$db")
 	if err != nil {

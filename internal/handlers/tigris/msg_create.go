@@ -21,7 +21,6 @@ import (
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -54,11 +53,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"pipeline",
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err := commonparams.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
-	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
+	if err = commonparams.UnimplementedNonDefault(document, "capped", func(v any) bool {
 		b, ok := v.(bool)
 		return ok && !b
 	}); err != nil {
@@ -72,7 +71,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"writeConcern",
 		"comment",
 	}
-	common.Ignored(document, h.L, ignoredFields...)
+	commonparams.Ignored(document, h.L, ignoredFields...)
 
 	command := document.Command()
 

@@ -44,11 +44,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
+	if err := commonparams.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "writeConcern")
+	commonparams.Ignored(document, h.L, "writeConcern")
 
 	var deletes *types.Array
 	if deletes, err = commonparams.GetOptionalParam(document, "deletes", deletes); err != nil {
@@ -142,11 +142,11 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
 	var err error
 
-	if err = common.Unimplemented(deleteDoc, "collation"); err != nil {
+	if err = commonparams.Unimplemented(deleteDoc, "collation"); err != nil {
 		return nil, false, err
 	}
 
-	common.Ignored(deleteDoc, h.L, "hint")
+	commonparams.Ignored(deleteDoc, h.L, "hint")
 
 	// get filter from document
 	var filter *types.Document

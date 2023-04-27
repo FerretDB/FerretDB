@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commonparams
 
 import (
 	"fmt"
@@ -20,7 +20,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -28,17 +27,17 @@ import (
 //
 //nolint:vet // for readability
 type FindParams struct {
-	DB          string
-	Collection  string
-	Filter      *types.Document
-	Sort        *types.Document
-	Projection  *types.Document
-	Skip        int64
-	Limit       int64
-	BatchSize   int32
-	SingleBatch bool
-	Comment     string
-	MaxTimeMS   int32
+	DB          string          `name:"$db"`
+	Collection  string          `name:"collection"`
+	Filter      *types.Document `name:"filter,opt"`
+	Sort        *types.Document `name:"sort,opt"`
+	Projection  *types.Document `name:"projection,opt"`
+	Skip        int64           `name:"skip"`
+	Limit       int64           `name:"limit"`
+	BatchSize   int32           `name:"batchSize"`
+	SingleBatch bool            `name:"singleBatch"`
+	Comment     string          `name:"comment"`
+	MaxTimeMS   int32           `name:"maxTimeMS"`
 }
 
 // GetFindParams returns `find` command parameters.
@@ -46,7 +45,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	var res FindParams
 	var err error
 
-	if res.DB, err = commonparams.GetRequiredParam[string](doc, "$db"); err != nil {
+	if res.DB, err = GetRequiredParam[string](doc, "$db"); err != nil {
 		return nil, err
 	}
 
@@ -59,16 +58,16 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	if res.Collection, ok = collection.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collection)),
+			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collection)),
 			doc.Command(),
 		)
 	}
 
-	if res.Filter, err = commonparams.GetOptionalParam(doc, "filter", res.Filter); err != nil {
+	if res.Filter, err = GetOptionalParam(doc, "filter", res.Filter); err != nil {
 		return nil, err
 	}
 
-	if res.Sort, err = commonparams.GetOptionalParam(doc, "sort", res.Sort); err != nil {
+	if res.Sort, err = GetOptionalParam(doc, "sort", res.Sort); err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			"Expected field sort to be of type object",
@@ -76,7 +75,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		)
 	}
 
-	if res.Projection, err = commonparams.GetOptionalParam(doc, "projection", res.Projection); err != nil {
+	if res.Projection, err = GetOptionalParam(doc, "projection", res.Projection); err != nil {
 		return nil, err
 	}
 
@@ -96,7 +95,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2005
 
-	if res.BatchSize, err = commonparams.GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
+	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
 		return nil, err
 	}
 
@@ -107,15 +106,15 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		)
 	}
 
-	if res.SingleBatch, err = commonparams.GetOptionalParam(doc, "singleBatch", false); err != nil {
+	if res.SingleBatch, err = GetOptionalParam(doc, "singleBatch", false); err != nil {
 		return nil, err
 	}
 
-	if res.Comment, err = commonparams.GetOptionalParam(doc, "comment", ""); err != nil {
+	if res.Comment, err = GetOptionalParam(doc, "comment", ""); err != nil {
 		return nil, err
 	}
 
-	if res.MaxTimeMS, err = commonparams.GetOptionalPositiveNumber(doc, "maxTimeMS"); err != nil {
+	if res.MaxTimeMS, err = GetOptionalPositiveNumber(doc, "maxTimeMS"); err != nil {
 		return nil, err
 	}
 

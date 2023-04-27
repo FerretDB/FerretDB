@@ -20,7 +20,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -41,7 +40,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	commonparams.Ignored(document, h.L, "writeConcern", "comment")
 
 	db, err := commonparams.GetRequiredParam[string](document, "$db")
 	if err != nil {

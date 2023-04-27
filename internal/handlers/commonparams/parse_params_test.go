@@ -12,34 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package commonparams
 
 import (
-	"context"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/stretchr/testify/require"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCreateIndexes implements HandlerInterface.
-func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/78
-
-	document, err := msg.Document()
-	if err != nil {
-		return nil, err
+func TestParse(t *testing.T) {
+	tests := map[string]struct {
+		doc        *types.Document
+		params     any
+		wantParams any
+		wantErr    error
+	}{
+		"simple": {
+			doc: must.NotFail(types.NewDocument("$db", "test")),
+			params: FindParams{
+				DB: "test",
+			},
+			wantParams: FindParams{
+				DB: "test",
+			},
+			wantErr: nil,
+		},
 	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := Unmarshal(tt.doc, tt.params)
+			if tt.wantErr != nil {
+				require.Equal(t, tt.wantErr, err)
+			}
 
-	commonparams.Ignored(document, h.L, "writeConcern", "commitQuorum", "comment")
-
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
-	}))
-
-	return &reply, nil
+			require.Equal(t, tt.wantParams, tt.params)
+		})
+	}
 }

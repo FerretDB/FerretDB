@@ -45,7 +45,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	unimplementedFields := []string{
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err := commonparams.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"readConcern",
 		"comment",
 	}
-	common.Ignored(document, h.L, ignoredFields...)
+	commonparams.Ignored(document, h.L, ignoredFields...)
 
 	var filter *types.Document
 	if filter, err = commonparams.GetOptionalParam(document, "query", filter); err != nil {
@@ -64,13 +64,13 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	var skip, limit int64
 
 	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = common.GetSkipParam("count", s); err != nil {
+		if skip, err = commonparams.GetSkipParam("count", s); err != nil {
 			return nil, err
 		}
 	}
 
 	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetLimitParam("count", l); err != nil {
+		if limit, err = commonparams.GetLimitParam("count", l); err != nil {
 			return nil, err
 		}
 	}

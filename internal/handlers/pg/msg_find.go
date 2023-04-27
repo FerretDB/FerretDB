@@ -46,7 +46,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetFindParams(document, h.L)
+	params, err := commonparams.GetFindParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}

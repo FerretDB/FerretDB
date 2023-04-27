@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -39,11 +39,11 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
+	if err := commonparams.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "estimate")
+	commonparams.Ignored(document, h.L, "estimate")
 
 	m := document.Map()
 	target, ok := m["dataSize"].(string)

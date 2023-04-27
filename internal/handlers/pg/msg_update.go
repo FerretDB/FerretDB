@@ -43,11 +43,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
+	if err := commonparams.Unimplemented(document, "let"); err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation")
+	commonparams.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation")
 
 	var qp pgdb.QueryParams
 
@@ -105,11 +105,11 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"collation",
 				"arrayFilters",
 			}
-			if err := common.Unimplemented(update, unimplementedFields...); err != nil {
+			if err := commonparams.Unimplemented(update, unimplementedFields...); err != nil {
 				return err
 			}
 
-			common.Ignored(update, h.L, "hint")
+			commonparams.Ignored(update, h.L, "hint")
 
 			var q, u *types.Document
 			var upsert bool
