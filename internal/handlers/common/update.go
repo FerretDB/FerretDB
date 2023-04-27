@@ -876,8 +876,21 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
-	if err = checkConflictingOperators(command,
-		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll, pull,
+	if err = checkOperatorKeys(
+		command,
+		addToSet,
+		currentDate,
+		inc,
+		min,
+		max,
+		mul,
+		pop,
+		pull,
+		pullAll,
+		push,
+		set,
+		setOnInsert,
+		unset,
 	); err != nil {
 		return err
 	}
@@ -940,15 +953,26 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 	return commonerrors.NewWriteErrorMsg(code, msg)
 }
 
-// checkConflictingOperators checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingOperators(command string, a *types.Document, bs ...*types.Document) error {
-	if a == nil {
-		return nil
-	}
+// checkOperatorKeys returns error if any key contains empty path or
+// same path prefix exists in other documents.
+func checkOperatorKeys(command string, docs ...*types.Document) error {
+	seen := map[string]struct{}{}
 
-	for _, key := range a.Keys() {
-		for _, b := range bs {
-			if b != nil && b.Has(key) {
+	for _, doc := range docs {
+		for _, key := range doc.Keys() {
+			path, err := types.NewPathFromString(key)
+			if err != nil {
+				return newUpdateError(
+					commonerrors.ErrEmptyName,
+					fmt.Sprintf(
+						"The update path '%s' contains an empty field name, which is not allowed.",
+						key,
+					),
+					command,
+				)
+			}
+
+			if _, ok := seen[path.Prefix()]; ok {
 				return newUpdateError(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
@@ -957,6 +981,8 @@ func checkConflictingOperators(command string, a *types.Document, bs ...*types.D
 					command,
 				)
 			}
+
+			seen[path.Prefix()] = struct{}{}
 		}
 	}
 
