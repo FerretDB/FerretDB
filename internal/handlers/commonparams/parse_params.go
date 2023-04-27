@@ -18,7 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -43,9 +45,23 @@ func Unmarshal(doc *types.Document, value any) error {
 			tag = field.Name
 		}
 
+		var optional bool
+		for _, i := range strings.Split(tag, ",") {
+			if i == "opt" {
+				optional = true
+				continue
+			}
+
+			tag = i
+		}
+
 		// Try to get the value of the field from the document.
 		val, err := doc.Get(tag)
 		if err != nil {
+			if optional {
+				continue
+			}
+
 			return fmt.Errorf("Unmarshal: %s", err)
 		}
 
@@ -53,6 +69,23 @@ func Unmarshal(doc *types.Document, value any) error {
 		fv := elem.Field(i)
 		if !fv.CanSet() {
 			return fmt.Errorf("Unmarshal: field %s is not settable", field.Name)
+		}
+
+		var settable any
+
+		switch fv.Kind() {
+		case reflect.Int32, reflect.Int64, reflect.Float64:
+			settable, err = common.GetWholeNumberParam(val)
+			if err != nil {
+				return err
+			}
+		}
+
+		if settable != nil {
+			v := reflect.ValueOf(settable)
+			fv.Set(v)
+
+			continue
 		}
 
 		if val != nil {

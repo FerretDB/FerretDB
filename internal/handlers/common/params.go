@@ -494,7 +494,7 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 }
 
 // GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
-func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
+func GetOptionalPositiveNumber(document *types.Document, key string) (int64, error) {
 	v, err := document.Get(key)
 	if err != nil {
 		return 0, nil
@@ -536,7 +536,7 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 		)
 	}
 
-	value := int32(wholeNumberParam)
+	value := wholeNumberParam
 	if value < 0 {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,

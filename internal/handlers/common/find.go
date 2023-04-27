@@ -34,10 +34,10 @@ type FindParams struct {
 	Projection  *types.Document `name:"projection,opt"`
 	Skip        int64           `name:"skip"`
 	Limit       int64           `name:"limit"`
-	BatchSize   int32           `name:"batchSize"`
+	BatchSize   int64           `name:"batchSize"`
 	SingleBatch bool            `name:"singleBatch"`
 	Comment     string          `name:"comment"`
-	MaxTimeMS   int32           `name:"maxTimeMS"`
+	MaxTimeMS   int64           `name:"maxTimeMS"`
 }
 
 // GetFindParams returns `find` command parameters.
@@ -95,7 +95,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2005
 
-	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
+	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int64(101)); err != nil {
 		return nil, err
 	}
 

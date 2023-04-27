@@ -27,29 +27,76 @@ import (
 func TestParse(t *testing.T) {
 	tests := map[string]struct {
 		doc        *types.Document
-		params     any
 		wantParams any
 		wantErr    error
 	}{
 		"simple": {
-			doc: must.NotFail(types.NewDocument("$db", "test")),
-			params: common.FindParams{
-				DB: "test",
-			},
+			doc: must.NotFail(types.NewDocument(
+				"$db", "test",
+				"collection", "test",
+				"filter", must.NotFail(types.NewDocument("a", "b")),
+				"sort", must.NotFail(types.NewDocument("a", "b")),
+				"projection", must.NotFail(types.NewDocument("a", "b")),
+				"skip", int64(123),
+				"limit", int64(123),
+				"batchSize", int64(484),
+				"singleBatch", false,
+				"comment", "123",
+				"maxTimeMS", int64(123),
+			)),
 			wantParams: common.FindParams{
-				DB: "test",
+				DB:          "test",
+				Collection:  "test",
+				Filter:      must.NotFail(types.NewDocument("a", "b")),
+				Sort:        must.NotFail(types.NewDocument("a", "b")),
+				Projection:  must.NotFail(types.NewDocument("a", "b")),
+				Skip:        123,
+				Limit:       123,
+				BatchSize:   484,
+				SingleBatch: false,
+				Comment:     "123",
+				MaxTimeMS:   123,
 			},
 			wantErr: nil,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := Unmarshal(tt.doc, tt.params)
+			params := common.FindParams{}
+
+			err := Unmarshal(tt.doc, &params)
 			if tt.wantErr != nil {
 				require.Equal(t, tt.wantErr, err)
 			}
 
-			require.Equal(t, tt.wantParams, tt.params)
+			require.Equal(t, tt.wantParams, params)
 		})
+	}
+}
+
+func BenchmarkUnmarshal(b *testing.B) {
+	doc := must.NotFail(types.NewDocument(
+		"$db", "test",
+		"collection", "test",
+		"filter", must.NotFail(types.NewDocument("a", "b")),
+		"sort", must.NotFail(types.NewDocument("a", "b")),
+		"projection", must.NotFail(types.NewDocument("a", "b")),
+		"skip", int64(123),
+		"limit", int64(123),
+		"batchSize", int64(484),
+		"singleBatch", false,
+		"comment", "123",
+		"maxTimeMS", int64(123),
+	))
+
+	for i := 0; i < b.N; i++ {
+		params := common.FindParams{}
+
+		err := Unmarshal(doc, &params)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		_ = params.DB
 	}
 }
