@@ -836,7 +836,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 26,
 				Name: "NamespaceNotFound",
-				Message: "Source collection testcommandsadministrationrenamecollection-sourcedoesnotexist.none " +
+				Message: "Source collection TestCommandsAdministrationRenameCollection-SourceDoesNotExist.none " +
 					"does not exist",
 			},
 		},
@@ -858,7 +858,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Code: 20,
 				Name: "IllegalOperation",
 				Message: "error with target namespace: Fully qualified namespace is too long. Namespace: " +
-					"testcommandsadministrationrenamecollection-renamemaxtablelen.aaaaaaaaaaaaaaaaaaaaaaa" +
+					"TestCommandsAdministrationRenameCollection-RenameMaxTableLen.aaaaaaaaaaaaaaaaaaaaaaa" +
 					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
 					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
 					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Max: 255",
