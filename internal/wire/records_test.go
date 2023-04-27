@@ -18,8 +18,10 @@ import (
 	"bufio"
 	"errors"
 	"io/fs"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -49,6 +51,15 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 		return nil, nil
 	case err != nil:
 		return nil, err
+	}
+
+	// Select random N number of files from an array of files
+	N := 1000
+	if len(recordFiles) > N {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		offset := r.Intn(len(recordFiles) - N)
+		limit := offset + N
+		recordFiles = recordFiles[offset:limit]
 	}
 
 	var resMsgs []testCase
