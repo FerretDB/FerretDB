@@ -74,7 +74,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
-	if h.NativeSort {
+	if h.EnableSortPushdown {
 		qp.Sort = params.Sort
 	}
 

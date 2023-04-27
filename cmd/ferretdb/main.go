@@ -340,7 +340,7 @@ func run() {
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			NativeSort:            cli.Test.EnableSortingPushdown,
+			EnableSortPushdown:    cli.Test.EnableSortingPushdown,
 			EnableCursors:         cli.Test.EnableCursors,
 		},
 	})

@@ -234,6 +234,8 @@ func prepareSortClause(p *Placeholder, sort *types.Document) (string, []any, err
 		if err != nil {
 			return "", nil, err
 		}
+
+		key = k
 	}
 
 	// Skip sorting dot notation

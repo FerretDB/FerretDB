@@ -62,7 +62,7 @@ type NewHandlerOpts struct {
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
 	DisableFilterPushdown bool
-	NativeSort            bool
+	EnableSortPushdown    bool
 	EnableCursors         bool
 }
 
@@ -102,7 +102,7 @@ func init() {
 			StateProvider: opts.StateProvider,
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
-			NativeSort:            opts.NativeSort,
+			EnableSortPushdown:    opts.EnableSortPushdown,
 			EnableCursors:         opts.EnableCursors,
 		}
 		return pg.New(handlerOpts)

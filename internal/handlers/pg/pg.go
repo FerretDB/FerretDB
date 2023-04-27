@@ -54,7 +54,7 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
-	NativeSort            bool
+	EnableSortPushdown    bool
 	EnableCursors         bool
 }
 
