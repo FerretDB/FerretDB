@@ -29,7 +29,7 @@ import (
 type FindParams struct {
 	DB          string          `name:"$db"`
 	Collection  string          `name:"collection"`
-	Filter      *types.Document `name:"filter,opt"`
+	Filter      *types.Document `name:"filter,opt" error:"badValue"`
 	Sort        *types.Document `name:"sort,opt"`
 	Projection  *types.Document `name:"projection,opt"`
 	Skip        int64           `name:"skip"`
