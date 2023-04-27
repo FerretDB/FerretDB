@@ -792,7 +792,6 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		err              *mongo.CommandError
 		recreateOld      bool // this indicates that the old collection should be recreated
 		targetNamespace  any  // optional, if set, ignores targetCollection and uses targetNamespace
-
 	}{
 		"Rename": {
 			sourceCollection: "foo",

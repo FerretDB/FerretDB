@@ -34,8 +34,8 @@ import (
 // MsgRenameCollection implements HandlerInterface.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var err error
-	dbPool, err := h.DBPool(ctx)
 
+	dbPool, err := h.DBPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
