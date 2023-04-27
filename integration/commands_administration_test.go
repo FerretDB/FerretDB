@@ -778,7 +778,10 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	t.Parallel()
 
-	maxTableLen := strings.Repeat("a", 63)
+	// rename collection must be executed from admin database.
+	adminDB := setup.SetupWithOpts(t, &setup.SetupOpts{DatabaseName: "admin"})
+
+	maxTableLen := strings.Repeat("a", 255)
 	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -788,6 +791,8 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		expected         bson.D
 		err              *mongo.CommandError
 		recreateOld      bool // this indicates that the old collection should be recreated
+		targetNamespace  any  // optional, if set, ignores targetCollection and uses targetNamespace
+
 	}{
 		"Rename": {
 			sourceCollection: "foo",
@@ -825,14 +830,15 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				Message: `target namespace exists`,
 			},
 		},
-		"SoureDoesNotExist": {
+		"SourceDoesNotExist": {
 			sourceCollection: "none",
 			targetCollection: "bar",
 			to:               "to",
 			err: &mongo.CommandError{
-				Code:    26,
-				Name:    "NamespaceNotFound",
-				Message: "source namespace does not exist",
+				Code: 26,
+				Name: "NamespaceNotFound",
+				Message: "Source collection testcommandsadministrationrenamecollection-sourcedoesnotexist.none " +
+					"does not exist",
 			},
 		},
 		// this confirms that after we rename foo to bar and then recreate foo again,
@@ -850,19 +856,32 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			targetCollection: maxTableLen + "a",
 			to:               "to",
 			err: &mongo.CommandError{
-				Code:    73,
-				Name:    "InvalidNamespace",
-				Message: "collection is too long",
+				Code: 20,
+				Name: "IllegalOperation",
+				Message: "error with target namespace: Fully qualified namespace is too long. Namespace: " +
+					"testcommandsadministrationrenamecollection-renamemaxtablelen.aaaaaaaaaaaaaaaaaaaaaaa" +
+					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Max: 255",
 			},
 		},
 		"BadParamTo": {
 			sourceCollection: "foo",
-			targetCollection: "bar",
-			to:               "f",
+			targetCollection: "",
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "required parameter \"to\" is missing",
+				Code:    40414,
+				Name:    "Location40414",
+				Message: "BSON field 'renameCollection.to' is missing but a required field",
+			},
+		},
+		"BadParamTypeTo": {
+			sourceCollection: "foo",
+			targetNamespace:  true,
+			to:               "to",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'renameCollection.to' is the wrong type 'bool', expected type 'string'",
 			},
 		},
 	} {
@@ -882,14 +901,23 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			var actual bson.D
 
 			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.sourceCollection)
-			targetNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)
+
+			var targetNamespace any
+			targetNamespace = fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)
+
+			if tc.targetNamespace != nil {
+				targetNamespace = tc.targetNamespace
+			}
 
 			cmd := bson.D{
 				{"renameCollection", sourceNamespace},
-				{tc.to, targetNamespace},
 			}
 
-			err := collection.Database().Client().Database(db.Name()).RunCommand(
+			if tc.to != "" {
+				cmd = append(cmd, bson.E{Key: tc.to, Value: targetNamespace})
+			}
+
+			err := adminDB.Collection.Database().RunCommand(
 				ctx, cmd,
 			).Decode(&actual)
 
@@ -924,11 +952,9 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 				})
 
 				require.NoError(t, err)
-				require.Equal(
-					t,
-					&mongo.InsertManyResult{[]any{int32(1), int32(2)}},
-					res,
-				)
+
+				expected := mongo.InsertManyResult{InsertedIDs: []any{int32(1), int32(2)}}
+				require.Equal(t, &expected, res)
 
 				var v any
 				err = db.Collection(tc.targetCollection).FindOne(
@@ -1014,7 +1040,7 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 
 	val := atomic.Int32{}
 	val.Add(int32(collNum - 1))
-	require.Equal(t, val, errNum) // expected to have errors for all the rename attempts apart from the first one
+	require.Equal(t, val.Load(), errNum.Load()) // expected to have errors for all the rename attempts apart from the first one
 
 	mx.Lock()
 	renamedCollectionsCount := len(renamedCollections)
@@ -1026,6 +1052,7 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 	require.NoError(t, err)
 
 	var found bool
+
 	for _, coll := range colls {
 		if coll == "rename_collection_stress_renamed" {
 			found = true
@@ -1041,6 +1068,7 @@ func TestCommandsAdministrationRenameCollectionStress(t *testing.T) {
 		if coll == "system.version" {
 			continue
 		}
+
 		require.NoError(t, db.Collection(coll).Drop(ctx))
 	}
 }

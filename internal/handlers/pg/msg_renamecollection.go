@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -58,9 +59,22 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
-	targetNamespace, err := common.GetRequiredParam[string](document, "to")
+	targetField, err := document.Get("to")
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
+			"BSON field 'renameCollection.to' is missing but a required field",
+			document.Command(),
+		)
+	}
+
+	targetNamespace, ok := targetField.(string)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			"BSON field 'renameCollection.to' is the wrong type 'bool', expected type 'string'",
+			document.Command(),
+		)
 	}
 
 	// we assume we cannot move a collection between databases, yet.
@@ -98,14 +112,19 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			"target namespace exists",
 		)
 	case errors.Is(err, pgdb.ErrTableNotExist):
-		return nil, commonerrors.NewCommandErrorMsg(
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNamespaceNotFound,
-			"source namespace does not exist",
+			fmt.Sprintf("Source collection %s does not exist", sourceNamespace),
+			document.Command(),
 		)
 	case errors.Is(err, pgdb.ErrInvalidCollectionName):
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrInvalidNamespace,
-			"collection is too long",
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIllegalOperation,
+			fmt.Sprintf(
+				"error with target namespace: Fully qualified namespace is too long. Namespace: %s Max: 255",
+				targetNamespace,
+			),
+			document.Command(),
 		)
 	}
 

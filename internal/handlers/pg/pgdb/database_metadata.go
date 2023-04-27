@@ -198,7 +198,7 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) (map[string]bo
 	}
 	defer iter.Close()
 
-	tables := make(map[string]bool)
+	tables := map[string]bool{}
 
 	for {
 		_, doc, err := iter.Next()
