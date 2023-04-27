@@ -33,7 +33,7 @@ import (
 
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
-// To validate update document, call ValidateUpdateOperators before UpdateDocument.
+// To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
 // TODO findAndModify returns CommandError https://github.com/FerretDB/FerretDB/issues/2440
 func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var changed bool
@@ -213,16 +213,8 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 			}
 		}
 
-		path, err := types.NewPathFromString(setKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					setKey,
-				),
-			)
-		}
+		// checkOperatorKeys has checked validity of path.
+		path := must.NotFail(types.NewPathFromString(setKey))
 
 		if doc.HasByPath(path) {
 			docValue := must.NotFail(doc.GetByPath(path))
@@ -333,19 +325,10 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	for _, incKey := range incDoc.Keys() {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
-		var path types.Path
 		var err error
 
-		path, err = types.NewPathFromString(incKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					incKey,
-				),
-			)
-		}
+		// checkOperatorKeys has checked validity of path.
+		path := must.NotFail(types.NewPathFromString(incKey))
 
 		if !doc.HasByPath(path) {
 			// ensure incValue is a valid number type.
@@ -474,18 +457,8 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		var path types.Path
-
-		path, err = types.NewPathFromString(maxKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					maxKey,
-				),
-			)
-		}
+		// checkOperatorKeys has checked validity of path.
+		path := must.NotFail(types.NewPathFromString(maxKey))
 
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, maxVal)
@@ -552,18 +525,8 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		var path types.Path
-
-		path, err = types.NewPathFromString(minKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					minKey,
-				),
-			)
-		}
+		// checkOperatorKeys has checked validity of path.
+		path := must.NotFail(types.NewPathFromString(minKey))
 
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, minVal)
