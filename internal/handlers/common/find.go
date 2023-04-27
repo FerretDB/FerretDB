@@ -38,6 +38,22 @@ type FindParams struct {
 	SingleBatch bool            `name:"singleBatch"`
 	Comment     string          `name:"comment"`
 	MaxTimeMS   int64           `name:"maxTimeMS"`
+
+	ReturnKey           bool `name:"returnKey,non-default"`
+	ShowRecordId        bool `name:"showRecordId,non-default"`
+	Tailable            bool `name:"tailable,non-default"`
+	OplogReplay         bool `name:"oplogReplay,non-default"`
+	NoCursorTimeout     bool `name:"noCursorTimeout,non-default"`
+	AwaitData           bool `name:"awaitData,non-default"`
+	AllowPartialResults bool `name:"allowPartialResults,non-default"`
+
+	Collation any `name:"collation,unimplemented"`
+	Let       any `name:"let,unimplemented"`
+
+	AllowDiskUse any `name:"allowDiskUse,ignored"`
+	ReadConcern  any `name:"readConcern,ignored"`
+	Max          any `name:"max,ignored"`
+	Min          any `name:"min,ignored"`
 }
 
 // GetFindParams returns `find` command parameters.

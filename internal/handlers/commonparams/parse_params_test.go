@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -64,10 +65,11 @@ func TestParse(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			params := common.FindParams{}
 
-			err := Unmarshal(tt.doc, &params)
+			err := Unmarshal(tt.doc, &params, zap.NewNop())
 			if tt.wantErr != nil {
 				require.Equal(t, tt.wantErr, err)
 			}
+			require.NoError(t, err)
 
 			require.Equal(t, tt.wantParams, params)
 		})
@@ -89,10 +91,12 @@ func BenchmarkUnmarshal(b *testing.B) {
 		"maxTimeMS", int64(123),
 	))
 
+	l := zap.NewNop()
+
 	for i := 0; i < b.N; i++ {
 		params := common.FindParams{}
 
-		err := Unmarshal(doc, &params)
+		err := Unmarshal(doc, &params, l)
 		if err != nil {
 			b.Fatal(err)
 		}

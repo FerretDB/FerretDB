@@ -20,12 +20,15 @@ import (
 	"reflect"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // Unmarshal unmarshals a document into a struct.
-func Unmarshal(doc *types.Document, value any) error {
+func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("Unmarshal: value must be a non-nil pointer")
@@ -45,24 +48,61 @@ func Unmarshal(doc *types.Document, value any) error {
 			tag = field.Name
 		}
 
-		var optional bool
+		var optional, nonDefault, unImplemented, ignored bool
 		for _, i := range strings.Split(tag, ",") {
-			if i == "opt" {
+			switch i {
+			case "opt":
 				optional = true
-				continue
+			case "non-default":
+				nonDefault = true
+			case "unimplemented":
+				unImplemented = true
+			case "ignored":
+				ignored = true
+			default:
+				tag = i
 			}
-
-			tag = i
 		}
 
 		// Try to get the value of the field from the document.
 		val, err := doc.Get(tag)
 		if err != nil {
-			if optional {
+			if optional || nonDefault || unImplemented || ignored {
 				continue
 			}
 
 			return fmt.Errorf("Unmarshal: %s", err)
+		}
+
+		if ignored {
+			l.Debug(
+				"ignoring field",
+				zap.String("command", doc.Command()), zap.String("field", tag), zap.Any("value", val),
+			)
+
+			continue
+		}
+
+		if unImplemented {
+			msg := fmt.Sprintf(
+				"%s: support for field %q with value %v is not implemented yet",
+				doc.Command(), tag, val,
+			)
+
+			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, tag)
+		}
+
+		if nonDefault {
+			v, ok := val.(bool)
+
+			if ok && !v {
+				msg := fmt.Sprintf(
+					"%s: support for field %q with non-default value %v is not implemented yet",
+					doc.Command(), tag, val,
+				)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, tag)
+			}
 		}
 
 		// Set the value of the field from the document.
@@ -79,6 +119,8 @@ func Unmarshal(doc *types.Document, value any) error {
 			if err != nil {
 				return err
 			}
+		case reflect.String, reflect.Bool:
+			settable = val
 		}
 
 		if settable != nil {
