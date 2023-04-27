@@ -99,6 +99,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"objects", int32(objects),
 			"avgObjSize", float64(avgObjSize),
 			"dataSize", float64(stats.Size),
+			"storageSize", float64(stats.Size),
 			// Tigris indexes all the fields https://docs.tigrisdata.com/apidocs/#operation/Tigris_Read
 			"indexes", int32(0),
 			"indexSize", int32(0),
