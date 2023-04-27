@@ -267,7 +267,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 	actual := ConvertDocument(t, doc)
 	expected := must.NotFail(types.NewDocument(
-		"ns", "testcommandsdiagnosticvalidate.TestCommandsDiagnosticValidate",
+		"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
 		"nInvalidDocuments", int32(0),
 		"nNonCompliantDocuments", int32(0),
 		"nrecords", int32(0), // replaced below

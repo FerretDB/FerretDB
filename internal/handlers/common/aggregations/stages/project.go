@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // project represents $project stage.
@@ -71,22 +72,18 @@ func newProject(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (p *project) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
-	var out []*types.Document
-
-	for _, doc := range in {
-		projected, err := common.ProjectDocument(doc, p.projection, p.inclusion)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, projected)
-	}
-
-	return out, nil
+//
+//nolint:lll // for readability
+func (p *project) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return common.ProjectionIterator(iter, closer, p.projection)
 }
 
 // Type implements Stage interface.
 func (p *project) Type() StageType {
 	return StageTypeDocuments
 }
+
+// check interfaces
+var (
+	_ Stage = (*project)(nil)
+)

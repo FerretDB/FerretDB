@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // match represents $match stage.
@@ -45,21 +46,8 @@ func newMatch(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (m *match) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	var res []*types.Document
-
-	for _, doc := range in {
-		matches, err := common.FilterDocument(doc, m.filter)
-		if err != nil {
-			return nil, err
-		}
-
-		if matches {
-			res = append(res, doc)
-		}
-	}
-
-	return res, nil
+func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	return common.FilterIterator(iter, closer, m.filter), nil
 }
 
 // Type  implements Stage interface.

@@ -331,11 +331,11 @@ func TestCollectionName(t *testing.T) {
 				Name: "InvalidNamespace",
 				Code: 73,
 				Message: fmt.Sprintf(
-					"Fully qualified namespace is too long. Namespace: testcollectionname.%s Max: 255",
+					"Fully qualified namespace is too long. Namespace: TestCollectionName.%s Max: 255",
 					collectionName300,
 				),
 			},
-			alt: fmt.Sprintf("Invalid collection name: 'testcollectionname.%s'", collectionName300),
+			alt: fmt.Sprintf("Invalid collection name: 'TestCollectionName.%s'", collectionName300),
 		},
 		"LongEnough": {
 			collection: collectionName235,
@@ -350,7 +350,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: `Invalid collection name: collection_name_with_a-$`,
 			},
-			alt: `Invalid collection name: 'testcollectionname.collection_name_with_a-$'`,
+			alt: `Invalid collection name: 'TestCollectionName.collection_name_with_a-$'`,
 		},
 		"WithADash": {
 			collection: "collection_name_with_a-",
@@ -363,9 +363,9 @@ func TestCollectionName(t *testing.T) {
 			err: &mongo.CommandError{
 				Name:    "InvalidNamespace",
 				Code:    73,
-				Message: "Invalid namespace specified 'testcollectionname.'",
+				Message: "Invalid namespace specified 'TestCollectionName.'",
 			},
-			alt: "Invalid collection name: 'testcollectionname.'",
+			alt: "Invalid collection name: 'TestCollectionName.'",
 		},
 		"Null": {
 			collection: "\x00",
@@ -374,7 +374,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: "namespaces cannot have embedded null characters",
 			},
-			alt: "Invalid collection name: 'testcollectionname.\x00'",
+			alt: "Invalid collection name: 'TestCollectionName.\x00'",
 		},
 		"Dot": {
 			collection: "collection.name",
