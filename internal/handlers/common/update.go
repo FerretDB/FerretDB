@@ -75,7 +75,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$unset":
-			// Checked in processSetFieldExpression that updateV is a doc.
+			// updateV is document, checked in ValidateUpdateOperators.
 			unsetDoc := updateV.(*types.Document)
 
 			for _, key := range unsetDoc.Keys() {
@@ -213,7 +213,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 			}
 		}
 
-		// checkOperatorKeys has checked validity of path.
+		// setKey has valid path, checked in ValidateUpdateOperators.
 		path := must.NotFail(types.NewPathFromString(setKey))
 
 		if doc.HasByPath(path) {
@@ -317,7 +317,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 // processIncFieldExpression changes document according to $inc operator.
 // If the document was changed it returns true.
 func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
-	// expecting here a document since all checks were made in ValidateUpdateOperators func
+	// updateV is document, checked in ValidateUpdateOperators.
 	incDoc := updateV.(*types.Document)
 
 	var changed bool
@@ -327,7 +327,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		var err error
 
-		// checkOperatorKeys has checked validity of path.
+		// incKey has valid path, checked in ValidateUpdateOperators.
 		path := must.NotFail(types.NewPathFromString(incKey))
 
 		if !doc.HasByPath(path) {
@@ -457,7 +457,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		// checkOperatorKeys has checked validity of path.
+		// maxKey has valid path, checked in ValidateUpdateOperators.
 		path := must.NotFail(types.NewPathFromString(maxKey))
 
 		if !doc.HasByPath(path) {
@@ -525,7 +525,7 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		// checkOperatorKeys has checked validity of path.
+		// minKey has valid path, checked in ValidateUpdateOperators.
 		path := must.NotFail(types.NewPathFromString(minKey))
 
 		if !doc.HasByPath(path) {
@@ -835,11 +835,7 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
-	if err = checkConflictingChanges(command, set, inc); err != nil {
-		return err
-	}
-
-	if err = checkOperatorKeys(
+	if err = validateOperatorKeys(
 		command,
 		addToSet,
 		currentDate,
@@ -916,9 +912,9 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 	return commonerrors.NewWriteErrorMsg(code, msg)
 }
 
-// checkOperatorKeys returns error if any key contains empty path or
-// same path prefix exists in other documents.
-func checkOperatorKeys(command string, docs ...*types.Document) error {
+// validateOperatorKeys returns error if any key contains empty path or
+// the same path prefix exists in other key or other document.
+func validateOperatorKeys(command string, docs ...*types.Document) error {
 	seen := map[string]struct{}{}
 
 	for _, doc := range docs {
@@ -949,29 +945,6 @@ func checkOperatorKeys(command string, docs ...*types.Document) error {
 		}
 	}
 
-	return nil
-}
-
-// checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingChanges(command string, a, b *types.Document) error {
-	if a == nil {
-		return nil
-	}
-	if b == nil {
-		return nil
-	}
-
-	for _, key := range a.Keys() {
-		if b.Has(key) {
-			return newUpdateError(
-				commonerrors.ErrConflictingUpdateOperators,
-				fmt.Sprintf(
-					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
-				),
-				command,
-			)
-		}
-	}
 	return nil
 }
 
@@ -1031,7 +1004,7 @@ func validateSetExpression(command string, update *types.Document) error {
 
 	updateExpression := must.NotFail(update.Get("$set"))
 
-	// updateExpression is document, checked in processSetFieldExpression.
+	// updateExpression is document, checked in ValidateUpdateOperators.
 	doc := updateExpression.(*types.Document)
 
 	if doc.Has("_id") {
@@ -1053,7 +1026,7 @@ func validateRenameExpression(command string, update *types.Document) error {
 
 	updateExpression := must.NotFail(update.Get("$rename"))
 
-	// updateExpression is document, checked in processSetFieldExpression.
+	// updateExpression is document, checked in ValidateUpdateOperators.
 	doc := updateExpression.(*types.Document)
 
 	iter := doc.Iterator()
@@ -1122,7 +1095,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 		return nil // it is ok: key is absent
 	}
 
-	// currentDateExpression is document, checked in processSetFieldExpression.
+	// currentDateExpression is document, checked in ValidateUpdateOperators.
 	currentDateExpression := currentDateTopField.(*types.Document)
 
 	for _, field := range currentDateExpression.Keys() {
