@@ -63,8 +63,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	qp.Explain = true
 
-	qp.NativeSort = h.NativeSort
-
 	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -106,18 +104,18 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var queryPlanner *types.Document
+	var results *pgdb.QueryResults
+
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		queryPlanner, err = pgdb.Explain(ctx, tx, &qp)
+		queryPlanner, results, err = pgdb.Explain(ctx, tx, &qp)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// if the plan returned filter info or index info, it means that pushdown had been done
-	pushdown := queryPlanner.HasByPath(types.NewStaticPath("Plan", "Filter")) ||
-		queryPlanner.HasByPath(types.NewStaticPath("Plan", "Index Cond"))
+	pushdown := results.FilterPushdown
 
 	hostname, err := os.Hostname()
 	if err != nil {

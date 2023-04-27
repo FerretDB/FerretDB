@@ -22,10 +22,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -44,33 +44,33 @@ type FetchedDocs struct {
 type QueryParams struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
+	Sort       *types.Document
 	DB         string
 	Collection string
 	Comment    string
 	Explain    bool
-	NativeSort bool
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
-func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, *QueryResults, error) {
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:     qp.DB,
-		table:      table,
-		comment:    qp.Comment,
-		explain:    qp.Explain,
-		filter:     qp.Filter,
-		unmarshal:  unmarshalExplain,
-		nativeSort: qp.NativeSort,
+	iter, res, err := buildIterator(ctx, tx, &iteratorParams{
+		schema:    qp.DB,
+		table:     table,
+		comment:   qp.Comment,
+		explain:   qp.Explain,
+		filter:    qp.Filter,
+		sort:      qp.Sort,
+		unmarshal: unmarshalExplain,
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
 	defer iter.Close()
@@ -79,12 +79,12 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 
 	switch {
 	case errors.Is(err, iterator.ErrIteratorDone):
-		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+		return nil, nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
 	case err != nil:
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	return plan, nil
+	return plan, res, nil
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
@@ -102,53 +102,60 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 	return convertJSON(plans[0]).(*types.Document), nil
 }
 
+// QueryResults represents operations that were done by query builder.
+type QueryResults struct {
+	FilterPushdown bool
+	SortPushdown   bool
+}
+
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, error) {
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, *QueryResults, error) {
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil, new(iteratorParams)), nil
+		return newIterator(ctx, nil, new(iteratorParams)), nil, nil
 	default:
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
-		schema:     qp.DB,
-		table:      table,
-		comment:    qp.Comment,
-		explain:    qp.Explain,
-		filter:     qp.Filter,
-		nativeSort: qp.NativeSort,
+	iter, res, err := buildIterator(ctx, tx, &iteratorParams{
+		schema:  qp.DB,
+		table:   table,
+		comment: qp.Comment,
+		explain: qp.Explain,
+		filter:  qp.Filter,
+		sort:    qp.Sort,
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	return iter, nil
+	return iter, res, nil
 }
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema     string
-	table      string
-	comment    string
-	explain    bool
-	nativeSort bool
-	filter     *types.Document
-	forUpdate  bool                                    // if SELECT FOR UPDATE is needed.
-	unmarshal  func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
+	schema    string
+	table     string
+	comment   string
+	explain   bool
+	filter    *types.Document
+	sort      *types.Document
+	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
+	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, *QueryResults, error) {
 	var query string
+	var results QueryResults
 
 	if p.explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
@@ -170,8 +177,10 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 
 	where, args, err := prepareWhereClause(&placeholder, p.filter)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
+
+	results.FilterPushdown = where != ""
 
 	query += where
 
@@ -179,41 +188,35 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 		query += ` FOR UPDATE`
 	}
 
-	if p.nativeSort {
-		sort, arg, err := prepareSortClause(&placeholder, p.filter, asc)
+	if p.sort != nil {
+		sort, sortArgs, err := prepareSortClause(&placeholder, p.sort)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, nil, lazyerrors.Error(err)
 		}
 
-		if sort != "" {
-			query += sort
-			args = append(args, arg)
-		}
+		query += sort
+		args = append(args, sortArgs...)
+
+		results.SortPushdown = sort != ""
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows, p), nil
+	return newIterator(ctx, rows, p), &results, nil
 }
 
-type order int8
-
-const (
-	desc order = -1
-	asc  order = 1
-)
-
-func prepareSortClause(p *Placeholder, sqlFilters *types.Document, o order) (string, any, error) {
-	iter := sqlFilters.Iterator()
+func prepareSortClause(p *Placeholder, sort *types.Document) (string, []any, error) {
+	iter := sort.Iterator()
 	defer iter.Close()
 
-	var key *string
+	var key string
+	var order types.SortType
 
 	for {
-		k, _, err := iter.Next()
+		k, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -222,31 +225,35 @@ func prepareSortClause(p *Placeholder, sqlFilters *types.Document, o order) (str
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		if key == nil {
-			key = pointer.ToString(k)
-			continue
+		// Skip sorting if there are more than one sort parameters
+		if order != 0 {
+			return "", nil, nil
 		}
 
-		if k != *key {
-			return "", nil, nil
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return "", nil, err
 		}
 	}
 
-	if key == nil {
+	// Skip sorting dot notation
+	if strings.ContainsRune(key, '.') {
 		return "", nil, nil
 	}
 
 	var sqlOrder string
-	switch o {
-	case desc:
-		sqlOrder = " DESC"
-	case asc:
-		sqlOrder = " ASC"
+	switch order {
+	case types.Descending:
+		sqlOrder = "DESC"
+	case types.Ascending:
+		sqlOrder = "ASC"
+	case 0:
+		return "", nil, nil
 	default:
-		panic(fmt.Sprint("forbidden order:", o))
+		panic(fmt.Sprint("forbidden order:", order))
 	}
 
-	return fmt.Sprintf(" ORDER BY %s %s", p.Next(), sqlOrder), key, nil
+	return fmt.Sprintf(" ORDER BY %s %s", p.Next(), sqlOrder), []any{key}, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.

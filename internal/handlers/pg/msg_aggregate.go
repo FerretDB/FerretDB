@@ -189,7 +189,7 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 	var docs []*types.Document
 
 	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.QueryDocuments(ctx, tx, p.qp)
+		iter, _, getErr := pgdb.QueryDocuments(ctx, tx, p.qp)
 		if getErr != nil {
 			return getErr
 		}
