@@ -859,7 +859,14 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
 			resultType: emptyResult,
 		},
-		"ConflictKeySuffix": {
+		"ConflictKey": {
+			update: bson.D{
+				{"$set", bson.D{{"v", "val"}}},
+				{"$min", bson.D{{"v.foo", "val"}}},
+			},
+			resultType: emptyResult,
+		},
+		"ConflictKeyPrefix": {
 			update: bson.D{
 				{"$set", bson.D{{"v.foo", "val"}}},
 				{"$min", bson.D{{"v", "val"}}},
