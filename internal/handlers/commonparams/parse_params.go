@@ -22,11 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// Unmarshal unmarshals a document into a struct.
 func Unmarshal(doc *types.Document, value any) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("Unmarshal: value must be a non-nil pointer")
 	}
+
 	elem := rv.Elem()
 	if elem.Kind() != reflect.Struct {
 		return errors.New("Unmarshal: value must be a struct pointer")
@@ -35,6 +37,7 @@ func Unmarshal(doc *types.Document, value any) error {
 	// Iterate over the fields of the struct.
 	for i := 0; i < elem.NumField(); i++ {
 		field := elem.Type().Field(i)
+
 		tag := field.Tag.Get("name")
 		if tag == "" {
 			tag = field.Name
@@ -51,12 +54,14 @@ func Unmarshal(doc *types.Document, value any) error {
 		if !fv.CanSet() {
 			return fmt.Errorf("Unmarshal: field %s is not settable", field.Name)
 		}
+
 		if val != nil {
 			v := reflect.ValueOf(val)
 			if fv.Type() != v.Type() {
 				return fmt.Errorf("Unmarshal: field %s type mismatch: got %s, expected %s",
 					field.Name, v.Type(), fv.Type())
 			}
+
 			fv.Set(v)
 		}
 	}
