@@ -22,22 +22,48 @@ import (
 // GetPushdownQuery gets pushdown query for aggregation.
 // When the first aggregation stage is $match, $match query is
 // used for pushdown, otherwise nil is return.
-func GetPushdownQuery(stagesDocs []any) *types.Document {
+func GetPushdownQuery(stagesDocs []any) (*types.Document, *types.Document) {
 	if len(stagesDocs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	firstStageDoc := stagesDocs[0]
-	firstStage, isDoc := firstStageDoc.(*types.Document)
+	var match, sort *types.Document
 
-	if !isDoc || !firstStage.Has("$match") {
-		return nil
+	for i, doc := range stagesDocs {
+		if i > 2 {
+			break
+		}
+
+		stage, isDoc := doc.(*types.Document)
+		if !isDoc {
+			return nil, nil
+		}
+
+		switch {
+		case stage.Has("$match"):
+			matchQuery := must.NotFail(stage.Get("$match"))
+			query, isDoc := matchQuery.(*types.Document)
+
+			if !isDoc || match != nil {
+				return nil, nil
+			}
+
+			match = query
+
+		case stage.Has("$sort"):
+			sortQuery := must.NotFail(stage.Get("$sort"))
+			query, isDoc := sortQuery.(*types.Document)
+
+			if !isDoc || sort != nil {
+				return nil, nil
+			}
+
+			sort = query
+
+		default:
+			return nil, nil
+		}
 	}
 
-	matchQuery := must.NotFail(firstStage.Get("$match"))
-	if query, isDoc := matchQuery.(*types.Document); isDoc {
-		return query
-	}
-
-	return nil
+	return match, sort
 }
