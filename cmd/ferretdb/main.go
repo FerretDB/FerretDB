@@ -82,6 +82,7 @@ var cli struct {
 	Test struct {
 		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
 		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableSortingPushdown bool   `default:"false" help:"Experimental: enable sorting pushdown."`
 		EnableCursors         bool   `default:"false" help:"Experimental: enable cursors."`
 
 		//nolint:lll // for readability
@@ -339,6 +340,7 @@ func run() {
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
+			EnableSortPushdown:    cli.Test.EnableSortingPushdown,
 			EnableCursors:         cli.Test.EnableCursors,
 		},
 	})

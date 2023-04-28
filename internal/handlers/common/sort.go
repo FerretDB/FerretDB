@@ -42,7 +42,7 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 	for i, sortKey := range sortDoc.Keys() {
 		sortField := must.NotFail(sortDoc.Get(sortKey))
 
-		sortType, err := getSortType(sortKey, sortField)
+		sortType, err := GetSortType(sortKey, sortField)
 		if err != nil {
 			return err
 		}
@@ -125,8 +125,8 @@ func (ds *docsSorter) Less(i, j int) bool {
 	return ds.sorts[k](p, q)
 }
 
-// getSortType determines SortType from input sort value.
-func getSortType(key string, value any) (types.SortType, error) {
+// GetSortType determines SortType from input sort value.
+func GetSortType(key string, value any) (types.SortType, error) {
 	sortValue, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {

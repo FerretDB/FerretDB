@@ -200,7 +200,7 @@ func (ms *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, 
 		forUpdate: forUpdate,
 	}
 
-	iter, err := buildIterator(ctx, ms.tx, iterParams)
+	iter, _, err := buildIterator(ctx, ms.tx, iterParams)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
