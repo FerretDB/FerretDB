@@ -120,6 +120,7 @@ func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, er
 	}, nil
 }
 
+// prepareDeleteParams returns filter and limit parameters for delete operation.
 func prepareDeleteParams(deleteDoc *types.Document, l *zap.Logger) (*types.Document, bool, error) {
 	var err error
 
