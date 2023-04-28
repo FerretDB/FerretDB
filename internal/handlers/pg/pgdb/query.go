@@ -189,7 +189,10 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 	}
 
 	if p.sort != nil {
-		sort, sortArgs, err := prepareOrderByClause(&placeholder, p.sort)
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, p.sort)
 		if err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
@@ -366,6 +369,7 @@ func prepareOrderByClause(p *Placeholder, sort *types.Document) (string, []any, 
 	}
 
 	var sqlOrder string
+
 	switch order {
 	case types.Descending:
 		sqlOrder = "DESC"

@@ -59,7 +59,7 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, _, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -109,7 +109,7 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, _, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -154,7 +154,7 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, _, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -205,7 +205,7 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, _, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -246,7 +246,7 @@ func TestQueryDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, _, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -493,7 +493,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			actual, args, err := prepareWhereClause(tc.filter)
+			actual, args, err := prepareWhereClause(new(Placeholder), tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
