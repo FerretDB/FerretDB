@@ -20,8 +20,9 @@ import (
 )
 
 // GetPushdownQuery gets pushdown query for aggregation.
-// When the first aggregation stage is $match, $match query is
-// used for pushdown, otherwise nil is return.
+// When the first two aggregation stages are $match or $sort they are
+// used for pushdown, and returned in order: $match, $sort, otherwise nil is return.
+// If any of those stages repeat in first two stages, it also returns nil.
 func GetPushdownQuery(stagesDocs []any) (*types.Document, *types.Document) {
 	if len(stagesDocs) == 0 {
 		return nil, nil
