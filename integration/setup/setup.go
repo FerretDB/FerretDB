@@ -178,9 +178,6 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 		ownDatabase = true
 	}
 
-	dbNameSize := len(databaseName)
-	require.True(tb, dbNameSize < 64, "database name len %d is too long: '%s'", dbNameSize, databaseName)
-
 	var ownCollection bool
 	collectionName := opts.CollectionName
 	if collectionName == "" {
