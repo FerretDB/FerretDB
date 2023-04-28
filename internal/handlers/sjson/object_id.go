@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
@@ -26,8 +26,8 @@ import (
 // objectIDType represents BSON ObjectId type.
 type objectIDType types.ObjectID
 
-// pjsontype implements pjsontype interface.
-func (obj *objectIDType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (obj *objectIDType) sjsontype() {}
 
 // UnmarshalJSON implements json.Unmarshaler interface.
 func (obj *objectIDType) UnmarshalJSON(data []byte) error {
@@ -54,7 +54,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(b) != types.ObjectIDLen {
-		return lazyerrors.Errorf("pjson.objectIDType.UnmarshalJSON: %d bytes", len(b))
+		return lazyerrors.Errorf("sjson.objectIDType.UnmarshalJSON: %d bytes", len(b))
 	}
 
 	copy(obj[:], b)
@@ -62,7 +62,7 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
+// MarshalJSON implements sjsontype interface.
 func (obj *objectIDType) MarshalJSON() ([]byte, error) {
 	res, err := json.Marshal(hex.EncodeToString(obj[:]))
 	if err != nil {
@@ -74,5 +74,5 @@ func (obj *objectIDType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*objectIDType)(nil)
+	_ sjsontype = (*objectIDType)(nil)
 )

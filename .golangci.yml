@@ -167,11 +167,6 @@ issues:
       path: cmd/envtool
       text: pgdb
 
-    # only `pg` handler can import `pjson` package, no other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/pg
-      text: pjson
-
     # only `tigris` handler can import `tigrisdb` package, no other handler can do that
     - linters: [depguard]
       path: internal/handlers/tigris

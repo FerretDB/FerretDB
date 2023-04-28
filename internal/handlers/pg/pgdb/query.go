@@ -25,7 +25,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -85,7 +85,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
-// EXPLAIN result is not pjson, so it cannot be unmarshalled by pjson.Unmarshal.
+// EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
 func unmarshalExplain(b []byte) (*types.Document, error) {
 	var plans []map[string]any
 	if err := json.Unmarshal(b, &plans); err != nil {
@@ -263,12 +263,12 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 						// type not supported for pushdown
 
 					case float64, bool, int32, int64:
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
 						args = append(args, rootKey, v)
 
 					case string, types.ObjectID, time.Time:
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), pjson.GetTypeOfValue(v)))
-						args = append(args, rootKey, string(must.NotFail(pjson.MarshalSingleValue(v))))
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 					default:
 						panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -333,7 +333,7 @@ func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
 	case string, types.ObjectID, time.Time:
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, p.Next(), p.Next())
-		args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
 		// don't change the default eq query

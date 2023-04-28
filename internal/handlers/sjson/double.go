@@ -12,24 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// binaryType represents BSON Binary data type.
-type binaryType types.Binary
+// doubleType represents BSON 64-bit binary floating point type.
+type doubleType float64
 
-// pjsontype implements pjsontype interface.
-func (bin *binaryType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (d *doubleType) sjsontype() {}
 
-// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
-func (bin *binaryType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
+// UnmarshalJSON implements json.Unmarshaler interface.
+func (d *doubleType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -38,31 +37,25 @@ func (bin *binaryType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 
-	var o []byte
-
-	err := dec.Decode(&o)
-	if err != nil {
+	var f float64
+	if err := dec.Decode(&f); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if err = checkConsumed(dec, r); err != nil {
+	if err := checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	bin.B = o
-
-	if sch.Subtype == nil {
-		return lazyerrors.Errorf("binary subtype in the schema is nil")
-	}
-
-	bin.Subtype = *sch.Subtype
+	*d = doubleType(f)
 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
-func (bin *binaryType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(bin.B)
+// MarshalJSON implements sjsontype interface.
+func (d *doubleType) MarshalJSON() ([]byte, error) {
+	f := float64(*d)
+
+	res, err := json.Marshal(f)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -72,5 +65,5 @@ func (bin *binaryType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*binaryType)(nil)
+	_ sjsontype = (*doubleType)(nil)
 )

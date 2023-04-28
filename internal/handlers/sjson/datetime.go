@@ -12,31 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// boolType represents BSON Boolean type.
-type boolType bool
+// dateTimeType represents BSON UTC datetime type.
+type dateTimeType time.Time
 
-// pjsontype implements pjsontype interface.
-func (b *boolType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (dt *dateTimeType) sjsontype() {}
+
+// String returns formatted time for debugging.
+func (dt *dateTimeType) String() string {
+	return time.Time(*dt).Format(time.RFC3339Nano)
+}
 
 // UnmarshalJSON implements json.Unmarshaler interface.
-func (b *boolType) UnmarshalJSON(data []byte) error {
+func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
 
-	var o bool
+	var o int64
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -45,14 +52,15 @@ func (b *boolType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*b = boolType(o)
+	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
+	*dt = dateTimeType(time.UnixMilli(o))
 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
-func (b *boolType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(bool(*b))
+// MarshalJSON implements sjsontype interface.
+func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(time.Time(*dt).UnixMilli())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -62,5 +70,5 @@ func (b *boolType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*boolType)(nil)
+	_ sjsontype = (*dateTimeType)(nil)
 )

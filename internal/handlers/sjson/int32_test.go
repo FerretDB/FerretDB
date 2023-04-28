@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"math"
@@ -41,13 +41,13 @@ var int32TestCases = []testCase{{
 
 func TestInt32(t *testing.T) {
 	t.Parallel()
-	testJSON(t, int32TestCases, func() pjsontype { return new(int32Type) })
+	testJSON(t, int32TestCases, func() sjsontype { return new(int32Type) })
 }
 
 func FuzzInt32(f *testing.F) {
-	fuzzJSON(f, int32TestCases, func() pjsontype { return new(int32Type) })
+	fuzzJSON(f, int32TestCases, func() sjsontype { return new(int32Type) })
 }
 
 func BenchmarkInt32(b *testing.B) {
-	benchmark(b, int32TestCases, func() pjsontype { return new(int32Type) })
+	benchmark(b, int32TestCases, func() sjsontype { return new(int32Type) })
 }

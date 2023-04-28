@@ -12,47 +12,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
 	"encoding/json"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// stringType represents BSON UTF-8 string type.
-type stringType string
+// binaryType represents BSON Binary data type.
+type binaryType types.Binary
 
-// pjsontype implements pjsontype interface.
-func (str *stringType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (bin *binaryType) sjsontype() {}
 
-// UnmarshalJSON implements json.Unmarshaler interface.
-func (str *stringType) UnmarshalJSON(data []byte) error {
+// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
+func (bin *binaryType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
+	dec.DisallowUnknownFields()
 
-	var o string
-	if err := dec.Decode(&o); err != nil {
+	var o []byte
+
+	err := dec.Decode(&o)
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if err := checkConsumed(dec, r); err != nil {
+	if err = checkConsumed(dec, r); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	*str = stringType(o)
+	bin.B = o
+
+	if sch.Subtype == nil {
+		return lazyerrors.Errorf("binary subtype in the schema is nil")
+	}
+
+	bin.Subtype = *sch.Subtype
 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
-func (str *stringType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(string(*str))
+// MarshalJSON implements sjsontype interface.
+func (bin *binaryType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(bin.B)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -62,5 +72,5 @@ func (str *stringType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*stringType)(nil)
+	_ sjsontype = (*binaryType)(nil)
 )
