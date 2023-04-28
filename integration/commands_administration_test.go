@@ -781,7 +781,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 	// rename collection must be executed from admin database.
 	adminDB := setup.SetupWithOpts(t, &setup.SetupOpts{DatabaseName: "admin"})
 
-	maxTableLen := strings.Repeat("a", 255)
+	maxCollectionNameLen := strings.Repeat("a", 235)
 	insertCollections := []string{"foo", "buz"}
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -850,20 +850,21 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 			expected:         bson.D{{"ok", float64(1)}},
 			recreateOld:      true,
 		},
-		"RenameMaxTableLen": {
+		"MaxCollectionName": {
 			sourceCollection: "foo",
-			targetCollection: maxTableLen + "a",
+			targetCollection: maxCollectionNameLen + "a", // 236 chars
 			to:               "to",
 			err: &mongo.CommandError{
-				Code: 20,
-				Name: "IllegalOperation",
-				Message: "error with target namespace: Fully qualified namespace is too long. Namespace: " +
-					"TestCommandsAdministrationRenameCollection-RenameMaxTableLen.aaaaaaaaaaaaaaaaaaaaaaa" +
-					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Max: 255",
+				Code: 73,
+				Name: "InvalidNamespace",
+				Message: "error with target namespace: Fully qualified namespace is too long. " +
+					"Namespace: TestCommandsAdministrationRenameCollection-MaxCollectionName.aaaaa" +
+					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Max: 235",
 			},
 		},
+
 		"BadParamTo": {
 			sourceCollection: "foo",
 			targetCollection: "",
