@@ -77,21 +77,24 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	if len(targetNamespace) > maxTableNameLength {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrIllegalOperation,
-			fmt.Sprintf(
-				"error with target namespace: Fully qualified namespace is too long. Namespace: %s Max: 255",
-				targetNamespace,
-			),
-			document.Command(),
-		)
-	}
-
 	// we assume we cannot move a collection between databases, yet.
 	targetDB, targetCollection, err := extractFromNamespace(targetNamespace)
 	if err != nil {
 		return nil, err
+	}
+
+	maxCollectionNameLen := 63
+
+	// -1 for dot between database and collection name.
+	if len(targetNamespace)-len(targetDB)-1 > maxCollectionNameLen {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf(
+				"error with target namespace: Fully qualified namespace is too long. Namespace: %s Max: 235",
+				targetNamespace,
+			),
+			document.Command(),
+		)
 	}
 
 	if targetDB != sourceDB {
