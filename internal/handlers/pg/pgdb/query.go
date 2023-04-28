@@ -25,6 +25,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -43,6 +44,7 @@ type FetchedDocs struct {
 type QueryParams struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
+	Sort       *types.Document
 	DB         string
 	Collection string
 	Comment    string
@@ -52,22 +54,26 @@ type QueryParams struct {
 // Explain returns SQL EXPLAIN results for given query parameters.
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
-func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, QueryResults, error) {
+	var res QueryResults
+
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
 		schema:    qp.DB,
 		table:     table,
 		comment:   qp.Comment,
 		explain:   qp.Explain,
 		filter:    qp.Filter,
+		sort:      qp.Sort,
 		unmarshal: unmarshalExplain,
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
 	defer iter.Close()
@@ -76,12 +82,12 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 
 	switch {
 	case errors.Is(err, iterator.ErrIteratorDone):
-		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+		return nil, res, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
 	case err != nil:
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	return plan, nil
+	return plan, res, nil
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
@@ -99,35 +105,45 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 	return convertJSON(plans[0]).(*types.Document), nil
 }
 
+// QueryResults represents operations that were done by query builder.
+type QueryResults struct {
+	FilterPushdown bool
+	SortPushdown   bool
+}
+
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
 // If the collection doesn't exist, it returns an empty iterator and no error.
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, error) {
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, QueryResults, error) {
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
+
+	var res QueryResults
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil, new(iteratorParams)), nil
+		return newIterator(ctx, nil, new(iteratorParams)), res, nil
 	default:
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
 		schema:  qp.DB,
 		table:   table,
 		comment: qp.Comment,
 		explain: qp.Explain,
 		filter:  qp.Filter,
+		sort:    qp.Sort,
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	return iter, nil
+	return iter, res, nil
 }
 
 // iteratorParams contains parameters for building an iterator.
@@ -137,13 +153,15 @@ type iteratorParams struct {
 	comment   string
 	explain   bool
 	filter    *types.Document
+	sort      *types.Document
 	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
 	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, QueryResults, error) {
 	var query string
+	var res QueryResults
 
 	if p.explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
@@ -161,10 +179,14 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	where, args, err := prepareWhereClause(p.filter)
+	var placeholder Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, p.filter)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
+
+	res.FilterPushdown = where != ""
 
 	query += where
 
@@ -172,19 +194,33 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 		query += ` FOR UPDATE`
 	}
 
-	rows, err := tx.Query(ctx, query, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if p.sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, p.sort)
+		if err != nil {
+			return nil, res, lazyerrors.Error(err)
+		}
+
+		query += sort
+		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
 	}
 
-	return newIterator(ctx, rows, p), nil
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, res, lazyerrors.Error(err)
+	}
+
+	return newIterator(ctx, rows, p), res, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
+func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
-	var p Placeholder
 
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
@@ -242,7 +278,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 
 				switch k {
 				case "$eq":
-					if f, a := filterEqual(&p, rootKey, v); f != "" {
+					if f, a := filterEqual(p, rootKey, v); f != "" {
 						filters = append(filters, f)
 						args = append(args, a...)
 					}
@@ -284,7 +320,7 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			if f, a := filterEqual(&p, rootKey, v); f != "" {
+			if f, a := filterEqual(p, rootKey, v); f != "" {
 				filters = append(filters, f)
 				args = append(args, a...)
 			}
@@ -300,6 +336,58 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 	}
 
 	return filter, args, nil
+}
+
+// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
+func prepareOrderByClause(p *Placeholder, sort *types.Document) (string, []any, error) {
+	iter := sort.Iterator()
+	defer iter.Close()
+
+	var key string
+	var order types.SortType
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, lazyerrors.Error(err)
+		}
+
+		// Skip sorting if there are more than one sort parameters
+		if order != 0 {
+			return "", nil, nil
+		}
+
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return "", nil, err
+		}
+
+		key = k
+	}
+
+	// Skip sorting dot notation
+	if strings.ContainsRune(key, '.') {
+		return "", nil, nil
+	}
+
+	var sqlOrder string
+
+	switch order {
+	case types.Descending:
+		sqlOrder = "DESC"
+	case types.Ascending:
+		sqlOrder = "ASC"
+	case 0:
+		return "", nil, nil
+	default:
+		panic(fmt.Sprint("forbidden order:", order))
+	}
+
+	return fmt.Sprintf(" ORDER BY _jsonb->%s %s", p.Next(), sqlOrder), []any{key}, nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
