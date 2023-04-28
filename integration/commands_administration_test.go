@@ -792,6 +792,7 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 		err              *mongo.CommandError
 		recreateOld      bool // this indicates that the old collection should be recreated
 		targetNamespace  any  // optional, if set, ignores targetCollection and uses targetNamespace
+		emptyNamespace   any  // optional, if set, allows to create an empty namespace
 	}{
 		"Rename": {
 			sourceCollection: "foo",
@@ -864,7 +865,17 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Max: 235",
 			},
 		},
-
+		"EmptyNamespace": {
+			sourceCollection: "",
+			targetCollection: "bar",
+			to:               "to",
+			emptyNamespace:   true,
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified ",
+			},
+		},
 		"BadParamTo": {
 			sourceCollection: "foo",
 			targetCollection: "",
@@ -900,7 +911,12 @@ func TestCommandsAdministrationRenameCollection(t *testing.T) {
 
 			var actual bson.D
 
-			sourceNamespace := fmt.Sprintf("%s.%s", db.Name(), tc.sourceCollection)
+			var sourceNamespace any
+			sourceNamespace = fmt.Sprintf("%s.%s", db.Name(), tc.sourceCollection)
+
+			if tc.emptyNamespace != nil {
+				sourceNamespace = tc.sourceCollection
+			}
 
 			var targetNamespace any
 			targetNamespace = fmt.Sprintf("%s.%s", db.Name(), tc.targetCollection)

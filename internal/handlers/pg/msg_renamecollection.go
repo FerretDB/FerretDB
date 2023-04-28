@@ -49,9 +49,22 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
-	sourceNamespace, err := common.GetRequiredParam[string](document, document.Command())
+	sourceField, err := document.Get(document.Command())
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			"Invalid namespace specified ",
+			document.Command(),
+		)
+	}
+
+	sourceNamespace, ok := sourceField.(string)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %T", sourceField), // the issue here is that we do not return BSON types, like double etc.
+			document.Command(),
+		)
 	}
 
 	sourceDB, collection, err := extractFromNamespace(sourceNamespace)
