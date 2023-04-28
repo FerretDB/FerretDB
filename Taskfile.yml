@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 30m
+  INTEGRATIONTIME: 35m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -152,6 +152,16 @@ tasks:
     cmds:
       - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
+      - task: fmt-yaml
+
+  fmt-yaml:
+    desc: "Format yaml"
+    cmds:
+      - >
+        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o+w {} \;{{end}}
+      - docker compose run --rm -v $(pwd):/work prettier --write --parser=yaml "./**/*.yml"
+      - >
+        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o-w {} \;{{end}}
 
   test:
     desc: "Run all unit and integration tests in parallel"
@@ -559,6 +569,7 @@ tasks:
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
+      - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 
