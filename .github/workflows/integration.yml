@@ -109,7 +109,6 @@ jobs:
           git status
           git diff --exit-code
 
-
   env-data:
     name: env-data
     runs-on: ubuntu-22.04
