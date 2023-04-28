@@ -381,7 +381,7 @@ func prepareOrderByClause(p *Placeholder, sort *types.Document) (string, []any, 
 		panic(fmt.Sprint("forbidden order:", order))
 	}
 
-	return fmt.Sprintf(" ORDER BY %s %s", p.Next(), sqlOrder), []any{key}, nil
+	return fmt.Sprintf(" ORDER BY _jsonb->%s %s", p.Next(), sqlOrder), []any{key}, nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
