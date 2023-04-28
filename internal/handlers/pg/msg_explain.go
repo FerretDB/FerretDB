@@ -104,7 +104,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var queryPlanner *types.Document
-	var results *pgdb.QueryResults
+	var results pgdb.QueryResults
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error

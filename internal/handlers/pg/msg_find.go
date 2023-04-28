@@ -85,7 +85,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 
 		var iter types.DocumentsIterator
-		var queryRes *pgdb.QueryResults
+		var queryRes pgdb.QueryResults
 
 		iter, queryRes, err = pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {

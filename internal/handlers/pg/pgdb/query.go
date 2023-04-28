@@ -54,13 +54,16 @@ type QueryParams struct {
 // Explain returns SQL EXPLAIN results for given query parameters.
 //
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
-func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, *QueryResults, error) {
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, QueryResults, error) {
+	var res QueryResults
+
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
-		return nil, nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	iter, res, err := buildIterator(ctx, tx, &iteratorParams{
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
 		schema:    qp.DB,
 		table:     table,
 		comment:   qp.Comment,
@@ -79,9 +82,9 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 
 	switch {
 	case errors.Is(err, iterator.ErrIteratorDone):
-		return nil, nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+		return nil, res, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
 	case err != nil:
-		return nil, nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
 	return plan, res, nil
@@ -113,19 +116,22 @@ type QueryResults struct {
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, *QueryResults, error) {
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, QueryResults, error) {
 	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
+
+	var res QueryResults
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil, new(iteratorParams)), nil, nil
+		return newIterator(ctx, nil, new(iteratorParams)), res, nil
 	default:
-		return nil, nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	iter, res, err := buildIterator(ctx, tx, &iteratorParams{
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
 		schema:  qp.DB,
 		table:   table,
 		comment: qp.Comment,
@@ -134,7 +140,7 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.Docu
 		sort:    qp.Sort,
 	})
 	if err != nil {
-		return nil, nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
 	return iter, res, nil
@@ -153,9 +159,9 @@ type iteratorParams struct {
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, *QueryResults, error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, QueryResults, error) {
 	var query string
-	var results QueryResults
+	var res QueryResults
 
 	if p.explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
@@ -177,10 +183,10 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 
 	where, args, err := prepareWhereClause(&placeholder, p.filter)
 	if err != nil {
-		return nil, nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	results.FilterPushdown = where != ""
+	res.FilterPushdown = where != ""
 
 	query += where
 
@@ -194,21 +200,21 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 
 		sort, sortArgs, err = prepareOrderByClause(&placeholder, p.sort)
 		if err != nil {
-			return nil, nil, lazyerrors.Error(err)
+			return nil, res, lazyerrors.Error(err)
 		}
 
 		query += sort
 		args = append(args, sortArgs...)
 
-		results.SortPushdown = sort != ""
+		res.SortPushdown = sort != ""
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
-		return nil, nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	return newIterator(ctx, rows, p), &results, nil
+	return newIterator(ctx, rows, p), res, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
