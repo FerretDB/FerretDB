@@ -26,8 +26,8 @@ import (
 	"regexp"
 )
 
-// FileSlug describes the file name and expected slug of blog posts.
-type FileSlug struct {
+// fileSlug describes the file name and expected slug of blog posts.
+type fileSlug struct {
 	slug     string
 	fileName string
 }
@@ -40,41 +40,40 @@ func main() {
 		log.Fatal(err)
 	}
 
-	slugs := GetBlogSlugs(fs)
+	slugs := getBlogSlugs(fs)
 
 	pass := true
 
 	for _, slug := range slugs {
-		fo, err := os.Open(filepath.Join(dir, slug.fileName))
-		if err != nil {
-			log.Fatalf("Couldn't open file: %s", slug.fileName)
-			continue
-		}
+		// wrap in func to avoid possible resource leak of calling defer in the loop.
+		func() {
+			fo, err := os.Open(filepath.Join(dir, slug.fileName))
+			if err != nil {
+				log.Fatalf("Couldn't open file: %s", slug.fileName)
+			}
 
-		defer fo.Close()
+			defer fo.Close()
 
-		serr := VerifySlug(slug, fo)
-
-		if serr != nil {
-			log.Print(serr)
-
-			pass = false
-		}
+			if err = verifySlug(slug, fo); err != nil {
+				log.Print(err)
+				pass = false
+			}
+		}()
 	}
 
 	if !pass {
-		log.Fatal("One or more blog posts are not correctly formated")
+		log.Fatal("One or more blog posts are not correctly formatted")
 	}
 }
 
-// GetBlogSlugs returns slice containing FileSlug for each DirEntry.
-func GetBlogSlugs(fs []fs.DirEntry) []FileSlug {
+// getBlogSlugs returns slice containing fileSlug for each DirEntry.
+func getBlogSlugs(fs []fs.DirEntry) []fileSlug {
 	// start with 4 digits then a 0[1-9] or 1 [0 1 or 2]
 	// then - and either 0 [1-9] or [1 or 2][0-9] or 3[0 or 1] - slug(any) and end with .md.
 	fnRegex := regexp.MustCompile(`^\d{4}\-(?:0[1-9]|1[012])\-(?:0[1-9]|[12][0-9]|3[01])-(.*).md$`)
 	mdRegex := regexp.MustCompile(`.md$`)
 
-	var fileSlugs []FileSlug
+	var fileSlugs []fileSlug
 
 	for _, f := range fs {
 		fn := f.Name()
@@ -90,14 +89,14 @@ func GetBlogSlugs(fs []fs.DirEntry) []FileSlug {
 			continue
 		}
 
-		fileSlugs = append(fileSlugs, FileSlug{sm[len(sm)-1], fn})
+		fileSlugs = append(fileSlugs, fileSlug{sm[len(sm)-1], fn})
 	}
 
 	return fileSlugs
 }
 
-// VerifySlug returns error if file doesn't contain expected slug.
-func VerifySlug(fS FileSlug, f io.Reader) error {
+// verifySlug returns error if file doesn't contain expected slug.
+func verifySlug(fS fileSlug, f io.Reader) error {
 	r := regexp.MustCompile("^slug: (.*)")
 
 	pass := false
@@ -112,7 +111,7 @@ func VerifySlug(fS FileSlug, f io.Reader) error {
 	}
 
 	if !pass {
-		return fmt.Errorf("Slug is not correctly formated in file %s", fS.fileName)
+		return fmt.Errorf("slug is not correctly formated in file %s", fS.fileName)
 	}
 
 	return nil
