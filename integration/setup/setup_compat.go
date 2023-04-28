@@ -81,6 +81,8 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
+	dbNameSize := len(opts.databaseName)
+	require.True(tb, dbNameSize < 64, "database name len %d is too long: '%s'", dbNameSize, opts.databaseName)
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
