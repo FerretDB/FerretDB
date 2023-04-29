@@ -13,18 +13,10 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.19'
-
       - name: Install dependencies
         run: go get ./cmd/cleantool
-
-      - shell: bash
-        env:
-          SUPER_SECRET: ${{ secrets.SuperSecret }}
-        run: |
-          echo "a somple test $SUPER_SECRET"
       - name: Scan old package versions and store the version id to env
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
-          ENV_NAME: just_a_test
         run: |
           go run cmd/cleantool/cleantool.go
