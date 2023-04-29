@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v52/github"
+	"github.com/sethvargo/go-githubactions"
 	"golang.org/x/oauth2"
 )
 
@@ -27,7 +30,7 @@ func main() {
 	orgName := "FerretDB"
 	daysBack := 90
 	pageSize := 100
-	var versions []int64
+	var versions []string
 	for i := 1; i < 100; i++ {
 		listOption := github.ListOptions{Page: i, PerPage: pageSize}
 		packageListOption := github.PackageListOptions{ListOptions: listOption}
@@ -38,7 +41,7 @@ func main() {
 		for _, v := range packages {
 			if time.Now().After(v.UpdatedAt.Add(time.Duration(daysBack) * 24 * time.Hour)) {
 				log.Printf("Stale version: %v (%v, %s)", v.GetID(), v.GetVersion(), v.UpdatedAt)
-				versions = append(versions, v.GetID())
+				versions = append(versions, fmt.Sprintf("%v", (v.GetID())))
 			} else {
 				log.Printf("skip version: %v (%v, %s)", v.GetID(), v.GetVersion(), v.UpdatedAt)
 			}
@@ -50,4 +53,8 @@ func main() {
 
 	}
 	log.Println(versions)
+	staleVersions := strings.Join(versions, ", ")
+	log.Printf("Setting STALE_VERSIONS to %q.", staleVersions)
+	githubactions.SetEnv("STALE_VERSIONS", staleVersions)
+
 }
