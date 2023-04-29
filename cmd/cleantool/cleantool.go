@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 	"os"
+	"time"
 
 	"github.com/google/go-github/v52/github"
 	"golang.org/x/oauth2"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	token := os.Getenv("FOO")
+	token := os.Getenv("ROBOT_TOKEN")
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
