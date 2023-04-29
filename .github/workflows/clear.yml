@@ -13,15 +13,15 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.19'
-      - name: get current dir
-        run: |
-            pwd
+
       - name: Install dependencies
         run: go get ./cmd/cleantool
-      - name: get env
+
+      - shell: bash
         env:
-           ENV_NAME: just_a_test
-        run: echo $ENV_NAME;env
+          SUPER_SECRET: ${{ secrets.SuperSecret }}
+        run: |
+          echo "a somple test $SUPER_SECRET"
       - name: Scan old package versions and store the version id to env
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
