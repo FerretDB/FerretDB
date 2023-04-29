@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"time"
+	"os"
 
 	"github.com/google/go-github/v52/github"
 	"golang.org/x/oauth2"
@@ -11,12 +12,12 @@ import (
 
 func main() {
 	ctx := context.Background()
+	token := os.Getenv("FOO")
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "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"},
+		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
-
 	packageType := "container"
 	packageName := "ferretdb-dev"
 	orgName := "FerretDB"
