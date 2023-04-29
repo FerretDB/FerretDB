@@ -14,11 +14,8 @@ func main() {
 	ctx := context.Background()
 	tokenName := "ROBOT_TOKEN"
 	token := os.Getenv(tokenName)
-	for _, v := range os.Environ() {
-		log.Println(v)
-	}
 	if token == "" {
-		log.Fatalf("env %v is not found", tokenName)
+		log.Fatalf("env variable %v is not found, please set it before run it", tokenName)
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
