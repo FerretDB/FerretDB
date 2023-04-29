@@ -21,5 +21,6 @@ jobs:
       - name: Scan old package versions and store the version id to env
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+          ENV_NAME: just_a_test
         run: |
           go run cmd/cleantool/cleantool.go
