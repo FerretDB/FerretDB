@@ -20,4 +20,4 @@ jobs:
         run: go get ./cmd/cleantool
       - name: Scan old package versions and store the version id to env
         run: |
-          ls -l
+          go run cmd/cleantool/cleantool.go
