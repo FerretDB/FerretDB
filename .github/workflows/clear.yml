@@ -17,7 +17,7 @@ jobs:
         run: |
             pwd
       - name: Install dependencies
-        run: go get .
+        run: go get ./cmd/cleantool
       - name: Scan old package versions and store the version id to env
         run: |
           ls -l
