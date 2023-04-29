@@ -20,3 +20,5 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: |
           go run cmd/cleantool/cleantool.go
+      - name: echo STALE_VERSIONS
+        run: echo $STALE_VERSIONS
