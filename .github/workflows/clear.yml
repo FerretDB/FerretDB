@@ -1,4 +1,4 @@
----
+
 name: clear old packages
 on: workflow_dispatch
   # schedule:
@@ -6,7 +6,7 @@ on: workflow_dispatch
 
 jobs:
   scan-old-package:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Scan old package versions and store the version id to env
