@@ -95,6 +95,33 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs *types.Array, ordered bool) (int32, *commonerrors.WriteErrors) { //nolint:lll // argument list is too long
+	var inserted int32
+	var insErrors commonerrors.WriteErrors
+
+	dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+        var err error
+        for i := 0; i < docs.Len(); i++ {
+            doc := must.NotFail(docs.Get(i))
+            err = insertDocument(ctx, dbPool, qp, doc)
+            var we *commonerrors.WriteErrors
+            switch {
+            case err == nil:
+                inserted++
+            case errors.As(err, &we):
+                insErrors.Merge(we, int32(i))
+            default:
+                insErrors.Append(err, int32(i))
+            }
+        }
+        
+        return nil
+	})
+
+	return inserted, &insErrors
+}
+
+/*
 // insertMany inserts many documents into the collection one by one.
 //
 // If insert is ordered, and a document fails to insert, handling of the remaining documents will be stopped.
@@ -128,6 +155,20 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 	}
 
 	return inserted, &insErrors
+}
+*/
+// insertDocument prepares and executes actual INSERT request to Postgres.
+func insertDocumentSt(ctx context.Context,qp *pgdb.QueryParams,tx pgx.Tx, doc any) error {
+	d, ok := doc.(*types.Document)
+	if !ok {
+		return commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+		)
+	}
+
+	return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
+
 }
 
 // insertDocument prepares and executes actual INSERT request to Postgres.
