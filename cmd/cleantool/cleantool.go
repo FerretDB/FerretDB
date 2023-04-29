@@ -14,6 +14,9 @@ func main() {
 	ctx := context.Background()
 	tokenName := "ROBOT_TOKEN"
 	token := os.Getenv(tokenName)
+	for _, v := range os.Environ() {
+		log.Println(v)
+	}
 	if token == "" {
 		log.Fatalf("env %v is not found", tokenName)
 	}
