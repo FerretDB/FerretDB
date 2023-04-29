@@ -18,6 +18,10 @@ jobs:
             pwd
       - name: Install dependencies
         run: go get ./cmd/cleantool
+      - name: get env
+        env:
+           ENV_NAME: just_a_test
+        run: echo $ENV_NAME
       - name: Scan old package versions and store the version id to env
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
