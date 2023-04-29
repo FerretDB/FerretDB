@@ -12,7 +12,11 @@ import (
 
 func main() {
 	ctx := context.Background()
-	token := os.Getenv("ROBOT_TOKEN")
+	tokenName := "ROBOT_TOKEN"
+	token := os.Getenv(tokenName)
+	if token == "" {
+		log.Fatalf("env %v is not found", tokenName)
+	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
