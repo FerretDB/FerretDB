@@ -13,6 +13,8 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.19'
+      - name:
+          run: |
       - name: Install dependencies
         run: go get .
       - name: Scan old package versions and store the version id to env
