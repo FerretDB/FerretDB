@@ -12,7 +12,7 @@ linters-settings:
       - golang.org/x/net/context # use stdlib's context instead
       - github.com/FerretDB/FerretDB/internal/bson
       - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
-      - github.com/FerretDB/FerretDB/internal/handlers/pg/pjson
+      - github.com/FerretDB/FerretDB/internal/handlers/sjson
       - github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb
       - github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson
       - github.com/FerretDB/FerretDB/internal/types/fjson
@@ -166,6 +166,11 @@ issues:
     - linters: [depguard]
       path: cmd/envtool
       text: pgdb
+
+    # only `pg` handler can import `sjson` package, no other handler can do that
+    - linters: [depguard]
+      path: internal/handlers/pg
+      text: sjson
 
     # only `tigris` handler can import `tigrisdb` package, no other handler can do that
     - linters: [depguard]
