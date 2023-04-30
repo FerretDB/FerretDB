@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ import (
 // nullType represents BSON Null type.
 type nullType types.NullType
 
-// pjsontype implements pjsontype interface.
-func (*nullType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (*nullType) sjsontype() {}
 
 // UnmarshalJSON implements json.Unmarshaler interface.
 // This method should never be called, as nullType values must be caught by the caller of this method.
@@ -32,12 +32,12 @@ func (*nullType) UnmarshalJSON(data []byte) error {
 	panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
 }
 
-// MarshalJSON implements pjsontype interface.
+// MarshalJSON implements sjsontype interface.
 func (*nullType) MarshalJSON() ([]byte, error) {
 	return []byte("null"), nil
 }
 
 // check interfaces
 var (
-	_ pjsontype = (*nullType)(nil)
+	_ sjsontype = (*nullType)(nil)
 )

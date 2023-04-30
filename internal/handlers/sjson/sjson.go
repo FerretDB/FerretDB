@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pjson provides converters from/to jsonb with some extensions for built-in and `types` types.
+// Package sjson provides converters from/to jsonb with some extensions for built-in and `types` types.
 //
 // See contributing guidelines and documentation for package `types` for details.
 //
 // # Mapping
 //
-// PJSON uses schema to map values to data types.
+// SJSON uses schema to map values to data types.
 // Schema is stored in the `$s` field of the document and contains information about the fields.
 // A document with schema looks like this:
 //
@@ -37,32 +37,32 @@
 //
 // Composite types
 //
-//	Alias      types package    pjson package        pjson schema                                            JSON representation
+//	Alias      types package    sjson package        sjson schema                                            JSON representation
 //
-//	object     *types.Document  *pjson.documentType  {"t":"object", "$s": {"$k":[<keys>], "p":{<properties>}} JSON object
-//	array      *types.Array     *pjson.arrayType     {"t":"array", "i": [<item 1>, <item 2>]}                JSON array
+//	object     *types.Document  *sjson.documentType  {"t":"object", "$s": {"$k":[<keys>], "p":{<properties>}} JSON object
+//	array      *types.Array     *sjson.arrayType     {"t":"array", "i": [<item 1>, <item 2>]}                JSON array
 //
 // Scalar types
 //
-//		Alias      types package   pjson package         pjson schema                         JSON representation
+//	Alias      types package   sjson package         sjson schema                         JSON representation
 //
-//		double     float64         *pjson.doubleType    {"t":"double"}                        JSON number
-//		string     string          *pjson.stringType    {"t":"string"}                        JSON string
-//		binData    types.Binary    *pjson.binaryType    {"t":"binData",
-//		                                                 "s":<subtype number>}                "<base 64 string>"
-//		objectId   types.ObjectID  *pjson.objectIDType  {"t":"objectId"}                      "<ObjectID as 24 character hex string>"
-//		bool       bool            *pjson.boolType      {"t":"bool"}                          JSON true / false values
-//		date       time.Time       *pjson.dateTimeType  {"t":"date"}   						  milliseconds since epoch as JSON number
-//		null       types.NullType  *pjson.nullType      {"t":"null"}                          JSON null
-//		regex      types.Regex     *pjson.regexType     {"t":"regex",
-//	                                                	 "o": "<string w/o terminating 0x0>"} "<string w/o terminating 0x0>"
-//		int        int32           *pjson.int32Type     {"t":"int"}   			              JSON number
-//		timestamp  types.Timestamp *pjson.timestampType {"t":"timestamp"}                     JSON number
-//		long       int64           *pjson.int64Type     {"t":"long"}                          JSON number
+//	double     float64         *sjson.doubleType    {"t":"double"}                        JSON number
+//	string     string          *sjson.stringType    {"t":"string"}                        JSON string
+//	binData    types.Binary    *sjson.binaryType    {"t":"binData",
+//	                                                 "s":<subtype number>}                "<base 64 string>"
+//	objectId   types.ObjectID  *sjson.objectIDType  {"t":"objectId"}                      "<ObjectID as 24 character hex string>"
+//	bool       bool            *sjson.boolType      {"t":"bool"}                          JSON true / false values
+//	date       time.Time       *sjson.dateTimeType  {"t":"date"}                          milliseconds since epoch as JSON number
+//	null       types.NullType  *sjson.nullType      {"t":"null"}                          JSON null
+//	regex      types.Regex     *sjson.regexType     {"t":"regex",
+//	                                                 "o": "<string w/o terminating 0x0>"} "<string w/o terminating 0x0>"
+//	int        int32           *sjson.int32Type     {"t":"int"}                           JSON number
+//	timestamp  types.Timestamp *sjson.timestampType {"t":"timestamp"}                     JSON number
+//	long       int64           *sjson.int64Type     {"t":"long"}                          JSON number
 //
 //nolint:lll // for readability
 //nolint:dupword // false positive
-package pjson
+package sjson
 
 import (
 	"bytes"
@@ -78,14 +78,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// pjsontype is a type that can be marshaled from/to pjson.
-type pjsontype interface {
-	pjsontype() // seal for go-sumtype
+// sjsontype is a type that can be marshaled from/to sjson.
+type sjsontype interface {
+	sjsontype() // seal for go-sumtype
 
 	json.Marshaler
 }
 
-//go-sumtype:decl pjsontype
+//go-sumtype:decl sjsontype
 
 // checkConsumed returns error if decoder or reader have buffered or unread data.
 func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
@@ -105,8 +105,8 @@ func checkConsumed(dec *json.Decoder, r *bytes.Reader) error {
 	return nil
 }
 
-// fromPJSON converts pjsontype value to matching built-in or types' package value.
-func fromPJSON(v pjsontype) any {
+// fromSJSON converts sjsontype value to matching built-in or types' package value.
+func fromSJSON(v sjsontype) any {
 	switch v := v.(type) {
 	case *documentType:
 		return pointer.To(types.Document(*v))
@@ -139,8 +139,8 @@ func fromPJSON(v pjsontype) any {
 	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
 }
 
-// toPJSON converts built-in or types' package value to pjsontype value.
-func toPJSON(v any) pjsontype {
+// toSJSON converts built-in or types' package value to sjsontype value.
+func toSJSON(v any) sjsontype {
 	switch v := v.(type) {
 	case *types.Document:
 		return pointer.To(documentType(*v))
@@ -213,7 +213,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 	// decode data from the rest of the document using the schema
 	if len(sch.Keys) != len(v) {
 		return nil, lazyerrors.Errorf(
-			"pjson.Unmarshal: the data must have the same number of schema keys and document fields (keys: %d, fields: %d)",
+			"sjson.Unmarshal: the data must have the same number of schema keys and document fields (keys: %d, fields: %d)",
 			len(sch.Keys), len(v),
 		)
 	}
@@ -224,7 +224,7 @@ func Unmarshal(data []byte) (*types.Document, error) {
 		b, ok := v[key]
 
 		if !ok {
-			return nil, lazyerrors.Errorf("pjson.Unmarshal: missing key %q", key)
+			return nil, lazyerrors.Errorf("sjson.Unmarshal: missing key %q", key)
 		}
 
 		v, err := unmarshalSingleValue(b, sch.Properties[key])
@@ -238,10 +238,10 @@ func Unmarshal(data []byte) (*types.Document, error) {
 	return d, nil
 }
 
-// unmarshalSingleValue decodes the given pjson-encoded data element by the given schema.
+// unmarshalSingleValue decodes the given sjson-encoded data element by the given schema.
 func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
 	if bytes.Equal(data, []byte("null")) {
-		return fromPJSON(new(nullType)), nil
+		return fromSJSON(new(nullType)), nil
 	}
 
 	if sch == nil {
@@ -252,8 +252,7 @@ func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
 
-	err := dec.Decode(&v)
-	if err != nil {
+	if err := dec.Decode(&v); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -261,12 +260,13 @@ func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var res pjsontype
+	var res sjsontype
+	var err error
 
 	switch sch.Type {
 	case elemTypeObject:
 		if sch.Schema == nil {
-			return nil, lazyerrors.Errorf("pjson.unmarshalSingleValue: schema is not set")
+			return nil, lazyerrors.Errorf("sjson.unmarshalSingleValue: schema is not set")
 		}
 
 		var d documentType
@@ -274,7 +274,7 @@ func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
 		res = &d
 	case elemTypeArray:
 		if sch.Items == nil {
-			return nil, lazyerrors.Errorf("pjson.unmarshalSingleValue: schema's items are not set")
+			return nil, lazyerrors.Errorf("sjson.unmarshalSingleValue: schema's items are not set")
 		}
 
 		var a arrayType
@@ -323,14 +323,14 @@ func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
 		err = l.UnmarshalJSON(data)
 		res = &l
 	default:
-		return nil, lazyerrors.Errorf("pjson.unmarshalSingleValue: unhandled type %q", sch.Type)
+		return nil, lazyerrors.Errorf("sjson.unmarshalSingleValue: unhandled type %q", sch.Type)
 	}
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return fromPJSON(res), nil
+	return fromSJSON(res), nil
 }
 
 // Marshal encodes the given document and set its schema in the field $s.
@@ -359,7 +359,7 @@ func Marshal(d *types.Document) ([]byte, error) {
 		buf.WriteString(key)
 		buf.WriteString(`":`)
 
-		b, err := toPJSON(values[i]).MarshalJSON()
+		b, err := toSJSON(values[i]).MarshalJSON()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -372,14 +372,14 @@ func Marshal(d *types.Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// MarshalSingleValue encodes given built-in or types' package value into pjson.
+// MarshalSingleValue encodes given built-in or types' package value into sjson.
 // Use it when you need to encode a single value, for example in a where clause.
 func MarshalSingleValue(v any) ([]byte, error) {
 	if v == nil {
 		panic("v is nil")
 	}
 
-	b, err := toPJSON(v).MarshalJSON()
+	b, err := toSJSON(v).MarshalJSON()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

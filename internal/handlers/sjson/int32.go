@@ -12,33 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// regexType represents BSON Regular expression type.
-type regexType types.Regex
+// int32Type represents BSON 32-bit integer type.
+type int32Type int32
 
-// pjsontype implements pjsontype interface.
-func (regex *regexType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (i *int32Type) sjsontype() {}
 
-// UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
-func (regex *regexType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
+// UnmarshalJSON implements json.Unmarshaler interface.
+func (i *int32Type) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	var o string
+	var o int32
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -47,21 +45,14 @@ func (regex *regexType) UnmarshalJSONWithSchema(data []byte, sch *elem) error {
 		return lazyerrors.Error(err)
 	}
 
-	if sch.Options == nil {
-		return lazyerrors.Errorf("regex options is nil")
-	}
-
-	*regex = regexType{
-		Pattern: o,
-		Options: *sch.Options,
-	}
+	*i = int32Type(o)
 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
-func (regex *regexType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(regex.Pattern)
+// MarshalJSON implements sjsontype interface.
+func (i *int32Type) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(int32(*i))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -71,5 +62,5 @@ func (regex *regexType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*regexType)(nil)
+	_ sjsontype = (*int32Type)(nil)
 )
