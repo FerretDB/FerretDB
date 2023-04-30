@@ -12,7 +12,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: '1.20'
       - name: Install dependencies
         run: go get ./cmd/cleantool
       - name: Scan old package versions and store the version id to env
