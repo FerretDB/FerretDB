@@ -12,29 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// dateTimeType represents BSON UTC datetime type.
-type dateTimeType time.Time
+// int64Type represents BSON 64-bit integer type.
+type int64Type int64
 
-// pjsontype implements pjsontype interface.
-func (dt *dateTimeType) pjsontype() {}
-
-// String returns formatted time for debugging.
-func (dt *dateTimeType) String() string {
-	return time.Time(*dt).Format(time.RFC3339Nano)
-}
+// sjsontype implements sjsontype interface.
+func (i *int64Type) sjsontype() {}
 
 // UnmarshalJSON implements json.Unmarshaler interface.
-func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
+func (i *int64Type) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
@@ -52,15 +46,14 @@ func (dt *dateTimeType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
-	*dt = dateTimeType(time.UnixMilli(o))
+	*i = int64Type(o)
 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
-func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(time.Time(*dt).UnixMilli())
+// MarshalJSON implements sjsontype interface.
+func (i *int64Type) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(int64(*i))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -70,5 +63,5 @@ func (dt *dateTimeType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*dateTimeType)(nil)
+	_ sjsontype = (*int64Type)(nil)
 )

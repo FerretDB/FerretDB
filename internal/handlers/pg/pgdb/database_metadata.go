@@ -309,7 +309,7 @@ func metadataToDocument(metadata *metadata) *types.Document {
 	for _, idx := range metadata.indexes {
 		keyDoc := types.MakeDocument(len(idx.Key))
 		for _, pair := range idx.Key {
-			keyDoc.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be pjson-marshaled correctly
+			keyDoc.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be sjson-marshaled correctly
 		}
 
 		indexesArr.Append(must.NotFail(types.NewDocument(
