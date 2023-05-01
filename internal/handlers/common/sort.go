@@ -44,7 +44,7 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 		if strings.Contains(sortKey, "$") {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFieldPathInvalidName,
-				"FieldPath field names may not start with '$'. Consider using $getField or $setField",
+				"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 				"sort",
 			)
 		}
