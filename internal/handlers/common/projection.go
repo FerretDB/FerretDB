@@ -236,9 +236,23 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				}
 
 				projected.Remove(key)
+
+				break
 			}
 
-			// TODO: process dot notation here https://github.com/FerretDB/FerretDB/issues/2430
+			// process dot notation
+			if inclusion {
+				v, err := docWithoutID.Get(path.Prefix())
+				if err == nil {
+					if _, ok := v.(*types.Document); ok {
+						projected.Set(path.Prefix(), new(types.Document))
+					}
+
+					if _, ok := v.(*types.Array); ok {
+						projected.Set(path.Prefix(), new(types.Array))
+					}
+				}
+			}
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
 		}

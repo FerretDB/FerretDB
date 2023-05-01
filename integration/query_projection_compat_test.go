@@ -133,7 +133,6 @@ func TestQueryProjectionCompat(t *testing.T) {
 		"DotNotationInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationIncludeTwo": {
 			filter:     bson.D{},
