@@ -183,6 +183,15 @@ services:
     volumes:
       - ./tmp/rpms:/rpms
 
+  # for YAML files
+  prettier:
+    build:
+      context: ./build/deps
+      dockerfile: ferretdb-prettier.Dockerfile
+    container_name: ferretdb_ferretdb-prettier
+    volumes:
+      - .:/workdir
+
   # for documentation
   textlint:
     build:
@@ -196,13 +205,6 @@ services:
       context: ./build/deps
       dockerfile: markdownlint.Dockerfile
     container_name: ferretdb_markdownlint
-    volumes:
-      - .:/workdir
-  prettier:
-    build:
-      context: ./build/deps
-      dockerfile: prettier.Dockerfile
-    container_name: ferretdb_ferretdb-prettier
     volumes:
       - .:/workdir
   wrangler:

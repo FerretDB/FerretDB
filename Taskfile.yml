@@ -27,6 +27,7 @@ tasks:
       - task: test
       - task: lint
       - task: security
+      - task: fmt-yaml
       - task: docs
 
   init-tools:
@@ -141,27 +142,17 @@ tasks:
       - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
-    desc: "Generate (and format) code"
+    desc: "Generate (and format) Go code"
     cmds:
       - go generate -x ./...
       - bin/task{{exeExt}} -d integration integration-gen
-      - task: fmt
+      - task: fmt-go
 
-  fmt:
-    desc: "Format code"
+  fmt-go:
+    desc: "Format Go code"
     cmds:
       - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
-      - task: fmt-yaml
-
-  fmt-yaml:
-    desc: "Format yaml"
-    cmds:
-      - >
-        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o+w {} \;{{end}}
-      - docker compose run --rm -v $(pwd):/work prettier --write --parser=yaml "./**/*.yml"
-      - >
-        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o-w {} \;{{end}}
 
   test:
     desc: "Run all unit and integration tests in parallel"
@@ -552,6 +543,11 @@ tasks:
           VERSION:
             sh: cat build/version/version.txt
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
+
+  fmt-yaml:
+    desc: "Format YAML files"
+    cmds:
+      - docker compose run --rm prettier --write --parser=yaml "**/*.yml"
 
   docs:
     desc: "Format, lint and build documentation"

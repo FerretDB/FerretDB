@@ -1,0 +1,64 @@
+---
+name: Format
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "12 0 * * *"
+
+# Do not run this workflow in parallel for any PR change.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+
+jobs:
+  format:
+    name: Format files
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: format
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Format Go code
+        run: bin/task fmt-go fmt-yaml
+
+      - name: Format YAML files
+        run: bin/task fmt-yaml
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
