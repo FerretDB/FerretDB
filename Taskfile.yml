@@ -148,6 +148,10 @@ tasks:
       - bin/task{{exeExt}} -d integration integration-gen
       - task: fmt-go
 
+  # invoked by FerretDB/github-actions/linters action
+  fmt:
+    deps: [fmt-go]
+
   fmt-go:
     desc: "Format Go code"
     cmds:
