@@ -1225,7 +1225,6 @@ func TestAggregateCompatSort(t *testing.T) {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
 			resultType: emptyResult,
 		},
-
 		"BadDollarStart": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
 			resultType: emptyResult,
