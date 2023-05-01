@@ -22,13 +22,13 @@ import (
 )
 
 // MixedBenchmarkValues contain documents with various types of values.
-var MixedBenchmarkValues = BenchmarkValues{
+var MixedBenchmarkValues = benchmarkValues{
 	name: "MixedBenchmarkValues",
 	iter: newValuesIterator(generateMixedValues()),
 }
 
 // LargeDocumentBenchmarkValues contains a single large document with various types of values.
-var LargeDocumentBenchmarkValues = BenchmarkValues{
+var LargeDocumentBenchmarkValues = benchmarkValues{
 	name: "LargeDocumentBenchmarkValues",
 	iter: newValuesIterator(generateLargeDocument()),
 }
