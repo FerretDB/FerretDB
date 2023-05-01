@@ -268,22 +268,16 @@ func TestQueryCompatSort(t *testing.T) {
 			filter:     bson.D{},
 			sort:       bson.D{{"$v.foo", 1}},
 			resultType: emptyResult,
-
-			skip: "https://github.com/FerretDB/FerretDB/issues/2259",
 		},
 		"BadDollarMid": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v.$foo.bar", 1}},
 			resultType: emptyResult,
-
-			skip: "https://github.com/FerretDB/FerretDB/issues/2259",
 		},
 		"BadDollarEnd": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v.$foo", 1}},
 			resultType: emptyResult,
-
-			skip: "https://github.com/FerretDB/FerretDB/issues/2259",
 		},
 	}
 
