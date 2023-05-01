@@ -21,31 +21,40 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// BenchmarkSmallDocuments provides 1000 documents that look like:
+// BenchmarkSmallDocuments provides 10000 documents that look like:
 //
-//	{_id: <int32>, v: "foo"}
-//	{_id: <int32>, v: int32(42)}
-//	{_id: <int32>, v: "42"}
-//	{_id: <int32>, v: {"foo": int32(42)}}
-var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", func() generatorFunc {
+//	{_id: int32(0), id: int32(0), v: "foo"}
+//	{_id: int32(1), id: int32(1), v: int32(42)}
+//	{_id: int32(2), id: int32(2), v: "42"}
+//	{_id: int32(3), id: int32(3), v: {"foo": int32(42)}}
+//	...
+//
+// `_id` is a primary key that goes from 0 to n-1.
+// `id` has the same value as `_id`, but is not indexed by default.
+// `v` has one of the four values shown above.
+var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", 10000, func(n int) generatorFunc {
 	values := []any{
 		"foo", int32(42), "42", bson.D{{"foo", int32(42)}},
 	}
-	l := int32(len(values))
+	l := len(values)
 
-	var i int32
+	var i int
 	return func() bson.D {
-		if i >= 1000 {
+		if i >= n {
 			return nil
 		}
-		doc := bson.D{{"_id", i}, {"v", values[i%l]}}
+		doc := bson.D{
+			{"_id", int32(i)},
+			{"id", int32(i)},
+			{"v", values[i%l]},
+		}
 		i++
 		return doc
 	}
 })
 
 // BenchmarkLargeDocuments provides a single large document with fields of various types.
-var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", func() generatorFunc {
+var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", 123, func(n int) generatorFunc {
 	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
 	}
