@@ -15,7 +15,12 @@
 // Package hanadb provides SAP HANA connection utilities.
 package hanadb
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/SAP/go-hdb/driver"
+)
 
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
@@ -27,8 +32,11 @@ var (
 	// ErrSchemaNotExist indicates that there is no such schema.
 	ErrSchemaNotExist = fmt.Errorf("database/schema does not exist")
 
-	// ErrAlreadyExist indicates that a schema or table already exists.
-	ErrAlreadyExist = fmt.Errorf("database/schema or collection/table already exists")
+	// ErrSchemaAlreadyExist indicates that a schema already exists.
+	ErrSchemaAlreadyExist = fmt.Errorf("database/schema already exists")
+
+	// ErrCollectionAlreadyExist indicates that a collection already exists.
+	ErrCollectionAlreadyExist = fmt.Errorf("collection/table already exists")
 
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
@@ -36,3 +44,25 @@ var (
 	// ErrInvalidDatabaseName indicates that a database didn't pass name checks.
 	ErrInvalidDatabaseName = fmt.Errorf("invalid FerretDB database name")
 )
+
+// Errors from HanaDB.
+var Errors = map[int]error{
+	259: ErrTableNotExist,
+	288: ErrCollectionAlreadyExist,
+	362: ErrSchemaNotExist,
+	386: ErrSchemaAlreadyExist,
+}
+
+// getHanaErrorIfExists converts 'err' to formatted version if it exists
+//
+// Returns one of the errors above or the original error if the formatted version doesn't exist.
+func getHanaErrorIfExists(err error) error {
+	var dbError driver.Error
+	if errors.As(err, &dbError) {
+		if hanaErr, ok := Errors[dbError.Code()]; ok {
+			return hanaErr
+		}
+	}
+
+	return err
+}

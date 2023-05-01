@@ -15,12 +15,22 @@
 // Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"fmt"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 // MixedBenchmarkValues contain documents with various types of values.
 var MixedBenchmarkValues = BenchmarkValues{
 	name: "MixedBenchmarkValues",
 	iter: newValuesIterator(generateMixedValues()),
+}
+
+// LargeDocumentBenchmarkValues contains a single large document with various types of values.
+var LargeDocumentBenchmarkValues = BenchmarkValues{
+	name: "LargeDocumentBenchmarkValues",
+	iter: newValuesIterator(generateLargeDocument()),
 }
 
 // generateMixedValues returns generator that generates deterministic set
@@ -42,6 +52,40 @@ func generateMixedValues() func() bson.D {
 
 		doc := bson.D{{"_id", i}, {"v", v}}
 		i++
+
+		return doc
+	}
+
+	return gen
+}
+
+// generateLargeDocument returns generator that generates single deterministic document
+// with 200 elements that contain simple strings, doubles and objects.
+func generateLargeDocument() func() bson.D {
+	values := []any{
+		"foo", 42, "42", bson.D{{"42", "hello"}},
+	}
+	valuesLen := len(values)
+
+	elements := make([]bson.E, 200)
+	elements[0] = bson.E{"_id", 0}
+
+	for i := 1; i < len(elements); i++ {
+		elements[i] = bson.E{
+			Key:   fmt.Sprint(i),
+			Value: values[i%valuesLen],
+		}
+	}
+
+	doc := bson.D(elements)
+
+	var done bool
+	gen := func() bson.D {
+		if done {
+			return nil
+		}
+
+		done = true
 
 		return doc
 	}

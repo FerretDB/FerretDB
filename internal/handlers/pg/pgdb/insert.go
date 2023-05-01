@@ -22,7 +22,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -85,7 +85,7 @@ func insert(ctx context.Context, tx pgx.Tx, p *insertParams) error {
 	sql := `INSERT INTO ` + pgx.Identifier{p.schema, p.table}.Sanitize() +
 		` (_jsonb) VALUES ($1)`
 
-	_, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(p.doc)))
+	_, err := tx.Exec(ctx, sql, must.NotFail(sjson.Marshal(p.doc)))
 	if err == nil {
 		return nil
 	}

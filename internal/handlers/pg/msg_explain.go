@@ -73,6 +73,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	qp.Sort, err = common.GetOptionalParam[*types.Document](explain, "sort", nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	if command.Command() == "aggregate" {
 		var pipeline *types.Array
 		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
@@ -103,19 +108,21 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = nil
 	}
 
+	if !h.EnableSortPushdown {
+		qp.Sort = nil
+	}
+
 	var queryPlanner *types.Document
+	var results pgdb.QueryResults
+
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		queryPlanner, err = pgdb.Explain(ctx, tx, &qp)
+		queryPlanner, results, err = pgdb.Explain(ctx, tx, &qp)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// if the plan returned filter info or index info, it means that pushdown had been done
-	pushdown := queryPlanner.HasByPath(types.NewStaticPath("Plan", "Filter")) ||
-		queryPlanner.HasByPath(types.NewStaticPath("Plan", "Index Cond"))
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -138,7 +145,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", pushdown,
+			"pushdown", results.FilterPushdown,
+			"sortingPushdown", results.SortPushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},
