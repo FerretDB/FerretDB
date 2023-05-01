@@ -15,54 +15,117 @@
 package shareddata
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"reflect"
+
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 // BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
-// It also calculates checksum of all provided documents.
 type BenchmarkProvider interface {
 	// Name returns benchmark provider name.
 	Name() string
 
-	// Hash returns actual hash of all provider documents.
-	// It should be called after closing iterator.
-	Hash() string
-
-	// Docs returns iterator that returns all documents from provider.
-	// They should be always in deterministic order.
-	// The iterator calculates the checksum of all documents on go.
-	Docs() iterator.Interface[struct{}, bson.D]
+	// NewIterator returns a new iterator for documents in the same order.
+	NewIterator() iterator.Interface[struct{}, bson.D]
 }
 
-// benchmarkValues returns shared data documents for benchmark in deterministic order.
-type benchmarkValues struct {
-	// iter returns all documents in deterministic order.
-	iter *valuesIterator
+// hashBenchmarkProvider checks that BenchmarkProvider's NewIterator methods returns a new iterator
+// for the same documents in the same order,
+// and returns a hash of those documents that could be used as a part of benchmark name.
+func hashBenchmarkProvider(bp BenchmarkProvider) string {
+	iter1 := bp.NewIterator()
+	defer iter1.Close()
 
-	// name represents the name of the benchmark values set.
-	name string
+	iter2 := bp.NewIterator()
+	defer iter2.Close()
+
+	h := sha256.New()
+
+	for {
+		_, v1, err := iter1.Next()
+		switch {
+		case err == nil:
+			_, v2, err := iter2.Next()
+			if err != nil {
+				panic(err)
+			}
+
+			must.BeTrue(reflect.DeepEqual(v1, v2))
+
+			b := must.NotFail(json.Marshal(v1))
+			h.Write(b)
+
+		case errors.Is(err, iterator.ErrIteratorDone):
+			_, _, err = iter2.Next()
+			if !errors.Is(err, iterator.ErrIteratorDone) {
+				panic("iter2 should be done too")
+			}
+
+			return hex.EncodeToString(h.Sum(nil)[:8])
+
+		default:
+			panic(err)
+		}
+	}
 }
 
-// Name implements BenchmarkProvider interface.
-func (b *benchmarkValues) Name() string {
-	return b.name
+// generatorFunc is a function that returns the next generated bson.D document, or nil.
+//
+// The order of documents returned must be deterministic.
+type generatorFunc func() bson.D
+
+// newGeneratorFunc returns a new generatorFunc.
+//
+// All returned functions should be independent from each other, but return the same documents in the same order.
+type newGeneratorFunc func() generatorFunc
+
+// generatorBenchmarkProvider uses generator functions to implement BenchmarkProvider.
+type generatorBenchmarkProvider struct {
+	baseName         string
+	newGeneratorFunc newGeneratorFunc
+	hash             string
 }
 
-// Hash implements BenchmarkProvider interface.
-// It returns actual hash of all documents produced by BenchmarkValues.
-// It will panic if iterator was not closed.
-func (b *benchmarkValues) Hash() string {
-	return must.NotFail(b.iter.Hash())
+// newGeneratorBenchmarkProvider returns BenchmarkProvider with a given base name and newGeneratorFunc.
+func newGeneratorBenchmarkProvider(baseName string, newGeneratorFunc newGeneratorFunc) BenchmarkProvider {
+	gbp := &generatorBenchmarkProvider{
+		baseName:         baseName,
+		newGeneratorFunc: newGeneratorFunc,
+	}
+
+	gbp.hash = hashBenchmarkProvider(gbp)
+
+	return gbp
 }
 
-// Docs implements BenchmarkProvider interface.
-func (b *benchmarkValues) Docs() iterator.Interface[struct{}, bson.D] {
-	return b.iter
+func (gbp *generatorBenchmarkProvider) Name() string {
+	return gbp.baseName + "/" + gbp.hash
+}
+
+func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}, bson.D] {
+	var unused struct{}
+	next := gbp.newGeneratorFunc()
+
+	f := func() (struct{}, bson.D, error) {
+		v := next()
+		if v == nil {
+			return unused, nil, iterator.ErrIteratorDone
+		}
+
+		return unused, v, nil
+	}
+
+	return iterator.ForFunc(f)
 }
 
 // check interfaces
 var (
-	_ BenchmarkProvider = (*benchmarkValues)(nil)
+	_ BenchmarkProvider = (*generatorBenchmarkProvider)(nil)
 )

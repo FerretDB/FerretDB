@@ -25,6 +25,8 @@ import (
 type NextFunc[K, V any] func() (K, V, error)
 
 // valuesIterator implements iterator.Interface.
+//
+//nolint:vet // for readability
 type funcIterator[K, V any] struct {
 	m sync.Mutex
 	f NextFunc[K, V]
@@ -52,6 +54,7 @@ func (iter *funcIterator[K, V]) Next() (K, V, error) {
 	if iter.f == nil {
 		var k K
 		var v V
+
 		return k, v, fmt.Errorf("%w (f is nil)", ErrIteratorDone)
 	}
 

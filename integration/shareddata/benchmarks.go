@@ -18,53 +18,38 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/exp/maps"
 )
 
-// MixedBenchmarkValues contain documents with various types of values.
-var MixedBenchmarkValues = benchmarkValues{
-	name: "MixedBenchmarkValues",
-	iter: newValuesIterator(generateMixedValues()),
-}
-
-// LargeDocumentBenchmarkValues contains a single large document with various types of values.
-var LargeDocumentBenchmarkValues = benchmarkValues{
-	name: "LargeDocumentBenchmarkValues",
-	iter: newValuesIterator(generateLargeDocument()),
-}
-
-// generateMixedValues returns generator that generates deterministic set
-// of 400 documents that contains string, double, and object types.
-func generateMixedValues() func() bson.D {
+// BenchmarkSmallDocuments provides 1000 documents that look like:
+//
+//	{_id: <int32>, v: "foo"}
+//	{_id: <int32>, v: int32(42)}
+//	{_id: <int32>, v: "42"}
+//	{_id: <int32>, v: {"foo": int32(42)}}
+var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", func() generatorFunc {
 	values := []any{
-		"foo", 42, "42", bson.D{{"42", "hello"}},
+		"foo", int32(42), "42", bson.D{{"foo", int32(42)}},
 	}
-	valuesLen := len(values)
+	l := int32(len(values))
 
-	i := 0
-
-	gen := func() bson.D {
-		if i >= 400 {
+	var i int32
+	return func() bson.D {
+		if i >= 1000 {
 			return nil
 		}
-
-		v := values[i%valuesLen]
-
-		doc := bson.D{{"_id", i}, {"v", v}}
+		doc := bson.D{{"_id", i}, {"v", values[i%l]}}
 		i++
-
 		return doc
 	}
+})
 
-	return gen
-}
-
-// generateLargeDocument returns generator that generates single deterministic document
-// with 200 elements that contain simple strings, doubles and objects.
-func generateLargeDocument() func() bson.D {
+// BenchmarkLargeDocuments provides a single large document with fields of various types.
+var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", func() generatorFunc {
 	values := []any{
 		"foo", 42, "42", bson.D{{"42", "hello"}},
 	}
-	valuesLen := len(values)
+	l := len(values)
 
 	elements := make([]bson.E, 200)
 	elements[0] = bson.E{"_id", 0}
@@ -72,14 +57,15 @@ func generateLargeDocument() func() bson.D {
 	for i := 1; i < len(elements); i++ {
 		elements[i] = bson.E{
 			Key:   fmt.Sprint(i),
-			Value: values[i%valuesLen],
+			Value: values[i%l],
 		}
 	}
 
 	doc := bson.D(elements)
 
 	var done bool
-	gen := func() bson.D {
+
+	return func() bson.D {
 		if done {
 			return nil
 		}
@@ -88,6 +74,25 @@ func generateLargeDocument() func() bson.D {
 
 		return doc
 	}
+})
 
-	return gen
+// AllBenchmarkProviders returns all benchmark providers in random order.
+func AllBenchmarkProviders() []BenchmarkProvider {
+	providers := []BenchmarkProvider{
+		BenchmarkSmallDocuments,
+		BenchmarkLargeDocuments,
+	}
+
+	// check that names are unique and randomize order
+	res := make(map[string]BenchmarkProvider, len(providers))
+	for _, p := range providers {
+		n := p.Name()
+		if _, ok := res[n]; ok {
+			panic("duplicate benchmark provider name: " + n)
+		}
+
+		res[n] = p
+	}
+
+	return maps.Values(res)
 }
