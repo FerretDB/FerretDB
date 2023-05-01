@@ -170,6 +170,14 @@ func verifyChecksum(r *bufio.Reader) error {
 	return nil
 }
 
+// attachChecksum appends checksum to a message
+func attachChecksum(data []byte) []byte {
+	var checksum []byte
+	binary.LittleEndian.PutUint32(checksum, calculateChecksum(data))
+	return checksum
+}
+
+// detachChecksum removes the checksum bytes from a message
 func detachChecksum(data []byte) ([]byte, uint32) {
 	msgLen := len(data)
 	msg := data[:msgLen-kCrc32Size]
@@ -178,6 +186,7 @@ func detachChecksum(data []byte) ([]byte, uint32) {
 	return msg, checksum
 }
 
+// calculateChecksum returns the crc32c value of the message
 func calculateChecksum(msg []byte) uint32 {
 	table := crc32.MakeTable(crc32.Castagnoli)
 	return crc32.Checksum(msg, table)
