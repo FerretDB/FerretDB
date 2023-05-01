@@ -14,7 +14,8 @@ or someone is already working on it.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
-feel free to pick any issue that is not assigned to anyone and doesn't have `not ready` label.
+feel free to pick any issue
+[that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
 Still, please let us know as described above.
 
 ## Setting up the environment
