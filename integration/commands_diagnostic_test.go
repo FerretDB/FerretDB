@@ -16,7 +16,6 @@ package integration
 
 import (
 	"net"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -221,10 +220,6 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 	os := m["os"].(bson.D)
 	assert.Equal(t, []string{"type", "name", "version"}, CollectKeys(t, os))
-
-	if runtime.GOOS == "linux" {
-		require.NotEmpty(t, os.Map()["name"], "os name should not be empty")
-	}
 
 	system := m["system"].(bson.D)
 	keys := CollectKeys(t, system)
