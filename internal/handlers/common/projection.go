@@ -221,12 +221,12 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
-			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+			time.Time, types.NullType, types.Regex, types.Timestamp: // all these types are treated as new fields value
 			projected.Set(key, value)
 
 		case bool: // field: bool
 			if !inclusion {
-				// exclusion projection removes the path.
+				// exclusion projection removes the value from the path.
 				projected.RemoveByPath(path)
 
 				continue
@@ -240,8 +240,10 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				continue
 			}
 
-			// inclusion projection with non-existent path with
-			// document or array along the path sets empty document or array.
+			// inclusion projection with non-existent path has special behaviour
+			// if document or array is on the path.
+			// For a document path it creates an empty document.
+			// For an array path it creates an empty array.
 			for {
 				v, err = docWithoutID.GetByPath(path)
 				if err != nil {
