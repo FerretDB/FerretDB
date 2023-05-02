@@ -71,7 +71,7 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, e
 	}
 
 	var updatesArray *types.Array
-	if updatesArray, err = GetOptionalParam(document, "updatesArray", updatesArray); err != nil {
+	if updatesArray, err = GetOptionalParam(document, "updates", updatesArray); err != nil {
 		return nil, err
 	}
 
