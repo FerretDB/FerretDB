@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -20,25 +20,25 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var boolTestCases = []testCase{{
-	name: "false",
-	v:    pointer.To(boolType(false)),
-	j:    `false`,
+var objectIDTestCases = []testCase{{
+	name: "normal",
+	v:    pointer.To(objectIDType{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}),
+	j:    `"010101010101010101010101"`,
 }, {
-	name: "true",
-	v:    pointer.To(boolType(true)),
-	j:    `true`,
+	name: "EOF",
+	j:    `{`,
+	jErr: `unexpected EOF`,
 }}
 
-func TestBool(t *testing.T) {
+func TestObjectID(t *testing.T) {
 	t.Parallel()
-	testJSON(t, boolTestCases, func() pjsontype { return new(boolType) })
+	testJSON(t, objectIDTestCases, func() sjsontype { return new(objectIDType) })
 }
 
-func FuzzBool(f *testing.F) {
-	fuzzJSON(f, boolTestCases, func() pjsontype { return new(boolType) })
+func FuzzObjectID(f *testing.F) {
+	fuzzJSON(f, objectIDTestCases, func() sjsontype { return new(objectIDType) })
 }
 
-func BenchmarkBool(b *testing.B) {
-	benchmark(b, boolTestCases, func() pjsontype { return new(boolType) })
+func BenchmarkObjectID(b *testing.B) {
+	benchmark(b, objectIDTestCases, func() sjsontype { return new(objectIDType) })
 }

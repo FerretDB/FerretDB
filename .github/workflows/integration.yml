@@ -156,3 +156,4 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
+          carryforward: unit # workaround for https://github.com/lemurheavy/coveralls-public/issues/1636

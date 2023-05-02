@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -60,13 +60,13 @@ var binaryTestCases = []testCase{{
 
 func TestBinary(t *testing.T) {
 	t.Parallel()
-	testJSON(t, binaryTestCases, func() pjsontype { return new(binaryType) })
+	testJSON(t, binaryTestCases, func() sjsontype { return new(binaryType) })
 }
 
 func FuzzBinary(f *testing.F) {
-	fuzzJSON(f, binaryTestCases, func() pjsontype { return new(binaryType) })
+	fuzzJSON(f, binaryTestCases, func() sjsontype { return new(binaryType) })
 }
 
 func BenchmarkBinary(b *testing.B) {
-	benchmark(b, binaryTestCases, func() pjsontype { return new(binaryType) })
+	benchmark(b, binaryTestCases, func() sjsontype { return new(binaryType) })
 }
