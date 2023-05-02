@@ -82,6 +82,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// Add the backend's name to prevent the usage of the same database.
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
 
+	// When database name is too long, database is created but inserting documents
+	// fail with InvalidNamespace error.
+	require.Less(tb, len(opts.databaseName), 64, "database name is too long")
+
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)

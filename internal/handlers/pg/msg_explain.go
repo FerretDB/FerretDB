@@ -73,6 +73,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	qp.Sort, err = common.GetOptionalParam[*types.Document](explain, "sort", nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	if command.Command() == "aggregate" {
 		var pipeline *types.Array
 		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
@@ -103,6 +108,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = nil
 	}
 
+	if !h.EnableSortPushdown {
+		qp.Sort = nil
+	}
+
 	var queryPlanner *types.Document
 	var results pgdb.QueryResults
 
@@ -114,8 +123,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	if err != nil {
 		return nil, err
 	}
-
-	pushdown := results.FilterPushdown
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -138,7 +145,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", pushdown,
+			"pushdown", results.FilterPushdown,
+			"sortingPushdown", results.SortPushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

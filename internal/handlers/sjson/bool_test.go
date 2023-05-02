@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -20,29 +20,25 @@ import (
 	"github.com/AlekSi/pointer"
 )
 
-var timestampTestCases = []testCase{{
-	name: "one",
-	v:    pointer.To(timestampType(1)),
-	j:    `1`,
+var boolTestCases = []testCase{{
+	name: "false",
+	v:    pointer.To(boolType(false)),
+	j:    `false`,
 }, {
-	name: "zero",
-	v:    pointer.To(timestampType(0)),
-	j:    `0`,
-}, {
-	name: "EOF",
-	j:    `{`,
-	jErr: `unexpected EOF`,
+	name: "true",
+	v:    pointer.To(boolType(true)),
+	j:    `true`,
 }}
 
-func TestTimestamp(t *testing.T) {
+func TestBool(t *testing.T) {
 	t.Parallel()
-	testJSON(t, timestampTestCases, func() pjsontype { return new(timestampType) })
+	testJSON(t, boolTestCases, func() sjsontype { return new(boolType) })
 }
 
-func FuzzTimestamp(f *testing.F) {
-	fuzzJSON(f, timestampTestCases, func() pjsontype { return new(timestampType) })
+func FuzzBool(f *testing.F) {
+	fuzzJSON(f, boolTestCases, func() sjsontype { return new(boolType) })
 }
 
-func BenchmarkTimestamp(b *testing.B) {
-	benchmark(b, timestampTestCases, func() pjsontype { return new(timestampType) })
+func BenchmarkBool(b *testing.B) {
+	benchmark(b, boolTestCases, func() sjsontype { return new(boolType) })
 }
