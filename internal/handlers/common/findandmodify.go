@@ -157,7 +157,7 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		default:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				"UpdateParams argument must be either an object or an array",
+				"Update argument must be either an object or an array",
 				"update",
 			)
 		}
