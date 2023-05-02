@@ -45,62 +45,29 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "writeConcern")
-
-	var deletes *types.Array
-	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
-		return nil, err
-	}
-
-	ordered := true
-	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "comment")
-
-	var qp tigrisdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetDeleteParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	qp := tigrisdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
 	}
 
 	var deleted int32
 	var delErrors commonerrors.WriteErrors
 
 	// process every delete filter
-	for i := 0; i < deletes.Len(); i++ {
-		// get document with filter
-		deleteDoc, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
-		if err != nil {
-			return nil, err
-		}
+	for i, deleteParams := range params.Deletes {
+		qp.Filter = deleteParams.Filter
 
-		var limited bool
-		qp.Filter, limited, err = h.prepareDeleteParams(deleteDoc)
-		if err != nil {
-			return nil, err
-		}
-
-		del, err := execDelete(ctx, &deleteParams{dbPool, &qp, h.DisableFilterPushdown, limited})
+		del, err := execDelete(ctx, &execDeleteParams{
+			dbPool,
+			&qp,
+			h.DisableFilterPushdown,
+			deleteParams.Limited,
+		})
 		if err == nil {
 			deleted += del
 			continue
@@ -108,7 +75,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		delErrors.Append(err, int32(i))
 
-		if ordered {
+		if params.Ordered {
 			break
 		}
 	}
@@ -172,8 +139,8 @@ func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Documen
 	return filter, limit == 1, nil
 }
 
-// deleteParams contains parameters for execDelete function.
-type deleteParams struct {
+// execDeleteParams contains parameters for execDelete function.
+type execDeleteParams struct {
 	dbPool                *tigrisdb.TigrisDB
 	qp                    *tigrisdb.QueryParams
 	disableFilterPushdown bool
@@ -182,7 +149,7 @@ type deleteParams struct {
 
 // execDelete fetches documents, filter them out and limiting with the given limit value.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dp *deleteParams) (int32, error) {
+func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	var err error
 
 	resDocs := make([]*types.Document, 0, 16)
