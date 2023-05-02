@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
@@ -26,8 +26,8 @@ import (
 // documentType represents BSON Document type.
 type documentType types.Document
 
-// pjsontype implements pjsontype interface.
-func (doc *documentType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (doc *documentType) sjsontype() {}
 
 // UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
 func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error {
@@ -57,7 +57,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 	}
 
 	if len(sch.Keys) != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: %d elements in $k in the schema, %d in the document",
+		return lazyerrors.Errorf("sjson.documentType.UnmarshalJSON: %d elements in $k in the schema, %d in the document",
 			len(sch.Keys), len(rawMessages),
 		)
 	}
@@ -68,7 +68,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 		b, ok := rawMessages[key]
 
 		if !ok {
-			return lazyerrors.Errorf("pjson.documentType.UnmarshalJSON: missing key %q", key)
+			return lazyerrors.Errorf("sjson.documentType.UnmarshalJSON: missing key %q", key)
 		}
 
 		v, err := unmarshalSingleValue(b, sch.Properties[key])
@@ -84,7 +84,7 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
+// MarshalJSON implements sjsontype interface.
 func (doc *documentType) MarshalJSON() ([]byte, error) {
 	td := types.Document(*doc)
 
@@ -129,5 +129,5 @@ func (doc *documentType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*documentType)(nil)
+	_ sjsontype = (*documentType)(nil)
 )

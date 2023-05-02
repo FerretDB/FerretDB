@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -67,29 +67,29 @@ var arrayTestCases = []testCase{
 		name: "SchemaIsNil",
 		sch:  new(elem),
 		j:    `["foo"]`,
-		jErr: `pjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array`,
+		jErr: `sjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array`,
 	}, {
 		name: "ExtraElemsInSchema",
 		sch:  &elem{Type: elemTypeArray, Items: []*elem{stringSchema, stringSchema}},
 		j:    `["foo"]`,
-		jErr: `pjson.arrayType.UnmarshalJSON: 2 elements in schema, 1 in total`,
+		jErr: `sjson.arrayType.UnmarshalJSON: 2 elements in schema, 1 in total`,
 	}, {
 		name: "ExtraElemsInArray",
 		sch:  &elem{Type: elemTypeArray, Items: []*elem{stringSchema}},
 		j:    `["foo", "bar"]`,
-		jErr: `pjson.arrayType.UnmarshalJSON: 1 elements in schema, 2 in total`,
+		jErr: `sjson.arrayType.UnmarshalJSON: 1 elements in schema, 2 in total`,
 	},
 }
 
 func TestArray(t *testing.T) {
 	t.Parallel()
-	testJSON(t, arrayTestCases, func() pjsontype { return new(arrayType) })
+	testJSON(t, arrayTestCases, func() sjsontype { return new(arrayType) })
 }
 
 func FuzzArray(f *testing.F) {
-	fuzzJSON(f, arrayTestCases, func() pjsontype { return new(arrayType) })
+	fuzzJSON(f, arrayTestCases, func() sjsontype { return new(arrayType) })
 }
 
 func BenchmarkArray(b *testing.B) {
-	benchmark(b, arrayTestCases, func() pjsontype { return new(arrayType) })
+	benchmark(b, arrayTestCases, func() sjsontype { return new(arrayType) })
 }

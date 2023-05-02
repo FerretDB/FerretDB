@@ -12,46 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
-	"math"
 	"testing"
 
 	"github.com/AlekSi/pointer"
 )
 
-var doubleTestCases = []testCase{{
-	name: "42.13",
-	v:    pointer.To(doubleType(42.13)),
-	j:    "42.13",
+var timestampTestCases = []testCase{{
+	name: "one",
+	v:    pointer.To(timestampType(1)),
+	j:    `1`,
 }, {
 	name: "zero",
-	v:    pointer.To(doubleType(math.Copysign(0, +1))),
-	j:    "0",
-}, {
-	name: "max float64",
-	v:    pointer.To(doubleType(math.MaxFloat64)),
-	j:    "1.7976931348623157e+308",
-}, {
-	name: "smallest positive float64",
-	v:    pointer.To(doubleType(math.SmallestNonzeroFloat64)),
-	j:    "5e-324",
+	v:    pointer.To(timestampType(0)),
+	j:    `0`,
 }, {
 	name: "EOF",
 	j:    `{`,
 	jErr: `unexpected EOF`,
 }}
 
-func TestDouble(t *testing.T) {
+func TestTimestamp(t *testing.T) {
 	t.Parallel()
-	testJSON(t, doubleTestCases, func() pjsontype { return new(doubleType) })
+	testJSON(t, timestampTestCases, func() sjsontype { return new(timestampType) })
 }
 
-func FuzzDouble(f *testing.F) {
-	fuzzJSON(f, doubleTestCases, func() pjsontype { return new(doubleType) })
+func FuzzTimestamp(f *testing.F) {
+	fuzzJSON(f, timestampTestCases, func() sjsontype { return new(timestampType) })
 }
 
-func BenchmarkDouble(b *testing.B) {
-	benchmark(b, doubleTestCases, func() pjsontype { return new(doubleType) })
+func BenchmarkTimestamp(b *testing.B) {
+	benchmark(b, timestampTestCases, func() sjsontype { return new(timestampType) })
 }

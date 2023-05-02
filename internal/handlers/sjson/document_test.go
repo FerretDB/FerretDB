@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -453,7 +453,7 @@ var (
 			Schema: new(schema),
 		},
 		j:    `{"foo": "bar"}`,
-		jErr: `pjson.documentType.UnmarshalJSON: 0 elements in $k in the schema, 1 in the document`,
+		jErr: `sjson.documentType.UnmarshalJSON: 0 elements in $k in the schema, 1 in the document`,
 	}
 
 	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, eof, nilSchema, emptySchema}
@@ -461,13 +461,13 @@ var (
 
 func TestDocument(t *testing.T) {
 	t.Parallel()
-	testJSON(t, documentTestCases, func() pjsontype { return new(documentType) })
+	testJSON(t, documentTestCases, func() sjsontype { return new(documentType) })
 }
 
 func FuzzDocument(f *testing.F) {
-	fuzzJSON(f, documentTestCases, func() pjsontype { return new(documentType) })
+	fuzzJSON(f, documentTestCases, func() sjsontype { return new(documentType) })
 }
 
 func BenchmarkDocument(b *testing.B) {
-	benchmark(b, documentTestCases, func() pjsontype { return new(documentType) })
+	benchmark(b, documentTestCases, func() sjsontype { return new(documentType) })
 }

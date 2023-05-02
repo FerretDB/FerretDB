@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -36,13 +36,13 @@ var stringTestCases = []testCase{{
 
 func TestString(t *testing.T) {
 	t.Parallel()
-	testJSON(t, stringTestCases, func() pjsontype { return new(stringType) })
+	testJSON(t, stringTestCases, func() sjsontype { return new(stringType) })
 }
 
 func FuzzString(f *testing.F) {
-	fuzzJSON(f, stringTestCases, func() pjsontype { return new(stringType) })
+	fuzzJSON(f, stringTestCases, func() sjsontype { return new(stringType) })
 }
 
 func BenchmarkString(b *testing.B) {
-	benchmark(b, stringTestCases, func() pjsontype { return new(stringType) })
+	benchmark(b, stringTestCases, func() sjsontype { return new(stringType) })
 }

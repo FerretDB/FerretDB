@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
@@ -25,8 +25,8 @@ import (
 // arrayType represents BSON Array type.
 type arrayType types.Array
 
-// pjsontype implements pjsontype interface.
-func (a *arrayType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (a *arrayType) sjsontype() {}
 
 // UnmarshalJSONWithSchema unmarshals the JSON data with the given schema.
 func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error {
@@ -47,11 +47,11 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error 
 	}
 
 	if len(rawMessages) > 0 && schemas == nil {
-		return lazyerrors.Errorf("pjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array")
+		return lazyerrors.Errorf("sjson.arrayType.UnmarshalJSON: array schema is nil for non-empty array")
 	}
 
 	if len(schemas) != len(rawMessages) {
-		return lazyerrors.Errorf("pjson.arrayType.UnmarshalJSON: %d elements in schema, %d in total",
+		return lazyerrors.Errorf("sjson.arrayType.UnmarshalJSON: %d elements in schema, %d in total",
 			len(schemas), len(rawMessages),
 		)
 	}
@@ -72,7 +72,7 @@ func (a *arrayType) UnmarshalJSONWithSchema(data []byte, schemas []*elem) error 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
+// MarshalJSON implements sjsontype interface.
 func (a *arrayType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	buf.WriteByte('[')
@@ -105,5 +105,5 @@ func (a *arrayType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*arrayType)(nil)
+	_ sjsontype = (*arrayType)(nil)
 )
