@@ -65,7 +65,8 @@ For FerretDB Inc. engineers and long-term contributors, besides the guides in [C
    This way, we are similar to community members and could notice similar problems that we could fix for everyone,
    not just for us.
 2. Pull request **title** should be accurate and descriptive as it is used in the generated changelog.
-   It should not mention the issue number but describe the fixed issue instead.
+   It generally should start with imperative verb
+   It should not mention the issue number.
 3. We provide a pull requests template that includes suggestions and readiness checklist.
    Please use it.
 4. It is fine to send several sequential pull requests for one issue to make them easier to review.
