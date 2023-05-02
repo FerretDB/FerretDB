@@ -19,23 +19,26 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetPushdownQuery gets pushdown query for aggregation.
-// When the first two aggregation stages are $match or $sort they are
-// used for pushdown, and returned in order: $match, $sort, otherwise nil is return.
-// If any of those stages repeat in first two stages, it also returns nil.
-func GetPushdownQuery(stagesDocs []any) (*types.Document, *types.Document) {
+// GetPushdownQuery gets pushdown query ($match and $sort) for aggregation.
+//
+// If the first two stages are either $match, $sort, or a combination of them, we can push them down.
+// In this case, we return the first match and sort statements to pushdown.
+// If $match stage is not present, match is returned as nil.
+// If $sort stage is not present, sort is returned as nil.
+func GetPushdownQuery(stagesDocs []any) (match *types.Document, sort *types.Document) {
 	if len(stagesDocs) == 0 {
-		return nil, nil
+		return
 	}
 
-	var match, sort *types.Document
+	stagesToPushdown := []any{stagesDocs[0]}
 
-	for i, doc := range stagesDocs {
-		if i > 2 {
-			break
-		}
+	if len(stagesDocs) > 1 {
+		stagesToPushdown = append(stagesToPushdown, stagesDocs[1])
+	}
 
-		stage, isDoc := doc.(*types.Document)
+	for _, s := range stagesToPushdown {
+		stage, isDoc := s.(*types.Document)
+
 		if !isDoc {
 			return nil, nil
 		}
@@ -46,7 +49,7 @@ func GetPushdownQuery(stagesDocs []any) (*types.Document, *types.Document) {
 			query, isDoc := matchQuery.(*types.Document)
 
 			if !isDoc || match != nil {
-				return nil, nil
+				continue
 			}
 
 			match = query
@@ -56,15 +59,16 @@ func GetPushdownQuery(stagesDocs []any) (*types.Document, *types.Document) {
 			query, isDoc := sortQuery.(*types.Document)
 
 			if !isDoc || sort != nil {
-				return nil, nil
+				continue
 			}
 
 			sort = query
 
 		default:
-			return nil, nil
+			// not $match nor $sort, we shouldn't continue pushdown
+			return
 		}
 	}
 
-	return match, sort
+	return
 }
