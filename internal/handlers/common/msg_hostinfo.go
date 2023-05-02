@@ -37,19 +37,16 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 	var osName, osVersion string
 
+	// try to parse Linux distro name and version, but do not fail if they are not present
 	if runtime.GOOS == "linux" {
 		file, err := os.Open("/etc/os-release")
 		if err != nil {
 			file, err = os.Open("/usr/lib/os-release")
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
 		}
-		defer file.Close()
 
-		osName, osVersion, err = parseOSRelease(file)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		if err == nil {
+			defer file.Close()
+			osName, osVersion, _ = parseOSRelease(file)
 		}
 	}
 
