@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -47,13 +47,13 @@ var regexTestCases = []testCase{{
 
 func TestRegex(t *testing.T) {
 	t.Parallel()
-	testJSON(t, regexTestCases, func() pjsontype { return new(regexType) })
+	testJSON(t, regexTestCases, func() sjsontype { return new(regexType) })
 }
 
 func FuzzRegex(f *testing.F) {
-	fuzzJSON(f, regexTestCases, func() pjsontype { return new(regexType) })
+	fuzzJSON(f, regexTestCases, func() sjsontype { return new(regexType) })
 }
 
 func BenchmarkRegex(b *testing.B) {
-	benchmark(b, regexTestCases, func() pjsontype { return new(regexType) })
+	benchmark(b, regexTestCases, func() sjsontype { return new(regexType) })
 }

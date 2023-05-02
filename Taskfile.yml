@@ -241,8 +241,8 @@ tasks:
       - echo 'Running five functions for {{.BENCHTIME}} each...'
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
+      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
+      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
@@ -262,8 +262,8 @@ tasks:
       - echo 'Running eight functions for {{.FUZZTIME}} each...'
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
+      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
+      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/tigris/tjson/
       - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZTIME}} ./internal/wire/
