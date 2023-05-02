@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -9,7 +23,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v52/github"
-	"github.com/sethvargo/go-githubactions"
 	"golang.org/x/oauth2"
 )
 
@@ -30,13 +43,14 @@ func main() {
 	orgName := "FerretDB"
 	daysBack := 90
 	pageSize := 100
+	pageIndex := 1
 	var versions []string
-	for i := 1; i < 100; i++ {
-		listOption := github.ListOptions{Page: i, PerPage: pageSize}
+	for {
+		listOption := github.ListOptions{Page: pageIndex, PerPage: pageSize}
 		packageListOption := github.PackageListOptions{ListOptions: listOption}
 		packages, _, err := client.Organizations.PackageGetAllVersions(ctx, orgName, packageType, packageName, &packageListOption)
 		if err != nil {
-			log.Printf("Failed to get versions for page %d", i)
+			log.Printf("Failed to get versions for page %d", pageIndex)
 		}
 		for _, v := range packages {
 			if time.Now().After(v.UpdatedAt.Add(time.Duration(daysBack) * 24 * time.Hour)) {
@@ -47,14 +61,12 @@ func main() {
 			}
 		}
 		if len(packages) < pageSize {
-			log.Printf("Come to the last page (page %d)", i)
+			log.Printf("Come to the last page (page %d)", pageIndex)
 			break
 		}
-
+		pageIndex++
 	}
 	log.Println(versions)
 	staleVersions := strings.Join(versions, ", ")
 	log.Printf("Setting STALE_VERSIONS to %q.", staleVersions)
-	githubactions.SetEnv("STALE_VERSIONS", staleVersions)
-
 }
