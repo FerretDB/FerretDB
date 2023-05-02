@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -96,47 +95,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}))
 
 	return &reply, nil
-}
-
-// prepareDeleteParams extracts query filter and limit from delete document.
-func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
-	var err error
-
-	if err = common.Unimplemented(deleteDoc, "collation"); err != nil {
-		return nil, false, err
-	}
-
-	common.Ignored(deleteDoc, h.L, "hint")
-
-	// get filter from document
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
-		return nil, false, err
-	}
-
-	common.Ignored(filter, h.L, "$comment")
-
-	// TODO use `GetLimitParam`
-	// https://github.com/FerretDB/FerretDB/issues/2255
-	l, err := deleteDoc.Get("limit")
-	if err != nil {
-		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
-			"BSON field 'delete.deletes.limit' is missing but a required field",
-			"limit",
-		)
-	}
-
-	var limit int64
-	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFailedToParse,
-			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
-			"limit",
-		)
-	}
-
-	return filter, limit == 1, nil
 }
 
 // execDeleteParams contains parameters for execDelete function.
