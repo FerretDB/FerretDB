@@ -225,32 +225,42 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			projected.Set(key, value)
 
 		case bool: // field: bool
-			// process top level fields
-			if path.Len() == 1 {
-				if inclusion {
-					if docWithoutID.Has(key) {
-						projected.Set(key, must.NotFail(docWithoutID.Get(key)))
+			if !inclusion {
+				// exclusion projection removes the path.
+				projected.RemoveByPath(path)
+
+				continue
+			}
+
+			// inclusion projection with existing path sets the value.
+			v, err := docWithoutID.GetByPath(path)
+			if err == nil {
+				projected.SetByPath(path, v)
+
+				continue
+			}
+
+			// inclusion projection with non-existent path with
+			// document or array along the path sets empty document or array.
+			for {
+				v, err = docWithoutID.GetByPath(path)
+				if err != nil {
+					if path.Len() > 1 {
+						path = path.TrimSuffix()
+						continue
 					}
-
-					continue
 				}
-
-				projected.Remove(key)
 
 				break
 			}
 
-			// process dot notation
-			if inclusion {
-				v, err := docWithoutID.Get(path.Prefix())
-				if err == nil {
-					if _, ok := v.(*types.Document); ok {
-						projected.Set(path.Prefix(), new(types.Document))
-					}
+			if v != nil {
+				if _, ok := v.(*types.Document); ok {
+					projected.SetByPath(path, new(types.Document))
+				}
 
-					if _, ok := v.(*types.Array); ok {
-						projected.Set(path.Prefix(), new(types.Array))
-					}
+				if _, ok := v.(*types.Array); ok {
+					projected.SetByPath(path, new(types.Array))
 				}
 			}
 		default:
