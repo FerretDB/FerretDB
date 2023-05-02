@@ -1,5 +1,5 @@
 
-name: clear old packages
+name: clean old packages
 on:
   workflow_dispatch:
   schedule:
