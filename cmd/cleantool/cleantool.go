@@ -26,15 +26,17 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// if the most recent update time of the package was 90 days ago, then mark it as
+// stale.
 func isPackageToBeClean(p *github.PackageVersion) bool {
 	daysBack := 90
 	toBeClean := false
 
 	if time.Now().After(p.UpdatedAt.Add(time.Duration(daysBack) * 24 * time.Hour)) {
-		log.Printf("Stale version: %v (%v, %s)", p.GetID(), p.GetVersion(), p.UpdatedAt)
+		log.Printf("Stale version id: %v , recent update was at %s", p.GetID(), p.UpdatedAt)
 		toBeClean = true
 	} else {
-		log.Printf("skip version: %v (%v, %s)", p.GetID(), p.GetVersion(), p.UpdatedAt)
+		log.Printf("Skip version id: %v , recent update was at %s", p.GetID(), p.UpdatedAt)
 	}
 
 	return toBeClean
@@ -78,5 +80,5 @@ func main() {
 	}
 	log.Println(versions)
 	staleVersions := strings.Join(versions, ", ")
-	log.Printf("STALE_VERSIONS is: %q.", staleVersions)
+	log.Printf("Found %d stale versions: %v", len(versions), staleVersions)
 }
