@@ -16,6 +16,7 @@ package common
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"strconv"
 	"strings"
@@ -38,13 +39,11 @@ func parseOSRelease(r io.Reader) (string, string, error) {
 		value := strings.Join(str[1:], "")
 		unquotedValue, err := strconv.Unquote(value)
 
-		switch err {
-		case nil:
+		if errors.Is(err, nil) {
 			configParams[str[0]] = unquotedValue
-		// when value does not contain quotes
-		case strconv.ErrSyntax:
+		} else if errors.Is(err, strconv.ErrSyntax) {
 			configParams[str[0]] = value
-		default:
+		} else {
 			return "", "", lazyerrors.Error(err)
 		}
 	}
