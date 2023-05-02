@@ -43,9 +43,9 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		if err != nil {
 			file, err = os.Open("/usr/lib/os-release")
 		}
-		defer file.Close()
 
 		if err == nil {
+			defer file.Close()
 			osName, osVersion, _ = parseOSRelease(file)
 		}
 	}
