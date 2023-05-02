@@ -3,7 +3,7 @@
 name: Enhancement
 description: Some feature could work better.
 assignees: ["ferretdb-bot"]
-labels: ["code/enhancement"]
+labels: ["code/enhancement", "not ready"]
 body:
   - type: markdown
     attributes:
