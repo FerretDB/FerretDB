@@ -78,7 +78,6 @@ func main() {
 		}
 		pageIndex++
 	}
-	log.Println(versions)
 	staleVersions := strings.Join(versions, ", ")
 	log.Printf("Found %d stale versions: %v", len(versions), staleVersions)
 }
