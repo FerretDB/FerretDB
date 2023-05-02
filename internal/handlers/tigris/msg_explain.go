@@ -21,10 +21,8 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -43,50 +41,15 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	db, err := common.GetRequiredParam[string](document, "$db")
+	params, err := common.GetExplainParams(document, h.L)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	filter := params.Filter
 
-	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	filter, err := common.GetOptionalParam[*types.Document](explain, "filter", nil)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if command.Command() == "aggregate" {
-		var pipeline *types.Array
-		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
-
-		if err != nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrMissingField,
-				"BSON field 'aggregate.pipeline' is missing but a required field",
-				document.Command(),
-			)
-		}
-
-		stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-		for _, d := range stagesDocs {
-			if _, ok := d.(*types.Document); !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
-					"Each element of the 'pipeline' array must be an object",
-					document.Command(),
-				)
-			}
-		}
-
-		filter = stages.GetPushdownQuery(stagesDocs)
+	if params.Aggregate {
+		filter = stages.GetPushdownQuery(params.StagesDocs)
 	}
 
 	if h.DisableFilterPushdown {
@@ -117,8 +80,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	cmd := command.DeepCopy()
-	cmd.Set("$db", db)
+	cmd := params.Command.DeepCopy()
+	cmd.Set("$db", params.DB)
 
 	var reply wire.OpMsg
 
