@@ -26,6 +26,20 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func isPackageToBeClean(p *github.PackageVersion) bool {
+	daysBack := 90
+	toBeClean := false
+
+	if time.Now().After(p.UpdatedAt.Add(time.Duration(daysBack) * 24 * time.Hour)) {
+		log.Printf("Stale version: %v (%v, %s)", p.GetID(), p.GetVersion(), p.UpdatedAt)
+		toBeClean = true
+	} else {
+		log.Printf("skip version: %v (%v, %s)", p.GetID(), p.GetVersion(), p.UpdatedAt)
+	}
+
+	return toBeClean
+}
+
 func main() {
 	ctx := context.Background()
 	tokenName := "ROBOT_TOKEN"
@@ -41,7 +55,6 @@ func main() {
 	packageType := "container"
 	packageName := "ferretdb-dev"
 	orgName := "FerretDB"
-	daysBack := 90
 	pageSize := 100
 	pageIndex := 1
 	var versions []string
@@ -53,11 +66,8 @@ func main() {
 			log.Printf("Failed to get versions for page %d", pageIndex)
 		}
 		for _, v := range packages {
-			if time.Now().After(v.UpdatedAt.Add(time.Duration(daysBack) * 24 * time.Hour)) {
-				log.Printf("Stale version: %v (%v, %s)", v.GetID(), v.GetVersion(), v.UpdatedAt)
-				versions = append(versions, fmt.Sprintf("%v", (v.GetID())))
-			} else {
-				log.Printf("skip version: %v (%v, %s)", v.GetID(), v.GetVersion(), v.UpdatedAt)
+			if isPackageToBeClean(v) {
+				versions = append(versions, fmt.Sprintf("%v", v.GetID()))
 			}
 		}
 		if len(packages) < pageSize {
@@ -68,5 +78,5 @@ func main() {
 	}
 	log.Println(versions)
 	staleVersions := strings.Join(versions, ", ")
-	log.Printf("Setting STALE_VERSIONS to %q.", staleVersions)
+	log.Printf("STALE_VERSIONS is: %q.", staleVersions)
 }
