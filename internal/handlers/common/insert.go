@@ -25,9 +25,9 @@ import (
 
 // InsertParams represents the parameters for an insert command.
 type InsertParams struct {
+	Docs           *types.Array
 	DB, Collection string
 	Ordered        bool
-	Docs           *types.Array
 }
 
 // GetInsertParams returns the parameters for an insert command.
@@ -37,6 +37,7 @@ func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, er
 	Ignored(document, l, "writeConcern", "bypassDocumentValidation", "comment")
 
 	var db, collection string
+
 	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}

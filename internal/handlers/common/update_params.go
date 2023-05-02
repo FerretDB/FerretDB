@@ -33,11 +33,11 @@ type UpdatesParams struct {
 
 // UpdateParams represents a single update operation parameters.
 type UpdateParams struct {
-	Comment string
-	Upsert  bool
-	Multi   bool
 	Filter  *types.Document
 	Update  *types.Document
+	Comment string
+	Multi   bool
+	Upsert  bool
 }
 
 // GetUpdateParams returns parameters for update command.
@@ -83,12 +83,7 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, e
 			return nil, err
 		}
 
-		unimplementedFields := []string{
-			"c",
-			"collation",
-			"arrayFilters",
-		}
-		if err := Unimplemented(update, unimplementedFields...); err != nil {
+		if err = Unimplemented(update, "c", "collation", "arrayFilters"); err != nil {
 			return nil, err
 		}
 
@@ -99,6 +94,7 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, e
 		if q, err = GetOptionalParam(update, "q", q); err != nil {
 			return nil, err
 		}
+
 		if u, err = GetOptionalParam(update, "u", u); err != nil {
 			// TODO check if u is an array of aggregation pipeline stages
 			return nil, err
@@ -139,7 +135,6 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, e
 			Multi:   multi,
 			Comment: comment,
 		})
-
 	}
 
 	return &UpdatesParams{
