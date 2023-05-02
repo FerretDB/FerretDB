@@ -33,6 +33,8 @@ import (
 
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
+// To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
+// TODO findAndModify returns CommandError https://github.com/FerretDB/FerretDB/issues/2440
 func UpdateDocument(doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
@@ -73,16 +75,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$unset":
-			unsetDoc, ok := updateV.(*types.Document)
-			if !ok {
-				return false, commonerrors.NewCommandErrorMsg(
-					commonerrors.ErrFailedToParse,
-					fmt.Sprintf("Modifiers operate on fields but we found type string instead. "+
-						"For example: {$mod: {<field>: ...}} not {$unset: \"%s\"}",
-						updateV,
-					),
-				)
-			}
+			// updateV is document, checked in ValidateUpdateOperators.
+			unsetDoc := updateV.(*types.Document)
 
 			for _, key := range unsetDoc.Keys() {
 				var path types.Path
@@ -219,16 +213,8 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 			}
 		}
 
-		path, err := types.NewPathFromString(setKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					setKey,
-				),
-			)
-		}
+		// setKey has valid path, checked in ValidateUpdateOperators.
+		path := must.NotFail(types.NewPathFromString(setKey))
 
 		if doc.HasByPath(path) {
 			docValue := must.NotFail(doc.GetByPath(path))
@@ -331,7 +317,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 // processIncFieldExpression changes document according to $inc operator.
 // If the document was changed it returns true.
 func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
-	// expecting here a document since all checks were made in ValidateUpdateOperators func
+	// updateV is document, checked in ValidateUpdateOperators.
 	incDoc := updateV.(*types.Document)
 
 	var changed bool
@@ -339,19 +325,10 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	for _, incKey := range incDoc.Keys() {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
-		var path types.Path
 		var err error
 
-		path, err = types.NewPathFromString(incKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					incKey,
-				),
-			)
-		}
+		// incKey has valid path, checked in ValidateUpdateOperators.
+		path := must.NotFail(types.NewPathFromString(incKey))
 
 		if !doc.HasByPath(path) {
 			// ensure incValue is a valid number type.
@@ -407,8 +384,8 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 		}
 
-		switch err {
-		case errUnexpectedLeftOpType:
+		switch {
+		case errors.Is(err, errUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -417,7 +394,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					incValue,
 				),
 			)
-		case errUnexpectedRightOpType:
+		case errors.Is(err, errUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -433,7 +410,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errLongExceeded:
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -442,7 +419,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errIntExceeded:
+		case errors.Is(err, errIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -452,7 +429,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				),
 			)
 		default:
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 	}
 
@@ -480,18 +457,8 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		var path types.Path
-
-		path, err = types.NewPathFromString(maxKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					maxKey,
-				),
-			)
-		}
+		// maxKey has valid path, checked in ValidateUpdateOperators.
+		path := must.NotFail(types.NewPathFromString(maxKey))
 
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, maxVal)
@@ -558,18 +525,8 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		var path types.Path
-
-		path, err = types.NewPathFromString(minKey)
-		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf(
-					"The update path '%s' contains an empty field name, which is not allowed.",
-					minKey,
-				),
-			)
-		}
+		// minKey has valid path, checked in ValidateUpdateOperators.
+		path := must.NotFail(types.NewPathFromString(minKey))
 
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, minVal)
@@ -734,7 +691,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceeded):
+		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -802,97 +759,110 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 }
 
 // ValidateUpdateOperators validates update statement.
-func ValidateUpdateOperators(update *types.Document) error {
+func ValidateUpdateOperators(command string, update *types.Document) error {
 	var err error
-	if _, err = HasSupportedUpdateModifiers(update); err != nil {
+	if _, err = HasSupportedUpdateModifiers(command, update); err != nil {
 		return err
 	}
 
-	currentDate, err := extractValueFromUpdateOperator("$currentDate", update)
+	currentDate, err := extractValueFromUpdateOperator(command, "$currentDate", update)
 	if err != nil {
 		return err
 	}
 
-	inc, err := extractValueFromUpdateOperator("$inc", update)
+	inc, err := extractValueFromUpdateOperator(command, "$inc", update)
 	if err != nil {
 		return err
 	}
 
-	max, err := extractValueFromUpdateOperator("$max", update)
+	max, err := extractValueFromUpdateOperator(command, "$max", update)
 	if err != nil {
 		return err
 	}
 
-	min, err := extractValueFromUpdateOperator("$min", update)
+	min, err := extractValueFromUpdateOperator(command, "$min", update)
 	if err != nil {
 		return err
 	}
 
-	mul, err := extractValueFromUpdateOperator("$mul", update)
+	mul, err := extractValueFromUpdateOperator(command, "$mul", update)
 	if err != nil {
 		return err
 	}
 
-	set, err := extractValueFromUpdateOperator("$set", update)
+	set, err := extractValueFromUpdateOperator(command, "$set", update)
 	if err != nil {
 		return err
 	}
 
-	unset, err := extractValueFromUpdateOperator("$unset", update)
+	unset, err := extractValueFromUpdateOperator(command, "$unset", update)
 	if err != nil {
 		return err
 	}
 
-	setOnInsert, err := extractValueFromUpdateOperator("$setOnInsert", update)
+	setOnInsert, err := extractValueFromUpdateOperator(command, "$setOnInsert", update)
 	if err != nil {
 		return err
 	}
 
-	_, err = extractValueFromUpdateOperator("$rename", update)
+	_, err = extractValueFromUpdateOperator(command, "$rename", update)
 	if err != nil {
 		return err
 	}
 
-	pop, err := extractValueFromUpdateOperator("$pop", update)
+	pop, err := extractValueFromUpdateOperator(command, "$pop", update)
 	if err != nil {
 		return err
 	}
 
-	push, err := extractValueFromUpdateOperator("$push", update)
+	push, err := extractValueFromUpdateOperator(command, "$push", update)
 	if err != nil {
 		return err
 	}
 
-	addToSet, err := extractValueFromUpdateOperator("$addToSet", update)
+	addToSet, err := extractValueFromUpdateOperator(command, "$addToSet", update)
 	if err != nil {
 		return err
 	}
 
-	pullAll, err := extractValueFromUpdateOperator("$pullAll", update)
+	pullAll, err := extractValueFromUpdateOperator(command, "$pullAll", update)
 	if err != nil {
 		return err
 	}
 
-	pull, err := extractValueFromUpdateOperator("$pull", update)
+	pull, err := extractValueFromUpdateOperator(command, "$pull", update)
 	if err != nil {
 		return err
 	}
 
-	if err = checkConflictingChanges(set, inc); err != nil {
-		return err
-	}
-
-	if err = checkConflictingOperators(
-		mul, currentDate, inc, min, max, set, setOnInsert, unset, pop, push, addToSet, pullAll, pull,
+	if err = validateOperatorKeys(
+		command,
+		addToSet,
+		currentDate,
+		inc,
+		min,
+		max,
+		mul,
+		pop,
+		pull,
+		pullAll,
+		push,
+		set,
+		setOnInsert,
+		unset,
 	); err != nil {
 		return err
 	}
 
-	if err = validateCurrentDateExpression(update); err != nil {
+	if err = validateCurrentDateExpression(command, update); err != nil {
 		return err
 	}
 
-	if err = validateRenameExpression(update); err != nil {
+	if err = validateRenameExpression(command, update); err != nil {
+		return err
+	}
+
+	if err = validateSetExpression(command, update); err != nil {
 		return err
 	}
 
@@ -902,7 +872,7 @@ func ValidateUpdateOperators(update *types.Document) error {
 // HasSupportedUpdateModifiers checks that update document contains supported update operators.
 // If no update operators are found it returns false.
 // If update document contains unsupported update operators it returns an error.
-func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
+func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, error) {
 	for _, updateOp := range update.Keys() {
 		switch updateOp {
 		case // field update operators:
@@ -916,12 +886,13 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 			return true, nil
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
 							"update specified as an array", updateOp,
 					),
+					command,
 				)
 			}
 
@@ -932,47 +903,48 @@ func HasSupportedUpdateModifiers(update *types.Document) (bool, error) {
 	return false, nil
 }
 
-// checkConflictingOperators checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingOperators(a *types.Document, bs ...*types.Document) error {
-	if a == nil {
-		return nil
+// newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
+func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
+	if command == "findAndModify" {
+		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
 	}
 
-	for _, key := range a.Keys() {
-		for _, b := range bs {
-			if b != nil && b.Has(key) {
-				return commonerrors.NewWriteErrorMsg(
+	return commonerrors.NewWriteErrorMsg(code, msg)
+}
+
+// validateOperatorKeys returns error if any key contains empty path or
+// the same path prefix exists in other key or other document.
+func validateOperatorKeys(command string, docs ...*types.Document) error {
+	seen := map[string]struct{}{}
+
+	for _, doc := range docs {
+		for _, key := range doc.Keys() {
+			path, err := types.NewPathFromString(key)
+			if err != nil {
+				return newUpdateError(
+					commonerrors.ErrEmptyName,
+					fmt.Sprintf(
+						"The update path '%s' contains an empty field name, which is not allowed.",
+						key,
+					),
+					command,
+				)
+			}
+
+			if _, ok := seen[path.Prefix()]; ok {
+				return newUpdateError(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
 						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
 					),
+					command,
 				)
 			}
+
+			seen[path.Prefix()] = struct{}{}
 		}
 	}
 
-	return nil
-}
-
-// checkConflictingChanges checks if there are the same keys in these documents and returns an error, if any.
-func checkConflictingChanges(a, b *types.Document) error {
-	if a == nil {
-		return nil
-	}
-	if b == nil {
-		return nil
-	}
-
-	for _, key := range a.Keys() {
-		if b.Has(key) {
-			return commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrConflictingUpdateOperators,
-				fmt.Sprintf(
-					"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
-				),
-			)
-		}
-	}
 	return nil
 }
 
@@ -990,7 +962,7 @@ func checkConflictingChanges(a, b *types.Document) error {
 //	bson.D{{"v", nil}}.
 //
 // It also checks for path collisions and returns the error if there's any.
-func extractValueFromUpdateOperator(op string, update *types.Document) (*types.Document, error) {
+func extractValueFromUpdateOperator(command, op string, update *types.Document) (*types.Document, error) {
 	if !update.Has(op) {
 		return nil, nil
 	}
@@ -998,40 +970,64 @@ func extractValueFromUpdateOperator(op string, update *types.Document) (*types.D
 
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
-		return nil, commonerrors.NewWriteErrorMsg(
+		return nil, newUpdateError(
 			commonerrors.ErrFailedToParse,
-			"Modifiers operate on fields but we found another type instead",
+			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
+				AliasFromType(updateExpression),
+				op,
+				types.FormatAnyValue(updateExpression),
+			),
+			command,
 		)
 	}
 
 	duplicate, ok := doc.FindDuplicateKey()
 	if ok {
-		return nil, commonerrors.NewWriteErrorMsg(
+		return nil, newUpdateError(
 			commonerrors.ErrConflictingUpdateOperators,
 			fmt.Sprintf(
 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
 			),
+			command,
 		)
 	}
 
 	return doc, nil
 }
 
+// validateSetExpression validates $set expression input.
+func validateSetExpression(command string, update *types.Document) error {
+	if !update.Has("$set") {
+		return nil
+	}
+
+	updateExpression := must.NotFail(update.Get("$set"))
+
+	// updateExpression is document, checked in ValidateUpdateOperators.
+	doc := updateExpression.(*types.Document)
+
+	if doc.Has("_id") {
+		return newUpdateError(
+			commonerrors.ErrImmutableField,
+			"Performing an update on the path '_id' would modify the immutable field '_id'",
+			command,
+		)
+	}
+
+	return nil
+}
+
 // validateRenameExpression validates $rename input on correctness.
-func validateRenameExpression(update *types.Document) error {
+func validateRenameExpression(command string, update *types.Document) error {
 	if !update.Has("$rename") {
 		return nil
 	}
 
 	updateExpression := must.NotFail(update.Get("$rename"))
 
-	doc, ok := updateExpression.(*types.Document)
-	if !ok {
-		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrFailedToParse,
-			"Modifiers operate on fields but we found another type instead",
-		)
-	}
+	// updateExpression is document, checked in ValidateUpdateOperators.
+	doc := updateExpression.(*types.Document)
 
 	iter := doc.Iterator()
 	defer iter.Close()
@@ -1050,35 +1046,39 @@ func validateRenameExpression(update *types.Document) error {
 
 		var vStr string
 
-		vStr, ok = v.(string)
+		vStr, ok := v.(string)
 		if !ok {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, vStr),
+				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, v),
+				command,
 			)
 		}
 
 		// disallow fields where key is equal to the target
 		if k == vStr {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf("The source and target field for $rename must differ: %s: %v", k, vStr),
+				fmt.Sprintf(`The source and target field for $rename must differ: %s: "%[1]s"`, k, vStr),
+				command,
 			)
 		}
 
 		if _, ok = keys[k]; ok {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrConflictingUpdateOperators,
-				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", k, k),
+				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", k, k),
+				command,
 			)
 		}
 
 		keys[k] = struct{}{}
 
 		if _, ok = keys[vStr]; ok {
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrConflictingUpdateOperators,
-				fmt.Sprintf("Updating the '%s' would create a conflict at '%s'", vStr, vStr),
+				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", vStr, vStr),
+				command,
 			)
 		}
 
@@ -1089,19 +1089,14 @@ func validateRenameExpression(update *types.Document) error {
 }
 
 // validateCurrentDateExpression validates $currentDate input on correctness.
-func validateCurrentDateExpression(update *types.Document) error {
+func validateCurrentDateExpression(command string, update *types.Document) error {
 	currentDateTopField, err := update.Get("$currentDate")
 	if err != nil {
 		return nil // it is ok: key is absent
 	}
 
-	currentDateExpression, ok := currentDateTopField.(*types.Document)
-	if !ok {
-		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrFailedToParse,
-			"Modifiers operate on fields but we found another type instead",
-		)
-	}
+	// currentDateExpression is document, checked in ValidateUpdateOperators.
+	currentDateExpression := currentDateTopField.(*types.Document)
 
 	for _, field := range currentDateExpression.Keys() {
 		setValue := must.NotFail(currentDateExpression.Get(field))
@@ -1110,9 +1105,10 @@ func validateCurrentDateExpression(update *types.Document) error {
 		case *types.Document:
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
-					return commonerrors.NewWriteErrorMsg(
+					return newUpdateError(
 						commonerrors.ErrBadValue,
 						fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+						command,
 					)
 				}
 			}
@@ -1122,16 +1118,12 @@ func validateCurrentDateExpression(update *types.Document) error {
 			}
 
 			currentDateTypeString, ok := currentDateType.(string)
-			if !ok {
-				return commonerrors.NewWriteErrorMsg(
+			if !ok || !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
+				return newUpdateError(
 					commonerrors.ErrBadValue,
-					"The '$type' string field is required to be 'date' or 'timestamp'",
-				)
-			}
-			if !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
-				return commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrBadValue,
-					"The '$type' string field is required to be 'date' or 'timestamp'",
+					"The '$type' string field is required to be 'date' or 'timestamp': "+
+						"{$currentDate: {field : {$type: 'date'}}}",
+					command,
 				)
 			}
 
@@ -1139,11 +1131,12 @@ func validateCurrentDateExpression(update *types.Document) error {
 			continue
 
 		default:
-			return commonerrors.NewWriteErrorMsg(
+			return newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
 					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
 				),
+				command,
 			)
 		}
 	}

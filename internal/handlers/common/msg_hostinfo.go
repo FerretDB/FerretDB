@@ -40,7 +40,10 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	if runtime.GOOS == "linux" {
 		file, err := os.Open("/etc/os-release")
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			file, err = os.Open("/etc/arch-release")
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 		defer file.Close()
 

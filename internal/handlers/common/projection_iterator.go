@@ -15,27 +15,37 @@
 package common
 
 import (
+	"errors"
+
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // ProjectionIterator returns an iterator that projects documents returned by the underlying iterator.
+// It will be added to the given closer.
 //
 // Next method returns the next projected document.
 //
 // Close method closes the underlying iterator.
-// For that reason, there is no need to track both iterators.
-func ProjectionIterator(iter types.DocumentsIterator, projection *types.Document) (types.DocumentsIterator, error) {
-	inclusion, err := isProjectionInclusion(projection)
+func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	projectionValidated, inclusion, err := ValidateProjection(projection)
+	if errors.Is(err, errProjectionEmpty) {
+		return iter, nil
+	}
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &projectionIterator{
+	res := &projectionIterator{
 		iter:       iter,
-		projection: projection,
+		projection: projectionValidated,
 		inclusion:  inclusion,
-	}, nil
+	}
+	closer.Add(res)
+
+	return res, nil
 }
 
 // projectionIterator is returned by ProjectionIterator.
@@ -54,12 +64,12 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	err = projectDocument(iter.inclusion, doc, iter.projection)
+	projected, err := ProjectDocument(doc, iter.projection, iter.inclusion)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	return unused, doc, nil
+	return unused, projected, nil
 }
 
 // Close implements iterator.Interface. See ProjectionIterator for details.

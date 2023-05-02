@@ -5,11 +5,11 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 30m
+  INTEGRATIONTIME: 35m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
-  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
   BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
   SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
@@ -36,6 +36,13 @@ tasks:
       - go mod verify
       - go generate -x
 
+  init-tools-golangci:
+    dir: tools/golangci
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - go generate -x
+
   init-integration:
     dir: integration
     cmds:
@@ -44,7 +51,7 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [gen-version, init-tools, init-integration]
+    deps: [gen-version, init-tools, init-tools-golangci, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
@@ -145,6 +152,16 @@ tasks:
     cmds:
       - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
+      - task: fmt-yaml
+
+  fmt-yaml:
+    desc: "Format yaml"
+    cmds:
+      - >
+        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o+w {} \;{{end}}
+      - docker compose run --rm -v $(pwd):/work prettier --write --parser=yaml "./**/*.yml"
+      - >
+        {{if eq OS "linux"}}find . -name "*.yml" -exec chmod o-w {} \;{{end}}
 
   test:
     desc: "Run all unit and integration tests in parallel"
@@ -217,15 +234,15 @@ tasks:
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
 
-  bench-short:
-    desc: "Benchmark for about 25 seconds (with default BENCHTIME)"
+  bench-unit-short:
+    desc: "Benchmark internal package for about 25 seconds (with default BENCHTIME)"
     cmds:
       - go test -list='Benchmark.*' ./...
       - echo 'Running five functions for {{.BENCHTIME}} each...'
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
+      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
+      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
@@ -245,8 +262,8 @@ tasks:
       - echo 'Running eight functions for {{.FUZZTIME}} each...'
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
+      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
+      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/tigris/tjson/
       - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZTIME}} ./internal/wire/
@@ -552,6 +569,7 @@ tasks:
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
+      - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 
@@ -573,3 +591,12 @@ tasks:
     desc: "Start blog development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-blog start --host=0.0.0.0 --port=3001
+
+  blog-cloudflare-preview:
+    cmds:
+      # for debugging
+      - >
+        docker compose run --rm
+        --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
+        wrangler
+      - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build

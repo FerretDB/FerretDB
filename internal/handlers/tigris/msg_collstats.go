@@ -49,12 +49,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO Add proper support for scale: https://github.com/FerretDB/FerretDB/issues/1346
-	var scale int32
+	scale := int32(1)
 
-	scale, err = common.GetOptionalPositiveNumber(document, "scale")
-	if err != nil || scale == 0 {
-		scale = 1
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
+			return nil, err
+		}
 	}
 
 	querier := dbPool.Driver.UseDatabase(db)
@@ -64,18 +65,29 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	pairs := []any{
+		"ns", db + "." + collection,
+		"size", int32(stats.Size) / scale,
+		"count", stats.NumObjects,
+	}
+
+	// If there are objects in the collection, calculate the average object size.
+	if stats.NumObjects > 0 {
+		pairs = append(pairs, "avgObjSize", int32(stats.Size)/stats.NumObjects)
+	}
+
+	pairs = append(pairs,
+		"storageSize", int32(stats.Size)/scale,
+		"nindexes", int32(0),
+		"totalIndexSize", int32(0),
+		"totalSize", int32(stats.Size)/scale,
+		"scaleFactor", scale,
+		"ok", float64(1),
+	)
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ns", db+"."+collection,
-			"count", stats.NumObjects,
-			"size", int32(stats.Size)/scale,
-			"storageSize", int32(stats.Size)/scale,
-			"totalIndexSize", int32(0),
-			"totalSize", int32(stats.Size)/scale,
-			"scaleFactor", scale,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

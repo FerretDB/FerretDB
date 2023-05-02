@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -24,7 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -91,11 +90,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	stages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]aggregations.Stage, 0, len(stages))
-	stagesStats := make([]aggregations.Stage, 0, len(stages))
+	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
+	stagesDocuments := make([]stages.Stage, 0, len(aggregationStages))
+	stagesStats := make([]stages.Stage, 0, len(aggregationStages))
 
-	for i, d := range stages {
+	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -105,17 +104,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		var s aggregations.Stage
+		var s stages.Stage
 
-		if s, err = aggregations.NewStage(d); err != nil {
+		if s, err = stages.NewStage(d); err != nil {
 			return nil, err
 		}
 
 		switch s.Type() {
-		case aggregations.StageTypeDocuments:
+		case stages.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
 			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case aggregations.StageTypeStats:
+		case stages.StageTypeStats:
 			if i > 0 {
 				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -140,13 +139,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     aggregations.GetPushdownQuery(stages),
+			Filter:     stages.GetPushdownQuery(aggregationStages),
 		}
 
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
-		statistics := aggregations.GetStatistics(stagesStats)
+		statistics := stages.GetStatistics(stagesStats)
 
 		resDocs, err = processStagesStats(ctx, &stagesStatsParams{
 			dbPool, db, collection, statistics, stagesStats,
@@ -182,7 +181,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 type stagesDocumentsParams struct {
 	dbPool *pgdb.Pool
 	qp     *pgdb.QueryParams
-	stages []aggregations.Stage
+	stages []stages.Stage
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
@@ -190,23 +189,25 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 	var docs []*types.Document
 
 	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.QueryDocuments(ctx, tx, p.qp)
-		if getErr != nil {
-			return getErr
+		var err error
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, p.qp)
+		if err != nil {
+			return err
 		}
 
-		var err error
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		for _, s := range p.stages {
+			if iter, err = s.Process(ctx, iter, closer); err != nil {
+				return err
+			}
+		}
+
 		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 		return err
 	}); err != nil {
 		return nil, err
-	}
-
-	for _, s := range p.stages {
-		var err error
-		if docs, err = s.Process(ctx, docs); err != nil {
-			return nil, err
-		}
 	}
 
 	return docs, nil
@@ -217,15 +218,15 @@ type stagesStatsParams struct {
 	dbPool     *pgdb.Pool
 	db         string
 	collection string
-	statistics map[aggregations.Statistic]struct{}
-	stages     []aggregations.Stage
+	statistics map[stages.Statistic]struct{}
+	stages     []stages.Stage
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
 func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Document, error) {
 	// Clarify what needs to be retrieved from the database and retrieve it.
-	_, hasCount := p.statistics[aggregations.StatisticCount]
-	_, hasStorage := p.statistics[aggregations.StatisticStorage]
+	_, hasCount := p.statistics[stages.StatisticCount]
+	_, hasStorage := p.statistics[stages.StatisticStorage]
 
 	var host string
 	var err error
@@ -241,45 +242,51 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var dbStats *pgdb.DBStats
+	var collStats *pgdb.CollStats
 
 	if hasCount || hasStorage {
-		dbStats, err = p.dbPool.Stats(ctx, p.db, p.collection)
+		if err = p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+			var exists bool
 
-		switch {
-		case err == nil:
-		// do nothing
-		case errors.Is(err, pgdb.ErrTableNotExist):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNamespaceNotFound,
-				fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
-				"aggregate",
-			)
-		default:
-			return nil, err
+			if exists, err = pgdb.CollectionExists(ctx, tx, p.db, p.collection); err != nil {
+				return err
+			}
+
+			if !exists {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrNamespaceNotFound,
+					fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
+					"aggregate",
+				)
+			}
+
+			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
+			return err
+		}); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
 	if hasStorage {
 		var avgObjSize int32
-		if dbStats.CountRows > 0 {
-			avgObjSize = int32(dbStats.SizeRelation) / dbStats.CountRows
+		if collStats.CountObjects > 0 {
+			avgObjSize = int32(collStats.SizeCollection) / collStats.CountObjects
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(dbStats.SizeTotal),
-				"count", dbStats.CountRows,
+				"size", int32(collStats.SizeTotal),
+				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(dbStats.SizeRelation),
+				"storageSize", int32(collStats.SizeCollection),
 				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", dbStats.CountIndexes,
+				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", int32(dbStats.SizeIndexes),
-				"totalSize", int32(dbStats.SizeTotal),
+				"totalIndexSize", int32(collStats.SizeIndexes),
+				"totalSize", int32(collStats.SizeTotal),
 				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
 		)
@@ -287,18 +294,21 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 	if hasCount {
 		doc.Set(
-			"count", dbStats.CountRows,
+			"count", collStats.CountObjects,
 		)
 	}
 
 	// Process the retrieved statistics through the stages.
-	var res []*types.Document
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
+
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
 	for _, s := range p.stages {
-		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
 
-	return res, nil
+	return iterator.ConsumeValues(iter)
 }
