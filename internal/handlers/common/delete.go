@@ -151,7 +151,7 @@ func prepareDeleteParams(deleteDoc *types.Document, l *zap.Logger) (*types.Docum
 	if limit, err = GetWholeNumberParam(limitValue); err != nil || limit < 0 || limit > 1 {
 		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
-			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
+			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", limitValue),
 			"limit",
 		)
 	}
