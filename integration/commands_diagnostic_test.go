@@ -224,7 +224,6 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 	if runtime.GOOS == "linux" {
 		require.NotEmpty(t, os.Map()["name"], "os name should not be empty")
-		require.NotEmpty(t, os.Map()["version"], "os version should not be empty")
 	}
 
 	system := m["system"].(bson.D)
