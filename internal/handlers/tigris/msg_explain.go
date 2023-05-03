@@ -86,7 +86,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			}
 		}
 
-		filter = stages.GetPushdownQuery(stagesDocs)
+		filter, _ = stages.GetPushdownQuery(stagesDocs)
 	}
 
 	if h.DisableFilterPushdown {

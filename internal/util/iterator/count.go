@@ -19,7 +19,7 @@ import "errors"
 // ConsumeCount returns the number of elements in the iterator.
 // ErrIteratorDone error is returned as nil; any other error is returned as-is.
 //
-// Iterator is always closed at the end.
+// It always closes the iterator.
 func ConsumeCount[K, V any](iter Interface[K, V]) (int, error) {
 	defer iter.Close()
 
