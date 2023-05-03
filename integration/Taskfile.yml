@@ -5,7 +5,7 @@ version: 3
 vars:
   BENCHTIME: 5s
   BENCHNAME: '{{default "." .BENCHNAME}}'
-  RACEFLAG: -race={{ne OS "windows"}}
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
   env-data:
