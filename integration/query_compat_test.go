@@ -271,13 +271,17 @@ func TestQueryCompatSort(t *testing.T) {
 		},
 		"BadDollarMid": {
 			filter:     bson.D{},
-			sort:       bson.D{{"v.$foo.bar", 1}},
+			sort:       bson.D{{"v.$foo.bar", 1}, {"_id", 1}},
 			resultType: emptyResult,
 		},
 		"BadDollarEnd": {
 			filter:     bson.D{},
-			sort:       bson.D{{"v.$foo", 1}},
+			sort:       bson.D{{"_id", 1}, {"v.$foo", 1}},
 			resultType: emptyResult,
+		},
+		"DollarPossible": {
+			filter: bson.D{},
+			sort:   bson.D{{"v.f$oo.bar", 1}, {"_id", 1}},
 		},
 	}
 
