@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"math"
 	"testing"
 
@@ -88,7 +87,7 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 
 				if tc.altMessage != "" {
 					var expectedErr mongo.CommandError
-					require.True(t, errors.As(compatErr, &expectedErr))
+					require.ErrorAs(t, compatErr, &expectedErr)
 					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
 				} else {
 					assert.Equal(t, compatErr, targetErr)
@@ -154,7 +153,7 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 
 				if tc.altMessage != "" {
 					var expectedErr mongo.CommandError
-					require.True(t, errors.As(compatErr, &expectedErr))
+					require.ErrorAs(t, compatErr, &expectedErr)
 					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
 				} else {
 					assert.Equal(t, compatErr, targetErr)

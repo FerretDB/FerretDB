@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,7 +80,7 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 							AssertMatchesCommandError(t, compatErr, targetErr)
 
 							var expectedErr mongo.CommandError
-							require.True(t, errors.As(compatErr, &expectedErr))
+							require.ErrorAs(t, targetErr, &expectedErr)
 							AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 						} else {
 							require.Equal(t, compatErr, targetErr)

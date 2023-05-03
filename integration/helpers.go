@@ -155,8 +155,15 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
-// AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
+// AssertEqualError is a deprecated alias for AssertEqualCommandError.
+//
+// Deprecated: use AssertEqualCommandError instead.
 func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+	return AssertEqualCommandError(t, expected, actual)
+}
+
+// AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
+func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -171,75 +178,8 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
-// AssertMatchesCommandError asserts error code, name and wrapped are the same.
-func AssertMatchesCommandError(t *testing.T, expected, actual error) {
-	t.Helper()
-	var aErr, eErr mongo.CommandError
-
-	if ok := errors.As(expected, &eErr); !ok {
-		assert.Equal(t, expected, actual)
-	}
-
-	if ok := errors.As(actual, &aErr); !ok {
-		assert.Equal(t, expected, actual)
-	}
-
-	assert.Equal(t, eErr.Name, aErr.Name)
-	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
-	assert.Equal(t, eErr.Code, aErr.Code)
-}
-
-// AssertMatchesWriteErrorCode asserts error codes are the same.
-func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
-	t.Helper()
-
-	var aErr, eErr mongo.WriteException
-
-	if ok := errors.As(actual, &aErr); !ok || len(aErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
-	}
-
-	if ok := errors.As(expected, &eErr); !ok || len(eErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
-	}
-
-	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
-}
-
-// AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);
-// the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
-//
-// In general, error messages should be the same. Exceptions include:
-//
-//   - MongoDB typos (e.g. "sortto" instead of "sort to");
-//   - MongoDB values formatting (e.g. we don't want to write additional code to format
-//     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
-//
-// In any case, the alternative error message returned by FerretDB should not mislead users.
-func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
-	t.Helper()
-
-	a, ok := actual.(mongo.CommandError)
-	if !ok {
-		return assert.Equal(t, expected, actual)
-	}
-
-	// set expected fields that might be helpful in the test output
-	require.Nil(t, expected.Raw)
-	expected.Raw = a.Raw
-
-	if assert.ObjectsAreEqual(expected, a) {
-		return true
-	}
-
-	expected.Message = altMessage
-	return assert.Equal(t, expected, a)
-}
-
-// AssertEqualWriteError asserts that the expected error is the same as the actual.
-func AssertEqualWriteError(t *testing.T, expected mongo.WriteError, actual error) bool {
+// AssertEqualError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
+func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException)
@@ -257,6 +197,86 @@ func AssertEqualWriteError(t *testing.T, expected mongo.WriteError, actual error
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
+	return assert.Equal(t, expected, a)
+}
+
+// AssertMatchesCommandError asserts that both errors are equal CommandErrors,
+// except messages (and ignoring the Raw part).
+func AssertMatchesCommandError(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	var a mongo.CommandError
+	require.ErrorAs(t, actual, &a)
+
+	var e mongo.CommandError
+	require.ErrorAs(t, expected, &e)
+
+	a.Raw = nil
+	e.Raw = nil
+
+	actualMessage := a.Message
+	a.Message = e.Message
+	if !AssertEqualError(t, e, a) {
+		t.Logf("actual message: %s", actualMessage)
+	}
+}
+
+// AssertMatchesWriteError asserts error codes are the same.
+//
+// TODO check not only code; make is look similar to AssertMatchesCommandError above.
+// https://github.com/FerretDB/FerretDB/issues/2545
+func AssertMatchesWriteError(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	var aErr, eErr mongo.WriteException
+
+	if ok := errors.As(actual, &aErr); !ok || len(aErr.WriteErrors) != 1 {
+		assert.Equal(t, expected, actual)
+		return
+	}
+
+	if ok := errors.As(expected, &eErr); !ok || len(eErr.WriteErrors) != 1 {
+		assert.Equal(t, expected, actual)
+		return
+	}
+
+	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
+}
+
+// AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
+//
+// Deprecated: use AssertEqualAltCommandError instead.
+func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	return AssertEqualAltCommandError(t, expected, altMessage, actual)
+}
+
+// AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);
+// the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
+//
+// In general, error messages should be the same. Exceptions include:
+//
+//   - MongoDB typos (e.g. "sortto" instead of "sort to");
+//   - MongoDB values formatting (e.g. we don't want to write additional code to format
+//     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
+//
+// In any case, the alternative error message returned by FerretDB should not mislead users.
+func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	if assert.ObjectsAreEqual(expected, a) {
+		return true
+	}
+
+	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
 }
 

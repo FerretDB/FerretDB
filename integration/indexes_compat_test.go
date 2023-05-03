@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -235,7 +234,7 @@ func TestIndexesCreate(t *testing.T) {
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
+						require.ErrorAs(t, compatErr, &expectedErr)
 						expectedErr.Raw = nil
 						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 					} else {
@@ -702,7 +701,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
+						require.ErrorAs(t, compatErr, &expectedErr)
 						expectedErr.Raw = nil
 						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 					} else {

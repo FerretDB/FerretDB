@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"math"
 	"testing"
 
@@ -94,7 +93,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 						if tc.altMessage != "" {
 							var expectedErr mongo.CommandError
-							require.True(t, errors.As(compatErr, &expectedErr))
+							require.ErrorAs(t, compatErr, &expectedErr)
 							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
 						} else {
 							assert.Equal(t, compatErr, targetErr)
