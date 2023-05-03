@@ -1,26 +1,26 @@
 ---
-slug: document-databases-definition-features-use-cases
 title: "Document Database: Definition, Features, Use Cases"
-author: Alexander Fashakin
+authors: [alex]
 image: /img/blog/mongodb-alternatives.png
 description: >
     Learn about NoSQL document databases, their features, benefits, use cases, and popular examples such as FerretDB, MongoDB, and Couchbase.
 unlisted: true
 ---
 
-![FerretDB v0.9.1 - Minor Release](/img/blog/ferretdb-v0.9.1.jpg)
+![To be replaced](/img/blog/ferretdb-v0.9.1.jpg)
 
-Since their inception in the 1960s, databases have undergone significant changes, with relational databases like Oracle, MySQL, and PostgreSQL becoming more popular.
+Since the inception of databases in the 1960s, the world of data has undergone significant changes.
+While relational databases like Oracle, MySQL, and PostgreSQL have long been the stalwarts of the database world, document databases have been gaining momentum in recent years.
 
 <!--truncate-->
 
-These platforms use a Structured Query Language (SQL) to store and retrieve table-based data records.
-However, SQL-based storage and retrieval models are not always sufficient for handling records with unstructured information and heavy workloads, particularly for organizations with scalability needs.
+The use of a Structured Query Language (SQL) in relational databases to store and retrieve table-based data records are not always sufficient for handling records with unstructured data and heavy workloads, particularly for organizations with scalability concerns.
 
-To address these needs, NoSQL databases emerged as a solution for companies seeking databases with flexible schema support.
+To address these needs, NoSQL databases emerged as a solution for companies looking to manage unstructured data and enable faster processing.
 One of these NoSQL databases is the document database.
+There are other types like the key-value store, graph database, and wide-column store.
 
-In this article, we will discuss what document databases are, their unique features, and use cases.
+In this article, we will focus on what document databases are, their unique features, and use cases.
 
 ## What is a Document Database?
 
@@ -65,14 +65,18 @@ Moreover, NoSQL databases usually don't need a fixed schema, so they can accommo
 
 ## Benefits of Document Databases
 
-There are clear strengths and weaknesses with document databases, and it depends from application to application whether the document model is the right fit.
-The following are advantages of the document model with considerable trade-offs.
+The following are advantages of the document database:
 
 ### Flexible Database Schema
 
 NoSQL databases are incredibly flexible compared to relational databases.
 Each document is a separate entity with its own structure, making it easier to query data and make changes that enable the application to evolve over time.
 There is no need to modify all existing records to accommodate a new structure.
+
+These flexibility provides a faster and more flexible way to manage and create databases.
+Developers can start building a database with collections of documents immediately, and they can modify it as they build their applications.
+With collections of documents that can be populated right away, you don’t need to know the structure of the database.
+Instead, developers can get started with their database as soon as possible.
 
 ### High Scalability
 
@@ -81,12 +85,11 @@ Because document databases collocate related data in a single document, sharding
 
 Document databases emphasize performance and availability, letting you balance consistency with performance, contrary to relational databases, where consistency is always the top priority.
 
-### Agility
+### Performance
 
-Document databases offer a faster and more flexible way to manage and create databases.
-Developers can start building a database with collections of documents immediately, and they can modify it as they build their applications.
-With collections of documents that can be populated right away, you don’t need to know the structure of the database.
-Instead, developers can get started with their database as soon as possible.
+Document databases offer superior and faster performance for read and write operations, particularly when working with nested objects and documents.
+As shown in the document data model example above, you can easily query and update nested objects in a single atomic operation.
+By storing related data together, document databases reduce the need for complex joins and queries, resulting in faster access to the required information.
 
 ## Document Databases vs. Relational Databases
 
@@ -102,17 +105,18 @@ Here is a comparison table between document databases and relational databases:
 | Structure   | Flexible schema design, documents can have different structures within the same collection                             | Predefined, rigid structure with tables, columns, and rows                              |
 | Scalability | Efficient horizontal scaling, allowing for easy distribution of data across multiple hosts                             | Vertical scaling, adding resources to a single machine to handle more data              |
 | Querying    | Rich querying capabilities, with support for complex nested data structures                                            | Limited support for querying nested data structures, with more focus on join operations |
-| Development | Developer-friendly, with a more intuitive data model for object-oriented programming languages                         | Less intuitive data model, more complex SQL queries required                            |
+| Development | Developer-friendly, with a more natural data model for object-oriented programming languages                         | Less user-friendly data model, more complex SQL queries required                            |
 | Consistency | Lower consistency guarantees, with more focus on performance and availability                                          | Higher consistency guarantees, with more focus on data integrity and accuracy           |
 | Use Cases   | Best for handling large volumes of semi-structured or unstructured data, suited for modern web and mobile applications | Best for handling structured data, suited for traditional business applications         |
 
-**Read more:** PostgreSQL vs MongoDB - Understanding a Relational Database vs Document Database(To Link once published)
+**Read more:** [PostgreSQL vs MongoDB - Understanding a Relational Database vs Document Database](https://blog.ferretdb.io/mongodb-vs-postgresql-database-comparison/)
 
 ## Examples of NoSQL Document Databases
 
 ### FerretDB
 
 FerretDB is an open-source document database with MongoDB-compatibility built-in, allowing you to run MongoDB workloads on other database backends, such as PostgreSQL, Tigris, SAP Hana, and many others.
+With the release of the production-ready FerretDB 1.0 GA as well as a growing open source community, you can now build your applications with FerretDB while leveraging all the features of a PostgreSQL backend, or any other supported database backend.
 
 ### MongoDB
 
@@ -129,13 +133,16 @@ As a multi-model NoSQL database, Couchbase is tailored towards highly interactiv
 
 RavenDB is a NoSQL document database with several features and capabilities suitable for mobile and web applications.
 Built with ACID compliance, RavenDB is fully transactional within the database and across clusters.
-RavenDB is an all-in-one database that includes a cloud service, a Time Series model, ML processing, and an OLAP plugin for business analysis.
+RavenDB is an all-in-one database that includes a cloud service, a Time Series model, ML processing, and an online analytical processing (OLAP) plugin for business analysis.
 
 ## Getting Started with Document Databases
 
 Document databases represent a significant departure from traditional relational databases in storing and accessing data.
 This evolution is interesting for developers who can build their applications with a flexible data model that offers high scalability and agility.
 
-If you want to be part of a growing community of NoSQL document database enthusiasts, the Document Database Community is a global network of developers where you can learn more about recent trends, technologies, and news in the document database space.
+If you want to be part of a growing community of NoSQL document database enthusiasts, the [Document Database Community](https://documentdatabase.org/) is a global network of developers where you can learn more about recent trends, technologies, and news in the document database space.
 
-To get started with a document database for your project, you should check out FerretDB.
+If you're looking for a document database to practice and build with, Ferret is a good option for you.
+It's open source nature and compatibility with MongoDB wire protocols and queries makes it an attractive option.
+
+To get started, checkout the [installation guide](https://docs.ferretdb.io/quickstart-guide/) for FerretDB.
