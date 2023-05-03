@@ -15,7 +15,7 @@ jobs:
         with:
           go-version: '1.20'
       - name: Install dependencies
-        run: go get ./cmd/cleantool
+        run: go get ./tools/cleantool
       - name: Scan old package versions and store the version id to env
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
