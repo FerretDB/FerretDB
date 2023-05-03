@@ -59,6 +59,10 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{},
 		},
+		"NilProjection": {
+			filter:     bson.D{},
+			projection: nil,
+		},
 		"Include1Field": {
 			filter:     bson.D{},
 			projection: bson.D{{"v", int32(1)}},
