@@ -884,6 +884,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 1}},
 			},
+			resultPushdown: true, // $sort and $match are first two stages
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -1405,6 +1406,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
+			resultPushdown: true, // $match after $sort can be pushed down
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
