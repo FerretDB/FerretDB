@@ -17,7 +17,7 @@ While relational databases like Oracle, MySQL, and PostgreSQL have long been the
 The use of a Structured Query Language (SQL) in relational databases to store and retrieve table-based data records are not always sufficient for handling records with unstructured data and heavy workloads, particularly for organizations with scalability concerns.
 
 To address these needs, NoSQL databases emerged as a solution for companies looking to manage unstructured data and enable faster processing.
-One of these NoSQL databases is the document database.
+Document database is a type of NoSQL databases.
 There are other types like the key-value store, graph database, and wide-column store.
 
 In this article, we will focus on what document databases are, their unique features, and use cases.
