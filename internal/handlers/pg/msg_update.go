@@ -169,7 +169,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				)))
 
-				if err = insertDocument(ctx, dbPool, &qp, doc); err != nil {
+				if err = insertDocument(ctx, tx, &qp, doc); err != nil {
 					return err
 				}
 

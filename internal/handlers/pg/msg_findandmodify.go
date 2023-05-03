@@ -218,7 +218,7 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 
 	switch res.Operation {
 	case common.UpsertOperationInsert:
-		if err = insertDocument(ctx, dbPool, query, res.Upsert); err != nil {
+		if err = insertDocument(ctx, tx, query, res.Upsert); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
