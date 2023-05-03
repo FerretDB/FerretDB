@@ -141,21 +141,20 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
-	tableName = collectionNameToTableName(ms.collection)
+	defaultTableName := collectionNameToTableName(ms.collection)
 
-	allTables, err := ms.getAllTableHashes(ctx)
-	if err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
+	var tableNameUnique bool
+	tableName = defaultTableName
 
-	i := 0
-	for allTables[tableName] {
-		tableName = tableName + fmt.Sprintf("%d", i)
-		if !allTables[tableName] {
-			break
+	for i := 1; !tableNameUnique; i++ {
+		tableNameUnique, err = ms.isTableNameUnique(ctx, tableName)
+		if err != nil {
+			tableName = ""
+			err = lazyerrors.Error(err)
+			return
 		}
-		i++
+
+		tableName = fmt.Sprintf("%s_%d", defaultTableName, i)
 	}
 
 	m = &metadata{
@@ -191,44 +190,6 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	}
 }
 
-// getAllTableHashes returns all hashed table names for the given FerretDB database.
-func (ms *metadataStorage) getAllTableHashes(ctx context.Context) (map[string]bool, error) {
-	iterParams := &iteratorParams{
-		schema:    ms.db,
-		table:     dbMetadataTableName,
-		forUpdate: false,
-	}
-
-	iter, _, err := buildIterator(ctx, ms.tx, iterParams)
-	if err != nil {
-		return nil, err
-	}
-	defer iter.Close()
-
-	tables := map[string]bool{}
-
-	for {
-		_, doc, err := iter.Next()
-
-		switch {
-		case err == nil:
-			// do nothing
-		case errors.Is(err, iterator.ErrIteratorDone):
-			return tables, nil
-		}
-
-		i := 0
-
-		for _, k := range doc.Keys() {
-			if k == "table" {
-				v := must.NotFail(doc.Get(k))
-				tables[v.(string)] = true
-				i++
-			}
-		}
-	}
-}
-
 // getTableName returns PostgreSQL table name for the given FerretDB database and collection.
 //
 // If the metadata doesn't exist, it returns ErrTableNotExist.
@@ -239,6 +200,37 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 	}
 
 	return metadata.table, nil
+}
+
+// isTableNameUnique checks that the given table name is not present in metadata.
+func (ms *metadataStorage) isTableNameUnique(ctx context.Context, tableName string) (bool, error) {
+	iterParams := &iteratorParams{
+		schema: ms.db,
+		table:  dbMetadataTableName,
+		filter: must.NotFail(types.NewDocument("table", tableName)),
+	}
+
+	iter, _, err := buildIterator(ctx, ms.tx, iterParams)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	defer iter.Close()
+
+	_, _, err = iter.Next()
+
+	switch {
+	case err == nil:
+		// duplicate table name found
+		return false, nil
+
+	case errors.Is(err, iterator.ErrIteratorDone):
+		// bo duplicate table name found
+		return true, nil
+
+	default:
+		return false, lazyerrors.Error(err)
+	}
 }
 
 // renameCollection renames metadataStorage.collection.
@@ -449,41 +441,6 @@ func collectionNameToTableName(name string) string {
 
 	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
 }
-
-// ensureUniqueTableName ensures that the suggested table name is unique (it could be not unique if the collection was renamed)
-/*func (ms *metadataStorage) ensureUniqueTableName(ctx context.Context) (string, error) {
-	tableName := collectionNameToTableName(ms.collection)
-	iterParams := &iteratorParams{
-		schema: ms.db,
-		table:  dbMetadataTableName,
-		filter: must.NotFail(types.NewDocument("table", tableName)),
-	}
-
-	for i := 1; ; i++ {
-		iter, _, err := buildIterator(ctx, ms.tx, iterParams)
-		if err != nil {
-			return "", lazyerrors.Error(err)
-		}
-
-		defer iter.Close()
-
-		_, _, err = iter.Next()
-
-		switch {
-		case err == nil:
-			// duplicate table name found
-			tableName += fmt.Sprintf("%d", i)
-			iter.Close()
-
-		case errors.Is(err, iterator.ErrIteratorDone):
-			// bo duplicate table name found
-			return nil, ErrTableNotExist
-
-		default:
-			return nil, lazyerrors.Error(err)
-		}
-	}
-}*/
 
 // setIndex sets the index info in the metadata table.
 // It returns a PostgreSQL table name and index name that can be used to create index.
