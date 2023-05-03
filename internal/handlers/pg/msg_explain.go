@@ -56,7 +56,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	if params.Aggregate {
-		qp.Filter, qp.Sort = stages.GetPushdownQuery(stagesDocs)
+		qp.Filter, qp.Sort = stages.GetPushdownQuery(params.StagesDocs)
 	}
 
 	if h.DisableFilterPushdown {

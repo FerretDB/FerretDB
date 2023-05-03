@@ -49,7 +49,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	filter := params.Filter
 
 	if params.Aggregate {
-		filter, _ = stages.GetPushdownQuery(stagesDocs)
+		filter, _ = stages.GetPushdownQuery(params.StagesDocs)
 	}
 
 	if h.DisableFilterPushdown {
