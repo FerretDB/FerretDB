@@ -136,10 +136,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := tigrisdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     stages.GetPushdownQuery(aggregationStages),
 		}
 
-		qp.Filter = stages.GetPushdownQuery(aggregationStages)
+		qp.Filter, _ = stages.GetPushdownQuery(aggregationStages)
 
 		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
 			dbPool, &qp, stagesDocuments,
