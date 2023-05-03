@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ import (
 
 type testCase struct {
 	name   string
-	v      pjsontype
+	v      sjsontype
 	sch    *elem
 	j      string
 	canonJ string // canonical form without extra object fields, zero values, etc.
@@ -76,7 +76,7 @@ func lastErr(err error) error {
 	}
 }
 
-func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
+func testJSON(t *testing.T, testCases []testCase, newFunc func() sjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
@@ -135,7 +135,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 
 				t.Parallel()
 
-				actualJ, err := MarshalSingleValue(fromPJSON(tc.v))
+				actualJ, err := MarshalSingleValue(fromSJSON(tc.v))
 				require.NoError(t, err)
 
 				expectedJ := tc.j
@@ -149,7 +149,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() pjsontype) {
 	}
 }
 
-func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
+func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() sjsontype) {
 	for _, tc := range testCases {
 		sch := must.NotFail(json.Marshal(tc.sch))
 		f.Add(tc.j, string(sch))
@@ -190,7 +190,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 		// Temporary hack, should be removed once we improve our validation.
 		// TODO https://github.com/FerretDB/FerretDB/issues/1273
 		{
-			d, ok := fromPJSON(v).(*types.Document)
+			d, ok := fromSJSON(v).(*types.Document)
 			if !ok {
 				t.Skip()
 			}
@@ -220,13 +220,13 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() pjsontype) {
 	})
 }
 
-func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
+func benchmark(b *testing.B, testCases []testCase, newFunc func() sjsontype) {
 	for _, tc := range testCases {
 		tc := tc
 		b.Run(tc.name, func(b *testing.B) {
 			b.Run("UnmarshalJSON", func(b *testing.B) {
 				data := []byte(tc.j)
-				var v pjsontype
+				var v sjsontype
 				var err error
 
 				b.ReportAllocs()
@@ -254,7 +254,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() pjsontype) {
 }
 
 // unmarshalJSON encapsulates type switch and calls UnmarshalJSON or UnmarshalJSONWithSchema on the given value.
-func unmarshalJSON(v pjsontype, tc *testCase) error {
+func unmarshalJSON(v sjsontype, tc *testCase) error {
 	var err error
 	switch v := v.(type) {
 	case *documentType:
