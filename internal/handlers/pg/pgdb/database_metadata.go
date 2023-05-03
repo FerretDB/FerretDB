@@ -134,6 +134,13 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		return
 	}
 
+	// Index to ensure that table name is unique
+	key = IndexKey{{Field: `table`, Order: types.Ascending}}
+	if err = createPgIndexIfNotExists(ctx, ms.tx, ms.db, dbMetadataTableName, dbMetadataIndexName, key, true); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
 	tableName = collectionNameToTableName(ms.collection)
 
 	allTables, err := ms.getAllTableHashes(ctx)
@@ -192,7 +199,7 @@ func (ms *metadataStorage) getAllTableHashes(ctx context.Context) (map[string]bo
 		forUpdate: false,
 	}
 
-	iter, err := buildIterator(ctx, ms.tx, iterParams)
+	iter, _, err := buildIterator(ctx, ms.tx, iterParams)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +244,7 @@ func (ms *metadataStorage) getTableName(ctx context.Context) (string, error) {
 // renameCollection renames metadataStorage.collection.
 //
 // If the metadata for the collection that needs to be renamed doesn't exist, ErrTableNotExist is returned.
-// If the to collection aleady exists, ErrAlreadyExist is returned.
+// If the to collection already exists, ErrAlreadyExist is returned.
 func (ms *metadataStorage) renameCollection(ctx context.Context, to string) error {
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
@@ -442,6 +449,41 @@ func collectionNameToTableName(name string) string {
 
 	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
 }
+
+// ensureUniqueTableName ensures that the suggested table name is unique (it could be not unique if the collection was renamed)
+/*func (ms *metadataStorage) ensureUniqueTableName(ctx context.Context) (string, error) {
+	tableName := collectionNameToTableName(ms.collection)
+	iterParams := &iteratorParams{
+		schema: ms.db,
+		table:  dbMetadataTableName,
+		filter: must.NotFail(types.NewDocument("table", tableName)),
+	}
+
+	for i := 1; ; i++ {
+		iter, _, err := buildIterator(ctx, ms.tx, iterParams)
+		if err != nil {
+			return "", lazyerrors.Error(err)
+		}
+
+		defer iter.Close()
+
+		_, _, err = iter.Next()
+
+		switch {
+		case err == nil:
+			// duplicate table name found
+			tableName += fmt.Sprintf("%d", i)
+			iter.Close()
+
+		case errors.Is(err, iterator.ErrIteratorDone):
+			// bo duplicate table name found
+			return nil, ErrTableNotExist
+
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+}*/
 
 // setIndex sets the index info in the metadata table.
 // It returns a PostgreSQL table name and index name that can be used to create index.
