@@ -36,9 +36,6 @@ type MsgBody interface {
 	msgbody() // seal for go-sumtype
 }
 
-// crc32c checksum byte size
-const kCrc32Size = 4
-
 //go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
@@ -49,6 +46,12 @@ var ErrZeroRead = errors.New("zero bytes read")
 //
 // Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
+
+	reader := io.TeeReader(r)
+
+	// detach checksum
+	//
+
 	if err := verifyChecksum(r); err != nil {
 		return nil, nil, lazyerrors.Error(err)
 	}
@@ -135,17 +138,14 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 
 // verifyChecksum verifies the checksum of the message it is attached
 func verifyChecksum(r *bufio.Reader) error {
-	// n = MsgHeaderLen + flagbits length
-	n := MsgHeaderLen + 4
+
+	n := MsgHeaderLen + crc32.Size
 	msgHeader, err := r.Peek(n)
 	if err != nil {
 		if err == io.EOF {
 			return ErrZeroRead
 		}
-
-		return lazyerrors.Error(err)
 	}
-
 	msgLen := int(binary.LittleEndian.Uint32(msgHeader[0:4]))
 
 	if msgLen < MsgHeaderLen || msgLen > MaxMsgLen {
@@ -180,8 +180,8 @@ func attachChecksum(data []byte) []byte {
 // detachChecksum removes the checksum bytes from a message
 func detachChecksum(data []byte) ([]byte, uint32) {
 	msgLen := len(data)
-	msg := data[:msgLen-kCrc32Size]
-	checksum := binary.LittleEndian.Uint32(data[msgLen-kCrc32Size:])
+	msg := data[:msgLen-crc32.Size]
+	checksum := binary.LittleEndian.Uint32(data[msgLen-crc32.Size:])
 
 	return msg, checksum
 }
