@@ -25,12 +25,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetRequiredParam returns doc's value for key or protocol error for missing or invalid parameter.
+// GetRequiredParam returns doc's value for key
+// or protocol error for missing key or invalid type.
 func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
-	v, err := doc.Get(key)
-	if err != nil {
+	v, _ := doc.Get(key)
+	if v == nil {
 		msg := fmt.Sprintf("required parameter %q is missing", key)
 		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
 	}
@@ -44,13 +45,15 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	return res, nil
 }
 
-// GetOptionalParam returns doc's value for key, default value for missing parameter, or protocol error for invalid parameter.
+// GetOptionalParam returns doc's value for key, default value for missing parameter,
+// or protocol error for missing key or invalid type.
 func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
-	v, err := doc.Get(key)
-	if err != nil {
+	v, _ := doc.Get(key)
+	if v == nil {
 		return defaultValue, nil
 	}
 
+	// require exact type; do not threat nulls as default values in this helper
 	res, ok := v.(T)
 	if !ok {
 		msg := fmt.Sprintf(
@@ -69,8 +72,8 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 // Zero values for those types, as well as nulls and missing fields, return false.
 // Other types return a protocol error.
 func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
-	v, err := doc.Get(key)
-	if err != nil {
+	v, _ := doc.Get(key)
+	if v == nil {
 		return false, nil
 	}
 
@@ -495,8 +498,8 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 
 // GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
 func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
-	v, err := document.Get(key)
-	if err != nil {
+	v, _ := document.Get(key)
+	if v == nil {
 		return 0, nil
 	}
 
