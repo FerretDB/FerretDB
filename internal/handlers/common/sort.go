@@ -41,7 +41,7 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 	sortFuncs := make([]sortFunc, len(sortDoc.Keys()))
 
 	for i, sortKey := range sortDoc.Keys() {
-		if strings.Contains(sortKey, "$") {
+		if strings.HasPrefix(sortKey, "$") {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFieldPathInvalidName,
 				"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
