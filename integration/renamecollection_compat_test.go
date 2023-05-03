@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -40,80 +39,71 @@ func TestRenameCollectionCompat(t *testing.T) {
 	targetDB := targetCollection.Database()
 	compatDB := compatCollection.Database()
 
+	// Rename collection should be performed while connecting to the admin database.
+	targetDBConnect := targetCollection.Database().Client().Database("admin")
+	compatDBConnect := compatCollection.Database().Client().Database("admin")
+
 	for name, tc := range map[string]struct {
 		targetNSFrom any
 		compatNSFrom any
-		targetNSTo any
-		compatNSTo any
-		resultType compatTestCaseResultType
-	} {
+		targetNSTo   any
+		compatNSTo   any
+		resultType   compatTestCaseResultType
+	}{
 		"Valid": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
 			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
-			targetNSTo: targetDB.Name() + ".newCollection",
-			compatNSTo: targetDB.Name() + ".newCollection",
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   targetDB.Name() + ".newCollection",
 		},
 		"NilFrom": {
 			targetNSFrom: nil,
 			compatNSFrom: nil,
-			targetNSTo: targetDB.Name() + ".newCollection",
-			compatNSTo: compatDB.Name() + ".newCollection",
-			resultType: emptyResult,
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
+			resultType:   emptyResult,
 		},
 		"NilTo": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
 			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
-			targetNSTo: nil,
-			compatNSTo: nil,
-			resultType: emptyResult,
+			targetNSTo:   nil,
+			compatNSTo:   nil,
+			resultType:   emptyResult,
 		},
 		"EmptyFrom": {
 			targetNSFrom: "",
 			compatNSFrom: "",
-			targetNSTo: targetDB.Name() + ".newCollection",
-			compatNSTo: compatDB.Name() + ".newCollection",
-			resultType: emptyResult,
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
+			resultType:   emptyResult,
 		},
 		"EmptyTo": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
 			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
-			targetNSTo: "",
-			compatNSTo: "",
-			resultType: emptyResult,
+			targetNSTo:   "",
+			compatNSTo:   "",
+			resultType:   emptyResult,
 		},
-		"EmptyDBFrom": {
-
-		},
-		"EmptyDBTo": {
-
-		},
-		"EmptyCollectionFrom": {
-
-		},
-		"EmptyCollectionTo": {
-
-		},
-		"NonExistentDB": {
-
-		},
-		"NonExistentCollectionFrom": {
-
-		},
+		"EmptyDBFrom":               {},
+		"EmptyDBTo":                 {},
+		"EmptyCollectionFrom":       {},
+		"EmptyCollectionTo":         {},
+		"NonExistentDB":             {},
+		"NonExistentCollectionFrom": {},
 		"CollectionToAlreadyExists": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
 			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
-			targetNSTo: targetDB.Name() + "." + targetCollectionExists.Name(),
-			compatNSTo: targetDB.Name() + "." + compatCollectionExists.Name(),
-			resultType: emptyResult,
+			targetNSTo:   targetDB.Name() + "." + targetCollectionExists.Name(),
+			compatNSTo:   targetDB.Name() + "." + compatCollectionExists.Name(),
+			resultType:   emptyResult,
 		},
 		"SameNamespace": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
 			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
-			targetNSTo: targetDB.Name() + "." + targetCollection.Name(),
-			compatNSTo: targetDB.Name() + "." + compatCollection.Name(),
-			resultType: emptyResult,
+			targetNSTo:   targetDB.Name() + "." + targetCollection.Name(),
+			compatNSTo:   targetDB.Name() + "." + compatCollection.Name(),
+			resultType:   emptyResult,
 		},
-
 	} {
 		name, tc := name, tc
 
@@ -123,12 +113,12 @@ func TestRenameCollectionCompat(t *testing.T) {
 			t.Parallel()
 
 			var targetRes bson.D
-			targetCommand := bson.D{{"renameCollection",tc.targetNSFrom}, {"to", tc.targetNSTo}}
-			targetErr := targetDB.RunCommand(ctx, targetCommand).Decode(&targetRes)
+			targetCommand := bson.D{{"renameCollection", tc.targetNSFrom}, {"to", tc.targetNSTo}}
+			targetErr := targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
 
 			var compatRes bson.D
-			compatCommand := bson.D{{"renameCollection",tc.compatNSFrom}, {"to", tc.compatNSTo}}
-			compatErr := compatDB.RunCommand(ctx, compatCommand).Decode(&compatRes)
+			compatCommand := bson.D{{"renameCollection", tc.compatNSFrom}, {"to", tc.compatNSTo}}
+			compatErr := compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.resultType == emptyResult {
 				require.Error(t, compatErr)
@@ -141,12 +131,12 @@ func TestRenameCollectionCompat(t *testing.T) {
 				//	require.True(t, errors.As(compatErr, &expectedErr))
 				//	AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
 				//} else {
-					assert.Equal(t, compatErr, targetErr)
-			//	}
+				assert.Equal(t, compatErr, targetErr)
+				//	}
 
 				return
 			}
-		}
+		})
 	}
 }
 

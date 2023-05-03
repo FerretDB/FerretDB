@@ -70,12 +70,20 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	dbFrom, collectionFrom, err := extractFromNamespace(namespaceFrom)
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s'", namespaceFrom),
+			command,
+		)
 	}
 
 	dbTo, collectionTo, err := extractFromNamespace(namespaceTo)
 	if err != nil {
-		return nil, err
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid target namespace: %s", namespaceTo),
+			command,
+		)
 	}
 
 	if dbFrom != dbTo {
@@ -91,7 +99,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrIllegalOperation,
 			"Can't rename a collection to itself",
-			document.Command(),
+			command,
 		)
 	}
 
@@ -138,15 +146,12 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 // extractFromNamespace returns the database and collection name from a given namespace.
 //
 // The namespace must be in the format of "database.collection".
-// If the namespace is invalid, a CommandError with ErrInvalidNamespace code is returned.
+// If the namespace is invalid, an error is returned
 func extractFromNamespace(namespace string) (string, string, error) {
 	split := strings.Split(namespace, ".")
 
 	if len(split) != 2 {
-		return "", "", commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrInvalidNamespace,
-			"Invalid namespace specified "+namespace,
-		)
+		return "", "", errors.New("invalid namespace")
 	}
 
 	return split[0], split[1], nil
