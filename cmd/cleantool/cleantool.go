@@ -34,6 +34,7 @@ func isPackageToBeClean(p *github.PackageVersion) bool {
 
 	if time.Now().After(p.UpdatedAt.Add(time.Duration(daysBack) * 24 * time.Hour)) {
 		log.Printf("Stale version id: %v , recent update was at %s", p.GetID(), p.UpdatedAt)
+
 		toBeClean = true
 	} else {
 		log.Printf("Skip version id: %v , recent update was at %s", p.GetID(), p.UpdatedAt)
@@ -46,9 +47,11 @@ func main() {
 	ctx := context.Background()
 	tokenName := "ROBOT_TOKEN"
 	token := os.Getenv(tokenName)
+
 	if token == "" {
 		log.Fatalf("env variable %v is not found, please set it before run it", tokenName)
 	}
+
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
@@ -59,25 +62,32 @@ func main() {
 	orgName := "FerretDB"
 	pageSize := 100
 	pageIndex := 1
+
 	var versions []string
+
 	for {
 		listOption := github.ListOptions{Page: pageIndex, PerPage: pageSize}
 		packageListOption := github.PackageListOptions{ListOptions: listOption}
 		packages, _, err := client.Organizations.PackageGetAllVersions(ctx, orgName, packageType, packageName, &packageListOption)
+
 		if err != nil {
 			log.Printf("Failed to get versions for page %d", pageIndex)
 		}
+
 		for _, v := range packages {
 			if isPackageToBeClean(v) {
 				versions = append(versions, fmt.Sprintf("%v", v.GetID()))
 			}
 		}
+
 		if len(packages) < pageSize {
 			log.Printf("Come to the last page (page %d)", pageIndex)
 			break
 		}
+
 		pageIndex++
 	}
+
 	staleVersions := strings.Join(versions, ", ")
 	log.Printf("Found %d stale versions: %v", len(versions), staleVersions)
 }
