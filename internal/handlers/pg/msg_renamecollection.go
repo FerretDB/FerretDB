@@ -49,76 +49,38 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, err
 	}
 
-	sourceField, err := document.Get(document.Command())
-	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			"Invalid namespace specified ",
-			document.Command(),
-		)
-	}
+	command := document.Command()
 
-	sourceNamespace, ok := sourceField.(string)
-	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %T", sourceField), // the issue here is that we do not return BSON types, like double etc.
-			document.Command(),
-		)
-	}
-
-	sourceDB, collection, err := extractFromNamespace(sourceNamespace)
+	namespaceFrom, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}
 
-	targetField, err := document.Get("to")
-	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
-			"BSON field 'renameCollection.to' is missing but a required field",
-			document.Command(),
-		)
-	}
-
-	targetNamespace, ok := targetField.(string)
-	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
-			"BSON field 'renameCollection.to' is the wrong type 'bool', expected type 'string'",
-			document.Command(),
-		)
-	}
-
-	// we assume we cannot move a collection between databases, yet.
-	targetDB, targetCollection, err := extractFromNamespace(targetNamespace)
+	namespaceTo, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
 		return nil, err
 	}
 
-	maxCollectionNameLen := 63
-
-	// -1 for dot between database and collection name.
-	if len(targetNamespace)-len(targetDB)-1 > maxCollectionNameLen {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf(
-				"error with target namespace: Fully qualified namespace is too long. Namespace: %s Max: 235",
-				targetNamespace,
-			),
-			document.Command(),
-		)
+	dbFrom, collectionFrom, err := extractFromNamespace(namespaceFrom)
+	if err != nil {
+		return nil, err
 	}
 
-	if targetDB != sourceDB {
+	dbTo, collectionTo, err := extractFromNamespace(namespaceTo)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbFrom != dbTo {
+		// TODO Support cross-database rename: https://github.com/FerretDB/FerretDB/issues/2563
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
-			"renameCollection rename a collection to another database",
-			document.Command(),
+			"renameCollection doesn't not support cross-database rename",
+			command,
 		)
 	}
 
-	if sourceNamespace == targetNamespace {
+	if collectionFrom == collectionTo {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrIllegalOperation,
 			"Can't rename a collection to itself",
@@ -127,31 +89,32 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.RenameCollection(ctx, tx, sourceDB, collection, targetCollection)
+		return pgdb.RenameCollection(ctx, tx, dbFrom, collectionFrom, collectionTo)
 	})
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, pgdb.ErrAlreadyExist):
-		return nil, commonerrors.NewCommandErrorMsg(
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNamespaceExists,
 			"target namespace exists",
+			command,
 		)
 	case errors.Is(err, pgdb.ErrTableNotExist):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNamespaceNotFound,
-			fmt.Sprintf("Source collection %s does not exist", sourceNamespace),
-			document.Command(),
+			fmt.Sprintf("Source collection %s does not exist", namespaceFrom),
+			command,
 		)
 	case errors.Is(err, pgdb.ErrInvalidCollectionName):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrIllegalOperation,
 			fmt.Sprintf(
 				"error with target namespace: Fully qualified namespace is too long. Namespace: %s Max: 255",
-				targetNamespace,
+				namespaceTo,
 			),
-			document.Command(),
+			command,
 		)
 	}
 
@@ -166,10 +129,12 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 }
 
 // extractFromNamespace returns the database and collection name from a given namespace.
+//
+// The namespace must be in the format of "database.collection".
+// If the namespace is invalid, a CommandError with ErrInvalidNamespace code is returned.
 func extractFromNamespace(namespace string) (string, string, error) {
 	split := strings.Split(namespace, ".")
 
-	// we assume that the given namespace contains a single dot.
 	if len(split) != 2 {
 		return "", "", commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrInvalidNamespace,

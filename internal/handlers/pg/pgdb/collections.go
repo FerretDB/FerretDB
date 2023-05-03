@@ -194,15 +194,15 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 // It returns ErrTableNotExist if either source database or collection does not exist.
 // It returns ErrAlreadyExist if the target database or collection already exists.
 // It returns ErrInvalidCollectionName if collection name is not valid.
-func RenameCollection(ctx context.Context, tx pgx.Tx, db, from, to string) error {
-	if !validateCollectionNameRe.MatchString(to) ||
-		strings.HasPrefix(to, reservedPrefix) ||
-		!utf8.ValidString(to) ||
-		len(to) > maxTableNameLength {
+func RenameCollection(ctx context.Context, tx pgx.Tx, db, collectionFrom, collectionTo string) error {
+	if !validateCollectionNameRe.MatchString(collectionTo) ||
+		strings.HasPrefix(collectionTo, reservedPrefix) ||
+		!utf8.ValidString(collectionTo) ||
+		len(collectionTo) > maxTableNameLength {
 		return ErrInvalidCollectionName
 	}
 
-	return newMetadataStorage(tx, db, from).renameCollection(ctx, to)
+	return newMetadataStorage(tx, db, collectionFrom).renameCollection(ctx, collectionTo)
 }
 
 // createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.

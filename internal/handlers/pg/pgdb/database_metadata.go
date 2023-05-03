@@ -151,6 +151,7 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 		if err != nil {
 			tableName = ""
 			err = lazyerrors.Error(err)
+
 			return
 		}
 
