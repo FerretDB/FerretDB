@@ -135,11 +135,19 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
 	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
 	if len(stagesStats) == len(stagesDocuments) {
+		filter, sort := stages.GetPushdownQuery(aggregationStages)
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     stages.GetPushdownQuery(aggregationStages),
+		}
+
+		if !h.DisableFilterPushdown {
+			qp.Filter = filter
+		}
+
+		if h.EnableSortPushdown {
+			qp.Sort = sort
 		}
 
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
