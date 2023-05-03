@@ -1,1 +1,1 @@
-FROM tmknom/prettier:2.8.7
+FROM tmknom/prettier:2.8.8
