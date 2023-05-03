@@ -3,7 +3,7 @@
 name: Chore
 description: Code maintenance improvements.
 assignees: ["ferretdb-bot"]
-labels: ["code/chore"]
+labels: ["code/chore", "not ready"]
 body:
   - type: markdown
     attributes:

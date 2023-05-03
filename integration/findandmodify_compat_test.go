@@ -207,6 +207,26 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				}},
 			},
 		},
+		"ConflictKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+			altMessage: "Updating the path 'v' would create a conflict at 'v'",
+		},
+		"ConflictKeyPrefix": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)

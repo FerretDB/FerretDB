@@ -74,6 +74,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
+	if h.EnableSortPushdown && params.Projection == nil {
+		qp.Sort = params.Sort
+	}
+
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		if params.BatchSize == 0 {
@@ -81,8 +85,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 
 		var iter types.DocumentsIterator
+		var queryRes pgdb.QueryResults
 
-		iter, err = pgdb.QueryDocuments(ctx, tx, qp)
+		iter, queryRes, err = pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -92,18 +97,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.FilterIterator(iter, closer, params.Filter)
 
-		iter, err = common.SortIterator(iter, closer, params.Sort)
-		if err != nil {
-			var pathErr *types.DocumentPathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrPathContainsEmptyElement,
-					"Empty field names in path are not allowed",
-					document.Command(),
-				)
-			}
+		if !queryRes.SortPushdown {
+			iter, err = common.SortIterator(iter, closer, params.Sort)
+			if err != nil {
+				var pathErr *types.DocumentPathError
+				if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrPathContainsEmptyElement,
+						"Empty field names in path are not allowed",
+						document.Command(),
+					)
+				}
 
-			return lazyerrors.Error(err)
+				return lazyerrors.Error(err)
+			}
 		}
 
 		iter = common.SkipIterator(iter, closer, params.Skip)
@@ -181,7 +188,7 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 		fp.qp.Filter = nil
 	}
 
-	iter, err := pgdb.QueryDocuments(ctx, fp.tx, fp.qp)
+	iter, _, err := pgdb.QueryDocuments(ctx, fp.tx, fp.qp)
 	if err != nil {
 		return nil, err
 	}

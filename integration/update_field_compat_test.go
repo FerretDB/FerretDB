@@ -581,10 +581,9 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.array"}}}},
 			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1776",
 		},
-		"DotNotationDocumentNotExistentPath": {
+		"DotNotationDocNonExistent": {
 			update:     bson.D{{"$rename", bson.D{{"not.existent.path", ""}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
 		},
 		"DotNotationArrayField": {
 			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
@@ -656,10 +655,9 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 			update: bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1242",
 		},
-		"DotNotationArrayNonExistentPath": {
+		"DotNotationArrNonExistentPath": {
 			update:     bson.D{{"$unset", bson.D{{"non.0.existent", int32(1)}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2065",
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$unset", bson.D{{"v..", ""}}}},
@@ -859,6 +857,20 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
 			resultType: emptyResult,
 		},
+		"ConflictKey": {
+			update: bson.D{
+				{"$set", bson.D{{"v", "val"}}},
+				{"$min", bson.D{{"v.foo", "val"}}},
+			},
+			resultType: emptyResult,
+		},
+		"ConflictKeyPrefix": {
+			update: bson.D{
+				{"$set", bson.D{{"v.foo", "val"}}},
+				{"$min", bson.D{{"v", "val"}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -962,10 +974,9 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationIndexOutOfArray": {
-			update:        bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
-			resultType:    emptyResult,
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/2065",
+		"DotNotationIndexOutOfArr": {
+			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
+			resultType: emptyResult,
 		},
 	}
 

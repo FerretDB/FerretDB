@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"testing"
@@ -45,13 +45,13 @@ var dateTimeTestCases = []testCase{{
 
 func TestDateTime(t *testing.T) {
 	t.Parallel()
-	testJSON(t, dateTimeTestCases, func() pjsontype { return new(dateTimeType) })
+	testJSON(t, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
 }
 
 func FuzzDateTime(f *testing.F) {
-	fuzzJSON(f, dateTimeTestCases, func() pjsontype { return new(dateTimeType) })
+	fuzzJSON(f, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
 }
 
 func BenchmarkDateTime(b *testing.B) {
-	benchmark(b, dateTimeTestCases, func() pjsontype { return new(dateTimeType) })
+	benchmark(b, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
 }

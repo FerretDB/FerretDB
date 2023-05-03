@@ -12,33 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// timestampType represents BSON Timestamp type.
-type timestampType types.Timestamp
+// boolType represents BSON Boolean type.
+type boolType bool
 
-// pjsontype implements pjsontype interface.
-func (ts *timestampType) pjsontype() {}
+// sjsontype implements sjsontype interface.
+func (b *boolType) sjsontype() {}
 
 // UnmarshalJSON implements json.Unmarshaler interface.
-func (ts *timestampType) UnmarshalJSON(data []byte) error {
+func (b *boolType) UnmarshalJSON(data []byte) error {
 	if bytes.Equal(data, []byte("null")) {
 		panic("null data")
 	}
 
 	r := bytes.NewReader(data)
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
-	var o uint64
+	var o bool
 	if err := dec.Decode(&o); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -47,14 +45,14 @@ func (ts *timestampType) UnmarshalJSON(data []byte) error {
 		return lazyerrors.Error(err)
 	}
 
-	*ts = timestampType(o)
+	*b = boolType(o)
 
 	return nil
 }
 
-// MarshalJSON implements pjsontype interface.
-func (ts *timestampType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(uint64(*ts))
+// MarshalJSON implements sjsontype interface.
+func (b *boolType) MarshalJSON() ([]byte, error) {
+	res, err := json.Marshal(bool(*b))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,5 +62,5 @@ func (ts *timestampType) MarshalJSON() ([]byte, error) {
 
 // check interfaces
 var (
-	_ pjsontype = (*timestampType)(nil)
+	_ sjsontype = (*boolType)(nil)
 )

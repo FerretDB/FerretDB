@@ -136,7 +136,7 @@ linters:
     - scopelint
     - structcheck
 
-    - nlreturn    # too annoying
+    - nlreturn # too annoying
     - testpackage # we test internals
 
 issues:

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pjson
+package sjson
 
 import (
 	"math"
@@ -45,13 +45,13 @@ var int64TestCases = []testCase{{
 
 func TestInt64(t *testing.T) {
 	t.Parallel()
-	testJSON(t, int64TestCases, func() pjsontype { return new(int64Type) })
+	testJSON(t, int64TestCases, func() sjsontype { return new(int64Type) })
 }
 
 func FuzzInt64(f *testing.F) {
-	fuzzJSON(f, int64TestCases, func() pjsontype { return new(int64Type) })
+	fuzzJSON(f, int64TestCases, func() sjsontype { return new(int64Type) })
 }
 
 func BenchmarkInt64(b *testing.B) {
-	benchmark(b, int64TestCases, func() pjsontype { return new(int64Type) })
+	benchmark(b, int64TestCases, func() sjsontype { return new(int64Type) })
 }
