@@ -90,7 +90,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		// TODO Support cross-database rename: https://github.com/FerretDB/FerretDB/issues/2563
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
-			"renameCollection doesn't not support cross-database rename",
+			"Command renameCollection does not support cross-database rename",
 			command,
 		)
 	}
@@ -125,10 +125,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	case errors.Is(err, pgdb.ErrInvalidCollectionName):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrIllegalOperation,
-			fmt.Sprintf(
-				"error with target namespace: Fully qualified namespace is too long. Namespace: %s Max: 255",
-				namespaceTo,
-			),
+			fmt.Sprintf("Invalid collection name: '%s'", namespaceTo),
 			command,
 		)
 	}
