@@ -55,6 +55,14 @@ func TestQueryProjectionCompat(t *testing.T) {
 	providers := append(shareddata.AllProviders(), topLevelFieldsIntegers)
 
 	testCases := map[string]queryCompatTestCase{
+		"EmptyProjection": {
+			filter:     bson.D{},
+			projection: bson.D{},
+		},
+		"NilProjection": {
+			filter:     bson.D{},
+			projection: nil,
+		},
 		"Include1Field": {
 			filter:     bson.D{},
 			projection: bson.D{{"v", int32(1)}},
