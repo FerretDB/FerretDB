@@ -63,7 +63,7 @@ func TestDatabaseMetadata(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestRenameCollection(t *testing.T) {
+func TestDatabaseMetadataRenameCollection(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	pool := getPool(ctx, t)

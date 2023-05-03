@@ -45,9 +45,16 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "writeConcern", "comment", "dropTarget"); err != nil {
+	// TODO Implement dropTarget param: https://github.com/FerretDB/FerretDB/issues/2565
+	if err = common.Unimplemented(document, "dropTarget"); err != nil {
 		return nil, err
 	}
+
+	ignoredFields := []string{
+		"writeConcern",
+		"comment",
+	}
+	common.Ignored(document, h.L, ignoredFields...)
 
 	command := document.Command()
 
