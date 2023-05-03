@@ -39,11 +39,12 @@ func parseOSRelease(r io.Reader) (string, string, error) {
 		value := strings.Join(str[1:], "")
 		unquotedValue, err := strconv.Unquote(value)
 
-		if errors.Is(err, nil) {
+		switch {
+		case errors.Is(err, nil):
 			configParams[str[0]] = unquotedValue
-		} else if errors.Is(err, strconv.ErrSyntax) {
+		case errors.Is(err, strconv.ErrSyntax):
 			configParams[str[0]] = value
-		} else {
+		default:
 			return "", "", lazyerrors.Error(err)
 		}
 	}
