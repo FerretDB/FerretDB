@@ -302,7 +302,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
+			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
 			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
 				// In principle, normal and proxy responses should be logged with the same level
 				// as they behave the same way. If it's not true, there is a bug somewhere, so
