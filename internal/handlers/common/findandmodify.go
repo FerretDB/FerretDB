@@ -50,7 +50,7 @@ type FindAndModifyParams struct {
 	MaxTimeMS                             int32
 }
 
-// UpsertParams represents parameters for upsert, if the document exists Update is set.
+// UpsertParams represents parameters for upsert, if the document exists UpdateParams is set.
 // Otherwise, Insert is set. It returns ReturnValue to return to the client.
 type UpsertParams struct {
 	// ReturnValue is the value set on the command response.

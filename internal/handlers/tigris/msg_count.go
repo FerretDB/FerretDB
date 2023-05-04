@@ -16,10 +16,8 @@ package tigris
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -39,56 +37,21 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"collation",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = common.Unimplemented(document, "collation"); err != nil {
 		return nil, err
 	}
 
-	ignoredFields := []string{
-		"hint",
-		"readConcern",
-		"comment",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
+	common.Ignored(document, h.L, "hint", "readConcern", "comment")
 
-	var qp tigrisdb.QueryParams
-
-	if qp.Filter, err = common.GetOptionalParam(document, "query", qp.Filter); err != nil {
-		return nil, err
-	}
-
-	var skip, limit int64
-
-	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = common.GetSkipParam("count", s); err != nil {
-			return nil, err
-		}
-	}
-
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetLimitParam("count", l); err != nil {
-			return nil, err
-		}
-	}
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetCountParams(document)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	qp := tigrisdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
+		Filter:     params.Filter,
 	}
 
 	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})
@@ -96,11 +59,11 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	if resDocs, err = common.SkipDocuments(resDocs, skip); err != nil {
+	if resDocs, err = common.SkipDocuments(resDocs, params.Skip); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
+	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
