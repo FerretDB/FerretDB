@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -40,9 +41,20 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 	sortFuncs := make([]sortFunc, len(sortDoc.Keys()))
 
 	for i, sortKey := range sortDoc.Keys() {
+		fields := strings.Split(sortKey, ".")
+		for _, field := range fields {
+			if strings.HasPrefix(field, "$") {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFieldPathInvalidName,
+					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+					"sort",
+				)
+			}
+		}
+
 		sortField := must.NotFail(sortDoc.Get(sortKey))
 
-		sortType, err := getSortType(sortKey, sortField)
+		sortType, err := GetSortType(sortKey, sortField)
 		if err != nil {
 			return err
 		}
@@ -125,8 +137,8 @@ func (ds *docsSorter) Less(i, j int) bool {
 	return ds.sorts[k](p, q)
 }
 
-// getSortType determines SortType from input sort value.
-func getSortType(key string, value any) (types.SortType, error) {
+// GetSortType determines SortType from input sort value.
+func GetSortType(key string, value any) (types.SortType, error) {
 	sortValue, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {

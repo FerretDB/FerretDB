@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iterator describes a generic Iterator interface.
+// Package iterator describes a generic Iterator interface and related utilities.
 package iterator
 
 import "errors"

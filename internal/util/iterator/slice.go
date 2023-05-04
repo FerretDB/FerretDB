@@ -15,6 +15,7 @@
 package iterator
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -50,9 +51,9 @@ func (iter *sliceIterator[V]) Next() (int, V, error) {
 	iter.n++
 	n := int(iter.n) - 1
 
-	var zero V
-	if n >= len(iter.s) {
-		return 0, zero, ErrIteratorDone
+	if l := len(iter.s); n >= l {
+		var v V
+		return 0, v, fmt.Errorf("%w (n (%d) >= len (%d)", ErrIteratorDone, n, l)
 	}
 
 	return n, iter.s[n], nil
@@ -71,5 +72,6 @@ func (iter *sliceIterator[V]) Close() {
 // check interfaces
 var (
 	_ Interface[int, any] = (*sliceIterator[any])(nil)
+	_ NextFunc[int, any]  = (*sliceIterator[any])(nil).Next
 	_ Closer              = (*sliceIterator[any])(nil)
 )
