@@ -198,6 +198,13 @@ services:
     container_name: ferretdb_markdownlint
     volumes:
       - .:/workdir
+  prettier:
+    build:
+      context: ./build/deps
+      dockerfile: prettier.Dockerfile
+    container_name: ferretdb_ferretdb-prettier
+    volumes:
+      - .:/workdir
   wrangler:
     build:
       context: ./build/deps

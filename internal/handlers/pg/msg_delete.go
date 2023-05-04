@@ -199,7 +199,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	}
 
 	err := dp.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err := pgdb.QueryDocuments(ctx, tx, dp.qp)
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, dp.qp)
 		if err != nil {
 			return err
 		}

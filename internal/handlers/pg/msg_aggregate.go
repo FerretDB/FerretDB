@@ -135,11 +135,19 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
 	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
 	if len(stagesStats) == len(stagesDocuments) {
+		filter, sort := stages.GetPushdownQuery(aggregationStages)
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     stages.GetPushdownQuery(aggregationStages),
+		}
+
+		if !h.DisableFilterPushdown {
+			qp.Filter = filter
+		}
+
+		if h.EnableSortPushdown {
+			qp.Sort = sort
 		}
 
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
@@ -189,23 +197,25 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 	var docs []*types.Document
 
 	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.QueryDocuments(ctx, tx, p.qp)
-		if getErr != nil {
-			return getErr
+		var err error
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, p.qp)
+		if err != nil {
+			return err
 		}
 
-		var err error
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		for _, s := range p.stages {
+			if iter, err = s.Process(ctx, iter, closer); err != nil {
+				return err
+			}
+		}
+
 		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 		return err
 	}); err != nil {
 		return nil, err
-	}
-
-	for _, s := range p.stages {
-		var err error
-		if docs, err = s.Process(ctx, docs); err != nil {
-			return nil, err
-		}
 	}
 
 	return docs, nil
@@ -297,13 +307,16 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	// Process the retrieved statistics through the stages.
-	var res []*types.Document
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
+
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
 	for _, s := range p.stages {
-		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
 
-	return res, nil
+	return iterator.ConsumeValues(iter)
 }

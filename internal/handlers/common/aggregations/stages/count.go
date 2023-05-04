@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // count represents $count stage.
@@ -78,14 +78,8 @@ func newCount(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (c *count) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	if len(in) == 0 {
-		return nil, nil
-	}
-
-	res := must.NotFail(types.NewDocument(c.field, int32(len(in))))
-
-	return []*types.Document{res}, nil
+func (c *count) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	return common.CountIterator(iter, closer, c.field), nil
 }
 
 // Type implements Stage interface.

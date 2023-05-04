@@ -3,7 +3,7 @@
 name: Feature
 description: Some feature is not implemented yet.
 assignees: ["ferretdb-bot"]
-labels: ["code/feature"]
+labels: ["code/feature", "not ready"]
 body:
   - type: markdown
     attributes:

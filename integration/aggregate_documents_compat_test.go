@@ -34,7 +34,8 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip          string // skip test for all handlers, must have issue number mentioned
+	skipForTigris string // skip test for Tigris handler, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -62,6 +63,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
@@ -268,6 +273,8 @@ func TestAggregateCommandCompat(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/2523")
+
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -877,6 +884,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 1}},
 			},
+			resultPushdown: true, // $sort and $match are first two stages
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -892,6 +900,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: true,
+			skipForTigris:  "TestAggregateCompatLimit",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1115,12 +1124,14 @@ func TestAggregateCompatMatch(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: true,
+			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: true,
+			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1213,6 +1224,10 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"BadDollarStart": {
+			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
 			resultType: emptyResult,
 		},
 	}
@@ -1395,6 +1410,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
+			resultPushdown: true, // $match after $sort can be pushed down
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{

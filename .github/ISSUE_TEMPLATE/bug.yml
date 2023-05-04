@@ -3,7 +3,7 @@
 name: Bug
 description: Some feature works incorrectly.
 assignees: ["ferretdb-bot"]
-labels: ["code/bug"]
+labels: ["code/bug", "not ready"]
 body:
   - type: markdown
     attributes:
