@@ -119,6 +119,15 @@ func Unmarshal(doc *types.Document, command string, value any, l *zap.Logger) er
 
 		switch fv.Kind() { //nolint: exhaustive // TODO: add more types support
 		case reflect.Int32, reflect.Int64, reflect.Float64:
+			if tag == "skip" || tag == "limit" {
+				settable, err = GetWholeParamStrict(command, tag, val)
+				if err != nil {
+					return err
+				}
+
+				break
+			}
+
 			settable, err = GetWholeNumberParam(val)
 			if err != nil {
 				return err

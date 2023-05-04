@@ -99,7 +99,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	Ignored(doc, l, "hint")
 
 	if s, _ := doc.Get("skip"); s != nil {
-		if res.Skip, err = commonparams.GetSkipParam("find", s); err != nil {
+		if res.Skip, err = commonparams.GetWholeParamStrict("find", "skip", s); err != nil {
 			return nil, err
 		}
 	}

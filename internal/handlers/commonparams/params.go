@@ -74,22 +74,22 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// GetSkipParam validates the given skip value for find and count commands.
+// GetWholeParamStrict validates the given value for find and count commands.
 //
 // If the value is valid, it returns its int64 representation,
 // otherwise it returns a command error with the given command being mentioned.
-func GetSkipParam(command string, value any) (int64, error) {
-	skipValue, err := GetWholeNumberParam(value)
+func GetWholeParamStrict(command string, param string, value any) (int64, error) {
+	whole, err := GetWholeNumberParam(value)
 
 	if err == nil {
-		if skipValue < 0 {
+		if whole < 0 {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", skipValue),
+				fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
 			)
 		}
 
-		return skipValue, nil
+		return whole, nil
 	}
 
 	switch {
@@ -101,20 +101,20 @@ func GetSkipParam(command string, value any) (int64, error) {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
-				`BSON field '%s.skip' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				command, AliasFromType(value),
+				`BSON field '%s.%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+				command, param, AliasFromType(value),
 			),
-			"skip",
+			param,
 		)
 	case errors.Is(err, ErrNotWholeNumber):
 		if math.Signbit(value.(float64)) {
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
+				fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
 			)
 		}
 
-		// for non-integer numbers, skip value is rounded to the greatest integer value less than the given value.
+		// for non-integer numbers, value is rounded to the greatest integer value less than the given value.
 		return int64(math.Floor(value.(float64))), nil
 
 	case errors.Is(err, ErrLongExceededPositive):
@@ -123,7 +123,7 @@ func GetSkipParam(command string, value any) (int64, error) {
 	case errors.Is(err, ErrLongExceededNegative):
 		return 0, commonerrors.NewCommandError(
 			commonerrors.ErrValueNegative,
-			fmt.Errorf("BSON field 'skip' value must be >= 0, actual value '%d'", int(math.Ceil(value.(float64)))),
+			fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
 		)
 
 	default:
