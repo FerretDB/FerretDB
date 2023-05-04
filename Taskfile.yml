@@ -322,7 +322,7 @@ tasks:
       - >
         bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=''
-        --listen-tls=:27018F
+        --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
         --listen-tls-key-file=./build/certs/server-key.pem
         --listen-tls-ca-file=./build/certs/rootCA-cert.pem
