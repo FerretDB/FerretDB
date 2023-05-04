@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -44,8 +45,8 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		return nil, errors.New(errCode.String())
 	}
 
-	switch expected {
-	case "ok":
+	switch {
+	case expected == "ok":
 		var reply wire.OpMsg
 
 		replyDoc := must.NotFail(types.NewDocument(
@@ -58,8 +59,11 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 		return &reply, nil
 
-	case "panic":
-		panic("debugError panic")
+	case strings.HasPrefix(expected, "panic"):
+		panic("debugError " + expected)
+
+	case strings.HasPrefix(expected, "lazy"):
+		return nil, lazyerrors.New(expected)
 
 	default:
 		return nil, errors.New(expected)

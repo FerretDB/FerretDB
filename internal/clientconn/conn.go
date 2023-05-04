@@ -179,13 +179,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		// write to temporary file first, then rename to avoid partial files
 
-		var f *os.File
-		h := sha256.New()
-
 		// use local directory so os.Rename below always works
+		var f *os.File
 		if f, err = os.CreateTemp(c.testRecordsDir, "_*.partial"); err != nil {
 			return
 		}
+
+		h := sha256.New()
 
 		defer func() {
 			// do not store partial files
@@ -217,8 +217,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 		}()
 
-		mw := io.MultiWriter(f, h)
-		r := io.TeeReader(c.netConn, mw)
+		r := io.TeeReader(c.netConn, io.MultiWriter(f, h))
 		bufr = bufio.NewReader(r)
 	}
 
@@ -245,24 +244,21 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil && errors.As(err, &validationErr) {
-			var res wire.OpMsg
+			// Currently, we respond with OP_MSG containing an error and don't close the connection.
+			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.
+			// Second, what command it was, if any, and if the client could handle it.
+			//
+			// TODO https://github.com/FerretDB/FerretDB/issues/2412
 
 			// get protocol error to return correct error document
-			protoErr, ok := commonerrors.ProtocolError(validationErr)
-			if !ok {
-				panic(err)
-			}
+			protoErr := commonerrors.ProtocolError(validationErr)
 
+			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 
-			var b []byte
-
-			b, err = res.MarshalBinary()
-			if err != nil {
-				panic(err)
-			}
+			b := must.NotFail(res.MarshalBinary())
 
 			resHeader = &wire.MsgHeader{
 				OpCode:        reqHeader.OpCode,
@@ -272,7 +268,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			if err = wire.WriteMessage(bufw, resHeader, &res); err != nil {
-				panic(err)
+				return
 			}
 
 			if err = bufw.Flush(); err != nil {
@@ -446,8 +442,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if err != nil {
 		switch resHeader.OpCode {
 		case wire.OpCodeMsg:
-			protoErr, recoverable := commonerrors.ProtocolError(err)
-			closeConn = !recoverable
+			protoErr := commonerrors.ProtocolError(err)
 
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
