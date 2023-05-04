@@ -15,17 +15,21 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestFindAndModifyCompatSimple(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"EmptyQueryRemove": {
 			command: bson.D{
@@ -81,6 +85,8 @@ func TestFindAndModifyCompatSimple(t *testing.T) {
 }
 
 func TestFindAndModifyCompatErrors(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"NotEnoughParameters": {
 			command: bson.D{},
@@ -108,12 +114,29 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"maxTimeMS", "string"},
 			},
 		},
+		"DollarPrefixedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+		"DollarPrefixedNestedFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$invalid", "val"}}}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			skipForTigris: "schema validation would fail",
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
 }
 
 func TestFindAndModifyCompatUpdate(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Replace": {
 			command: bson.D{
@@ -169,6 +192,197 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
+		"InvalidOperator": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$invalid", "non-existent-field"}}},
+			},
+		},
+		"OperatorConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+		},
+		"ConflictKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+			altMessage: "Updating the path 'v' would create a conflict at 'v'",
+		},
+		"ConflictKeyPrefix": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpdateSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NonExistentExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"UpdateID": {
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+			},
+			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NonExistentExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"UnsetNonExistentField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$unset", "non-existent-field"}}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NotDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "datetime"}}},
+				{"update", bson.D{{"$currentDate", 1}}},
+			},
+		},
+		"UnknownOption": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "datetime"}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"foo", int32(1)}}}}}}},
+			},
+		},
+		"NotDate": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "datetime"}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", int32(1)}}}}}}},
+			},
+		},
+		"UnknownType": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "datetime"}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "unknown"}}}}}}},
+			},
+		},
+		"InvalidType": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "datetime"}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", 1}}}}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpdateRename(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NotDocument": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$rename", 1}}},
+			},
+		},
+		"NonStringTargetField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v", 0}}}}},
+			},
+		},
+		"SameTargetField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v", "v"}}}}},
+			},
+		},
+		"DuplicateSource": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"v", "x"}}}}},
+			},
+		},
+		"DuplicateTarget": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"x", "w"}}}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -178,6 +392,8 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 //
 // TODO Add more tests for sort: https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"DotNotation": {
 			command: bson.D{
@@ -207,6 +423,13 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
 			},
 		},
+		"BadDollarStart": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
+				{"sort", bson.D{{"$v.foo", 1}, {"_id", 1}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -218,23 +441,9 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 		"Tigris' schema doesn't fit for most of providers, upsert for Tigris is tested in TestFindAndModifyUpsert.",
 	)
 
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
-		"Upsert": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-				{"upsert", true},
-			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
-		},
-		"UpsertNew": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
-				{"upsert", true},
-				{"new", true},
-			},
-		},
 		"UpsertNoSuchDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
@@ -257,7 +466,6 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"v", 43.13}}},
 				{"upsert", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1098",
 		},
 		"UpsertReplaceReturnNew": {
 			command: bson.D{
@@ -267,19 +475,154 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
+		"ExistsNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+				{"new", true},
+			},
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrueID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpsertSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Upsert": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+			},
+		},
+		"UpsertNew": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"update", bson.D{{"$set", bson.D{{"v", 43.13}}}}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"UpsertNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "43"}}}}},
+			},
+		},
+		"UpsertNewNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "43"}}}}},
+				{"new", true},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"UpsertID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
+			},
+			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"NonExistentExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"NonExistentExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"ExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "v"}}},
+			},
+		},
+		"UnsetNonExistentField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "double"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$unset", "non-existent-field"}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
 }
 
 func TestFindAndModifyCompatRemove(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Remove": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
 				{"remove", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 		"RemoveEmptyQueryResult": {
 			command: bson.D{
@@ -295,7 +638,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 				},
 				{"remove", true},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1243",
 		},
 	}
 
@@ -304,7 +646,8 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
-	command bson.D
+	command    bson.D
+	altMessage string
 
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
@@ -354,6 +697,23 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					var targetErr, compatErr error
 					targetErr = targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetMod)
 					compatErr = compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatMod)
+
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						targetErr = UnsetRaw(t, targetErr)
+						compatErr = UnsetRaw(t, compatErr)
+
+						if tc.altMessage != "" {
+							var expectedErr mongo.CommandError
+							require.True(t, errors.As(compatErr, &expectedErr))
+							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+						} else {
+							assert.Equal(t, compatErr, targetErr)
+						}
+
+						return
+					}
+
 					require.Equal(t, compatErr, targetErr)
 					AssertEqualDocuments(t, compatMod, targetMod)
 

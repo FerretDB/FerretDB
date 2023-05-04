@@ -23,7 +23,7 @@ import (
 // ConsumeValues consumes all values from iterator until it is done.
 // ErrIteratorDone error is returned as nil; any other error is returned as-is.
 //
-// Iterator is always closed at the end.
+// It always closes the iterator.
 func ConsumeValues[K, V any](iter Interface[K, V]) ([]V, error) {
 	defer iter.Close()
 
@@ -105,4 +105,6 @@ func (iter *valuesIterator[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[struct{}, any] = (*valuesIterator[any, any])(nil)
+	_ NextFunc[struct{}, any]  = (*valuesIterator[any, any])(nil).Next
+	_ Closer                   = (*valuesIterator[any, any])(nil)
 )

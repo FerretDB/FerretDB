@@ -62,6 +62,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrDollarPrefixedFieldName indicates the field name is prefixed with $.
+	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
+
 	// ErrInvalidID indicates that _id field is invalid.
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
@@ -71,11 +74,14 @@ const (
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
-	// ErrInvalidOptions indicates that _id index cannot be deleted.
-	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
+	// ErrImmutableField indicates that _id field is immutable.
+	ErrImmutableField = ErrorCode(66) // ImmutableField
 
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
+
+	// ErrInvalidOptions indicates that _id index cannot be deleted.
+	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
@@ -115,6 +121,9 @@ const (
 
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
+
+	// ErrProjectBadExpression indicates projection value wrong type.
+	ErrProjectBadExpression = ErrorCode(15969) // Location15969
 
 	// ErrSortBadExpression indicates sort expression is not object.
 	ErrSortBadExpression = ErrorCode(15973) // Location15973
@@ -181,11 +190,11 @@ const (
 	// ErrStageGroupMultipleAccumulator indicates that group field must specify one accumulator.
 	ErrStageGroupMultipleAccumulator = ErrorCode(40238) // Location40238
 
-	// ErrStageInvalid indicates invalid aggregation pipeline stage.
-	ErrStageInvalid = ErrorCode(40323) // Location40323
-
 	// ErrStageGroupInvalidAccumulator indicates invalid accumulator field.
 	ErrStageGroupInvalidAccumulator = ErrorCode(40234) // Location40234
+
+	// ErrStageInvalid indicates invalid aggregation pipeline stage.
+	ErrStageInvalid = ErrorCode(40323) // Location40323
 
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352

@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -59,11 +59,13 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, res, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
+
+			assert.Equal(t, QueryResults{}, res)
 
 			defer iter.Close()
 
@@ -109,13 +111,15 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, res, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
 			iter.Close()
+
+			assert.Equal(t, QueryResults{}, res)
 
 			n, doc, err := iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
@@ -154,11 +158,13 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, res, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
+
+			assert.Equal(t, QueryResults{}, res)
 
 			cancelGet()
 
@@ -205,13 +211,15 @@ func TestQueryDocuments(t *testing.T) {
 			}
 
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, res, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
+
+			assert.Equal(t, QueryResults{}, res)
 
 			n, doc, err := iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
@@ -246,13 +254,15 @@ func TestQueryDocuments(t *testing.T) {
 
 		err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 			qp := &QueryParams{DB: databaseName, Collection: collectionName}
-			iter, err := QueryDocuments(ctxGet, tx, qp)
+			iter, res, err := QueryDocuments(ctxGet, tx, qp)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 			require.NotNil(t, iter)
 
 			defer iter.Close()
+
+			assert.Equal(t, QueryResults{}, res)
 
 			n, doc, err := iter.Next()
 			require.Equal(t, iterator.ErrIteratorDone, err, "%v", err)
@@ -278,6 +288,80 @@ func TestQueryDocuments(t *testing.T) {
 
 		require.NoError(t, err)
 	})
+}
+
+func TestQueryDocumentsPushdown(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+
+	pool := getPool(ctx, t)
+	databaseName := testutil.DatabaseName(t)
+	setupDatabase(ctx, t, pool, databaseName)
+
+	insertDoc := must.NotFail(types.NewDocument("_id", int32(1)))
+
+	for name, tc := range map[string]struct {
+		Filter      *types.Document
+		Sort        *types.Document
+		ExpectedRes QueryResults
+	}{
+		"Filter": {
+			Filter: must.NotFail(types.NewDocument("v", "foo")),
+			ExpectedRes: QueryResults{
+				FilterPushdown: true,
+			},
+		},
+		"Sort": {
+			Sort: must.NotFail(types.NewDocument("v", int32(1))),
+			ExpectedRes: QueryResults{
+				SortPushdown: true,
+			},
+		},
+		"FilterAndSort": {
+			Filter: must.NotFail(types.NewDocument("v", int32(1))),
+			Sort:   must.NotFail(types.NewDocument("_id", int32(-1))),
+			ExpectedRes: QueryResults{
+				FilterPushdown: true,
+				SortPushdown:   true,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			collectionName := testutil.CollectionName(t)
+			err := pool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+				if err := InsertDocument(ctx, tx, databaseName, collectionName, insertDoc); err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				getCtx, getCancel := context.WithCancel(ctx)
+				defer getCancel()
+
+				qp := QueryParams{
+					DB:         databaseName,
+					Collection: collectionName,
+					Filter:     tc.Filter,
+					Sort:       tc.Sort,
+				}
+
+				iter, res, err := QueryDocuments(getCtx, tx, &qp)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				iter.Close()
+
+				assert.Equal(t, tc.ExpectedRes, res)
+
+				return nil
+			})
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestPrepareWhereClause(t *testing.T) {
@@ -493,7 +577,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			actual, args, err := prepareWhereClause(tc.filter)
+			actual, args, err := prepareWhereClause(new(Placeholder), tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)

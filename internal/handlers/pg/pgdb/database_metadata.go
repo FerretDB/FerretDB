@@ -21,7 +21,7 @@ import (
 	"hash/fnv"
 	"regexp"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -200,7 +200,7 @@ func (ms *metadataStorage) get(ctx context.Context, forUpdate bool) (*metadata, 
 		forUpdate: forUpdate,
 	}
 
-	iter, err := buildIterator(ctx, ms.tx, iterParams)
+	iter, _, err := buildIterator(ctx, ms.tx, iterParams)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -309,7 +309,7 @@ func metadataToDocument(metadata *metadata) *types.Document {
 	for _, idx := range metadata.indexes {
 		keyDoc := types.MakeDocument(len(idx.Key))
 		for _, pair := range idx.Key {
-			keyDoc.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be pjson-marshaled correctly
+			keyDoc.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be sjson-marshaled correctly
 		}
 
 		indexesArr.Append(must.NotFail(types.NewDocument(

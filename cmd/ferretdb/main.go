@@ -80,9 +80,10 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Test struct {
-		RecordsDir      string `default:"" help:"Experimental: directory for record files."`
-		DisablePushdown bool   `default:"false" help:"Experimental: disable query pushdown."`
-		EnableCursors   bool   `default:"false" help:"Experimental: enable cursors."`
+		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
+		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableSortingPushdown bool   `default:"false" help:"Experimental: enable sorting pushdown."`
+		EnableCursors         bool   `default:"false" help:"Experimental: enable cursors."`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -338,8 +339,9 @@ func run() {
 		HANAURL: hanaFlags.HANAURL,
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: cli.Test.DisablePushdown,
-			EnableCursors:   cli.Test.EnableCursors,
+			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
+			EnableSortPushdown:    cli.Test.EnableSortingPushdown,
+			EnableCursors:         cli.Test.EnableCursors,
 		},
 	})
 	if err != nil {

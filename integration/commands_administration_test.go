@@ -74,7 +74,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	expectedErr = mongo.CommandError{
 		Code:    48,
 		Name:    "NamespaceExists",
-		Message: `Collection testcommandsadministrationcreatedroplist.TestCommandsAdministrationCreateDropList already exists.`,
+		Message: `Collection TestCommandsAdministrationCreateDropList.TestCommandsAdministrationCreateDropList already exists.`,
 	}
 	AssertEqualError(t, expectedErr, err)
 
@@ -583,16 +583,17 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
+	// Expected result is to have empty statistics (neither the database nor the collection exists)
 	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
 	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("storageSize")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("nindexes")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("totalIndexSize")))
+	assert.Equal(t, int32(0), must.NotFail(doc.Get("totalSize")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 8_012)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
@@ -605,15 +606,31 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	require.NoError(t, err)
 
 	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
+	if setup.IsTigris(t) {
+		assert.True(t, doc.Has("size"))
+		assert.True(t, doc.Has("avgObjSize"))
+		assert.True(t, doc.Has("storageSize"))
+		assert.True(t, doc.Has("nindexes"))
+		assert.True(t, doc.Has("totalIndexSize"))
+		assert.True(t, doc.Has("totalSize"))
+
+		return
+	}
+
+	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("size")), 39_900)
+	assert.InDelta(t, int32(2_400), must.NotFail(doc.Get("avgObjSize")), 2_370)
+	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("storageSize")), 39_900)
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, int32(12_000), must.NotFail(doc.Get("totalIndexSize")), 11_000)
+	assert.InDelta(t, int32(32_000), must.NotFail(doc.Get("totalSize")), 30_000)
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
@@ -625,16 +642,31 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
-	assert.InDelta(t, float64(16), must.NotFail(doc.Get("size")), 16)
-	assert.InDelta(t, float64(8), must.NotFail(doc.Get("storageSize")), 8)
-	assert.InDelta(t, float64(8), must.NotFail(doc.Get("totalIndexSize")), 8)
-	assert.InDelta(t, float64(24), must.NotFail(doc.Get("totalSize")), 24)
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
+	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
+	if setup.IsTigris(t) {
+		assert.True(t, doc.Has("size"))
+		assert.True(t, doc.Has("avgObjSize"))
+		assert.True(t, doc.Has("storageSize"))
+		assert.True(t, doc.Has("nindexes"))
+		assert.True(t, doc.Has("totalIndexSize"))
+		assert.True(t, doc.Has("totalSize"))
+
+		return
+	}
+
+	assert.InDelta(t, int32(16), must.NotFail(doc.Get("size")), 16)
+	assert.InDelta(t, int32(2_400), must.NotFail(doc.Get("avgObjSize")), 2_370)
+	assert.InDelta(t, int32(24), must.NotFail(doc.Get("storageSize")), 24)
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, int32(8), must.NotFail(doc.Get("totalIndexSize")), 8)
+	assert.InDelta(t, int32(24), must.NotFail(doc.Get("totalSize")), 24)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
@@ -656,7 +688,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.InDelta(t, float64(200), must.NotFail(doc.Get("millis")), 200)
 	})
 
-	t.Run("NonExisting", func(t *testing.T) {
+	t.Run("NonExistent", func(t *testing.T) {
 		t.Parallel()
 		ctx, collection := setup.Setup(t)
 
@@ -682,15 +714,28 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
-
-	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.Equal(t, int32(1), doc.Remove("collections"))
+	assert.Equal(t, int32(6), doc.Remove("objects")) // Number of documents in DocumentsStrings
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
-	assert.InDelta(t, float64(49152), doc.Remove("totalSize"), 49152)
+	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
+	if setup.IsTigris(t) {
+		assert.True(t, doc.Has("avgObjSize"))
+		assert.True(t, doc.Has("storageSize"))
+		assert.True(t, doc.Has("dataSize"))
+		assert.True(t, doc.Has("totalSize"))
+
+		return
+	}
+
+	assert.InDelta(t, int32(37_500), doc.Remove("avgObjSize"), 37_460)
+	assert.InDelta(t, int32(37_500), doc.Remove("dataSize"), 37_450)
+	assert.InDelta(t, int32(37_500), doc.Remove("storageSize"), 37_450)
+	assert.InDelta(t, int32(49_152), doc.Remove("totalSize"), 49_100)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
@@ -907,6 +952,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 
 			// MongoDB might be slow to update the status
 			var status any
+			var retry int64
 			for i := 0; i < 3; i++ {
 				var actual bson.D
 				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
@@ -923,7 +969,9 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 				if status == tc.expectedStatus {
 					break
 				}
-				ctxutil.Sleep(s.Ctx, time.Second)
+
+				retry++
+				ctxutil.SleepWithJitter(s.Ctx, time.Second, retry)
 			}
 
 			assert.Equal(t, tc.expectedStatus, status)

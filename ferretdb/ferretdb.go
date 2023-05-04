@@ -45,9 +45,9 @@ type Config struct {
 
 	// PostgreSQL connection string for `pg` handler.
 	// See:
-	// * https://pkg.go.dev/github.com/jackc/pgx/v4/pgxpool#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgx/v4#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgconn#ParseConfig
+	// * https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
+	// * https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
+	// * https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
 	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
 	// Tigris parameters for `tigris` handler.
@@ -90,6 +90,8 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
+	version.Get().Package = "embedded"
+
 	if config.Listener.TCP == "" &&
 		config.Listener.Unix == "" &&
 		config.Listener.TLS == "" {

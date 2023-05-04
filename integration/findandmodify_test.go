@@ -36,7 +36,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 		"EmptyCollectionName": {
 			err: &mongo.CommandError{
 				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname-emptycollectionname.'",
+				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 				Name:    "InvalidNamespace",
 			},
 		},
@@ -148,6 +148,7 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command         bson.D
 		lastErrorObject bson.D
+		skipForTigris   string
 	}{
 		"UpsertNoSuchDocumentNoIdInQuery": {
 			command: bson.D{
@@ -166,9 +167,59 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				{"updatedExisting", false},
 			},
 		},
+		"UpsertExpressionKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+			skipForTigris: "schema validation would fail",
+		},
+		"UpsertDocumentKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"key", "val"}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"v", "replaced"}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+			skipForTigris: "schema validation would fail",
+		},
+		"ExistsFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
+		"NonExistentExistsTrue": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+			lastErrorObject: bson.D{
+				{"n", int32(1)},
+				{"updatedExisting", false},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
+			}
+
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 

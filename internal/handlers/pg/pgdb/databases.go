@@ -20,15 +20,15 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
-var validateDatabaseNameRe = regexp.MustCompile("^[a-z_-][a-z0-9_-]{0,62}$")
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
 
 // Databases returns a sorted list of FerretDB databases / PostgreSQL schemas.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {

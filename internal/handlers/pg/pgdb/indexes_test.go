@@ -21,7 +21,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -61,7 +61,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedIndexdef := fmt.Sprintf(
-		"CREATE INDEX %s ON %s.%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
+		"CREATE INDEX %s ON \"%s\".%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
 		pgIndexName, databaseName, tableName,
 	)
 	assert.Equal(t, expectedIndexdef, indexdef)
