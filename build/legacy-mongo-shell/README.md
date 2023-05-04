@@ -13,6 +13,14 @@ For example, to check if the `findAndModify` command failed with the error code 
 
 More useful functions:
 
+`assert.eq(a, b, msg)`
+
+throws if two values are not equal (tested without strict equality).
+
+`assert.isnull(what, msg)`
+
+throws if `what` is not null.
+
 `assert.commandFailed(res, msg)`
 
 throws if the command did not fail.
