@@ -21,7 +21,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -53,13 +52,16 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 		return nil, err
 	}
 
-	// Select random N number of files from an array of files
-	N := 1000
-	if len(recordFiles) > N {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		offset := r.Intn(len(recordFiles) - N)
-		limit := offset + N
-		recordFiles = recordFiles[offset:limit]
+	// Select random 1000 number of files from an array of files
+	if len(recordFiles) > 1000 {
+		idx := rand.Perm(len(recordFiles))
+		idx = idx[:1000]
+
+		sel := []string{}
+		for _, i := range idx {
+			sel = append(sel, recordFiles[i])
+		}
+		recordFiles = sel
 	}
 
 	var resMsgs []testCase
