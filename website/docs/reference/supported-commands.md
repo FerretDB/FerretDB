@@ -675,8 +675,8 @@ db.aggregate()
 | `renameCollection`                |                                |                           | ✅      |                                                                                                  |
 |                                   | `to`                           |                           | ✅      | Cross-database support not implemented [issue](https://github.com/FerretDB/FerretDB/issues/2563) |
 |                                   | `dropTarget`                   |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2565)                                        |
-|                                   | `writeConcern`                 |                           | ⚠️     |                                                                                                  |
-|                                   | `comment`                      |                           | ⚠️     |                                                                                                  |
+|                                   | `writeConcern`                 |                           | ⚠️     | Ignored                                                                                          |
+|                                   | `comment`                      |                           | ⚠️     | Ignored                                                                                                 |
 | `rotateCertificates`              |                                |                           | ❌      |                                                                                                  |
 | `setFeatureCompatibilityVersion`  |                                |                           | ❌      |                                                                                                  |
 | `setIndexCommitQuorum`            |                                |                           | ❌      |                                                                                                  |

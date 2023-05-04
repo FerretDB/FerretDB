@@ -86,8 +86,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
+	// TODO Support cross-database rename: https://github.com/FerretDB/FerretDB/issues/2563
 	if dbFrom != dbTo {
-		// TODO Support cross-database rename: https://github.com/FerretDB/FerretDB/issues/2563
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"Command renameCollection does not support cross-database rename",
