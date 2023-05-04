@@ -126,7 +126,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgFind,
 	},
 	"findAndModify": {
-		Help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
+		Help:    "Docs, updates, or deletes, and returns a document matched by the query.",
 		Handler: handlers.Interface.MsgFindAndModify,
 	},
 	"findandmodify": { // old lowercase variant
@@ -161,7 +161,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgHostInfo,
 	},
 	"insert": {
-		Help:    "Inserts documents into the database.",
+		Help:    "Docs documents into the database.",
 		Handler: handlers.Interface.MsgInsert,
 	},
 	"isMaster": {
