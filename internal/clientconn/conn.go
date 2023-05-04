@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -204,19 +205,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 				c.l.Warn(e)
 			}
 
-			var hashPath string
-
-			hash := fmt.Sprintf("%64x", h.Sum(nil))
-			for i := 0; i < len(hash); i += 2 {
-				hashPath = filepath.Join(hashPath, hash[i:i+2])
-			}
-
-			makePath := filepath.Join(c.testRecordsDir, hashPath[:len(hashPath)-2])
-			if e := os.MkdirAll(makePath, 0o777); e != nil {
+			fileName := hex.EncodeToString(h.Sum(nil))
+			hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
+			if e := os.MkdirAll(hashPath, 0o777); e != nil {
 				c.l.Warn(e)
 			}
 
-			path := filepath.Join(c.testRecordsDir, hashPath+".bin")
+			path := filepath.Join(hashPath, fileName+".bin")
 			if e := os.Rename(f.Name(), path); e != nil {
 				c.l.Warn(e)
 			}
