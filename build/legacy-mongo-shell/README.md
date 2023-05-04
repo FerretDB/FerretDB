@@ -33,6 +33,18 @@ throws if the two arrays do not have the same members, in any order. By default,
 
 throws if write result contained an error.
 
+`assert.docEq(expectedDoc, actualDoc, msg)`
+
+throws if `actualDoc` object is not equal to `expectedDoc` object. The order of fields
+(properties) within objects is disregarded. Throws if object representation in BSON exceeds 16793600 bytes.
+
+`assert.retry(func, msg, num_attempts, intervalMS, {runHangAnalyzer = true} = {})`
+
+calls the given function `func` repeatedly at time intervals specified by
+`intervalMS` (milliseconds) until either func() returns true or the number of
+attempted function calls is equal to `num_attempts`. Throws an exception with
+message `msg` after all attempts are used up. If no `intervalMS` argument is passed, it defaults to 0.
+
 Here are all the available functions:
 
 ```
