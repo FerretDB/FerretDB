@@ -1,6 +1,6 @@
 ### Useful assertions
 
-The legacy `mongo` shell uses its own assertions defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js). This `mongosh` deviates from this which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
+The legacy `mongo` shell uses its own assertions defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js). This deviates from `mongosh` this which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
 
 A useful function is `assert.commandFailedWithCode` which asserts that the command failed with the expected code as the name implies. One should pass the result of a call to the `db.runCommand()` helper as this provides a result type that the function can parse.
 
