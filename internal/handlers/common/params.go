@@ -59,7 +59,7 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 	if !ok {
 		msg := fmt.Sprintf(
 			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
-			key, AliasFromType(v), AliasFromType(defaultValue),
+			key, commonparams.AliasFromType(v), commonparams.AliasFromType(defaultValue),
 		)
 
 		return defaultValue, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
@@ -107,7 +107,7 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 		msg := fmt.Sprintf(
 			`BSON field '%s' is the wrong type '%s', expected types '[bool, long, int, decimal, double]'`,
 			key,
-			AliasFromType(v),
+			commonparams.AliasFromType(v),
 		)
 
 		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
@@ -293,20 +293,6 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	}
 
 	return bitmask, nil
-}
-
-// parseTypeCode returns typeCode and error by given type code alias.
-func parseTypeCode(alias string) (typeCode, error) {
-	code, ok := aliasToTypeCode[alias]
-	if !ok {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf(`Unknown type name alias: %s`, alias),
-			"$type",
-		)
-	}
-
-	return code, nil
 }
 
 // addNumbers returns the result of v1 and v2 addition and error if addition failed.

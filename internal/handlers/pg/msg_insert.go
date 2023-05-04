@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -114,7 +115,7 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams
 	if !ok {
 		return commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+			fmt.Sprintf("document has invalid type %s", commonparams.AliasFromType(doc)),
 		)
 	}
 

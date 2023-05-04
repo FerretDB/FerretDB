@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -74,7 +75,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	if res.Collection, ok = collection.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collection)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collection)),
 			doc.Command(),
 		)
 	}
@@ -98,7 +99,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	Ignored(doc, l, "hint")
 
 	if s, _ := doc.Get("skip"); s != nil {
-		if res.Skip, err = GetSkipParam("find", s); err != nil {
+		if res.Skip, err = commonparams.GetSkipParam("find", s); err != nil {
 			return nil, err
 		}
 	}

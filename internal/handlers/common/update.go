@@ -408,7 +408,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					AliasFromType(docValue),
+					commonparams.AliasFromType(docValue),
 				),
 			)
 		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
@@ -575,7 +575,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
-				AliasFromType(updateV),
+				commonparams.AliasFromType(updateV),
 			),
 		)
 	}
@@ -689,7 +689,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					AliasFromType(docValue),
+					commonparams.AliasFromType(docValue),
 				),
 			)
 		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
@@ -975,7 +975,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
-				AliasFromType(updateExpression),
+				commonparams.AliasFromType(updateExpression),
 				op,
 				types.FormatAnyValue(updateExpression),
 			),
@@ -1135,7 +1135,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 			return newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
+					"or a $type expression ({$type: 'timestamp/date'}).", commonparams.AliasFromType(setValue),
 				),
 				command,
 			)

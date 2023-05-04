@@ -58,7 +58,7 @@ func GetScaleParam(command string, value any) (int32, error) {
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field '%s.scale' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				command, AliasFromType(value),
+				command, commonparams.AliasFromType(value),
 			),
 			"scale",
 		)
