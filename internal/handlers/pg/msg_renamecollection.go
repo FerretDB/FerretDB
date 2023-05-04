@@ -65,7 +65,23 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	namespaceTo, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
-		return nil, err
+		to, err := document.Get("to")
+		if err != nil || to == types.Null {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrMissingField,
+				"BSON field 'renameCollection.to' is missing but a required field",
+				command,
+			)
+		}
+
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				"BSON field 'renameCollection.to' is the wrong type '%s', expected type 'string'",
+				common.AliasFromType(to),
+			),
+			command,
+		)
 	}
 
 	dbFrom, collectionFrom, err := extractFromNamespace(namespaceFrom)
@@ -104,6 +120,19 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		dbFromExists, err := pgdb.DatabaseExists(ctx, tx, dbFrom)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if !dbFromExists {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNamespaceNotFound,
+				fmt.Sprintf("Database %s does not exist or is drop pending", dbFrom),
+				command,
+			)
+		}
+
 		return pgdb.RenameCollection(ctx, tx, dbFrom, collectionFrom, collectionTo)
 	})
 
@@ -128,6 +157,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			fmt.Sprintf("Invalid collection name: '%s'", namespaceTo),
 			command,
 		)
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
@@ -143,7 +174,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 // extractFromNamespace returns the database and collection name from a given namespace.
 //
 // The namespace must be in the format of "database.collection".
-// If the namespace is invalid, an error is returned
+// If the namespace is invalid, an error is returned.
 func extractFromNamespace(namespace string) (string, string, error) {
 	split := strings.Split(namespace, ".")
 

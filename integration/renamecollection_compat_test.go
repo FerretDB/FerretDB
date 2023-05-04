@@ -15,11 +15,13 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -51,6 +53,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 		targetNSTo   any
 		compatNSTo   any
 		resultType   compatTestCaseResultType
+		altMessage   string
 	}{
 		"Valid": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
@@ -64,6 +67,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 			targetNSTo:   targetDB.Name() + ".newCollection",
 			compatNSTo:   compatDB.Name() + ".newCollection",
 			resultType:   emptyResult,
+			altMessage:   `required parameter "renameCollection" has type types.NullType (expected string)`,
 		},
 		"NilTo": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
@@ -78,6 +82,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 			targetNSTo:   targetDB.Name() + ".newCollection",
 			compatNSTo:   compatDB.Name() + ".newCollection",
 			resultType:   emptyResult,
+			altMessage:   `required parameter "renameCollection" has type int32 (expected string)`,
 		},
 		"BadTypeTo": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
@@ -103,8 +108,8 @@ func TestRenameCollectionCompat(t *testing.T) {
 		"EmptyDBFrom": {
 			targetNSFrom: "." + targetCollection.Name(),
 			compatNSFrom: "." + compatCollection.Name(),
-			targetNSTo:   ".newCollection",
-			compatNSTo:   ".newCollection",
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
 			resultType:   emptyResult,
 		},
 		"EmptyDBTo": {
@@ -178,13 +183,13 @@ func TestRenameCollectionCompat(t *testing.T) {
 				targetErr = UnsetRaw(t, targetErr)
 				compatErr = UnsetRaw(t, compatErr)
 
-				//if tc.altMessage != "" {
-				//	var expectedErr mongo.CommandError
-				//	require.True(t, errors.As(compatErr, &expectedErr))
-				//	AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-				//} else {
-				assert.Equal(t, compatErr, targetErr)
-				//	}
+				if tc.altMessage != "" {
+					var expectedErr mongo.CommandError
+					require.True(t, errors.As(compatErr, &expectedErr))
+					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+				} else {
+					assert.Equal(t, compatErr, targetErr)
+				}
 
 				return
 			}
