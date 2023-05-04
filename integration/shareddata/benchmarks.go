@@ -15,9 +15,11 @@
 package shareddata
 
 import (
-	"fmt"
+	"math/rand"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/exp/maps"
 )
 
@@ -56,17 +58,19 @@ var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", 10
 // BenchmarkLargeDocuments provides a single large document with fields of various types.
 var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", 123, func(n int) generatorFunc {
 	values := []any{
-		"foo", 42, "42", bson.D{{"42", "hello"}},
+		true, "foo", false, true, 512, true, 42, false, -42, "42", false, false, true, bson.D{{"42", "hello"}},
+		primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+		false, true, 42.13, 501,
 	}
-	l := len(values)
+	vLen := len(values)
 
 	elements := make([]bson.E, 200)
 	elements[0] = bson.E{"_id", 0}
 
 	for i := 1; i < len(elements); i++ {
 		elements[i] = bson.E{
-			Key:   fmt.Sprint(i),
-			Value: values[i%l],
+			Key:   genLetters(i, 50),
+			Value: values[i%vLen],
 		}
 	}
 
@@ -104,4 +108,18 @@ func AllBenchmarkProviders() []BenchmarkProvider {
 	}
 
 	return maps.Values(res)
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+// genLetters returns pseudo-random string of specified length that consists of letters generated from seed.
+func genLetters(seed int, length int) string {
+	src := rand.NewSource(int64(seed))
+
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[src.Int63()%int64(len(letters))]
+	}
+
+	return string(b)
 }

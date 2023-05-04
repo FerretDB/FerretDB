@@ -78,33 +78,34 @@ func BenchmarkQuery(b *testing.B) {
 	})
 }
 
-// func BenchmarkReplaceLargeDocument(b *testing.B) {
-// 	provider := shareddata.BenchmarkLargeDocuments
+func BenchmarkReplaceLargeDocument(b *testing.B) {
+	provider := shareddata.BenchmarkLargeDocuments
 
-// 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-// 		BenchmarkProvider: provider,
-// 	})
-// 	ctx, coll := s.Ctx, s.Collection
+	s := setup.SetupWithOpts(b, &setup.SetupOpts{
+		BenchmarkProvider: provider,
+	})
+	ctx, coll := s.Ctx, s.Collection
 
-// 	filter := bson.D{{"_id", 0}}
-// 	runsCount := 1
+	runsCount := 1
 
-// 	b.Run(provider.Hash(), func(b *testing.B) {
-// 		for i := 0; i < b.N; i++ {
-// 			var doc bson.D
-// 			err := coll.FindOne(ctx, filter).Decode(&doc)
-// 			require.NoError(b, err)
+	b.Run(provider.Name(), func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			var doc bson.D
+			err := coll.FindOne(ctx, bson.D{}).Decode(&doc)
+			require.NoError(b, err)
 
-// 			doc[runsCount].Value = i * 11111
+			doc[runsCount].Value = i * 11111
 
-// 			updateRes, err := coll.ReplaceOne(ctx, filter, doc)
-// 			require.NoError(b, err)
+			updateRes, err := coll.ReplaceOne(ctx, bson.D{}, doc)
+			require.NoError(b, err)
 
-// 			require.Equal(b, int64(1), updateRes.ModifiedCount)
-// 		}
-// 		runsCount++
-// 	})
-// }
+			require.Equal(b, int64(1), updateRes.ModifiedCount)
+		}
+		runsCount++
+	})
+
+	b.Fail()
+}
 
 // func BenchmarkInsertMany(b *testing.B) {
 // 	id := 0

@@ -76,6 +76,26 @@ func ConsumeValuesN[K, V any](iter Interface[K, V], n int) ([]V, error) {
 	return res, nil
 }
 
+func GetKeyValueAtN[K, V any](iter Interface[K, V], n int) (key K, val V, err error) {
+	var zeroK K
+	var zeroV V
+
+	defer iter.Close()
+
+	for i := 0; i < n; i++ {
+		key, val, err = iter.Next()
+		if err != nil {
+			if errors.Is(err, ErrIteratorDone) {
+				return zeroK, zeroV, lazyerrors.Errorf("Index %d exceeded the length of iterator: %d", n, i)
+			}
+
+			return zeroK, zeroV, lazyerrors.Error(err)
+		}
+	}
+
+	return
+}
+
 // Values returns an iterator over values of another iterator.
 //
 // Close method closes the underlying iterator.
