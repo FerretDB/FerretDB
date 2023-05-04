@@ -162,7 +162,7 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return AssertEqualCommandError(t, expected, actual)
 }
 
-// AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
+// AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
 func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
@@ -178,7 +178,7 @@ func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual e
 	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
+// AssertEqualWriteError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
 func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
@@ -205,11 +205,11 @@ func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error
 func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	t.Helper()
 
-	var a mongo.CommandError
-	require.ErrorAs(t, actual, &a)
+	a, ok := actual.(mongo.CommandError)
+	require.Truef(t, ok, "actual is %T, not mongo.CommandError", a)
 
-	var e mongo.CommandError
-	require.ErrorAs(t, expected, &e)
+	e, ok := expected.(mongo.CommandError)
+	require.Truef(t, ok, "expected is %T, not mongo.CommandError", e)
 
 	a.Raw = nil
 	e.Raw = nil

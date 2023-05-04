@@ -76,6 +76,7 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 
+						// TODO https://github.com/FerretDB/FerretDB/issues/2545
 						if tc.altErrorMsg != "" {
 							AssertMatchesCommandError(t, compatErr, targetErr)
 
