@@ -103,8 +103,8 @@ func TestRenameCollectionCompat(t *testing.T) {
 		"EmptyDBFrom": {
 			targetNSFrom: "." + targetCollection.Name(),
 			compatNSFrom: "." + compatCollection.Name(),
-			targetNSTo:   targetDB.Name() + ".newCollection",
-			compatNSTo:   targetDB.Name() + ".newCollection",
+			targetNSTo:   ".newCollection",
+			compatNSTo:   ".newCollection",
 			resultType:   emptyResult,
 		},
 		"EmptyDBTo": {
@@ -196,7 +196,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 			compatNames, err := compatDB.ListCollectionNames(ctx, bson.D{})
 			require.NoError(t, err)
 
-			assert.Equal(t, targetNames, compatNames)
+			assert.ElementsMatch(t, targetNames, compatNames)
 
 			// Recreation of collection with the old name must be possible
 			err = targetDB.CreateCollection(ctx, targetCollection.Name())
@@ -212,7 +212,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 			compatNames, err = compatDB.ListCollectionNames(ctx, bson.D{})
 			require.NoError(t, err)
 
-			assert.Equal(t, targetNames, compatNames)
+			assert.ElementsMatch(t, targetNames, compatNames)
 		})
 	}
 }

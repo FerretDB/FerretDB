@@ -147,7 +147,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 func extractFromNamespace(namespace string) (string, string, error) {
 	split := strings.Split(namespace, ".")
 
-	if len(split) != 2 {
+	if len(split) != 2 || split[0] == "" || split[1] == "" {
 		return "", "", errors.New("invalid namespace")
 	}
 
