@@ -3,7 +3,7 @@
 name: Documentation
 description: Something is badly or not documented.
 assignees: ["ferretdb-bot"]
-labels: ["documentation"]
+labels: ["documentation", "not ready"]
 body:
   - type: markdown
     attributes:
