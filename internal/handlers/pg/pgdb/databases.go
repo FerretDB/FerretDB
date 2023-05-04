@@ -35,6 +35,7 @@ func DatabaseExists(ctx context.Context, tx pgx.Tx, db string) (bool, error) {
 	sql := "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)"
 
 	var exists bool
+
 	err := tx.QueryRow(ctx, sql, db).Scan(&exists)
 	if err != nil {
 		return false, lazyerrors.Error(err)

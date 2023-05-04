@@ -52,8 +52,8 @@ func TestRenameCollectionCompat(t *testing.T) {
 		compatNSFrom any
 		targetNSTo   any
 		compatNSTo   any
-		resultType   compatTestCaseResultType
 		altMessage   string
+		resultType   compatTestCaseResultType
 	}{
 		"Valid": {
 			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
