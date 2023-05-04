@@ -244,8 +244,6 @@ tasks:
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
-      - go test -bench=BenchmarkUnmarshal -benchtime={{.BENCHTIME}} ./internal/handlers/commonparams/    | tee -a new.txt
-      - go test -bench=BenchmarkGetFindParams -benchtime={{.BENCHTIME}} ./internal/handlers/common/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
