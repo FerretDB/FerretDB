@@ -65,7 +65,9 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	namespaceTo, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
-		to, err := document.Get("to")
+		var to any
+		to, err = document.Get("to")
+
 		if err != nil || to == types.Null {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrMissingField,
@@ -120,7 +122,9 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		dbFromExists, err := pgdb.DatabaseExists(ctx, tx, dbFrom)
+		var dbFromExists bool
+
+		dbFromExists, err = pgdb.DatabaseExists(ctx, tx, dbFrom)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

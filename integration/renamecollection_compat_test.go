@@ -43,7 +43,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 	targetDB := targetCollection.Database()
 	compatDB := compatCollection.Database()
 
-	// Rename collection should be performed while connecting to the admin database.
+	// Collection rename should be performed while connecting to the admin database.
 	targetDBConnect := targetCollection.Database().Client().Database("admin")
 	compatDBConnect := compatCollection.Database().Client().Database("admin")
 
