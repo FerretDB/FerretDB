@@ -18,10 +18,11 @@ package clientconn
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
@@ -179,6 +180,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// write to temporary file first, then rename to avoid partial files
 
 		var f *os.File
+		h := sha256.New()
 
 		// use local directory so os.Rename below always works
 		if f, err = os.CreateTemp(c.testRecordsDir, "_*.partial"); err != nil {
@@ -203,16 +205,20 @@ func (c *conn) run(ctx context.Context) (err error) {
 				c.l.Warn(e)
 			}
 
-			path := filepath.Join(
-				c.testRecordsDir,
-				fmt.Sprintf("%s-%d.bin", time.Now().Format("2006.01.02.15.04.05.000"), rand.Uint64()),
-			)
+			fileName := hex.EncodeToString(h.Sum(nil))
+			hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
+			if e := os.MkdirAll(hashPath, 0o777); e != nil {
+				c.l.Warn(e)
+			}
+
+			path := filepath.Join(hashPath, fileName+".bin")
 			if e := os.Rename(f.Name(), path); e != nil {
 				c.l.Warn(e)
 			}
 		}()
 
-		r := io.TeeReader(c.netConn, f)
+		mw := io.MultiWriter(f, h)
+		r := io.TeeReader(c.netConn, mw)
 		bufr = bufio.NewReader(r)
 	}
 
