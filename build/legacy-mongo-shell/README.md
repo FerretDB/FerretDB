@@ -11,56 +11,6 @@ For example, to check if the `findAndModify` command failed with the error code 
 > assert.commandFailedWithCode(res, ErrorCodes.ImmutableField);
 ```
 
-`ErrorCodes` is an object that is generated from various source files. It provides error names that correspond to their respective codes.
-
-```js
-> ErrorCodes.
-Display all 443 possibilities? (y or n)
-ErrorCodes.APIDeprecationError                                          ErrorCodes.NetworkInterfaceExceededTimeLimit
-ErrorCodes.APIMismatchError                                             ErrorCodes.NetworkTimeout
-ErrorCodes.APIStrictError                                               ErrorCodes.NewReplicaSetConfigurationIncompatible
-ErrorCodes.APIVersionError                                              ErrorCodes.NoConfigPrimary
-ErrorCodes.AlarmAlreadyFulfilled                                        ErrorCodes.NoMatchParseContext
-ErrorCodes.AlreadyInitialized                                           ErrorCodes.NoMatchingDocument
-ErrorCodes.AmbiguousIndexKeyPattern                                     ErrorCodes.NoProgressMade
-ErrorCodes.AtomicityFailure                                             ErrorCodes.NoProjectionFound
-ErrorCodes.AuditingNotEnabled                                           ErrorCodes.NoQueryExecutionPlans
-ErrorCodes.AuthSchemaIncompatible                                       ErrorCodes.NoReplicationEnabled
-ErrorCodes.AuthenticationAbandoned                                      ErrorCodes.NoShardingEnabled
-ErrorCodes.AuthenticationFailed                                         ErrorCodes.NoSuchKey
-ErrorCodes.AuthenticationRestrictionUnmet                               ErrorCodes.NoSuchReshardCollection
-ErrorCodes.BSONObjectTooLarge                                           ErrorCodes.NoSuchSession
-ErrorCodes.BackgroundOperationInProgressForDatabase                     ErrorCodes.NoSuchTenantMigration
-ErrorCodes.BackgroundOperationInProgressForNamespace                    ErrorCodes.NoSuchTransaction
-ErrorCodes.BackupCursorOpenConflictWithCheckpoint                       ErrorCodes.NodeNotElectable
-ErrorCodes.BadPerfCounterPath                                           ErrorCodes.NodeNotFound
-ErrorCodes.BadValue                                                     ErrorCodes.NonConformantBSON
-ErrorCodes.BalancerInterrupted                                          ErrorCodes.NonExistentPath
-ErrorCodes.BrokenPromise                                                ErrorCodes.NonRetryableTenantMigrationConflict
-ErrorCodes.CallbackCanceled                                             ErrorCodes.NotAReplicaSet
-ErrorCodes.CanRepairToDowngrade                                         ErrorCodes.NotARetryableWriteCommand
-ErrorCodes.CannotApplyOplogWhilePrimary                                 ErrorCodes.NotExactValueField
-ErrorCodes.CannotBackfillArray                                          ErrorCodes.NotImplemented
-ErrorCodes.CannotBackup                                                 ErrorCodes.NotPrimaryNoSecondaryOk
-ErrorCodes.CannotBuildIndexKeys                                         ErrorCodes.NotPrimaryOrSecondary
-ErrorCodes.CannotConvertIndexToUnique                                   ErrorCodes.NotSecondary
-ErrorCodes.CannotCreateCollection                                       ErrorCodes.NotSingleValueField
-ErrorCodes.CannotCreateIndex                                            ErrorCodes.NotWritablePrimary
-ErrorCodes.CannotDowngrade                                              ErrorCodes.NotYetInitialized
-ErrorCodes.CannotDropShardKeyIndex                                      ErrorCodes.OBSOLETE_BalancerLostDistributedLock
-```
-
-`ErrorCodeStrings` is an object with the reverse mapping of the above.
-
-```js
-> ErrorCodeStrings[0]
-OK
-> ErrorCodeStrings[2]
-BadValue
-> ErrorCodeStrings[66]
-ImmutableField
-```
-
 More useful functions:
 
 `assert.commandFailed(res, msg)`
@@ -131,4 +81,54 @@ assert.valueOf
 assert.writeError
 assert.writeErrorWithCode
 assert.writeOK
+```
+
+`ErrorCodes` is an object that is generated from various source files. It provides error names that correspond to their respective codes.
+
+```js
+> ErrorCodes.
+Display all 443 possibilities? (y or n)
+ErrorCodes.APIDeprecationError                                          ErrorCodes.NetworkInterfaceExceededTimeLimit
+ErrorCodes.APIMismatchError                                             ErrorCodes.NetworkTimeout
+ErrorCodes.APIStrictError                                               ErrorCodes.NewReplicaSetConfigurationIncompatible
+ErrorCodes.APIVersionError                                              ErrorCodes.NoConfigPrimary
+ErrorCodes.AlarmAlreadyFulfilled                                        ErrorCodes.NoMatchParseContext
+ErrorCodes.AlreadyInitialized                                           ErrorCodes.NoMatchingDocument
+ErrorCodes.AmbiguousIndexKeyPattern                                     ErrorCodes.NoProgressMade
+ErrorCodes.AtomicityFailure                                             ErrorCodes.NoProjectionFound
+ErrorCodes.AuditingNotEnabled                                           ErrorCodes.NoQueryExecutionPlans
+ErrorCodes.AuthSchemaIncompatible                                       ErrorCodes.NoReplicationEnabled
+ErrorCodes.AuthenticationAbandoned                                      ErrorCodes.NoShardingEnabled
+ErrorCodes.AuthenticationFailed                                         ErrorCodes.NoSuchKey
+ErrorCodes.AuthenticationRestrictionUnmet                               ErrorCodes.NoSuchReshardCollection
+ErrorCodes.BSONObjectTooLarge                                           ErrorCodes.NoSuchSession
+ErrorCodes.BackgroundOperationInProgressForDatabase                     ErrorCodes.NoSuchTenantMigration
+ErrorCodes.BackgroundOperationInProgressForNamespace                    ErrorCodes.NoSuchTransaction
+ErrorCodes.BackupCursorOpenConflictWithCheckpoint                       ErrorCodes.NodeNotElectable
+ErrorCodes.BadPerfCounterPath                                           ErrorCodes.NodeNotFound
+ErrorCodes.BadValue                                                     ErrorCodes.NonConformantBSON
+ErrorCodes.BalancerInterrupted                                          ErrorCodes.NonExistentPath
+ErrorCodes.BrokenPromise                                                ErrorCodes.NonRetryableTenantMigrationConflict
+ErrorCodes.CallbackCanceled                                             ErrorCodes.NotAReplicaSet
+ErrorCodes.CanRepairToDowngrade                                         ErrorCodes.NotARetryableWriteCommand
+ErrorCodes.CannotApplyOplogWhilePrimary                                 ErrorCodes.NotExactValueField
+ErrorCodes.CannotBackfillArray                                          ErrorCodes.NotImplemented
+ErrorCodes.CannotBackup                                                 ErrorCodes.NotPrimaryNoSecondaryOk
+ErrorCodes.CannotBuildIndexKeys                                         ErrorCodes.NotPrimaryOrSecondary
+ErrorCodes.CannotConvertIndexToUnique                                   ErrorCodes.NotSecondary
+ErrorCodes.CannotCreateCollection                                       ErrorCodes.NotSingleValueField
+ErrorCodes.CannotCreateIndex                                            ErrorCodes.NotWritablePrimary
+ErrorCodes.CannotDowngrade                                              ErrorCodes.NotYetInitialized
+ErrorCodes.CannotDropShardKeyIndex                                      ErrorCodes.OBSOLETE_BalancerLostDistributedLock
+```
+
+`ErrorCodeStrings` is an object with the reverse mapping of the above.
+
+```js
+> ErrorCodeStrings[0]
+OK
+> ErrorCodeStrings[2]
+BadValue
+> ErrorCodeStrings[66]
+ImmutableField
 ```
