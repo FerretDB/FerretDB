@@ -37,7 +37,7 @@ type FindParams struct {
 	BatchSize   int64           `name:"batchSize"`
 	SingleBatch bool            `name:"singleBatch"`
 	Comment     string          `name:"comment"`
-	MaxTimeMS   int64           `name:"maxTimeMS"`
+	MaxTimeMS   int32           `name:"maxTimeMS"`
 
 	ReturnKey           bool `name:"returnKey,non-default"`
 	ShowRecordId        bool `name:"showRecordId,non-default"`

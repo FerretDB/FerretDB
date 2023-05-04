@@ -47,7 +47,7 @@ type FindAndModifyParams struct {
 	Query, Sort, Update                   *types.Document
 	Remove, Upsert                        bool
 	ReturnNewDocument, HasUpdateOperators bool
-	MaxTimeMS                             int64
+	MaxTimeMS                             int32
 }
 
 // UpsertParams represents parameters for upsert, if the document exists UpdateParams is set.

@@ -31,12 +31,12 @@ import (
 func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("Unmarshal: value must be a non-nil pointer")
+		return errors.New("unmarshal: value must be a non-nil pointer")
 	}
 
 	elem := rv.Elem()
 	if elem.Kind() != reflect.Struct {
-		return errors.New("Unmarshal: value must be a struct pointer")
+		return errors.New("unmarshal: value must be a struct pointer")
 	}
 
 	// Iterate over the fields of the struct.
@@ -49,6 +49,7 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 		}
 
 		var optional, nonDefault, unImplemented, ignored bool
+
 		for _, i := range strings.Split(tag, ",") {
 			switch i {
 			case "opt":
@@ -108,12 +109,12 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 		// Set the value of the field from the document.
 		fv := elem.Field(i)
 		if !fv.CanSet() {
-			return fmt.Errorf("Unmarshal: field %s is not settable", field.Name)
+			return fmt.Errorf("unmarshal: field %s is not settable", field.Name)
 		}
 
 		var settable any
 
-		switch fv.Kind() {
+		switch fv.Kind() { //nolint: exhaustive // TODO: add more types support
 		case reflect.Int32, reflect.Int64, reflect.Float64:
 			settable, err = common.GetWholeNumberParam(val)
 			if err != nil {
@@ -121,6 +122,8 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 			}
 		case reflect.String, reflect.Bool:
 			settable = val
+		default:
+			return fmt.Errorf("unmarshal: field %s type %s is not supported", field.Name, fv.Type())
 		}
 
 		if settable != nil {
@@ -133,8 +136,10 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 		if val != nil {
 			v := reflect.ValueOf(val)
 			if fv.Type() != v.Type() {
-				return fmt.Errorf("Unmarshal: field %s type mismatch: got %s, expected %s",
-					field.Name, v.Type(), fv.Type())
+				return fmt.Errorf(
+					"unmarshal: field %s type mismatch: got %s, expected %s",
+					field.Name, v.Type(), fv.Type(),
+				)
 			}
 
 			fv.Set(v)

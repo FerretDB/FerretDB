@@ -75,32 +75,3 @@ func TestParse(t *testing.T) {
 		})
 	}
 }
-
-func BenchmarkUnmarshal(b *testing.B) {
-	doc := must.NotFail(types.NewDocument(
-		"$db", "test",
-		"collection", "test",
-		"filter", must.NotFail(types.NewDocument("a", "b")),
-		"sort", must.NotFail(types.NewDocument("a", "b")),
-		"projection", must.NotFail(types.NewDocument("a", "b")),
-		"skip", int64(123),
-		"limit", int64(123),
-		"batchSize", int64(484),
-		"singleBatch", false,
-		"comment", "123",
-		"maxTimeMS", int64(123),
-	))
-
-	l := zap.NewNop()
-
-	for i := 0; i < b.N; i++ {
-		params := common.FindParams{}
-
-		err := Unmarshal(doc, &params, l)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		_ = params.DB
-	}
-}

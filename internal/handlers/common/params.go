@@ -562,5 +562,5 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 		)
 	}
 
-	return value, nil
+	return int32(value), nil
 }
