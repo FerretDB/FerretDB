@@ -140,6 +140,22 @@ func Unmarshal(doc *types.Document, command string, value any, l *zap.Logger) er
 
 		if settable != nil {
 			v := reflect.ValueOf(settable)
+
+			if v.Type() != fv.Type() {
+				if tag == command {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrInvalidNamespace,
+						fmt.Sprintf("collection name has invalid type %s", AliasFromType(settable)),
+						command,
+					)
+				}
+
+				return fmt.Errorf(
+					"unmarshal: field %s type mismatch: got %s, expected %s",
+					field.Name, v.Type(), fv.Type(),
+				)
+			}
+
 			fv.Set(v)
 
 			continue

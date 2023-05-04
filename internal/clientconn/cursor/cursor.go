@@ -32,7 +32,7 @@ type NewParams struct {
 	Iter       types.DocumentsIterator
 	DB         string
 	Collection string
-	BatchSize  int64
+	BatchSize  int32
 }
 
 // New creates a new cursor.
