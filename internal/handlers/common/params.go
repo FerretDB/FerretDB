@@ -20,6 +20,7 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -131,66 +132,26 @@ func AssertType[T types.Type](value any) (T, error) {
 	return res, nil
 }
 
-var (
-	errUnexpectedType        = fmt.Errorf("unexpected type")
-	errNotWholeNumber        = fmt.Errorf("not a whole number")
-	errNegativeNumber        = fmt.Errorf("negative number")
-	errNotBinaryMask         = fmt.Errorf("not a binary mask")
-	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
-	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
-	errLongExceededPositive  = fmt.Errorf("long exceeded - positive value")
-	errLongExceededNegative  = fmt.Errorf("long exceeded - negative value")
-	errIntExceeded           = fmt.Errorf("int exceeded")
-	errInfinity              = fmt.Errorf("infinity")
-)
-
-// GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
-// such as used in the limit, $size, etc.
-func GetWholeNumberParam(value any) (int64, error) {
-	switch value := value.(type) {
-	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
-	case float64:
-		switch {
-		case math.IsInf(value, 1):
-			return 0, errInfinity
-		case value > float64(math.MaxInt64):
-			return 0, errLongExceededPositive
-		case value < float64(math.MinInt64):
-			return 0, errLongExceededNegative
-		case value != math.Trunc(value):
-			return 0, errNotWholeNumber
-		}
-
-		return int64(value), nil
-	case int32:
-		return int64(value), nil
-	case int64:
-		return value, nil
-	default:
-		return 0, errUnexpectedType
-	}
-}
-
 // GetLimitStageParam returns $limit stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {
-	limit, err := GetWholeNumberParam(value)
+	limit, err := commonparams.GetWholeNumberParam(value)
 
 	switch {
 	case err == nil:
-	case errors.Is(err, errUnexpectedType):
+	case errors.Is(err, commonparams.ErrUnexpectedType):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity):
+	case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
+	case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
@@ -221,17 +182,17 @@ func GetLimitStageParam(value any) (int64, error) {
 // GetSkipStageParam returns $skip stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetSkipStageParam(value any) (int64, error) {
-	limit, err := GetWholeNumberParam(value)
+	limit, err := commonparams.GetWholeNumberParam(value)
 
 	switch {
 	case err == nil:
-	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity), errors.Is(err, errUnexpectedType):
+	case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity), errors.Is(err, commonparams.ErrUnexpectedType):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
-	case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
+	case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
@@ -284,11 +245,11 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask != math.Trunc(mask) || math.IsInf(mask, 0) {
-			return 0, errNotWholeNumber
+			return 0, commonparams.ErrNotWholeNumber
 		}
 
 		if mask < 0 {
-			return 0, errNegativeNumber
+			return 0, commonparams.ErrNegativeNumber
 		}
 
 		bitmask = uint64(mask)
@@ -312,7 +273,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, errNegativeNumber
+			return 0, commonparams.ErrNegativeNumber
 		}
 
 		bitmask = uint64(mask)
@@ -320,13 +281,13 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, errNegativeNumber
+			return 0, commonparams.ErrNegativeNumber
 		}
 
 		bitmask = uint64(mask)
 
 	default:
-		return 0, errNotBinaryMask
+		return 0, commonparams.ErrNotBinaryMask
 	}
 
 	return bitmask, nil
@@ -360,7 +321,7 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			return v1 + float64(v2), nil
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	case int32:
 		switch v2 := v2.(type) {
@@ -379,17 +340,17 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if int64(v1) > math.MaxInt64-v2 {
-					return nil, errLongExceededPositive
+					return nil, commonparams.ErrLongExceededPositive
 				}
 			} else {
 				if int64(v1) < math.MinInt64-v2 {
-					return nil, errLongExceededNegative
+					return nil, commonparams.ErrLongExceededNegative
 				}
 			}
 
 			return v2 + int64(v1), nil
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	case int64:
 		switch v2 := v2.(type) {
@@ -398,11 +359,11 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int32:
 			if v2 > 0 {
 				if v1 > math.MaxInt64-int64(v2) {
-					return nil, errIntExceeded
+					return nil, commonparams.ErrIntExceeded
 				}
 			} else {
 				if v1 < math.MinInt64-int64(v2) {
-					return nil, errIntExceeded
+					return nil, commonparams.ErrIntExceeded
 				}
 			}
 
@@ -410,20 +371,20 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if v1 > math.MaxInt64-v2 {
-					return nil, errLongExceededPositive
+					return nil, commonparams.ErrLongExceededPositive
 				}
 			} else {
 				if v1 < math.MinInt64-v2 {
-					return nil, errLongExceededNegative
+					return nil, commonparams.ErrLongExceededNegative
 				}
 			}
 
 			return v1 + v2, nil
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	default:
-		return nil, errUnexpectedLeftOpType
+		return nil, commonparams.ErrUnexpectedLeftOpType
 	}
 }
 
@@ -445,7 +406,7 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case int64:
 			res = v1 * float64(v2)
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 
 		return res, nil
@@ -464,7 +425,7 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 			return multiplyLongSafely(int64(v1), v2)
 
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	case int64:
 		switch v2 := v2.(type) {
@@ -477,10 +438,10 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 			return multiplyLongSafely(v1, v2)
 
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	default:
-		return nil, errUnexpectedLeftOpType
+		return nil, commonparams.ErrUnexpectedLeftOpType
 	}
 }
 
@@ -499,12 +460,12 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
 	// results in overflow with the MinInt64 as result.
 	case v1 == math.MinInt64 || v2 == math.MinInt64:
-		return 0, errLongExceededNegative
+		return 0, commonparams.ErrLongExceededNegative
 	}
 
 	res := v1 * v2
 	if res/v2 != v1 {
-		return 0, errLongExceededPositive
+		return 0, commonparams.ErrLongExceededPositive
 	}
 
 	return res, nil
@@ -517,16 +478,16 @@ func GetOptionalPositiveNumber(document *types.Document, key string) (int32, err
 		return 0, nil
 	}
 
-	wholeNumberParam, err := GetWholeNumberParam(v)
+	wholeNumberParam, err := commonparams.GetWholeNumberParam(v)
 	if err != nil {
 		switch err {
-		case errUnexpectedType:
+		case commonparams.ErrUnexpectedType:
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s must be a number", key),
 				key,
 			)
-		case errNotWholeNumber:
+		case commonparams.ErrNotWholeNumber:
 			if _, ok := v.(float64); ok {
 				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,

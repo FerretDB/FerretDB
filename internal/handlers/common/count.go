@@ -15,11 +15,9 @@
 package common
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -40,58 +38,12 @@ type CountParams struct {
 
 // GetCountParams returns the parameters for the count command.
 func GetCountParams(document *types.Document, l *zap.Logger) (*CountParams, error) {
-	var err error
+	var count CountParams
 
-	if err = Unimplemented(document, "collation"); err != nil {
-		return nil, err
-	}
-
-	Ignored(document, l, "hint", "readConcern", "comment")
-
-	var filter *types.Document
-	if filter, err = GetOptionalParam(document, "query", filter); err != nil {
-		return nil, err
-	}
-
-	var skip, limit int64
-
-	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = GetSkipParam("count", s); err != nil {
-			return nil, err
-		}
-	}
-
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = GetLimitParam("count", l); err != nil {
-			return nil, err
-		}
-	}
-
-	var db, collection string
-
-	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	err := commonparams.Unmarshal(document, "count", &count, l)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	return &CountParams{
-		DB:         db,
-		Collection: collection,
-		Filter:     filter,
-		Skip:       skip,
-		Limit:      limit,
-	}, nil
+	return &count, nil
 }

@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -385,7 +386,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		}
 
 		switch {
-		case errors.Is(err, errUnexpectedLeftOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -394,7 +395,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					incValue,
 				),
 			)
-		case errors.Is(err, errUnexpectedRightOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -410,7 +411,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
+		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -419,7 +420,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errors.Is(err, errIntExceeded):
+		case errors.Is(err, commonparams.ErrIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -666,7 +667,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 			continue
 
-		case errors.Is(err, errUnexpectedLeftOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -675,7 +676,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					mulValue,
 				),
 			)
-		case errors.Is(err, errUnexpectedRightOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := mulKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -691,7 +692,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
+		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -700,7 +701,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errors.Is(err, errIntExceeded):
+		case errors.Is(err, commonparams.ErrIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(

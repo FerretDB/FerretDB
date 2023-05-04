@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,7 +44,7 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 			return false, lazyerrors.Error(err)
 		}
 
-		popValue, err := GetWholeNumberParam(popValueRaw)
+		popValue, err := commonparams.GetWholeNumberParam(popValueRaw)
 		if err != nil {
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrFailedToParse,

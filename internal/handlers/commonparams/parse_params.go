@@ -22,13 +22,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // Unmarshal unmarshals a document into a struct.
-func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
+func Unmarshal(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("unmarshal: value must be a non-nil pointer")
@@ -62,6 +61,10 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 				ignored = true
 			default:
 				tag = i
+
+				if i == "collection" {
+					tag = command
+				}
 			}
 		}
 
@@ -72,7 +75,7 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 				continue
 			}
 
-			return fmt.Errorf("Unmarshal: %s", err)
+			return fmt.Errorf("unmarshal: %s", err)
 		}
 
 		if ignored {
@@ -116,11 +119,11 @@ func Unmarshal(doc *types.Document, value any, l *zap.Logger) error {
 
 		switch fv.Kind() { //nolint: exhaustive // TODO: add more types support
 		case reflect.Int32, reflect.Int64, reflect.Float64:
-			settable, err = common.GetWholeNumberParam(val)
+			settable, err = GetWholeNumberParam(val)
 			if err != nil {
 				return err
 			}
-		case reflect.String, reflect.Bool:
+		case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
 			settable = val
 		default:
 			return fmt.Errorf("unmarshal: field %s type %s is not supported", field.Name, fv.Type())

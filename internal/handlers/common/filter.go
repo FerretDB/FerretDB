@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -932,22 +933,22 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 
 // filterFieldExprSize handles {field: {$size: sizeValue}} filter.
 func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
-	size, err := GetWholeNumberParam(sizeValue)
+	size, err := commonparams.GetWholeNumberParam(sizeValue)
 	if err != nil {
 		switch err {
-		case errUnexpectedType:
+		case commonparams.ErrUnexpectedType:
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case errNotWholeNumber:
+		case commonparams.ErrNotWholeNumber:
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case errInfinity:
+		case commonparams.ErrInfinity:
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -1651,14 +1652,14 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 // Mask value used in error message.
 func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 	switch {
-	case errors.Is(err, errNotWholeNumber):
+	case errors.Is(err, commonparams.ErrNotWholeNumber):
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
 			operator,
 		)
 
-	case errors.Is(err, errNegativeNumber):
+	case errors.Is(err, commonparams.ErrNegativeNumber):
 		if _, ok := maskValue.(float64); ok {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
@@ -1673,7 +1674,7 @@ func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
 			operator,
 		)
 
-	case errors.Is(err, errNotBinaryMask):
+	case errors.Is(err, commonparams.ErrNotBinaryMask):
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
