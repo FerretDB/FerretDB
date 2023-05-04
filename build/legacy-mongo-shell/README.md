@@ -1,26 +1,79 @@
 ### Useful assertions
 
-The legacy `mongo` shell uses its own assertions defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js). This deviates from `mongosh` this which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
+The legacy `mongo` shell uses its own assertions where are defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js). This deviates from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
 
 A useful function is `assert.commandFailedWithCode` which asserts that the command failed with the expected code as the name implies. One should pass the result of a call to the `db.runCommand()` helper as this provides a result type that the function can parse.
 
-For example to check if the `findAndModify` command failed with the error code `ImmutableField` you would do the following:
+For example, to check if the `findAndModify` command failed with the error code `ImmutableField` you would do the following:
 
 ```js
 > const res = db.runCommand({findAndModify: "foo", query: {}, update: {$set: {_id: 1}}});
 > assert.commandFailedWithCode(res, ErrorCodes.ImmutableField);
 ```
 
-Here `ErrorCodes` is an object that is generated from various source files. The keys are the error names and the values correspond to their respective error codes.
+`ErrorCodes` is an object that is generated from various source files. It provides error names that correspond to their respective codes.
 
+```js
+> ErrorCodes.
+Display all 443 possibilities? (y or n)
+ErrorCodes.APIDeprecationError                                          ErrorCodes.NetworkInterfaceExceededTimeLimit
+ErrorCodes.APIMismatchError                                             ErrorCodes.NetworkTimeout
+ErrorCodes.APIStrictError                                               ErrorCodes.NewReplicaSetConfigurationIncompatible
+ErrorCodes.APIVersionError                                              ErrorCodes.NoConfigPrimary
+ErrorCodes.AlarmAlreadyFulfilled                                        ErrorCodes.NoMatchParseContext
+ErrorCodes.AlreadyInitialized                                           ErrorCodes.NoMatchingDocument
+ErrorCodes.AmbiguousIndexKeyPattern                                     ErrorCodes.NoProgressMade
+ErrorCodes.AtomicityFailure                                             ErrorCodes.NoProjectionFound
+ErrorCodes.AuditingNotEnabled                                           ErrorCodes.NoQueryExecutionPlans
+ErrorCodes.AuthSchemaIncompatible                                       ErrorCodes.NoReplicationEnabled
+ErrorCodes.AuthenticationAbandoned                                      ErrorCodes.NoShardingEnabled
+ErrorCodes.AuthenticationFailed                                         ErrorCodes.NoSuchKey
+ErrorCodes.AuthenticationRestrictionUnmet                               ErrorCodes.NoSuchReshardCollection
+ErrorCodes.BSONObjectTooLarge                                           ErrorCodes.NoSuchSession
+ErrorCodes.BackgroundOperationInProgressForDatabase                     ErrorCodes.NoSuchTenantMigration
+ErrorCodes.BackgroundOperationInProgressForNamespace                    ErrorCodes.NoSuchTransaction
+ErrorCodes.BackupCursorOpenConflictWithCheckpoint                       ErrorCodes.NodeNotElectable
+ErrorCodes.BadPerfCounterPath                                           ErrorCodes.NodeNotFound
+ErrorCodes.BadValue                                                     ErrorCodes.NonConformantBSON
+ErrorCodes.BalancerInterrupted                                          ErrorCodes.NonExistentPath
+ErrorCodes.BrokenPromise                                                ErrorCodes.NonRetryableTenantMigrationConflict
+ErrorCodes.CallbackCanceled                                             ErrorCodes.NotAReplicaSet
+ErrorCodes.CanRepairToDowngrade                                         ErrorCodes.NotARetryableWriteCommand
+ErrorCodes.CannotApplyOplogWhilePrimary                                 ErrorCodes.NotExactValueField
+ErrorCodes.CannotBackfillArray                                          ErrorCodes.NotImplemented
+ErrorCodes.CannotBackup                                                 ErrorCodes.NotPrimaryNoSecondaryOk
+ErrorCodes.CannotBuildIndexKeys                                         ErrorCodes.NotPrimaryOrSecondary
+ErrorCodes.CannotConvertIndexToUnique                                   ErrorCodes.NotSecondary
+ErrorCodes.CannotCreateCollection                                       ErrorCodes.NotSingleValueField
+ErrorCodes.CannotCreateIndex                                            ErrorCodes.NotWritablePrimary
+ErrorCodes.CannotDowngrade                                              ErrorCodes.NotYetInitialized
+ErrorCodes.CannotDropShardKeyIndex                                      ErrorCodes.OBSOLETE_BalancerLostDistributedLock
+```
 
-`assert.commandFailedWithCode(res, expectedCode, msg)`
+`ErrorCodeStrings` is an object with the reverse mapping of the above.
 
-throws if the result did not contain the expected code.
+```js
+> ErrorCodeStrings[0]
+OK
+> ErrorCodeStrings[2]
+BadValue
+> ErrorCodeStrings[66]
+ImmutableField
+```
+
+More useful functions:
+
+`assert.commandFailed(res, msg)`
+
+throws if the command did not fail.
 
 `assert.commandWorked(res)`
 
 throws if the result contained an error.
+
+`assert.commandFailedWithCode(res, expectedCode, msg)`
+
+throws if the result did not contain the expected code.
 
 `assert.sameMembers(aArr, bArr, msg, compareFn = _isDocEq)`
 
@@ -30,12 +83,10 @@ throws if the two arrays do not have the same members, in any order. By default,
 
 throws if write result contained an error.
 
-Here are the available functions:
+Here are all the available functions:
 
 ```
 assert.adminCommandWorkedAllowingNetworkError
-assert.apply
-assert.automsg
 assert.between
 assert.betweenEx
 assert.betweenIn
@@ -59,14 +110,12 @@ assert.eq
 assert.gt
 assert.gte
 assert.hasFields
-assert.hasOwnProperty
 assert.includes
 assert.isnull
 assert.lt
 assert.lte
 assert.neq
 assert.noAPIParams
-assert.propertyIsEnumerable
 assert.retry
 assert.retryNoExcept
 assert.sameMembers
