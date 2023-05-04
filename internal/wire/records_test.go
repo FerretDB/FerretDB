@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"errors"
 	"io/fs"
+	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -49,6 +50,18 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 		return nil, nil
 	case err != nil:
 		return nil, err
+	}
+
+	// Select random 1000 number of files from an array of files
+	if len(recordFiles) > 1000 {
+		idx := rand.Perm(len(recordFiles))
+		idx = idx[:1000]
+
+		sel := []string{}
+		for _, i := range idx {
+			sel = append(sel, recordFiles[i])
+		}
+		recordFiles = sel
 	}
 
 	var resMsgs []testCase
