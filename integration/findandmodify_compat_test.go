@@ -422,6 +422,13 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
 			},
 		},
+		"BadDollarStart": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
+				{"sort", bson.D{{"$v.foo", 1}, {"_id", 1}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
