@@ -21,7 +21,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
 
-	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -31,10 +30,11 @@ type State struct {
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	TelemetryLocked bool      `json:"-"`
-	Start           time.Time `json:"-"`
-	LatestVersion   string    `json:"-"` // may be empty
-	HandlerVersion  string    `json:"-"` // may be empty
+	TelemetryLocked   bool      `json:"-"`
+	Start             time.Time `json:"-"`
+	LatestVersion     string    `json:"-"` // empty if IsUpdateAvailable is false
+	HandlerVersion    string    `json:"-"` // may be empty
+	IsUpdateAvailable bool      `json:"-"`
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -57,12 +57,7 @@ func (s *State) UpdateAvailable() bool {
 		return false
 	}
 
-	// if we don't know yet
-	if s.LatestVersion == "" {
-		return false
-	}
-
-	return s.LatestVersion != version.Get().Version
+	return s.IsUpdateAvailable
 }
 
 // fill replaces all unset or invalid values with default.
@@ -84,11 +79,12 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:            s.UUID,
-		Telemetry:       telemetry,
-		TelemetryLocked: s.TelemetryLocked,
-		Start:           s.Start,
-		LatestVersion:   s.LatestVersion,
-		HandlerVersion:  s.HandlerVersion,
+		UUID:              s.UUID,
+		Telemetry:         telemetry,
+		TelemetryLocked:   s.TelemetryLocked,
+		Start:             s.Start,
+		LatestVersion:     s.LatestVersion,
+		HandlerVersion:    s.HandlerVersion,
+		IsUpdateAvailable: s.IsUpdateAvailable,
 	}
 }

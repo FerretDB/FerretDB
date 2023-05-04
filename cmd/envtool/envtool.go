@@ -111,6 +111,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	defer pgPool.Close()
 
 	logger.Info("Creating databases...")
@@ -178,6 +182,10 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	defer db.Driver.Close()

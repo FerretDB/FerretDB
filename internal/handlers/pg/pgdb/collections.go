@@ -50,7 +50,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
+	iter, _, err := buildIterator(ctx, tx, &iteratorParams{
 		schema: db,
 		table:  dbMetadataTableName,
 	})

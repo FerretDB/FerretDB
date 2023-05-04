@@ -224,6 +224,7 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 
 		return res, nil
 	case common.UpsertOperationUpdate:
+
 		_, err = updateDocument(ctx, tx, query, res.Upsert)
 		if err != nil {
 			return nil, lazyerrors.Error(err)

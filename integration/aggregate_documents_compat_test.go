@@ -17,6 +17,7 @@ package integration
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +34,8 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip          string // skip test for all handlers, must have issue number mentioned
+	skipForTigris string // skip test for Tigris handler, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -61,6 +63,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForTigris != "" {
+				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
@@ -267,6 +273,8 @@ func TestAggregateCommandCompat(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/2523")
+
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -876,6 +884,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 1}},
 			},
+			resultPushdown: true, // $sort and $match are first two stages
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -891,6 +900,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: true,
+			skipForTigris:  "TestAggregateCompatLimit",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1114,12 +1124,14 @@ func TestAggregateCompatMatch(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: true,
+			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: true,
+			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1212,6 +1224,10 @@ func TestAggregateCompatSort(t *testing.T) {
 		},
 		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"BadDollarStart": {
+			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
 			resultType: emptyResult,
 		},
 	}
@@ -1394,12 +1410,136 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
+			resultPushdown: true, // $match after $sort can be pushed down
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", int32(1)}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatProject(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"Include1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", int32(1)}}}},
+			},
+		},
+		"Exclude1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", int64(0)}}}},
+			},
+		},
+		"IncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", 1.42}}}},
+			},
+		},
+		"ExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}}}},
+			},
+		},
+		"Include2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", 1.24}, {"bar", true}}}},
+			},
+		},
+		"Exclude2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+
+				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", false}}}},
+			},
+		},
+		"Include1FieldExclude1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+
+				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", true}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Exclude1FieldInclude1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+
+				bson.D{{"$project", bson.D{{"foo", int32(1)}, {"bar", false}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IncludeFieldExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", true}}}},
+			},
+		},
+		"ExcludeFieldIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"v", false}}}},
+			},
+		},
+		"ExcludeFieldExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", false}}}},
+			},
+		},
+		"IncludeFieldIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"v", true}}}},
+			},
+		},
+		"Assign1Field": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", primitive.NewObjectID()}}}},
+			},
+		},
+		"AssignID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+			},
+		},
+		"Assign1FieldIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			},
+		},
+		"Assign2FieldsIncludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", nil}, {"bar", "qux"}}}},
+			},
+		},
+		"Assign1FieldExcludeID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
 		},
 	}

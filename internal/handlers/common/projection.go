@@ -17,6 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -28,13 +29,13 @@ import (
 
 var errProjectionEmpty = errors.New("projection is empty")
 
-// validateProjection check projection document.
+// ValidateProjection check projection document.
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
-func validateProjection(projection *types.Document) (*types.Document, bool, error) {
+func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
-	if projection == nil {
+	if projection.Len() == 0 {
 		return nil, false, errProjectionEmpty
 	}
 
@@ -51,6 +52,13 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		if err != nil {
 			return nil, false, lazyerrors.Error(err)
+		}
+
+		if strings.Contains(key, "$") {
+			return nil, false, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("projection operator $ is not supported in %s", key),
+			)
 		}
 
 		var result bool
@@ -120,8 +128,8 @@ func validateProjection(projection *types.Document) (*types.Document, bool, erro
 	return validated, *projectionVal, nil
 }
 
-// projectDocument applies projection to the copy of the document.
-func projectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
+// ProjectDocument applies projection to the copy of the document.
+func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
 	projected, err := types.NewDocument("_id", must.NotFail(doc.Get("_id")))
 	if err != nil {
 		return nil, err

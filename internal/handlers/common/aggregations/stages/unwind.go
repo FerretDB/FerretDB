@@ -104,7 +104,13 @@ func newUnwind(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	// TODO https://github.com/FerretDB/FerretDB/issues/2490
+	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var out []*types.Document
 
 	if u.field == nil {
@@ -113,7 +119,7 @@ func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 
 	key := u.field.GetExpressionSuffix()
 
-	for _, doc := range in {
+	for _, doc := range docs {
 		d := u.field.Evaluate(doc)
 		switch d := d.(type) {
 		case *types.Array:
@@ -142,7 +148,7 @@ func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 		}
 	}
 
-	return out, nil
+	return iterator.Values(iterator.ForSlice(out)), nil
 }
 
 // Type implements Stage interface.

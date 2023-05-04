@@ -36,7 +36,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 		"EmptyCollectionName": {
 			err: &mongo.CommandError{
 				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname-emptycollectionname.'",
+				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 				Name:    "InvalidNamespace",
 			},
 		},

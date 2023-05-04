@@ -23,10 +23,8 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -44,78 +42,42 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	common.Ignored(document, h.L, "verbosity")
-
-	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
+	params, err := common.GetExplainParams(document, h.L)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	if qp.Collection, err = common.GetRequiredParam[string](command, command.Command()); err != nil {
-		return nil, lazyerrors.Error(err)
+	qp := pgdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
+		Explain:    true,
+		Filter:     params.Filter,
+		Sort:       params.Sort,
 	}
 
-	qp.Explain = true
-
-	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	qp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if command.Command() == "aggregate" {
-		var pipeline *types.Array
-		pipeline, err = common.GetRequiredParam[*types.Array](explain, "pipeline")
-
-		if err != nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrMissingField,
-				"BSON field 'aggregate.pipeline' is missing but a required field",
-				document.Command(),
-			)
-		}
-
-		stagesDocs := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-		for _, d := range stagesDocs {
-			if _, ok := d.(*types.Document); !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
-					"Each element of the 'pipeline' array must be an object",
-					document.Command(),
-				)
-			}
-		}
-
-		qp.Filter = stages.GetPushdownQuery(stagesDocs)
+	if params.Aggregate {
+		qp.Filter, qp.Sort = stages.GetPushdownQuery(params.StagesDocs)
 	}
 
 	if h.DisableFilterPushdown {
 		qp.Filter = nil
 	}
 
+	if !h.EnableSortPushdown {
+		qp.Sort = nil
+	}
+
 	var queryPlanner *types.Document
+	var results pgdb.QueryResults
+
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		queryPlanner, err = pgdb.Explain(ctx, tx, &qp)
+		queryPlanner, results, err = pgdb.Explain(ctx, tx, &qp)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// if the plan returned filter info or index info, it means that pushdown had been done
-	pushdown := queryPlanner.HasByPath(types.NewStaticPath("Plan", "Filter")) ||
-		queryPlanner.HasByPath(types.NewStaticPath("Plan", "Index Cond"))
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -129,7 +91,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	cmd := command.DeepCopy()
+	cmd := params.Command.DeepCopy()
 	cmd.Set("$db", qp.DB)
 
 	var reply wire.OpMsg
@@ -138,7 +100,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", pushdown,
+			"pushdown", results.FilterPushdown,
+			"sortingPushdown", results.SortPushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

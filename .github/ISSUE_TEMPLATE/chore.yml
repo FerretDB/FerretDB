@@ -3,7 +3,7 @@
 name: Chore
 description: Code maintenance improvements.
 assignees: ["ferretdb-bot"]
-labels: ["code/chore"]
+labels: ["code/chore", "not ready"]
 body:
   - type: markdown
     attributes:
@@ -33,7 +33,7 @@ body:
         - unit tests added/updated;
         - integration/compatibility tests added/updated;
         - spot refactorings done;
-        - user documentation updated;
+        - user documentation updated or an issue to create documentation created;
         - something else?
     validations:
       required: true

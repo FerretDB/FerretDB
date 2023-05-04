@@ -29,7 +29,7 @@ import (
 //
 // Close method closes the underlying iterator.
 func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	projectionValidated, inclusion, err := validateProjection(projection)
+	projectionValidated, inclusion, err := ValidateProjection(projection)
 	if errors.Is(err, errProjectionEmpty) {
 		return iter, nil
 	}
@@ -64,7 +64,7 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	projected, err := projectDocument(doc, iter.projection, iter.inclusion)
+	projected, err := ProjectDocument(doc, iter.projection, iter.inclusion)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}

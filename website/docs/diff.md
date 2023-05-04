@@ -26,7 +26,6 @@ slug: /diff/ # referenced in README.md and beacon
    * database name must not include non-latin letters;
    * collection name must be valid UTF-8 characters;
    * database name must not start with a number;
-   * database name cannot contain capital letters;
 9. For Tigris, FerretDB requires Tigris schema validation for `create` command: validator must be set as `$tigrisSchemaString`.
     The value must be a JSON string representing JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 10. FerretDB offers the same validation rules for the `scale` parameter in both the `collStats` and `dbStats` commands.

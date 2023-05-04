@@ -16,11 +16,14 @@ package stages
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -79,13 +82,16 @@ func newCollStats(stage *types.Document) (Stage, error) {
 //
 // Processing consists of modification of the input document, so it contains all the necessary fields
 // and the data is modified according to the given request.
-func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	// For non-shared collections, the input must be an array with a single document.
-	if len(in) != 1 {
-		panic(fmt.Sprintf("collStatsStage: Process: expected 1 document, got %d", len(in)))
+func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	_, res, err := iter.Next()
+	if errors.Is(err, iterator.ErrIteratorDone) {
+		// For non-shared collections, it must contain a single document.
+		panic("collStatsStage: Process: expected 1 document, got none")
 	}
 
-	res := in[0]
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	if c.storageStats != nil {
 		scale := c.storageStats.scale
@@ -102,7 +108,12 @@ func (c *collStats) Process(ctx context.Context, in []*types.Document) ([]*types
 		must.NoError(res.SetByPath(types.NewStaticPath("storageStats", "scaleFactor"), scale))
 	}
 
-	return []*types.Document{res}, nil
+	if _, _, err := iter.Next(); err == nil || !errors.Is(err, iterator.ErrIteratorDone) {
+		// For non-shared collections, it contains only a single document.
+		panic("collStatsStage: Process: expected 1 document, got more")
+	}
+
+	return iterator.Values(iterator.ForSlice([]*types.Document{res})), nil
 }
 
 // Type implements Stage interface.

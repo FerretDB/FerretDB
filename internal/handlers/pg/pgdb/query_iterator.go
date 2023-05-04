@@ -20,7 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -30,7 +30,7 @@ import (
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
 	ctx       context.Context
-	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal
+	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
 
 	m    sync.Mutex
 	rows pgx.Rows
@@ -46,7 +46,7 @@ type queryIterator struct {
 func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.DocumentsIterator {
 	unmarshalFunc := p.unmarshal
 	if unmarshalFunc == nil {
-		unmarshalFunc = pjson.Unmarshal
+		unmarshalFunc = sjson.Unmarshal
 	}
 
 	iter := &queryIterator{

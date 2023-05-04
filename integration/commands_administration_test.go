@@ -74,7 +74,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	expectedErr = mongo.CommandError{
 		Code:    48,
 		Name:    "NamespaceExists",
-		Message: `Collection testcommandsadministrationcreatedroplist.TestCommandsAdministrationCreateDropList already exists.`,
+		Message: `Collection TestCommandsAdministrationCreateDropList.TestCommandsAdministrationCreateDropList already exists.`,
 	}
 	AssertEqualError(t, expectedErr, err)
 
@@ -605,19 +605,32 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
-
 	doc := ConvertDocument(t, actual)
+
+	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("size")), 39_900)
 	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
+	if setup.IsTigris(t) {
+		assert.True(t, doc.Has("size"))
+		assert.True(t, doc.Has("avgObjSize"))
+		assert.True(t, doc.Has("storageSize"))
+		assert.True(t, doc.Has("nindexes"))
+		assert.True(t, doc.Has("totalIndexSize"))
+		assert.True(t, doc.Has("totalSize"))
+
+		return
+	}
+
+	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("size")), 39_900)
 	assert.InDelta(t, int32(2_400), must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, int32(40_000), must.NotFail(doc.Get("storageSize")), 39_900)
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, int32(12_000), must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, int32(32_000), must.NotFail(doc.Get("totalSize")), 30_000)
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
@@ -632,15 +645,28 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-	assert.InDelta(t, int32(16), must.NotFail(doc.Get("size")), 16)
 	assert.Equal(t, int32(6), must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
+	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
+	if setup.IsTigris(t) {
+		assert.True(t, doc.Has("size"))
+		assert.True(t, doc.Has("avgObjSize"))
+		assert.True(t, doc.Has("storageSize"))
+		assert.True(t, doc.Has("nindexes"))
+		assert.True(t, doc.Has("totalIndexSize"))
+		assert.True(t, doc.Has("totalSize"))
+
+		return
+	}
+
+	assert.InDelta(t, int32(16), must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, int32(2_400), must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, int32(24), must.NotFail(doc.Get("storageSize")), 24)
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, int32(8), must.NotFail(doc.Get("totalIndexSize")), 8)
 	assert.InDelta(t, int32(24), must.NotFail(doc.Get("totalSize")), 24)
-	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
@@ -693,12 +719,23 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
 	assert.Equal(t, int32(1), doc.Remove("collections"))
 	assert.Equal(t, int32(6), doc.Remove("objects")) // Number of documents in DocumentsStrings
+	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+
+	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
+	if setup.IsTigris(t) {
+		assert.True(t, doc.Has("avgObjSize"))
+		assert.True(t, doc.Has("storageSize"))
+		assert.True(t, doc.Has("dataSize"))
+		assert.True(t, doc.Has("totalSize"))
+
+		return
+	}
+
 	assert.InDelta(t, int32(37_500), doc.Remove("avgObjSize"), 37_460)
 	assert.InDelta(t, int32(37_500), doc.Remove("dataSize"), 37_450)
 	assert.InDelta(t, int32(37_500), doc.Remove("storageSize"), 37_450)
 	assert.InDelta(t, int32(49_152), doc.Remove("totalSize"), 49_100)
-	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
-	assert.Equal(t, float64(1), doc.Remove("ok"))
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
