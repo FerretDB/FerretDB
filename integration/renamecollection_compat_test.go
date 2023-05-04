@@ -218,6 +218,33 @@ func TestRenameCollectionCompat(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.ElementsMatch(t, targetNames, compatNames)
+
+			// Rename one more time
+			targetCommand = bson.D{{"renameCollection", tc.targetNSFrom}, {"to", tc.targetNSTo.(string) + "_new"}}
+			targetErr = targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
+			require.NoError(t, targetErr)
+
+			compatCommand = bson.D{{"renameCollection", tc.compatNSFrom}, {"to", tc.compatNSTo.(string) + "_new"}}
+			compatErr = compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
+			require.NoError(t, compatErr)
+
+			// Rename back
+			targetCommand = bson.D{{"renameCollection", tc.targetNSTo.(string) + "_new"}, {"to", tc.targetNSFrom}}
+			targetErr = targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
+			require.NoError(t, targetErr)
+
+			compatCommand = bson.D{{"renameCollection", tc.compatNSTo.(string) + "_new"}, {"to", tc.compatNSFrom}}
+			compatErr = compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
+			require.NoError(t, compatErr)
+
+			// Collection lists after all the manipulations must be the same
+			targetNames, err = targetDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			compatNames, err = compatDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			assert.ElementsMatch(t, targetNames, compatNames)
 		})
 	}
 }
