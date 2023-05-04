@@ -146,13 +146,17 @@ func (ms *metadataStorage) store(ctx context.Context) (tableName string, created
 	var tableNameUnique bool
 	tableName = defaultTableName
 
-	for i := 1; !tableNameUnique; i++ {
+	for i := 1; ; i++ {
 		tableNameUnique, err = ms.isTableNameUnique(ctx, tableName)
 		if err != nil {
 			tableName = ""
 			err = lazyerrors.Error(err)
 
 			return
+		}
+
+		if tableNameUnique {
+			break
 		}
 
 		tableName = fmt.Sprintf("%s_%d", defaultTableName, i)

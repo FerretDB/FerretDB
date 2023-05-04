@@ -40,8 +40,6 @@ var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 //
 // It returns (possibly wrapped) ErrSchemaNotExist if FerretDB database / PostgreSQL schema does not exist.
 func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2519
-
 	metadataExist, err := tableExists(ctx, tx, db, dbMetadataTableName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
