@@ -20,16 +20,26 @@ import (
 )
 
 var (
-	ErrNegativeNumber        = fmt.Errorf("negative number")
-	ErrNotWholeNumber        = fmt.Errorf("not a whole number")
-	ErrNotBinaryMask         = fmt.Errorf("not a binary mask")
-	ErrUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
+	// ErrNegativeNumber is returned when a negative number is given.
+	ErrNegativeNumber = fmt.Errorf("negative number")
+	// ErrNotWholeNumber is returned when a non-whole number is given.
+	ErrNotWholeNumber = fmt.Errorf("not a whole number")
+	// ErrNotBinaryMask is returned when a non-binary mask is given.
+	ErrNotBinaryMask = fmt.Errorf("not a binary mask")
+	// ErrUnexpectedLeftOpType is returned when an unexpected left operand type is given.
+	ErrUnexpectedLeftOpType = fmt.Errorf("unexpected left operand type")
+	// ErrUnexpectedRightOpType is returned when an unexpected right operand type is given.
 	ErrUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
-	ErrLongExceededPositive  = fmt.Errorf("long exceeded - positive value")
-	ErrLongExceededNegative  = fmt.Errorf("long exceeded - negative value")
-	ErrIntExceeded           = fmt.Errorf("int exceeded")
-	ErrInfinity              = fmt.Errorf("infinity")
-	ErrUnexpectedType        = fmt.Errorf("unexpected type")
+	// ErrLongExceededPositive is returned when a positive long value is given that exceeds the maximum value.
+	ErrLongExceededPositive = fmt.Errorf("long exceeded - positive value")
+	// ErrLongExceededNegative is returned when a negative long value is given that exceeds the minimum value.
+	ErrLongExceededNegative = fmt.Errorf("long exceeded - negative value")
+	// ErrIntExceeded is returned when an int value is given that exceeds the maximum value.
+	ErrIntExceeded = fmt.Errorf("int exceeded")
+	// ErrInfinity is returned when an infinity value is given.
+	ErrInfinity = fmt.Errorf("infinity")
+	// ErrUnexpectedType is returned when an unexpected type is given.
+	ErrUnexpectedType = fmt.Errorf("unexpected type")
 )
 
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,

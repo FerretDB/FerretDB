@@ -20,12 +20,41 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestParse(t *testing.T) {
+	type findParams struct { //nolint:vet // this is a test struct
+		DB          string          `name:"$db"`
+		Collection  string          `name:"collection"`
+		Filter      *types.Document `name:"filter,opt" error:"badValue"`
+		Sort        *types.Document `name:"sort,opt"`
+		Projection  *types.Document `name:"projection,opt"`
+		Skip        int64           `name:"skip"`
+		Limit       int64           `name:"limit"`
+		BatchSize   int64           `name:"batchSize"`
+		SingleBatch bool            `name:"singleBatch"`
+		Comment     string          `name:"comment"`
+		MaxTimeMS   int64           `name:"maxTimeMS"`
+
+		ReturnKey           bool `name:"returnKey,non-default"`
+		ShowRecordId        bool `name:"showRecordId,non-default"`
+		Tailable            bool `name:"tailable,non-default"`
+		OplogReplay         bool `name:"oplogReplay,non-default"`
+		NoCursorTimeout     bool `name:"noCursorTimeout,non-default"`
+		AwaitData           bool `name:"awaitData,non-default"`
+		AllowPartialResults bool `name:"allowPartialResults,non-default"`
+
+		Collation any `name:"collation,unimplemented"`
+		Let       any `name:"let,unimplemented"`
+
+		AllowDiskUse any `name:"allowDiskUse,ignored"`
+		ReadConcern  any `name:"readConcern,ignored"`
+		Max          any `name:"max,ignored"`
+		Min          any `name:"min,ignored"`
+	}
+
 	tests := map[string]struct {
 		doc        *types.Document
 		wantParams any
@@ -34,7 +63,7 @@ func TestParse(t *testing.T) {
 		"simple": {
 			doc: must.NotFail(types.NewDocument(
 				"$db", "test",
-				"collection", "test",
+				"find", "test",
 				"filter", must.NotFail(types.NewDocument("a", "b")),
 				"sort", must.NotFail(types.NewDocument("a", "b")),
 				"projection", must.NotFail(types.NewDocument("a", "b")),
@@ -45,7 +74,7 @@ func TestParse(t *testing.T) {
 				"comment", "123",
 				"maxTimeMS", int64(123),
 			)),
-			wantParams: common.FindParams{
+			wantParams: findParams{
 				DB:          "test",
 				Collection:  "test",
 				Filter:      must.NotFail(types.NewDocument("a", "b")),
@@ -63,9 +92,9 @@ func TestParse(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			params := common.FindParams{}
+			params := findParams{}
 
-			err := Unmarshal(tt.doc, &params, zap.NewNop())
+			err := Unmarshal(tt.doc, "find", &params, zap.NewNop())
 			if tt.wantErr != nil {
 				require.Equal(t, tt.wantErr, err)
 			}

@@ -186,7 +186,9 @@ func GetSkipStageParam(value any) (int64, error) {
 
 	switch {
 	case err == nil:
-	case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity), errors.Is(err, commonparams.ErrUnexpectedType):
+	case errors.Is(err, commonparams.ErrNotWholeNumber),
+		errors.Is(err, commonparams.ErrInfinity),
+		errors.Is(err, commonparams.ErrUnexpectedType):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
