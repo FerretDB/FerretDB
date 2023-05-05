@@ -25,7 +25,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	type findParams struct { //nolint:vet // this is a test struct
+	type findParams struct { //nolint:vet // this is a test struct to avoid import cycle
 		DB          string          `name:"$db"`
 		Collection  string          `name:"collection"`
 		Filter      *types.Document `name:"filter,opt" error:"badValue"`
