@@ -100,4 +100,4 @@ and then configure notification only for your name.
    because its template is much more useful
    (but may be too daunting for regular users, that's why templates for enhancements and features are much simpler).
    After creating an issue, please change its type (label) manually.
-1. Do not change automatically applied labels, assignees, or projects.
+2. Do not change automatically applied labels, assignees, or projects.
