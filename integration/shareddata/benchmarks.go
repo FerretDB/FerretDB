@@ -55,7 +55,8 @@ var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", 10
 	}
 })
 
-// BenchmarkLargeDocuments provides a single large document with fields of various types.
+// BenchmarkLargeDocuments provides a single large document with 123 fields of various types that consists
+// of different long keys and simple values.
 var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", 123, func(n int) generatorFunc {
 	values := []any{
 		true, "foo", false, true, 512, true, 42, false, -42, "42", false, false, true, bson.D{{"42", "hello"}},
@@ -64,7 +65,7 @@ var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", 12
 	}
 	vLen := len(values)
 
-	elements := make([]bson.E, 200)
+	elements := make([]bson.E, n)
 	elements[0] = bson.E{"_id", 0}
 
 	for i := 1; i < len(elements); i++ {

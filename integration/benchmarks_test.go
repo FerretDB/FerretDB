@@ -103,8 +103,6 @@ func BenchmarkReplaceLargeDocument(b *testing.B) {
 		}
 		runsCount++
 	})
-
-	b.Fail()
 }
 
 // func BenchmarkInsertMany(b *testing.B) {

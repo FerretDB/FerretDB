@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -50,6 +51,7 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 
 	for {
 		_, v1, err := iter1.Next()
+		log.Println(v1)
 		switch {
 		case err == nil:
 			_, v2, err := iter2.Next()
@@ -81,25 +83,25 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 // The order of documents returned must be deterministic.
 type generatorFunc func() bson.D
 
-// newGeneratorFunc returns a new generatorFunc that return n documents.
+// generatorFuncConstructor returns a new generatorFunc that return n documents.
 //
 // All returned functions should be independent from each other, but return the same documents in the same order.
-type newGeneratorFunc func(n int) generatorFunc
+type generatorFuncConstructor func(n int) generatorFunc
 
 // generatorBenchmarkProvider uses generator functions to implement BenchmarkProvider.
 type generatorBenchmarkProvider struct {
-	baseName         string
-	n                int
-	newGeneratorFunc newGeneratorFunc
-	hash             string
+	baseName           string
+	n                  int
+	genFuncConstructor generatorFuncConstructor
+	hash               string
 }
 
 // newGeneratorBenchmarkProvider returns BenchmarkProvider with a given base name and newGeneratorFunc.
-func newGeneratorBenchmarkProvider(baseName string, n int, newGeneratorFunc newGeneratorFunc) BenchmarkProvider {
+func newGeneratorBenchmarkProvider(baseName string, n int, genFuncConstructor generatorFuncConstructor) BenchmarkProvider {
 	gbp := &generatorBenchmarkProvider{
-		baseName:         baseName,
-		n:                n,
-		newGeneratorFunc: newGeneratorFunc,
+		baseName:           baseName,
+		n:                  n,
+		genFuncConstructor: genFuncConstructor,
 	}
 
 	gbp.hash = hashBenchmarkProvider(gbp)
@@ -113,7 +115,7 @@ func (gbp *generatorBenchmarkProvider) Name() string {
 
 func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}, bson.D] {
 	var unused struct{}
-	next := gbp.newGeneratorFunc(gbp.n)
+	next := gbp.genFuncConstructor(gbp.n)
 
 	f := func() (struct{}, bson.D, error) {
 		v := next()

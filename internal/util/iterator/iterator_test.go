@@ -55,43 +55,6 @@ func TestConsumeValuesN(t *testing.T) {
 	assert.Nil(t, actual)
 }
 
-func TestGetKeyValueAtN(t *testing.T) {
-	values := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	iter := ForSlice(values)
-
-	k, v, err := GetKeyValueAtN(iter, 2)
-	require.NoError(t, err)
-	assert.Equal(t, values[1], k)
-	assert.Equal(t, values[1], v)
-
-	k, v, err = GetKeyValueAtN(iter, 2)
-	require.NoError(t, err)
-	assert.Equal(t, values[3], k)
-	assert.Equal(t, values[3], v)
-
-	k, v, err = GetKeyValueAtN(iter, 2)
-	require.NoError(t, err)
-	assert.Equal(t, values[5], k)
-	assert.Equal(t, values[5], v)
-
-	k, v, err = GetKeyValueAtN(iter, 2)
-	require.NoError(t, err)
-	assert.Equal(t, values[7], k)
-	assert.Equal(t, values[7], v)
-
-	k, v, err = GetKeyValueAtN(iter, 2)
-	require.NoError(t, err)
-	assert.Equal(t, values[9], k)
-	assert.Equal(t, values[9], v)
-
-	k, v, err = GetKeyValueAtN(iter, 2)
-	require.Error(t, err)
-	assert.Equal(t, 0, k)
-	assert.Equal(t, 0, v)
-
-	iter.Close()
-}
-
 func TestForFunc(t *testing.T) {
 	var i int
 	f := func() (struct{}, int, error) {
