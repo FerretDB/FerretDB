@@ -43,7 +43,8 @@ var BenchmarkLessSmallDocuments = newGeneratorBenchmarkProvider("LessSmallDocume
 // of different long keys and simple values.
 var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", 123, func(n int) generatorFunc {
 	values := []any{
-		true, "foo", false, true, 512, true, 42, false, -42, "42", false, false, true, bson.D{{"42", "hello"}},
+		true, "foo", false, true, 512, true, 42, false, -42, "42", false, false, true,
+		bson.D{{"42", "hello"}},
 		primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
 		false, true, 42.13, 501,
 	}
