@@ -15,7 +15,10 @@
 package integration
 
 import (
+	"strings"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -164,6 +167,14 @@ func TestRenameCollectionCompat(t *testing.T) {
 			compatNSTo:   targetDB.Name() + ".new$Collection",
 			resultType:   emptyResult,
 		},
+		"LongNameTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
+			compatNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
+			resultType:   emptyResult,
+			altMessage:   "error with target namespace: Invalid collection name: " + strings.Repeat("aB", 150),
+		},
 	} {
 		name, tc := name, tc
 
@@ -186,7 +197,13 @@ func TestRenameCollectionCompat(t *testing.T) {
 				targetErr = UnsetRaw(t, targetErr)
 				compatErr = UnsetRaw(t, compatErr)
 
-				assert.Equal(t, compatErr, targetErr)
+				if tc.altMessage != "" {
+					var expectedErr mongo.CommandError
+					require.ErrorAs(t, compatErr, &expectedErr)
+					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+				} else {
+					assert.Equal(t, compatErr, targetErr)
+				}
 
 				return
 			}
