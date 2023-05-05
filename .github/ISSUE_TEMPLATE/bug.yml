@@ -1,5 +1,6 @@
 ---
 # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+
 name: Bug
 description: Some feature works incorrectly.
 assignees: ["ferretdb-bot"]
@@ -11,39 +12,46 @@ body:
         Thanks for taking the time to fill out this bug report!
         Please check if a similar issue is [already filed](https://github.com/FerretDB/FerretDB/issues).
   - type: textarea
-    id: versions
+    id: version
     attributes:
-      label: Versions
-      description: What versions of FerretDB and other software do you use?
+      label: FerretDB version
+      description: >
+        What version and package of FerretDB do you use?
+        Please provide an output of running FerretDB with `--version` flag.
+    validations:
+      required: true
+  - type: textarea
+    id: backend
+    attributes:
+      label: Backend
+      description: >
+        What backend (PostgreSQL, etc) and what version do you use?
     validations:
       required: true
   - type: textarea
     id: do
     attributes:
       label: What did you do?
-      description: Include MongoDB queries if you can.
+      description: >
+        Include MongoDB queries or
+        [pull request with a test script](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#reporting-a-bug)
+        if you can.
     validations:
       required: true
-  - type: textarea
-    id: how
-    attributes:
-      label: How can we reproduce it?
-      description: >
-        Include a pull request with test script noted in [reporting a bug](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#reporting-a-bug) if you can.
-    validations:
-      required: false
   - type: textarea
     id: expected
     attributes:
       label: What did you expect to see?
-      description: Include expected MongoDB results if you can.
+      description: >
+        Include expected MongoDB results if you can.
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
       label: What did you see instead?
-      description: Include FerretDB logs if possible.
+      description: >
+        Please include FerretDB [logs](https://docs.ferretdb.io/configuration/logging/).
     validations:
       required: true
   - type: textarea

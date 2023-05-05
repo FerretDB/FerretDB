@@ -254,6 +254,8 @@ Before submitting a pull request, please make sure that:
    please mention the issue number in the pull request **description** like `Closes #{issue_number}.`
    or `Closes org/repo#{issue_number}.`
    (You can just follow the pull request template).
+   Please do not use URLs like `https://github.com/org/repo/issue/{issue_number}`
+   or paths like `org/repo/issue/{issue_number}` even if they are rendered the same on GitHub.
    If you propose a tiny fix, there is no needed to create a new issue.
 2. There is no need to use draft pull requests.
    If you want to get feedback on something you are working on,
