@@ -23,17 +23,19 @@ import (
 
 // CountParams represents the parameters for the count command.
 type CountParams struct {
-	Collation any `name:"collation,unimplemented"`
-
-	Hint        any `name:"hint,ignored"`
-	ReadConcern any `name:"readConcern,ignored"`
-	Comment     any `name:"comment,ignored"`
-
 	Filter     *types.Document `name:"query"`
 	DB         string          `name:"$db"`
 	Collection string          `name:"collection"`
-	Skip       int64           `name:"skip"`
-	Limit      int64           `name:"limit"`
+
+	Skip  int64 `name:"skip,opt"`
+	Limit int64 `name:"limit,opt"`
+
+	Collation any `name:"collation,unimplemented"`
+	Hint      any `name:"hint,ignored"`
+
+	ReadConcern any `name:"readConcern,ignored"`
+
+	Comment any `name:"comment,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.
