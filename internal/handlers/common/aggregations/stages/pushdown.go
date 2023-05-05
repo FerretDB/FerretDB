@@ -19,25 +19,56 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetPushdownQuery gets pushdown query for aggregation.
-// When the first aggregation stage is $match, $match query is
-// used for pushdown, otherwise nil is return.
-func GetPushdownQuery(stagesDocs []any) *types.Document {
+// GetPushdownQuery gets pushdown query ($match and $sort) for aggregation.
+//
+// If the first two stages are either $match, $sort, or a combination of them, we can push them down.
+// In this case, we return the first match and sort statements to pushdown.
+// If $match stage is not present, match is returned as nil.
+// If $sort stage is not present, sort is returned as nil.
+func GetPushdownQuery(stagesDocs []any) (match *types.Document, sort *types.Document) {
 	if len(stagesDocs) == 0 {
-		return nil
+		return
 	}
 
-	firstStageDoc := stagesDocs[0]
-	firstStage, isDoc := firstStageDoc.(*types.Document)
+	stagesToPushdown := []any{stagesDocs[0]}
 
-	if !isDoc || !firstStage.Has("$match") {
-		return nil
+	if len(stagesDocs) > 1 {
+		stagesToPushdown = append(stagesToPushdown, stagesDocs[1])
 	}
 
-	matchQuery := must.NotFail(firstStage.Get("$match"))
-	if query, isDoc := matchQuery.(*types.Document); isDoc {
-		return query
+	for _, s := range stagesToPushdown {
+		stage, isDoc := s.(*types.Document)
+
+		if !isDoc {
+			return nil, nil
+		}
+
+		switch {
+		case stage.Has("$match"):
+			matchQuery := must.NotFail(stage.Get("$match"))
+			query, isDoc := matchQuery.(*types.Document)
+
+			if !isDoc || match != nil {
+				continue
+			}
+
+			match = query
+
+		case stage.Has("$sort"):
+			sortQuery := must.NotFail(stage.Get("$sort"))
+			query, isDoc := sortQuery.(*types.Document)
+
+			if !isDoc || sort != nil {
+				continue
+			}
+
+			sort = query
+
+		default:
+			// not $match nor $sort, we shouldn't continue pushdown
+			return
+		}
 	}
 
-	return nil
+	return
 }
