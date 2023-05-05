@@ -182,7 +182,7 @@ func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual e
 func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
-	we, ok := actual.(mongo.WriteException)
+	we, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
 	if !ok {
 		return assert.Equal(t, expected, actual)
 	}
@@ -205,10 +205,10 @@ func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error
 func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	t.Helper()
 
-	a, ok := actual.(mongo.CommandError)
+	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, ok, "actual is %T, not mongo.CommandError", a)
 
-	e, ok := expected.(mongo.CommandError)
+	e, ok := expected.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, ok, "expected is %T, not mongo.CommandError", e)
 
 	a.Raw = nil
@@ -216,6 +216,7 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 
 	actualMessage := a.Message
 	a.Message = e.Message
+
 	if !AssertEqualError(t, e, a) {
 		t.Logf("actual message: %s", actualMessage)
 	}
