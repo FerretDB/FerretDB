@@ -246,7 +246,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 		if err != nil && errors.As(err, &validationErr) {
 			// Currently, we respond with OP_MSG containing an error and don't close the connection.
 			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.
-			// Second, what command it was, if any, and if the client could handle it.
+			// Second, we don't know what command it was, if any,
+			// and if the client could handle returned error for it.
 			//
 			// TODO https://github.com/FerretDB/FerretDB/issues/2412
 
@@ -369,11 +370,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 // route sends request to a handler's command based on the op code provided in the request header.
 //
-// The possible resBody returns:
-//   - normal response  - to be returned to the client, closeConn is false;
-//   - protocol error - to be returned to the client, closeConn is false;
-//   - any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
-//
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
@@ -403,13 +399,28 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		resHeader.OpCode = wire.OpCodeMsg
 
 		if err == nil {
-			resBody, err = c.handleOpMsg(ctx, msg, command)
+			// do not store typed nil in interface, it make it non-nil
+
+			var resMsg *wire.OpMsg
+			resMsg, err = c.handleOpMsg(ctx, msg, command)
+
+			if resMsg != nil {
+				resBody = resMsg
+			}
 		}
 
 	case wire.OpCodeQuery:
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
-		resBody, err = c.h.CmdQuery(ctx, query)
+
+		// do not store typed nil in interface, it make it non-nil
+
+		var resReply *wire.OpReply
+		resReply, err = c.h.CmdQuery(ctx, query)
+
+		if resReply != nil {
+			resBody = resReply
+		}
 
 	case wire.OpCodeReply:
 		fallthrough
