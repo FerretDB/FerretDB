@@ -230,7 +230,7 @@ func (ms *metadataStorage) isTableNameUnique(ctx context.Context, tableName stri
 		return false, nil
 
 	case errors.Is(err, iterator.ErrIteratorDone):
-		// bo duplicate table name found
+		// no duplicate table name found
 		return true, nil
 
 	default:
