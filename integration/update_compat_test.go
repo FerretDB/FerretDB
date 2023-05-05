@@ -126,7 +126,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
-								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
+								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
@@ -374,7 +374,7 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
 
-								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
+								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
