@@ -20,7 +20,7 @@ body:
         Please provide an output of running FerretDB with [`--version` flag](https://docs.ferretdb.io/configuration/flags/).
     validations:
       required: true
-  - type: textarea
+  - type: input
     id: backend
     attributes:
       label: Backend
