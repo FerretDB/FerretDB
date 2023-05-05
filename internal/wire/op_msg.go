@@ -204,7 +204,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			return lazyerrors.Error(err)
 		}
 
-		// TODO validate checksum https://github.com/FerretDB/FerretDB/issues/1626
 	}
 
 	if _, err := msg.Document(); err != nil {
