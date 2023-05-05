@@ -150,7 +150,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	case errors.Is(err, pgdb.ErrInvalidCollectionName):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrIllegalOperation,
-			fmt.Sprintf("Invalid collection name: '%s'", namespaceTo),
+			fmt.Sprintf("error with target namespace: Invalid collection name: %s", collectionTo),
 			command,
 		)
 	default:

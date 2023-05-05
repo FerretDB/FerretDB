@@ -157,6 +157,13 @@ func TestRenameCollectionCompat(t *testing.T) {
 			compatNSTo:   targetDB.Name() + "." + compatCollection.Name(),
 			resultType:   emptyResult,
 		},
+		"InvalidNameTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + ".new$Collection",
+			compatNSTo:   targetDB.Name() + ".new$Collection",
+			resultType:   emptyResult,
+		},
 	} {
 		name, tc := name, tc
 
