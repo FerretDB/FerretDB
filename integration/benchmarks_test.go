@@ -105,39 +105,38 @@ func BenchmarkReplaceLargeDocument(b *testing.B) {
 	})
 }
 
-// func BenchmarkInsertMany(b *testing.B) {
-// 	id := 0
+func BenchmarkInsertMany(b *testing.B) {
+	ctx, coll := setup.Setup(b)
+	db := coll.Database()
 
-// 	ctx, coll := setup.Setup(b)
-// 	db := coll.Database()
+	provider := shareddata.BenchmarkLessSmallDocuments
 
-// 	b.Run("InsertMany-D10", func(b *testing.B) {
-// 		for i := 0; i < b.N; i++ {
-// 			b.StartTimer()
-// 			for j := 0; j < 40; j++ {
-// 				_, err := coll.InsertMany(ctx, []any{
-// 					bson.D{{"_id", id}, {"test", "test1"}},
-// 					bson.D{{"_id", (id + 1)}, {"test", "test2"}},
-// 					bson.D{{"_id", (id + 2)}, {"test", "test3"}},
-// 					bson.D{{"_id", (id + 3)}, {"test", "test4"}},
-// 					bson.D{{"_id", (id + 4)}, {"test", "test5"}},
-// 					bson.D{{"_id", (id + 5)}, {"test", "test6"}},
-// 					bson.D{{"_id", (id + 6)}, {"test", "test7"}},
-// 					bson.D{{"_id", (id + 7)}, {"test", "test8"}},
-// 					bson.D{{"_id", (id + 8)}, {"test", "test9"}},
-// 					bson.D{{"_id", (id + 9)}, {"test", "test10"}},
-// 					bson.D{{"_id", (id + 10)}, {"test", "test11"}},
-// 					bson.D{{"_id", (id + 11)}, {"test", "test12"}},
-// 					bson.D{{"_id", (id + 12)}, {"test", "test13"}},
-// 					bson.D{{"_id", (id + 13)}, {"test", "test14"}},
-// 					bson.D{{"_id", (id + 14)}, {"test", "test15"}},
-// 				})
-// 				require.NoError(b, err)
-// 				id = id + 15
-// 			}
-// 			b.StopTimer()
-// 			require.NoError(b, coll.Drop(ctx))
-// 			coll = db.Collection(coll.Name())
-// 		}
-// 	})
-// }
+	b.Run(provider.Name(), func(b *testing.B) {
+		b.StopTimer()
+		for i := 0; i < b.N; i++ {
+			iter := provider.NewIterator()
+
+			for {
+				docs, err := iterator.ConsumeValuesN(iter, 30)
+				if docs == nil {
+					break
+				}
+
+				insertDocs := make([]any, len(docs))
+				for i := range insertDocs {
+					insertDocs[i] = docs[i]
+				}
+
+				b.StartTimer()
+
+				_, err = coll.InsertMany(ctx, insertDocs)
+				require.NoError(b, err)
+
+				b.StopTimer()
+
+				require.NoError(b, coll.Drop(ctx))
+				coll = db.Collection(coll.Name())
+			}
+		}
+	})
+}

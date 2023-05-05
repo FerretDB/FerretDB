@@ -196,10 +196,11 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 
-	if len(opts.Providers) > 0 {
+	switch {
+	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
 		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
-	} else {
+	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
 

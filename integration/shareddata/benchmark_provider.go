@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"log"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -51,7 +50,6 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 
 	for {
 		_, v1, err := iter1.Next()
-		log.Println(v1)
 		switch {
 		case err == nil:
 			_, v2, err := iter2.Next()

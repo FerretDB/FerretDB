@@ -34,26 +34,10 @@ import (
 // `_id` is a primary key that goes from 0 to n-1.
 // `id` has the same value as `_id`, but is not indexed by default.
 // `v` has one of the four values shown above.
-var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", 10000, func(n int) generatorFunc {
-	values := []any{
-		"foo", int32(42), "42", bson.D{{"foo", int32(42)}},
-	}
-	l := len(values)
+var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", 10000, smallDocumentsGenerator)
 
-	var i int
-	return func() bson.D {
-		if i >= n {
-			return nil
-		}
-		doc := bson.D{
-			{"_id", int32(i)},
-			{"id", int32(i)},
-			{"v", values[i%l]},
-		}
-		i++
-		return doc
-	}
-})
+// BenchmarkSmallDocumentsSmall provides 100 documents that look like BenchmarkSmallDocuments
+var BenchmarkLessSmallDocuments = newGeneratorBenchmarkProvider("LessSmallDocuments", 100, smallDocumentsGenerator)
 
 // BenchmarkLargeDocuments provides a single large document with 123 fields of various types that consists
 // of different long keys and simple values.
@@ -111,10 +95,31 @@ func AllBenchmarkProviders() []BenchmarkProvider {
 	return maps.Values(res)
 }
 
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+// smallDocumentsGenerator returns generator function that produces n small documents.
+func smallDocumentsGenerator(n int) generatorFunc {
+	values := []any{
+		"foo", int32(42), "42", bson.D{{"foo", int32(42)}},
+	}
+	l := len(values)
+
+	var i int
+	return func() bson.D {
+		if i >= n {
+			return nil
+		}
+		doc := bson.D{
+			{"_id", int32(i)},
+			{"id", int32(i)},
+			{"v", values[i%l]},
+		}
+		i++
+		return doc
+	}
+}
 
 // genLetters returns pseudo-random string of specified length that consists of letters generated from seed.
 func genLetters(seed int, length int) string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	src := rand.NewSource(int64(seed))
 
 	b := make([]rune, length)
