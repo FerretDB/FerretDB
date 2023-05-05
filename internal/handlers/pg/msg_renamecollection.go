@@ -65,23 +65,9 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	namespaceTo, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
-		var to any
-		to, err = document.Get("to")
-
-		if err != nil || to == types.Null {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrMissingField,
-				"BSON field 'renameCollection.to' is missing but a required field",
-				command,
-			)
-		}
-
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf(
-				"BSON field 'renameCollection.to' is the wrong type '%s', expected type 'string'",
-				common.AliasFromType(to),
-			),
+			"'to' must be of type String",
 			command,
 		)
 	}
