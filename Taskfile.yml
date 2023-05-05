@@ -94,7 +94,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run {{.RACEFLAG}} ./cmd/envtool
+      - go run {{.RACEFLAG}} ./cmd/envtool setup
 
   env-logs:
     cmds:
