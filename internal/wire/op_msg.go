@@ -199,6 +199,14 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 		}
 	}
 
+	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
+		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		// TODO validate checksum https://github.com/FerretDB/FerretDB/issues/1626
+	}
+
 	if _, err := msg.Document(); err != nil {
 		return err
 	}
