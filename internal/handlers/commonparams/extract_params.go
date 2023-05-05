@@ -31,10 +31,10 @@ import (
 // Parameters are extracted by the field name or by the `name` tag.
 //
 // Possible tags:
-// - `opt` - field is optional
-// - `non-default` - field is unimplemented non-default
-// - `unimplemented` - field is not implemented yet
-// - `ignored` - field is ignored
+// * `opt` - field is optional;
+// * `non-default` - field is unimplemented non-default;
+// * `unimplemented` - field is not implemented yet;
+// * `ignored` - field is ignored.
 func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
