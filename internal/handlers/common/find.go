@@ -28,33 +28,17 @@ import (
 //
 //nolint:vet // for readability
 type FindParams struct {
-	DB          string          `name:"$db"`
-	Collection  string          `name:"collection"`
-	Filter      *types.Document `name:"filter,opt" error:"badValue"`
-	Sort        *types.Document `name:"sort,opt"`
-	Projection  *types.Document `name:"projection,opt"`
-	Skip        int64           `name:"skip"`
-	Limit       int64           `name:"limit"`
-	BatchSize   int32           `name:"batchSize"`
-	SingleBatch bool            `name:"singleBatch"`
-	Comment     string          `name:"comment"`
-	MaxTimeMS   int32           `name:"maxTimeMS"`
-
-	ReturnKey           bool `name:"returnKey,non-default"`
-	ShowRecordId        bool `name:"showRecordId,non-default"`
-	Tailable            bool `name:"tailable,non-default"`
-	OplogReplay         bool `name:"oplogReplay,non-default"`
-	NoCursorTimeout     bool `name:"noCursorTimeout,non-default"`
-	AwaitData           bool `name:"awaitData,non-default"`
-	AllowPartialResults bool `name:"allowPartialResults,non-default"`
-
-	Collation any `name:"collation,unimplemented"`
-	Let       any `name:"let,unimplemented"`
-
-	AllowDiskUse any `name:"allowDiskUse,ignored"`
-	ReadConcern  any `name:"readConcern,ignored"`
-	Max          any `name:"max,ignored"`
-	Min          any `name:"min,ignored"`
+	DB          string
+	Collection  string
+	Filter      *types.Document
+	Sort        *types.Document
+	Projection  *types.Document
+	Skip        int64
+	Limit       int64
+	BatchSize   int32
+	SingleBatch bool
+	Comment     string
+	MaxTimeMS   int32
 }
 
 // GetFindParams returns `find` command parameters.
