@@ -60,7 +60,13 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	namespaceFrom, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
-		return nil, err
+		from, _ := document.Get(command)
+
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(from)),
+			command,
+		)
 	}
 
 	namespaceTo, err := common.GetRequiredParam[string](document, "to")
