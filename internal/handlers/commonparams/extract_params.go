@@ -24,10 +24,17 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // ExtractParams fill passed value structure with parameters from the document.
 // Parameters are extracted by the field name or by the `name` tag.
+//
+// Possible tags:
+// - `opt` - field is optional
+// - `non-default` - field is unimplemented non-default
+// - `unimplemented` - field is not implemented yet
+// - `ignored` - field is ignored
 func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -76,7 +83,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 				continue
 			}
 
-			return fmt.Errorf("unmarshal: %s", err)
+			return lazyerrors.Error(err)
 		}
 
 		if ignored {
