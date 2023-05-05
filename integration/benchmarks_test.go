@@ -118,6 +118,8 @@ func BenchmarkInsertMany(b *testing.B) {
 
 			for {
 				docs, err := iterator.ConsumeValuesN(iter, 30)
+				require.NoError(b, err)
+
 				if docs == nil {
 					break
 				}

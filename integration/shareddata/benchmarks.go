@@ -36,7 +36,7 @@ import (
 // `v` has one of the four values shown above.
 var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", 10000, smallDocumentsGenerator)
 
-// BenchmarkSmallDocumentsSmall provides 100 documents that look like BenchmarkSmallDocuments
+// BenchmarkLessSmallDocuments provides 100 documents that look like BenchmarkSmallDocuments.
 var BenchmarkLessSmallDocuments = newGeneratorBenchmarkProvider("LessSmallDocuments", 100, smallDocumentsGenerator)
 
 // BenchmarkLargeDocuments provides a single large document with 123 fields of various types that consists
@@ -83,6 +83,7 @@ func AllBenchmarkProviders() []BenchmarkProvider {
 
 	// check that names are unique and randomize order
 	res := make(map[string]BenchmarkProvider, len(providers))
+
 	for _, p := range providers {
 		n := p.Name()
 		if _, ok := res[n]; ok {
@@ -103,6 +104,7 @@ func smallDocumentsGenerator(n int) generatorFunc {
 	l := len(values)
 
 	var i int
+
 	return func() bson.D {
 		if i >= n {
 			return nil
@@ -113,6 +115,7 @@ func smallDocumentsGenerator(n int) generatorFunc {
 			{"v", values[i%l]},
 		}
 		i++
+
 		return doc
 	}
 }

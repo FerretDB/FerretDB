@@ -50,9 +50,12 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 
 	for {
 		_, v1, err := iter1.Next()
+
 		switch {
 		case err == nil:
-			_, v2, err := iter2.Next()
+			var v2 bson.D
+
+			_, v2, err = iter2.Next()
 			if err != nil {
 				panic(err)
 			}
@@ -88,10 +91,10 @@ type generatorFuncConstructor func(n int) generatorFunc
 
 // generatorBenchmarkProvider uses generator functions to implement BenchmarkProvider.
 type generatorBenchmarkProvider struct {
-	baseName           string
-	n                  int
 	genFuncConstructor generatorFuncConstructor
+	baseName           string
 	hash               string
+	n                  int
 }
 
 // newGeneratorBenchmarkProvider returns BenchmarkProvider with a given base name and newGeneratorFunc.
@@ -107,10 +110,12 @@ func newGeneratorBenchmarkProvider(baseName string, n int, genFuncConstructor ge
 	return gbp
 }
 
+// Name returns name of provider that consists of name and hash of its documents.
 func (gbp *generatorBenchmarkProvider) Name() string {
 	return gbp.baseName + "/" + gbp.hash
 }
 
+// NewIterator returns the iterator that returns all documents from provider.
 func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}, bson.D] {
 	var unused struct{}
 	next := gbp.genFuncConstructor(gbp.n)

@@ -206,6 +206,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			fileName := hex.EncodeToString(h.Sum(nil))
+
 			hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
 			if e := os.MkdirAll(hashPath, 0o777); e != nil {
 				c.l.Warn(e)

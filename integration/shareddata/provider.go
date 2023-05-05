@@ -43,9 +43,9 @@ type Provider interface {
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
 	name       string
-	backends   []string
 	validators map[string]map[string]any // backend -> validator name -> validator
 	data       map[idType]any
+	backends   []string
 }
 
 // Name implement Provider interface.
@@ -61,6 +61,7 @@ func (values *Values[idType]) Validators(backend, collection string) map[string]
 		for key, value := range values.validators[backend] {
 			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
 		}
+
 		return validators
 	default:
 		return values.validators[backend]
@@ -72,9 +73,11 @@ func (values *Values[idType]) Docs() []bson.D {
 	ids := maps.Keys(values.data)
 
 	res := make([]bson.D, 0, len(values.data))
+
 	for _, id := range ids {
 		doc := bson.D{{"_id", id}}
 		v := values.data[id]
+
 		if v != unset {
 			doc = append(doc, bson.E{"v", v})
 		}
