@@ -26,8 +26,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// Unmarshal unmarshals a document into a struct.
-func Unmarshal(doc *types.Document, command string, value any, l *zap.Logger) error {
+// ExtractParams fill passed value structure with parameters from the document.
+// Parameters are extracted by the field name or by the `name` tag.
+func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("unmarshal: value must be a non-nil pointer")

@@ -40,7 +40,7 @@ type CountParams struct {
 func GetCountParams(document *types.Document, l *zap.Logger) (*CountParams, error) {
 	var count CountParams
 
-	err := commonparams.Unmarshal(document, "count", &count, l)
+	err := commonparams.ExtractParams(document, "count", &count, l)
 	if err != nil {
 		return nil, err
 	}

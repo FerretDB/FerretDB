@@ -94,7 +94,7 @@ func TestParse(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			params := findParams{}
 
-			err := Unmarshal(tt.doc, "find", &params, zap.NewNop())
+			err := ExtractParams(tt.doc, "find", &params, zap.NewNop())
 			if tt.wantErr != nil {
 				require.Equal(t, tt.wantErr, err)
 			}
