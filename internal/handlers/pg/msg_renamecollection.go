@@ -46,7 +46,10 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	// TODO Implement dropTarget param: https://github.com/FerretDB/FerretDB/issues/2565
-	if err = common.Unimplemented(document, "dropTarget"); err != nil {
+	if err = common.UnimplementedNonDefault(document, "dropTarget", func(v any) bool {
+		b, ok := v.(bool)
+		return ok && !b
+	}); err != nil {
 		return nil, err
 	}
 
