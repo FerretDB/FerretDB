@@ -88,7 +88,7 @@ func newMetadataStorage(tx pgx.Tx, db, collection string) *metadataStorage {
 // It makes a document with _id and table fields and stores it in the dbMetadataTableName table.
 // The given FerretDB collection name is stored in the _id field,
 // the corresponding PostgreSQL table name is stored in the table field.
-// For _id field it creates unique index.
+// For _id and table fields it creates unique indexes.
 //
 // It returns a possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
