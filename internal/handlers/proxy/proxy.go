@@ -50,7 +50,7 @@ func (r *Router) Close() {
 }
 
 // Route routes the message by sending it to another wire protocol compatible service.
-func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, bool) {
+func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody) {
 	deadline, _ := ctx.Deadline()
 	r.conn.SetDeadline(deadline)
 
@@ -67,5 +67,5 @@ func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 		panic(err)
 	}
 
-	return resHeader, resBody, false
+	return resHeader, resBody
 }

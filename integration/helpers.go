@@ -155,8 +155,15 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
-// AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
+// AssertEqualError is a deprecated alias for AssertEqualCommandError.
+//
+// Deprecated: use AssertEqualCommandError instead.
 func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+	return AssertEqualCommandError(t, expected, actual)
+}
+
+// AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
+func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -171,26 +178,55 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
-// AssertMatchesCommandError asserts error code, name and wrapped are the same.
-func AssertMatchesCommandError(t *testing.T, expected, actual error) {
+// AssertEqualWriteError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
+func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
-	var aErr, eErr mongo.CommandError
 
-	if ok := errors.As(expected, &eErr); !ok {
-		assert.Equal(t, expected, actual)
+	we, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
+	if !ok {
+		return assert.Equal(t, expected, actual)
 	}
 
-	if ok := errors.As(actual, &aErr); !ok {
-		assert.Equal(t, expected, actual)
+	if len(we.WriteErrors) != 1 {
+		return assert.Equal(t, expected, actual)
 	}
 
-	assert.Equal(t, eErr.Name, aErr.Name)
-	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
-	assert.Equal(t, eErr.Code, aErr.Code)
+	a := we.WriteErrors[0]
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	return assert.Equal(t, expected, a)
 }
 
-// AssertMatchesWriteErrorCode asserts error codes are the same.
-func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
+// AssertMatchesCommandError asserts that both errors are equal CommandErrors,
+// except messages (and ignoring the Raw part).
+func AssertMatchesCommandError(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.CommandError", a)
+
+	e, ok := expected.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.CommandError", e)
+
+	a.Raw = nil
+	e.Raw = nil
+
+	actualMessage := a.Message
+	a.Message = e.Message
+
+	if !AssertEqualError(t, e, a) {
+		t.Logf("actual message: %s", actualMessage)
+	}
+}
+
+// AssertMatchesWriteError asserts error codes are the same.
+//
+// TODO check not only code; make is look similar to AssertMatchesCommandError above.
+// https://github.com/FerretDB/FerretDB/issues/2545
+func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	var aErr, eErr mongo.WriteException
@@ -208,7 +244,14 @@ func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
 	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
 }
 
-// AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);
+// AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
+//
+// Deprecated: use AssertEqualAltCommandError instead.
+func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	return AssertEqualAltCommandError(t, expected, altMessage, actual)
+}
+
+// AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 //
 // In general, error messages should be the same. Exceptions include:
@@ -218,7 +261,7 @@ func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
 //     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
-func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -235,28 +278,6 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 	}
 
 	expected.Message = altMessage
-	return assert.Equal(t, expected, a)
-}
-
-// AssertEqualWriteError asserts that the expected error is the same as the actual.
-func AssertEqualWriteError(t *testing.T, expected mongo.WriteError, actual error) bool {
-	t.Helper()
-
-	we, ok := actual.(mongo.WriteException)
-	if !ok {
-		return assert.Equal(t, expected, actual)
-	}
-
-	if len(we.WriteErrors) != 1 {
-		return assert.Equal(t, expected, actual)
-	}
-
-	a := we.WriteErrors[0]
-
-	// set expected fields that might be helpful in the test output
-	require.Nil(t, expected.Raw)
-	expected.Raw = a.Raw
-
 	return assert.Equal(t, expected, a)
 }
 
