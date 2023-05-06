@@ -34,9 +34,6 @@ type MsgBody interface {
 	msgbody() // seal for go-sumtype
 }
 
-// crc32c checksum byte size
-const kCrc32Size = 4
-
 //go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
