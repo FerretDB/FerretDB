@@ -17,10 +17,8 @@ package wire
 import (
 	"bufio"
 	"encoding"
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"hash/crc32"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -49,9 +47,6 @@ var ErrZeroRead = errors.New("zero bytes read")
 //
 // Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
-	if err := verifyChecksum(r); err != nil {
-		return nil, nil, lazyerrors.Error(err)
-	}
 
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
@@ -131,54 +126,4 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	}
 
 	return nil
-}
-
-// verifyChecksum verifies the checksum of the message it is attached
-func verifyChecksum(r *bufio.Reader) error {
-	// n = MsgHeaderLen + flagbits length
-	n := MsgHeaderLen + 4
-	msgHeader, err := r.Peek(n)
-	if err != nil {
-		if err == io.EOF {
-			return ErrZeroRead
-		}
-
-		return lazyerrors.Error(err)
-	}
-
-	msgLen := int(binary.LittleEndian.Uint32(msgHeader[0:4]))
-
-	if msgLen < MsgHeaderLen || msgLen > MaxMsgLen {
-		return lazyerrors.Errorf("invalid message length %d", msgLen)
-	}
-
-	b, err := r.Peek(msgLen)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	flagbits := OpMsgFlags(binary.LittleEndian.Uint32(msgHeader[MsgHeaderLen:n]))
-	if flagbits.FlagSet(OpMsgChecksumPresent) {
-		// remove checksum from the message
-		actualMsg, checksum := detachChecksum(b)
-
-		if checksum != calculateChecksum(actualMsg) {
-			return lazyerrors.New("OP_MSG checksum does not match contents")
-		}
-	}
-
-	return nil
-}
-
-func detachChecksum(data []byte) ([]byte, uint32) {
-	msgLen := len(data)
-	msg := data[:msgLen-kCrc32Size]
-	checksum := binary.LittleEndian.Uint32(data[msgLen-kCrc32Size:])
-
-	return msg, checksum
-}
-
-func calculateChecksum(msg []byte) uint32 {
-	table := crc32.MakeTable(crc32.Castagnoli)
-	return crc32.Checksum(msg, table)
 }
