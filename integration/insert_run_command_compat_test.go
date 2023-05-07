@@ -93,7 +93,7 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
-					assert.Equal(t, compatRes, targetRes)
+					assert.Equal(t, compatRes.Map(), targetRes.Map())
 				})
 			}
 		})
@@ -117,7 +117,6 @@ func TestInsertRunCommandCompat(t *testing.T) {
 				bson.D{{}},
 			},
 			ordered: true,
-			skip:    "https://github.com/FerretDB/FerretDB/issues/1714",
 		},
 	}
 
