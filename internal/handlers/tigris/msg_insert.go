@@ -116,6 +116,10 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.Que
 
 // insertDocument checks if database and collection exist, create them if needed and attempts to insertDocument the given doc.
 func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, doc *types.Document) error {
+	if !doc.Has("_id") {
+		doc.Set("_id", types.NewObjectID())
+	}
+
 	err := dbPool.InsertDocument(ctx, qp.DB, qp.Collection, doc)
 
 	var driverErr *driver.Error
