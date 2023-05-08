@@ -151,7 +151,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	go func() {
 		defer close(done)
 
-		err = l.Run(ctx)
+		err := l.Run(ctx)
 		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
@@ -178,10 +178,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	}
 
 	uri := mongoDBURI(tb, &clientOpts)
-
 	client := setupClient(tb, ctx, uri)
-
-	require.NoError(tb, err)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
