@@ -111,9 +111,6 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 // insertDocument prepares and executes actual INSERT request to Postgres.
 func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
 	d, ok := doc.(*types.Document)
-	if !d.Has("_id") {
-		d.Set("_id", types.NewObjectID())
-	}
 	if !ok {
 		return commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrBadValue,
@@ -121,8 +118,17 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams
 		)
 	}
 
+	toInsert := d
+
+	if !toInsert.Has("_id") {
+		// We have to make a copy to avoid modifying the original document.
+		toInsert = d.DeepCopy()
+
+		toInsert.Set("_id", types.NewObjectID())
+	}
+
 	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
+		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, toInsert)
 	})
 
 	switch {
