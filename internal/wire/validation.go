@@ -28,11 +28,14 @@ type ValidationError struct {
 }
 
 // Error implements error interface.
-func (v ValidationError) Error() string {
+func (v *ValidationError) Error() string {
 	return v.err.Error()
 }
 
 // newValidationError returns new ValidationError.
+//
+// TODO remote and make callers use validateValue only?
+// https://github.com/FerretDB/FerretDB/issues/2412
 func newValidationError(err error) error {
 	return &ValidationError{err: err}
 }
@@ -63,3 +66,8 @@ func validateValue(v any) error {
 
 	return nil
 }
+
+// check interfaces
+var (
+	_ error = (*ValidationError)(nil)
+)

@@ -16,6 +16,7 @@ package integration
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -512,5 +513,58 @@ func TestDatabaseName(t *testing.T) {
 		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, collection.Name())
 		require.NoError(t, err)
 		collection.Database().Client().Database(dbName63).Drop(ctx)
+	})
+}
+
+func TestDebugError(t *testing.T) {
+	setup.SkipForMongoDB(t, "FerretDB-specific command")
+
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2412
+
+	t.Run("ValidationError", func(t *testing.T) {
+		t.Parallel()
+
+		err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
+		expected := mongo.CommandError{
+			Code: 2,
+			Name: "BadValue",
+		}
+		AssertMatchesCommandError(t, expected, err)
+		assert.ErrorContains(t, err, "NaN is not supported")
+
+		require.NoError(t, db.Client().Ping(ctx, nil), "validation errors should not close connection")
+	})
+
+	t.Run("LazyError", func(t *testing.T) {
+		t.Parallel()
+
+		err := db.RunCommand(ctx, bson.D{{"debugError", "lazy error"}}).Err()
+		expected := mongo.CommandError{
+			Code: 1,
+			Name: "InternalError",
+		}
+		AssertMatchesCommandError(t, expected, err)
+		assert.Regexp(t, `msg_debugerror\.go.+MsgDebugError.+lazy error$`, err.Error())
+
+		require.NoError(t, db.Client().Ping(ctx, nil), "lazy errors should not close connection")
+	})
+
+	t.Run("OtherError", func(t *testing.T) {
+		t.Parallel()
+
+		err := db.RunCommand(ctx, bson.D{{"debugError", "other error"}}).Err()
+		expected := mongo.CommandError{
+			Code: 1,
+			Name: "InternalError",
+		}
+		AssertMatchesCommandError(t, expected, err)
+		assert.ErrorContains(t, err, "other error")
+
+		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
 	})
 }
