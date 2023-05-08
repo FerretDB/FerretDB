@@ -23,7 +23,7 @@ false
 
 But this will not work for `find()` because the object's private properties returned are not useful to the function to assert that the command failed etc.
 
-```
+```js
 > const res = db.foo.find({a: 1});
 > res._filter
 { "a" : 1 }
@@ -34,6 +34,7 @@ test
 ```
 
 So, use a `runCommand` instead:
+
 ```js
 > // use a runCommand instead
 > const res = db.runCommand({find: "foo", filter: {a: 1}});
