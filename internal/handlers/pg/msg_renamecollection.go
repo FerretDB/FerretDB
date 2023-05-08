@@ -82,7 +82,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	dbFrom, collectionFrom, err := extractFromNamespace(namespaceFrom)
+	db, collectionFrom, err := splitNamespace(namespaceFrom)
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidNamespace,
@@ -91,7 +91,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	dbTo, collectionTo, err := extractFromNamespace(namespaceTo)
+	dbTo, collectionTo, err := splitNamespace(namespaceTo)
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidNamespace,
@@ -101,7 +101,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	// TODO Support cross-database rename: https://github.com/FerretDB/FerretDB/issues/2563
-	if dbFrom != dbTo {
+	if db != dbTo {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"Command renameCollection does not support cross-database rename",
@@ -123,15 +123,15 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			return lazyerrors.Error(err)
 		}
 
-		if !slices.Contains(dbs, dbFrom) {
+		if !slices.Contains(dbs, db) {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNamespaceNotFound,
-				fmt.Sprintf("Database %s does not exist or is drop pending", dbFrom),
+				fmt.Sprintf("Database %s does not exist or is drop pending", db),
 				command,
 			)
 		}
 
-		return pgdb.RenameCollection(ctx, tx, dbFrom, collectionFrom, collectionTo)
+		return pgdb.RenameCollection(ctx, tx, db, collectionFrom, collectionTo)
 	})
 
 	switch {
@@ -169,16 +169,13 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	return &reply, nil
 }
 
-// extractFromNamespace returns the database and collection name from a given namespace.
-//
-// The namespace must be in the format of "database.collection".
-// If the namespace is invalid, an error is returned.
-func extractFromNamespace(namespace string) (string, string, error) {
-	split := strings.Split(namespace, ".")
+// splitNamespace returns the database and collection name from a given namespace in format "database.collection".
+func splitNamespace(namespace string) (string, string, error) {
+	parts := strings.Split(namespace, ".")
 
-	if len(split) != 2 || split[0] == "" || split[1] == "" {
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		return "", "", errors.New("invalid namespace")
 	}
 
-	return split[0], split[1], nil
+	return parts[0], parts[1], nil
 }
