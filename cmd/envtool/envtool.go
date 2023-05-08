@@ -321,11 +321,39 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
+// mkdir creates all directories from given paths
+func mkdir(paths []string) error {
+	for _, path := range paths {
+		if err := os.MkdirAll(path, 0700); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// rmdir removes all directories from given paths
+func rmdir(paths []string) error {
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
 	Debug bool     `help:"Enable debug mode."`
 	Setup struct{} `cmd:""`
+	Shell struct {
+		Mkdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+		} `cmd:"" help:"Create directories if they do not already exist."`
+		Rmdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+		} `cmd:"" help:"Remove directories."`
+	} `cmd:""`
 }
 
 func main() {
@@ -347,11 +375,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
+	args := kongCtx.Args
 	switch kongCtx.Command() {
 	case "setup":
 		if err := setup(ctx, logger); err != nil {
 			printDiagnosticData(err, logger)
 			os.Exit(1)
 		}
+	case "shell mkdir <path>":
+		if err := mkdir(args[2:]); err != nil {
+			printDiagnosticData(err, logger)
+			os.Exit(1)
+		}
+	case "shell rmdir <path>":
+		if err := rmdir(args[2:]); err != nil {
+			printDiagnosticData(err, logger)
+			os.Exit(1)
+		}
 	}
+
 }
