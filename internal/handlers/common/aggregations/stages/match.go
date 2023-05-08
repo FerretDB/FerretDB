@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -29,7 +30,7 @@ type match struct {
 }
 
 // newMatch creates a new $match stage.
-func newMatch(stage *types.Document) (Stage, error) {
+func newMatch(stage *types.Document) (aggregations.Stage, error) {
 	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -50,11 +51,11 @@ func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, close
 }
 
 // Type  implements Stage interface.
-func (m *match) Type() StageType {
-	return StageTypeDocuments
+func (m *match) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*match)(nil)
+	_ aggregations.Stage = (*match)(nil)
 )
