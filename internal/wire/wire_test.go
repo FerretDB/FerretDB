@@ -149,7 +149,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
 			var err error
-			msgHeader, msgBody, err = ReadMessage(bufr, true)
+			msgHeader, msgBody, err = ReadMessage(bufr, false)
 			if err != nil {
 				t.Skip()
 			}

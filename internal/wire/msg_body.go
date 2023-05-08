@@ -16,7 +16,6 @@ package wire
 
 import (
 	"bufio"
-	"bytes"
 	"encoding"
 	"encoding/binary"
 	"errors"
@@ -75,14 +74,15 @@ func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error
 			flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[MsgHeaderLen : MsgHeaderLen+4]))
 
 			if flagBit.FlagSet(OpMsgChecksumPresent) {
-				buf := new(bytes.Buffer)
-				if err := binary.Write(buf, binary.LittleEndian, &header); err != nil {
-					return nil, nil, lazyerrors.Error(err)
+				msgBytes := make([]byte, header.MessageLength)
+
+				headBytes, err := header.MarshalBinary()
+				if err != nil {
+					return &header, nil, lazyerrors.Error(err)
 				}
-				if err := binary.Write(buf, binary.LittleEndian, b); err != nil {
-					return nil, nil, lazyerrors.Error(err)
-				}
-				msgBytes := buf.Bytes()
+
+				_ = append(msgBytes, headBytes...)
+				msgBytes = append(msgBytes, b...)
 
 				if err := verifyChecksum(msgBytes); err != nil {
 					return &header, nil, lazyerrors.Error(err)
@@ -94,7 +94,6 @@ func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error
 		if err := msg.UnmarshalBinary(b); err != nil {
 			return &header, nil, lazyerrors.Error(err)
 		}
-
 		return &header, &msg, nil
 
 	case OpCodeQuery:
@@ -152,7 +151,6 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 
 // verifyChecksum verifies the checksum attached to a msg
 func verifyChecksum(msg []byte) error {
-
 	table := crc32.MakeTable(crc32.Castagnoli)
 	expected := binary.LittleEndian.Uint32(msg[len(msg)-crc32.Size:])
 	checksum := crc32.Checksum(msg, table)
@@ -160,6 +158,5 @@ func verifyChecksum(msg []byte) error {
 	if expected != checksum {
 		return lazyerrors.New("OP_MSG checksum does not match contents")
 	}
-
 	return nil
 }
