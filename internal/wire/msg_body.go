@@ -44,7 +44,6 @@ var ErrZeroRead = errors.New("zero bytes read")
 //
 // Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
 func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
-
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
 		return nil, nil, lazyerrors.Error(err)
