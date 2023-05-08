@@ -17,6 +17,7 @@ package ctxutil
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -64,19 +65,25 @@ func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
 // DurationWithJitter returns an exponential backoff duration based on retry with random "full jitter".
 // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 //
-// The maximum sleep is the cap. The minimum duration is at least 100 milliseconds.
+// The maximum sleep is the cap. The minimum sleep is at least 3 milliseconds.
+// Provided cap must be larger than minimum sleep, and retry number must be a positive number.
 func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
 	const base = time.Millisecond * 100
+	const minMilliseconds = 3
 
 	if retry < 1 {
 		panic("retry must be nonzero positive number")
 	}
 
+	if cap.Milliseconds() <= minMilliseconds {
+		panic(fmt.Sprintf("cap must be larger than min sleep (%dms)", minMilliseconds))
+	}
+
 	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
 	capMilliseconds := float64(cap.Milliseconds())
 
-	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds)) - 100
+	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds)) - minMilliseconds
 
 	// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
-	return time.Duration(rand.Int63n(lowestValue)+100) * time.Millisecond
+	return time.Duration(rand.Int63n(lowestValue)+minMilliseconds) * time.Millisecond
 }
