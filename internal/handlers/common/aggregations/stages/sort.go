@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -31,7 +32,7 @@ type sort struct {
 }
 
 // newSort creates a new $sort stage.
-func newSort(stage *types.Document) (Stage, error) {
+func newSort(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -78,11 +79,11 @@ func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer
 }
 
 // Type  implements Stage interface.
-func (s *sort) Type() StageType {
-	return StageTypeDocuments
+func (s *sort) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*sort)(nil)
+	_ aggregations.Stage = (*sort)(nil)
 )
