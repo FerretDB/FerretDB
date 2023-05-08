@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -41,7 +42,7 @@ type storageStats struct {
 }
 
 // newCollStats creates a new $collStats stage.
-func newCollStats(stage *types.Document) (Stage, error) {
+func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -117,11 +118,11 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 }
 
 // Type implements Stage interface.
-func (c *collStats) Type() StageType {
-	return StageTypeStats
+func (c *collStats) Type() aggregations.StageType {
+	return aggregations.StageTypeStats
 }
 
 // check interfaces
 var (
-	_ Stage = (*collStats)(nil)
+	_ aggregations.Stage = (*collStats)(nil)
 )
