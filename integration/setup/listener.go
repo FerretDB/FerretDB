@@ -147,13 +147,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	l := clientconn.NewListener(&listenerOpts)
 
 	done := make(chan struct{})
+
 	lCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	go func() {
 		defer close(done)
 
-		err := l.Run(lCtx)
+		err = l.Run(lCtx)
 		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
