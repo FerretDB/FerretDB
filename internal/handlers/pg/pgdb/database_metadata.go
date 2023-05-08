@@ -16,8 +16,8 @@ package pgdb
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash/fnv"
 	"regexp"
 
@@ -444,7 +444,7 @@ func collectionNameToTableName(name string) string {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil))
+	return mangled[:truncateTo] + "_" + hex.EncodeToString(hash32.Sum(nil))
 }
 
 // setIndex sets the index info in the metadata table.
@@ -563,5 +563,5 @@ func indexNameToPgIndexName(collection, index string) string {
 		truncateTo = nameSymbolsLeft
 	}
 
-	return mangled[:truncateTo] + "_" + fmt.Sprintf("%08x", hash32.Sum(nil)) + "_idx"
+	return mangled[:truncateTo] + "_" + hex.EncodeToString(hash32.Sum(nil)) + "_idx"
 }
