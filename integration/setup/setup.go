@@ -196,10 +196,11 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 
-	if len(opts.Providers) > 0 {
+	switch {
+	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
 		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
-	} else {
+	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
 
@@ -284,27 +285,24 @@ func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	if provider == nil {
-		return
-	}
+	collectionName := collection.Name()
 
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collection.Name(), provider.Name())
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
 	provCtx, span := otel.Tracer("").Start(ctx, spanName)
 	region := trace.StartRegion(provCtx, spanName)
 
-	iter := provider.Docs()
+	iter := provider.NewIterator()
+	defer iter.Close()
 
 	for {
-		docs, err := iterator.ConsumeValuesN(iter, 10)
+		docs, err := iterator.ConsumeValuesN(iter, 100)
 		require.NoError(tb, err)
 
 		if len(docs) == 0 {
 			break
 		}
 
-		// convert []bson.D to []any, as mongodb requires.
 		insertDocs := make([]any, len(docs))
-
 		for i, doc := range docs {
 			insertDocs[i] = doc
 		}
