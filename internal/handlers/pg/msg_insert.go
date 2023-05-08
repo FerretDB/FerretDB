@@ -56,14 +56,13 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	inserted, insErrors := insertMany(ctx, dbPool, &qp, params.Docs, params.Ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
+		"n", inserted,
 		"ok", float64(1),
 	))
 
 	if insErrors.Len() > 0 {
 		replyDoc = insErrors.Document()
 	}
-
-	replyDoc.Set("n", inserted)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -118,8 +117,17 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams
 		)
 	}
 
+	toInsert := d
+
+	if !toInsert.Has("_id") {
+		// Make a copy so that original document could be sent to the proxy as it is.
+		toInsert = d.DeepCopy()
+
+		toInsert.Set("_id", types.NewObjectID())
+	}
+
 	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
+		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, toInsert)
 	})
 
 	switch {
