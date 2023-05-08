@@ -30,14 +30,12 @@ func TestDurationWithJitter(t *testing.T) {
 
 	t.Run("OneRetry", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 1)
-
 		assert.GreaterOrEqual(t, sleep, 100*time.Millisecond)
 		assert.LessOrEqual(t, sleep, 1*time.Second)
 	})
 
 	t.Run("ManyRetries", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 100000)
-
 		assert.GreaterOrEqual(t, sleep, 100*time.Millisecond)
 		assert.LessOrEqual(t, sleep, time.Second)
 	})
@@ -73,7 +71,6 @@ func TestDurationWithJitter(t *testing.T) {
 				// each line has retry count (j+1) and duration waited in milliseconds.
 				fmt.Fprintln(f, j+1, duration.Milliseconds())
 			}
-
 			fmt.Fprintln(f)
 		}
 	})
