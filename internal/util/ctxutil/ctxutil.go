@@ -61,10 +61,10 @@ func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
 	<-sleepCtx.Done()
 }
 
-// DurationWithJitter returns an exponential backoff duration based on retry with random jitter.
-// The maximum sleep is the cap. The minimum duration is at least 100 milliseconds.
+// DurationWithJitter returns an exponential backoff duration based on retry with random "full jitter".
+// https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 //
-// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
+// The maximum sleep is the cap. The minimum duration is at least 100 milliseconds.
 func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
 	const base = time.Millisecond * 100
 
@@ -74,7 +74,9 @@ func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
 
 	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
 	capMilliseconds := float64(cap.Milliseconds())
+
 	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds)) - 100
 
+	// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
 	return time.Duration(rand.Int63n(lowestValue)+100) * time.Millisecond
 }

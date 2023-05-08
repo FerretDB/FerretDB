@@ -28,20 +28,21 @@ import (
 func TestDurationWithJitter(t *testing.T) {
 	t.Parallel()
 
-	t.Run("larger or equal than 100ms", func(t *testing.T) {
+	t.Run("OneRetry", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 1)
 
 		assert.GreaterOrEqual(t, sleep, 100*time.Millisecond)
 		assert.LessOrEqual(t, sleep, 1*time.Second)
 	})
 
-	t.Run("less or equal then duration input", func(t *testing.T) {
+	t.Run("ManyRetries", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 100000)
 
+		assert.GreaterOrEqual(t, sleep, 100*time.Millisecond)
 		assert.LessOrEqual(t, sleep, time.Second)
 	})
 
-	t.Run("multiple tasks retry multiple times", func(t *testing.T) {
+	t.Run("RetryMultipleTimes", func(t *testing.T) {
 		// This test outputs a file for duration it took all nTasks to retry nRetries.
 		// In reality not all tasks will retry, but this is good enough for visualising it.
 
@@ -67,18 +68,13 @@ func TestDurationWithJitter(t *testing.T) {
 
 		defer f.Close()
 
-		entries, err := os.ReadDir("./")
-		require.NoError(t, err)
-
-		for _, e := range entries {
-			t.Log(e.Name())
-		}
-
 		for _, task := range durations {
 			for j, duration := range task {
 				// each line has retry count (j+1) and duration waited in milliseconds.
 				fmt.Fprintln(f, j+1, duration.Milliseconds())
 			}
+
+			fmt.Fprintln(f)
 		}
 	})
 }
