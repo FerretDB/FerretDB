@@ -1,7 +1,7 @@
-# Useful assertions
+# Assertions for `testjs`
 
 The legacy `mongo` shell uses its own assertions which are defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js).
-This deviates from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
+This deviates from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module. When you write a small reproducible script and call `task testjs` the legacy `mongo` shell will be invoked.
 
 See [Assertions 101](https://github.com/mongodb/mongo/wiki/Write-Tests-For-Server-Code#assertions-101) for a very brief overview.
 
@@ -81,7 +81,7 @@ assert.commandFailed@src/mongo/shell/assert.js:877:16
 @(shell):1:8
 ```
 
-## More useful functions
+## Some useful functions
 
 `assert.eq(a, b, msg)`
 
