@@ -148,13 +148,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	done := make(chan struct{})
 
-	lCtx, cancel := context.WithCancel(ctx)
-
 	go func() {
 		defer close(done)
-		defer cancel()
 
-		err = l.Run(lCtx)
+		err = l.Run(ctx)
 		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
@@ -182,11 +179,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	uri := mongoDBURI(tb, &clientOpts)
 
-	client, err := setupClient(tb, ctx, uri)
-	if err != nil {
-		// If we can't setup the client, we should stop the listener, so cleanup can be done properly.
-		cancel()
-	}
+	client := setupClient(tb, ctx, uri)
 
 	require.NoError(tb, err)
 

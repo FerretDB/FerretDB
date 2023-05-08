@@ -134,9 +134,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetURLF == "" {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		var err error
-		client, err = setupClient(tb, ctx, *targetURLF)
-		require.NoError(tb, err)
+		client = setupClient(tb, ctx, *targetURLF)
 		uri = *targetURLF
 	}
 

@@ -97,7 +97,8 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 // setupClient returns test-specific client for the given MongoDB URI.
 //
 // It disconnects automatically when test ends.
-func setupClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client, error) {
+// If the connection can't be established, it panics, as it doesn't make sense to proceed with tests if we couldn't connect.
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -107,7 +108,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client,
 
 	client, err := makeClient(ctx, uri)
 	if err != nil {
-		return nil, err
+		panic("Can't connect: " + err.Error())
 	}
 
 	tb.Cleanup(func() {
@@ -115,5 +116,5 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client,
 		require.NoError(tb, err)
 	})
 
-	return client, nil
+	return client
 }
