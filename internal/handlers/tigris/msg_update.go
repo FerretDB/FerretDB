@@ -17,7 +17,6 @@ package tigris
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/tigrisdata/tigris-client-go/driver"
 
@@ -42,81 +41,19 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation", "comment")
-
-	var qp tigrisdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetUpdateParams(document, h.L)
 	if err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	var updates *types.Array
-	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
 		return nil, err
 	}
 
 	var matched, modified int32
 	var upserted types.Array
-	for i := 0; i < updates.Len(); i++ {
-		update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
-		if err != nil {
-			return nil, err
-		}
 
-		unimplementedFields := []string{
-			"c",
-			"collation",
-			"arrayFilters",
-		}
-		if err := common.Unimplemented(update, unimplementedFields...); err != nil {
-			return nil, err
-		}
-
-		common.Ignored(update, h.L, "hint")
-
-		var q, u *types.Document
-		var upsert bool
-		var multi bool
-		if q, err = common.GetOptionalParam(update, "q", q); err != nil {
-			return nil, err
-		}
-
-		qp.Filter = q
-
-		if u, err = common.GetOptionalParam(update, "u", u); err != nil {
-			// TODO check if u is an array of aggregation pipeline stages
-			return nil, err
-		}
-		if u != nil {
-			if err = common.ValidateUpdateOperators(document.Command(), u); err != nil {
-				return nil, err
-			}
-		}
-
-		if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
-			return nil, err
-		}
-
-		if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
-			return nil, err
+	for _, u := range params.Updates {
+		qp := tigrisdb.QueryParams{
+			DB:         params.DB,
+			Collection: params.Collection,
+			Filter:     u.Filter,
 		}
 
 		resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})
@@ -125,13 +62,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if len(resDocs) == 0 {
-			if !upsert {
+			if !u.Upsert {
 				// nothing to do, continue to the next update operation
 				continue
 			}
 
-			doc := q.DeepCopy()
-			if _, err = common.UpdateDocument(doc, u); err != nil {
+			doc := u.Filter.DeepCopy()
+			if _, err = common.UpdateDocument(doc, u.Update); err != nil {
 				return nil, err
 			}
 			if !doc.Has("_id") {
@@ -151,14 +88,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			continue
 		}
 
-		if len(resDocs) > 1 && !multi {
+		if len(resDocs) > 1 && !u.Multi {
 			resDocs = resDocs[:1]
 		}
 
 		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			changed, err := common.UpdateDocument(doc, u)
+			changed, err := common.UpdateDocument(doc, u.Update)
 			if err != nil {
 				return nil, err
 			}

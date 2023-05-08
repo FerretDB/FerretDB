@@ -35,7 +35,7 @@ var errProjectionEmpty = errors.New("projection is empty")
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
-	if projection == nil {
+	if projection.Len() == 0 {
 		return nil, false, errProjectionEmpty
 	}
 

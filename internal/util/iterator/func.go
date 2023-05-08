@@ -21,57 +21,59 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// ForSlice returns an iterator over a slice.
-func ForSlice[V any](s []V) Interface[int, V] {
-	res := &sliceIterator[V]{
-		s:     s,
-		token: resource.NewToken(),
-	}
+// NextFunc is a part of Interface for the Next method.
+type NextFunc[K, V any] func() (K, V, error)
 
-	resource.Track(res, res.token)
-
-	return res
-}
-
-// sliceIterator implements iterator.Interface.
+// valuesIterator implements iterator.Interface.
 //
-//nolint:vet // golangci-lint's govet and gopls's govet could not agree on alignment
-type sliceIterator[V any] struct {
-	m     sync.Mutex
-	n     uint32
-	s     []V
+//nolint:vet // for readability
+type funcIterator[K, V any] struct {
+	m sync.Mutex
+	f NextFunc[K, V]
+
 	token *resource.Token
 }
 
+// ForFunc returns an iterator for the given function.
+func ForFunc[K, V any](f NextFunc[K, V]) Interface[K, V] {
+	iter := &funcIterator[K, V]{
+		f:     f,
+		token: resource.NewToken(),
+	}
+
+	resource.Track(iter, iter.token)
+
+	return iter
+}
+
 // Next implements iterator.Interface.
-func (iter *sliceIterator[V]) Next() (int, V, error) {
+func (iter *funcIterator[K, V]) Next() (K, V, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
-	iter.n++
-	n := int(iter.n) - 1
-
-	if l := len(iter.s); n >= l {
+	if iter.f == nil {
+		var k K
 		var v V
-		return 0, v, fmt.Errorf("%w (n (%d) >= len (%d)", ErrIteratorDone, n, l)
+
+		return k, v, fmt.Errorf("%w (f is nil)", ErrIteratorDone)
 	}
 
-	return n, iter.s[n], nil
+	return iter.f()
 }
 
 // Close implements iterator.Interface.
-func (iter *sliceIterator[V]) Close() {
+func (iter *funcIterator[K, V]) Close() {
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
-	iter.s = nil
+	iter.f = nil
 
 	resource.Untrack(iter, iter.token)
 }
 
 // check interfaces
 var (
-	_ Interface[int, any] = (*sliceIterator[any])(nil)
-	_ NextFunc[int, any]  = (*sliceIterator[any])(nil).Next
-	_ Closer              = (*sliceIterator[any])(nil)
+	_ Interface[any, any] = (*funcIterator[any, any])(nil)
+	_ NextFunc[any, any]  = (*funcIterator[any, any])(nil).Next
+	_ Closer              = (*funcIterator[any, any])(nil)
 )
