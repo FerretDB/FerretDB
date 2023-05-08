@@ -152,6 +152,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	go func() {
 		defer close(done)
+		defer cancel()
 
 		err = l.Run(lCtx)
 		if err == nil || errors.Is(err, context.Canceled) {
