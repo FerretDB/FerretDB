@@ -147,6 +147,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	l := clientconn.NewListener(&listenerOpts)
 
 	done := make(chan struct{})
+	doneWithErr := make(chan struct{})
 
 	go func() {
 		defer close(done)
@@ -161,7 +162,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	// ensure that all listener's logs are written before test ends
 	tb.Cleanup(func() {
-		<-done
+		select {
+		case <-done:
+		case <-doneWithErr:
+		}
 		h.Close()
 	})
 
@@ -181,8 +185,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	client, err := setupClient(tb, ctx, uri)
 	if err != nil {
-		// If we can't connect to the listener, we should stop the tests and do cleanup.
-		close(done)
+		// If we can't setup client, we should stop the tests and do cleanup.
+		close(doneWithErr)
 	}
 
 	require.NoError(tb, err)
