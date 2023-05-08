@@ -284,7 +284,7 @@ To help us accurately identify the cause, we encourage
 you to include a pull request with test script.
 Please write the test script in
 [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md). Use these assertions to validate your tests assumptions and invariants. You can also find an example of how to prepare a test script in
+You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md). Use these assertions to validate your test's assumptions and invariants. You can also find an example of how to prepare a test script in
 [build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
 
 Test your script using following steps:
