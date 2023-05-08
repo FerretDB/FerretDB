@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -33,7 +34,7 @@ type unwind struct {
 }
 
 // newUnwind creates a new $unwind stage.
-func newUnwind(stage *types.Document) (Stage, error) {
+func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 	field, err := stage.Get("$unwind")
 	if err != nil {
 		return nil, err
@@ -152,11 +153,11 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 }
 
 // Type implements Stage interface.
-func (u *unwind) Type() StageType {
-	return StageTypeDocuments
+func (u *unwind) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*unwind)(nil)
+	_ aggregations.Stage = (*unwind)(nil)
 )
