@@ -56,14 +56,13 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	inserted, insErrors := insertMany(ctx, dbPool, &qp, params.Docs, params.Ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
+		"n", inserted,
 		"ok", float64(1),
 	))
 
 	if insErrors.Len() > 0 {
 		replyDoc = insErrors.Document()
 	}
-
-	replyDoc.Set("n", inserted)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -116,8 +115,13 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.Que
 
 // insertDocument checks if database and collection exist, create them if needed and attempts to insertDocument the given doc.
 func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, doc *types.Document) error {
-	if !doc.Has("_id") {
-		doc.Set("_id", types.NewObjectID())
+	toInsert := doc
+
+	if !toInsert.Has("_id") {
+		// Make a copy so that original document could be sent to the proxy as it is.
+		toInsert = doc.DeepCopy()
+
+		toInsert.Set("_id", types.NewObjectID())
 	}
 
 	err := dbPool.InsertDocument(ctx, qp.DB, qp.Collection, doc)

@@ -93,7 +93,7 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
-					assert.Equal(t, compatRes.Map(), targetRes.Map())
+					assert.Equal(t, compatRes, targetRes)
 				})
 			}
 		})
