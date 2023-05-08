@@ -11,6 +11,16 @@ For example, to check if the `findAndModify` command failed with the error code 
 > assert.commandFailedWithCode(res, ErrorCodes.ImmutableField);
 ```
 
+It is not always necessary use the `db.runCommand()` helper as some write methods wrap a `WriteResult` which the helpers can parse. For example, `insert`, `update`, and `remove` will all return a `WriteResult` so the function can parse the result and look for a `writeError`.
+
+```js
+> assert.commandWorked(db.foo.insert({a: 1}));
+WriteResult({ "nInserted" : 1 })
+> const res = db.foo.insert({a: 1});
+> res.hasWriteError();
+false
+```
+
 More useful functions:
 
 `assert.eq(a, b, msg)`
