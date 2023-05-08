@@ -289,6 +289,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
 			pprof.SetGoroutineLabels(runCtx)
 
+			withTLS := l.tlsListener != nil
 			opts := &newConnOpts{
 				netConn:        netConn,
 				mode:           l.Mode,
@@ -297,6 +298,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				connMetrics:    l.Metrics.ConnMetrics,
 				proxyAddr:      l.ProxyAddr,
 				testRecordsDir: l.TestRecordsDir,
+				withTLS:        withTLS,
 			}
 			conn, e := newConn(opts)
 			if e != nil {

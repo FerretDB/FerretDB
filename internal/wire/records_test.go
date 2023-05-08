@@ -79,7 +79,7 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 		r := bufio.NewReader(f)
 
 		for {
-			header, body, err := ReadMessage(r)
+			header, body, err := ReadMessage(r, true)
 			if errors.Is(err, ErrZeroRead) {
 				break
 			}

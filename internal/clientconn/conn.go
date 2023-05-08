@@ -81,6 +81,7 @@ type conn struct {
 	proxy          *proxy.Router
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
+	withTLS        bool
 }
 
 // newConnOpts represents newConn options.
@@ -92,6 +93,7 @@ type newConnOpts struct {
 	connMetrics    *connmetrics.ConnMetrics
 	proxyAddr      string
 	testRecordsDir string // if empty, no records are created
+	withTLS        bool
 }
 
 // newConn creates a new client connection for given net.Conn.
@@ -119,6 +121,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		m:              opts.connMetrics,
 		proxy:          p,
 		testRecordsDir: opts.testRecordsDir,
+		withTLS:        opts.withTLS,
 	}, nil
 }
 
@@ -242,7 +245,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resBody wire.MsgBody
 		var validationErr *wire.ValidationError
 
-		reqHeader, reqBody, err = wire.ReadMessage(bufr)
+		reqHeader, reqBody, err = wire.ReadMessage(bufr, c.withTLS)
 		if err != nil && errors.As(err, &validationErr) {
 			// Currently, we respond with OP_MSG containing an error and don't close the connection.
 			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.

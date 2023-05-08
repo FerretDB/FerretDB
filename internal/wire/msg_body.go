@@ -46,7 +46,7 @@ var ErrZeroRead = errors.New("zero bytes read")
 // ReadMessage reads from reader and returns wire header and body.
 //
 // Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
-func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
+func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error) {
 
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
@@ -70,21 +70,23 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 	case OpCodeMsg:
 
-		// verify message checksum if present
-		flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[MsgHeaderLen : MsgHeaderLen+4]))
+		if !skipChecksum {
+			// verify message checksum if present
+			flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[MsgHeaderLen : MsgHeaderLen+4]))
 
-		if flagBit.FlagSet(OpMsgChecksumPresent) {
-			buf := new(bytes.Buffer)
-			if err := binary.Write(buf, binary.LittleEndian, &header); err != nil {
-				return nil, nil, lazyerrors.Error(err)
-			}
-			if err := binary.Write(buf, binary.LittleEndian, b); err != nil {
-				return nil, nil, lazyerrors.Error(err)
-			}
-			msgBytes := buf.Bytes()
+			if flagBit.FlagSet(OpMsgChecksumPresent) {
+				buf := new(bytes.Buffer)
+				if err := binary.Write(buf, binary.LittleEndian, &header); err != nil {
+					return nil, nil, lazyerrors.Error(err)
+				}
+				if err := binary.Write(buf, binary.LittleEndian, b); err != nil {
+					return nil, nil, lazyerrors.Error(err)
+				}
+				msgBytes := buf.Bytes()
 
-			if err := verifyChecksum(msgBytes); err != nil {
-				return &header, nil, lazyerrors.Error(err)
+				if err := verifyChecksum(msgBytes); err != nil {
+					return &header, nil, lazyerrors.Error(err)
+				}
 			}
 		}
 
