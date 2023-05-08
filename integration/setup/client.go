@@ -97,7 +97,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 // setupClient returns test-specific client for the given MongoDB URI.
 //
 // It disconnects automatically when test ends.
-func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string) (*mongo.Client, error) {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -106,12 +106,14 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	defer trace.StartRegion(ctx, "setupClient").End()
 
 	client, err := makeClient(ctx, uri)
-	require.NoError(tb, err, "URI: %s", uri)
+	if err != nil {
+		return nil, err
+	}
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
 		require.NoError(tb, err)
 	})
 
-	return client
+	return client, nil
 }

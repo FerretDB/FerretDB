@@ -178,7 +178,14 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	}
 
 	uri := mongoDBURI(tb, &clientOpts)
-	client := setupClient(tb, ctx, uri)
+
+	client, err := setupClient(tb, ctx, uri)
+	if err != nil {
+		// If we can't connect to the listener, we should stop the tests and do cleanup.
+		close(done)
+	}
+
+	require.NoError(tb, err)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
