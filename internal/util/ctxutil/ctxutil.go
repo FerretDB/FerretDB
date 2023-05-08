@@ -74,7 +74,7 @@ func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
 
 	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
 	capMilliseconds := float64(cap.Milliseconds())
-	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds))
+	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds)) - 100
 
-	return time.Duration(rand.Int63n(lowestValue)) * time.Millisecond
+	return time.Duration(rand.Int63n(lowestValue)+100) * time.Millisecond
 }

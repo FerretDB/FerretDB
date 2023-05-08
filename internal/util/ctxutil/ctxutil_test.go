@@ -28,13 +28,16 @@ import (
 func TestDurationWithJitter(t *testing.T) {
 	t.Parallel()
 
-	t.Run("larger or equal then 1ms", func(t *testing.T) {
+	t.Run("larger or equal than 100ms", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 1)
-		assert.GreaterOrEqual(t, sleep, time.Millisecond)
+
+		assert.GreaterOrEqual(t, sleep, 100*time.Millisecond)
+		assert.LessOrEqual(t, sleep, 1*time.Second)
 	})
 
 	t.Run("less or equal then duration input", func(t *testing.T) {
 		sleep := DurationWithJitter(time.Second, 100000)
+
 		assert.LessOrEqual(t, sleep, time.Second)
 	})
 
@@ -63,6 +66,13 @@ func TestDurationWithJitter(t *testing.T) {
 		require.NoError(t, err)
 
 		defer f.Close()
+
+		entries, err := os.ReadDir("./")
+		require.NoError(t, err)
+
+		for _, e := range entries {
+			t.Log(e.Name())
+		}
 
 		for _, task := range durations {
 			for j, duration := range task {
