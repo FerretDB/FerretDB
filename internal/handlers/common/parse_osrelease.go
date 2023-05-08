@@ -17,6 +17,7 @@ package common
 import (
 	"bufio"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,12 +30,16 @@ func parseOSRelease(r io.Reader) (string, string, error) {
 
 	configParams := map[string]string{}
 	for scanner.Scan() {
-		str := strings.Split(scanner.Text(), "=")
-		if len(str) != 2 {
+		key, value, ok := strings.Cut(scanner.Text(), "=")
+		if !ok {
 			continue
 		}
 
-		configParams[str[0]] = str[1]
+		if v, err := strconv.Unquote(value); err == nil {
+			value = v
+		}
+
+		configParams[key] = value
 	}
 
 	if err := scanner.Err(); err != nil {

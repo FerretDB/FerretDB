@@ -70,6 +70,17 @@ REDHAT_BUGZILLA_PRODUCT_VERSION=7.6
 REDHAT_SUPPORT_PRODUCT=Red Hat Enterprise Linux
 REDHAT_SUPPORT_PRODUCT_VERSION=7.6
 `,
+		"Arch Linux": `NAME="Arch Linux"
+PRETTY_NAME="Arch Linux"
+ID=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;23;147;209"
+HOME_URL="https://archlinux.org/"
+DOCUMENTATION_URL="https://wiki.archlinux.org/"
+SUPPORT_URL="https://bbs.archlinux.org/"
+BUG_REPORT_URL="https://bugs.archlinux.org/"
+PRIVACY_POLICY_URL="https://terms.archlinux.org/docs/privacy-policy/"
+LOGO=archlinux-logo`,
 	}
 
 	testCases := map[string]map[string]string{
@@ -84,6 +95,10 @@ REDHAT_SUPPORT_PRODUCT_VERSION=7.6
 		"redHat": {
 			"NAME":    "Red Hat Enterprise Linux Server",
 			"VERSION": "7.6 (Maipo)",
+		},
+		"Arch Linux": {
+			"NAME":    "Arch Linux",
+			"VERSION": "",
 		},
 	}
 
