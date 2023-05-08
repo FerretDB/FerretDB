@@ -205,7 +205,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
 			return lazyerrors.Error(err)
 		}
-
 	}
 
 	if _, err := msg.Document(); err != nil {

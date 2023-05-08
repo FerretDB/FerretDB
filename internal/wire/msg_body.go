@@ -46,7 +46,6 @@ var ErrZeroRead = errors.New("zero bytes read")
 //
 // Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
 func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error) {
-
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
 		return nil, nil, lazyerrors.Error(err)
@@ -54,6 +53,7 @@ func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error
 
 	b := make([]byte, header.MessageLength-MsgHeaderLen)
 	n, err := io.ReadFull(r, b)
+
 	if err != nil {
 		return nil, nil, lazyerrors.Errorf("expected %d, read %d: %w", len(b), n, err)
 	}
@@ -149,7 +149,7 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	return nil
 }
 
-// verifyChecksum verifies the checksum attached to a msg
+// verifyChecksum verifies the checksum attached to an OP_MSG.
 func verifyChecksum(msg []byte) error {
 	table := crc32.MakeTable(crc32.Castagnoli)
 	expected := binary.LittleEndian.Uint32(msg[len(msg)-crc32.Size:])
@@ -158,5 +158,6 @@ func verifyChecksum(msg []byte) error {
 	if expected != checksum {
 		return lazyerrors.New("OP_MSG checksum does not match contents")
 	}
+
 	return nil
 }
