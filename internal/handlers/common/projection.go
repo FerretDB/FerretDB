@@ -240,30 +240,32 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				continue
 			}
 
-			// inclusion projection with non-existent path has special behaviour
-			// if document or array is on the path.
-			// For a document path it creates an empty document.
-			// For an array path it creates an empty array.
+			subPath := path
+
+			// inclusion projection with non-existent path creates
+			// an empty document or an empty array on the path.
 			for {
-				v, err = docWithoutID.GetByPath(path)
-				if err != nil {
-					if path.Len() > 1 {
-						path = path.TrimSuffix()
-						continue
+				v, err = docWithoutID.GetByPath(subPath)
+				if err == nil {
+					if _, ok := v.(*types.Document); ok {
+						// subPath contains a document, create an empty document
+						projected.SetByPath(subPath, new(types.Document))
+						break
+					}
+
+					if _, ok := v.(*types.Array); ok {
+						// subPath contains an array, create an empty array
+						projected.SetByPath(subPath, new(types.Array))
+						break
 					}
 				}
 
+				if subPath.Len() > 1 {
+					subPath = subPath.TrimSuffix()
+					continue
+				}
+
 				break
-			}
-
-			if v != nil {
-				if _, ok := v.(*types.Document); ok {
-					projected.SetByPath(path, new(types.Document))
-				}
-
-				if _, ok := v.(*types.Array); ok {
-					projected.SetByPath(path, new(types.Array))
-				}
 			}
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)

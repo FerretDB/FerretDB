@@ -163,6 +163,22 @@ func TestQueryProjectionCompat(t *testing.T) {
 			projection: bson.D{{"v.foo", true}, {"v.array", false}},
 			resultType: emptyResult,
 		},
+		"DotNotation5LevelInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c.d", true}},
+		},
+		"DotNotation5LevelExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c.d", false}},
+		},
+		"DotNotation4LevelInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c", true}},
+		},
+		"DotNotation4LevelExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c", false}},
+		},
 	}
 
 	testQueryCompatWithProviders(t, providers, testCases)

@@ -74,6 +74,7 @@ func AllProviders() Providers {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+		DocumentsDeeplyNested,
 
 		ArrayStrings,
 		ArrayDoubles,
