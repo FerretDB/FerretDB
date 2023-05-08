@@ -2,7 +2,7 @@
 
 The legacy `mongo` shell uses its own assertions where are defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js). This deviates from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
 
-A useful function is `assert.commandFailedWithCode` which asserts that the command failed with the expected code as the name implies. One should pass the result of a call to the `db.runCommand()` helper as this provides a result type that the function can parse.
+A useful function is `assert.commandFailedWithCode` which asserts that the command failed with the expected code as the name implies. One should pass the result of a call to the `db.runCommand()` helper as this provides a result type that the function can parse. This is the preferred method to issue database commands, as it provides a consistent interface between the shell and drivers.
 
 For example, to check if the `findAndModify` command failed with the error code `ImmutableField` you would do the following:
 
@@ -19,6 +19,67 @@ WriteResult({ "nInserted" : 1 })
 > const res = db.foo.insert({a: 1});
 > res.hasWriteError();
 false
+```
+
+But this will not work for `find()` because the object's private properties returned are not useful to the function to assert that the command failed etc.
+
+```
+> const res = db.foo.find({a: 1});
+> res._filter
+{ "a" : 1 }
+> res._db
+test
+> res._batchSize
+0
+```
+
+So, use a `runCommand` instead:
+```js
+> // use a runCommand instead
+> const res = db.runCommand({find: "foo", filter: {a: 1}});
+> res.ok
+1
+> assert.commandWorked(res);
+{
+	"cursor" : {
+		"firstBatch" : [
+			{
+				"_id" : ObjectId("6458ec7adb858f891c0b8c68"),
+				"a" : 1
+			},
+			{
+				"_id" : ObjectId("6458ec9ddb858f891c0b8c6a"),
+				"a" : 1
+			}
+		],
+		"id" : NumberLong(0),
+		"ns" : "test.foo"
+	},
+	"ok" : 1
+}
+> assert.commandFailed(res);
+uncaught exception: Error: command worked when it should have failed: {
+	"cursor" : {
+		"firstBatch" : [
+			{
+				"_id" : ObjectId("6458ec7adb858f891c0b8c68"),
+				"a" : 1
+			},
+			{
+				"_id" : ObjectId("6458ec9ddb858f891c0b8c6a"),
+				"a" : 1
+			}
+		],
+		"id" : NumberLong(0),
+		"ns" : "test.foo"
+	},
+	"ok" : 1
+} :
+_getErrorWithCode@src/mongo/shell/utils.js:24:13
+doassert@src/mongo/shell/assert.js:18:14
+_assertCommandFailed@src/mongo/shell/assert.js:819:25
+assert.commandFailed@src/mongo/shell/assert.js:877:16
+@(shell):1:8
 ```
 
 More useful functions:
