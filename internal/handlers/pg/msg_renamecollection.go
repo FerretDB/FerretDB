@@ -118,8 +118,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		dbs, err := pgdb.Databases(ctx, tx)
-		if err != nil {
+		var dbs []string
+		if dbs, err = pgdb.Databases(ctx, tx); err != nil {
 			return lazyerrors.Error(err)
 		}
 
