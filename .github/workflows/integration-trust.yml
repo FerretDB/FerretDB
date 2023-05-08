@@ -100,7 +100,7 @@ jobs:
       # Unfortunately, it seems that tokenless uploads fail too often.
       # See https://github.com/codecov/codecov-action/issues/837.
       #
-      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         uses: codecov/codecov-action@v3
         with:
