@@ -41,9 +41,6 @@ const (
 	// ErrFailedToParse indicates user input parsing failure.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
-	// ErrUnauthorized indicates that the required privileges are unmet.
-	ErrUnauthorized = ErrorCode(13) // Unauthorized
-
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
