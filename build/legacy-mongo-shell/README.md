@@ -1,10 +1,13 @@
-### Useful assertions
+# Useful assertions
 
-The legacy `mongo` shell uses its own assertions which are defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js). This deviates from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
+The legacy `mongo` shell uses its own assertions which are defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js).
+This deviates from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
 
 See [Assertions 101](https://github.com/mongodb/mongo/wiki/Write-Tests-For-Server-Code#assertions-101) for a very brief overview.
 
-A useful function is `assert.commandFailedWithCode` which asserts that the command failed with the expected code as the name implies. One should pass the result of a call to the `db.runCommand()` helper as this provides a result type that the function can parse. This is the preferred method to issue database commands, as it provides a consistent interface between the shell and drivers.
+A useful function is `assert.commandFailedWithCode` which asserts that the command failed with the expected code as the name implies.
+One should pass the result of a call to the `db.runCommand()` helper as this provides a result type that the function can parse.
+This is the preferred method to issue database commands, as it provides a consistent interface between the shell and drivers.
 
 For example, to check if the `findAndModify` command failed with the error code `ImmutableField` you would do the following:
 
@@ -13,7 +16,8 @@ For example, to check if the `findAndModify` command failed with the error code 
 > assert.commandFailedWithCode(res, ErrorCodes.ImmutableField);
 ```
 
-It is not always necessary use the `db.runCommand()` helper as some write methods wrap a `WriteResult` which the helpers can parse. For example, `insert`, `update`, and `remove` will all return a `WriteResult` so the function can parse the result and look for a `writeError`.
+It is not always necessary use the `db.runCommand()` helper as some write methods wrap a `WriteResult` which the helpers can parse.
+For example, `insert`, `update`, and `remove` will all return a `WriteResult` so the function can parse the result and look for a `writeError`.
 
 ```js
 > assert.commandWorked(db.foo.insert({a: 1}));
@@ -44,31 +48,31 @@ But a `runCommand()` result will return the correct object that can be parsed:
 1
 > res._commandObj
 {
-	"find" : "foo",
-	"filter" : {
-		"a" : 1
-	},
-	"lsid" : {
-		"id" : UUID("cb64879f-6f69-4656-a38e-ce6dbe3ccebc")
-	}
+  "find" : "foo",
+  "filter" : {
+    "a" : 1
+  },
+  "lsid" : {
+    "id" : UUID("cb64879f-6f69-4656-a38e-ce6dbe3ccebc")
+  }
 }
 > assert.commandFailed(res);
 uncaught exception: Error: command worked when it should have failed: {
-	"cursor" : {
-		"firstBatch" : [
-			{
-				"_id" : ObjectId("6458ec7adb858f891c0b8c68"),
-				"a" : 1
-			},
-			{
-				"_id" : ObjectId("6458ec9ddb858f891c0b8c6a"),
-				"a" : 1
-			}
-		],
-		"id" : NumberLong(0),
-		"ns" : "test.foo"
-	},
-	"ok" : 1
+  "cursor" : {
+    "firstBatch" : [
+      {
+        "_id" : ObjectId("6458ec7adb858f891c0b8c68"),
+        "a" : 1
+      },
+      {
+        "_id" : ObjectId("6458ec9ddb858f891c0b8c6a"),
+        "a" : 1
+      }
+    ],
+    "id" : NumberLong(0),
+    "ns" : "test.foo"
+  },
+  "ok" : 1
 } :
 _getErrorWithCode@src/mongo/shell/utils.js:24:13
 doassert@src/mongo/shell/assert.js:18:14
@@ -77,7 +81,7 @@ assert.commandFailed@src/mongo/shell/assert.js:877:16
 @(shell):1:8
 ```
 
-More useful functions:
+## More useful functions
 
 `assert.eq(a, b, msg)`
 
@@ -101,7 +105,9 @@ throws if the result did not contain the expected code.
 
 `assert.sameMembers(aArr, bArr, msg, compareFn = _isDocEq)`
 
-throws if the two arrays do not have the same members, in any order. By default, nested arrays must have the same order to be considered equal. Optionally accepts a compareFn to compare values instead of using docEq.
+throws if the two arrays do not have the same members, in any order.
+By default, nested arrays must have the same order to be considered equal.
+Optionally accepts a compareFn to compare values instead of using docEq.
 
 `assert.writeOK(res, msg, {ignoreWriteConcernErrors} = {})`
 
@@ -109,19 +115,23 @@ throws if write result contained an error.
 
 `assert.docEq(expectedDoc, actualDoc, msg)`
 
-throws if `actualDoc` object is not equal to `expectedDoc` object. The order of fields
-(properties) within objects is disregarded. Throws if object representation in BSON exceeds 16793600 bytes.
+throws if `actualDoc` object is not equal to `expectedDoc` object.
+The order of fields
+(properties) within objects is disregarded.
+Throws if object representation in BSON exceeds 16793600 bytes.
 
 `assert.retry(func, msg, num_attempts, intervalMS, {runHangAnalyzer = true} = {})`
 
 calls the given function `func` repeatedly at time intervals specified by
 `intervalMS` (milliseconds) until either func() returns true or the number of
-attempted function calls is equal to `num_attempts`. Throws an exception with
-message `msg` after all attempts are used up. If no `intervalMS` argument is passed, it defaults to 0.
+attempted function calls is equal to `num_attempts`.
+Throws an exception with
+message `msg` after all attempts are used up.
+If no `intervalMS` argument is passed, it defaults to 0.
 
-Here are all the available functions:
+## All assert functions
 
-```
+```js
 assert.adminCommandWorkedAllowingNetworkError
 assert.between
 assert.betweenEx
@@ -169,9 +179,13 @@ assert.writeErrorWithCode
 assert.writeOK
 ```
 
-`ErrorCodes` is an object that is generated from various source files. It provides error names that correspond to their respective codes.
+## Error Codes
+
+`ErrorCodes` is an object that is generated from various source files.
+It provides error names that correspond to their respective codes.
 
 ```js
+// tab in the shell after typing the below to display all 443 error codes
 > ErrorCodes.
 Display all 443 possibilities? (y or n)
 ErrorCodes.APIDeprecationError                                          ErrorCodes.NetworkInterfaceExceededTimeLimit
