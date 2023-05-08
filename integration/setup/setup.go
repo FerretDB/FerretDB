@@ -136,7 +136,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	} else {
 		var err error
 		client, err = setupClient(tb, ctx, *targetURLF)
-		require.NoError(tb, err, "failed to setup client")
+		require.NoError(tb, err)
 		uri = *targetURLF
 	}
 
