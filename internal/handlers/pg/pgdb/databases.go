@@ -30,20 +30,6 @@ import (
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
 var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
 
-// DatabaseExists returns true if FerretDB database / PostgreSQL schema exists and false otherwise.
-func DatabaseExists(ctx context.Context, tx pgx.Tx, db string) (bool, error) {
-	sql := "SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)"
-
-	var exists bool
-
-	err := tx.QueryRow(ctx, sql, db).Scan(&exists)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	return exists, nil
-}
-
 // Databases returns a sorted list of FerretDB databases / PostgreSQL schemas.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	sql := "SELECT schema_name FROM information_schema.schemata ORDER BY schema_name"

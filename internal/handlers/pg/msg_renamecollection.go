@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -117,14 +118,12 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		var dbFromExists bool
-
-		dbFromExists, err = pgdb.DatabaseExists(ctx, tx, dbFrom)
+		dbs, err := pgdb.Databases(ctx, tx)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if !dbFromExists {
+		if !slices.Contains(dbs, dbFrom) {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNamespaceNotFound,
 				fmt.Sprintf("Database %s does not exist or is drop pending", dbFrom),
