@@ -21,7 +21,7 @@ WriteResult({ "nInserted" : 1 })
 false
 ```
 
-But this will not work for `find()` because the object's private properties returned are not useful to the function to assert that the command failed etc.
+ The `find()` method will return an object whose properties will not be parsed by the various assert functions:
 
 ```js
 > const res = db.foo.find({a: 1});
@@ -33,30 +33,22 @@ test
 0
 ```
 
-So, use a `runCommand` instead:
+But a `runCommand()` result will return the correct object that can be parsed:
 
 ```js
 > // use a runCommand instead
 > const res = db.runCommand({find: "foo", filter: {a: 1}});
 > res.ok
 1
-> assert.commandWorked(res);
+> res._commandObj
 {
-	"cursor" : {
-		"firstBatch" : [
-			{
-				"_id" : ObjectId("6458ec7adb858f891c0b8c68"),
-				"a" : 1
-			},
-			{
-				"_id" : ObjectId("6458ec9ddb858f891c0b8c6a"),
-				"a" : 1
-			}
-		],
-		"id" : NumberLong(0),
-		"ns" : "test.foo"
+	"find" : "foo",
+	"filter" : {
+		"a" : 1
 	},
-	"ok" : 1
+	"lsid" : {
+		"id" : UUID("cb64879f-6f69-4656-a38e-ce6dbe3ccebc")
+	}
 }
 > assert.commandFailed(res);
 uncaught exception: Error: command worked when it should have failed: {
