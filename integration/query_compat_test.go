@@ -229,6 +229,14 @@ func TestQueryCompatSort(t *testing.T) {
 			filter: bson.D{},
 			sort:   bson.D{{"v", -1}, {"_id", 1}},
 		},
+		"AscSingle": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", 1}},
+		},
+		"DescSingle": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", -1}},
+		},
 
 		"Bad": {
 			filter:     bson.D{},

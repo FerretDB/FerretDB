@@ -56,6 +56,7 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableSortingPushdownF = flag.Bool("enable-sorting-pushdown", false, "enable sorting pushdown")
 	enableCursorsF         = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
