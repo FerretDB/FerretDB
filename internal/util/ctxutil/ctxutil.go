@@ -69,20 +69,21 @@ func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
 // Provided cap must be larger than minimum sleep, and retry number must be a positive number.
 func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
 	const base = time.Millisecond * 100
-	const minMilliseconds = 3
+	const min = time.Millisecond * 3
 
 	if retry < 1 {
 		panic("retry must be nonzero positive number")
 	}
 
-	if cap.Milliseconds() <= minMilliseconds {
+	capMilliseconds := cap.Milliseconds()
+	minMilliseconds := min.Milliseconds()
+
+	if capMilliseconds <= minMilliseconds {
 		panic(fmt.Sprintf("cap must be larger than min sleep (%dms)", minMilliseconds))
 	}
 
 	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
-	capMilliseconds := float64(cap.Milliseconds())
-
-	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds)) - minMilliseconds
+	lowestValue := int64(math.Min(float64(capMilliseconds), maxMilliseconds)) - minMilliseconds
 
 	// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
 	return time.Duration(rand.Int63n(lowestValue)+minMilliseconds) * time.Millisecond
