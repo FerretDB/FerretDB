@@ -18,6 +18,8 @@ changelog:
 
     - title: Documentation 📄
       labels:
+        - blog/engineering
+        - blog/marketing
         - documentation
 
     - title: Other Changes 🤖
