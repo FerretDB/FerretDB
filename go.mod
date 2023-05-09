@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.15.0
-	github.com/prometheus/client_model v0.3.0
+	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.42.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tigrisdata/tigris-client-go v1.0.0-beta.29
