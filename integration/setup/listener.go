@@ -109,7 +109,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableSortPushdown:    *enableSortingPushdownF,
+			EnableSortPushdown:    *enableSortPushdownF,
 			EnableCursors:         *enableCursorsF,
 		},
 	}
