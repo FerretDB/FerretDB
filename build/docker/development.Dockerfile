@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.3-2 AS development-build
+FROM ghcr.io/ferretdb/golang:1.20.4-1 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -77,7 +77,7 @@ EOF
 
 # final stage
 
-FROM golang:1.20.3 AS development
+FROM golang:1.20.4 AS development
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
