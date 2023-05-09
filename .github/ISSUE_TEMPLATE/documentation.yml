@@ -1,5 +1,6 @@
 ---
 # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+
 name: Documentation
 description: Something is badly or not documented.
 assignees: ["ferretdb-bot"]
