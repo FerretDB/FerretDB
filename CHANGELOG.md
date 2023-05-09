@@ -1,27 +1,29 @@
 # Changelog
 
+## [v1.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.1.0) (2023-05-09)
 
-## [v1.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.1.0) (soon)
-
-
-## What's Changed
 ### New Features 🎉
 * Implement projection fields assignment by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2484
 * Implement `$project` pipeline aggregation stage by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2383
 * Handle `create` and `drop` commands in Hana handler by @polyal in https://github.com/FerretDB/FerretDB/pull/2458
+* Implement `renameCollection` command by @b1ron in https://github.com/FerretDB/FerretDB/pull/2343
+
 ### Fixed Bugs 🐛
 * Fix `findAndModify` for `$exists` query operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2385
-* `findAndModify` returns error on `$set` operator setting `_id` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2507
-* Update on conflicting dot notation path returns error by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2521
+* Fix `SchemaStats` to return correct data by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2426
+* Fix `findAndModify` for `$set` operator setting `_id` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2507
+* Fix `update` for conflicting dot notation paths by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2521
 * Fix `$` path errors for sort by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2534
 * Fix empty projections panic by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2562
+* Fix `runCommand`'s inserts of documents without `_id`s by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2574
+
 ### Enhancements 🛠
 * Validate `scale` param for `dbStats` and `collStats` correctly by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2418
-* Fix `SchemaStats` to return correct data by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2426
 * Allow database name contain uppercase characters by @syasyayas in https://github.com/FerretDB/FerretDB/pull/2504
 * Add identifying Arch Linux version in `hostInfo` command by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2525
 * Handle absent `os-release` file by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2541
 * Improve handling of `os-release` files by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2553
+
 ### Documentation 📄
 * Document test script by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2353
 * Use `draft` instead of `unlisted` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2372
@@ -41,6 +43,7 @@
 * Fix YAML indentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2455
 * Update blog post on Using FerretDB with Studio3T by @Fashander in https://github.com/FerretDB/FerretDB/pull/2457
 * Document `createIndexes`, `listIndexes`, and `dropIndexes` commands by @Fashander in https://github.com/FerretDB/FerretDB/pull/2488
+
 ### Other Changes 🤖
 * Allow setting "package" variable with a testing flag by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2357
 * Make it easier to use Docker-related Task targets by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2358
@@ -98,6 +101,11 @@
 * Improve fuzzing with recorded seed data by @fenogentov in https://github.com/FerretDB/FerretDB/pull/2392
 * Add proper CLI to `envtool` - `envtool setup`  subcommand by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2570
 * Recover from more errors, close connection less often by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2564
+* Tweak issue templates and contributing docs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2572
+* Refactor integration benchmarks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2537
+* Do panic in integration tests if connection can't be established by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2577
+* Small refactoring by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2575
+* Merge `no ci` label into `not ready` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2580
 
 ## New Contributors
 * @cooljeanius made their first contribution in https://github.com/FerretDB/FerretDB/pull/2420
@@ -110,7 +118,8 @@
 * @polyal made their first contribution in https://github.com/FerretDB/FerretDB/pull/2458
 * @wqhhust made their first contribution in https://github.com/FerretDB/FerretDB/pull/2485
 
-**Full Changelog**: https://github.com/FerretDB/FerretDB/compare/v1.0.0...v1.1.0
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/40?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.0.0...v1.1.0).
 
 
 ## [v1.0.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.0.0) (2023-04-03)
