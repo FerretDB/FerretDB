@@ -22,7 +22,7 @@ require (
 	golang.org/x/crypto v0.8.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20230418202329-0354be287a23
 	golang.org/x/net v0.9.0
-	golang.org/x/sys v0.7.0
+	golang.org/x/sys v0.8.0
 )
 
 require (
