@@ -22,7 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,7 +56,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	if params.Aggregate {
-		qp.Filter, qp.Sort = stages.GetPushdownQuery(params.StagesDocs)
+		qp.Filter, qp.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
 	if h.DisableFilterPushdown {
