@@ -79,10 +79,10 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 				return &header, nil, lazyerrors.Error(err)
 			}
 
-			expected := binary.LittleEndian.Uint32(b[offset:])
-			checksum := hasher.Sum32()
+			want := binary.LittleEndian.Uint32(b[offset:])
+			got := hasher.Sum32()
 
-			if expected != checksum {
+			if want != got {
 				return &header, nil, lazyerrors.New("OP_MSG checksum does not match contents.")
 			}
 		}
