@@ -97,6 +97,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 // setupClient returns test-specific client for the given MongoDB URI.
 //
 // It disconnects automatically when test ends.
+// If the connection can't be established, it panics, as it doesn't make sense to proceed with tests if we couldn't connect.
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
@@ -106,7 +107,9 @@ func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	defer trace.StartRegion(ctx, "setupClient").End()
 
 	client, err := makeClient(ctx, uri)
-	require.NoError(tb, err, "URI: %s", uri)
+	if err != nil {
+		panic("Can't connect: " + err.Error())
+	}
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)
