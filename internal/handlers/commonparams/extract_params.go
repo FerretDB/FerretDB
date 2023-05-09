@@ -74,6 +74,10 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			panic(err)
 		}
 
+		if options == nil {
+			return lazyerrors.Errorf("unexpected field %s encountered", lookup)
+		}
+
 		if options.ignored {
 			l.Debug(
 				"ignoring field",
@@ -198,6 +202,7 @@ type tagOptions struct {
 func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
 	var to tagOptions
 	var i int
+	var found bool
 
 	for ; i < value.NumField(); i++ {
 		field := value.Type().Field(i)
@@ -229,7 +234,13 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 			}
 		}
 
+		found = true
+
 		break
+	}
+
+	if !found {
+		return 0, nil, nil
 	}
 
 	return i, &to, nil
