@@ -15,6 +15,7 @@
 package commonparams
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -49,147 +51,186 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		panic("value must be a struct pointer")
 	}
 
-	var i int
+	iter := doc.Iterator()
+	defer iter.Close()
 
-	// Iterate over the fields of the struct.
-	for ; i < elem.NumField(); i++ {
-		field := elem.Type().Field(i)
-
-		tag := field.Tag.Get("name")
-		if tag == "" {
-			return lazyerrors.Errorf("no tag provided for %s", field.Name)
+	for {
+		key, val, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
 		}
 
-		var optional, nonDefault, unImplemented, ignored bool
-
-		for _, tt := range strings.Split(tag, ",") {
-			switch tt {
-			case "opt":
-				optional = true
-			case "non-default":
-				nonDefault = true
-			case "unimplemented":
-				unImplemented = true
-			case "ignored":
-				ignored = true
-			default:
-				tag = tt
-
-				if tt == "collection" {
-					tag = command
-				}
-			}
-		}
-
-		// Try to get the value of the field from the document.
-		val, err := doc.Get(tag)
 		if err != nil {
-			if optional || nonDefault || unImplemented || ignored {
-				continue
-			}
-
 			return lazyerrors.Error(err)
 		}
 
-		if ignored {
+		lookup := key
+		if key == command {
+			lookup = "collection"
+		}
+
+		fieldIndex, options, err := lookupFieldTag(lookup, &elem)
+		if err != nil {
+			panic(err)
+		}
+
+		if options.ignored {
 			l.Debug(
 				"ignoring field",
-				zap.String("command", doc.Command()), zap.String("field", tag), zap.Any("value", val),
+				zap.String("command", doc.Command()), zap.String("field", key), zap.Any("value", val),
 			)
 
 			continue
 		}
 
-		if unImplemented {
+		if options.unimplemented {
 			msg := fmt.Sprintf(
 				"%s: support for field %q with value %v is not implemented yet",
-				doc.Command(), tag, val,
+				doc.Command(), key, val,
 			)
 
-			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, tag)
+			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, key)
 		}
 
-		if nonDefault {
+		if options.nonDefault {
 			v, ok := val.(bool)
 
 			if ok && !v {
 				msg := fmt.Sprintf(
 					"%s: support for field %q with non-default value %v is not implemented yet",
-					doc.Command(), tag, val,
+					doc.Command(), key, val,
 				)
 
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, tag)
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, key)
 			}
 		}
 
-		// Set the value of the field from the document.
-		fv := elem.Field(i)
-		if !fv.CanSet() {
-			return lazyerrors.Errorf("field %s is not settable", field.Name)
+		err = setStructField(&elem, fieldIndex, command, key, val)
+		if err != nil {
+			return err
 		}
-
-		var settable any
-
-		switch fv.Kind() { //nolint: exhaustive // TODO: add more types support
-		case reflect.Int32, reflect.Int64, reflect.Float64:
-			if tag == "skip" || tag == "limit" {
-				settable, err = GetWholeParamStrict(command, tag, val)
-				if err != nil {
-					return err
-				}
-
-				break
-			}
-
-			settable, err = GetWholeNumberParam(val)
-			if err != nil {
-				return err
-			}
-		case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
-			settable = val
-		default:
-			return lazyerrors.Errorf("field %s type %s is not supported", field.Name, fv.Type())
-		}
-
-		if settable != nil {
-			v := reflect.ValueOf(settable)
-
-			if v.Type() != fv.Type() {
-				if tag == command {
-					return commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrInvalidNamespace,
-						fmt.Sprintf("collection name has invalid type %s", AliasFromType(settable)),
-						command,
-					)
-				}
-
-				return lazyerrors.Errorf(
-					"field %s type mismatch: got %s, expected %s",
-					field.Name, v.Type(), fv.Type(),
-				)
-			}
-
-			fv.Set(v)
-
-			continue
-		}
-
-		if val != nil {
-			v := reflect.ValueOf(val)
-			if fv.Type() != v.Type() {
-				return lazyerrors.Errorf(
-					"field %s type mismatch: got %s, expected %s",
-					field.Name, v.Type(), fv.Type(),
-				)
-			}
-
-			fv.Set(v)
-		}
-	}
-
-	if i != doc.Len() {
-		// some unprocessed fields left
 	}
 
 	return nil
+}
+
+func setStructField(elem *reflect.Value, i int, command, key string, val any) error {
+	var err error
+
+	field := elem.Type().Field(i)
+
+	// Set the value of the field from the document.
+	fv := elem.Field(i)
+	if !fv.CanSet() {
+		return lazyerrors.Errorf("field %s is not settable", field.Name)
+	}
+
+	var settable any
+
+	switch fv.Kind() { //nolint: exhaustive // TODO: add more types support
+	case reflect.Int32, reflect.Int64, reflect.Float64:
+		if key == "skip" || key == "limit" {
+			settable, err = GetWholeParamStrict(command, key, val)
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
+		settable, err = GetWholeNumberParam(val)
+		if err != nil {
+			return err
+		}
+	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
+		settable = val
+	default:
+		return lazyerrors.Errorf("field %s type %s is not supported", field.Name, fv.Type())
+	}
+
+	if settable != nil {
+		v := reflect.ValueOf(settable)
+
+		if v.Type() != fv.Type() {
+			if key == command {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrInvalidNamespace,
+					fmt.Sprintf("collection name has invalid type %s", AliasFromType(settable)),
+					command,
+				)
+			}
+
+			return lazyerrors.Errorf(
+				"field %s type mismatch: got %s, expected %s",
+				field.Name, v.Type(), fv.Type(),
+			)
+		}
+
+		fv.Set(v)
+
+		return nil
+	}
+
+	if val != nil {
+		v := reflect.ValueOf(val)
+		if fv.Type() != v.Type() {
+			return lazyerrors.Errorf(
+				"field %s type mismatch: got %s, expected %s",
+				field.Name, v.Type(), fv.Type(),
+			)
+		}
+
+		fv.Set(v)
+	}
+
+	return nil
+}
+
+// tagOptions contains options for the structure field tag.
+type tagOptions struct {
+	optional      bool
+	nonDefault    bool
+	unimplemented bool
+	ignored       bool
+}
+
+// lookupFieldTag looks for the tag and returns its options.
+func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
+	var to tagOptions
+	var i int
+
+	for ; i < value.NumField(); i++ {
+		field := value.Type().Field(i)
+
+		tag := field.Tag.Get("name")
+
+		optionsList := strings.Split(tag, ",")
+
+		if len(optionsList) == 0 {
+			return 0, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
+		}
+
+		if optionsList[0] != key {
+			continue
+		}
+
+		for _, tt := range optionsList[1:] {
+			switch tt {
+			case "opt":
+				to.optional = true
+			case "non-default":
+				to.nonDefault = true
+			case "unimplemented":
+				to.unimplemented = true
+			case "ignored":
+				to.ignored = true
+			default:
+				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
+			}
+		}
+
+		break
+	}
+
+	return i, &to, nil
 }
