@@ -240,37 +240,85 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				continue
 			}
 
-			subPath := path
-
-			// inclusion projection with non-existent path creates
-			// an empty document or an empty array on the path.
-			for {
-				v, err = docWithoutID.GetByPath(subPath)
-				if err == nil {
-					if _, ok := v.(*types.Document); ok {
-						// subPath contains a document, create an empty document
-						projected.SetByPath(subPath, new(types.Document))
-						break
-					}
-
-					if _, ok := v.(*types.Array); ok {
-						// subPath contains an array, create an empty array
-						projected.SetByPath(subPath, new(types.Array))
-						break
-					}
-				}
-
-				if subPath.Len() > 1 {
-					subPath = subPath.TrimSuffix()
-					continue
-				}
-
-				break
+			_, err = includeProjection(path, docWithoutID, projected)
+			if err == nil {
+				continue
 			}
+
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
 		}
 	}
 
 	return projected, nil
+}
+
+var noValueFound = errors.New("no value found")
+
+// includeProjection copies value found at source at path to the projected.
+// inclusion projection with non-existent path creates
+// an empty document or an empty array on the path.
+func includeProjection(path types.Path, source any, projected *types.Document) (any, error) {
+	key := path.Prefix()
+
+	switch val := source.(type) {
+	case *types.Document:
+		doc := new(types.Document)
+
+		docVal, err := val.Get(key)
+		if err != nil {
+			// key does not exist, return empty document.
+			return doc, nil
+		}
+
+		if path.Len() <= 1 {
+			// path reached suffix, return the document.
+			projected.Set(key, docVal)
+			return val, nil
+		}
+
+		// recursively set embedded value of the document.
+		embedded, err := includeProjection(path.TrimPrefix(), docVal, doc)
+		if err != nil && !errors.Is(err, noValueFound) {
+			return nil, err
+		}
+		if err == nil {
+			projected.Set(key, embedded)
+		}
+
+		return doc, nil
+	case *types.Array:
+		iter := val.Iterator()
+		defer iter.Close()
+
+		arr := new(types.Array)
+		for {
+			_, arrElem, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			if _, ok := arrElem.(*types.Document); !ok {
+				continue
+			}
+
+			doc := new(types.Document)
+			embedded, err := includeProjection(path, arrElem, doc)
+			if err != nil && !errors.Is(err, noValueFound) {
+				return nil, err
+			}
+			if err == nil {
+				arr.Append(embedded)
+			}
+		}
+
+		projected.Set(key, arr)
+		return arr, nil
+	default:
+		return nil, noValueFound
+	}
 }
