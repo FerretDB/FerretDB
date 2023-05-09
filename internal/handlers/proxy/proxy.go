@@ -62,7 +62,7 @@ func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 		panic(err)
 	}
 
-	resHeader, resBody, err := wire.ReadMessage(r.bufr, false)
+	resHeader, resBody, err := wire.ReadMessage(r.bufr)
 	if err != nil {
 		panic(err)
 	}

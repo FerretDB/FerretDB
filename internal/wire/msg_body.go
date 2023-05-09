@@ -45,7 +45,7 @@ var ErrZeroRead = errors.New("zero bytes read")
 // ReadMessage reads from reader and returns wire header and body.
 //
 // Error is (possibly wrapped) ErrZeroRead if zero bytes was read.
-func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error) {
+func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	var header MsgHeader
 	if err := header.readFrom(r); err != nil {
 		return nil, nil, lazyerrors.Error(err)
@@ -66,25 +66,28 @@ func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error
 		return &header, &reply, nil
 
 	case OpCodeMsg:
+		flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[0:4]))
+		if flagBit.FlagSet(OpMsgChecksumPresent) {
+			msgBytes := make([]byte, header.MessageLength)
 
-		if !skipChecksum {
-			// verify message checksum if present
-			flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[MsgHeaderLen : MsgHeaderLen+4]))
+			headerBytes, err := header.MarshalBinary()
+			if err != nil {
+				return &header, nil, lazyerrors.Error(err)
+			}
 
-			if flagBit.FlagSet(OpMsgChecksumPresent) {
-				msgBytes := make([]byte, header.MessageLength)
+			_ = append(msgBytes, headerBytes...)
+			msgBytes = append(msgBytes, b...)
 
-				headBytes, err := header.MarshalBinary()
-				if err != nil {
-					return &header, nil, lazyerrors.Error(err)
-				}
+			offset := len(msgBytes) - crc32.Size
+			expected := binary.LittleEndian.Uint32(msgBytes[offset:])
 
-				_ = append(msgBytes, headBytes...)
-				msgBytes = append(msgBytes, b...)
+			table := crc32.MakeTable(crc32.Castagnoli)
 
-				if err := verifyChecksum(msgBytes); err != nil {
-					return &header, nil, lazyerrors.Error(err)
-				}
+			actualMsg := msgBytes[:offset]
+			checksum := crc32.Checksum(actualMsg, table)
+
+			if expected != checksum {
+				return &header, nil, lazyerrors.New("OP_MSG checksum does not match contents.")
 			}
 		}
 
@@ -142,19 +145,6 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 
 	if _, err := w.Write(b); err != nil {
 		return lazyerrors.Error(err)
-	}
-
-	return nil
-}
-
-// verifyChecksum verifies the checksum attached to an OP_MSG.
-func verifyChecksum(msg []byte) error {
-	table := crc32.MakeTable(crc32.Castagnoli)
-	expected := binary.LittleEndian.Uint32(msg[len(msg)-crc32.Size:])
-	checksum := crc32.Checksum(msg, table)
-
-	if expected != checksum {
-		return lazyerrors.New("OP_MSG checksum does not match contents")
 	}
 
 	return nil

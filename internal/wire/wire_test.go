@@ -77,7 +77,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				br := bytes.NewReader(tc.expectedB)
 				bufr := bufio.NewReader(br)
-				msgHeader, msgBody, err := ReadMessage(bufr, false)
+				msgHeader, msgBody, err := ReadMessage(bufr)
 				if tc.err != "" {
 					require.Equal(t, tc.err, lastErr(err).Error())
 					return
@@ -149,7 +149,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
 			var err error
-			msgHeader, msgBody, err = ReadMessage(bufr, true)
+			msgHeader, msgBody, err = ReadMessage(bufr)
 			if err != nil {
 				t.Skip()
 			}

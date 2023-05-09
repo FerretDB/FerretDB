@@ -150,7 +150,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				wg.Done()
 			}()
 
-			acceptLoop(ctx, l.tcpListener, &wg, l, logger, false)
+			acceptLoop(ctx, l.tcpListener, &wg, l, logger)
 		}()
 	}
 
@@ -163,7 +163,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				wg.Done()
 			}()
 
-			acceptLoop(ctx, l.unixListener, &wg, l, logger, false)
+			acceptLoop(ctx, l.unixListener, &wg, l, logger)
 		}()
 	}
 
@@ -176,7 +176,7 @@ func (l *Listener) Run(ctx context.Context) error {
 				wg.Done()
 			}()
 
-			acceptLoop(ctx, l.tlsListener, &wg, l, logger, true)
+			acceptLoop(ctx, l.tlsListener, &wg, l, logger)
 		}()
 	}
 
@@ -242,7 +242,7 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 }
 
 // acceptLoop runs listener's connection accepting loop.
-func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger, isTLS bool) {
+func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
 	var retry int64
 	for {
 		netConn, err := listener.Accept()
@@ -297,7 +297,6 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				connMetrics:    l.Metrics.ConnMetrics,
 				proxyAddr:      l.ProxyAddr,
 				testRecordsDir: l.TestRecordsDir,
-				withTLS:        isTLS,
 			}
 			conn, e := newConn(opts)
 			if e != nil {
