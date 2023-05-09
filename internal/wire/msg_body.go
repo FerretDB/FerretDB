@@ -52,9 +52,7 @@ func ReadMessage(r *bufio.Reader, skipChecksum bool) (*MsgHeader, MsgBody, error
 	}
 
 	b := make([]byte, header.MessageLength-MsgHeaderLen)
-	n, err := io.ReadFull(r, b)
-
-	if err != nil {
+	if n, err := io.ReadFull(r, b); err != nil {
 		return nil, nil, lazyerrors.Errorf("expected %d, read %d: %w", len(b), n, err)
 	}
 
