@@ -255,7 +255,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 	return projected, nil
 }
 
-var noValueFound = errors.New("no value found")
+var noValueFoundAtPath = errors.New("no value found")
 
 // includeProjection copies value found at source at path to the projected.
 // Inclusion projection with non-existent path creates an empty document
@@ -265,27 +265,30 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 	switch val := source.(type) {
 	case *types.Document:
-		doc := new(types.Document)
-
 		embeddedSource, err := val.Get(key)
 		if err != nil {
 			// key does not exist, return empty document.
-			return doc, nil
+			return new(types.Document), nil
 		}
 
 		if path.Len() <= 1 {
 			// path reached suffix, return the document.
-			projected.Set(key, embeddedSource)
 			return val, nil
 		}
 
 		// recursively set embedded value of the document.
+		doc := new(types.Document)
 		embedded, err := includeProjection(path.TrimPrefix(), embeddedSource, doc)
-		if err != nil && !errors.Is(err, noValueFound) {
+
+		switch {
+		case errors.Is(err, noValueFoundAtPath):
+			// return new document because non existing path.
+			return new(types.Document), nil
+		case err != nil:
 			return nil, err
 		}
 
-		if err == nil {
+		if embedded != nil {
 			if isEmpty(key, projected) {
 				// only set projected if projected contains empty value at key.
 				// If projected is `{v: {foo: 1}}` and embedded is `{}`,
@@ -294,7 +297,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			}
 		}
 
-		return doc, nil
+		return projected, nil
 	case *types.Array:
 		iter := val.Iterator()
 		defer iter.Close()
@@ -318,11 +321,11 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			doc := new(types.Document)
 
 			embedded, err := includeProjection(path, arrElem, doc)
-			if err != nil && !errors.Is(err, noValueFound) {
+			if err != nil && !errors.Is(err, noValueFoundAtPath) {
 				return nil, err
 			}
 
-			if err == nil {
+			if embedded != nil {
 				arr.Append(embedded)
 			}
 		}
@@ -331,7 +334,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 		return arr, nil
 	default:
-		return nil, noValueFound
+		return nil, noValueFoundAtPath
 	}
 }
 
@@ -400,7 +403,7 @@ func excludeProjection(path types.Path, projected any) error {
 
 		// recursively remove embedded value of the document.
 		err = excludeProjection(path.TrimPrefix(), embeddedSource)
-		if err != nil && !errors.Is(err, noValueFound) {
+		if err != nil && !errors.Is(err, noValueFoundAtPath) {
 			return err
 		}
 
@@ -416,7 +419,7 @@ func excludeProjection(path types.Path, projected any) error {
 
 			err := excludeProjection(path, arrElem)
 
-			if errors.Is(err, noValueFound) {
+			if errors.Is(err, noValueFoundAtPath) {
 				projectedVal.Remove(i)
 				i--
 			}
@@ -428,6 +431,6 @@ func excludeProjection(path types.Path, projected any) error {
 
 		return nil
 	default:
-		return noValueFound
+		return noValueFoundAtPath
 	}
 }
