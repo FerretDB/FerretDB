@@ -11,9 +11,9 @@ require (
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/prometheus/client_golang v1.15.0
-	github.com/prometheus/client_model v0.3.0
-	github.com/prometheus/common v0.42.0
+	github.com/prometheus/client_golang v1.15.1
+	github.com/prometheus/client_model v0.4.0
+	github.com/prometheus/common v0.43.0
 	github.com/stretchr/testify v1.8.2
 	github.com/tigrisdata/tigris-client-go v1.0.0-beta.29
 	go.opentelemetry.io/otel v1.14.0
@@ -58,10 +58,9 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/perimeterx/marshmallow v1.1.4 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/oauth2 v0.5.0 // indirect
+	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
