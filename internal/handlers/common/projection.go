@@ -286,10 +286,10 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		}
 
 		if err == nil {
-			if !projected.Has(key) {
-				// only set if projected does not yet have the key.
+			if isEmpty(key, projected) {
+				// only set projected if projected contains empty value at key.
 				// If projected is `{v: {foo: 1}}` and embedded is `{}`,
-				// do not overwrite existing projected.
+				// do not overwrite it.
 				projected.Set(key, embedded)
 			}
 		}
@@ -333,6 +333,44 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 	default:
 		return nil, noValueFound
 	}
+}
+
+// isEmpty returns true if projected document at key is empty. It's empty if:
+// - key does not exist in projected document.
+// - projected contains empty document at key.
+// - projected contains an array which contain empty documents at key.
+func isEmpty(key string, projected *types.Document) bool {
+	v, err := projected.Get(key)
+	if err != nil {
+		return true
+	}
+
+	if doc, isDoc := v.(*types.Document); isDoc {
+		return doc.Len() == 0
+	}
+
+	if arr, isArray := v.(*types.Array); isArray {
+		iter := arr.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+			if err != nil {
+				return true
+			}
+
+			doc, ok := v.(*types.Document)
+			if !ok {
+				return false
+			}
+
+			if doc.Len() != 0 {
+				return false
+			}
+		}
+	}
+
+	return false
 }
 
 // excludeProjection removes path from projected value.

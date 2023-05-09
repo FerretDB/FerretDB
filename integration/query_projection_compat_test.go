@@ -142,10 +142,6 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}},
 		},
-		"DotNotationIncludeTwo": {
-			filter:     bson.D{},
-			projection: bson.D{{"v.foo", true}, {"v.array", true}},
-		},
 		"DotNotationExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", false}},
@@ -178,6 +174,30 @@ func TestQueryProjectionCompat(t *testing.T) {
 		"DotNotation4LevelExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.a.b.c", false}},
+		},
+	}
+
+	testQueryCompatWithProviders(t, providers, testCases)
+}
+
+func TestQueryProjectionIncludeManyCompat(t *testing.T) {
+	t.Parallel()
+
+	// TODO: create issue
+	providers := shareddata.AllProviders().Remove("Composites")
+
+	testCases := map[string]queryCompatTestCase{
+		"DotNotationIncludeTwo": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.array", true}},
+		},
+		"DotNotationIncludeTwoReverse": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array", true}, {"v.foo", true}},
+		},
+		"DotNotationIncludeMany": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.42", true}, {"v.foo", true}, {"v.array", true}},
 		},
 	}
 
