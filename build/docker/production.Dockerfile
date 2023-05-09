@@ -50,6 +50,8 @@ RUN --mount=type=cache,target=/cache \
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
+git status
+
 # check that stdlib was cached
 go install -v -race=false std
 

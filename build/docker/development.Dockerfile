@@ -58,6 +58,8 @@ RUN --mount=type=cache,target=/cache \
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
+git status
+
 RACE=false
 if test "$TARGETARCH" = "amd64"
 then
