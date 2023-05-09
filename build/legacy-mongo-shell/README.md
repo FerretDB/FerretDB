@@ -102,7 +102,7 @@ throws if the result contained an error.
 
 `assert.commandFailedWithCode(res, expectedCode, msg)`
 
-throws if the result did not contain the expected code.
+throws if the command did not fail with the expected code.
 
 `assert.sameMembers(aArr, bArr, msg, compareFn = _isDocEq)`
 
