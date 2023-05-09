@@ -75,7 +75,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		}
 
 		if options == nil {
-			return lazyerrors.Errorf("unexpected field %s encountered", lookup)
+			return lazyerrors.Errorf("unexpected field '%s' encountered", lookup)
 		}
 
 		if options.ignored {

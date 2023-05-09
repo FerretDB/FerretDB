@@ -15,6 +15,7 @@
 package commonparams
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -57,10 +58,12 @@ func TestParse(t *testing.T) {
 
 	tests := map[string]struct {
 		doc        *types.Document
+		command    string
 		wantParams any
 		wantErr    error
 	}{
 		"simple": {
+			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"$db", "test",
 				"find", "test",
@@ -89,14 +92,23 @@ func TestParse(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		"empty tag": {
+			command: "count",
+			doc:     must.NotFail(types.NewDocument("find", "test")),
+			wantParams: &struct {
+				Find string
+			}{},
+			wantErr: errors.New("[extract_params.go:78 commonparams.ExtractParams] unexpected field 'find' encountered"),
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			params := findParams{}
 
-			err := ExtractParams(tt.doc, "find", &params, zap.NewNop())
+			err := ExtractParams(tt.doc, tt.command, &params, zap.NewNop())
 			if tt.wantErr != nil {
-				require.Equal(t, tt.wantErr, err)
+				require.Equal(t, tt.wantErr.Error(), err.Error())
+				return
 			}
 			require.NoError(t, err)
 
