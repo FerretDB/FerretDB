@@ -18,7 +18,7 @@ Last month, in the middle of April, we released the [FerretDB 1.0. GA](https://b
 Since then, we’ve had genuinely amazing support from the community as well as a host of new contributors, including [@cooljeanius](https://github.com/cooljeanius), [@j0holo](https://github.com/j0holo), [@AuruTus](https://github.com/AuruTus), [@craigpastro](https://github.com/craigpastro), [@afiskon](https://github.com/afiskon), [@syasyayas](https://github.com/syasyayas), [@raeidish](https://github.com/raeidish), [@polyal](https://github.com/polyal), and [@wqhhust](https://github.com/wqhhust).
 
 We thank you all!
-Your enthusiasm and passion for FerretDB reinforce our belief in the need for a truly open-source document database replacement to MongoDB.
+Your enthusiasm and passion for FerretDB reinforce our belief in the need for a truly open-source document database alternative to MongoDB.
 
 While this is not a major release, we have some exciting updates and fixes for you.
 Let’s find out!
