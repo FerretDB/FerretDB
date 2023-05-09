@@ -15,7 +15,6 @@
 package commonparams
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -28,37 +27,43 @@ import (
 )
 
 // ExtractParams fill passed value structure with parameters from the document.
+// If the passed value is not a pointer to the structure it panics.
 // Parameters are extracted by the field name or by the `name` tag.
 //
 // Possible tags:
-// * `opt` - field is optional;
-// * `non-default` - field is unimplemented non-default;
-// * `unimplemented` - field is not implemented yet;
-// * `ignored` - field is ignored.
+//   - `opt` - field is optional;
+//   - `non-default` - field is unimplemented non-default;
+//   - `unimplemented` - field is not implemented yet;
+//   - `ignored` - field is ignored.
+//
+// Collection field processed in a special way. For the commands that require collection name
+// it is extracted from the command name.
 func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("unmarshal: value must be a non-nil pointer")
+		panic("value must be a non-nil pointer")
 	}
 
 	elem := rv.Elem()
 	if elem.Kind() != reflect.Struct {
-		return errors.New("unmarshal: value must be a struct pointer")
+		panic("value must be a struct pointer")
 	}
 
+	var i int
+
 	// Iterate over the fields of the struct.
-	for i := 0; i < elem.NumField(); i++ {
+	for ; i < elem.NumField(); i++ {
 		field := elem.Type().Field(i)
 
 		tag := field.Tag.Get("name")
 		if tag == "" {
-			tag = field.Name
+			return lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
 
 		var optional, nonDefault, unImplemented, ignored bool
 
-		for _, i := range strings.Split(tag, ",") {
-			switch i {
+		for _, tt := range strings.Split(tag, ",") {
+			switch tt {
 			case "opt":
 				optional = true
 			case "non-default":
@@ -68,9 +73,9 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			case "ignored":
 				ignored = true
 			default:
-				tag = i
+				tag = tt
 
-				if i == "collection" {
+				if tt == "collection" {
 					tag = command
 				}
 			}
@@ -120,7 +125,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		// Set the value of the field from the document.
 		fv := elem.Field(i)
 		if !fv.CanSet() {
-			return fmt.Errorf("unmarshal: field %s is not settable", field.Name)
+			return lazyerrors.Errorf("field %s is not settable", field.Name)
 		}
 
 		var settable any
@@ -143,7 +148,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
 			settable = val
 		default:
-			return fmt.Errorf("unmarshal: field %s type %s is not supported", field.Name, fv.Type())
+			return lazyerrors.Errorf("field %s type %s is not supported", field.Name, fv.Type())
 		}
 
 		if settable != nil {
@@ -158,8 +163,8 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 					)
 				}
 
-				return fmt.Errorf(
-					"unmarshal: field %s type mismatch: got %s, expected %s",
+				return lazyerrors.Errorf(
+					"field %s type mismatch: got %s, expected %s",
 					field.Name, v.Type(), fv.Type(),
 				)
 			}
@@ -172,14 +177,18 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		if val != nil {
 			v := reflect.ValueOf(val)
 			if fv.Type() != v.Type() {
-				return fmt.Errorf(
-					"unmarshal: field %s type mismatch: got %s, expected %s",
+				return lazyerrors.Errorf(
+					"field %s type mismatch: got %s, expected %s",
 					field.Name, v.Type(), fv.Type(),
 				)
 			}
 
 			fv.Set(v)
 		}
+	}
+
+	if i != doc.Len() {
+		// some unprocessed fields left
 	}
 
 	return nil
