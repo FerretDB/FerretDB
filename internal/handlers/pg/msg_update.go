@@ -42,46 +42,20 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "ordered", "writeConcern", "bypassDocumentValidation")
-
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetUpdateParams(document, h.L)
 	if err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	var updates *types.Array
-	if updates, err = common.GetOptionalParam(document, "updates", updates); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.CreateCollectionIfNotExists(ctx, tx, qp.DB, qp.Collection)
+		return pgdb.CreateCollectionIfNotExists(ctx, tx, params.DB, params.Collection)
 	})
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", params.DB, params.Collection)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 	default:
 		return nil, lazyerrors.Error(err)
@@ -91,59 +65,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	var upserted types.Array
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		for i := 0; i < updates.Len(); i++ {
-			update, err := common.AssertType[*types.Document](must.NotFail(updates.Get(i)))
-			if err != nil {
-				return err
+		for _, u := range params.Updates {
+			qp := pgdb.QueryParams{
+				DB:         params.DB,
+				Collection: params.Collection,
+				Filter:     u.Filter,
+				Comment:    u.Comment,
 			}
-
-			unimplementedFields := []string{
-				"c",
-				"collation",
-				"arrayFilters",
-			}
-			if err := common.Unimplemented(update, unimplementedFields...); err != nil {
-				return err
-			}
-
-			common.Ignored(update, h.L, "hint")
-
-			var q, u *types.Document
-			var upsert bool
-			var multi bool
-			if q, err = common.GetOptionalParam(update, "q", q); err != nil {
-				return err
-			}
-			if u, err = common.GetOptionalParam(update, "u", u); err != nil {
-				// TODO check if u is an array of aggregation pipeline stages
-				return err
-			}
-
-			// get comment from options.Update().SetComment() method
-			if qp.Comment, err = common.GetOptionalParam(document, "comment", qp.Comment); err != nil {
-				return err
-			}
-
-			// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-			if qp.Comment, err = common.GetOptionalParam(q, "$comment", qp.Comment); err != nil {
-				return err
-			}
-
-			if u != nil {
-				if err = common.ValidateUpdateOperators(document.Command(), u); err != nil {
-					return err
-				}
-			}
-
-			if upsert, err = common.GetOptionalParam(update, "upsert", upsert); err != nil {
-				return err
-			}
-
-			if multi, err = common.GetOptionalParam(update, "multi", multi); err != nil {
-				return err
-			}
-
-			qp.Filter = q
 
 			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
 			if err != nil {
@@ -151,13 +79,13 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			if len(resDocs) == 0 {
-				if !upsert {
+				if !u.Upsert {
 					// nothing to do, continue to the next update operation
 					continue
 				}
 
-				doc := q.DeepCopy()
-				if _, err = common.UpdateDocument(doc, u); err != nil {
+				doc := u.Filter.DeepCopy()
+				if _, err = common.UpdateDocument(doc, u.Update); err != nil {
 					return err
 				}
 				if !doc.Has("_id") {
@@ -177,14 +105,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			if len(resDocs) > 1 && !multi {
+			if len(resDocs) > 1 && !u.Multi {
 				resDocs = resDocs[:1]
 			}
 
 			matched += int32(len(resDocs))
 
 			for _, doc := range resDocs {
-				changed, err := common.UpdateDocument(doc, u)
+				changed, err := common.UpdateDocument(doc, u.Update)
 				if err != nil {
 					return err
 				}

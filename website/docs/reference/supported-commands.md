@@ -538,7 +538,7 @@ db.aggregate()
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                          |
 | --------------------------------- | ------------------------------ | ------------------------- | ------ | ----------------------------------------------------------------- |
-| `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                                  |
+| `listCollections`                 |                                |                           | ✅      |                                                                   |
 |                                   | `filter`                       |                           | ✅      |                                                                   |
 |                                   | `nameOnly`                     |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)          |
 |                                   | `comment`                      |                           | ⚠️      | Ignored                                                           |
@@ -573,14 +573,13 @@ db.aggregate()
 |                                   | `size`                         |                           | ⚠️      |                                                                   |
 |                                   | `writeConcern`                 |                           | ⚠️      |                                                                   |
 |                                   | `comment`                      |                           | ⚠️      |                                                                   |
-| `create`                          |                                |                           | ✅      | Basic command is fully supported                                  |
-|                                   | `capped`                       |                           | ⚠️      | Unimplemented                                                     |
-|                                   | `timeseries`                   |                           | ⚠️      | Unimplemented                                                     |
-|                                   |                                |                           | ⚠️      |                                                                   |
+| `create`                          |                                |                           | ✅      |                                                                   |
+|                                   | `capped`                       |                           | ⚠️      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/75)   |
+|                                   | `timeseries`                   |                           | ⚠️      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/177)  |
 |                                   |                                | `timeField`               | ⚠️      |                                                                   |
 |                                   |                                | `metaField`               | ⚠️      |                                                                   |
 |                                   |                                | `granularity`             | ⚠️      |                                                                   |
-|                                   | `expireAfterSeconds`           |                           | ⚠️      | Unimplemented                                                     |
+|                                   | `expireAfterSeconds`           |                           | ⚠️      | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2415) |
 |                                   | `clusteredIndex`               |                           | ⚠️      |                                                                   |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️      |                                                                   |
 |                                   | `autoIndexId`                  |                           | ⚠️      | Ignored                                                           |
@@ -625,10 +624,10 @@ db.aggregate()
 |                                   | `$ownOps`                      |                           | ⚠️      |                                                                   |
 |                                   | `$all`                         |                           | ⚠️      |                                                                   |
 |                                   | `comment`                      |                           | ⚠️      |                                                                   |
-| `drop`                            |                                |                           | ✅      | Basic command is fully supported                                  |
+| `drop`                            |                                |                           | ✅      |                                                                   |
 |                                   | `writeConcern`                 |                           | ⚠️      | Ignored                                                           |
 |                                   | `comment`                      |                           | ⚠️      | Ignored                                                           |
-| `dropDatabase`                    |                                |                           | ✅      | Basic command is fully supported                                  |
+| `dropDatabase`                    |                                |                           | ✅      |                                                                   |
 |                                   | `writeConcern`                 |                           | ⚠️      | Ignored                                                           |
 |                                   | `comment`                      |                           | ⚠️      | Ignored                                                           |
 | `dropConnections`                 |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1511)         |
@@ -655,12 +654,12 @@ db.aggregate()
 | `killOp`                          |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1515)         |
 |                                   | `op`                           |                           | ⚠️      |                                                                   |
 |                                   | `comment`                      |                           | ⚠️      |                                                                   |
-| `listCollections`                 |                                |                           | ✅      | Basic command is fully supported                                  |
+| `listCollections`                 |                                |                           | ✅      |                                                                   |
 |                                   | `filter`                       |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/1405)         |
 |                                   | `nameOnly`                     |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/301)          |
 |                                   | `authorizedCollections`        |                           | ⚠️      |                                                                   |
 |                                   | `comment`                      |                           | ⚠️      |                                                                   |
-| `listDatabases`                   |                                |                           | ✅      | Basic command is fully supported                                  |
+| `listDatabases`                   |                                |                           | ✅      |                                                                   |
 |                                   | `filter`                       |                           | ✅      |                                                                   |
 |                                   | `nameOnly`                     |                           | ✅      |                                                                   |
 |                                   | `authorizedDatabases`          |                           | ⚠️      | Ignored                                                           |
@@ -672,11 +671,11 @@ db.aggregate()
 |                                   | `<target>`                     |                           | ⚠️      |                                                                   |
 |                                   | `comment`                      |                           | ⚠️      |                                                                   |
 | `reIndex`                         |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1516)         |
-| `renameCollection`                |                                |                           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1517)         |
-|                                   | `to`                           |                           | ⚠️      |                                                                   |
-|                                   | `dropTarget`                   |                           | ⚠️      |                                                                   |
-|                                   | `writeConcern`                 |                           | ⚠️      |                                                                   |
-|                                   | `comment`                      |                           | ⚠️      |                                                                   |
+| `renameCollection`                |                                |                           | ✅      |                                                                   |
+|                                   | `to`                           |                           | ✅      | [Issue](https://github.com/FerretDB/FerretDB/issues/2563)         |
+|                                   | `dropTarget`                   |                           | ⚠️      | [Issue](https://github.com/FerretDB/FerretDB/issues/2565)         |
+|                                   | `writeConcern`                 |                           | ⚠️      | Ignored                                                           |
+|                                   | `comment`                      |                           | ⚠️      | Ignored                                                           |
 | `rotateCertificates`              |                                |                           | ❌      |                                                                   |
 | `setFeatureCompatibilityVersion`  |                                |                           | ❌      |                                                                   |
 | `setIndexCommitQuorum`            |                                |                           | ❌      |                                                                   |

@@ -126,7 +126,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgFind,
 	},
 	"findAndModify": {
-		Help:    "Inserts, updates, or deletes, and returns a document matched by the query.",
+		Help:    "Docs, updates, or deletes, and returns a document matched by the query.",
 		Handler: handlers.Interface.MsgFindAndModify,
 	},
 	"findandmodify": { // old lowercase variant
@@ -161,7 +161,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgHostInfo,
 	},
 	"insert": {
-		Help:    "Inserts documents into the database.",
+		Help:    "Docs documents into the database.",
 		Handler: handlers.Interface.MsgInsert,
 	},
 	"isMaster": {
@@ -190,6 +190,10 @@ var Commands = map[string]command{
 	"ping": {
 		Help:    "Returns a pong response.",
 		Handler: handlers.Interface.MsgPing,
+	},
+	"renameCollection": {
+		Help:    "Changes the name of an existing collection.",
+		Handler: handlers.Interface.MsgRenameCollection,
 	},
 	"saslStart": {
 		Help:    "Starts a SASL conversation.",

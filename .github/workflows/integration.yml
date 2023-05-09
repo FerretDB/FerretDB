@@ -5,7 +5,7 @@ name: Integration
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -35,7 +35,7 @@ jobs:
       group: paid
     timeout-minutes: 45
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     strategy:
       fail-fast: false
@@ -82,7 +82,7 @@ jobs:
       # Unfortunately, it seems that tokenless uploads fail too often.
       # See https://github.com/codecov/codecov-action/issues/837.
       #
-      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         uses: codecov/codecov-action@v3
         with:
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       - name: Checkout code
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     needs: test
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       - name: Submit coveralls

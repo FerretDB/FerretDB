@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -39,7 +40,7 @@ type project struct {
 }
 
 // newProject validates projection document and creates a new $project stage.
-func newProject(stage *types.Document) (Stage, error) {
+func newProject(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -78,11 +79,11 @@ func (p *project) Process(_ context.Context, iter types.DocumentsIterator, close
 }
 
 // Type implements Stage interface.
-func (p *project) Type() StageType {
-	return StageTypeDocuments
+func (p *project) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*project)(nil)
+	_ aggregations.Stage = (*project)(nil)
 )
