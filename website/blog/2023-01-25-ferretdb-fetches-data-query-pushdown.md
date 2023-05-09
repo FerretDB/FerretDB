@@ -37,7 +37,7 @@ Fortunately, we’ve managed to introduce the query pushdown with [this PR](http
 
 Let's jump right into the FerretDB internals and go step by step to see how it handles the sample query!
 
-Let's say we have a collection with data on thousands of customers, and want to check if the one under “john.doe@example.com” email address has an active account:
+Let's say we have a collection with data on thousands of customers, and want to check if the one under `john.doe@example.com` email address has an active account:
 
 ```js
 db.customers.find({ 'email': 'john.doe@example.com' },{ active: 1 })
