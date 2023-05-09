@@ -68,23 +68,19 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	case OpCodeMsg:
 		flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[0:4]))
 		if flagBit.FlagSet(OpMsgChecksumPresent) {
-			msgBytes := make([]byte, header.MessageLength)
+			offset := len(b) - crc32.Size
+			hasher := crc32.New(crc32.MakeTable(crc32.Castagnoli))
 
-			headerBytes, err := header.MarshalBinary()
-			if err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, &header); err != nil {
 				return &header, nil, lazyerrors.Error(err)
 			}
 
-			_ = append(msgBytes, headerBytes...)
-			msgBytes = append(msgBytes, b...)
+			if err := binary.Write(hasher, binary.LittleEndian, b[:offset]); err != nil {
+				return &header, nil, lazyerrors.Error(err)
+			}
 
-			offset := len(msgBytes) - crc32.Size
-			expected := binary.LittleEndian.Uint32(msgBytes[offset:])
-
-			table := crc32.MakeTable(crc32.Castagnoli)
-
-			actualMsg := msgBytes[:offset]
-			checksum := crc32.Checksum(actualMsg, table)
+			expected := binary.LittleEndian.Uint32(b[offset:])
+			checksum := hasher.Sum32()
 
 			if expected != checksum {
 				return &header, nil, lazyerrors.New("OP_MSG checksum does not match contents.")
