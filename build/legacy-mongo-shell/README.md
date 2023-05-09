@@ -17,7 +17,7 @@ For example, to check if the `findAndModify` command failed with the error code 
 > assert.commandFailedWithCode(res, ErrorCodes.ImmutableField);
 ```
 
-It is not always necessary use the `db.runCommand()` helper as some write methods wrap a `WriteResult` which the helpers can parse.
+It is not always necessary use the `db.runCommand()` helper as some write methods wrap a `writeError` which the helpers can parse.
 For example, `insert`, `update`, and `remove` will all return a `WriteResult` so the function can parse the result and look for a `writeError`.
 
 ```js
