@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.3-2 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.20.4-1 AS all-in-one-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -57,6 +57,8 @@ RUN --mount=type=cache,target=/cache \
 # (and that happens on GitHub-hosted Actions runners).
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
+
+git status
 
 RACE=false
 if test "$TARGETARCH" = "amd64"
