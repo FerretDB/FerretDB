@@ -226,8 +226,10 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		case bool: // field: bool
 			if inclusion {
+				var v any
+
 				// inclusion projection with existing path sets the value.
-				v, err := docWithoutID.GetByPath(path)
+				v, err = docWithoutID.GetByPath(path)
 				if err == nil {
 					if err = projected.SetByPath(path, v); err == nil {
 						continue
@@ -284,7 +286,12 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		}
 
 		if err == nil {
-			projected.Set(key, embedded)
+			if !projected.Has(key) {
+				// only set if projected does not yet have the key.
+				// If projected is `{v: {foo: 1}}` and embedded is `{}`,
+				// do not overwrite existing projected.
+				projected.Set(key, embedded)
+			}
 		}
 
 		return doc, nil
