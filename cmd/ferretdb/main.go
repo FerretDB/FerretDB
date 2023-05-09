@@ -82,7 +82,7 @@ var cli struct {
 	Test struct {
 		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
 		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sorting pushdown."`
+		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableCursors         bool   `default:"false" help:"Experimental: enable cursors."`
 
 		//nolint:lll // for readability
