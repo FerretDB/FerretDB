@@ -16,7 +16,6 @@ package common
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"strconv"
 	"strings"
@@ -31,22 +30,16 @@ func parseOSRelease(r io.Reader) (string, string, error) {
 
 	configParams := map[string]string{}
 	for scanner.Scan() {
-		str := strings.Split(scanner.Text(), "=")
-		if len(str) != 2 {
+		key, value, ok := strings.Cut(scanner.Text(), "=")
+		if !ok {
 			continue
 		}
 
-		value := strings.Join(str[1:], "")
-		unquotedValue, err := strconv.Unquote(value)
-
-		switch {
-		case errors.Is(err, nil):
-			configParams[str[0]] = unquotedValue
-		case errors.Is(err, strconv.ErrSyntax):
-			configParams[str[0]] = value
-		default:
-			return "", "", lazyerrors.Error(err)
+		if v, err := strconv.Unquote(value); err == nil {
+			value = v
 		}
+
+		configParams[key] = value
 	}
 
 	if err := scanner.Err(); err != nil {
