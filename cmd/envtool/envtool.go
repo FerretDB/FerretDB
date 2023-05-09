@@ -323,21 +323,35 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 
 // mkdir creates all directories from given paths
 func mkdir(paths []string) error {
+	var errs error
+
 	for _, path := range paths {
 		if err := os.MkdirAll(path, 0700); err != nil {
-			return err
+			errs = errors.Join(errs, err)
 		}
 	}
+
+	if errs != nil {
+		return errs
+	}
+
 	return nil
 }
 
 // rmdir removes all directories from given paths
 func rmdir(paths []string) error {
+	var errs error
+
 	for _, path := range paths {
 		if err := os.RemoveAll(path); err != nil {
-			return err
+			errs = errors.Join(errs, err)
 		}
 	}
+
+	if errs != nil {
+		return errs
+	}
+
 	return nil
 }
 
