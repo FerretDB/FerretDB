@@ -227,7 +227,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 		case bool: // field: bool
 			if !inclusion {
 				// exclusion projection removes the value from the path.
-				projected.RemoveByPath(path)
+				excludeProjection(path, projected)
 
 				continue
 			}
@@ -256,8 +256,8 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 var noValueFound = errors.New("no value found")
 
 // includeProjection copies value found at source at path to the projected.
-// inclusion projection with non-existent path creates
-// an empty document or an empty array on the path.
+// Inclusion projection with non-existent path creates an empty document
+// or an empty array on the path.
 func includeProjection(path types.Path, source any, projected *types.Document) (any, error) {
 	key := path.Prefix()
 
@@ -282,6 +282,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		if err != nil && !errors.Is(err, noValueFound) {
 			return nil, err
 		}
+
 		if err == nil {
 			projected.Set(key, embedded)
 		}
@@ -292,6 +293,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		defer iter.Close()
 
 		arr := new(types.Array)
+
 		for {
 			_, arrElem, err := iter.Next()
 			if err != nil {
@@ -307,18 +309,80 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			}
 
 			doc := new(types.Document)
+
 			embedded, err := includeProjection(path, arrElem, doc)
 			if err != nil && !errors.Is(err, noValueFound) {
 				return nil, err
 			}
+
 			if err == nil {
 				arr.Append(embedded)
 			}
 		}
 
 		projected.Set(key, arr)
+
 		return arr, nil
 	default:
 		return nil, noValueFound
+	}
+}
+
+// excludeProjection removes path from projected value.
+// When an array is on the path, it checks if the array contains any document
+// with the key to remove that document.
+//
+//	Examples: "v.foo" exclusion projection:
+//	{v: {foo: 1}                        -> {v: {}}
+//	{v: {foo: 1, bar: 1}                -> {v: {bar: 1}}
+//	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{}, {}]}
+//	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {bar: 1}]}
+func excludeProjection(path types.Path, projected any) error {
+	key := path.Prefix()
+
+	switch projectedVal := projected.(type) {
+	case *types.Document:
+		embeddedSource, err := projectedVal.Get(key)
+		if err != nil {
+			return nil
+		}
+
+		if path.Len() <= 1 {
+			// path reached suffix, remove key from the document.
+			projectedVal.Remove(key)
+			return nil
+		}
+
+		// recursively remove embedded value of the document.
+		err = excludeProjection(path.TrimPrefix(), embeddedSource)
+		if err != nil && !errors.Is(err, noValueFound) {
+			return err
+		}
+
+		return nil
+	case *types.Array:
+		for i := projectedVal.Len() - 1; i >= 0; i-- {
+			arrElem := must.NotFail(projectedVal.Get(i))
+
+			if _, ok := arrElem.(*types.Document); !ok {
+				// not a document, cannot possibly be part of path, do nothing.
+				continue
+			}
+
+			err := excludeProjection(path, arrElem)
+
+			if errors.Is(err, noValueFound) {
+				projectedVal.Remove(i)
+				i--
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	default:
+		return noValueFound
 	}
 }
