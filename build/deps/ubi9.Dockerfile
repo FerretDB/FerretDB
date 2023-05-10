@@ -1,1 +1,1 @@
-FROM redhat/ubi9-minimal:9.1.0
+FROM redhat/ubi9-minimal:9.2-484
