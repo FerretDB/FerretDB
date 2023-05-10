@@ -321,7 +321,7 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
-// mkdir creates all directories from given paths
+// mkdir creates all directories from given paths.
 func mkdir(paths []string) error {
 	var errs error
 
@@ -338,7 +338,7 @@ func mkdir(paths []string) error {
 	return nil
 }
 
-// rmdir removes all directories from given paths
+// rmdir removes all directories from given paths.
 func rmdir(paths []string) error {
 	var errs error
 
