@@ -108,9 +108,9 @@ throws if the command did not fail with the expected code.
 
 throws if the two arrays do not have the same members, in any order.
 By default, nested arrays must have the same order to be considered equal.
-Optionally accepts a compareFn to compare values instead of using docEq.
+Optionally accepts a compareFn to compare values instead of using `docEq`.
 
-`assert.writeOK(res, msg, {ignoreWriteConcernErrors} = {})`
+`assert.writeOK(res, msg)`
 
 throws if write result contained an error.
 
@@ -121,10 +121,10 @@ The order of fields
 (properties) within objects is disregarded.
 Throws if object representation in BSON exceeds 16793600 bytes.
 
-`assert.retry(func, msg, num_attempts, intervalMS, {runHangAnalyzer = true} = {})`
+`assert.retry(func, msg, num_attempts, intervalMS)`
 
 calls the given function `func` repeatedly at time intervals specified by
-`intervalMS` (milliseconds) until either func() returns true or the number of
+`intervalMS` (milliseconds) until either `func()` returns true or the number of
 attempted function calls is equal to `num_attempts`.
 Throws an exception with
 message `msg` after all attempts are used up.
