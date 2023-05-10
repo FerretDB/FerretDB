@@ -26,7 +26,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	type allTagsThatPass struct {
+	type allTagsThatPass struct { //nolint:vet // it's a test struct
 		DB           string          `ferretdb:"$db"`
 		Collection   string          `ferretdb:"collection"`
 		Filter       *types.Document `ferretdb:"filter,opt"`
@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 		Find bool `ferretdb:"find,non-default"`
 	}
 
-	tests := map[string]struct {
+	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
 		params     any
@@ -60,23 +60,19 @@ func TestParse(t *testing.T) {
 				"filter", must.NotFail(types.NewDocument("a", "b")),
 				"allowDiskUse", "123",
 			)),
-			params: &allTagsThatPass{},
+			params: new(allTagsThatPass),
 			wantParams: &allTagsThatPass{
 				DB:         "test",
 				Collection: "test",
 				Filter:     must.NotFail(types.NewDocument("a", "b")),
 			},
-			wantErr: nil,
 		},
 		"UnimplementedTag": {
 			command: "command",
 			doc: must.NotFail(types.NewDocument(
 				"find", "test",
 			)),
-			params: &unimplementedTag{},
-			wantParams: &unimplementedTag{
-				Find: "test",
-			},
+			params:  new(unimplementedTag),
 			wantErr: errors.New("NotImplemented (238): find: support for field \"find\" with value test is not implemented yet"),
 		},
 		"NonDefaultTag": {
@@ -84,16 +80,17 @@ func TestParse(t *testing.T) {
 			doc: must.NotFail(types.NewDocument(
 				"find", true,
 			)),
-			params:     &nonDefaultTag{},
-			wantParams: &nonDefaultTag{},
-			wantErr:    errors.New("NotImplemented (238): find: support for field \"find\" with non-default value true is not implemented yet"),
+			params: new(nonDefaultTag),
+			wantErr: errors.New(
+				"NotImplemented (238): find: support for field \"find\"" +
+					" with non-default value true is not implemented yet",
+			),
 		},
 		"EmptyTag": {
-			command:    "count",
-			doc:        must.NotFail(types.NewDocument("find", "test")),
-			params:     &noTag{},
-			wantParams: &noTag{},
-			wantErr:    errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'find' encountered"),
+			command: "count",
+			doc:     must.NotFail(types.NewDocument("find", "test")),
+			params:  new(noTag),
+			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'find' encountered"),
 		},
 	}
 	for name, tt := range tests {
