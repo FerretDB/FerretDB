@@ -65,6 +65,8 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		}
 
 		lookup := key
+
+		// If the key is the same as the command name, then it is a collection name.
 		if key == command {
 			lookup = "collection"
 		}
@@ -118,6 +120,63 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 	return nil
 }
 
+// tagOptions contains options for the structure field tag.
+type tagOptions struct {
+	optional      bool
+	nonDefault    bool
+	unimplemented bool
+	ignored       bool
+}
+
+// lookupFieldTag looks for the tag and returns its options.
+func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
+	var to tagOptions
+	var i int
+	var found bool
+
+	for ; i < value.NumField(); i++ {
+		field := value.Type().Field(i)
+
+		tag := field.Tag.Get("name")
+
+		optionsList := strings.Split(tag, ",")
+
+		if len(optionsList) == 0 {
+			return 0, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
+		}
+
+		if optionsList[0] != key {
+			continue
+		}
+
+		for _, tt := range optionsList[1:] {
+			switch tt {
+			case "opt":
+				to.optional = true
+			case "non-default":
+				to.nonDefault = true
+			case "unimplemented":
+				to.unimplemented = true
+			case "ignored":
+				to.ignored = true
+			default:
+				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
+			}
+		}
+
+		found = true
+
+		break
+	}
+
+	if !found {
+		return 0, nil, nil
+	}
+
+	return i, &to, nil
+}
+
+// setStructField sets the value of the document field to the structure field.
 func setStructField(elem *reflect.Value, i int, command, key string, val any) error {
 	var err error
 
@@ -188,60 +247,4 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 	}
 
 	return nil
-}
-
-// tagOptions contains options for the structure field tag.
-type tagOptions struct {
-	optional      bool
-	nonDefault    bool
-	unimplemented bool
-	ignored       bool
-}
-
-// lookupFieldTag looks for the tag and returns its options.
-func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
-	var to tagOptions
-	var i int
-	var found bool
-
-	for ; i < value.NumField(); i++ {
-		field := value.Type().Field(i)
-
-		tag := field.Tag.Get("name")
-
-		optionsList := strings.Split(tag, ",")
-
-		if len(optionsList) == 0 {
-			return 0, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
-		}
-
-		if optionsList[0] != key {
-			continue
-		}
-
-		for _, tt := range optionsList[1:] {
-			switch tt {
-			case "opt":
-				to.optional = true
-			case "non-default":
-				to.nonDefault = true
-			case "unimplemented":
-				to.unimplemented = true
-			case "ignored":
-				to.ignored = true
-			default:
-				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
-			}
-		}
-
-		found = true
-
-		break
-	}
-
-	if !found {
-		return 0, nil, nil
-	}
-
-	return i, &to, nil
 }
