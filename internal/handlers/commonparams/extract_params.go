@@ -185,7 +185,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 	// Set the value of the field from the document.
 	fv := elem.Field(i)
 	if !fv.CanSet() {
-		return lazyerrors.Errorf("field %s is not settable", field.Name)
+		panic(fmt.Sprintf("field %s is not settable", field.Name))
 	}
 
 	var settable any
@@ -208,7 +208,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
 		settable = val
 	default:
-		return lazyerrors.Errorf("field %s type %s is not supported", field.Name, fv.Type())
+		panic(fmt.Sprintf("field %s type %s is not supported", field.Name, fv.Type()))
 	}
 
 	if settable != nil {
