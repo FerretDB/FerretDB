@@ -39,7 +39,6 @@ func TestUpdateFieldSet(t *testing.T) {
 		alt      string
 	}{
 		"ArrayNil": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1662
 			id:       "string",
 			update:   bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
 			expected: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
@@ -50,7 +49,6 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetSameValueInt": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1662
 			id:       "int32",
 			update:   bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
