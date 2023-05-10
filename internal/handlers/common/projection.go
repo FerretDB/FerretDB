@@ -249,9 +249,15 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 // pathNotExists indicates that no path was found.
 var pathNotExists = errors.New("path not exists")
 
-// includeProjection copies value found at source at path to the projected.
+// includeProjection copies value found of source at path to the projected.
 // Inclusion projection with non-existent path creates an empty document
 // or an empty array on the path.
+//
+//	Examples: "v.foo" inclusion projection:
+//	{v: {foo: 1, bar: 1}}               -> {v: {foo: 1}}
+//	{v: {bar: 1}}                       -> {v: {}}
+//	{v: [{bar: 1}]}                     -> {v: [{}]}
+//	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{foo: 1}, {foo: 2}, {}]}
 func includeProjection(path types.Path, source any, projected *types.Document) (any, error) {
 	key := path.Prefix()
 
@@ -378,8 +384,8 @@ func isEmpty(key string, projected *types.Document) bool {
 // with the key to remove that document. This is not the case in document.Remove(key).
 //
 //	Examples: "v.foo" exclusion projection:
-//	{v: {foo: 1}                        -> {v: {}}
-//	{v: {foo: 1, bar: 1}                -> {v: {bar: 1}}
+//	{v: {foo: 1}}                       -> {v: {}}
+//	{v: {foo: 1, bar: 1}}               -> {v: {bar: 1}}
 //	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{}, {}]}
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {bar: 1}]}
 func excludeProjection(path types.Path, projected any) error {
