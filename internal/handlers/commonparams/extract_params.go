@@ -101,7 +101,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		if options.nonDefault {
 			v, ok := val.(bool)
 
-			if ok && !v {
+			if ok && v {
 				msg := fmt.Sprintf(
 					"%s: support for field %q with non-default value %v is not implemented yet",
 					doc.Command(), key, val,
@@ -137,7 +137,7 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 	for ; i < value.NumField(); i++ {
 		field := value.Type().Field(i)
 
-		tag := field.Tag.Get("name")
+		tag := field.Tag.Get("ferretdb")
 
 		optionsList := strings.Split(tag, ",")
 

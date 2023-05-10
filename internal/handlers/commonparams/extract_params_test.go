@@ -27,10 +27,10 @@ import (
 
 func TestParse(t *testing.T) {
 	type allTagsThatPass struct {
-		DB           string          `name:"$db"`
-		Collection   string          `name:"collection"`
-		Filter       *types.Document `name:"filter,opt"`
-		AllowDiskUse any             `name:"allowDiskUse,ignored"`
+		DB           string          `ferretdb:"$db"`
+		Collection   string          `ferretdb:"collection"`
+		Filter       *types.Document `ferretdb:"filter,opt"`
+		AllowDiskUse any             `ferretdb:"allowDiskUse,ignored"`
 	}
 
 	type noTag struct {
@@ -38,7 +38,11 @@ func TestParse(t *testing.T) {
 	}
 
 	type unimplementedTag struct {
-		Find string `name:"find,unimplemented"`
+		Find string `ferretdb:"find,unimplemented"`
+	}
+
+	type nonDefaultTag struct {
+		Find bool `ferretdb:"find,non-default"`
 	}
 
 	tests := map[string]struct {
@@ -74,6 +78,15 @@ func TestParse(t *testing.T) {
 				Find: "test",
 			},
 			wantErr: errors.New("NotImplemented (238): find: support for field \"find\" with value test is not implemented yet"),
+		},
+		"NonDefaultTag": {
+			command: "command",
+			doc: must.NotFail(types.NewDocument(
+				"find", true,
+			)),
+			params:     &nonDefaultTag{},
+			wantParams: &nonDefaultTag{},
+			wantErr:    errors.New("NotImplemented (238): find: support for field \"find\" with non-default value true is not implemented yet"),
 		},
 		"EmptyTag": {
 			command:    "count",
