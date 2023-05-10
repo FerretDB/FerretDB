@@ -260,17 +260,29 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		embeddedSource, err := val.Get(key)
 		if err != nil {
 			// key does not exist, return projected document.
-			return projected, nil
+			return nil, nil
 		}
 
 		if path.Len() <= 1 {
 			// path reached suffix, return the document.
-			projected.Set(key, embeddedSource)
-			return projected, nil
+			setBySourceOrder(key, embeddedSource, val, projected)
+			return nil, nil
 		}
 
-		// recursively get embedded value of the document.
-		embedded, err := includeProjection(path.TrimPrefix(), embeddedSource, new(types.Document))
+		embeddedProjected := new(types.Document)
+
+		if projected.Has(key) {
+			v := must.NotFail(projected.Get(key))
+			if doc, ok := v.(*types.Document); ok {
+				embeddedProjected = doc
+			}
+		}
+
+		// if array is found at next prefix use embeddedArray,
+		// if document is found, embeddedProjected is set.
+		// This is because projected document may contain previously assigned
+		// projection value.
+		embeddedArray, err := includeProjection(path.TrimPrefix(), embeddedSource, embeddedProjected)
 
 		switch {
 		case errors.Is(err, pathNotExists):
@@ -282,12 +294,17 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 		if isEmpty(key, projected) {
 			// only set projected if projected contains empty value.
-			// If projected is `{v: {foo: 1}}` and embedded is `{}`,
+			// If projected is `{v: {foo: 1}}` and embeddedArray is `{}`,
 			// do not overwrite it.
-			projected.Set(key, embedded)
+			if _, ok := embeddedSource.(*types.Array); ok {
+				projected.Set(key, embeddedArray)
+				return projected, nil
+			}
+
+			setBySourceOrder(key, embeddedProjected, val, projected)
 		}
 
-		return projected, nil
+		return nil, nil
 	case *types.Array:
 		iter := val.Iterator()
 		defer iter.Close()
@@ -308,12 +325,12 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 				continue
 			}
 
-			embedded, err := includeProjection(path, arrElem, new(types.Document))
-			if err != nil {
+			embeddedProjected := new(types.Document)
+			if _, err = includeProjection(path, arrElem, embeddedProjected); err != nil {
 				return nil, err
 			}
 
-			arr.Append(embedded)
+			arr.Append(embeddedProjected)
 		}
 
 		return arr, nil
@@ -407,5 +424,49 @@ func excludeProjection(path types.Path, projected any) error {
 		return nil
 	default:
 		return pathNotExists
+	}
+}
+
+// setBySourceOrder sets the key val pair to projected in same field order as the source.
+// Example:
+//
+//	key: foo
+//	val: 1
+//	source: {foo: 1, bar: 2}
+//	projected: {bar: 2}
+//
+// setBySourceOrder sets projected to {foo: 1, bar: 2} rather than adding it to the last field.
+func setBySourceOrder(key string, val any, source, projected *types.Document) {
+	projectedKeys := projected.Keys()
+
+	i := 0
+
+	for _, sourceKey := range source.Keys() {
+		if sourceKey == key {
+			break
+		}
+
+		if i >= len(projectedKeys) {
+			break
+		}
+
+		if sourceKey == projectedKeys[i] {
+			i++
+		}
+	}
+
+	tmp := projected.DeepCopy()
+
+	// remove fields from i-th to the end
+	for j := i; j < len(projectedKeys); j++ {
+		projected.Remove(projectedKeys[i])
+	}
+
+	// set key
+	projected.Set(key, val)
+
+	// copy i-th to the end to projected
+	for _, key := range tmp.Keys()[i:] {
+		projected.Set(key, must.NotFail(tmp.Get(tmp.Keys()[i])))
 	}
 }
