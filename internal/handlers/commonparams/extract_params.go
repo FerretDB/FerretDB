@@ -190,7 +190,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 
 	var settable any
 
-	switch fv.Kind() { //nolint: exhaustive // TODO: add more types support
+	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
 		if key == "skip" || key == "limit" {
 			settable, err = GetWholeParamStrict(command, key, val)
