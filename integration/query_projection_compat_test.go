@@ -175,6 +175,14 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"v.a.b.c", false}},
 		},
+		"DotNotationArray": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.0", true}},
+		},
+		"DotNotationArrayPath": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.0.foo", true}},
+		},
 	}
 
 	testQueryCompatWithProviders(t, providers, testCases)
