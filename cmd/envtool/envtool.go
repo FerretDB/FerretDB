@@ -326,7 +326,7 @@ func mkdir(paths []string) error {
 	var errs error
 
 	for _, path := range paths {
-		if err := os.MkdirAll(path, 0700); err != nil {
+		if err := os.MkdirAll(path, 0o700); err != nil {
 			errs = errors.Join(errs, err)
 		}
 	}
@@ -407,5 +407,4 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
 }
