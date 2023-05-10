@@ -16,5 +16,3 @@ vendor/
 state.json
 tmp/
 website/build/
-
-.idea/

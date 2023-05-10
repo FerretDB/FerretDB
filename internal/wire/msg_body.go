@@ -77,19 +77,18 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 			flagBit := OpMsgFlags(binary.LittleEndian.Uint32(b[:kFlagBitSize]))
 			if flagBit.FlagSet(OpMsgChecksumPresent) {
-				offset := len(b) - crc32.Size
 				hasher := crc32.New(crc32.MakeTable(crc32.Castagnoli))
 
 				if err := binary.Write(hasher, binary.LittleEndian, &header); err != nil {
 					return &header, nil, lazyerrors.Error(err)
 				}
 
+				offset := len(b) - crc32.Size
 				if err := binary.Write(hasher, binary.LittleEndian, b[:offset]); err != nil {
 					return &header, nil, lazyerrors.Error(err)
 				}
 
 				got := hasher.Sum32()
-
 				if want != got {
 					return &header, nil, lazyerrors.New("OP_MSG checksum does not match contents.")
 				}
@@ -156,12 +155,13 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 }
 
 // getChecksum returns the checksum attached to an OP_MSG.
-func getChecksum(b []byte) (uint32, error) {
+func getChecksum(data []byte) (uint32, error) {
 	// ensure that the length of the body is at least the size of a flagbit
 	// and a crc32c checksum
-	if len(b) < crc32.Size+kFlagBitSize {
+	n := len(data)
+	if n < crc32.Size+kFlagBitSize {
 		return 0, lazyerrors.New("Invalid message size for an OpMsg containing a checksum")
 	}
 
-	return binary.LittleEndian.Uint32(b[len(b)-crc32.Size:]), nil
+	return binary.LittleEndian.Uint32(data[n-crc32.Size:]), nil
 }
