@@ -64,12 +64,14 @@ func TestIsSupportedLocale(t *testing.T) {
 		locale   string
 		expected bool
 	}{
+		{"c", true},
+		{"POSIX", true},
+		{"C.UTF8", true},
 		{"en_US.utf8", true},
 		{"en_US.utf-8", true},
 		{"en_US.UTF8", true},
 		{"en_US.UTF-8", true},
 		{"en_UK.UTF-8", false},
-		{"en_UK.utf--8", false},
 		{"en_US", false},
 	}
 
