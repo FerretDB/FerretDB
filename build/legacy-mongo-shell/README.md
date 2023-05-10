@@ -108,7 +108,7 @@ throws if the command did not fail with the expected code.
 
 throws if the two arrays do not have the same members, in any order.
 By default, nested arrays must have the same order to be considered equal.
-Optionally accepts a compareFn to compare values instead of using `docEq`.
+Optionally accepts a `compareFn` to compare values instead of using `docEq`.
 
 `assert.writeOK(res, msg)`
 
