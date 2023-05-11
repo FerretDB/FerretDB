@@ -95,7 +95,6 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 		}
 		return nil
 	})
-
 	// if transaction fails with err
 	// try inserting one document at a time
 	if err != nil {
