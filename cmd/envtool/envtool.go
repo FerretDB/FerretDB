@@ -382,6 +382,7 @@ func main() {
 	defer cancel()
 
 	var err error
+
 	switch cmd := kongCtx.Command(); cmd {
 	case "setup":
 		err = setup(ctx, logger)
