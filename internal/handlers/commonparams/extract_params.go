@@ -254,6 +254,10 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			return lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
 
+		if len(optionsList) != 1 {
+			continue
+		}
+
 		key := optionsList[0]
 		if key == "collection" {
 			key = command
