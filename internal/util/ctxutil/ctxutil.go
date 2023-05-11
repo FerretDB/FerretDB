@@ -86,8 +86,8 @@ func DurationWithJitter(cap time.Duration, attempt int64) time.Duration {
 	// cap is a max limit of possible durations returned
 	maxDuration := int64(math.Min(float64(capDuration), backoff))
 
+	// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
 	sleep := rand.Int63n(maxDuration-minDuration) + minDuration
 
-	// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
 	return time.Duration(sleep) * time.Millisecond
 }
