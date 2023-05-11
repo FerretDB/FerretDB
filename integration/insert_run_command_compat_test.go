@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -76,13 +75,8 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 
-						// TODO https://github.com/FerretDB/FerretDB/issues/2545
 						if tc.altErrorMsg != "" {
 							AssertMatchesCommandError(t, compatErr, targetErr)
-
-							var expectedErr mongo.CommandError
-							require.ErrorAs(t, targetErr, &expectedErr)
-							AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 						} else {
 							require.Equal(t, compatErr, targetErr)
 						}

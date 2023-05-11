@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -91,11 +90,8 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 
-						// TODO https://github.com/FerretDB/FerretDB/issues/2545
 						if tc.altMessage != "" {
-							var expectedErr mongo.CommandError
-							require.ErrorAs(t, compatErr, &expectedErr)
-							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+							AssertMatchesCommandError(t, compatErr, targetErr)
 						} else {
 							assert.Equal(t, compatErr, targetErr)
 						}

@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
