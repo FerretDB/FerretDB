@@ -117,8 +117,6 @@ The `internal` subpackages contain most of the FerretDB code:
 * `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
 * `types/fjson` provides converters from/to FJSON for built-in and `types` types.
-  FJSON adds some extensions to JSON for keeping object keys in order,
-  preserving BSON type information in the values themselves, etc.
   It is used for logging of BSON values and wire protocol messages.
 * `bson` package provides converters from/to BSON for built-in and `types` types.
 * `wire` package provides wire protocol implementation.
@@ -128,13 +126,13 @@ The `internal` subpackages contain most of the FerretDB code:
 * `handlers` contains a common interface for backend handlers that they should implement.
   Handlers use `types` and `wire` packages, but `bson` package details are hidden.
 * `handlers/common` contains code shared by different handlers.
-* `handlers/dummy` contains a stub implementation of that interface that could be copied into a new package
-  as a starting point for the new handlers.
-* `handlers/pg` contains the implementation of the PostgreSQL handler.
-* `handlers/pg/pjson` provides converters from/to PJSON for built-in and `types` types.
-  PJSON adds some extensions to JSON for keeping object keys in order,
+* `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
+  SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by `pg` handler.
+  It is used by `sqlite` and `pg` handlers.
+* `handlers/sqlite` contains the implementation of the SQLite handler.
+  It is being converted into universal handler for all backends.
+* `handlers/pg` contains the implementation of the PostgreSQL handler.
 * `handlers/tigris` contains the implementation of the Tigris handler.
 * `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
   BSON type information is preserved either in the schema (where possible) or in the values themselves.
