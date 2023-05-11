@@ -15,67 +15,37 @@
 package common
 
 import (
-	"fmt"
+	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // CountParams represents the parameters for the count command.
 type CountParams struct {
-	Filter         *types.Document
-	DB, Collection string
-	Skip, Limit    int64
+	Filter     *types.Document `ferretdb:"query"`
+	DB         string          `ferretdb:"$db"`
+	Collection string          `ferretdb:"collection"`
+
+	Skip  int64 `ferretdb:"skip,opt"`
+	Limit int64 `ferretdb:"limit,opt"`
+
+	Collation any `ferretdb:"collation,unimplemented"`
+	Hint      any `ferretdb:"hint,ignored"`
+
+	ReadConcern any `ferretdb:"readConcern,ignored"`
+
+	Comment any `ferretdb:"comment,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.
-func GetCountParams(document *types.Document) (*CountParams, error) {
-	var err error
-	var filter *types.Document
+func GetCountParams(document *types.Document, l *zap.Logger) (*CountParams, error) {
+	var count CountParams
 
-	if filter, err = GetOptionalParam(document, "query", filter); err != nil {
-		return nil, err
-	}
-
-	var skip, limit int64
-
-	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = GetSkipParam("count", s); err != nil {
-			return nil, err
-		}
-	}
-
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = GetLimitParam("count", l); err != nil {
-			return nil, err
-		}
-	}
-
-	var db, collection string
-
-	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	err := commonparams.ExtractParams(document, "count", &count, l)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	return &CountParams{
-		DB:         db,
-		Collection: collection,
-		Filter:     filter,
-		Skip:       skip,
-		Limit:      limit,
-	}, nil
+	return &count, nil
 }
