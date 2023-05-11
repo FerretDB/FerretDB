@@ -57,21 +57,22 @@ func setupDatabase(ctx context.Context, tb testing.TB, pool *Pool, db string) {
 	tb.Cleanup(dropDatabase)
 }
 
-func TestValidUTF8Locale(t *testing.T) {
+func TestIsSupportedLocale(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
 		locale   string
 		expected bool
 	}{
+		{"c", true},
+		{"POSIX", true},
+		{"C.UTF8", true},
 		{"en_US.utf8", true},
 		{"en_US.utf-8", true},
 		{"en_US.UTF8", true},
 		{"en_US.UTF-8", true},
 		{"en_UK.UTF-8", false},
-		{"en_UK.utf--8", false},
 		{"en_US", false},
-		{"utf8", false},
 	}
 
 	for _, tc := range cases {
@@ -79,7 +80,7 @@ func TestValidUTF8Locale(t *testing.T) {
 		t.Run(tc.locale, func(t *testing.T) {
 			t.Parallel()
 
-			actual := isValidUTF8Locale(tc.locale)
+			actual := isSupportedLocale(tc.locale)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
@@ -302,4 +303,92 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 		})
 		require.NoError(t, err)
 	})
+}
+
+func TestRenameCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := getPool(ctx, t)
+
+	databaseName := testutil.DatabaseName(t)
+	collectionName := testutil.CollectionName(t)
+	setupDatabase(ctx, t, pool, databaseName)
+
+	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateCollection(ctx, tx, databaseName, collectionName)
+	})
+	require.NoError(t, err)
+
+	var tableName string
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		tableName, err = newMetadataStorage(tx, databaseName, collectionName).getTableName(ctx)
+		return err
+	})
+	require.NoError(t, err)
+
+	// Rename collection
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return RenameCollection(ctx, tx, databaseName, collectionName, collectionName+"Renamed")
+	})
+	require.NoError(t, err)
+
+	var tableNameRenamed string
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		tableNameRenamed, err = newMetadataStorage(tx, databaseName, collectionName+"Renamed").getTableName(ctx)
+		return err
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, tableName, tableNameRenamed) // Table name of the renamed collection should stay the same
+
+	// Create one more collection with the name as the initial one
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateCollection(ctx, tx, databaseName, collectionName)
+	})
+	require.NoError(t, err)
+
+	var tableNameNew string
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		tableNameNew, err = newMetadataStorage(tx, databaseName, collectionName).getTableName(ctx)
+		return err
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, tableName+"_1", tableNameNew) // Suffix must be added to the table name of the new collection
+
+	// Attempt to rename collection to the name of the existing one
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return RenameCollection(ctx, tx, databaseName, collectionName+"Renamed", collectionName)
+	})
+	require.Error(t, ErrAlreadyExist, err)
+
+	// Rename collection one more time, create one more collection with the name as the initial one and check the suffix
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return RenameCollection(ctx, tx, databaseName, collectionName, collectionName+"RenamedAgain")
+	})
+	require.NoError(t, err)
+
+	var tableNameRenamedSecondTime string
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		tableNameRenamedSecondTime, err = newMetadataStorage(tx, databaseName, collectionName+"RenamedAgain").getTableName(ctx)
+		return err
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, tableNameNew, tableNameRenamedSecondTime) // Table name of the second renamed collection should stay the same
+
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		return CreateCollection(ctx, tx, databaseName, collectionName)
+	})
+	require.NoError(t, err)
+
+	var tableNameNewSecondTime string
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		tableNameNewSecondTime, err = newMetadataStorage(tx, databaseName, collectionName).getTableName(ctx)
+		return err
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, tableName+"_2", tableNameNewSecondTime) // Suffix must be increased
 }

@@ -117,7 +117,6 @@ func TestInsertRunCommandCompat(t *testing.T) {
 				bson.D{{}},
 			},
 			ordered: true,
-			skip:    "https://github.com/FerretDB/FerretDB/issues/1714",
 		},
 	}
 

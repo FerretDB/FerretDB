@@ -12,26 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_hana
-
-package registry
+package tigris
 
 import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/hana"
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
-func init() {
-	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
-
-		handlerOpts := &hana.NewOpts{
-			HANAURL:       opts.HANAURL,
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
-		}
-		return hana.New(handlerOpts)
-	}
+// MsgRenameCollection implements HandlerInterface.
+func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "renameCollection is not implemented yet")
 }

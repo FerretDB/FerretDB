@@ -33,6 +33,6 @@ The default username and password can be specified in FerretDB's connection stri
 but the client could use a different user by providing a username and password in MongoDB URI.
 For example, if the server was started with `postgres://user1:pass1@postgres:5432/ferretdb`,
 anonymous clients will be authenticated as user1,
-but clients that use `mongodb://user2:pass2@ferretdb:27018/?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
+but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
 Since usernames and passwords are transferred in plain text,
 the use of TLS is highly recommended.

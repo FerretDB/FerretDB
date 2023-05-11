@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -48,7 +49,7 @@ type groupBy struct {
 }
 
 // newGroup creates a new $group stage.
-func newGroup(stage *types.Document) (Stage, error) {
+func newGroup(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -271,11 +272,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 }
 
 // Type implements Stage interface.
-func (g *group) Type() StageType {
-	return StageTypeDocuments
+func (g *group) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*group)(nil)
+	_ aggregations.Stage = (*group)(nil)
 )

@@ -16,38 +16,15 @@
 package stages
 
 import (
-	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // newStageFunc is a type for a function that creates a new aggregation stage.
-type newStageFunc func(stage *types.Document) (Stage, error)
-
-// StageType is a type for aggregation stage types.
-type StageType int
-
-const (
-	// StageTypeDocuments is a type for stages that process documents.
-	StageTypeDocuments StageType = iota
-
-	// StageTypeStats is a type for stages that process statistics and doesn't need documents.
-	StageTypeStats
-)
-
-// Stage is a common interface for all aggregation stages.
-type Stage interface {
-	// Process applies an aggregate stage on documents from iterator.
-	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
-
-	// Type returns the type of the stage.
-	//
-	// TODO Remove it? https://github.com/FerretDB/FerretDB/issues/2423
-	Type() StageType
-}
+type newStageFunc func(stage *types.Document) (aggregations.Stage, error)
 
 // stages maps all supported aggregation stages.
 var stages = map[string]newStageFunc{
@@ -66,6 +43,7 @@ var stages = map[string]newStageFunc{
 
 // unsupportedStages maps all unsupported yet stages.
 var unsupportedStages = map[string]struct{}{
+	// sorted alphabetically
 	"$addFields":              {},
 	"$bucket":                 {},
 	"$bucketAuto":             {},
@@ -98,10 +76,11 @@ var unsupportedStages = map[string]struct{}{
 	"$sortByCount":            {},
 	"$unionWith":              {},
 	"$unset":                  {},
+	// please keep sorted alphabetically
 }
 
 // NewStage creates a new aggregation stage.
-func NewStage(stage *types.Document) (Stage, error) {
+func NewStage(stage *types.Document) (aggregations.Stage, error) {
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
