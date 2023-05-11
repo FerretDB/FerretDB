@@ -20,15 +20,39 @@ For example, to check if the `findAndModify` command failed with the error code 
 It is not always necessary use the `db.runCommand()` helper as some write methods wrap a `writeError` which the helpers can parse.
 For example, `insert`, `update`, and `remove` will all return a `WriteResult` so the function can parse the result and look for a `writeError`.
 
+See the `WriteResult` object below:
+
 ```js
+// WriteResult object
 > assert.commandWorked(db.foo.insert({a: 1}));
 WriteResult({ "nInserted" : 1 })
 > const res = db.foo.insert({a: 1});
 > res.hasWriteError();
 false
+> Object.keys(res);
+[
+  "ok",
+  "nInserted",
+  "nUpserted",
+  "nMatched",
+  "nModified",
+  "nRemoved",
+  "getUpsertedId",
+  "getRawResponse",
+  "getWriteError",
+  "hasWriteError",
+  "getWriteConcernError",
+  "hasWriteConcernError",
+  "tojson",
+  "toString",
+  "shellPrint"
+]
+> res instanceof WriteResult
+true
+>
 ```
 
- The `find()` method will return an object whose properties will not be parsed by the various assert functions:
+ The `find()` method will return an object, the properties of which will not be parsed by the various assert functions:
 
 ```js
 > const res = db.foo.find({a: 1});
@@ -38,6 +62,24 @@ false
 test
 > res._batchSize
 0
+// all properties are private but the shell will iterate the cursor object when called
+> Object.keys(res);
+[
+  "_mongo",
+  "_db",
+  "_collection",
+  "_ns",
+  "_filter",
+  "_projection",
+  "_limit",
+  "_skip",
+  "_batchSize",
+  "_options",
+  "_additionalCmdParams",
+  "_cursor",
+  "_numReturned"
+]
+>
 ```
 
 But a `runCommand()` result will return the correct object that can be parsed:
