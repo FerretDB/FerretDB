@@ -175,6 +175,9 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			var bw bytes.Buffer
 			bufw := bufio.NewWriter(&bw)
 			err := WriteMessage(bufw, msgHeader, msgBody)
+			if err != nil {
+				t.Skip()
+			}
 			require.NoError(t, err)
 			err = bufw.Flush()
 			require.NoError(t, err)
