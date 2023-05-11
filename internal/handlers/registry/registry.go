@@ -24,8 +24,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -85,26 +83,4 @@ func Handlers() []string {
 	handlers := maps.Keys(registry)
 	slices.Sort(handlers)
 	return handlers
-}
-
-// init registers handlers that are always enabled.
-func init() {
-	registry["dummy"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		return dummy.New(opts.Logger)
-	}
-
-	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		handlerOpts := &pg.NewOpts{
-			PostgreSQLURL: opts.PostgreSQLURL,
-
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
-
-			DisableFilterPushdown: opts.DisableFilterPushdown,
-			EnableSortPushdown:    opts.EnableSortPushdown,
-			EnableCursors:         opts.EnableCursors,
-		}
-		return pg.New(handlerOpts)
-	}
 }
