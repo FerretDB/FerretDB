@@ -66,7 +66,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - rm -fr .cache .task tools/.task integration/.task tmp
+      - go run ./cmd/envtool shell rmdir .cache .task tools/.task integration/.task tmp
       - task: env-pull
       - task: init
 
@@ -517,7 +517,7 @@ tasks:
   packages-deb:
     cmds:
       - echo 'deb' > build/version/package.txt
-      - mkdir -p tmp/debs
+      - go run ./cmd/envtool shell mkdir tmp/debs
       - task: docker-build
         vars:
           FILE: production
@@ -535,7 +535,7 @@ tasks:
   packages-rpm:
     cmds:
       - echo 'rpm' > build/version/package.txt
-      - mkdir -p tmp/rpms
+      - go run ./cmd/envtool shell mkdir tmp/rpms
       - task: docker-build
         vars:
           FILE: production
