@@ -158,9 +158,15 @@ As with any database, before moving to production, please verify if it is suitab
 ### PostgreSQL
 
 PostgreSQL backend is our main backend and is fully supported.
-MongoDB collections are mapped to PostgreSQL tables,
-and MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
-The physical layout might change as we work on improving compatibility and performance.
+
+PostgreSQL should be configured with `UTF8` encoding and one of the following locales:
+`POSIX`, `C`, `C.UTF8`, `en_US.UTF8`.
+
+MongoDB databases are mapped to PostgreSQL schemas in a single PostgreSQL database that should be created in advance.
+MongoDB collections are mapped to PostgreSQL tables.
+MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
+Those mappings might change as we work on improving compatibility and performance,
+but no breaking changes will be introduced without a major version bump.
 
 ### Tigris (beta)
 
