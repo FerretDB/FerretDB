@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -197,9 +196,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 				compatErr = UnsetRaw(t, compatErr)
 
 				if tc.altMessage != "" {
-					var expectedErr mongo.CommandError
-					require.ErrorAs(t, compatErr, &expectedErr)
-					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
+					AssertMatchesCommandError(t, compatErr, targetErr)
 				} else {
 					assert.Equal(t, compatErr, targetErr)
 				}
