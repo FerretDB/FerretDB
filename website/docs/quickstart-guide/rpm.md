@@ -20,7 +20,8 @@ You can check that FerretDB was installed by running
 ferretdb --version
 ```
 
-FerretDB does not automatically installs PostgreSQL or other backends. To install PostgreSQL, run the following commands:
+FerretDB does not automatically installs PostgreSQL or other backends.
+To install PostgreSQL, run the following commands:
 
 ```sh
 sudo yum install -y postgresql
