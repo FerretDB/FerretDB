@@ -15,62 +15,36 @@
 package common
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // InsertParams represents the parameters for an insert command.
 type InsertParams struct {
-	Docs           *types.Array
-	DB, Collection string
-	Ordered        bool
+	Docs       *types.Array `ferretdb:"documents,opt"`
+	DB         string       `ferretdb:"$db"`
+	Collection string       `ferretdb:"collection"`
+	Ordered    bool         `ferretdb:"ordered,opt"`
+
+	writeConcern             any `ferretdb:"writeConcern,ignored"`
+	bypassDocumentValidation any `ferretdb:"bypassDocumentValidation,ignored"`
+	comment                  any `ferretdb:"comment,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.
 func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, error) {
 	var err error
 
-	Ignored(document, l, "writeConcern", "bypassDocumentValidation", "comment")
-
-	var db, collection string
-
-	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
+	var params = InsertParams{
+		Ordered: true,
 	}
 
-	collectionParam, err := document.Get(document.Command())
+	err = commonparams.ExtractParams(document, "insert", &params, l)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	var docs *types.Array
-	if docs, err = GetOptionalParam(document, "documents", docs); err != nil {
-		return nil, err
-	}
-
-	ordered := true
-	if ordered, err = GetOptionalParam(document, "ordered", ordered); err != nil {
-		return nil, err
-	}
-
-	return &InsertParams{
-		DB:         db,
-		Collection: collection,
-		Ordered:    ordered,
-		Docs:       docs,
-	}, nil
+	return &params, nil
 }
