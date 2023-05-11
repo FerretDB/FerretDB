@@ -41,7 +41,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 					"maxWriteBatchSize", int32(100000),
 					"localTime", time.Now(),
 					// logicalSessionTimeoutMinutes
-					"connectionId", int32(0),
+					"connectionId", int32(42),
 					"minWireVersion", common.MinWireVersion,
 					"maxWireVersion", common.MaxWireVersion,
 					"readOnly", false,
