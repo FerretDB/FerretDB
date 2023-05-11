@@ -100,7 +100,7 @@ func TestParse(t *testing.T) {
 				"extra", "field",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'extra' encountered"),
+			wantErr: errors.New("[extract_params.go:81 commonparams.ExtractParams] unexpected field 'extra' encountered"),
 		},
 		"MissingRequiredField": {
 			command: "find",
