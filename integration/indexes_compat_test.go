@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -231,11 +230,12 @@ func TestIndexesCreate(t *testing.T) {
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
 
+					// TODO https://github.com/FerretDB/FerretDB/issues/2545
 					if tc.altErrorMsg != "" {
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
+						require.ErrorAs(t, compatErr, &expectedErr)
 						expectedErr.Raw = nil
 						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 					} else {
@@ -698,11 +698,12 @@ func TestIndexesDropRunCommand(t *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
+					// TODO https://github.com/FerretDB/FerretDB/issues/2545
 					if tc.altErrorMsg != "" {
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
+						require.ErrorAs(t, compatErr, &expectedErr)
 						expectedErr.Raw = nil
 						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 					} else {

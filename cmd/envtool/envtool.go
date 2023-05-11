@@ -324,11 +324,12 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool `help:"Enable debug mode."`
+	Debug bool     `help:"Enable debug mode."`
+	Setup struct{} `cmd:""`
 }
 
 func main() {
-	kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli)
 
 	// always enable debug logging on CI
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
@@ -346,8 +347,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	if err := setup(ctx, logger); err != nil {
-		printDiagnosticData(err, logger)
-		os.Exit(1)
+	switch kongCtx.Command() {
+	case "setup":
+		if err := setup(ctx, logger); err != nil {
+			printDiagnosticData(err, logger)
+			os.Exit(1)
+		}
 	}
 }

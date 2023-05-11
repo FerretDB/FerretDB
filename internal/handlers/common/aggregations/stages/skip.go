@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,7 +30,7 @@ type skip struct {
 }
 
 // newSkip creates a new $skip stage.
-func newSkip(stage *types.Document) (Stage, error) {
+func newSkip(stage *types.Document) (aggregations.Stage, error) {
 	value, err := stage.Get("$skip")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -51,11 +52,11 @@ func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator, closer
 }
 
 // Type implements Stage interface.
-func (s *skip) Type() StageType {
-	return StageTypeDocuments
+func (s *skip) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*skip)(nil)
+	_ aggregations.Stage = (*skip)(nil)
 )

@@ -12,32 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stages
+package hana
 
 import (
-	"github.com/FerretDB/FerretDB/internal/types"
+	"context"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// GetPushdownQuery gets pushdown query for aggregation.
-// When the first aggregation stage is $match, $match query is
-// used for pushdown, otherwise nil is return.
-func GetPushdownQuery(stagesDocs []any) *types.Document {
-	if len(stagesDocs) == 0 {
-		return nil
-	}
-
-	firstStageDoc := stagesDocs[0]
-	firstStage, isDoc := firstStageDoc.(*types.Document)
-
-	if !isDoc || !firstStage.Has("$match") {
-		return nil
-	}
-
-	matchQuery := must.NotFail(firstStage.Get("$match"))
-	if query, isDoc := matchQuery.(*types.Document); isDoc {
-		return query
-	}
-
-	return nil
+// MsgRenameCollection implements HandlerInterface.
+func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -91,8 +92,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]stages.Stage, 0, len(aggregationStages))
-	stagesStats := make([]stages.Stage, 0, len(aggregationStages))
+	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
+	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -104,17 +105,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		var s stages.Stage
+		var s aggregations.Stage
 
 		if s, err = stages.NewStage(d); err != nil {
 			return nil, err
 		}
 
 		switch s.Type() {
-		case stages.StageTypeDocuments:
+		case aggregations.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
 			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case stages.StageTypeStats:
+		case aggregations.StageTypeStats:
 			if i > 0 {
 				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -135,11 +136,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
 	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
 	if len(stagesStats) == len(stagesDocuments) {
+		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
+
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     stages.GetPushdownQuery(aggregationStages),
+		}
+
+		if !h.DisableFilterPushdown {
+			qp.Filter = filter
+		}
+
+		if h.EnableSortPushdown {
+			qp.Sort = sort
 		}
 
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
@@ -181,7 +191,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 type stagesDocumentsParams struct {
 	dbPool *pgdb.Pool
 	qp     *pgdb.QueryParams
-	stages []stages.Stage
+	stages []aggregations.Stage
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
@@ -219,7 +229,7 @@ type stagesStatsParams struct {
 	db         string
 	collection string
 	statistics map[stages.Statistic]struct{}
-	stages     []stages.Stage
+	stages     []aggregations.Stage
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
