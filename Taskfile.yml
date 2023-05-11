@@ -529,6 +529,7 @@ tasks:
           ARCH: amd64
           VERSION:
             sh: cat build/version/version.txt
+          POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
 
   packages-rpm:
@@ -546,6 +547,7 @@ tasks:
           ARCH: amd64
           VERSION:
             sh: cat build/version/version.txt
+          POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
 
   fmt-yaml:
