@@ -82,7 +82,7 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 	var inserted int32
 	var insErrors commonerrors.WriteErrors
 
-	//
+	// attempt to insert all documents in a single transaction
 	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		for i := 0; i < docs.Len(); i++ {
 			doc := must.NotFail(docs.Get(i))
