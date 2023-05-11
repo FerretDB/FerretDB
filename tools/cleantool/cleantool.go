@@ -69,7 +69,6 @@ func main() {
 		listOption := github.ListOptions{Page: pageIndex, PerPage: pageSize}
 		packageListOption := github.PackageListOptions{ListOptions: listOption}
 		packages, _, err := client.Organizations.PackageGetAllVersions(ctx, orgName, packageType, packageName, &packageListOption)
-
 		if err != nil {
 			log.Printf("Failed to get versions for page %d", pageIndex)
 		}
