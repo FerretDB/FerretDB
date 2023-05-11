@@ -94,13 +94,14 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 		}
 		return nil
 	})
+
 	// if transaction fails with err
 	// try inserting one document at a time
 	if err != nil {
 		for i := 0; i < docs.Len(); i++ {
 			doc := must.NotFail(docs.Get(i))
 
-			err := insertDocumentFallback(ctx, dbPool, qp, doc)
+			err := insertDocumentSeparately(ctx, dbPool, qp, doc)
 
 			var we *commonerrors.WriteErrors
 
@@ -171,17 +172,11 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc an
 	}
 }
 
-// insertDocumentFallback prepares and executes actual INSERT request to Postgres in separate transaction.
-func insertDocumentFallback(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
-	d, ok := doc.(*types.Document)
-	if !ok {
-		return commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
-		)
-	}
-
+// insertDocumentSeparately prepares and executes actual INSERT request to Postgres in separate transaction.
+//
+// It should be used in places where we don't want to rollback previous inserted documents on error.
+func insertDocumentSeparately(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
 	return dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return insertDocument(ctx, tx, qp, d)
+		return insertDocument(ctx, tx, qp, doc)
 	})
 }
