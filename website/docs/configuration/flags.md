@@ -43,6 +43,8 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 
 ## Backend handlers
 
+<!-- Do not document alpha backends -->
+
 ### PostgreSQL
 
 [PostgreSQL backend](../understanding-ferretdb.md#postgresql) can be enabled by

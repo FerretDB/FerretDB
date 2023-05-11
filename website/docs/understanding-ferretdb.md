@@ -168,6 +168,11 @@ MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresq
 Those mappings might change as we work on improving compatibility and performance,
 but no breaking changes will be introduced without a major version bump.
 
+### SQLite (alpha)
+
+We are [working on](https://github.com/FerretDB/FerretDB/issues/2387) SQLite backend.
+It is not officially supported yet.
+
 ### Tigris (beta)
 
 We also support the [Tigris](https://www.tigrisdata.com) backend on a beta level.
