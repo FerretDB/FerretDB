@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -115,6 +116,11 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		if err != nil {
 			return err
 		}
+	}
+
+	err := checkAllRequiredFieldsPopulated(&elem, doc.Keys())
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -244,6 +250,27 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 		}
 
 		fv.Set(v)
+	}
+
+	return nil
+}
+
+// checkAllRequiredFieldsPopulated checks that all required fields are populated.
+func checkAllRequiredFieldsPopulated(v *reflect.Value, keys []string) error {
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+
+		tag := field.Tag.Get("ferretdb")
+
+		optionsList := strings.Split(tag, ",")
+
+		if len(optionsList) == 0 {
+			return lazyerrors.Errorf("no tag provided for %s", field.Name)
+		}
+
+		if !slices.Contains(keys, optionsList[0]) {
+			return lazyerrors.Errorf("required field %q is not populated", optionsList[0])
+		}
 	}
 
 	return nil

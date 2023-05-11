@@ -108,7 +108,7 @@ func TestParse(t *testing.T) {
 				"$db", "test",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'extra' encountered"),
+			wantErr: errors.New("[extract_params.go:272 commonparams.checkAllRequiredFieldsPopulated] required field \"collection\" is not populated"),
 		},
 	}
 	for name, tt := range tests {
