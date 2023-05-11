@@ -229,10 +229,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 				)
 			}
 
-			return lazyerrors.Errorf(
-				"field %s type mismatch: got %s, expected %s",
-				field.Name, v.Type(), fv.Type(),
-			)
+			panic(fmt.Sprintf("field %s type mismatch: got %s, expected %s", field.Name, v.Type(), fv.Type()))
 		}
 
 		fv.Set(v)
