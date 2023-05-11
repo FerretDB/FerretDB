@@ -221,26 +221,38 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	}
 }
 
-// AssertMatchesWriteError asserts error codes are the same.
-//
-// TODO check not only code; make is look similar to AssertMatchesCommandError above.
-// https://github.com/FerretDB/FerretDB/issues/2545
+// AssertMatchesWriteError asserts that both errors are equal WriteErrors,
+// except messages (and ignoring the Raw part).
 func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	t.Helper()
 
-	var aErr, eErr mongo.WriteException
+	a, okA := actual.(mongo.WriteException)   //nolint:errorlint // do not inspect error chain
+	e, okE := expected.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
 
-	if ok := errors.As(actual, &aErr); !ok || len(aErr.WriteErrors) != 1 {
+	if !okA && !okE {
+		// driver sent an error which is not WriteException, check errors are the same.
 		assert.Equal(t, expected, actual)
 		return
 	}
 
-	if ok := errors.As(expected, &eErr); !ok || len(eErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
-	}
+	require.Truef(t, okA, "actual is %T, not mongo.WriteException", a)
+	require.Truef(t, len(a.WriteErrors) == 1, "actual is %v, expected one mongo.WriteError", a.WriteErrors)
 
-	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
+	require.Truef(t, okE, "expected is %T, not mongo.WriteException", e)
+	require.Truef(t, len(e.WriteErrors) == 1, "expected is %v, expected one mongo.WriteError", e.WriteErrors)
+
+	aErr := a.WriteErrors[0]
+	eErr := e.WriteErrors[0]
+
+	aErr.Raw = nil
+	eErr.Raw = nil
+
+	actualMessage := aErr.Message
+	aErr.Message = eErr.Message
+
+	if !AssertEqualWriteError(t, eErr, aErr) {
+		t.Logf("actual message: %s", actualMessage)
+	}
 }
 
 // AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
