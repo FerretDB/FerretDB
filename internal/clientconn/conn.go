@@ -331,9 +331,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 			// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
 			var resBodyString, proxyBodyString string
+
 			if resBody != nil {
 				resBodyString = resBody.String()
 			}
+
 			if proxyBody != nil {
 				proxyBodyString = proxyBody.String()
 			}
@@ -499,6 +501,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = "unhandled"
+
 			c.l.Desugar().Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
@@ -509,6 +512,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = "unexpected"
+
 			c.l.Desugar().Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
