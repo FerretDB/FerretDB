@@ -350,9 +350,9 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 }
 
 // isEmpty returns true if projected document at key is empty. It's empty if:
-// - key does not exist in projected document,
-// - projected contains empty document at key, or
-// - projected contains an array which contain empty documents at key.
+//   - key does not exist in projected document,
+//   - projected contains empty document at key, or
+//   - projected contains an array which contain empty documents at key.
 func isEmpty(key string, projected *types.Document) bool {
 	v, err := projected.Get(key)
 	if err != nil {
