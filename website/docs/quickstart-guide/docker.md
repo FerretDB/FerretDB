@@ -82,11 +82,11 @@ You can improve that setup by:
 
 Find out more about:
 
-* [Getting logs](../configuration/logging.md#docker-logs)
+* [getting logs](../configuration/logging.md#docker-logs).
 
 ## Development image
 
-The [development image](https://ghcr.io/ferretdb/ferretdb-dev)
+The [development image](https://ghcr.io/ferretdb/ferretdb-dev) `ghcr.io/ferretdb/ferretdb-dev`
 contains the [debug build](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds)
 of FerretDB with test coverage instrumentation, race detector,
 and other changes that make it more suitable for debugging problems.
