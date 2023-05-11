@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -74,7 +75,7 @@ func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, er
 	if collection, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
@@ -148,7 +149,7 @@ func prepareDeleteParams(deleteDoc *types.Document, l *zap.Logger) (*types.Docum
 	}
 
 	var limit int64
-	if limit, err = GetWholeNumberParam(limitValue); err != nil || limit < 0 || limit > 1 {
+	if limit, err = commonparams.GetWholeNumberParam(limitValue); err != nil || limit < 0 || limit > 1 {
 		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", limitValue),

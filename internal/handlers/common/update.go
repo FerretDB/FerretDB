@@ -25,6 +25,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -385,7 +386,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		}
 
 		switch {
-		case errors.Is(err, errUnexpectedLeftOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -394,7 +395,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					incValue,
 				),
 			)
-		case errors.Is(err, errUnexpectedRightOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -407,10 +408,10 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					AliasFromType(docValue),
+					commonparams.AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
+		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -419,7 +420,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errors.Is(err, errIntExceeded):
+		case errors.Is(err, commonparams.ErrIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -574,7 +575,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
-				AliasFromType(updateV),
+				commonparams.AliasFromType(updateV),
 			),
 		)
 	}
@@ -666,7 +667,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 			continue
 
-		case errors.Is(err, errUnexpectedLeftOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -675,7 +676,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					mulValue,
 				),
 			)
-		case errors.Is(err, errUnexpectedRightOpType):
+		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := mulKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -688,10 +689,10 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					AliasFromType(docValue),
+					commonparams.AliasFromType(docValue),
 				),
 			)
-		case errors.Is(err, errLongExceededPositive), errors.Is(err, errLongExceededNegative):
+		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -700,7 +701,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					must.NotFail(doc.Get("_id")),
 				),
 			)
-		case errors.Is(err, errIntExceeded):
+		case errors.Is(err, commonparams.ErrIntExceeded):
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
@@ -974,7 +975,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 			commonerrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
-				AliasFromType(updateExpression),
+				commonparams.AliasFromType(updateExpression),
 				op,
 				types.FormatAnyValue(updateExpression),
 			),
@@ -1134,7 +1135,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 			return newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-					"or a $type expression ({$type: 'timestamp/date'}).", AliasFromType(setValue),
+					"or a $type expression ({$type: 'timestamp/date'}).", commonparams.AliasFromType(setValue),
 				),
 				command,
 			)

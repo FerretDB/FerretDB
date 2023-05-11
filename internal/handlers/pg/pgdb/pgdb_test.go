@@ -57,21 +57,22 @@ func setupDatabase(ctx context.Context, tb testing.TB, pool *Pool, db string) {
 	tb.Cleanup(dropDatabase)
 }
 
-func TestValidUTF8Locale(t *testing.T) {
+func TestIsSupportedLocale(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
 		locale   string
 		expected bool
 	}{
+		{"c", true},
+		{"POSIX", true},
+		{"C.UTF8", true},
 		{"en_US.utf8", true},
 		{"en_US.utf-8", true},
 		{"en_US.UTF8", true},
 		{"en_US.UTF-8", true},
 		{"en_UK.UTF-8", false},
-		{"en_UK.utf--8", false},
 		{"en_US", false},
-		{"utf8", false},
 	}
 
 	for _, tc := range cases {
@@ -79,7 +80,7 @@ func TestValidUTF8Locale(t *testing.T) {
 		t.Run(tc.locale, func(t *testing.T) {
 			t.Parallel()
 
-			actual := isValidUTF8Locale(tc.locale)
+			actual := isSupportedLocale(tc.locale)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

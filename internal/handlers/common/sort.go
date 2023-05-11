@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -139,10 +140,10 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // GetSortType determines SortType from input sort value.
 func GetSortType(key string, value any) (types.SortType, error) {
-	sortValue, err := GetWholeNumberParam(value)
+	sortValue, err := commonparams.GetWholeNumberParam(value)
 	if err != nil {
 		switch {
-		case errors.Is(err, errUnexpectedType):
+		case errors.Is(err, commonparams.ErrUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
 				value = "null"
 			}
@@ -152,7 +153,7 @@ func GetSortType(key string, value any) (types.SortType, error) {
 				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
 				"$sort",
 			)
-		case errors.Is(err, errNotWholeNumber):
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				"$sort must be a whole number",

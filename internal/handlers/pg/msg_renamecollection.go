@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -68,7 +69,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(from)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(from)),
 			command,
 		)
 	}
