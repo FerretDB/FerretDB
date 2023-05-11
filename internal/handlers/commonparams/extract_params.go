@@ -118,7 +118,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		}
 	}
 
-	err := checkAllRequiredFieldsPopulated(&elem, doc.Keys())
+	err := checkAllRequiredFieldsPopulated(&elem, command, doc.Keys())
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 }
 
 // checkAllRequiredFieldsPopulated checks that all required fields are populated.
-func checkAllRequiredFieldsPopulated(v *reflect.Value, keys []string) error {
+func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []string) error {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 
@@ -268,8 +268,13 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, keys []string) error {
 			return lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
 
-		if !slices.Contains(keys, optionsList[0]) {
-			return lazyerrors.Errorf("required field %q is not populated", optionsList[0])
+		key := optionsList[0]
+		if key == "collection" {
+			key = command
+		}
+
+		if !slices.Contains(keys, key) {
+			return lazyerrors.Errorf("required field %q is not populated", key)
 		}
 	}
 

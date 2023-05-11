@@ -90,7 +90,7 @@ func TestParse(t *testing.T) {
 			command: "count",
 			doc:     must.NotFail(types.NewDocument("find", "test")),
 			params:  new(noTag),
-			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'find' encountered"),
+			wantErr: errors.New("[extract_params.go:81 commonparams.ExtractParams] unexpected field 'find' encountered"),
 		},
 		"ExtraFieldPassed": {
 			command: "find",
