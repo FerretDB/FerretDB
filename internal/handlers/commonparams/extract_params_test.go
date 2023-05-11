@@ -92,6 +92,24 @@ func TestParse(t *testing.T) {
 			params:  new(noTag),
 			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'find' encountered"),
 		},
+		"ExtraFieldPassed": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"$db", "test",
+				"find", "test",
+				"extra", "field",
+			)),
+			params:  new(allTagsThatPass),
+			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'extra' encountered"),
+		},
+		"MissingRequiredField": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"$db", "test",
+			)),
+			params:  new(allTagsThatPass),
+			wantErr: errors.New("[extract_params.go:80 commonparams.ExtractParams] unexpected field 'extra' encountered"),
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {

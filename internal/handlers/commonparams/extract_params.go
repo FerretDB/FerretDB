@@ -34,7 +34,7 @@ import (
 //
 // Possible tags:
 //   - `opt` - field is optional;
-//   - `non-default` - field is unimplemented non-default;
+//   - `non-default` - field is unimplemented for non-default values;
 //   - `unimplemented` - field is not implemented yet;
 //   - `ignored` - field is ignored.
 //
