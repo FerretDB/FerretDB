@@ -149,8 +149,11 @@ func getChecksum(data []byte) (uint32, error) {
 }
 
 func containsValidChecksum(header *MsgHeader, body []byte) error {
-	flagBit := OpMsgFlags(binary.LittleEndian.Uint32(body[:kFlagBitSize]))
+	if len(body) < kFlagBitSize {
+		return lazyerrors.New("Message contains illegal flags value")
+	}
 
+	flagBit := OpMsgFlags(binary.LittleEndian.Uint32(body[:kFlagBitSize]))
 	if flagBit.FlagSet(OpMsgChecksumPresent) {
 		want, err := getChecksum(body)
 		if err != nil {
