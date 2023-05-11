@@ -28,21 +28,52 @@ import (
 //
 //nolint:vet // for readability
 type FindParams struct {
-	DB          string
-	Collection  string
-	Filter      *types.Document
-	Sort        *types.Document
-	Projection  *types.Document
-	Skip        int64
-	Limit       int64
-	BatchSize   int32
-	SingleBatch bool
-	Comment     string
-	MaxTimeMS   int32
+	DB          string          `ferretdb:"$db"`
+	Collection  string          `ferretdb:"collection"`
+	Filter      *types.Document `ferretdb:"filter,opt"`
+	Sort        *types.Document `ferretdb:"sort,opt"`
+	Projection  *types.Document `ferretdb:"projection,opt"`
+	Skip        int64           `ferretdb:"skip,opt"`
+	Limit       int64           `ferretdb:"limit,opt"`
+	BatchSize   int64           `ferretdb:"batchSize,opt"`
+	SingleBatch bool            `ferretdb:"singleBatch,opt"`
+	Comment     string          `ferretdb:"comment,opt"`
+	MaxTimeMS   int32           `ferretdb:"maxTimeMS,opt"`
+
+	Collation any `ferretdb:"collation,unimplemented"`
+	Let       any `ferretdb:"let,unimplemented"`
+
+	AllowDiskUse any `ferretdb:"allowDiskUse,ignored"`
+	ReadConcern  any `ferretdb:"readConcern,ignored"`
+	Max          any `ferretdb:"max,ignored"`
+	Min          any `ferretdb:"min,ignored"`
+	Hint         any `ferretdb:"hint,ignored"`
+
+	ReturnKey           any `ferretdb:"returnKey,non-default"`
+	ShowRecordId        any `ferretdb:"showRecordId,non-default"`
+	Tailable            any `ferretdb:"tailable,non-default"`
+	OplogReplay         any `ferretdb:"oplogReplay,non-default"`
+	NoCursorTimeout     any `ferretdb:"noCursorTimeout,non-default"`
+	AwaitData           any `ferretdb:"awaitData,non-default"`
+	AllowPartialResults any `ferretdb:"allowPartialResults,non-default"`
 }
 
 // GetFindParams returns `find` command parameters.
 func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
+	var params FindParams
+
+	err := commonparams.ExtractParams(doc, "find", &params, l)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: process default values somehow
+	params.BatchSize = 101
+
+	return &params, nil
+}
+
+func getFindparams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	var res FindParams
 	var err error
 
@@ -80,8 +111,6 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		return nil, err
 	}
 
-	Ignored(doc, l, "hint")
-
 	if s, _ := doc.Get("skip"); s != nil {
 		if res.Skip, err = commonparams.GetWholeParamStrict("find", "skip", s); err != nil {
 			return nil, err
@@ -96,9 +125,9 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2005
 
-	if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
-		return nil, err
-	}
+	//if res.BatchSize, err = GetOptionalParam(doc, "batchSize", int32(101)); err != nil {
+	//	return nil, err
+	//}
 
 	if res.BatchSize < 0 {
 		return nil, commonerrors.NewCommandError(
@@ -119,9 +148,9 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		return nil, err
 	}
 
-	Ignored(doc, l, "readConcern")
+	Ignored(doc, l, "allowDiskUse", "hint", "max", "min", "readConcern")
 
-	Ignored(doc, l, "max", "min")
+	Unimplemented(doc, "collation", "let")
 
 	// boolean flags that default to false
 	for _, k := range []string{
@@ -140,12 +169,6 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 			return nil, err
 		}
 	}
-
-	Unimplemented(doc, "collation")
-
-	Ignored(doc, l, "allowDiskUse")
-
-	Unimplemented(doc, "let")
 
 	return &res, nil
 }
