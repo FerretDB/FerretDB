@@ -9,9 +9,9 @@ require (
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	github.com/stretchr/testify v1.8.2
-	golang.org/x/perf v0.0.0-20230227161431-f7320a6d63e8
-	golang.org/x/tools v0.8.0
-	golang.org/x/vuln v0.0.0-20230419012003-9268f8338db8
+	golang.org/x/perf v0.0.0-20230427221525-d343f6398b76
+	golang.org/x/tools v0.9.0
+	golang.org/x/vuln v0.1.0
 	mvdan.cc/gofumpt v0.5.0
 )
 
@@ -102,11 +102,11 @@ require (
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/sync v0.2.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/term v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
