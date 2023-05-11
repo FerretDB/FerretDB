@@ -235,9 +235,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			}
 
 			// exclusion projection removes the field on the path in projected.
-			if err = excludeProjection(path, projected); err != nil {
-				return nil, err
-			}
+			excludeProjection(path, projected)
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
 		}
@@ -398,7 +396,7 @@ func isEmpty(key string, projected *types.Document) bool {
 //
 //	Example: "v.0.foo" path exclusion projection:
 //	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{foo: 1}, {foo: 2}]}
-func excludeProjection(path types.Path, projected any) error {
+func excludeProjection(path types.Path, projected any) {
 	key := path.Prefix()
 
 	switch projected := projected.(type) {
@@ -406,22 +404,19 @@ func excludeProjection(path types.Path, projected any) error {
 		embeddedSource, err := projected.Get(key)
 		if err != nil {
 			// key does not exist, nothing to exclude.
-			return nil
+			return
 		}
 
 		if path.Len() <= 1 {
 			// path reached suffix, remove the field from the document.
 			projected.Remove(key)
-			return nil
+			return
 		}
 
 		// recursively remove field from the embeddedSource.
-		err = excludeProjection(path.TrimPrefix(), embeddedSource)
-		if err != nil && !errors.Is(err, pathNotExists) {
-			return err
-		}
+		excludeProjection(path.TrimPrefix(), embeddedSource)
 
-		return nil
+		return
 	case *types.Array:
 		// modifies the field of projected, hence not using iterator.
 		for i := 0; i < projected.Len(); i++ {
@@ -432,14 +427,13 @@ func excludeProjection(path types.Path, projected any) error {
 				continue
 			}
 
-			if err := excludeProjection(path, arrElem); err != nil {
-				return err
-			}
+			excludeProjection(path, arrElem)
 		}
 
-		return nil
+		return
 	default:
-		return pathNotExists
+		// not a path, nothing to exclude.
+		return
 	}
 }
 
