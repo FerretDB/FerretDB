@@ -132,7 +132,7 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc an
 	if !ok {
 		return commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+			fmt.Sprintf("document has invalid type %s", commonparams.AliasFromType(doc)),
 		)
 	}
 
