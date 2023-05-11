@@ -295,9 +295,6 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	}
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		// TODO validate checksum if present (mainly for tests), update if not
-		// https://github.com/FerretDB/FerretDB/issues/1626
-
 		if err := binary.Write(bufw, binary.LittleEndian, msg.checksum); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
