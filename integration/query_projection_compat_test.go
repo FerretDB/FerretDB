@@ -166,6 +166,10 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"v.array.42", false}},
 		},
+		"DotNotationIncludeSecondLevel": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.42", true}},
+		},
 		"DotNotationIncludeExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", false}},
@@ -187,13 +191,39 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"v.a.b.c", false}},
 		},
-		"DotNotationArray": {
+		"DotNotationArrayInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.array.0", true}},
 		},
-		"DotNotationArrayPath": {
+		"DotNotationArrayExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.0", false}},
+		},
+		"DotNotationArrayPathInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.0.foo", true}},
+		},
+		"DotNotationArrayPathExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.0.foo", false}},
+		},
+		"DotNotationManyInclude": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"v.42", true},
+				{"v.non-existent", true},
+				{"v.foo", true},
+				{"v.array", true},
+			},
+		},
+		"DotNotationManyExclude": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"v.42", false},
+				{"v.non-existent", false},
+				{"v.foo", false},
+				{"v.array", false},
+			},
 		},
 	}
 
