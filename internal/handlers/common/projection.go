@@ -250,9 +250,9 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 var pathNotExists = errors.New("path not exists")
 
 // includeProjection copies the field on the path from source to projected.
-// When an array is on the path, it checks if the array contains any document
-// with the key to include that field. This is not the case in document.SetByPath(path).
-// Dot notation with array index path do not include unlike document.SetByPath(path).
+// When an array is on the path, it returns the array containing any document
+// with the same key. Dot notation with array index path does not include
+// the field unlike document.SetByPath(path).
 // Inclusion projection with non-existent path creates an empty document
 // or an empty array based on what source has.
 //
@@ -264,7 +264,7 @@ var pathNotExists = errors.New("path not exists")
 //
 //	Example: "v.0.foo" path inclusion projection:
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {}]}
-func includeProjection(path types.Path, source any, projected *types.Document) (any, error) {
+func includeProjection(path types.Path, source any, projected *types.Document) (*types.Array, error) {
 	key := path.Prefix()
 
 	switch source := source.(type) {
