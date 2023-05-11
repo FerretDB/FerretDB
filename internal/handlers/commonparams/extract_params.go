@@ -229,7 +229,14 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 				)
 			}
 
-			panic(fmt.Sprintf("field %s type mismatch: got %s, expected %s", field.Name, v.Type(), fv.Type()))
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
+				),
+				command,
+			)
 		}
 
 		fv.Set(v)

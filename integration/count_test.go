@@ -26,63 +26,158 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestQueryBadCountType(t *testing.T) {
+func TestQueryCountErrors(t *testing.T) {
 	t.Parallel()
 	s := setup.SetupWithOpts(t, nil)
 
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any
-		err   string
+		value    any
+		expected mongo.CommandError
 	}{
-		"Document": {
-			value: bson.D{},
-			err:   "object",
+		"CollectionDocument": {
+			value: bson.D{
+				{"count", bson.D{}},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type object",
+			},
 		},
-		"Array": {
-			value: primitive.A{},
-			err:   "array",
+		"CollectionArray": {
+			value: bson.D{
+				{"count", primitive.A{}},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type array",
+			},
 		},
-		"Double": {
-			value: 3.14,
-			err:   "double",
+		"CollectionDouble": {
+			value: bson.D{
+				{"count", 3.14},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type double",
+			},
 		},
-		"Binary": {
-			value: primitive.Binary{},
-			err:   "binData",
+		"CollectionBinary": {
+			value: bson.D{
+				{"count", primitive.Binary{}},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type binData",
+			},
 		},
-		"ObjectID": {
-			value: primitive.ObjectID{},
-			err:   "objectId",
+		"CollectionObjectID": {
+			value: bson.D{
+				{"count", primitive.ObjectID{}},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type objectId",
+			},
 		},
-		"Bool": {
-			value: true,
-			err:   "bool",
+		"CollectionBool": {
+			value: bson.D{
+				{"count", true},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type bool",
+			},
 		},
-		"Date": {
-			value: time.Now(),
-			err:   "date",
+		"CollectionDate": {
+			value: bson.D{
+				{"count", time.Now()},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type date",
+			},
 		},
-		"Null": {
-			value: nil,
-			err:   "null",
+		"CollectionNull": {
+			value: bson.D{
+				{"count", nil},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type null",
+			},
 		},
-		"Regex": {
-			value: primitive.Regex{Pattern: "/foo/"},
-			err:   "regex",
+		"CollectionRegex": {
+			value: bson.D{
+				{"count", primitive.Regex{Pattern: "/foo/"}},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type regex",
+			},
 		},
-		"Int": {
-			value: int32(42),
-			err:   "int",
+		"CollectionInt": {
+			value: bson.D{
+				{"count", int32(42)},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type int",
+			},
 		},
-		"Timestamp": {
-			value: primitive.Timestamp{},
-			err:   "timestamp",
+		"CollectionTimestamp": {
+			value: bson.D{
+				{"count", primitive.Timestamp{}},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type timestamp",
+			},
 		},
-		"Long": {
-			value: int64(42),
-			err:   "long",
+		"CollectionLong": {
+			value: bson.D{
+				{"count", int64(42)},
+				{"query", bson.D{}},
+			},
+			expected: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type long",
+			},
+		},
+		"QueryInt": {
+			value: bson.D{
+				{"count", "collection"},
+				{"query", int32(42)},
+			},
+			expected: mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'count.query' is the wrong type 'int', expected types 'object'",
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -90,19 +185,10 @@ func TestQueryBadCountType(t *testing.T) {
 			t.Parallel()
 
 			var actual bson.D
-			cmd := bson.D{
-				{"count", tc.value},
-				{"query", bson.D{{"v", "some"}}},
-			}
-			err := collection.Database().RunCommand(ctx, cmd).Decode(&actual)
+			err := collection.Database().RunCommand(ctx, tc.value).Decode(&actual)
 			require.Error(t, err)
 
-			expected := mongo.CommandError{
-				Code:    73,
-				Name:    "InvalidNamespace",
-				Message: "collection name has invalid type " + tc.err,
-			}
-			AssertEqualError(t, expected, err)
+			AssertEqualCommandError(t, tc.expected, err)
 		})
 	}
 }
