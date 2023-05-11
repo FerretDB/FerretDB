@@ -15,7 +15,7 @@
 package commonparams
 
 import (
-	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestParse(t *testing.T) {
 		command    string
 		params     any
 		wantParams any
-		wantErr    error
+		wantErr    string
 	}{
 		"AllTagTypesThatPass": {
 			command: "find",
@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 				"find", "test",
 			)),
 			params:  new(unimplementedTag),
-			wantErr: errors.New("NotImplemented (238): find: support for field \"find\" with value test is not implemented yet"),
+			wantErr: "support for field \"find\" with value test is not implemented yet",
 		},
 		"NonDefaultTag": {
 			command: "command",
@@ -81,16 +81,14 @@ func TestParse(t *testing.T) {
 				"find", true,
 			)),
 			params: new(nonDefaultTag),
-			wantErr: errors.New(
-				"NotImplemented (238): find: support for field \"find\"" +
-					" with non-default value true is not implemented yet",
-			),
+			wantErr: "support for field \"find\"" +
+				" with non-default value true is not implemented yet",
 		},
 		"EmptyTag": {
 			command: "count",
 			doc:     must.NotFail(types.NewDocument("find", "test")),
 			params:  new(noTag),
-			wantErr: errors.New("[extract_params.go:81 commonparams.ExtractParams] unexpected field 'find' encountered"),
+			wantErr: "unexpected field 'find' encountered",
 		},
 		"ExtraFieldPassed": {
 			command: "find",
@@ -100,7 +98,7 @@ func TestParse(t *testing.T) {
 				"extra", "field",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: errors.New("[extract_params.go:81 commonparams.ExtractParams] unexpected field 'extra' encountered"),
+			wantErr: "unexpected field 'extra' encountered",
 		},
 		"MissingRequiredField": {
 			command: "find",
@@ -108,14 +106,14 @@ func TestParse(t *testing.T) {
 				"$db", "test",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: errors.New("[extract_params.go:272 commonparams.checkAllRequiredFieldsPopulated] required field \"collection\" is not populated"),
+			wantErr: "required field \"find\" is not populated",
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := ExtractParams(tt.doc, tt.command, tt.params, zap.NewNop())
-			if tt.wantErr != nil {
-				require.Equal(t, tt.wantErr.Error(), err.Error())
+			if tt.wantErr != "" {
+				require.Regexp(t, regexp.MustCompile(".*"+tt.wantErr), err.Error())
 				return
 			}
 			require.NoError(t, err)

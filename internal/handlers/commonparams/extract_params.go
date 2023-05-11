@@ -236,20 +236,6 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 		}
 
 		fv.Set(v)
-
-		return nil
-	}
-
-	if val != nil {
-		v := reflect.ValueOf(val)
-		if fv.Type() != v.Type() {
-			return lazyerrors.Errorf(
-				"field %s type mismatch: got %s, expected %s",
-				field.Name, v.Type(), fv.Type(),
-			)
-		}
-
-		fv.Set(v)
 	}
 
 	return nil
