@@ -12,35 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_tigris
-
 package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 )
 
-// init registers "tigris" handler for Tigris when "ferretdb_tigris" build tag is provided.
+// init registers "pg" handler.
 func init() {
-	registry["tigris"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("Tigris handler is in beta.")
-
-		handlerOpts := &tigris.NewOpts{
-			AuthParams: tigris.AuthParams{
-				URL:          opts.TigrisURL,
-				ClientID:     opts.TigrisClientID,
-				ClientSecret: opts.TigrisClientSecret,
-			},
+	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		handlerOpts := &pg.NewOpts{
+			PostgreSQLURL: opts.PostgreSQLURL,
 
 			L:             opts.Logger,
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
+			EnableSortPushdown:    opts.EnableSortPushdown,
 			EnableCursors:         opts.EnableCursors,
 		}
 
-		return tigris.New(handlerOpts)
+		return pg.New(handlerOpts)
 	}
 }

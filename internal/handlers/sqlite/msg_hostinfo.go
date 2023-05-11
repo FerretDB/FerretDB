@@ -12,27 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_hana
-
-package registry
+package sqlite
 
 import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/hana"
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
-func init() {
-	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
-
-		handlerOpts := &hana.NewOpts{
-			HANAURL:       opts.HANAURL,
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
-		}
-
-		return hana.New(handlerOpts)
-	}
+// MsgHostInfo implements HandlerInterface.
+func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgHostInfo(ctx, msg)
 }
