@@ -82,33 +82,64 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 	var inserted int32
 	var insErrors commonerrors.WriteErrors
 
-	for i := 0; i < docs.Len(); i++ {
-		doc := must.NotFail(docs.Get(i))
+	//
+	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		for i := 0; i < docs.Len(); i++ {
+			doc := must.NotFail(docs.Get(i))
 
-		err := insertDocument(ctx, dbPool, qp, doc)
+			err := insertDocument(ctx, tx, qp, doc)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	// if transaction fails with err
+	// try inserting one document at a time
+	if err != nil {
+		for i := 0; i < docs.Len(); i++ {
+			doc := must.NotFail(docs.Get(i))
 
-		var we *commonerrors.WriteErrors
+			err := insertDocumentFallback(ctx, dbPool, qp, doc)
 
-		switch {
-		case err == nil:
-			inserted++
-			continue
-		case errors.As(err, &we):
-			insErrors.Merge(we, int32(i))
-		default:
-			insErrors.Append(err, int32(i))
+			var we *commonerrors.WriteErrors
+
+			switch {
+			case err == nil:
+				inserted++
+				continue
+			case errors.As(err, &we):
+				insErrors.Merge(we, int32(i))
+			default:
+				insErrors.Append(err, int32(i))
+			}
+
+			if ordered {
+				return inserted, &insErrors
+			}
 		}
 
-		if ordered {
-			return inserted, &insErrors
-		}
+		return inserted, &insErrors
 	}
 
-	return inserted, &insErrors
+	return int32(docs.Len()), &insErrors
 }
 
 // insertDocument prepares and executes actual INSERT request to Postgres.
-func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
+func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc any) error {
+	d, ok := doc.(*types.Document)
+	if !ok {
+		return commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+		)
+	}
+
+	return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
+}
+
+// insertDocument prepares and executes actual INSERT request to Postgres.
+func insertDocumentFallback(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return commonerrors.NewCommandErrorMsg(
