@@ -12,25 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
-
-import (
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
-
-// SkipDocuments returns a subslice of given documents according to the given skip value.
-func SkipDocuments(docs []*types.Document, skip int64) ([]*types.Document, error) {
-	switch {
-	case skip == 0:
-		return docs, nil
-	case skip > 0:
-		if int64(len(docs)) < skip {
-			return []*types.Document{}, nil
-		}
-
-		return docs[skip:], nil
-	default:
-		return nil, lazyerrors.Errorf("unexpected skip value: %d", skip)
-	}
-}
+// Package commonparams contains functions for parsing handlers parameters.
+package commonparams
