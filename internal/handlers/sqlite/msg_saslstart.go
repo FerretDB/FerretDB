@@ -12,27 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_hana
-
-package registry
+package sqlite
 
 import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/hana"
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
-func init() {
-	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
+// MsgSASLStart implements HandlerInterface.
+func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var emptyPayload types.Binary
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+			"ok", float64(1),
+		))},
+	}))
 
-		handlerOpts := &hana.NewOpts{
-			HANAURL:       opts.HANAURL,
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
-		}
-
-		return hana.New(handlerOpts)
-	}
+	return &reply, nil
 }
