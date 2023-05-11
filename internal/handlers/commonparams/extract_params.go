@@ -30,7 +30,7 @@ import (
 
 // ExtractParams fill passed value structure with parameters from the document.
 // If the passed value is not a pointer to the structure it panics.
-// Parameters are extracted by the field name or by the `name` tag.
+// Parameters are extracted by the field name or by the `ferretdb` tag.
 //
 // Possible tags:
 //   - `opt` - field is optional;
