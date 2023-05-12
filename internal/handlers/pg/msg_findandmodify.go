@@ -141,6 +141,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					}
 				}
 
+				// TODO https://github.com/FerretDB/FerretDB/issues/2612
 				if _, err = updateDocument(ctx, tx, &qp, upsert); err != nil {
 					return lazyerrors.Error(err)
 				}
@@ -184,6 +185,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return nil
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 			if _, err = deleteDocuments(ctx, dbPool, &qp, resDocs); err != nil {
 				return err
 			}
@@ -218,13 +220,14 @@ func upsertDocuments(ctx context.Context, dbPool *pgdb.Pool, tx pgx.Tx, docs []*
 
 	switch res.Operation {
 	case common.UpsertOperationInsert:
+		// TODO https://github.com/FerretDB/FerretDB/issues/2612
 		if err = insertDocument(ctx, tx, query, res.Upsert); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		return res, nil
 	case common.UpsertOperationUpdate:
-
+		// TODO https://github.com/FerretDB/FerretDB/issues/2612
 		_, err = updateDocument(ctx, tx, query, res.Upsert)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
