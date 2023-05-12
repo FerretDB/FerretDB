@@ -226,6 +226,15 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 			break
 		}
 
+		if key == "maxTimeMS" {
+			settable, err = GetOptionalPositiveNumber(key, val)
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
 		settable, err = GetWholeNumberParam(val)
 		if err != nil {
 			return err

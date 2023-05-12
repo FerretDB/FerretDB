@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -47,7 +48,7 @@ type FindAndModifyParams struct {
 	Query, Sort, Update                   *types.Document
 	Remove, Upsert                        bool
 	ReturnNewDocument, HasUpdateOperators bool
-	MaxTimeMS                             int32
+	MaxTimeMS                             int64
 }
 
 // UpsertParams represents parameters for upsert, if the document exists UpdateParams is set.
@@ -111,9 +112,12 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		return nil, err
 	}
 
-	maxTimeMS, err := GetOptionalPositiveNumber(doc, "maxTimeMS")
-	if err != nil {
-		return nil, err
+	var maxTimeMS int64
+	if maxTimeMSValue, _ := doc.Get("maxTimeMS"); maxTimeMSValue != nil {
+		maxTimeMS, err = commonparams.GetOptionalPositiveNumber("maxTimeMS", maxTimeMSValue)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	unimplementedFields := []string{

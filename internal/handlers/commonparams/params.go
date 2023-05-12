@@ -130,3 +130,53 @@ func GetWholeParamStrict(command string, param string, value any) (int64, error)
 		return 0, lazyerrors.Error(err)
 	}
 }
+
+// GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
+func GetOptionalPositiveNumber(key string, value any) (int64, error) {
+	wholeNumberParam, err := GetWholeNumberParam(value)
+	if err != nil {
+		switch err {
+		case ErrUnexpectedType:
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s must be a number", key),
+				key,
+			)
+		case ErrNotWholeNumber:
+			if _, ok := value.(float64); ok {
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					fmt.Sprintf("%v has non-integral value", key),
+					key,
+				)
+			}
+
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s must be a whole number", key),
+				key,
+			)
+		default:
+			return 0, err
+		}
+	}
+
+	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
+			key,
+		)
+	}
+
+	param := wholeNumberParam
+	if param < 0 {
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("%v value for %s is out of range", value, key),
+			key,
+		)
+	}
+
+	return param, nil
+}

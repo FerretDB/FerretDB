@@ -107,8 +107,8 @@ func TestQueryBadFindType(t *testing.T) {
 			require.Error(t, err)
 
 			expected := mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
+				Code:    73,
+				Name:    "InvalidNamespace",
 				Message: "collection name has invalid type " + tc.err,
 			}
 			AssertEqualError(t, expected, err)
@@ -138,7 +138,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
-			altMessage: "Expected field sort to be of type object",
+			altMessage: "BSON field 'find.sort' is the wrong type 'double', expected types 'object'",
 		},
 		"BadSortType": {
 			command: bson.D{
@@ -151,7 +151,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
-			altMessage: "Expected field sort to be of type object",
+			altMessage: "BSON field 'find.sort' is the wrong type 'string', expected types 'object'",
 		},
 		"BadSortTypeValue": {
 			command: bson.D{
