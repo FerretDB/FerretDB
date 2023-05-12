@@ -28,9 +28,9 @@ type InsertParams struct {
 	Collection string       `ferretdb:"collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
-	writeConcern             any `ferretdb:"writeConcern,ignored"`
-	bypassDocumentValidation any `ferretdb:"bypassDocumentValidation,ignored"`
-	comment                  any `ferretdb:"comment,ignored"`
+	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
+	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
+	Comment                  string `ferretdb:"comment,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.
