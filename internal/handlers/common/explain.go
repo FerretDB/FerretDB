@@ -26,13 +26,15 @@ import (
 
 // ExplainParams represents the parameters for the explain command.
 type ExplainParams struct {
-	DB         string
-	Collection string
-	Command    *types.Document
-	Filter     *types.Document
-	Sort       *types.Document
-	StagesDocs []any
-	Aggregate  bool
+	DB         string          `ferretdb:"$db"`
+	Collection string          `ferretdb:"collection"`
+	Command    *types.Document `ferretdb:"explain"`
+	Filter     *types.Document `ferretdb:"filter,opt"`
+	Sort       *types.Document `ferretdb:"sort,opt"`
+	StagesDocs []any           `ferretdb:"-"`
+	Aggregate  bool            `ferretdb:"-"`
+
+	Verbosity string `ferretdb:"verbosity,ignored"`
 }
 
 // GetExplainParams returns the parameters for the explain command.
