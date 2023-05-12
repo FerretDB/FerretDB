@@ -29,6 +29,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+var ErrFieldNotPopulated = errors.New("field is not populated")
+
 // ExtractParams fill passed value structure with parameters from the document.
 // If the passed value is not a pointer to the structure it panics.
 // Parameters are extracted by the field name or by the `ferretdb` tag.
@@ -199,6 +201,23 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
 		if key == "skip" || key == "limit" {
+			// limit value for the `delete` command has to be 0 or 1
+			if command == "delete" {
+				var limit int64
+				limit, err = GetWholeNumberParam(val)
+				if err != nil || limit < 0 || limit > 1 {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrFailedToParse,
+						fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", val),
+						"limit",
+					)
+
+				}
+
+				settable = limit
+
+				break
+			}
 			settable, err = GetWholeParamStrict(command, key, val)
 			if err != nil {
 				return err
@@ -255,7 +274,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 
 			params := reflect.New(fv.Type().Elem())
 
-			err = ExtractParams(doc, "key", params.Interface(), l)
+			err = ExtractParams(doc, command, params.Interface(), l)
 			if err != nil {
 				return err
 			}
@@ -324,7 +343,7 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 		}
 
 		if !slices.Contains(keys, key) {
-			return lazyerrors.Errorf("required field %q is not populated", key)
+			return ErrFieldNotPopulated
 		}
 	}
 

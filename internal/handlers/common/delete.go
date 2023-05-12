@@ -15,8 +15,11 @@
 package common
 
 import (
+	"errors"
+
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -54,12 +57,19 @@ func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, er
 	}
 
 	err := commonparams.ExtractParams(document, "delete", &params, l)
+	if errors.Is(err, commonparams.ErrFieldNotPopulated) {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
+			"BSON field 'delete.deletes.limit' is missing but a required field",
+			"limit",
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	for _, delete := range params.Deletes {
-		delete.Limited = delete.Limit == 1
+	for i := 0; i < len(params.Deletes); i++ {
+		params.Deletes[i].Limited = params.Deletes[i].Limit == 1
 	}
 
 	return &params, nil
