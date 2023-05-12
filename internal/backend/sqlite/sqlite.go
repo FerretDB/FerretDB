@@ -12,29 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backend
-
-type Backend interface {
-	Database(params *DatabaseParams) Database
-}
-
-func BackendContract(b Backend) Backend {
-	return &backendContract{
-		b: b,
-	}
-}
-
-type backendContract struct {
-	b Backend
-}
-
-type DatabaseParams struct{}
-
-func (bc *backendContract) Database(params *DatabaseParams) Database {
-	return bc.b.Database(params)
-}
-
-// check interfaces
-var (
-	_ Backend = (*backendContract)(nil)
-)
+package sqlite

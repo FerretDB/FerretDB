@@ -15,6 +15,8 @@
 package backend
 
 type Database interface {
+	Collection(params *CollectionParams) Collection
+	ListCollections(params *ListCollectionsParams) ([]CollectionInfo, error)
 	CreateCollection(params *CreateCollectionParams) error
 	DropCollection(params *DropCollectionParams) error
 }
@@ -29,19 +31,35 @@ type databaseContract struct {
 	db Database
 }
 
+type CollectionParams struct{}
+
+func (dbc *databaseContract) Collection(params *CollectionParams) Collection {
+	return dbc.db.Collection(params)
+}
+
+type ListCollectionsParams struct{}
+
+type CollectionInfo struct{}
+
+func (dbc *databaseContract) ListCollections(params *ListCollectionsParams) (res []CollectionInfo, err error) {
+	// defer checkError(err, ErrCollectionDoesNotExist)
+	res, err = dbc.db.ListCollections(params)
+	return
+}
+
 type CreateCollectionParams struct{}
 
-func (db *databaseContract) CreateCollection(params *CreateCollectionParams) (err error) {
+func (dbc *databaseContract) CreateCollection(params *CreateCollectionParams) (err error) {
 	defer checkError(err, ErrCollectionAlreadyExists)
-	err = db.db.CreateCollection(params)
+	err = dbc.db.CreateCollection(params)
 	return
 }
 
 type DropCollectionParams struct{}
 
-func (db *databaseContract) DropCollection(params *DropCollectionParams) (err error) {
+func (dbc *databaseContract) DropCollection(params *DropCollectionParams) (err error) {
 	defer checkError(err, ErrCollectionAlreadyExists)
-	err = db.db.DropCollection(params)
+	err = dbc.db.DropCollection(params)
 	return
 }
 

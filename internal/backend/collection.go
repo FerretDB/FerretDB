@@ -14,4 +14,34 @@
 
 package backend
 
-type Collection interface{}
+import "github.com/FerretDB/FerretDB/internal/types"
+
+type Collection interface {
+	Insert(params *InsertParams) error
+}
+
+func CollectionContract(c Collection) Collection {
+	return &collectionContract{
+		c: c,
+	}
+}
+
+type collectionContract struct {
+	c Collection
+}
+
+type InsertParams struct {
+	Docs    types.DocumentsIterator
+	Ordered bool
+}
+
+func (cc *collectionContract) Insert(params *InsertParams) (err error) {
+	// defer checkError(err, ErrCollectionDoesNotExist)
+	err = cc.c.Insert(params)
+	return
+}
+
+// check interfaces
+var (
+	_ Collection = (*collectionContract)(nil)
+)
