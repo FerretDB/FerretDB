@@ -160,6 +160,7 @@ func containsValidChecksum(header *MsgHeader, body []byte) error {
 			lazyerrors.Error(err)
 		}
 
+		// https://datatracker.ietf.org/doc/html/rfc4960#appendix-B
 		hasher := crc32.New(crc32.MakeTable(crc32.Castagnoli))
 
 		if err := binary.Write(hasher, binary.LittleEndian, header); err != nil {
