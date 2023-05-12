@@ -12,27 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_hana
-
 package registry
 
 import (
+	_ "modernc.org/sqlite" // TODO move this to backend package
+
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/hana"
+	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
-// init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
+// init registers "sqlite" handler.
 func init() {
-	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
+	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		opts.Logger.Warn("SQLite handler is in alpha. It is not supported yet.")
 
-		handlerOpts := &hana.NewOpts{
-			HANAURL:       opts.HANAURL,
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
-		}
-
-		return hana.New(handlerOpts)
+		return sqlite.New(opts.Logger)
 	}
 }
