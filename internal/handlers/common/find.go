@@ -35,7 +35,7 @@ type FindParams struct {
 	BatchSize   int64           `ferretdb:"batchSize,opt"`
 	SingleBatch bool            `ferretdb:"singleBatch,opt"`
 	Comment     string          `ferretdb:"comment,opt"`
-	MaxTimeMS   int32           `ferretdb:"maxTimeMS,opt"`
+	MaxTimeMS   int64           `ferretdb:"maxTimeMS,opt"`
 
 	Collation any `ferretdb:"collation,unimplemented"`
 	Let       any `ferretdb:"let,unimplemented"`
