@@ -40,6 +40,7 @@ func init() {
 			DisableFilterPushdown: opts.DisableFilterPushdown,
 			EnableCursors:         opts.EnableCursors,
 		}
+
 		return tigris.New(handlerOpts)
 	}
 }
