@@ -32,6 +32,7 @@ func init() {
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 		}
+
 		return hana.New(handlerOpts)
 	}
 }
