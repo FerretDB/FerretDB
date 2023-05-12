@@ -44,11 +44,27 @@ const (
 // FindAndModifyParams represent all findAndModify requests' fields.
 // It's filled by calling prepareFindAndModifyParams.
 type FindAndModifyParams struct {
-	DB, Collection, Comment               string
-	Query, Sort, Update                   *types.Document
-	Remove, Upsert                        bool
-	ReturnNewDocument, HasUpdateOperators bool
-	MaxTimeMS                             int64
+	DB                string          `ferretdb:"$db"`
+	Collection        string          `ferretdb:"collection"`
+	Comment           string          `ferretdb:"comment,opt"`
+	Query             *types.Document `ferretdb:"query,opt"`
+	Sort              *types.Document `ferretdb:"sort,opt"`
+	Update            *types.Document `ferretdb:"update,opt"`
+	Remove            bool            `ferretdb:"remove,opt"`
+	Upsert            bool            `ferretdb:"upsert,opt"`
+	ReturnNewDocument bool            `ferretdb:"new,opt"`
+	MaxTimeMS         int64           `ferretdb:"maxTimeMS,opt"`
+
+	HasUpdateOperators bool `ferretdb:"-"`
+
+	Let          *types.Document `ferretdb:"let,unimplemented"`
+	Collation    *types.Document `ferretdb:"collation,unimplemented"`
+	Fields       *types.Document `ferretdb:"fields,unimplemented"`
+	ArrayFilters *types.Array    `ferretdb:"arrayFilters,unimplemented"`
+
+	Hint                     string          `ferretdb:"hint,ignored"`
+	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
+	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 }
 
 // UpsertParams represents parameters for upsert, if the document exists UpdateParams is set.
@@ -68,155 +84,42 @@ type UpsertParams struct {
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
 func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
-	command := doc.Command()
+	var params FindAndModifyParams
 
-	db, err := GetRequiredParam[string](doc, "$db")
+	err := commonparams.ExtractParams(doc, "findAndModify", &params, l)
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := GetRequiredParam[string](doc, command)
-	if err != nil {
-		return nil, err
-	}
-
-	if collection == "" {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("Invalid namespace specified '%s.'", db),
-		)
-	}
-
-	remove, err := GetBoolOptionalParam(doc, "remove")
-	if err != nil {
-		return nil, err
-	}
-
-	returnNewDocument, err := GetBoolOptionalParam(doc, "new")
-	if err != nil {
-		return nil, err
-	}
-
-	upsert, err := GetBoolOptionalParam(doc, "upsert")
-	if err != nil {
-		return nil, err
-	}
-
-	query, err := GetOptionalParam(doc, "query", new(types.Document))
-	if err != nil {
-		return nil, err
-	}
-
-	sort, err := GetOptionalParam(doc, "sort", new(types.Document))
-	if err != nil {
-		return nil, err
-	}
-
-	var maxTimeMS int64
-	if maxTimeMSValue, _ := doc.Get("maxTimeMS"); maxTimeMSValue != nil {
-		maxTimeMS, err = commonparams.GetOptionalPositiveNumber("maxTimeMS", maxTimeMSValue)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	unimplementedFields := []string{
-		"fields",
-		"collation",
-		"arrayFilters",
-		"let",
-	}
-	if err = Unimplemented(doc, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"bypassDocumentValidation",
-		"writeConcern",
-		"hint",
-	}
-	Ignored(doc, l, ignoredFields...)
-
-	var update *types.Document
-
-	updateParam, err := doc.Get("update")
-	if err != nil && !remove {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrFailedToParse,
-			"Either an update or remove=true must be specified",
-		)
-	}
-
-	if err == nil {
-		switch updateParam := updateParam.(type) {
-		case *types.Document:
-			update = updateParam
-		case *types.Array:
-			// TODO aggregation pipeline stages metrics
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				"Aggregation pipelines are not supported yet",
-				"update",
-			)
-		default:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
-				"Update argument must be either an object or an array",
-				"update",
-			)
-		}
-	}
-
-	if update != nil && remove {
+	if params.Update != nil && params.Remove {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrFailedToParse,
 			"Cannot specify both an update and remove=true",
 		)
 	}
 
-	if upsert && remove {
+	if params.Upsert && params.Remove {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrFailedToParse,
 			"Cannot specify both upsert=true and remove=true",
 		)
 	}
 
-	if returnNewDocument && remove {
+	if params.ReturnNewDocument && params.Remove {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrFailedToParse,
 			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
 		)
 	}
 
-	hasUpdateOperators, err := HasSupportedUpdateModifiers(command, update)
+	hasUpdateOperators, err := HasSupportedUpdateModifiers("findAndModify", params.Update)
 	if err != nil {
 		return nil, err
 	}
 
-	var comment string
-	// get comment from a "comment" field
-	if comment, err = GetOptionalParam(doc, "comment", comment); err != nil {
-		return nil, err
-	}
+	params.HasUpdateOperators = hasUpdateOperators
 
-	// get comment from query, e.g. db.collection.FindAndModify({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-	if comment, err = GetOptionalParam(query, "$comment", comment); err != nil {
-		return nil, err
-	}
-
-	return &FindAndModifyParams{
-		DB:                 db,
-		Collection:         collection,
-		Comment:            comment,
-		Query:              query,
-		Update:             update,
-		Sort:               sort,
-		Remove:             remove,
-		Upsert:             upsert,
-		ReturnNewDocument:  returnNewDocument,
-		HasUpdateOperators: hasUpdateOperators,
-		MaxTimeMS:          maxTimeMS,
-	}, nil
+	return &params, nil
 }
 
 // PrepareDocumentForUpsert prepares the document used for upsert operation.
