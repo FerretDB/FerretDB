@@ -82,6 +82,7 @@ func simulateCompetingClients(clients int) int64 {
 	go func() {
 		for {
 			ch <- struct{}{}
+
 			time.Sleep(time.Duration(rand.Intn(18)+2) * time.Millisecond)
 		}
 	}()
@@ -102,12 +103,14 @@ func simulateCompetingClients(clients int) int64 {
 
 	for i := 0; i < clients; i++ {
 		wg.Add(1)
+
 		go func() {
 			for retry := 1; retry < 1000; retry++ {
 				if call() {
 					wg.Done()
 					return
 				}
+
 				time.Sleep(DurationWithJitter(200*time.Millisecond, int64(retry)))
 			}
 		}()
