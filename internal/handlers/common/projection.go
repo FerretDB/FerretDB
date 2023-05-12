@@ -313,16 +313,14 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		iter := source.Iterator()
 		defer iter.Close()
 
-		// arr will only contain documents found in the array.
-		// non document values does not match path hence not included.
 		arr := new(types.Array)
-		var projectionExists bool
+		var inclusionExists bool
 
 		if v, err := projected.Get(key); err == nil {
 			projectedArr, ok := v.(*types.Array)
 			if ok {
 				arr = projectedArr
-				projectionExists = true
+				inclusionExists = true
 			}
 		}
 
@@ -344,7 +342,12 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 			doc := new(types.Document)
 
-			if projectionExists {
+			if inclusionExists {
+				// when there are multiple inclusion fields, first inclusion
+				// inserts all documents from source to arr, they could be empty
+				// if it did not match previous inclusion fields.
+				// But number of documents in arr must be the same as number of documents
+				// in source.
 				var v any
 
 				v, err = arr.Get(i)
@@ -359,6 +362,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 				doc = docVal
 			} else {
+				// first inclusion field, insert it to the doc.
 				arr.Append(doc)
 			}
 
