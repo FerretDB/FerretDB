@@ -7,6 +7,10 @@ on:
 jobs:
   scan-old-package:
     runs-on: ubuntu-latest
+
+    # disable for now
+    if: false
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go
