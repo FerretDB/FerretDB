@@ -318,6 +318,11 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			key = command
 		}
 
+		// Fields with "-" are ignored when parsing parameters.
+		if key == "-" {
+			continue
+		}
+
 		if !slices.Contains(keys, key) {
 			return lazyerrors.Errorf("required field %q is not populated", key)
 		}
