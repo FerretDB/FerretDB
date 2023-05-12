@@ -75,6 +75,10 @@ func TestQueryProjectionCompat(t *testing.T) {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", 1.24}, {"bar", true}},
 		},
+		"Include2FieldsReverse": {
+			filter:     bson.D{},
+			projection: bson.D{{"bar", true}, {"foo", 1.24}},
+		},
 		"Exclude2Fields": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", int32(0)}, {"bar", false}},
@@ -141,33 +145,89 @@ func TestQueryProjectionCompat(t *testing.T) {
 		"DotNotationInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationIncludeTwo": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", true}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
+		},
+		"DotNotationIncludeTwoReverse": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array", true}, {"v.foo", true}},
+		},
+		"DotNotationIncludeTwoArray": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.bar", true}},
 		},
 		"DotNotationExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", false}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationExcludeTwo": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", false}, {"v.array", false}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
 		},
 		"DotNotationExcludeSecondLevel": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.array.42", false}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
+		},
+		"DotNotationIncludeSecondLevel": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.42", true}},
 		},
 		"DotNotationIncludeExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", false}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2430",
+		},
+		"DotNotation5LevelInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c.d", true}},
+		},
+		"DotNotation5LevelExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c.d", false}},
+		},
+		"DotNotation4LevelInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c", true}},
+		},
+		"DotNotation4LevelExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c", false}},
+		},
+		"DotNotationArrayInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.0", true}},
+		},
+		"DotNotationArrayExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.0", false}},
+		},
+		"DotNotationArrayPathInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.0.foo", true}},
+		},
+		"DotNotationArrayPathExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.0.foo", false}},
+		},
+		"DotNotationManyInclude": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"v.42", true},
+				{"v.non-existent", true},
+				{"v.foo", true},
+				{"v.array", true},
+			},
+		},
+		"DotNotationManyExclude": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"v.42", false},
+				{"v.non-existent", false},
+				{"v.foo", false},
+				{"v.array", false},
+			},
 		},
 	}
 
