@@ -97,6 +97,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					"_id", must.NotFail(doc.Get("_id")),
 				)))
 
+				// TODO https://github.com/FerretDB/FerretDB/issues/2612
 				if err = insertDocument(ctx, tx, &qp, doc); err != nil {
 					return err
 				}
@@ -121,6 +122,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
+				// TODO https://github.com/FerretDB/FerretDB/issues/2612
 				rowsChanged, err := updateDocument(ctx, tx, &qp, doc)
 				if err != nil {
 					return err
