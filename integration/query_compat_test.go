@@ -254,10 +254,6 @@ func TestQueryCompatSort(t *testing.T) {
 			resultType: emptyResult,
 		},
 
-		"DotNotation": {
-			filter: bson.D{},
-			sort:   bson.D{{"v.foo", 1}, {"_id", 1}},
-		},
 		"DotNotationIndex": {
 			filter: bson.D{},
 			sort:   bson.D{{"v.0", 1}, {"_id", 1}},
@@ -294,6 +290,22 @@ func TestQueryCompatSort(t *testing.T) {
 	}
 
 	testQueryCompat(t, testCases)
+}
+
+func TestQueryCompatSortDotNotation(t *testing.T) {
+	t.Parallel()
+
+	providers := shareddata.AllProviders().
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2618
+		Remove("ArrayDocuments")
+
+	testCases := map[string]queryCompatTestCase{
+		"DotNotation": {
+			filter: bson.D{},
+			sort:   bson.D{{"v.foo", 1}, {"_id", 1}},
+		},
+	}
+	testQueryCompatWithProviders(t, providers, testCases)
 }
 
 func TestQueryCompatSkip(t *testing.T) {
