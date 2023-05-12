@@ -43,9 +43,12 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 
 ## Backend handlers
 
+<!-- Do not document alpha backends -->
+
 ### PostgreSQL
 
-PostgreSQL backend can be enabled by `--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
+[PostgreSQL backend](../understanding-ferretdb.md#postgresql) can be enabled by
+`--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
 
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
@@ -53,7 +56,8 @@ PostgreSQL backend can be enabled by `--handler=pg` flag or `FERRETDB_HANDLER=pg
 
 ### Tigris (beta)
 
-Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
+[Tigris backend](../understanding-ferretdb.md#tigris-beta) can be enabled by
+`--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
 
 | Flag                     | Description                     | Environment Variable            | Default Value    |
 | ------------------------ | ------------------------------- | ------------------------------- | ---------------- |

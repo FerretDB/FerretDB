@@ -39,22 +39,18 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "collation"); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "hint", "readConcern", "comment")
-
-	params, err := common.GetCountParams(document)
+	params, err := common.GetCountParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var qp pgdb.QueryParams
+	qp := pgdb.QueryParams{
+		Filter:     params.Filter,
+		DB:         params.DB,
+		Collection: params.Collection,
+	}
 
 	qp.Filter = params.Filter
-	qp.DB = params.DB
-	qp.Collection = params.Collection
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {

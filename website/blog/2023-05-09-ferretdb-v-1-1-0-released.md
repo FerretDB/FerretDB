@@ -4,11 +4,11 @@ title: "FerretDB v1.1.0. Released"
 authors: [alex]
 description: >
   It is our pleasure to announce the release of [FerretDB](https://www.ferretdb.io/) version 1.1.0, which includes the addition of `renameCollection`, support for projection field assignments, and the `$project` pipeline aggregation stage, as well as `create` and `drop` commands in SAP HANA handler.
-image: /img/blog/ferretdb-v0.9.4.jpg
+image: /img/blog/ferretdb-1-1-0-release.png
 tags: [release]
 ---
 
-![FerretDB v.1.1.0](/img/blog/ferretdb-v0.9.4.jpg)
+![FerretDB v.1.1.0](/img/blog/ferretdb-1-1-0-release.png)
 
 It is our pleasure to announce the release of [FerretDB](https://www.ferretdb.io/) version 1.1.0, which includes the addition of `renameCollection`, support for projection field assignments, and the `$project` pipeline aggregation stage, as well as `create` and `drop` commands in SAP HANA handler.
 
