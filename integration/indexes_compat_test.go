@@ -229,10 +229,9 @@ func TestIndexesCreate(t *testing.T) {
 						t.Logf("Target error: %v", targetErr)
 						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						return
+					} else {
+						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
-					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					assert.Equal(t, compatRes, targetRes)
 
@@ -696,10 +695,9 @@ func TestIndexesDropRunCommand(t *testing.T) {
 						t.Logf("Target error: %v", targetErr)
 						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						return
+					} else {
+						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
-					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					require.Equal(t, compatRes, targetRes)
 
