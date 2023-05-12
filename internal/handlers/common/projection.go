@@ -244,15 +244,14 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 	return projected, nil
 }
 
-// pathNotExists indicates that no path was found.
-var pathNotExists = errors.New("path not exists")
-
 // includeProjection copies the field on the path from source to projected.
 // When an array is on the path, it returns the array containing any document
 // with the same key. Dot notation with array index path does not include
 // the field unlike document.SetByPath(path).
 // Inclusion projection with non-existent path creates an empty document
 // or an empty array based on what source has.
+// It returns iterator errors other than ErrIteratorDone.
+// If the projected contains field that is not expected in source, it panics.
 //
 //	Example: "v.foo" path inclusion projection:
 //	{v: {foo: 1, bar: 1}}               -> {v: {foo: 1}}
@@ -287,31 +286,26 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			if d, ok := v.(*types.Document); ok {
 				doc = d
 			}
+
+			if arr, ok := v.(*types.Array); ok {
+				// use next prefix key with arr value, allowing array to parse existing
+				// projection fields.
+				doc = must.NotFail(types.NewDocument(path.TrimPrefix().Prefix(), arr))
+			}
 		}
 
-		// when next prefix has an arr use arr,
-		// if it has a document, doc is set by includeProjection.
+		// when next prefix has an array use returned value arr,
+		// if it has a document, field in the doc is set by includeProjection.
 		arr, err := includeProjection(path.TrimPrefix(), embeddedSource, doc)
-
-		switch {
-		case errors.Is(err, pathNotExists):
-			// path does not exist, nothing to set.
-			return nil, nil
-		case err != nil:
+		if err != nil {
 			return nil, err
 		}
 
-		if isEmpty(key, projected) {
-			// only set projected if projected contains empty value.
-			// If projected is `{v: {foo: 1}}` and arr is `{}`,
-			// do not overwrite it.
-			if _, ok := embeddedSource.(*types.Array); ok {
-				// set arr to projected
-				projected.Set(key, arr)
-				return nil, nil
-			}
-
+		switch embeddedSource.(type) {
+		case *types.Document:
 			setBySourceOrder(key, doc, source, projected)
+		case *types.Array:
+			projected.Set(key, arr)
 		}
 
 		return nil, nil
@@ -319,7 +313,20 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		iter := source.Iterator()
 		defer iter.Close()
 
+		// arr will only contain documents found in the array.
+		// non document values does not match path hence not included.
 		arr := new(types.Array)
+		var projectionExists bool
+
+		if v, err := projected.Get(key); err == nil {
+			projectedArr, ok := v.(*types.Array)
+			if ok {
+				arr = projectedArr
+				projectionExists = true
+			}
+		}
+
+		i := 0
 
 		for {
 			_, arrElem, err := iter.Next()
@@ -336,51 +343,38 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			}
 
 			doc := new(types.Document)
+
+			if projectionExists {
+				var v any
+
+				v, err = arr.Get(i)
+				if err != nil {
+					panic(err)
+				}
+
+				docVal, ok := v.(*types.Document)
+				if !ok {
+					panic("projected field must be a document")
+				}
+
+				doc = docVal
+			} else {
+				arr.Append(doc)
+			}
+
 			if _, err = includeProjection(path, arrElem, doc); err != nil {
 				return nil, err
 			}
 
-			arr.Append(doc)
+			arr.Set(i, doc)
+			i++
 		}
 
 		return arr, nil
 	default:
-		return nil, pathNotExists
+		// field is not a document or an array, nothing to set.
+		return nil, nil
 	}
-}
-
-// isEmpty returns true if projected document at key is empty. It's empty if:
-//   - key does not exist in projected document,
-//   - projected contains empty document at key, or
-//   - projected contains an array which contain empty documents at key.
-func isEmpty(key string, projected *types.Document) bool {
-	v, err := projected.Get(key)
-	if err != nil {
-		return true
-	}
-
-	if doc, isDoc := v.(*types.Document); isDoc {
-		return doc.Len() == 0
-	}
-
-	if arr, isArray := v.(*types.Array); isArray {
-		iter := arr.Iterator()
-		defer iter.Close()
-
-		for {
-			_, v, err := iter.Next()
-			if err != nil {
-				return true
-			}
-
-			doc, ok := v.(*types.Document)
-			if !ok || doc.Len() != 0 {
-				return false
-			}
-		}
-	}
-
-	return false
 }
 
 // excludeProjection removes the field on the path in projected.
