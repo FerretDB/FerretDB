@@ -698,14 +698,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-
-						if tc.altMessage != "" {
-							AssertMatchesCommandError(t, compatErr, targetErr)
-						} else {
-							assert.Equal(t, compatErr, targetErr)
-						}
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}

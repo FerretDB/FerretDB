@@ -190,19 +190,12 @@ func TestRenameCollectionCompat(t *testing.T) {
 			compatErr := compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.resultType == emptyResult {
-				require.Error(t, compatErr)
-
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				if tc.altMessage != "" {
-					AssertMatchesCommandError(t, compatErr, targetErr)
-				} else {
-					assert.Equal(t, compatErr, targetErr)
-				}
+				t.Logf("Target error: %v", targetErr)
+				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
 			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			// Collection lists after rename must be the same
 			targetNames, err := targetDB.ListCollectionNames(ctx, bson.D{})

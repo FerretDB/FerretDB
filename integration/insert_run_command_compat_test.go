@@ -72,14 +72,7 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-
-						if tc.altErrorMsg != "" {
-							AssertMatchesCommandError(t, compatErr, targetErr)
-						} else {
-							require.Equal(t, compatErr, targetErr)
-						}
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}

@@ -79,22 +79,11 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.resultType == emptyResult {
-				require.Error(t, compatErr)
-
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				if tc.altMessage != "" {
-					AssertMatchesCommandError(t, compatErr, targetErr)
-				} else {
-					assert.Equal(t, compatErr, targetErr)
-				}
+				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
 			}
-
-			require.NoError(t, compatErr)
-			require.NoError(t, targetErr)
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			targetDoc := ConvertDocument(t, targetRes)
 			compatDoc := ConvertDocument(t, compatRes)
@@ -143,22 +132,11 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.resultType == emptyResult {
-				require.Error(t, compatErr)
-
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				if tc.altMessage != "" {
-					AssertMatchesCommandError(t, compatErr, targetErr)
-				} else {
-					assert.Equal(t, compatErr, targetErr)
-				}
+				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
 			}
-
-			require.NoError(t, compatErr)
-			require.NoError(t, targetErr)
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			targetDoc := ConvertDocument(t, targetRes)
 			compatDoc := ConvertDocument(t, compatRes)

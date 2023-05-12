@@ -230,11 +230,13 @@ func TestIndexesCreate(t *testing.T) {
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
 
-					if tc.altErrorMsg != "" {
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
 						AssertMatchesCommandError(t, compatErr, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
+
+						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					assert.Equal(t, compatRes, targetRes)
 
@@ -692,11 +694,13 @@ func TestIndexesDropRunCommand(t *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
-					if tc.altErrorMsg != "" {
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
 						AssertMatchesCommandError(t, compatErr, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
+
+						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					require.Equal(t, compatRes, targetRes)
 

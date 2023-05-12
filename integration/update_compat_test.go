@@ -117,8 +117,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
