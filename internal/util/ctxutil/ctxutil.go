@@ -17,6 +17,7 @@ package ctxutil
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -61,20 +62,32 @@ func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
 	<-sleepCtx.Done()
 }
 
-// DurationWithJitter returns an exponential backoff duration based on retry with random jitter.
-// The maximum sleep is the cap. The minimum duration is at least 100 milliseconds.
+// DurationWithJitter returns an exponential backoff duration based on attempt with random "full jitter".
+// https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 //
-// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
-func DurationWithJitter(cap time.Duration, retry int64) time.Duration {
-	const base = time.Millisecond * 100
+// The maximum sleep is the cap. The minimum sleep is at least 3 milliseconds.
+// Provided cap must be larger than minimum sleep, and attempt number must be a positive number.
+func DurationWithJitter(cap time.Duration, attempt int64) time.Duration {
+	const base = 100      // ms
+	const minDuration = 3 // ms
 
-	if retry < 1 {
-		panic("retry must be nonzero positive number")
+	capDuration := cap.Milliseconds()
+
+	if attempt < 1 {
+		panic("attempt must be nonzero positive number")
 	}
 
-	maxMilliseconds := float64(base.Milliseconds()) * math.Pow(2, float64(retry))
-	capMilliseconds := float64(cap.Milliseconds())
-	lowestValue := int64(math.Min(capMilliseconds, maxMilliseconds))
+	if capDuration <= minDuration {
+		panic(fmt.Sprintf("cap must be larger than min duration (%dms)", minDuration))
+	}
 
-	return time.Duration(rand.Int63n(lowestValue)) * time.Millisecond
+	// calculate base backoff based on base duration and amount of attempts
+	backoff := float64(base * math.Pow(2, float64(attempt)))
+	// cap is a max limit of possible durations returned
+	maxDuration := int64(math.Min(float64(capDuration), backoff))
+
+	// Math/rand is good enough because we don't need the randomness to be cryptographically secure.
+	sleep := rand.Int63n(maxDuration-minDuration) + minDuration
+
+	return time.Duration(sleep) * time.Millisecond
 }
