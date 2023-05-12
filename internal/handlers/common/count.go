@@ -33,8 +33,8 @@ type CountParams struct {
 	Collation any `ferretdb:"collation,unimplemented"`
 
 	Hint        any `ferretdb:"hint,ignored"`
-	Comment     any `ferretdb:"comment,ignored"`
 	ReadConcern any `ferretdb:"readConcern,ignored"`
+	Comment     any `ferretdb:"comment,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.
