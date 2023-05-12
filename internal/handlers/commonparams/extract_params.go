@@ -240,6 +240,15 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 			return err
 		}
 	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer, reflect.Interface:
+		if command == "findAndModify" && key == "new" {
+			settable, err = GetBoolOptionalParam(val, key)
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
 		settable = val
 	case reflect.Slice:
 		array, ok := val.(*types.Array)
@@ -306,6 +315,11 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 					fmt.Sprintf("collection name has invalid type %s", AliasFromType(settable)),
 					command,
 				)
+			}
+
+			if command == "findAndModify" && key == "update" {
+				fv.Set(reflect.ValueOf(v.Interface()))
+				return nil
 			}
 
 			return commonerrors.NewCommandErrorMsgWithArgument(

@@ -180,3 +180,30 @@ func GetOptionalPositiveNumber(key string, value any) (int64, error) {
 
 	return param, nil
 }
+
+// GetBoolOptionalParam returns doc's bool value for key.
+// Non-zero double, long, and int values return true.
+// Zero values for those types, as well as nulls and missing fields, return false.
+// Other types return a protocol error.
+func GetBoolOptionalParam(v any, key string) (bool, error) {
+	switch v := v.(type) {
+	case float64:
+		return v != 0, nil
+	case bool:
+		return v, nil
+	case types.NullType:
+		return false, nil
+	case int32:
+		return v != 0, nil
+	case int64:
+		return v != 0, nil
+	default:
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected types '[bool, long, int, decimal, double]'`,
+			key,
+			AliasFromType(v),
+		)
+
+		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
+	}
+}

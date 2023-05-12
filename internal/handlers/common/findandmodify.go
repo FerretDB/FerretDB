@@ -49,11 +49,14 @@ type FindAndModifyParams struct {
 	Comment           string          `ferretdb:"comment,opt"`
 	Query             *types.Document `ferretdb:"query,opt"`
 	Sort              *types.Document `ferretdb:"sort,opt"`
-	Update            *types.Document `ferretdb:"update,opt"`
+	UpdateValue       any             `ferretdb:"update,opt"`
 	Remove            bool            `ferretdb:"remove,opt"`
 	Upsert            bool            `ferretdb:"upsert,opt"`
 	ReturnNewDocument bool            `ferretdb:"new,opt"`
 	MaxTimeMS         int64           `ferretdb:"maxTimeMS,opt"`
+
+	Update      *types.Document `ferretdb:"-"`
+	Aggregation *types.Array    `ferretdb:"-"`
 
 	HasUpdateOperators bool `ferretdb:"-"`
 
@@ -91,6 +94,40 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		return nil, err
 	}
 
+	if params.UpdateValue == nil && !params.Remove {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Either an update or remove=true must be specified",
+		)
+	}
+
+	if params.ReturnNewDocument && params.Remove {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrFailedToParse,
+			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
+		)
+	}
+
+	if params.UpdateValue != nil {
+		switch updateParam := params.UpdateValue.(type) {
+		case *types.Document:
+			params.Update = updateParam
+		case *types.Array:
+			// TODO aggregation pipeline stages metrics
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation pipelines are not supported yet",
+				"update",
+			)
+		default:
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"Update argument must be either an object or an array",
+				"update",
+			)
+		}
+	}
+
 	if params.Update != nil && params.Remove {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrFailedToParse,
@@ -102,13 +139,6 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrFailedToParse,
 			"Cannot specify both upsert=true and remove=true",
-		)
-	}
-
-	if params.ReturnNewDocument && params.Remove {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrFailedToParse,
-			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
 		)
 	}
 

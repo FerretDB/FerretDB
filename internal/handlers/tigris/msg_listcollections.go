@@ -19,6 +19,7 @@ import (
 	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -49,9 +50,12 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
-	if err != nil {
-		return nil, err
+	var nameOnly bool
+	if v, _ := document.Get("nameOnly"); v != nil {
+		nameOnly, err = commonparams.GetBoolOptionalParam(v, "nameOnly")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	names, err := dbPool.Driver.UseDatabase(db).ListCollections(ctx)
