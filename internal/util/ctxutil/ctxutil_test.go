@@ -16,8 +16,11 @@ package ctxutil
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -50,26 +53,10 @@ func TestDurationWithJitter(t *testing.T) {
 	})
 
 	t.Run("RetryMultipleTimes", func(t *testing.T) {
-		// This test outputs a file for duration it took all nTasks to retry nRetries.
-		// In reality not all tasks will retry, but this is good enough for visualising it.
-
-		nTasks := 100
-		nRetries := 5
-
-		durations := make([][]time.Duration, nTasks) // task -> retry count -> duration
-
-		for i := 0; i < nTasks; i++ {
-			durations[i] = make([]time.Duration, nRetries)
-			for j := 0; j < nRetries; j++ {
-				durations[i][j] = DurationWithJitter(time.Second, int64(j+1))
-
-				assert.GreaterOrEqual(t, durations[i][j], 3*time.Millisecond)
-				assert.LessOrEqual(t, durations[i][j], time.Second)
-			}
-		}
+		t.Skip("test used only to generate data")
 
 		dir := filepath.Join("result")
-		err := os.MkdirAll(dir, 0o777)
+		err := os.MkdirAll(dir, 0o754)
 		require.NoError(t, err)
 
 		filename := filepath.Join(dir, "multiple-retry-jitter.txt")
@@ -78,11 +65,55 @@ func TestDurationWithJitter(t *testing.T) {
 
 		defer f.Close()
 
-		for _, task := range durations {
-			for j, duration := range task {
-				// each line has retry count (j+1) and duration waited in milliseconds.
-				fmt.Fprintln(f, j+1, duration.Milliseconds())
-			}
+		for i := 1; i <= 100; i++ {
+			t.Logf("simulating %d clients...", i)
+			total := simulateCompetingClients(i)
+			fmt.Fprintf(f, "%d\t%d\n", i, total)
 		}
 	})
+}
+
+// simulateCompetingClients simulates amount of clients competing on a single resource.
+// They use duration returned by DurationWithJitter before calling the resource again.
+// It returns total amount of calls done by all clients.
+func simulateCompetingClients(clients int) int64 {
+	ch := make(chan struct{})
+
+	go func() {
+		for {
+			ch <- struct{}{}
+			time.Sleep(time.Duration(rand.Intn(18)+2) * time.Millisecond)
+		}
+	}()
+
+	totalCalls := atomic.Int64{}
+
+	call := func() bool {
+		totalCalls.Add(1)
+		select {
+		case <-ch:
+			return true
+		default:
+			return false
+		}
+	}
+
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < clients; i++ {
+		wg.Add(1)
+		go func() {
+			for retry := 1; retry < 1000; retry++ {
+				if call() {
+					wg.Done()
+					return
+				}
+				time.Sleep(DurationWithJitter(200*time.Millisecond, int64(retry)))
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	return totalCalls.Load()
 }
