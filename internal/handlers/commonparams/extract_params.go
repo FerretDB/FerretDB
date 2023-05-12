@@ -112,7 +112,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			}
 		}
 
-		err = setStructField(&elem, fieldIndex, command, key, val)
+		err = setStructField(&elem, fieldIndex, command, key, val, l)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 }
 
 // setStructField sets the value of the document field to the structure field.
-func setStructField(elem *reflect.Value, i int, command, key string, val any) error {
+func setStructField(elem *reflect.Value, i int, command, key string, val any, l *zap.Logger) error {
 	var err error
 
 	field := elem.Type().Field(i)
@@ -211,8 +211,59 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 		if err != nil {
 			return err
 		}
-	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
+	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer, reflect.Interface:
 		settable = val
+	case reflect.Slice:
+		array, ok := val.(*types.Array)
+		if !ok {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
+				),
+				command,
+			)
+		}
+
+		iter := array.Iterator()
+		defer iter.Close()
+
+		arrayToSet := reflect.MakeSlice(fv.Type(), array.Len(), array.Len())
+
+		for {
+			i, arrayDoc, err := iter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			doc, ok := arrayDoc.(*types.Document)
+			if !ok {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+						command, key, AliasFromType(val), AliasFromType(fv.Interface()),
+					),
+					command,
+				)
+			}
+
+			params := reflect.New(fv.Type().Elem())
+
+			err = ExtractParams(doc, "key", params.Interface(), l)
+			if err != nil {
+				return err
+			}
+
+			arrayToSet.Index(i).Set(params.Elem())
+		}
+
+		settable = arrayToSet.Interface()
 	default:
 		panic(fmt.Sprintf("field %s type %s is not supported", field.Name, fv.Type()))
 	}

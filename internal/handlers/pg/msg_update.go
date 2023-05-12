@@ -70,7 +70,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				DB:         params.DB,
 				Collection: params.Collection,
 				Filter:     u.Filter,
-				Comment:    u.Comment,
+				Comment:    params.Comment,
 			}
 
 			resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})

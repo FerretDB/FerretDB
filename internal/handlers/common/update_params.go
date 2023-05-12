@@ -15,132 +15,57 @@
 package common
 
 import (
-	"fmt"
-
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // UpdatesParams represents parameters for update command.
 type UpdatesParams struct {
-	DB         string
-	Collection string
-	Updates    []UpdateParams
+	DB         string         `ferretdb:"$db"`
+	Collection string         `ferretdb:"collection"`
+	Updates    []UpdateParams `ferretdb:"updates"`
+
+	Comment string `ferretdb:"comment,opt"`
+
+	Let *types.Document `ferretdb:"let,unimplemented"`
+
+	Ordered                  bool            `ferretdb:"ordered,ignored"`
+	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
+	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 }
 
 // UpdateParams represents a single update operation parameters.
 type UpdateParams struct {
-	Filter  *types.Document
-	Update  *types.Document
-	Comment string
-	Multi   bool
-	Upsert  bool
+	// TODO: query could have a comment that we probably should extract.
+	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
+	Filter *types.Document `ferretdb:"q,opt"`
+	Update *types.Document `ferretdb:"u,opt"`
+	Multi  bool            `ferretdb:"multi,opt"`
+	Upsert bool            `ferretdb:"upsert,opt"`
+
+	C            *types.Document `ferretdb:"c,unimplemented"`
+	Collation    *types.Document `ferretdb:"collation,unimplemented"`
+	ArrayFilters *types.Array    `ferretdb:"arrayFilters,unimplemented"`
+
+	Hint string `ferretdb:"hint,ignored"`
 }
 
 // GetUpdateParams returns parameters for update command.
 func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, error) {
-	var err error
+	var params UpdatesParams
 
-	if err = Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-
-	Ignored(document, l, "ordered", "writeConcern", "bypassDocumentValidation")
-
-	var db, collection string
-
-	if db, err = GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	err := commonparams.ExtractParams(document, "update", &params, l)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	for _, update := range params.Updates {
+		if err := ValidateUpdateOperators(document.Command(), update.Update); err != nil {
+			return nil, err
+		}
 	}
 
-	var updatesArray *types.Array
-	if updatesArray, err = GetOptionalParam(document, "updates", updatesArray); err != nil {
-		return nil, err
-	}
-
-	var updates []UpdateParams
-
-	for i := 0; i < updatesArray.Len(); i++ {
-		update, err := AssertType[*types.Document](must.NotFail(updatesArray.Get(i)))
-		if err != nil {
-			return nil, err
-		}
-
-		if err = Unimplemented(update, "c", "collation", "arrayFilters"); err != nil {
-			return nil, err
-		}
-
-		Ignored(update, l, "hint")
-
-		var q, u *types.Document
-
-		if q, err = GetOptionalParam(update, "q", q); err != nil {
-			return nil, err
-		}
-
-		if u, err = GetOptionalParam(update, "u", u); err != nil {
-			// TODO check if u is an array of aggregation pipeline stages
-			return nil, err
-		}
-
-		var comment string
-
-		// get comment from options.UpdateParams().SetComment() method
-		if comment, err = GetOptionalParam(document, "comment", comment); err != nil {
-			return nil, err
-		}
-
-		// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
-		if comment, err = GetOptionalParam(q, "$comment", comment); err != nil {
-			return nil, err
-		}
-
-		if u != nil {
-			if err = ValidateUpdateOperators(document.Command(), u); err != nil {
-				return nil, err
-			}
-		}
-
-		var upsert, multi bool
-
-		if upsert, err = GetOptionalParam(update, "upsert", upsert); err != nil {
-			return nil, err
-		}
-
-		if multi, err = GetOptionalParam(update, "multi", multi); err != nil {
-			return nil, err
-		}
-
-		updates = append(updates, UpdateParams{
-			Filter:  q,
-			Update:  u,
-			Upsert:  upsert,
-			Multi:   multi,
-			Comment: comment,
-		})
-	}
-
-	return &UpdatesParams{
-		DB:         db,
-		Collection: collection,
-		Updates:    updates,
-	}, nil
+	return &params, nil
 }

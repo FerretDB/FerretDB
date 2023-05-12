@@ -45,6 +45,14 @@ func TestParse(t *testing.T) {
 		Find bool `ferretdb:"find,non-default"`
 	}
 
+	type update struct {
+		Filter *types.Document `ferretdb:"q,opt"`
+	}
+
+	type updates struct {
+		Update []update `ferretdb:"updates"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -107,6 +115,24 @@ func TestParse(t *testing.T) {
 			)),
 			params:  new(allTagsThatPass),
 			wantErr: "required field \"find\" is not populated",
+		},
+		"ArrayTag": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"updates", must.NotFail(types.NewArray(
+					must.NotFail(types.NewDocument(
+						"q", must.NotFail(types.NewDocument("a", "b")),
+					)),
+				)),
+			)),
+			params: new(updates),
+			wantParams: &updates{
+				Update: []update{
+					{
+						Filter: must.NotFail(types.NewDocument("a", "b")),
+					},
+				},
+			},
 		},
 	}
 	for name, tt := range tests {
