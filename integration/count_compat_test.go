@@ -36,7 +36,6 @@ type countCompatTestCase struct {
 	optSkip any   // optional, skip option for the query, defaults to nil
 	limit   int64 // optional, limit option for the query, defaults to 0
 
-	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -87,6 +86,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
@@ -212,7 +212,6 @@ func TestCountCompat(t *testing.T) {
 			filter:     bson.D{},
 			optSkip:    "foo",
 			resultType: emptyResult,
-			altMessage: `BSON field 'count.skip' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
 	}
 

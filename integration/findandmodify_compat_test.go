@@ -213,7 +213,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v.foo", "val"}}},
 				}},
 			},
-			altMessage: "Updating the path 'v' would create a conflict at 'v'",
 		},
 		"ConflictKeyPrefix": {
 			command: bson.D{
@@ -223,7 +222,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v", "val"}}},
 				}},
 			},
-			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
 		},
 	}
 
@@ -262,7 +260,6 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
 			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
 		},
 	}
 
@@ -561,7 +558,6 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
 		},
 	}
 
@@ -644,8 +640,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
-	command    bson.D
-	altMessage string
+	command bson.D
 
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
@@ -698,6 +693,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return

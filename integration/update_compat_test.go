@@ -124,6 +124,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
+								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
 								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -237,8 +238,6 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
@@ -246,6 +245,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
+								// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -273,6 +273,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 								if targetErr != nil {
 									t.Logf("Target error: %v", targetErr)
+									// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 									AssertMatchesCommandError(t, compatErr, targetErr)
 
 									return
@@ -369,9 +370,7 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
-
+								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
 								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")

@@ -40,7 +40,6 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
 		resultType compatTestCaseResultType
-		altMessage string
 	}{
 		"scaleOne":           {scale: int32(1)},
 		"scaleBig":           {scale: int64(1000)},
@@ -54,12 +53,10 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 		"scaleString": {
 			scale:      "1",
 			resultType: emptyResult,
-			altMessage: `BSON field 'collStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
 		"scaleObject": {
 			scale:      bson.D{{"a", 1}},
 			resultType: emptyResult,
-			altMessage: `BSON field 'collStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double]'`,
 		},
 		"scaleNull": {scale: nil},
 	} {
@@ -79,6 +76,7 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.resultType == emptyResult {
+				// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
@@ -109,7 +107,6 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
 		resultType compatTestCaseResultType
-		altMessage string
 	}{
 		"scaleOne":   {scale: int32(1)},
 		"scaleBig":   {scale: int64(1000)},
@@ -132,6 +129,7 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			if tc.resultType == emptyResult {
+				// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return

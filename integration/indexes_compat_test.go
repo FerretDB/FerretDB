@@ -64,10 +64,9 @@ func TestIndexesCreate(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		models      []mongo.IndexModel
-		altErrorMsg string                   // optional, alternative error message in case of error
-		resultType  compatTestCaseResultType // defaults to nonEmptyResult
-		skip        string                   // optional, skip test with a specified reason
+		models     []mongo.IndexModel
+		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		skip       string                   // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -121,8 +120,7 @@ func TestIndexesCreate(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+			resultType: emptyResult,
 		},
 		"CustomName": {
 			models: []mongo.IndexModel{
@@ -170,8 +168,7 @@ func TestIndexesCreate(t *testing.T) {
 					Keys: bson.D{{"v", -1}, {"v", 1}},
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+			resultType: emptyResult,
 		},
 		"SameKeyDifferentNames": {
 			models: []mongo.IndexModel{
@@ -184,8 +181,7 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("bar"),
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: "One of the specified indexes already exists with a different name",
+			resultType: emptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -198,8 +194,7 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("index-name"),
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: "One of the specified indexes already exists with a different key",
+			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -232,6 +227,7 @@ func TestIndexesCreate(t *testing.T) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
@@ -381,6 +377,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 				require.Nil(t, compatRes)
 			}
 
+			// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 			AssertMatchesCommandError(t, compatErr, targetErr)
 			assert.Equal(t, compatRes, targetRes)
 
@@ -395,6 +392,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			require.Nil(t, targetRes)
 			require.Nil(t, compatRes)
 
+			// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 			AssertMatchesCommandError(t, compatErr, targetErr)
 		})
 	}
@@ -696,6 +694,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return

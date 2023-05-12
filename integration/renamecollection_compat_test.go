@@ -51,7 +51,6 @@ func TestRenameCollectionCompat(t *testing.T) {
 		compatNSFrom any
 		targetNSTo   any
 		compatNSTo   any
-		altMessage   string
 		resultType   compatTestCaseResultType
 	}{
 		"Valid": {
@@ -171,7 +170,6 @@ func TestRenameCollectionCompat(t *testing.T) {
 			targetNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
 			compatNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
 			resultType:   emptyResult,
-			altMessage:   "error with target namespace: Invalid collection name: " + strings.Repeat("aB", 150),
 		},
 	} {
 		name, tc := name, tc
@@ -191,6 +189,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 
 			if tc.resultType == emptyResult {
 				t.Logf("Target error: %v", targetErr)
+				// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return

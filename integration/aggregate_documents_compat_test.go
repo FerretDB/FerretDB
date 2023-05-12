@@ -127,6 +127,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						t.Logf("Compat error: %v", compatErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
@@ -205,6 +206,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
+					// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 					AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return

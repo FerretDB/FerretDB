@@ -93,6 +93,7 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
+					// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 					AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return

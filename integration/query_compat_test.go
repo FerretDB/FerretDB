@@ -147,6 +147,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return

@@ -135,6 +135,7 @@ func testQueryCompatCommand(t *testing.T, testCases map[string]queryCompatComman
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
