@@ -15,8 +15,6 @@
 package main
 
 import (
-	"errors"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,38 +35,26 @@ func TestPrintDiagnosticData(t *testing.T) {
 func TestRmdirAbsentDir(t *testing.T) {
 	t.Parallel()
 
-	err := rmdir([]string{"rz"})
+	err := rmdir("absent")
 	assert.NoError(t, err)
 }
 
 func TestMkdirAndRmdir(t *testing.T) {
 	t.Parallel()
 
-	paths := []string{"ab/c"}
+	paths := []string{"ab/c", "ab"}
 
-	err := mkdir(paths)
+	err := mkdir(paths...)
 	assert.NoError(t, err)
 
-	// check if paths exist.
-	var errs error
-
 	for _, path := range paths {
-		if _, err = os.Stat(path); err != nil {
-			errs = errors.Join(errs, err)
-		}
+		assert.DirExists(t, path)
 	}
 
-	assert.NoError(t, errs)
-
-	err = rmdir(paths)
+	err = rmdir(paths...)
 	assert.NoError(t, err)
 
-	// check if paths do not exist.
 	for _, path := range paths {
-		if _, err = os.Stat(path); !os.IsNotExist(err) {
-			errs = errors.Join(errs, err)
-		}
+		assert.NoDirExists(t, path)
 	}
-
-	assert.NoError(t, errs)
 }
