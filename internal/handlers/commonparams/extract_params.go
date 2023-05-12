@@ -200,7 +200,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
-		if key == "skip" || key == "limit" {
+		if key == "skip" || key == "limit" || key == "batchSize" {
 			// limit value for the `delete` command has to be 0 or 1
 			if command == "delete" {
 				var limit int64

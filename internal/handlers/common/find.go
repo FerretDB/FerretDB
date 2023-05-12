@@ -57,15 +57,14 @@ type FindParams struct {
 
 // GetFindParams returns `find` command parameters.
 func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
-	var params FindParams
+	params := FindParams{
+		BatchSize: 101,
+	}
 
 	err := commonparams.ExtractParams(doc, "find", &params, l)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: process default values somehow
-	params.BatchSize = 101
 
 	return &params, nil
 }
