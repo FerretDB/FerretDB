@@ -94,6 +94,13 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		return nil, err
 	}
 
+	if params.Collection == "" {
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.'", params.DB),
+		)
+	}
+
 	if params.UpdateValue == nil && !params.Remove {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrFailedToParse,
