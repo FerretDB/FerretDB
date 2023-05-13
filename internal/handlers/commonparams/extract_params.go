@@ -40,7 +40,8 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 //   - `non-default` - field is unimplemented for non-default values;
 //   - `unimplemented` - field is not implemented yet;
 //   - `ignored` - field is ignored;
-//   - `numericBool` - field is of type `bool` but can be parsed from numeric types.
+//   - `numericBool` - field is of type `bool` but can be parsed from numeric types;
+//   - `strict` - fields of numeric types are parsed strictly.
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
@@ -138,6 +139,7 @@ type tagOptions struct {
 	unimplemented bool
 	ignored       bool
 	numericBool   bool
+	strict        bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -173,6 +175,8 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 				to.ignored = true
 			case "numericBool":
 				to.numericBool = true
+			case "strict":
+				to.strict = true
 			default:
 				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
 			}
@@ -206,28 +210,29 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
-		if key == "skip" || key == "limit" || key == "batchSize" {
-			// limit value for the `delete` command has to be 0 or 1
-			if command == "delete" {
-				var limit int64
-				limit, err = GetWholeNumberParam(val)
-				if err != nil || limit < 0 || limit > 1 {
-					return commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrFailedToParse,
-						fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", val),
-						"limit",
-					)
-
-				}
-
-				settable = limit
-
-				break
-			}
+		if o.strict {
 			settable, err = GetWholeParamStrict(command, key, val)
 			if err != nil {
 				return err
 			}
+
+			break
+		}
+
+		// limit value for the `delete` command has to be 0 or 1
+		if key == "limit" && command == "delete" {
+			var limit int64
+			limit, err = GetWholeNumberParam(val)
+			if err != nil || limit < 0 || limit > 1 {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", val),
+					"limit",
+				)
+
+			}
+
+			settable = limit
 
 			break
 		}
