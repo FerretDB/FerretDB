@@ -80,7 +80,6 @@ func GetWholeNumberParam(value any) (int64, error) {
 // otherwise it returns a command error with the given command being mentioned.
 func getWholeParamStrict(command string, param string, value any) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
@@ -134,7 +133,6 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 // getOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
 func getOptionalPositiveNumber(key string, value any) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
