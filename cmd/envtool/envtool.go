@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	_ "embed"
@@ -347,6 +348,31 @@ func rmdir(paths ...string) error {
 	return errs
 }
 
+// cat will show the content of a file.
+func cat(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		r := bufio.NewReader(f)
+
+		for {
+			line, _, err := r.ReadLine()
+			if err != nil {
+				break
+			}
+
+			fmt.Println(line)
+		}
+	}
+
+	return errs
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
@@ -390,6 +416,8 @@ func main() {
 		err = mkdir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
 		err = rmdir(cli.Shell.Rmdir.Paths...)
+	case "shell cat <path>":
+		err = cat(cli.Shell.Rmdir.Paths...)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
