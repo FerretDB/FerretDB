@@ -127,7 +127,7 @@ Another bug was discovered when using multiple update operators, such as `$set` 
 Normally, it should return an error stating that there is a conflict, which should prevent the update operation, but it didn’t.
 This bug has now been resolved.
 
-Aside from that, we’ve also resolved a bug that occurs when attempting to use dot notation in sorting, especially when using a sort criteria like {"$v.foo", 1}.
+Aside from that, we’ve also resolved a bug that occurs when attempting to use dot notation in sorting, especially when using a sort criteria like `{"v.foo", 1}`.
 
 ## Documentation
 

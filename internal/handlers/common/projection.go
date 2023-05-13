@@ -221,28 +221,262 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
-			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+			time.Time, types.NullType, types.Regex, types.Timestamp: // all these types are treated as new fields value
 			projected.Set(key, value)
 
 		case bool: // field: bool
-			// process top level fields
-			if path.Len() == 1 {
-				if inclusion {
-					if docWithoutID.Has(key) {
-						projected.Set(key, must.NotFail(docWithoutID.Get(key)))
-					}
-
-					continue
+			if inclusion {
+				// inclusion projection copies the field on the path from docWithoutID to projected.
+				if _, err = includeProjection(path, docWithoutID, projected); err != nil {
+					return nil, err
 				}
 
-				projected.Remove(key)
+				continue
 			}
 
-			// TODO: process dot notation here https://github.com/FerretDB/FerretDB/issues/2430
+			// exclusion projection removes the field on the path in projected.
+			excludeProjection(path, projected)
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
 		}
 	}
 
 	return projected, nil
+}
+
+// includeProjection copies the field on the path from source to projected.
+// When an array is on the path, it returns the array containing any document
+// with the same key. Dot notation with array index path does not include
+// the field unlike document.SetByPath(path).
+// Inclusion projection with non-existent path creates an empty document
+// or an empty array based on what source has.
+// It returns iterator errors other than ErrIteratorDone.
+// If the projected contains field that is not expected in source, it panics.
+//
+//	Example: "v.foo" path inclusion projection:
+//	{v: {foo: 1, bar: 1}}               -> {v: {foo: 1}}
+//	{v: {bar: 1}}                       -> {v: {}}
+//	{v: [{bar: 1}]}                     -> {v: [{}]}
+//	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{foo: 1}, {foo: 2}, {}]}
+//
+//	Example: "v.0.foo" path inclusion projection:
+//	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {}]}
+func includeProjection(path types.Path, source any, projected *types.Document) (*types.Array, error) {
+	key := path.Prefix()
+
+	switch source := source.(type) {
+	case *types.Document:
+		embeddedSource, err := source.Get(key)
+		if err != nil {
+			// key does not exist, nothing to set.
+			return nil, nil
+		}
+
+		if path.Len() <= 1 {
+			// path reached suffix, set field in projected.
+			setBySourceOrder(key, embeddedSource, source, projected)
+			return nil, nil
+		}
+
+		doc := new(types.Document)
+
+		if projected.Has(key) {
+			// set doc if projected has field from other projection field.
+			v := must.NotFail(projected.Get(key))
+			if d, ok := v.(*types.Document); ok {
+				doc = d
+			}
+
+			if arr, ok := v.(*types.Array); ok {
+				// use next prefix key with arr value, allowing array to parse existing
+				// projection fields.
+				doc = must.NotFail(types.NewDocument(path.TrimPrefix().Prefix(), arr))
+			}
+		}
+
+		// when next prefix has an array use returned value arr,
+		// if it has a document, field in the doc is set by includeProjection.
+		arr, err := includeProjection(path.TrimPrefix(), embeddedSource, doc)
+		if err != nil {
+			return nil, err
+		}
+
+		switch embeddedSource.(type) {
+		case *types.Document:
+			setBySourceOrder(key, doc, source, projected)
+		case *types.Array:
+			projected.Set(key, arr)
+		}
+
+		return nil, nil
+	case *types.Array:
+		iter := source.Iterator()
+		defer iter.Close()
+
+		arr := new(types.Array)
+		var inclusionExists bool
+
+		if v, err := projected.Get(key); err == nil {
+			projectedArr, ok := v.(*types.Array)
+			if ok {
+				arr = projectedArr
+				inclusionExists = true
+			}
+		}
+
+		i := 0
+
+		for {
+			_, arrElem, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			if _, ok := arrElem.(*types.Document); !ok {
+				continue
+			}
+
+			doc := new(types.Document)
+
+			if inclusionExists {
+				// when there are multiple inclusion fields, first inclusion
+				// inserts all documents from source to arr, they could be empty
+				// if it did not match previous inclusion fields.
+				// But number of documents in arr must be the same as number of documents
+				// in source.
+				var v any
+
+				v, err = arr.Get(i)
+				if err != nil {
+					panic(err)
+				}
+
+				docVal, ok := v.(*types.Document)
+				if !ok {
+					panic("projected field must be a document")
+				}
+
+				doc = docVal
+			} else {
+				// first inclusion field, insert it to the doc.
+				arr.Append(doc)
+			}
+
+			if _, err = includeProjection(path, arrElem, doc); err != nil {
+				return nil, err
+			}
+
+			arr.Set(i, doc)
+			i++
+		}
+
+		return arr, nil
+	default:
+		// field is not a document or an array, nothing to set.
+		return nil, nil
+	}
+}
+
+// excludeProjection removes the field on the path in projected.
+// When an array is on the path, it checks if the array contains any document
+// with the key to remove that document. This is not the case in document.Remove(key).
+// Dot notation with array index path do not exclude unlike document.RemoveByPath(key).
+//
+//	Examples: "v.foo" path exclusion projection:
+//	{v: {foo: 1}}                       -> {v: {}}
+//	{v: {foo: 1, bar: 1}}               -> {v: {bar: 1}}
+//	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{}, {}]}
+//	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {bar: 1}]}
+//
+//	Example: "v.0.foo" path exclusion projection:
+//	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{foo: 1}, {foo: 2}]}
+func excludeProjection(path types.Path, projected any) {
+	key := path.Prefix()
+
+	switch projected := projected.(type) {
+	case *types.Document:
+		embeddedSource, err := projected.Get(key)
+		if err != nil {
+			// key does not exist, nothing to exclude.
+			return
+		}
+
+		if path.Len() <= 1 {
+			// path reached suffix, remove the field from the document.
+			projected.Remove(key)
+			return
+		}
+
+		// recursively remove field from the embeddedSource.
+		excludeProjection(path.TrimPrefix(), embeddedSource)
+
+		return
+	case *types.Array:
+		// modifies the field of projected, hence not using iterator.
+		for i := 0; i < projected.Len(); i++ {
+			arrElem := must.NotFail(projected.Get(i))
+
+			if _, ok := arrElem.(*types.Document); !ok {
+				// not a document, cannot possibly be part of path, do nothing.
+				continue
+			}
+
+			excludeProjection(path, arrElem)
+		}
+
+		return
+	default:
+		// not a path, nothing to exclude.
+		return
+	}
+}
+
+// setBySourceOrder sets the key value field to projected in same field order as the source.
+// Example:
+//
+//	key: foo
+//	val: 1
+//	source: {foo: 1, bar: 2}
+//	projected: {bar: 2}
+//
+// setBySourceOrder sets projected to {foo: 1, bar: 2} rather than adding it to the last field.
+func setBySourceOrder(key string, val any, source, projected *types.Document) {
+	projectedKeys := projected.Keys()
+
+	// newFieldIndex is where new field is to be inserted in projected document.
+	newFieldIndex := 0
+
+	for _, sourceKey := range source.Keys() {
+		if sourceKey == key {
+			break
+		}
+
+		if newFieldIndex >= len(projectedKeys) {
+			break
+		}
+
+		if sourceKey == projectedKeys[newFieldIndex] {
+			newFieldIndex++
+		}
+	}
+
+	tmp := projected.DeepCopy()
+
+	// remove fields of projected from newFieldIndex to the end
+	for i := newFieldIndex; i < len(projectedKeys); i++ {
+		projected.Remove(projectedKeys[i])
+	}
+
+	projected.Set(key, val)
+
+	// copy newFieldIndex-th to the end from tmp to projected
+	i := newFieldIndex
+	for _, key := range tmp.Keys()[newFieldIndex:] {
+		projected.Set(key, must.NotFail(tmp.Get(tmp.Keys()[i])))
+		i++
+	}
 }

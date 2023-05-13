@@ -185,6 +185,38 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 }
 
+// DocumentsDeeplyNested contains documents nested in multiple levels for tests.
+var DocumentsDeeplyNested = &Values[string]{
+	name:     "DocumentsDeeplyNested",
+	backends: []string{"ferretdb-pg", "mongodb"},
+	data: map[string]any{
+		"two":   bson.D{{"a", bson.D{{"b", 12}}}},
+		"three": bson.D{{"a", bson.D{{"b", bson.D{{"c", 12}}}}}},
+		"four": bson.D{
+			{"a", bson.D{
+				{"b", bson.D{
+					{"c", bson.D{
+						{"d", 123},
+					}},
+					{"e", 13},
+				}},
+				{"f", 14},
+			}},
+			{"g", 15},
+		},
+		"array": bson.D{
+			{"a", bson.D{
+				{"b", bson.D{
+					{"c", bson.A{1, 2}},
+					{"e", 13},
+				}},
+				{"f", 14},
+			}},
+			{"g", 15},
+		},
+	},
+}
+
 // ArrayStrings contains an array with string values for tests.
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
@@ -371,6 +403,20 @@ var ArrayDocuments = &Values[string]{
 			}},
 		},
 		"array-two-documents": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+		},
+		"array-three-documents": bson.A{
+			bson.D{{
+				"bar",
+				bson.A{bson.D{{"a", "b"}}},
+			}},
 			bson.D{{
 				"foo",
 				bson.A{bson.D{{"bar", "hello"}}},
