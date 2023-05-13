@@ -81,59 +81,60 @@ func GetWholeNumberParam(value any) (int64, error) {
 func getWholeParamStrict(command string, param string, value any) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 
-	if err == nil {
-		if whole < 0 {
-			return 0, commonerrors.NewCommandError(
-				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUnexpectedType):
+			if _, ok := value.(types.NullType); ok {
+				return 0, nil
+			}
+
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field '%s.%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+					command, param, AliasFromType(value),
+				),
+				param,
 			)
-		}
+		case errors.Is(err, ErrNotWholeNumber):
+			if math.Signbit(value.(float64)) {
+				return 0, commonerrors.NewCommandError(
+					commonerrors.ErrValueNegative,
+					fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+				)
+			}
 
-		return whole, nil
-	}
+			// for non-integer numbers, value is rounded to the greatest integer value less than the given value.
+			return int64(math.Floor(value.(float64))), nil
 
-	switch {
-	case errors.Is(err, ErrUnexpectedType):
-		if _, ok := value.(types.NullType); ok {
-			return 0, nil
-		}
+		case errors.Is(err, ErrLongExceededPositive):
+			return math.MaxInt64, nil
 
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf(
-				`BSON field '%s.%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				command, param, AliasFromType(value),
-			),
-			param,
-		)
-	case errors.Is(err, ErrNotWholeNumber):
-		if math.Signbit(value.(float64)) {
+		case errors.Is(err, ErrLongExceededNegative):
 			return 0, commonerrors.NewCommandError(
 				commonerrors.ErrValueNegative,
 				fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
 			)
+
+		default:
+			return 0, lazyerrors.Error(err)
 		}
+	}
 
-		// for non-integer numbers, value is rounded to the greatest integer value less than the given value.
-		return int64(math.Floor(value.(float64))), nil
-
-	case errors.Is(err, ErrLongExceededPositive):
-		return math.MaxInt64, nil
-
-	case errors.Is(err, ErrLongExceededNegative):
+	if whole < 0 {
 		return 0, commonerrors.NewCommandError(
 			commonerrors.ErrValueNegative,
-			fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+			fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
 		)
-
-	default:
-		return 0, lazyerrors.Error(err)
 	}
+
+	return whole, nil
 }
 
 // getOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
 func getOptionalPositiveNumber(key string, value any) (int64, error) {
-	wholeNumberParam, err := GetWholeNumberParam(value)
+	whole, err := GetWholeNumberParam(value)
+
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
@@ -157,20 +158,19 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 				key,
 			)
 		default:
-			return 0, err
+			return 0, lazyerrors.Error(err)
 		}
 	}
 
-	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
+	if whole > math.MaxInt32 || whole < math.MinInt32 {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
+			fmt.Sprintf("%v value for %s is out of range", whole, key),
 			key,
 		)
 	}
 
-	param := wholeNumberParam
-	if param < 0 {
+	if whole < 0 {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", value, key),
@@ -178,7 +178,7 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 		)
 	}
 
-	return param, nil
+	return whole, nil
 }
 
 // GetBoolOptionalParam returns doc's bool value for key.

@@ -58,11 +58,11 @@ func TestParse(t *testing.T) {
 	}
 
 	type strict struct {
-		Find int64 `ferretdb:"f,strict"`
+		Find int64 `ferretdb:"f,positiveNumber"`
 	}
 
 	type positive struct {
-		Find int64 `ferretdb:"f,positive"`
+		Find int64 `ferretdb:"f,wholePositiveNumber"`
 	}
 
 	type numericAsBool struct {

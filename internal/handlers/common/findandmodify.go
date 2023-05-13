@@ -52,7 +52,7 @@ type FindAndModifyParams struct {
 	Remove            bool            `ferretdb:"remove,opt"`
 	Upsert            bool            `ferretdb:"upsert,opt"`
 	ReturnNewDocument bool            `ferretdb:"new,opt,numericBool"`
-	MaxTimeMS         int64           `ferretdb:"maxTimeMS,opt,positive"`
+	MaxTimeMS         int64           `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
 
 	Update      *types.Document `ferretdb:"-"`
 	Aggregation *types.Array    `ferretdb:"-"`

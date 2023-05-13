@@ -37,14 +37,15 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 // Parameters are extracted by the field name or by the `ferretdb` tag.
 //
 // Possible tags:
-//   - `opt` - field is optional;
-//   - `non-default` - field is unimplemented for non-default values;
-//   - `unimplemented` - field is not implemented yet;
-//   - `ignored` - field is ignored;
-//   - `numericBool` - field is of type `bool` but can be parsed from numeric types;
-//   - `strict` - fields of numeric types are parsed strictly;
-//   - `positive` - fields of numeric types must be positive;
-//   - `numericAsBool` - fields of numeric types that must have as values only `0` or `1`.
+//   - `opt` - field is optional, the field value would not be set if it's not present in the document;
+//   - `unimplemented-non-default` - error would be returned if non-default value for the field is provided;
+//   - `unimplemented` - error would be returned if the value is present in the document;
+//   - `ignored` - field is ignored and would not be set, but it would be logged;
+//   - `positiveNumber` - provided value must be of types [int, long, double] and greater than 0,
+//     double values would be rounded to long;
+//   - `wholePositiveNumber` - provided value must be of types [int, long] and greater than 0;
+//   - `numericBool` - provided value must be of types [bool, int, long, double] and would be converted to bool;
+//   - `numericAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
@@ -155,14 +156,14 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 
 // tagOptions contains options for the structure field tag.
 type tagOptions struct {
-	optional      bool
-	nonDefault    bool
-	unimplemented bool
-	ignored       bool
-	numericBool   bool
-	strict        bool
-	positive      bool
-	numericAsBool bool
+	optional            bool
+	nonDefault          bool
+	unimplemented       bool
+	ignored             bool
+	positiveNumber      bool
+	wholePositiveNumber bool
+	numericBool         bool
+	numericAsBool       bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -215,10 +216,10 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 			to.ignored = true
 		case "numericBool":
 			to.numericBool = true
-		case "strict":
-			to.strict = true
-		case "positive":
-			to.positive = true
+		case "positiveNumber":
+			to.positiveNumber = true
+		case "wholePositiveNumber":
+			to.wholePositiveNumber = true
 		case "numericAsBool":
 			to.numericAsBool = true
 		default:
@@ -245,7 +246,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
-		if o.strict {
+		if o.positiveNumber {
 			settable, err = getWholeParamStrict(command, key, val)
 			if err != nil {
 				return err
@@ -254,7 +255,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 			break
 		}
 
-		if o.positive {
+		if o.wholePositiveNumber {
 			settable, err = getOptionalPositiveNumber(key, val)
 			if err != nil {
 				return err
