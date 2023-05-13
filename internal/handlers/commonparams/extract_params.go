@@ -43,6 +43,7 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 //   - `numericBool` - field is of type `bool` but can be parsed from numeric types;
 //   - `strict` - fields of numeric types are parsed strictly;
 //   - `positive` - fields of numeric types must be positive;
+//   - `numericAsBool` - fields of numeric types that must have as values only `0` or `1`.
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
@@ -142,6 +143,7 @@ type tagOptions struct {
 	numericBool   bool
 	strict        bool
 	positive      bool
+	numericAsBool bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -181,6 +183,8 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 				to.strict = true
 			case "positive":
 				to.positive = true
+			case "numericAsBool":
+				to.numericAsBool = true
 			default:
 				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
 			}
@@ -223,20 +227,19 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 			break
 		}
 
-		// limit value for the `delete` command has to be 0 or 1
-		if key == "limit" && command == "delete" {
-			var limit int64
-			limit, err = GetWholeNumberParam(val)
-			if err != nil || limit < 0 || limit > 1 {
+		if o.numericAsBool {
+			var numeric int64
+			numeric, err = GetWholeNumberParam(val)
+			if err != nil || numeric < 0 || numeric > 1 {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFailedToParse,
 					fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", val),
-					"limit",
+					command,
 				)
 
 			}
 
-			settable = limit
+			settable = numeric
 
 			break
 		}

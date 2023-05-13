@@ -41,7 +41,7 @@ type DeleteParams struct {
 // Delete represents single delete operation parameters.
 type Delete struct {
 	Filter  *types.Document `ferretdb:"q"`
-	Limit   int64           `ferretdb:"limit"`
+	Limit   int64           `ferretdb:"limit,numericAsBool"`
 	Limited bool            `ferretdb:"-"`
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	Comment string `ferretdb:"comment,opt"`

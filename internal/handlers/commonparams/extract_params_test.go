@@ -150,7 +150,7 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
-		"ParseDocumentIntoAnyTag": {
+		"AnyTagWithDocumentValue": {
 			command: "update",
 			doc: must.NotFail(types.NewDocument(
 				"u", must.NotFail(types.NewDocument("a", "b")),
@@ -160,7 +160,7 @@ func TestParse(t *testing.T) {
 				Update: must.NotFail(types.NewDocument("a", "b")),
 			},
 		},
-		"ParseArrayIntoAnyTag": {
+		"AnyTagWithArrayValue": {
 			command: "update",
 			doc: must.NotFail(types.NewDocument(
 				"u", must.NotFail(types.NewArray("a", "b")),
@@ -170,7 +170,17 @@ func TestParse(t *testing.T) {
 				Update: must.NotFail(types.NewArray("a", "b")),
 			},
 		},
-		"ParseInt32IntoBoolTag": {
+		"AnyTagWithStringValue": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"u", "a",
+			)),
+			params: new(updateAny),
+			wantParams: &updateAny{
+				Update: "a",
+			},
+		},
+		"BoolTagWithInt32Value": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int32(1),
@@ -180,7 +190,7 @@ func TestParse(t *testing.T) {
 				Find: true,
 			},
 		},
-		"ParseInt64IntoBoolTag": {
+		"BoolTagWithInt64Value": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int64(1),
@@ -190,7 +200,7 @@ func TestParse(t *testing.T) {
 				Find: true,
 			},
 		},
-		"ParseFloat64IntoBoolTag": {
+		"BoolTagWithFloatValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", 3.14,
@@ -200,7 +210,7 @@ func TestParse(t *testing.T) {
 				Find: true,
 			},
 		},
-		"ParseStringIntoBoolTag": {
+		"BoolTagWithStringValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", "true",
@@ -208,7 +218,7 @@ func TestParse(t *testing.T) {
 			params:  new(numericBool),
 			wantErr: "field 'f' is the wrong type 'string', expected types '\\[bool, long, int, decimal, double\\]'",
 		},
-		"ParseStrictTag": {
+		"StrictTag": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", 12.23,
@@ -218,7 +228,7 @@ func TestParse(t *testing.T) {
 				Find: 12,
 			},
 		},
-		"ParseStrictTagWithWrongType": {
+		"StrictTagWithWrongType": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", "12.23",
@@ -226,7 +236,7 @@ func TestParse(t *testing.T) {
 			params:  new(strict),
 			wantErr: "field 'find.f' is the wrong type 'string', expected types '\\[long, int, decimal, double\\]'",
 		},
-		"ParsePositiveTag": {
+		"PositiveTag": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int32(12),
@@ -236,7 +246,7 @@ func TestParse(t *testing.T) {
 				Find: 12,
 			},
 		},
-		"ParsePositiveTagWithNegativeFloatValue": {
+		"PositiveTagWithNegativeFloatValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", -12.23,
@@ -244,7 +254,7 @@ func TestParse(t *testing.T) {
 			params:  new(positive),
 			wantErr: "f has non-integral value",
 		},
-		"ParsePositiveTagWithNegativeIntValue": {
+		"PositiveTagWithNegativeIntValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int32(-1),
