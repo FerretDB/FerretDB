@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// FindParams contains `find` command parameters supported by at least one handler.
+// FindParams represents parameters for the find command.
 //
 //nolint:vet // for readability
 type FindParams struct {
@@ -37,22 +37,22 @@ type FindParams struct {
 	Comment     string          `ferretdb:"comment,opt"`
 	MaxTimeMS   int64           `ferretdb:"maxTimeMS,opt"`
 
-	Collation any `ferretdb:"collation,unimplemented"`
-	Let       any `ferretdb:"let,unimplemented"`
+	Collation *types.Document `ferretdb:"collation,unimplemented"`
+	Let       *types.Document `ferretdb:"let,unimplemented"`
 
-	AllowDiskUse any `ferretdb:"allowDiskUse,ignored"`
-	ReadConcern  any `ferretdb:"readConcern,ignored"`
-	Max          any `ferretdb:"max,ignored"`
-	Min          any `ferretdb:"min,ignored"`
-	Hint         any `ferretdb:"hint,ignored"`
+	AllowDiskUse bool            `ferretdb:"allowDiskUse,ignored"`
+	ReadConcern  *types.Document `ferretdb:"readConcern,ignored"`
+	Max          *types.Document `ferretdb:"max,ignored"`
+	Min          *types.Document `ferretdb:"min,ignored"`
+	Hint         any             `ferretdb:"hint,ignored"`
 
-	ReturnKey           any `ferretdb:"returnKey,non-default"`
-	ShowRecordId        any `ferretdb:"showRecordId,non-default"`
-	Tailable            any `ferretdb:"tailable,non-default"`
-	OplogReplay         any `ferretdb:"oplogReplay,non-default"`
-	NoCursorTimeout     any `ferretdb:"noCursorTimeout,non-default"`
-	AwaitData           any `ferretdb:"awaitData,non-default"`
-	AllowPartialResults any `ferretdb:"allowPartialResults,non-default"`
+	ReturnKey           bool `ferretdb:"returnKey,non-default"`
+	ShowRecordId        bool `ferretdb:"showRecordId,non-default"`
+	Tailable            bool `ferretdb:"tailable,non-default"`
+	OplogReplay         bool `ferretdb:"oplogReplay,non-default"`
+	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,non-default"`
+	AwaitData           bool `ferretdb:"awaitData,non-default"`
+	AllowPartialResults bool `ferretdb:"allowPartialResults,non-default"`
 }
 
 // GetFindParams returns `find` command parameters.

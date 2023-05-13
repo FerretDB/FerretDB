@@ -43,6 +43,8 @@ var ErrFieldNotPopulated = errors.New("field is not populated")
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
+// If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
+// the field must be of type `any`.
 func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -256,7 +258,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
-					`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+					`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
 				),
 				command,

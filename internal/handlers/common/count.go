@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// CountParams represents the parameters for the count command.
+// CountParams represents parameters for the count command.
 type CountParams struct {
 	Filter     *types.Document `ferretdb:"query"`
 	DB         string          `ferretdb:"$db"`
@@ -30,11 +30,11 @@ type CountParams struct {
 	Skip  int64 `ferretdb:"skip,opt"`
 	Limit int64 `ferretdb:"limit,opt"`
 
-	Collation any `ferretdb:"collation,unimplemented"`
+	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
-	Hint        any `ferretdb:"hint,ignored"`
-	ReadConcern any `ferretdb:"readConcern,ignored"`
-	Comment     any `ferretdb:"comment,ignored"`
+	Hint        any             `ferretdb:"hint,ignored"`
+	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
+	Comment     any             `ferretdb:"comment,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.

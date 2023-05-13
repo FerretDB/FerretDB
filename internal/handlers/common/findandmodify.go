@@ -41,8 +41,7 @@ const (
 	UpsertOperationUpdate
 )
 
-// FindAndModifyParams represent all findAndModify requests' fields.
-// It's filled by calling prepareFindAndModifyParams.
+// FindAndModifyParams represent parameters for the findAndModify command.
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
 	Collection        string          `ferretdb:"collection"`

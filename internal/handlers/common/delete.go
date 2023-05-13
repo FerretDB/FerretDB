@@ -24,13 +24,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// DeleteParams represents parameters for delete operation.
+// DeleteParams represents parameters for the delete command.
 type DeleteParams struct {
-	DB         string   `ferretdb:"$db"`
-	Collection string   `ferretdb:"collection"`
-	Comment    string   `ferretdb:"comment,opt"`
-	Deletes    []Delete `ferretdb:"deletes,opt"`
-	Ordered    bool     `ferretdb:"ordered,opt"`
+	DB         string `ferretdb:"$db"`
+	Collection string `ferretdb:"collection"`
+
+	Comment string   `ferretdb:"comment,opt"`
+	Deletes []Delete `ferretdb:"deletes,opt"`
+	Ordered bool     `ferretdb:"ordered,opt"`
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
@@ -42,7 +43,7 @@ type Delete struct {
 	Filter  *types.Document `ferretdb:"q"`
 	Limit   int64           `ferretdb:"limit"`
 	Limited bool            `ferretdb:"-"`
-	// TODO: Comment should be extracted from query
+	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	Comment string `ferretdb:"comment,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`

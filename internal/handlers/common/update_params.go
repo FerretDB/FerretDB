@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// UpdatesParams represents parameters for update command.
+// UpdatesParams represents parameters for the update command.
 type UpdatesParams struct {
 	DB         string         `ferretdb:"$db"`
 	Collection string         `ferretdb:"collection"`
@@ -38,7 +38,7 @@ type UpdatesParams struct {
 
 // UpdateParams represents a single update operation parameters.
 type UpdateParams struct {
-	// TODO: query could have a comment that we probably should extract.
+	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	Filter *types.Document `ferretdb:"q,opt"`
 	Update *types.Document `ferretdb:"u,opt"`
