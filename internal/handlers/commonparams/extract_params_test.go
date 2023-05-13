@@ -33,10 +33,6 @@ func TestParse(t *testing.T) {
 		AllowDiskUse any             `ferretdb:"allowDiskUse,ignored"`
 	}
 
-	type noTag struct {
-		Find string
-	}
-
 	type unimplementedTag struct {
 		Find string `ferretdb:"find,unimplemented"`
 	}
