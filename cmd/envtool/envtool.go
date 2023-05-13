@@ -348,34 +348,15 @@ func rmdir(paths ...string) error {
 	return errs
 }
 
-// cat will show the content of a file.
-func cat(paths ...string) error {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
+// read will show the content of a file.
+func read(paths ...string) error {
 	var errs error
 
 	for _, path := range paths {
-		if !strings.HasPrefix(path, "/") {
-			path = currentDir + "/" + path
-		}
-		f, err := os.Open(path)
-
+		b, err := os.ReadFile(path)
 		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		r := bufio.NewReader(f)
-
-		for {
-			line, _, err := r.ReadLine()
-			if err != nil {
-				break
-			}
-
-			fmt.Println(string(line))
+			break
+			fmt.Println(string(b))
 		}
 	}
 
@@ -394,9 +375,9 @@ var cli struct {
 		Rmdir struct {
 			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
 		} `cmd:"" help:"Remove directories."`
-		Cat struct {
-			Paths []string `arg:"" name:"path" help:"Paths to cat." type:"path"`
-		} `cmd:"" help:"cat files"`
+		Read struct {
+			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+		} `cmd:"" help:"read files"`
 	} `cmd:""`
 }
 
@@ -428,8 +409,8 @@ func main() {
 		err = mkdir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
 		err = rmdir(cli.Shell.Rmdir.Paths...)
-	case "shell cat <path>":
-		err = cat(cli.Shell.Cat.Paths...)
+	case "shell read <path>":
+		err = read(cli.Shell.Read.Paths...)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
