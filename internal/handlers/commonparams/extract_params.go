@@ -50,6 +50,20 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 // it is extracted from the command name.
 // If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
 // the field must be of type `any`.
+//
+// Errors list:
+//   - `ErrFailedToParse` when provided field is not present in passed structure;
+//   - `ErrFailedToParse` when provided field must be 0 or 1, but it is not;
+//   - `ErrNotImplemented` when support for provided field is not implemented yet;
+//   - `ErrNotImplemented`when support for non-default field value is not implemented yet;
+//   - `ErrFieldNotPopulated` - required field is not populated;
+//   - `ErrValueNegative` - field of numeric type is negative;
+//   - `ErrTypeMismatch` - field is type is not matched with the type of the value;
+//   - `ErrBadValue` when field is not a number;
+//   - `ErrBadValue` when field is not of integer type;
+//   - `ErrBadValue` when field is out of integer range;
+//   - `ErrBadValue` when field has negative value;
+//   - `ErrInvalidNamespace` - collection name has invalid type.
 func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -86,8 +100,12 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			panic(err)
 		}
 
-		if options == nil {
-			return lazyerrors.Errorf("unexpected field '%s' encountered", lookup)
+		if fieldIndex == nil {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("%s: unknown field '%q'", command, key),
+				command,
+			)
 		}
 
 		if options.ignored {
@@ -121,7 +139,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			}
 		}
 
-		err = setStructField(&elem, options, fieldIndex, command, key, val, l)
+		err = setStructField(&elem, options, *fieldIndex, command, key, val, l)
 		if err != nil {
 			return err
 		}
@@ -148,7 +166,7 @@ type tagOptions struct {
 }
 
 // lookupFieldTag looks for the tag and returns its options.
-func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
+func lookupFieldTag(key string, value *reflect.Value) (*int, *tagOptions, error) {
 	var to *tagOptions
 	var i int
 	var found bool
@@ -161,7 +179,7 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 		optionsList := strings.Split(tag, ",")
 
 		if len(optionsList) == 0 {
-			return 0, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
+			return nil, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
 
 		if optionsList[0] != key {
@@ -176,10 +194,10 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 	}
 
 	if !found {
-		return 0, nil, nil
+		return nil, nil, nil
 	}
 
-	return i, to, nil
+	return &i, to, nil
 }
 
 func tagOptionsFromList(optionsList []string) *tagOptions {
