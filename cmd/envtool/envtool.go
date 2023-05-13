@@ -354,7 +354,7 @@ func cat(paths ...string) error {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(currentDir)
+
 	var errs error
 
 	for _, path := range paths {
@@ -362,6 +362,7 @@ func cat(paths ...string) error {
 			path = currentDir + "/" + path
 		}
 		f, err := os.Open(path)
+
 		if err != nil {
 			panic(err)
 		}
