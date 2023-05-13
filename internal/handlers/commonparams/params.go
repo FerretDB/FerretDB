@@ -74,11 +74,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// GetWholeParamStrict validates the given value for find and count commands.
+// getWholeParamStrict validates the given value for find and count commands.
 //
 // If the value is valid, it returns its int64 representation,
 // otherwise it returns a command error with the given command being mentioned.
-func GetWholeParamStrict(command string, param string, value any) (int64, error) {
+func getWholeParamStrict(command string, param string, value any) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 
 	if err == nil {
@@ -131,8 +131,8 @@ func GetWholeParamStrict(command string, param string, value any) (int64, error)
 	}
 }
 
-// GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
-func GetOptionalPositiveNumber(key string, value any) (int64, error) {
+// getOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
+func getOptionalPositiveNumber(key string, value any) (int64, error) {
 	wholeNumberParam, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {
