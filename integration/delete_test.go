@@ -65,6 +65,7 @@ func TestDeleteLimitErrors(t *testing.T) {
 		deletes     bson.A
 		expectedErr *mongo.CommandError
 		skip        string
+		altMessage  string
 	}{
 		"NotSet": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
@@ -86,16 +87,18 @@ func TestDeleteLimitErrors(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
-				Message: "The 'delete.deletes.limit' field must be 0 or 1. Got 42.13",
+				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
 			},
+			altMessage: "The 'delete.deletes.limit' field must be 0 or 1. Got 42.13",
 		},
 		"InvalidInt": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
 			expectedErr: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
-				Message: "The 'delete.deletes.limit' field must be 0 or 1. Got 100",
+				Message: "The limit field in delete objects must be 0 or 1. Got 100",
 			},
+			altMessage: "The 'delete.deletes.limit' field must be 0 or 1. Got 100",
 		},
 	} {
 		name, tc := name, tc
@@ -113,10 +116,10 @@ func TestDeleteLimitErrors(t *testing.T) {
 			})
 
 			if tc.expectedErr != nil {
-				AssertEqualError(t, *tc.expectedErr, res.Err())
+				AssertEqualAltCommandError(t, *tc.expectedErr, tc.altMessage, res.Err())
 				return
 			}
-			assert.Equal(t, nil, res.Err())
+			require.NoError(t, res.Err())
 		})
 	}
 }
