@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	_ "embed"
@@ -350,17 +349,16 @@ func rmdir(paths ...string) error {
 
 // read will show the content of a file.
 func read(paths ...string) error {
-	var errs error
-
 	for _, path := range paths {
 		b, err := os.ReadFile(path)
 		if err != nil {
-			break
-			fmt.Println(string(b))
+			return err
 		}
+
+		fmt.Println(string(b))
 	}
 
-	return errs
+	return nil
 }
 
 // cli struct represents all command-line commands, fields and flags.
