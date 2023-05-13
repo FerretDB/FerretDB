@@ -319,7 +319,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 				)
 			}
 
-			if command == "findAndModify" && key == "update" {
+			if fv.Kind() == reflect.Interface {
 				fv.Set(reflect.ValueOf(v.Interface()))
 				return nil
 			}
