@@ -227,23 +227,6 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 			break
 		}
 
-		if o.numericAsBool {
-			var numeric int64
-			numeric, err = GetWholeNumberParam(val)
-			if err != nil || numeric < 0 || numeric > 1 {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", val),
-					command,
-				)
-
-			}
-
-			settable = numeric
-
-			break
-		}
-
 		if o.positive {
 			settable, err = GetOptionalPositiveNumber(key, val)
 			if err != nil {
@@ -265,6 +248,23 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 			if err != nil {
 				return err
 			}
+
+			break
+		}
+
+		if o.numericAsBool {
+			var numeric int64
+			numeric, err = GetWholeNumberParam(val)
+			if err != nil || numeric < 0 || numeric > 1 {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf("The '%s.%s' field must be 0 or 1. Got %v", command, key, types.FormatAnyValue(val)),
+					command,
+				)
+
+			}
+
+			settable = numeric == 1
 
 			break
 		}
@@ -312,7 +312,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 			params := reflect.New(fv.Type().Elem())
 
-			err = ExtractParams(doc, command, params.Interface(), l)
+			err = ExtractParams(doc, command+"."+key, params.Interface(), l)
 			if err != nil {
 				return err
 			}

@@ -40,9 +40,8 @@ type DeleteParams struct {
 
 // Delete represents single delete operation parameters.
 type Delete struct {
-	Filter  *types.Document `ferretdb:"q"`
-	Limit   int64           `ferretdb:"limit,numericAsBool"`
-	Limited bool            `ferretdb:"-"`
+	Filter *types.Document `ferretdb:"q"`
+	Limit  bool            `ferretdb:"limit,numericAsBool"`
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	Comment string `ferretdb:"comment,opt"`
 
@@ -67,10 +66,6 @@ func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, er
 	}
 	if err != nil {
 		return nil, err
-	}
-
-	for i := 0; i < len(params.Deletes); i++ {
-		params.Deletes[i].Limited = params.Deletes[i].Limit == 1
 	}
 
 	return &params, nil

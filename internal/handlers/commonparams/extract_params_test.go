@@ -69,6 +69,10 @@ func TestParse(t *testing.T) {
 		Find int64 `ferretdb:"f,positive"`
 	}
 
+	type numericAsBool struct {
+		Find bool `ferretdb:"f,numericAsBool"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -261,6 +265,70 @@ func TestParse(t *testing.T) {
 			)),
 			params:  new(positive),
 			wantErr: "-1 value for f is out of range",
+		},
+		"NumericAsBoolTagWithInt32Value1": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(1),
+			)),
+			params: new(numericAsBool),
+			wantParams: &numericAsBool{
+				Find: true,
+			},
+		},
+		"NumericAsBoolTagWithInt32Value0": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(0),
+			)),
+			params: new(numericAsBool),
+			wantParams: &numericAsBool{
+				Find: false,
+			},
+		},
+		"NumericAsBoolTagWithInt32ValueNegative": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(-1),
+			)),
+			params:  new(numericAsBool),
+			wantErr: "The 'find.f' field must be 0 or 1. Got -1",
+		},
+		"NumericAsBoolTagWithInt64Value": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int64(1),
+			)),
+			params: new(numericAsBool),
+			wantParams: &numericAsBool{
+				Find: true,
+			},
+		},
+		"NumericAsBoolTagWithFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 1.0,
+			)),
+			params: new(numericAsBool),
+			wantParams: &numericAsBool{
+				Find: true,
+			},
+		},
+		"NumericAsBoolTagWithIncorrectFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 3.14,
+			)),
+			params:  new(numericAsBool),
+			wantErr: "The 'find.f' field must be 0 or 1. Got 3.14",
+		},
+		"NumericAsBoolTagWithStringValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", "true",
+			)),
+			params:  new(numericAsBool),
+			wantErr: `The 'find.f' field must be 0 or 1. Got "true"`,
 		},
 	}
 	for name, tt := range tests {
