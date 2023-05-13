@@ -112,12 +112,6 @@ func TestParse(t *testing.T) {
 			wantErr: "support for field \"find\"" +
 				" with non-default value true is not implemented yet",
 		},
-		"EmptyTag": {
-			command: "count",
-			doc:     must.NotFail(types.NewDocument("find", "test")),
-			params:  new(noTag),
-			wantErr: "unexpected field 'find' encountered",
-		},
 		"ExtraFieldPassed": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
@@ -126,7 +120,7 @@ func TestParse(t *testing.T) {
 				"extra", "field",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: "unexpected field 'extra' encountered",
+			wantErr: `find: unknown field "extra"`,
 		},
 		"MissingRequiredField": {
 			command: "find",

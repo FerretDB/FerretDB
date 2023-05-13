@@ -103,7 +103,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		if fieldIndex == nil {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				fmt.Sprintf("%s: unknown field '%q'", command, key),
+				fmt.Sprintf("%s: unknown field %q", command, key),
 				command,
 			)
 		}
@@ -176,11 +176,11 @@ func lookupFieldTag(key string, value *reflect.Value) (*int, *tagOptions, error)
 
 		tag := field.Tag.Get("ferretdb")
 
-		optionsList := strings.Split(tag, ",")
-
-		if len(optionsList) == 0 {
+		if tag == "" {
 			return nil, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
+
+		optionsList := strings.Split(tag, ",")
 
 		if optionsList[0] != key {
 			continue
