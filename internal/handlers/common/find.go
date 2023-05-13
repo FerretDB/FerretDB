@@ -33,9 +33,9 @@ type FindParams struct {
 	Filter      *types.Document `ferretdb:"filter,opt"`
 	Sort        *types.Document `ferretdb:"sort,opt"`
 	Projection  *types.Document `ferretdb:"projection,opt"`
-	Skip        int64           `ferretdb:"skip,opt,strict"`
-	Limit       int64           `ferretdb:"limit,opt,strict"`
-	BatchSize   int64           `ferretdb:"batchSize,opt,strict"`
+	Skip        int64           `ferretdb:"skip,opt,positiveNumber"`
+	Limit       int64           `ferretdb:"limit,opt,positiveNumber"`
+	BatchSize   int64           `ferretdb:"batchSize,opt,positiveNumber"`
 	SingleBatch bool            `ferretdb:"singleBatch,opt"`
 	Comment     string          `ferretdb:"comment,opt"`
 	MaxTimeMS   int64           `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
