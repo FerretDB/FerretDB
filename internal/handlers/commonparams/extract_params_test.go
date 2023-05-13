@@ -61,6 +61,14 @@ func TestParse(t *testing.T) {
 		Find bool `ferretdb:"f,numericBool"`
 	}
 
+	type strict struct {
+		Find int64 `ferretdb:"f,strict"`
+	}
+
+	type positive struct {
+		Find int64 `ferretdb:"f,positive"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -191,6 +199,58 @@ func TestParse(t *testing.T) {
 			wantParams: &numericBool{
 				Find: true,
 			},
+		},
+		"ParseStringIntoBoolTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", "true",
+			)),
+			params:  new(numericBool),
+			wantErr: "field 'f' is the wrong type 'string', expected types '\\[bool, long, int, decimal, double\\]'",
+		},
+		"ParseStrictTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 12.23,
+			)),
+			params: new(strict),
+			wantParams: &strict{
+				Find: 12,
+			},
+		},
+		"ParseStrictTagWithWrongType": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", "12.23",
+			)),
+			params:  new(strict),
+			wantErr: "field 'find.f' is the wrong type 'string', expected types '\\[long, int, decimal, double\\]'",
+		},
+		"ParsePositiveTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(12),
+			)),
+			params: new(positive),
+			wantParams: &positive{
+				Find: 12,
+			},
+		},
+		"ParsePositiveTagWithNegativeFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", -12.23,
+			)),
+			params:  new(positive),
+			wantErr: "f has non-integral value",
+		},
+		"ParsePositiveTagWithNegativeIntValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(-1),
+			)),
+			params:  new(positive),
+			wantErr: "-1 value for f is out of range",
 		},
 	}
 	for name, tt := range tests {

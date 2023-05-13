@@ -41,7 +41,8 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 //   - `unimplemented` - field is not implemented yet;
 //   - `ignored` - field is ignored;
 //   - `numericBool` - field is of type `bool` but can be parsed from numeric types;
-//   - `strict` - fields of numeric types are parsed strictly.
+//   - `strict` - fields of numeric types are parsed strictly;
+//   - `positive` - fields of numeric types must be positive;
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
@@ -140,6 +141,7 @@ type tagOptions struct {
 	ignored       bool
 	numericBool   bool
 	strict        bool
+	positive      bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -177,6 +179,8 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 				to.numericBool = true
 			case "strict":
 				to.strict = true
+			case "positive":
+				to.positive = true
 			default:
 				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
 			}
@@ -237,7 +241,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 			break
 		}
 
-		if key == "maxTimeMS" {
+		if o.positive {
 			settable, err = GetOptionalPositiveNumber(key, val)
 			if err != nil {
 				return err
