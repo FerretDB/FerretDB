@@ -355,7 +355,7 @@ func read(paths ...string) error {
 			return err
 		}
 
-		fmt.Println(string(b))
+		fmt.Print(string(b))
 	}
 
 	return nil
