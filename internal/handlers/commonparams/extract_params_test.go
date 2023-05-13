@@ -53,6 +53,14 @@ func TestParse(t *testing.T) {
 		Update []update `ferretdb:"updates"`
 	}
 
+	type updateAny struct {
+		Update any `ferretdb:"u"`
+	}
+
+	type numericBool struct {
+		Find bool `ferretdb:"f,numericBool"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -114,7 +122,7 @@ func TestParse(t *testing.T) {
 				"$db", "test",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: "required field \"find\" is not populated",
+			wantErr: "required field is not populated",
 		},
 		"ArrayTag": {
 			command: "update",
@@ -132,6 +140,56 @@ func TestParse(t *testing.T) {
 						Filter: must.NotFail(types.NewDocument("a", "b")),
 					},
 				},
+			},
+		},
+		"ParseDocumentIntoAnyTag": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"u", must.NotFail(types.NewDocument("a", "b")),
+			)),
+			params: new(updateAny),
+			wantParams: &updateAny{
+				Update: must.NotFail(types.NewDocument("a", "b")),
+			},
+		},
+		"ParseArrayIntoAnyTag": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"u", must.NotFail(types.NewArray("a", "b")),
+			)),
+			params: new(updateAny),
+			wantParams: &updateAny{
+				Update: must.NotFail(types.NewArray("a", "b")),
+			},
+		},
+		"ParseInt32IntoBoolTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(1),
+			)),
+			params: new(numericBool),
+			wantParams: &numericBool{
+				Find: true,
+			},
+		},
+		"ParseInt64IntoBoolTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int64(1),
+			)),
+			params: new(numericBool),
+			wantParams: &numericBool{
+				Find: true,
+			},
+		},
+		"ParseFloat64IntoBoolTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 3.14,
+			)),
+			params: new(numericBool),
+			wantParams: &numericBool{
+				Find: true,
 			},
 		},
 	}

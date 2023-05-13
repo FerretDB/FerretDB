@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-var ErrFieldNotPopulated = errors.New("field is not populated")
+var ErrFieldNotPopulated = errors.New("required field is not populated")
 
 // ExtractParams fill passed value structure with parameters from the document.
 // If the passed value is not a pointer to the structure it panics.
@@ -39,7 +39,8 @@ var ErrFieldNotPopulated = errors.New("field is not populated")
 //   - `opt` - field is optional;
 //   - `non-default` - field is unimplemented for non-default values;
 //   - `unimplemented` - field is not implemented yet;
-//   - `ignored` - field is ignored.
+//   - `ignored` - field is ignored;
+//   - `numericBool` - field is of type `bool` but can be parsed from numeric types.
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
@@ -116,7 +117,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			}
 		}
 
-		err = setStructField(&elem, fieldIndex, command, key, val, l)
+		err = setStructField(&elem, options, fieldIndex, command, key, val, l)
 		if err != nil {
 			return err
 		}
@@ -136,6 +137,7 @@ type tagOptions struct {
 	nonDefault    bool
 	unimplemented bool
 	ignored       bool
+	numericBool   bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -169,6 +171,8 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 				to.unimplemented = true
 			case "ignored":
 				to.ignored = true
+			case "numericBool":
+				to.numericBool = true
 			default:
 				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
 			}
@@ -187,7 +191,7 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 }
 
 // setStructField sets the value of the document field to the structure field.
-func setStructField(elem *reflect.Value, i int, command, key string, val any, l *zap.Logger) error {
+func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key string, val any, l *zap.Logger) error {
 	var err error
 
 	field := elem.Type().Field(i)
@@ -241,8 +245,10 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 		if err != nil {
 			return err
 		}
-	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer, reflect.Interface:
-		if command == "findAndModify" && key == "new" {
+	case reflect.String, reflect.Struct, reflect.Pointer, reflect.Interface:
+		settable = val
+	case reflect.Bool:
+		if o.numericBool {
 			settable, err = GetBoolOptionalParam(val, key)
 			if err != nil {
 				return err
