@@ -35,13 +35,11 @@ type InsertParams struct {
 
 // GetInsertParams returns the parameters for an insert command.
 func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, error) {
-	var err error
-
-	var params = InsertParams{
+	params := InsertParams{
 		Ordered: true,
 	}
 
-	err = commonparams.ExtractParams(document, "insert", &params, l)
+	err := commonparams.ExtractParams(document, "insert", &params, l)
 	if err != nil {
 		return nil, err
 	}
