@@ -15,8 +15,11 @@
 package common
 
 import (
+	"errors"
+
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -62,6 +65,14 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	}
 
 	err := commonparams.ExtractParams(doc, "find", &params, l)
+
+	var ce *commonerrors.CommandError
+	if errors.As(err, &ce) {
+		if ce.Code() == commonerrors.ErrInvalidNamespace {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, ce.Unwrap().Error(), "find")
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}

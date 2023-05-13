@@ -107,8 +107,8 @@ func TestQueryBadFindType(t *testing.T) {
 			require.Error(t, err)
 
 			expected := mongo.CommandError{
-				Code:    73,
-				Name:    "InvalidNamespace",
+				Code:    2,
+				Name:    "BadValue",
 				Message: "collection name has invalid type " + tc.err,
 			}
 			AssertEqualError(t, expected, err)
