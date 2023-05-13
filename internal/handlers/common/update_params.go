@@ -61,7 +61,7 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, e
 		return nil, err
 	}
 
-	if len(params.Updates) != 0 {
+	if len(params.Updates) > 0 {
 		for _, update := range params.Updates {
 			if err := ValidateUpdateOperators(document.Command(), update.Update); err != nil {
 				return nil, err
