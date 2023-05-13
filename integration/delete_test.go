@@ -86,7 +86,7 @@ func TestDeleteLimitErrors(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
-				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
+				Message: "The 'delete.deletes.limit' field must be 0 or 1. Got 42.13",
 			},
 		},
 		"InvalidInt": {
@@ -94,7 +94,7 @@ func TestDeleteLimitErrors(t *testing.T) {
 			expectedErr: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
-				Message: "The limit field in delete objects must be 0 or 1. Got 100",
+				Message: "The 'delete.deletes.limit' field must be 0 or 1. Got 100",
 			},
 		},
 	} {

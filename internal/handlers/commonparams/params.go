@@ -135,14 +135,14 @@ func GetWholeParamStrict(command string, param string, value any) (int64, error)
 func GetOptionalPositiveNumber(key string, value any) (int64, error) {
 	wholeNumberParam, err := GetWholeNumberParam(value)
 	if err != nil {
-		switch err {
-		case ErrUnexpectedType:
+		switch {
+		case errors.Is(err, ErrUnexpectedType):
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s must be a number", key),
 				key,
 			)
-		case ErrNotWholeNumber:
+		case errors.Is(err, ErrNotWholeNumber):
 			if _, ok := value.(float64); ok {
 				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,

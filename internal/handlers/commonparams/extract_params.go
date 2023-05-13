@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// ErrFieldNotPopulated is returned when a required field is not populated.
 var ErrFieldNotPopulated = errors.New("required field is not populated")
 
 // ExtractParams fill passed value structure with parameters from the document.
@@ -148,7 +149,7 @@ type tagOptions struct {
 
 // lookupFieldTag looks for the tag and returns its options.
 func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
-	var to tagOptions
+	var to *tagOptions
 	var i int
 	var found bool
 
@@ -167,28 +168,7 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 			continue
 		}
 
-		for _, tt := range optionsList[1:] {
-			switch tt {
-			case "opt":
-				to.optional = true
-			case "non-default":
-				to.nonDefault = true
-			case "unimplemented":
-				to.unimplemented = true
-			case "ignored":
-				to.ignored = true
-			case "numericBool":
-				to.numericBool = true
-			case "strict":
-				to.strict = true
-			case "positive":
-				to.positive = true
-			case "numericAsBool":
-				to.numericAsBool = true
-			default:
-				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
-			}
-		}
+		to = tagOptionsFromList(optionsList[1:])
 
 		found = true
 
@@ -199,7 +179,36 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 		return 0, nil, nil
 	}
 
-	return i, &to, nil
+	return i, to, nil
+}
+
+func tagOptionsFromList(optionsList []string) *tagOptions {
+	var to tagOptions
+
+	for _, tt := range optionsList {
+		switch tt {
+		case "opt":
+			to.optional = true
+		case "non-default":
+			to.nonDefault = true
+		case "unimplemented":
+			to.unimplemented = true
+		case "ignored":
+			to.ignored = true
+		case "numericBool":
+			to.numericBool = true
+		case "strict":
+			to.strict = true
+		case "positive":
+			to.positive = true
+		case "numericAsBool":
+			to.numericAsBool = true
+		default:
+			panic(fmt.Sprintf("unknown tag option %s", tt))
+		}
+	}
+
+	return &to
 }
 
 // setStructField sets the value of the document field to the structure field.
@@ -254,6 +263,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 		if o.numericAsBool {
 			var numeric int64
+
 			numeric, err = GetWholeNumberParam(val)
 			if err != nil || numeric < 0 || numeric > 1 {
 				return commonerrors.NewCommandErrorMsgWithArgument(
@@ -261,7 +271,6 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 					fmt.Sprintf("The '%s.%s' field must be 0 or 1. Got %v", command, key, types.FormatAnyValue(val)),
 					command,
 				)
-
 			}
 
 			settable = numeric == 1
@@ -371,7 +380,8 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			return lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
 
-		if len(optionsList) != 1 {
+		to := tagOptionsFromList(optionsList[1:])
+		if to.ignored || to.optional || to.unimplemented || to.nonDefault {
 			continue
 		}
 
