@@ -30,8 +30,9 @@ type ExplainParams struct {
 	Filter *types.Document `ferretdb:"filter,opt"`
 	Sort   *types.Document `ferretdb:"sort,opt"`
 
-	StagesDocs []any `ferretdb:"-"`
-	Aggregate  bool  `ferretdb:"-"`
+	StagesDocs []any           `ferretdb:"-"`
+	Aggregate  bool            `ferretdb:"-"`
+	Command    *types.Document `ferretdb:"-"`
 
 	Verbosity string `ferretdb:"verbosity,ignored"`
 }

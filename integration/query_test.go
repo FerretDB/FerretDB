@@ -138,7 +138,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
-			altMessage: "BSON field 'find.sort' is the wrong type 'double', expected types 'object'",
+			altMessage: "BSON field 'find.sort' is the wrong type 'double', expected type 'object'",
 		},
 		"BadSortType": {
 			command: bson.D{
@@ -151,7 +151,7 @@ func TestQueryBadSortType(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "Expected field sortto be of type object",
 			},
-			altMessage: "BSON field 'find.sort' is the wrong type 'string', expected types 'object'",
+			altMessage: "BSON field 'find.sort' is the wrong type 'string', expected type 'object'",
 		},
 		"BadSortTypeValue": {
 			command: bson.D{

@@ -285,7 +285,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
-						`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+						`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 						command, key, AliasFromType(val), AliasFromType(fv.Interface()),
 					),
 					command,
@@ -327,7 +327,7 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any, l 
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
-					`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+					`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
 				),
 				command,
