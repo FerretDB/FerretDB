@@ -138,7 +138,7 @@ func extractParam(document *types.Document) (showDetails, allParameters bool, er
 			}
 		}
 
-		if v, _ := document.Get("allParameters"); v != nil {
+		if v, _ := param.Get("allParameters"); v != nil {
 			allParameters, err = commonparams.GetBoolOptionalParam(v, "allParameters")
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
