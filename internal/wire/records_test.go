@@ -100,7 +100,7 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 
 			// unset flagBit (if present)
 			flag := binary.LittleEndian.Uint32(bodyBytes[:kFlagBitSize])
-			flag &^= 0x01 // flips the LSB of the flag
+			flag &^= 0x01 // flips the LSB of the flagbit
 
 			binary.LittleEndian.PutUint32(bodyBytes[:kFlagBitSize], flag)
 
