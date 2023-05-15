@@ -450,10 +450,8 @@ tasks:
         --output={{.OUTPUT}}
         .
     vars:
-      VERSION:
-        go run ./cmd/envtool shell read build/version/version.txt
-      COMMIT:
-        go run ./cmd/envtool shell read build/version/commit.txt
+      VERSION: go run ./cmd/envtool shell read build/version/version.txt
+      COMMIT: go run ./cmd/envtool shell read build/version/commit.txt
 
   # do not change that target much; see "Building and packaging" in README.md
   build-release:
@@ -527,8 +525,7 @@ tasks:
       - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
         env:
           ARCH: amd64
-          VERSION:
-            go run ./cmd/envtool shell read build/version/version.txt
+          VERSION: go run ./cmd/envtool shell read build/version/version.txt
           POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
 
@@ -545,8 +542,7 @@ tasks:
       - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
         env:
           ARCH: amd64
-          VERSION:
-            go run ./cmd/envtool shell read build/version/version.txt
+          VERSION: go run ./cmd/envtool shell read build/version/version.txt
           POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
 
