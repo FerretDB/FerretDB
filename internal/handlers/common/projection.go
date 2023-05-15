@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -65,13 +66,19 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			if value.Keys()[0] == "$type" {
+			if _, err := value.Get("$type"); err != nil {
+				return nil, false, commonerrors.NewCommandErrorMsg(
+					commonerrors.ErrNotImplemented,
+					fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
+				)
 			}
 
-			return nil, false, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
-			)
+			if value.Len() > 1 {
+				return nil, false, lazyerrors.New("invalid")
+			}
+
+			result = true
+			validated.Set(key, value)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
@@ -217,12 +224,32 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
-				fmt.Sprintf("projection %s is not supported",
-					types.FormatAnyValue(value),
-				),
-			)
+			if td, err := value.Get("$type"); err == nil {
+				td, ok := td.(string)
+				if !ok {
+					return nil, lazyerrors.New("wrong $type type")
+				}
+
+				expr, err := types.NewExpression(td)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				v := expr.Evaluate(docWithoutID)
+				if v == nil {
+					projected.Set(key, "missing")
+				} else {
+					projected.Set(key, sjson.GetTypeOfValue(v))
+				}
+
+			} else {
+				return nil, commonerrors.NewCommandErrorMsg(
+					commonerrors.ErrCommandNotFound,
+					fmt.Sprintf("projection %s is not supported",
+						types.FormatAnyValue(value),
+					),
+				)
+			}
 
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all these types are treated as new fields value

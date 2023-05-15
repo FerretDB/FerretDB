@@ -144,7 +144,7 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 		val, err := doc.Get(path.String())
 		if err != nil {
 			// if the path does not exist, return nil.
-			return Null
+			return nil
 		}
 
 		return val

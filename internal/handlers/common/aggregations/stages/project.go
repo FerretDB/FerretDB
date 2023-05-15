@@ -36,7 +36,7 @@ import (
 //	  }
 type project struct {
 	projection *types.Document
-	inclusion  bool
+	inclusion  bool // why do we store inclusion here, it's not used and it's already set in iterator
 }
 
 // newProject validates projection document and creates a new $project stage.
