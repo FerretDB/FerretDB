@@ -65,8 +65,8 @@ func TestParse(t *testing.T) {
 		Find int64 `ferretdb:"f,wholePositiveNumber"`
 	}
 
-	type numericAsBool struct {
-		Find bool `ferretdb:"f,numericAsBool"`
+	type zeroOrOneAsBool struct {
+		Find bool `ferretdb:"f,zeroOrOneAsBool"`
 	}
 
 	tests := map[string]struct { //nolint:vet // it's a test table
@@ -256,68 +256,68 @@ func TestParse(t *testing.T) {
 			params:  new(positive),
 			wantErr: "-1 value for f is out of range",
 		},
-		"NumericAsBoolTagWithInt32Value1": {
+		"ZeroOrOneAsBoolTagWithInt32Value1": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int32(1),
 			)),
-			params: new(numericAsBool),
-			wantParams: &numericAsBool{
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
 				Find: true,
 			},
 		},
-		"NumericAsBoolTagWithInt32Value0": {
+		"ZeroOrOneAsBoolTagWithInt32Value0": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int32(0),
 			)),
-			params: new(numericAsBool),
-			wantParams: &numericAsBool{
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
 				Find: false,
 			},
 		},
-		"NumericAsBoolTagWithInt32ValueNegative": {
+		"ZeroOrOneAsBoolTagWithInt32ValueNegative": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int32(-1),
 			)),
-			params:  new(numericAsBool),
+			params:  new(zeroOrOneAsBool),
 			wantErr: "The 'find.f' field must be 0 or 1. Got -1",
 		},
-		"NumericAsBoolTagWithInt64Value": {
+		"ZeroOrOneAsBoolTagWithInt64Value": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", int64(1),
 			)),
-			params: new(numericAsBool),
-			wantParams: &numericAsBool{
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
 				Find: true,
 			},
 		},
-		"NumericAsBoolTagWithFloatValue": {
+		"ZeroOrOneAsBoolTagWithFloatValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", 1.0,
 			)),
-			params: new(numericAsBool),
-			wantParams: &numericAsBool{
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
 				Find: true,
 			},
 		},
-		"NumericAsBoolTagWithIncorrectFloatValue": {
+		"ZeroOrOneAsBoolTagWithIncorrectFloatValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", 3.14,
 			)),
-			params:  new(numericAsBool),
+			params:  new(zeroOrOneAsBool),
 			wantErr: "The 'find.f' field must be 0 or 1. Got 3.14",
 		},
-		"NumericAsBoolTagWithStringValue": {
+		"ZeroOrOneAsBoolTagWithStringValue": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
 				"f", "true",
 			)),
-			params:  new(numericAsBool),
+			params:  new(zeroOrOneAsBool),
 			wantErr: `The 'find.f' field must be 0 or 1. Got "true"`,
 		},
 	}

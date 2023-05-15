@@ -15,11 +15,8 @@
 package common
 
 import (
-	"errors"
-
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -41,7 +38,7 @@ type DeleteParams struct {
 // Delete represents single delete operation parameters.
 type Delete struct {
 	Filter  *types.Document `ferretdb:"q"`
-	Limited bool            `ferretdb:"limit,numericAsBool"`
+	Limited bool            `ferretdb:"limit,zeroOrOneAsBool"`
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	Comment string `ferretdb:"comment,opt"`
 
@@ -57,14 +54,6 @@ func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, er
 	}
 
 	err := commonparams.ExtractParams(document, "delete", &params, l)
-	if errors.Is(err, commonparams.ErrFieldNotPopulated) {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
-			"BSON field 'delete.deletes.limit' is missing but a required field",
-			"limit",
-		)
-	}
-
 	if err != nil {
 		return nil, err
 	}

@@ -58,7 +58,7 @@ func TestDeleteSimple(t *testing.T) {
 	}
 }
 
-func TestDeleteLimitErrors(t *testing.T) {
+func TestDeleteErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -67,6 +67,14 @@ func TestDeleteLimitErrors(t *testing.T) {
 		skip        string
 		altMessage  string
 	}{
+		"QueryNotSet": {
+			deletes: bson.A{bson.D{}},
+			expectedErr: &mongo.CommandError{
+				Code:    int32(commonerrors.ErrMissingField),
+				Name:    commonerrors.ErrMissingField.String(),
+				Message: "BSON field 'delete.deletes.q' is missing but a required field",
+			},
+		},
 		"NotSet": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
 			expectedErr: &mongo.CommandError{

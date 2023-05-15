@@ -29,9 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// ErrFieldNotPopulated is returned when a required field is not populated.
-var ErrFieldNotPopulated = errors.New("required field is not populated")
-
 // ExtractParams fill passed value structure with parameters from the document.
 // If the passed value is not a pointer to the structure it panics.
 // Parameters are extracted by the field name or by the `ferretdb` tag.
@@ -45,7 +42,7 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 //     double values would be rounded to long;
 //   - `wholePositiveNumber` - provided value must be of types [int, long] and greater than 0;
 //   - `numericBool` - provided value must be of types [bool, int, long, double] and would be converted to bool;
-//   - `numericAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
+//   - `zeroOrOneAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
@@ -57,7 +54,6 @@ var ErrFieldNotPopulated = errors.New("required field is not populated")
 //   - `ErrFailedToParse` when provided field must be 0 or 1, but it is not;
 //   - `ErrNotImplemented` when support for provided field is not implemented yet;
 //   - `ErrNotImplemented`when support for non-default field value is not implemented yet;
-//   - `ErrFieldNotPopulated` - required field is not populated;
 //   - `ErrValueNegative` - field of numeric type is negative;
 //   - `ErrTypeMismatch` - field is type is not matched with the type of the value;
 //   - `ErrBadValue` when field is not a number;
@@ -163,7 +159,7 @@ type tagOptions struct {
 	positiveNumber      bool
 	wholePositiveNumber bool
 	numericBool         bool
-	numericAsBool       bool
+	zeroOrOneAsBool     bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -220,8 +216,8 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 			to.positiveNumber = true
 		case "wholePositiveNumber":
 			to.wholePositiveNumber = true
-		case "numericAsBool":
-			to.numericAsBool = true
+		case "zeroOrOneAsBool":
+			to.zeroOrOneAsBool = true
 		default:
 			panic(fmt.Sprintf("unknown tag option %s", tt))
 		}
@@ -280,7 +276,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 			break
 		}
 
-		if o.numericAsBool {
+		if o.zeroOrOneAsBool {
 			var numeric int64
 
 			numeric, err = GetWholeNumberParam(val)
@@ -415,7 +411,11 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 		}
 
 		if !slices.Contains(keys, key) {
-			return ErrFieldNotPopulated
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrMissingField,
+				fmt.Sprintf("BSON field '%s.%s' is missing but a required field", command, key),
+				"limit",
+			)
 		}
 	}
 
