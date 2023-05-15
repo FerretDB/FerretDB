@@ -414,7 +414,7 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrMissingField,
 				fmt.Sprintf("BSON field '%s.%s' is missing but a required field", command, key),
-				"limit",
+				command,
 			)
 		}
 	}
