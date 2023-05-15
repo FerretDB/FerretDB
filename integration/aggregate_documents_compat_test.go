@@ -521,11 +521,25 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", "$add"},
 			}}}},
 		},
-		"DotNotationID": {
+		"DotNotationSimple": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
 			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
+		},
+		"DotNotationArrayElem": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0"},
+			}}}},
+		},
+		"DotNotationNested": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.0.foo"},
+			}}}},
+		},
+		"DotNotationNonExistent": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.non-existent-field"},
+			}}}},
 		},
 		"EmptyPath": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
