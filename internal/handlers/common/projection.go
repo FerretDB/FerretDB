@@ -35,6 +35,12 @@ var errProjectionEmpty = errors.New("projection is empty")
 // Exception is for the _id field that could be included or excluded.
 // ValidateProjection returns errProjectionEmpty for empty projection and
 // CommandError for invalid projection fields.
+//
+// Errors:
+//   - `ErrProjectionExIn` when there is exclusion in inclusion projection;
+//   - `ErrProjectionInEx` when there is inclusion in exclusion projection;
+//   - `ErrNotImplemented` when there is unimplemented projection operators and expressions;
+//   - `errProjectionEmpty` when projection document is empty.
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
