@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -49,9 +50,12 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
-	if err != nil {
-		return nil, err
+	var nameOnly bool
+	if v, _ := document.Get("nameOnly"); v != nil {
+		nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var totalSize int64
