@@ -124,7 +124,7 @@ func TestParse(t *testing.T) {
 				"$db", "test",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: "required field is not populated",
+			wantErr: "BSON field 'find.find' is missing but a required field",
 		},
 		"ArrayTag": {
 			command: "update",
