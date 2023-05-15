@@ -204,8 +204,14 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 			return lazyerrors.Errorf("unknown sort order: %d", field.Order)
 		}
 
-		// It's important to sanitize field.Field data here, as it's a user-provided value.
-		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order)
+		// if the key is foo.bar, then need to modify it to foo -> bar
+		var transformedParts []string
+		fs := strings.Split(field.Field, ".")
+		for _, f := range fs {
+			// It's important to sanitize field.Field data here, as it's a user-provided value.
+			transformedParts = append(transformedParts, quoteString(f))
+		}
+		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, strings.Join(transformedParts, " -> "), order)
 	}
 
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
