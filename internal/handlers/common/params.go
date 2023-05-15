@@ -72,8 +72,9 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 	return res, nil
 }
 
-// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null,
-// or protocol error for other invalid type.
+// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null.
+//
+// ErrTypeMismatch returned if the document value is not of the expected type.
 func GetOptionalNullParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, err := GetOptionalParam(doc, key, defaultValue)
 	if err != nil {
@@ -94,6 +95,8 @@ func GetOptionalNullParam[T types.Type](doc *types.Document, key string, default
 //	if !ok {
 //	  return commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, "expected document")
 //	}
+//
+// ErrBadValue returned if the value is not of the expected type.
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
@@ -201,7 +204,12 @@ func GetSkipStageParam(value any) (int64, error) {
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.
 // Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
-func getBinaryMaskParam(mask any) (uint64, error) {
+//
+// Returned errors:
+//   - ErrBadValue if positional argument is not a number;
+//   - ErrBadValue if positional argument is negative;
+//   - ErrBadValue if bitmask argument is not a whole number;
+func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	var bitmask uint64
 
 	switch mask := mask.(type) {
@@ -211,16 +219,18 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, commonerrors.NewCommandErrorMsg(
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,
 					fmt.Sprintf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
+					operator,
 				)
 			}
 
 			if b < 0 {
-				return 0, commonerrors.NewCommandErrorMsg(
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,
 					fmt.Sprintf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
+					operator,
 				)
 			}
 
@@ -230,11 +240,19 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask != math.Trunc(mask) || math.IsInf(mask, 0) {
-			return 0, commonparams.ErrNotWholeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("Expected an integer: %s: %#v", operator, mask),
+				operator,
+			)
 		}
 
 		if mask < 0 {
-			return 0, commonparams.ErrNegativeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, mask),
+				operator,
+			)
 		}
 
 		bitmask = uint64(mask)
@@ -258,7 +276,11 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, commonparams.ErrNegativeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, mask),
+				operator,
+			)
 		}
 
 		bitmask = uint64(mask)
@@ -266,13 +288,21 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, commonparams.ErrNegativeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, mask),
+				operator,
+			)
 		}
 
 		bitmask = uint64(mask)
 
 	default:
-		return 0, commonparams.ErrNotBinaryMask
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, mask),
+			operator,
+		)
 	}
 
 	return bitmask, nil
