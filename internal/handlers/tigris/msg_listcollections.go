@@ -52,7 +52,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	var nameOnly bool
 	if v, _ := document.Get("nameOnly"); v != nil {
-		nameOnly, err = commonparams.GetBoolOptionalParam(v, "nameOnly")
+		nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v)
 		if err != nil {
 			return nil, err
 		}

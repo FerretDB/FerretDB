@@ -49,7 +49,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var nameOnly bool
 	if v, _ := document.Get("nameOnly"); v != nil {
-		nameOnly, err = commonparams.GetBoolOptionalParam(v, "nameOnly")
+		nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v)
 		if err != nil {
 			return nil, err
 		}

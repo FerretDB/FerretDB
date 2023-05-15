@@ -183,7 +183,7 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 // Non-zero double, long, and int values return true.
 // Zero values for those types, as well as nulls and missing fields, return false.
 // Other types return a protocol error.
-func GetBoolOptionalParam(v any, key string) (bool, error) {
+func GetBoolOptionalParam(key string, v any) (bool, error) {
 	switch v := v.(type) {
 	case float64:
 		return v != 0, nil

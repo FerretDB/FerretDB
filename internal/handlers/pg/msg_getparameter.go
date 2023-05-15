@@ -132,14 +132,14 @@ func extractParam(document *types.Document) (showDetails, allParameters bool, er
 
 	if param, ok := getPrm.(*types.Document); ok {
 		if v, _ := param.Get("showDetails"); v != nil {
-			showDetails, err = commonparams.GetBoolOptionalParam(v, "showDetails")
+			showDetails, err = commonparams.GetBoolOptionalParam("showDetails", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
 
 		if v, _ := param.Get("allParameters"); v != nil {
-			allParameters, err = commonparams.GetBoolOptionalParam(v, "allParameters")
+			allParameters, err = commonparams.GetBoolOptionalParam("allParameters", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}

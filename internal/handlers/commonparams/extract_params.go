@@ -268,7 +268,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 		settable = val
 	case reflect.Bool:
 		if o.numericBool {
-			settable, err = GetBoolOptionalParam(val, key)
+			settable, err = GetBoolOptionalParam(key, val)
 			if err != nil {
 				return err
 			}
