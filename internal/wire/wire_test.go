@@ -111,6 +111,11 @@ func testMessages(t *testing.T, testCases []testCase) {
 				var buf bytes.Buffer
 				bufw := bufio.NewWriter(&buf)
 				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)
+				if err != nil {
+					require.Equal(t, tc.err, lastErr(err).Error())
+					return
+				}
+
 				require.NoError(t, err)
 				err = bufw.Flush()
 				require.NoError(t, err)
