@@ -26,6 +26,8 @@ package backends
 type Backend interface {
 	Database(*DatabaseParams) Database
 	ListDatabases(*ListDatabasesParams) (*ListDatabasesResult, error)
+	CreateDatabase(*CreateDatabaseParams) error
+	DropDatabase(*DropDatabaseParams) error
 }
 
 // BackendContract wraps Backend and enforces its contract.
@@ -64,6 +66,22 @@ type ListDatabasesResult struct{}
 func (bc *backendContract) ListDatabases(params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
 	defer checkError(err)
 	res, err = bc.b.ListDatabases(params)
+	return
+}
+
+type CreateDatabaseParams struct{}
+
+func (bc *backendContract) CreateDatabase(params *CreateDatabaseParams) (err error) {
+	defer checkError(err)
+	err = bc.b.CreateDatabase(params)
+	return
+}
+
+type DropDatabaseParams struct{}
+
+func (bc *backendContract) DropDatabase(params *DropDatabaseParams) (err error) {
+	defer checkError(err)
+	err = bc.b.DropDatabase(params)
 	return
 }
 

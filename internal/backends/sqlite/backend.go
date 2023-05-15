@@ -30,7 +30,15 @@ func (b *backend) Database(params *backends.DatabaseParams) backends.Database {
 }
 
 // ListDatabases implements backends.Backend interface.
-func (b *backend) ListDatabases(params *backends.ListDatabasesParams) (res *backends.ListDatabasesResult, err error) {
+func (b *backend) ListDatabases(params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (b *backend) CreateDatabase(params *backends.CreateDatabaseParams) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (b *backend) DropDatabase(params *backends.DropDatabaseParams) error {
 	panic("not implemented") // TODO: Implement
 }
 
