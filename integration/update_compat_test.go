@@ -118,10 +118,10 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
 
-								// updateEmptyMsg is error from mongo go driver.
-								updateEmptyMsg := "update document must have at least one element"
-								if assert.EqualError(t, targetErr, updateEmptyMsg) {
-									require.EqualError(t, compatErr, updateEmptyMsg)
+								if targetErr.Error() == "update document must have at least one element" {
+									// mongo go driver sent error that the update document is empty.
+									require.Equal(t, compatErr, targetErr)
+
 									return
 								}
 
