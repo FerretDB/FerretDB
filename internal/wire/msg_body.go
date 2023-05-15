@@ -121,8 +121,10 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 		))
 	}
 
-	if err := containsValidChecksum(header, b); err != nil {
-		return lazyerrors.Error(err)
+	if header.OpCode == OpCodeMsg {
+		if err := containsValidChecksum(header, b); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	if err := header.writeTo(w); err != nil {

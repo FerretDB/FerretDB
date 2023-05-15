@@ -16,6 +16,7 @@ package wire
 
 import (
 	"bufio"
+	"encoding/binary"
 	"errors"
 	"io/fs"
 	"math/rand"
@@ -98,7 +99,10 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 			}
 
 			// unset flagBit (if present)
-			copy(bodyBytes[0:kFlagBitSize], []byte{0x00, 0x00, 0x00, 0x00})
+			flag := binary.LittleEndian.Uint32(bodyBytes[:kFlagBitSize])
+			flag &^= 0x01 // flips the LSB of the flagbit
+
+			binary.LittleEndian.PutUint32(bodyBytes[:kFlagBitSize], flag)
 
 			resMsgs = append(resMsgs, testCase{
 				headerB: headBytes,
