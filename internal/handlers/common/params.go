@@ -209,6 +209,8 @@ func GetSkipStageParam(value any) (int64, error) {
 //   - ErrBadValue if positional argument is not a number;
 //   - ErrBadValue if positional argument is negative;
 //   - ErrBadValue if bitmask argument is not a whole number;
+//   - ErrFailedToParse if bitmask argument is not a whole number or negative;
+//   - ErrBadValue if the type of the value is not [int, long, double, binary, array];
 func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	var bitmask uint64
 
