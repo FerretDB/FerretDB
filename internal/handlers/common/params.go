@@ -26,8 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetRequiredParam returns doc's value for key
-// or protocol error for missing key or invalid type.
+// GetRequiredParam returns doc's value for key.
+//
+// Returned errors:
+//   - ErrBadValue if the document value is missing;
+//   - ErrBadValue if the document value is not of the expected type.
 func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
@@ -46,8 +49,9 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	return res, nil
 }
 
-// GetOptionalParam returns doc's value for key, default value for missing parameter,
-// or protocol error for invalid type.
+// GetOptionalParam returns doc's value for key or default value for missing parameter.
+//
+// ErrTypeMismatch returned if the document value is not of the expected type.
 func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, _ := doc.Get(key)
 	if v == nil {
@@ -82,7 +86,7 @@ func GetOptionalNullParam[T types.Type](doc *types.Document, key string, default
 	return v, err
 }
 
-// AssertType asserts value's type, returning protocol error for unexpected types.
+// AssertType asserts value's type, returning ErrBadValue for unexpected types.
 //
 // If a custom error is needed, use a normal Go type assertion instead:
 //
@@ -101,7 +105,13 @@ func AssertType[T types.Type](value any) (T, error) {
 }
 
 // GetLimitStageParam returns $limit stage argument from the provided value.
-// It returns the proper error if value doesn't meet requirements.
+//
+// Returned errors:
+//   - ErrStageLimitInvalidArg if the value type is not [int, long, double];
+//   - ErrStageLimitInvalidArg if the value is not a whole number or is NaN;
+//   - ErrStageLimitInvalidArg if the value is not in the range of int64;
+//   - ErrStageLimitInvalidArg if the value is negative;
+//   - ErrStageLimitZero if the value is zero.
 func GetLimitStageParam(value any) (int64, error) {
 	limit, err := commonparams.GetWholeNumberParam(value)
 
@@ -148,7 +158,12 @@ func GetLimitStageParam(value any) (int64, error) {
 }
 
 // GetSkipStageParam returns $skip stage argument from the provided value.
-// It returns the proper error if value doesn't meet requirements.
+//
+// Returned errors:
+//   - ErrStageSkipBadValue if the value type is not [int, long, double];
+//   - ErrStageSkipBadValue if the value is not a whole number or is NaN;
+//   - ErrStageSkipBadValue if the value is not in the range of int64;
+//   - ErrStageSkipBadValue if the value is less than zero.
 func GetSkipStageParam(value any) (int64, error) {
 	limit, err := commonparams.GetWholeNumberParam(value)
 
@@ -196,16 +211,16 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, commonerrors.NewCommandError(
+				return 0, commonerrors.NewCommandErrorMsg(
 					commonerrors.ErrBadValue,
-					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
+					fmt.Sprintf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
 				)
 			}
 
 			if b < 0 {
-				return 0, commonerrors.NewCommandError(
+				return 0, commonerrors.NewCommandErrorMsg(
 					commonerrors.ErrBadValue,
-					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
+					fmt.Sprintf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
 				)
 			}
 
