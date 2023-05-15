@@ -75,8 +75,11 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 			compatCommand := bson.D{{"collStats", compatCollection.Name()}, {"scale", tc.scale}}
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
-			if tc.resultType == emptyResult {
-				// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
 				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
@@ -128,8 +131,11 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatCommand := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
-			if tc.resultType == emptyResult {
-				// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
 				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return

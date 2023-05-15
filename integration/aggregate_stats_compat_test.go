@@ -103,7 +103,8 @@ func TestAggregateCompatCollStats(t *testing.T) {
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						t.Logf("Compat error: %v", compatErr)
-						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return

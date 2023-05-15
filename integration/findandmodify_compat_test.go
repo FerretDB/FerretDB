@@ -693,13 +693,15 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					require.Equal(t, compatErr, targetErr)
 					AssertEqualDocuments(t, compatMod, targetMod)
 
 					// To make sure that the results of modification are equal,
