@@ -286,6 +286,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/153).
 | `killSessions`             |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1552) |
 | `refreshSessions`          |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1553) |
 | `startSession`             |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1554) |
+| `logout`                   |                | ✅️      |                                                          |
+
 
 ## Aggregation pipelines
 
