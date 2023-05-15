@@ -207,6 +207,7 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 		// if the key is foo.bar, then need to modify it to foo -> bar
 		var transformedParts []string
 		fs := strings.Split(field.Field, ".")
+
 		for _, f := range fs {
 			// It's important to sanitize field.Field data here, as it's a user-provided value.
 			transformedParts = append(transformedParts, quoteString(f))
