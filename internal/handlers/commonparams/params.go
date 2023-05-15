@@ -179,7 +179,7 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 	return whole, nil
 }
 
-// GetBoolOptionalParam returns doc's bool value for key.
+// GetBoolOptionalParam returns bool value of v.
 // Non-zero double, long, and int values return true.
 // Zero values for those types, as well as nulls and missing fields, return false.
 // Other types return a protocol error.
