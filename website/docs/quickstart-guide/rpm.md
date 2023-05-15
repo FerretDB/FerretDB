@@ -11,7 +11,7 @@ Download the latest FerretDB `.rpm` package from [our release pages](https://git
 then run the following command in your terminal:
 
 ```sh
-sudo rpm -i ferretdb.deb
+sudo rpm -i ferretdb.rpm
 ```
 
 You can check that FerretDB was installed by running
