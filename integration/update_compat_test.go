@@ -118,6 +118,13 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
 
+								// updateEmptyMsg is error from mongo go driver.
+								updateEmptyMsg := "update document must have at least one element"
+								if assert.EqualError(t, targetErr, updateEmptyMsg) {
+									require.EqualError(t, compatErr, updateEmptyMsg)
+									return
+								}
+
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
 								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
@@ -480,6 +487,15 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      int32(0),
 			resultType: emptyResult,
+		},
+		"TrueEmptyDocument": {
+			update: bson.D{},
+			multi:  true,
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2630",
+		},
+		"FalseEmptyDocument": {
+			update: bson.D{},
+			multi:  false,
 		},
 	}
 

@@ -221,24 +221,17 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	}
 }
 
-// AssertMatchesWriteError first checks if expected and actual errors are WriteExceptions.
-// If both are not, the driver sent an error, check they are the same.
-// If either expected or actual is WriteExceptions, asserts that both errors are equal WriteErrors,
+// AssertMatchesWriteError asserts that both errors are equal WriteErrors,
 // except messages (and ignoring the Raw part).
+// WriteErrors are wrapped in a WriteException, it asserts there is exactly one WriteError.
 func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	t.Helper()
 
-	a, okA := actual.(mongo.WriteException)   //nolint:errorlint // do not inspect error chain
-	e, okE := expected.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
-
-	if !okA && !okE {
-		// driver sent an error which is not WriteException, check errors are the same.
-		assert.Equal(t, expected, actual)
-		return
-	}
-
+	a, okA := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, okA, "actual is %T, not mongo.WriteException", a)
 	require.Lenf(t, a.WriteErrors, 1, "actual is %v, expected one mongo.WriteError", a.WriteErrors)
+
+	e, okE := expected.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
 
 	require.Truef(t, okE, "expected is %T, not mongo.WriteException", e)
 	require.Lenf(t, e.WriteErrors, 1, "expected is %v, expected one mongo.WriteError", e.WriteErrors)
