@@ -72,8 +72,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 
 // getWholeParamStrict validates the given value for find and count commands.
 //
-// If the value is valid, it returns its int64 representation,
-// otherwise it returns a command error with the given command being mentioned.
+// # If the value is valid, it returns its int64 representation
+//
+// Command errors:
+//   - ErrTypeMismatch if the value is not of types [int, long, double, null];
+//   - ErrValueNegative if the value is negative;
 func getWholeParamStrict(command string, param string, value any) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
@@ -126,7 +129,13 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 	return whole, nil
 }
 
-// getOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
+// getOptionalPositiveNumber returns doc's value for key.
+//
+// Return errors:
+//   - ErrBadValue if value is not a number;
+//   - ErrBadValue if value is not of types [int, long];
+//   - ErrBadValue if value exceeds int32 range;
+//   - ErrBadValue if value is negative;
 func getOptionalPositiveNumber(key string, value any) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
@@ -178,7 +187,7 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 // GetBoolOptionalParam returns bool value of v.
 // Non-zero double, long, and int values return true.
 // Zero values for those types, as well as nulls and missing fields, return false.
-// Other types return a protocol error.
+// Other types return ErrTypeMismatch command error.
 func GetBoolOptionalParam(key string, v any) (bool, error) {
 	switch v := v.(type) {
 	case float64:
