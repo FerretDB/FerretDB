@@ -1326,7 +1326,7 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				{"_id", "$v.foo"},
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
-		}, // test
+		},
 		"EmptyPath": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$"}}},
 			resultType: emptyResult,
