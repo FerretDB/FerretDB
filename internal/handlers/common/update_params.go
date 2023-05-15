@@ -43,7 +43,7 @@ type UpdateParams struct {
 	Filter *types.Document `ferretdb:"q,opt"`
 	Update *types.Document `ferretdb:"u,opt"`
 	Multi  bool            `ferretdb:"multi,opt"`
-	Upsert bool            `ferretdb:"upsert,opt"`
+	Upsert bool            `ferretdb:"upsert,opt,numericBool"`
 
 	C            *types.Document `ferretdb:"c,unimplemented"`
 	Collation    *types.Document `ferretdb:"collation,unimplemented"`
