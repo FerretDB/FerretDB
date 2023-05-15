@@ -12,4 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+// Package backends provides common interfaces and code for all backend implementations.
+//
+// # Design principles.
+//
+//  1. Contexts are per-operation and should not be stored.
+//  2. Backend is stateful. Database and Collection are stateless.
+//  3. Returned errors could be nil, *Error or any other error type.
+//     *Error codes are enforced by contracts;
+//     they are not documented in the code comments, but are visible in the contract's code (to avoid duplication).
+package backends

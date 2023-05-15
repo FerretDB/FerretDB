@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backend
+package backends
 
 import (
 	"errors"
+	"fmt"
 
 	"golang.org/x/exp/slices"
 
@@ -31,15 +32,37 @@ const (
 
 	ErrCollectionDoesNotExist  // collection does not exist
 	ErrCollectionAlreadyExists // collection already exists
+	ErrCollectionNameIsInvalid // collection name is invalid
 )
 
 type Error struct {
-	Code ErrorCode
+	code ErrorCode
 	err  error
 }
 
+// NewError creates a new backend error wrapping another error.
+func NewError(code ErrorCode, err error) *Error {
+	if code == 0 {
+		panic("backends.NewError: code must not be 0")
+	}
+
+	// TODO we might allow nil error if needed
+	if err == nil {
+		panic("backends.NewError: err must not be nil")
+	}
+
+	return &Error{
+		code: code,
+		err:  err,
+	}
+}
+
+func (err *Error) Code() ErrorCode {
+	return err.code
+}
+
 func (err *Error) Error() string {
-	return err.err.Error()
+	return fmt.Sprintf("backends.Error: %v", err.err)
 }
 
 func (err *Error) Unwrap() error {
@@ -57,14 +80,18 @@ func checkError(err error, codes ...ErrorCode) {
 
 	var e *Error
 	if !errors.As(err, &e) {
+		return
+	}
+
+	if e.code == 0 {
 		panic(err)
 	}
 
-	if e.Code == 0 {
+	if len(codes) == 0 {
 		panic(err)
 	}
 
-	if !slices.Contains(codes, e.Code) {
+	if !slices.Contains(codes, e.code) {
 		panic(err)
 	}
 }

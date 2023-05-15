@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backend
+package backends
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+)
 
 type Collection interface {
-	Insert(params *InsertParams) error
+	Insert(context.Context, *InsertParams) (*InsertResult, error)
 }
 
 func CollectionContract(c Collection) Collection {
@@ -35,9 +39,11 @@ type InsertParams struct {
 	Ordered bool
 }
 
-func (cc *collectionContract) Insert(params *InsertParams) (err error) {
+type InsertResult struct{}
+
+func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (res *InsertResult, err error) {
 	// defer checkError(err, ErrCollectionDoesNotExist)
-	err = cc.c.Insert(params)
+	res, err = cc.c.Insert(ctx, params)
 	return
 }
 

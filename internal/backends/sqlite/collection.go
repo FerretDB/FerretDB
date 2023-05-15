@@ -12,29 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backend
+package sqlite
 
-type Backend interface {
-	Database(params *DatabaseParams) Database
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/backends"
+)
+
+type collection struct {
+	db *database
 }
 
-func BackendContract(b Backend) Backend {
-	return &backendContract{
-		b: b,
-	}
+func newCollection(db *database) backends.Collection {
+	return backends.CollectionContract(&collection{
+		db: db,
+	})
 }
 
-type backendContract struct {
-	b Backend
-}
-
-type DatabaseParams struct{}
-
-func (bc *backendContract) Database(params *DatabaseParams) Database {
-	return bc.b.Database(params)
+// Insert implements backends.Collection interface.
+func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
+	panic("not implemented") // TODO: Implement
 }
 
 // check interfaces
 var (
-	_ Backend = (*backendContract)(nil)
+	_ backends.Collection = (*collection)(nil)
 )
