@@ -31,6 +31,7 @@ import (
 func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	projectionValidated, inclusion, err := ValidateProjection(projection)
 	if errors.Is(err, errProjectionEmpty) {
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		return iter, nil
 	}
 

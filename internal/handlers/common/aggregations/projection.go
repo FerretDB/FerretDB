@@ -27,15 +27,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// errProjectionEmpty indicates projection field is empty.
 var errProjectionEmpty = errors.New("projection is empty")
 
 // ValidateProjection check projection document.
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
+// ValidateProjection returns CommandError and errProjectionEmpty.
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
 	if projection.Len() == 0 {
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		return nil, false, errProjectionEmpty
 	}
 
@@ -142,6 +145,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 		switch idValue := idValue.(type) {
 		case *types.Document: // field: { $elemMatch: { field2: value }}
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			return nil, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrCommandNotFound,
 				fmt.Sprintf("projection %s is not supported",
@@ -168,6 +172,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
 	if err != nil {
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		return nil, err
 	}
 
@@ -213,6 +218,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			return nil, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrCommandNotFound,
 				fmt.Sprintf("projection %s is not supported",
@@ -284,10 +290,12 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			// set doc if projected has field from other projection field.
 			v := must.NotFail(projected.Get(key))
 			if d, ok := v.(*types.Document); ok {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 				doc = d
 			}
 
 			if arr, ok := v.(*types.Array); ok {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 				// use next prefix key with arr value, allowing array to parse existing
 				// projection fields.
 				doc = must.NotFail(types.NewDocument(path.TrimPrefix().Prefix(), arr))
@@ -305,6 +313,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		case *types.Document:
 			setBySourceOrder(key, doc, source, projected)
 		case *types.Array:
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			projected.Set(key, arr)
 		}
 
@@ -319,6 +328,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 		if v, err := projected.Get(key); err == nil {
 			projectedArr, ok := v.(*types.Array)
 			if ok {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 				arr = projectedArr
 				inclusionExists = true
 			}
@@ -330,6 +340,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			_, arrElem, err := iter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
+					// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 					break
 				}
 
@@ -337,6 +348,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			}
 
 			if _, ok := arrElem.(*types.Document); !ok {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 				continue
 			}
 
@@ -363,6 +375,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 				doc = docVal
 			} else {
 				// first inclusion field, insert it to the doc.
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 				arr.Append(doc)
 			}
 
@@ -370,12 +383,14 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 				return nil, err
 			}
 
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			arr.Set(i, doc)
 			i++
 		}
 
 		return arr, nil
 	default:
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		// field is not a document or an array, nothing to set.
 		return nil, nil
 	}
@@ -411,6 +426,7 @@ func excludeProjection(path types.Path, projected any) {
 			return
 		}
 
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		// recursively remove field from the embeddedSource.
 		excludeProjection(path.TrimPrefix(), embeddedSource)
 
@@ -421,15 +437,18 @@ func excludeProjection(path types.Path, projected any) {
 			arrElem := must.NotFail(projected.Get(i))
 
 			if _, ok := arrElem.(*types.Document); !ok {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 				// not a document, cannot possibly be part of path, do nothing.
 				continue
 			}
 
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			excludeProjection(path, arrElem)
 		}
 
 		return
 	default:
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		// not a path, nothing to exclude.
 		return
 	}
@@ -456,10 +475,12 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 		}
 
 		if newFieldIndex >= len(projectedKeys) {
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			break
 		}
 
 		if sourceKey == projectedKeys[newFieldIndex] {
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 			newFieldIndex++
 		}
 	}
@@ -468,6 +489,7 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 
 	// remove fields of projected from newFieldIndex to the end
 	for i := newFieldIndex; i < len(projectedKeys); i++ {
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		projected.Remove(projectedKeys[i])
 	}
 
@@ -476,6 +498,7 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 	// copy newFieldIndex-th to the end from tmp to projected
 	i := newFieldIndex
 	for _, key := range tmp.Keys()[newFieldIndex:] {
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
 		projected.Set(key, must.NotFail(tmp.Get(tmp.Keys()[i])))
 		i++
 	}
