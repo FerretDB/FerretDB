@@ -39,11 +39,11 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	indexName := "test"
+	indexName := "test_nested_field"
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 		idx := Index{
 			Name: indexName,
-			Key:  []IndexKeyPair{{Field: "foo", Order: types.Ascending}, {Field: "bar", Order: types.Descending}},
+			Key:  []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}},
 		}
 		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
 	})
@@ -61,6 +61,32 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedIndexdef := fmt.Sprintf(
+		"CREATE INDEX %s ON \"%s\".%s USING btree ((((_jsonb -> 'foo'::text) -> 'bar'::text)))",
+		pgIndexName, databaseName, tableName,
+	)
+	assert.Equal(t, expectedIndexdef, indexdef)
+
+	indexName = "test"
+	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
+		idx := Index{
+			Name: indexName,
+			Key:  []IndexKeyPair{{Field: "foo", Order: types.Ascending}, {Field: "bar", Order: types.Descending}},
+		}
+		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+	})
+	require.NoError(t, err)
+
+	tableName = collectionNameToTableName(collectionName)
+	pgIndexName = indexNameToPgIndexName(collectionName, indexName)
+
+	err = pool.p.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		databaseName, tableName, pgIndexName,
+	).Scan(&indexdef)
+	require.NoError(t, err)
+
+	expectedIndexdef = fmt.Sprintf(
 		"CREATE INDEX %s ON \"%s\".%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
 		pgIndexName, databaseName, tableName,
 	)
@@ -109,6 +135,15 @@ func TestDropIndexes(t *testing.T) {
 				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
 			},
 			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+			},
+		},
+		"DropNestedField": {
+			toCreate: []Index{
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}}}},
 			expected: []Index{
 				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
 			},
