@@ -29,10 +29,9 @@ func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		pipeline    bson.A
 		expectedErr *mongo.CommandError
-		skip        string
 		altMessage  string
+		pipeline    bson.A
 	}{
 		"EmptyPipeline": {
 			pipeline: bson.A{
@@ -47,10 +46,6 @@ func TestAggregateProjectErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 			ctx, collection := setup.Setup(t)
 
