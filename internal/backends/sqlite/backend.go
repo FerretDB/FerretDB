@@ -15,6 +15,8 @@
 package sqlite
 
 import (
+	"context"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
 
@@ -25,20 +27,16 @@ func NewBackend() backends.Backend {
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(params *backends.DatabaseParams) backends.Database {
+func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams) backends.Database {
 	return newDatabase(b)
 }
 
 // ListDatabases implements backends.Backend interface.
-func (b *backend) ListDatabases(params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
+func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (b *backend) CreateDatabase(params *backends.CreateDatabaseParams) error {
-	panic("not implemented") // TODO: Implement
-}
-
-func (b *backend) DropDatabase(params *backends.DropDatabaseParams) error {
+func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
 	panic("not implemented") // TODO: Implement
 }
 

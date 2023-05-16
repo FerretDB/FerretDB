@@ -69,7 +69,9 @@ type ListCollectionsResult struct {
 }
 
 // CollectionInfo represents information about a single collection.
-type CollectionInfo struct{}
+type CollectionInfo struct {
+	Name string
+}
 
 // ListCollections returns information about collections in the database.
 //

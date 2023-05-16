@@ -14,6 +14,8 @@
 
 package backends
 
+import "context"
+
 // Backends is a generic interface for all backends for accessing them.
 //
 // Backend object is expected to be stateful and wrap database connection(s).
@@ -24,10 +26,11 @@ package backends
 //
 // See backendContract and its methods for additional details.
 type Backend interface {
-	Database(*DatabaseParams) Database
-	ListDatabases(*ListDatabasesParams) (*ListDatabasesResult, error)
-	CreateDatabase(*CreateDatabaseParams) error
-	DropDatabase(*DropDatabaseParams) error
+	Database(context.Context, *DatabaseParams) Database
+	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
+	DropDatabase(context.Context, *DropDatabaseParams) error
+
+	// There is no interface method to create a database; see package documentation.
 }
 
 // BackendContract wraps Backend and enforces its contract.
@@ -55,33 +58,41 @@ type DatabaseParams struct {
 // Database returns a Database instance for given parameters.
 //
 // The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(params *DatabaseParams) Database {
-	return bc.b.Database(params)
+func (bc *backendContract) Database(ctx context.Context, params *DatabaseParams) Database {
+	return bc.b.Database(ctx, params)
 }
 
+// ListDatabasesParams represents the parameters of Backend.ListDatabases method.
 type ListDatabasesParams struct{}
 
-type ListDatabasesResult struct{}
+// ListCollectionsResult represents the results of Database.ListCollections method.
+type ListDatabasesResult struct {
+	Databases []DatabaseInfo
+}
 
-func (bc *backendContract) ListDatabases(params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
+// DatabaseInfo represents information about a single database.
+type DatabaseInfo struct {
+	Name string
+}
+
+// ListDatabases returns a Database instance for given parameters.
+func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
 	defer checkError(err)
-	res, err = bc.b.ListDatabases(params)
+	res, err = bc.b.ListDatabases(ctx, params)
 	return
 }
 
-type CreateDatabaseParams struct{}
-
-func (bc *backendContract) CreateDatabase(params *CreateDatabaseParams) (err error) {
-	defer checkError(err)
-	err = bc.b.CreateDatabase(params)
-	return
+// DropDatabaseParams represents the parameters of Backend.DropDatabase method.
+type DropDatabaseParams struct {
+	Name string
 }
 
-type DropDatabaseParams struct{}
-
-func (bc *backendContract) DropDatabase(params *DropDatabaseParams) (err error) {
+// DropDatabase drops database with given parameters.
+//
+// Database doesn't have to exist; that's not an error.
+func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
 	defer checkError(err)
-	err = bc.b.DropDatabase(params)
+	err = bc.b.DropDatabase(ctx, params)
 	return
 }
 
