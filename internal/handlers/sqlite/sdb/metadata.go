@@ -1,15 +1,17 @@
-package mdb
+package sdb
 
 import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"sync"
 
 	"golang.org/x/exp/maps"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 )
 
 var (
@@ -19,6 +21,13 @@ var (
 )
 
 const (
+
+	// Reserved prefix for database and collection names.
+	reservedPrefix = "_ferretdb_"
+
+	// Database metadata table name.
+	dbMetadataTableName = reservedPrefix + "database_metadata"
+
 	dbExtension = ".sqlite"
 )
 
@@ -29,6 +38,7 @@ func NewMetadata(dbPath string) (*Metadata, error) {
 
 	return &Metadata{
 		dbPath: dbPath,
+		dbs:    make(map[string]*dbData),
 	}, nil
 }
 
@@ -36,7 +46,7 @@ type Metadata struct {
 	dbPath string
 
 	mx  sync.Mutex
-	dbs map[string]dbData
+	dbs map[string]*dbData
 }
 
 type dbData struct {
@@ -70,21 +80,35 @@ func (m *Metadata) GetDatabasesList(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	m.dbs = make(map[string]dbData, len(dbs))
-
-	for _, db := range dbs {
-		conn, err := sql.Open("sqlite", db)
+	for _, dbName := range dbs {
+		conn, err := sql.Open("sqlite", dbName)
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = conn.ExecContext(ctx, "")
+		query := fmt.Sprintf("SELECT sjson FROM %s", dbMetadataTableName)
+
+		result, err := conn.QueryContext(ctx, query)
 		if err != nil {
 			return nil, err
 		}
 
-		// load collections metadata here.
+		var doc string
+
+		err = result.Scan(&doc)
+		if err != nil {
+			return nil, err
+		}
+
+		metadata, err := m.documentToMetadata(doc)
+		if err != nil {
+			return nil, err
+		}
+
+		m.dbs[dbName] = metadata
 	}
+
+	return nil, nil
 }
 
 func (m *Metadata) GetCollectionsList(database string) ([]string, error) {
@@ -100,4 +124,17 @@ func (m *Metadata) RemoveCollection(database, collection string) error {
 
 func (m *Metadata) RemoveDatabase(database string) error {
 	return nil
+}
+
+func (m *Metadata) documentToMetadata(raw []byte) (*dbData, error) {
+	doc, err := sjson.Unmarshal(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	if !doc.Has("_id") {
+		return nil, ErrMalformedMetadata
+	}
+
+	doc.Get("_id")
 }
