@@ -289,7 +289,7 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
 				"storageSize", collStats.SizeCollection,
-				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"nindexes", collStats.CountIndexes,
