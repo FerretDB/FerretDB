@@ -189,37 +189,37 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 
 	expression, err := aggregations.NewExpression(groupKey)
 	if err != nil {
-		var fieldPathErr *types.FieldPathError
+		var fieldPathErr *aggregations.FieldPathError
 		if !errors.As(err, &fieldPathErr) {
 			return nil, lazyerrors.Error(err)
 		}
 
 		switch fieldPathErr.Code() {
-		case types.ErrNotFieldPath:
+		case aggregations.ErrNotFieldPath:
 			// constant value aggregates values of all `in` documents into one aggregated document.
 			return []groupedDocuments{{
 				groupID:   groupKey,
 				documents: in,
 			}}, nil
-		case types.ErrEmptyFieldPath:
+		case aggregations.ErrEmptyFieldPath:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupInvalidFieldPath,
 				"'$' by itself is not a valid FieldPath",
 				"$group (stage)",
 			)
-		case types.ErrInvalidFieldPath:
+		case aggregations.ErrInvalidFieldPath:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
 				"$group (stage)",
 			)
-		case types.ErrEmptyVariable:
+		case aggregations.ErrEmptyVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				"empty variable names are not allowed",
 				"$group (stage)",
 			)
-		case types.ErrUndefinedVariable:
+		case aggregations.ErrUndefinedVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupUndefinedVariable,
 				fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
