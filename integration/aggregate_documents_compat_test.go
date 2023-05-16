@@ -1190,6 +1190,18 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
+		"AscendingValueDescendingID": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v", 1},
+				{"_id", -1},
+			}}}},
+		},
+		"DescendingValueDescendingID": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v", -1},
+				{"_id", -1},
+			}}}},
+		},
 
 		"DotNotationIndex": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{

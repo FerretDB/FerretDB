@@ -92,7 +92,8 @@ func lessFunc(sortPath types.Path, sortType types.SortType) func(a, b *types.Doc
 
 		bField, err := b.GetByPath(sortPath)
 		if err != nil {
-			return false
+			// same logic as above
+			bField = types.Null
 		}
 
 		result := types.CompareOrderForSort(aField, bField, sortType)
