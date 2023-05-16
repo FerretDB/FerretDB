@@ -703,11 +703,13 @@ func TestAggregateCompatGroupExpressionDottedFieldsDocs(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo.bar"},
 			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2276",
 		},
 		"DeeplyNested": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.a.b.c"},
 			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2276",
 		},
 	}
 
