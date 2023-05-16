@@ -30,14 +30,14 @@ type ExpressionErrorCode int
 const (
 	_ ExpressionErrorCode = iota
 
-	// ErrNotExpression indicates that field is not a path.
+	// ErrNotExpression indicates that field is not an expression.
 	ErrNotExpression
 
-	// ErrEmptyExpression indicates that path is empty.
-	ErrEmptyExpression
-
-	// ErrInvalidExpression indicates that path is invalid.
+	// ErrInvalidExpression indicates that expression is invalid.
 	ErrInvalidExpression
+
+	// ErrEmptyFieldPath indicates that field path expression is empty.
+	ErrEmptyFieldPath
 
 	// ErrUndefinedVariable indicates that variable name is not defined.
 	ErrUndefinedVariable
@@ -67,12 +67,6 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 }
 
 // Expression is an expression constructed from field value.
-//type Expression interface {
-//	Evaluate(doc *types.Document) any
-//	GetExpressionSuffix() string
-//}
-
-// Expression is field path constructed from expression.
 type Expression struct {
 	path types.Path
 	*ExpressionOpts
@@ -112,7 +106,7 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression
 		val = strings.TrimPrefix(expression, "$")
 
 		if val == "" {
-			return nil, newExpressionError(ErrEmptyExpression)
+			return nil, newExpressionError(ErrEmptyFieldPath)
 		}
 	default:
 		return nil, newExpressionError(ErrNotExpression)
