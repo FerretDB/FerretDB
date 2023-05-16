@@ -1,11 +1,15 @@
 package mdb
 
 import (
+	"context"
+	"database/sql"
 	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
-	"github.com/FerretDB/FerretDB/internal/types"
+	"golang.org/x/exp/maps"
 )
 
 var (
@@ -14,75 +18,80 @@ var (
 	ErrMalformedMetadata  = errors.New("malformed metadata")
 )
 
-type MetadataStorage interface {
-	CreateCollection(name string) error
+const (
+	dbExtension = ".sqlite"
+)
 
-	GetDatabasesList() ([]byte, error)
+func NewMetadata(dbPath string) (*Metadata, error) {
+	if dbPath == "" {
+		return nil, errors.New("db path is empty")
+	}
 
-	RemoveCollection(database, collection string) error
-	RemoveDatabase(database string) error
+	return &Metadata{
+		dbPath: dbPath,
+	}, nil
 }
 
 type Metadata struct {
-	storage MetadataStorage
+	dbPath string
 
 	mx  sync.Mutex
-	dbs *types.Document
+	dbs map[string]dbData
 }
 
-func (m *Metadata) GetDatabasesList() ([]string, error) {
+type dbData struct {
+	collections map[string]string
+	// indexes, etc.
+}
+
+func (m *Metadata) GetDatabasesList(ctx context.Context) ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
 	// short path
 	if m.dbs != nil {
-		return m.dbs.Keys(), nil
+		return maps.Keys(m.dbs), nil
 	}
 
-	list, err := m.storage.GetDatabasesList()
+	var dbs []string
+
+	err := filepath.WalkDir(m.dbPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if filepath.Ext(path) == dbExtension {
+			dbs = append(dbs, path)
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	dbs, err := sjson.Unmarshal(list)
-	if err != nil {
-		return nil, err
+	m.dbs = make(map[string]dbData, len(dbs))
+
+	for _, db := range dbs {
+		conn, err := sql.Open("sqlite", db)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = conn.ExecContext(ctx, "")
+		if err != nil {
+			return nil, err
+		}
+
+		// load collections metadata here.
 	}
-
-	m.dbs = dbs
-
-	return m.dbs.Keys(), nil
 }
 
 func (m *Metadata) GetCollectionsList(database string) ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
-	if !m.dbs.Has(database) {
-		return nil, ErrDatabaseNotFound
-	}
-
-	dbMetadataDoc, err := m.dbs.Get(database)
-	if err != nil {
-		return nil, err
-	}
-
-	dbMetadata, ok := dbMetadataDoc.(*types.Document)
-	if !ok {
-		return nil, ErrMalformedMetadata
-	}
-
-	collMetadataDoc, err := dbMetadata.Get("collections")
-	if err != nil {
-		return nil, err
-	}
-
-	collMetadata, ok := collMetadataDoc.(*types.Document)
-	if !ok {
-		return nil, ErrMalformedMetadata
-	}
-
-	return collMetadata.Keys(), nil
+	return nil, nil
 }
 
 func (m *Metadata) RemoveCollection(database, collection string) error {
