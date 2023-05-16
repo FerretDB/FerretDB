@@ -93,7 +93,7 @@ type CreateCollectionParams struct {
 //
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
-	defer checkError(err, ErrCollectionAlreadyExists, ErrCollectionNameIsInvalid)
+	defer checkError(err, ErrorCodeCollectionAlreadyExists, ErrorCodeCollectionNameIsInvalid)
 	err = dbc.db.CreateCollection(ctx, params)
 	return
 }
@@ -105,7 +105,7 @@ type DropCollectionParams struct {
 
 // DropCollection drops existing collection in the database.
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
-	defer checkError(err, ErrCollectionDoesNotExist)
+	defer checkError(err, ErrorCodeCollectionDoesNotExist)
 	err = dbc.db.DropCollection(ctx, params)
 	return
 }

@@ -17,6 +17,8 @@ package sqlite
 import (
 	"context"
 
+	_ "modernc.org/sqlite"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
 

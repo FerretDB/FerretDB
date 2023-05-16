@@ -15,8 +15,6 @@
 package registry
 
 import (
-	_ "modernc.org/sqlite" // TODO move this to backend package
-
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )

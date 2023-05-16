@@ -23,24 +23,29 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
-//go:generate ../../bin/stringer -linecomment -type ErrorCode
+//go:generate ../../bin/stringer -type ErrorCode
 
+// ErrorCode represent a backend error code.
 type ErrorCode int
 
+// Error codes.
 const (
 	_ ErrorCode = iota
 
-	ErrCollectionDoesNotExist  // collection does not exist
-	ErrCollectionAlreadyExists // collection already exists
-	ErrCollectionNameIsInvalid // collection name is invalid
+	ErrorCodeCollectionDoesNotExist
+	ErrorCodeCollectionAlreadyExists
+	ErrorCodeCollectionNameIsInvalid
 )
 
+// Error represents a backend error returned by all Backend, Database and Collection methods.
 type Error struct {
+	// this internal error can't be accessed by the caller
+	err error
+
 	code ErrorCode
-	err  error
 }
 
-// NewError creates a new backend error wrapping another error.
+// NewError creates a new backend error.
 func NewError(code ErrorCode, err error) *Error {
 	if code == 0 {
 		panic("backends.NewError: code must not be 0")
@@ -57,18 +62,25 @@ func NewError(code ErrorCode, err error) *Error {
 	}
 }
 
+// Code returns the error code.
 func (err *Error) Code() ErrorCode {
 	return err.code
 }
 
+// There is intentionally no method to return the internal error.
+
+// Error implements error interface.
 func (err *Error) Error() string {
-	return fmt.Sprintf("backends.Error: %v", err.err)
+	return fmt.Sprintf("%s: %v", err.code, err.err)
 }
 
-func (err *Error) Unwrap() error {
-	return err.err
-}
-
+// checkError enforces backend interfaces contracts.
+//
+// Err must be nil, *Error, or some other opaque error.
+// If err is *Error, it must have one of the given error codes.
+// If that's not the case, checkError panics in debug builds.
+//
+// It does nothing in non-debug builds.
 func checkError(err error, codes ...ErrorCode) {
 	if !debugbuild.Enabled {
 		return
@@ -84,15 +96,15 @@ func checkError(err error, codes ...ErrorCode) {
 	}
 
 	if e.code == 0 {
-		panic(err)
+		panic(fmt.Sprintf("error code is 0: %v", err))
 	}
 
 	if len(codes) == 0 {
-		panic(err)
+		panic(fmt.Sprintf("no allowed error codes: %v", err))
 	}
 
 	if !slices.Contains(codes, e.code) {
-		panic(err)
+		panic(fmt.Sprintf("error code is not in %v: %v", codes, err))
 	}
 }
 
