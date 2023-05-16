@@ -33,16 +33,40 @@ func TestParse(t *testing.T) {
 		AllowDiskUse any             `ferretdb:"allowDiskUse,ignored"`
 	}
 
-	type noTag struct {
-		Find string
-	}
-
 	type unimplementedTag struct {
 		Find string `ferretdb:"find,unimplemented"`
 	}
 
 	type nonDefaultTag struct {
 		Find bool `ferretdb:"find,non-default"`
+	}
+
+	type update struct {
+		Filter *types.Document `ferretdb:"q,opt"`
+	}
+
+	type updates struct {
+		Update []update `ferretdb:"updates"`
+	}
+
+	type updateAny struct {
+		Update any `ferretdb:"u"`
+	}
+
+	type numericBool struct {
+		Find bool `ferretdb:"f,numericBool"`
+	}
+
+	type strict struct {
+		Find int64 `ferretdb:"f,positiveNumber"`
+	}
+
+	type positive struct {
+		Find int64 `ferretdb:"f,wholePositiveNumber"`
+	}
+
+	type zeroOrOneAsBool struct {
+		Find bool `ferretdb:"f,zeroOrOneAsBool"`
 	}
 
 	tests := map[string]struct { //nolint:vet // it's a test table
@@ -84,12 +108,6 @@ func TestParse(t *testing.T) {
 			wantErr: "support for field \"find\"" +
 				" with non-default value true is not implemented yet",
 		},
-		"EmptyTag": {
-			command: "count",
-			doc:     must.NotFail(types.NewDocument("find", "test")),
-			params:  new(noTag),
-			wantErr: "unexpected field 'find' encountered",
-		},
 		"ExtraFieldPassed": {
 			command: "find",
 			doc: must.NotFail(types.NewDocument(
@@ -98,7 +116,7 @@ func TestParse(t *testing.T) {
 				"extra", "field",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: "unexpected field 'extra' encountered",
+			wantErr: `find: unknown field "extra"`,
 		},
 		"MissingRequiredField": {
 			command: "find",
@@ -106,7 +124,201 @@ func TestParse(t *testing.T) {
 				"$db", "test",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: "required field \"find\" is not populated",
+			wantErr: "BSON field 'find.find' is missing but a required field",
+		},
+		"ArrayTag": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"updates", must.NotFail(types.NewArray(
+					must.NotFail(types.NewDocument(
+						"q", must.NotFail(types.NewDocument("a", "b")),
+					)),
+				)),
+			)),
+			params: new(updates),
+			wantParams: &updates{
+				Update: []update{
+					{
+						Filter: must.NotFail(types.NewDocument("a", "b")),
+					},
+				},
+			},
+		},
+		"AnyTagWithDocumentValue": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"u", must.NotFail(types.NewDocument("a", "b")),
+			)),
+			params: new(updateAny),
+			wantParams: &updateAny{
+				Update: must.NotFail(types.NewDocument("a", "b")),
+			},
+		},
+		"AnyTagWithArrayValue": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"u", must.NotFail(types.NewArray("a", "b")),
+			)),
+			params: new(updateAny),
+			wantParams: &updateAny{
+				Update: must.NotFail(types.NewArray("a", "b")),
+			},
+		},
+		"AnyTagWithStringValue": {
+			command: "update",
+			doc: must.NotFail(types.NewDocument(
+				"u", "a",
+			)),
+			params: new(updateAny),
+			wantParams: &updateAny{
+				Update: "a",
+			},
+		},
+		"BoolTagWithInt32Value": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(1),
+			)),
+			params: new(numericBool),
+			wantParams: &numericBool{
+				Find: true,
+			},
+		},
+		"BoolTagWithInt64Value": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int64(1),
+			)),
+			params: new(numericBool),
+			wantParams: &numericBool{
+				Find: true,
+			},
+		},
+		"BoolTagWithFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 3.14,
+			)),
+			params: new(numericBool),
+			wantParams: &numericBool{
+				Find: true,
+			},
+		},
+		"BoolTagWithStringValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", "true",
+			)),
+			params:  new(numericBool),
+			wantErr: "field 'f' is the wrong type 'string', expected types '\\[bool, long, int, decimal, double\\]'",
+		},
+		"StrictTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 12.23,
+			)),
+			params: new(strict),
+			wantParams: &strict{
+				Find: 12,
+			},
+		},
+		"StrictTagWithWrongType": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", "12.23",
+			)),
+			params:  new(strict),
+			wantErr: "field 'find.f' is the wrong type 'string', expected types '\\[long, int, decimal, double\\]'",
+		},
+		"PositiveTag": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(12),
+			)),
+			params: new(positive),
+			wantParams: &positive{
+				Find: 12,
+			},
+		},
+		"PositiveTagWithNegativeFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", -12.23,
+			)),
+			params:  new(positive),
+			wantErr: "f has non-integral value",
+		},
+		"PositiveTagWithNegativeIntValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(-1),
+			)),
+			params:  new(positive),
+			wantErr: "-1 value for f is out of range",
+		},
+		"ZeroOrOneAsBoolTagWithInt32Value1": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(1),
+			)),
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
+				Find: true,
+			},
+		},
+		"ZeroOrOneAsBoolTagWithInt32Value0": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(0),
+			)),
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
+				Find: false,
+			},
+		},
+		"ZeroOrOneAsBoolTagWithInt32ValueNegative": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int32(-1),
+			)),
+			params:  new(zeroOrOneAsBool),
+			wantErr: "The 'find.f' field must be 0 or 1. Got -1",
+		},
+		"ZeroOrOneAsBoolTagWithInt64Value": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", int64(1),
+			)),
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
+				Find: true,
+			},
+		},
+		"ZeroOrOneAsBoolTagWithFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 1.0,
+			)),
+			params: new(zeroOrOneAsBool),
+			wantParams: &zeroOrOneAsBool{
+				Find: true,
+			},
+		},
+		"ZeroOrOneAsBoolTagWithIncorrectFloatValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", 3.14,
+			)),
+			params:  new(zeroOrOneAsBool),
+			wantErr: "The 'find.f' field must be 0 or 1. Got 3.14",
+		},
+		"ZeroOrOneAsBoolTagWithStringValue": {
+			command: "find",
+			doc: must.NotFail(types.NewDocument(
+				"f", "true",
+			)),
+			params:  new(zeroOrOneAsBool),
+			wantErr: `The 'find.f' field must be 0 or 1. Got "true"`,
 		},
 	}
 	for name, tt := range tests {
