@@ -10,8 +10,6 @@ import (
 	"sync"
 
 	"golang.org/x/exp/maps"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 )
 
 var (
@@ -31,6 +29,7 @@ const (
 	dbExtension = ".sqlite"
 )
 
+// NewMetadata returns instance of metadata
 func NewMetadata(dbPath string) (*Metadata, error) {
 	if dbPath == "" {
 		return nil, errors.New("db path is empty")
@@ -115,26 +114,47 @@ func (m *Metadata) GetCollectionsList(database string) ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
-	return nil, nil
+	db, ok := m.dbs[database]
+	if !ok {
+		return nil, ErrDatabaseNotFound
+	}
+
+	return maps.Keys(db.collections), nil
 }
 
 func (m *Metadata) RemoveCollection(database, collection string) error {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
+	db, ok := m.dbs[database]
+	if !ok {
+		return ErrDatabaseNotFound
+	}
+
+	_, ok = db.collections[collection]
+	if !ok {
+		return ErrCollectionNotFound
+	}
+
+	delete(db.collections, collection)
+
 	return nil
 }
 
 func (m *Metadata) RemoveDatabase(database string) error {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
+	_, ok := m.dbs[database]
+	if !ok {
+		return ErrDatabaseNotFound
+	}
+
+	delete(m.dbs, database)
+
 	return nil
 }
 
 func (m *Metadata) documentToMetadata(raw []byte) (*dbData, error) {
-	doc, err := sjson.Unmarshal(raw)
-	if err != nil {
-		return nil, err
-	}
-
-	if !doc.Has("_id") {
-		return nil, ErrMalformedMetadata
-	}
-
-	doc.Get("_id")
+	return &dbData{}, nil
 }
