@@ -20,10 +20,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
 
+// database implements backends.Database interface.
 type database struct {
 	b *backend
 }
 
+// newDatabase creates a new Database.
 func newDatabase(b *backend) backends.Database {
 	return backends.DatabaseContract(&database{
 		b: b,

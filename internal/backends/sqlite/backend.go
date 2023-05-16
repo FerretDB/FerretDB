@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
 
+// backend implements backends.Backend interface.
 type backend struct{}
 
 // NewBackend creates a new SQLite backend.

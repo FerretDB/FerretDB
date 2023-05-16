@@ -20,10 +20,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
 
+// collection implements backends.Collection interface.
 type collection struct {
 	db *database
 }
 
+// newDatabase creates a new Collection.
 func newCollection(db *database) backends.Collection {
 	return backends.CollectionContract(&collection{
 		db: db,

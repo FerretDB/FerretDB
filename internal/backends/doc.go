@@ -16,9 +16,18 @@
 //
 // # Design principles.
 //
-//  1. Contexts are per-operation and should not be stored.
-//  2. Backend is stateful. Database and Collection are stateless.
-//  3. Returned errors could be nil, *Error or any other error type.
-//     *Error codes are enforced by contracts;
-//     they are not documented in the code comments, but are visible in the contract's code (to avoid duplication).
+//  1. Interfaces are relatively high-level and "fat".
+//     We are generally doing one backend interface call per handler call.
+//     For example, `insert` command handler calls only
+//     `db.Database("database").Collection("collection").Insert(ctx, params)` method that would
+//     create a database if needed, create a collection if needed, and insert all documents with correct parameters.
+//     There is no method to insert one document into an existing collection.
+//     That shifts some complexity from a single handler into multiple backend implementations;
+//     for example, support for `insert` with `ordered: true` and `ordered: false` should be implemented multiple times.
+//     But that allows those implementations to be much more effective.
+//  2. Backend objects are stateful. Database and Collection objects are stateless.
+//  3. Contexts are per-operation and should not be stored.
+//  4. Errors returned by methods could be nil, *Error, or some other opaque error type.
+//     Contracts enforce *Error codes; they are not documented in the code comments
+//     but are visible in the contract's code (to avoid duplication).
 package backends
