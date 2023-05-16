@@ -68,8 +68,8 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 
 // Expression is an expression constructed from field value.
 type Expression struct {
-	path types.Path
 	*ExpressionOpts
+	path types.Path
 }
 
 // ExpressionOpts represents options used to modify behavior of Expression functions.
@@ -132,8 +132,8 @@ func NewExpression(expression string) (*Expression, error) {
 }
 
 // Evaluate gets the value at the path.
-func (p *Expression) Evaluate(doc *types.Document) any {
-	path := p.path
+func (e *Expression) Evaluate(doc *types.Document) any {
+	path := e.path
 
 	if path.Len() == 1 {
 		val, err := doc.Get(path.String())
@@ -154,7 +154,7 @@ func (p *Expression) Evaluate(doc *types.Document) any {
 		}
 	}
 
-	vals := p.getExpressionPathValue(doc, path)
+	vals := e.getPathValue(doc, path)
 
 	if len(vals) == 0 {
 		if isPrefixArray {
@@ -180,11 +180,11 @@ func (p *Expression) Evaluate(doc *types.Document) any {
 }
 
 // GetExpressionSuffix returns suffix of pathExpression.
-func (p *Expression) GetExpressionSuffix() string {
-	return p.path.Suffix()
+func (e *Expression) GetExpressionSuffix() string {
+	return e.path.Suffix()
 }
 
-// getExpressionPathValue go through each key of the path iteratively to
+// getPathValue go through each key of the path iteratively to
 // find values that exist at suffix.
 // An array may return multiple values.
 // At each key of the path, it checks:
@@ -192,10 +192,10 @@ func (p *Expression) GetExpressionSuffix() string {
 // - if the array contains documents which have the key. (This check can
 // be disabled by setting ExpressionOpts.IgnoreArrays field).
 //
-// It is different from `getDocumentsAtSuffix`, it does not find array item by
+// It is different from `common.getDocumentsAtSuffix`, it does not find array item by
 // array dot notation `foo.0.bar`. It returns empty array [] because using index
 // such as `0` does not match using expression path.
-func (p *Expression) getExpressionPathValue(doc *types.Document, path types.Path) []any {
+func (e *Expression) getPathValue(doc *types.Document, path types.Path) []any {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	keys := path.Slice()
 	vals := []any{doc}
@@ -214,7 +214,7 @@ func (p *Expression) getExpressionPathValue(doc *types.Document, path types.Path
 
 				embeddedVals = append(embeddedVals, embeddedVal)
 			case *types.Array:
-				if p.IgnoreArrays {
+				if e.IgnoreArrays {
 					continue
 				}
 				// iterate elements to get documents that contain the key.

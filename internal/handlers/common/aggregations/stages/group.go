@@ -201,7 +201,7 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 				groupID:   groupKey,
 				documents: in,
 			}}, nil
-		case aggregations.ErrEmptyExpression:
+		case aggregations.ErrEmptyFieldPath:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				// TODO
 				commonerrors.ErrGroupInvalidFieldPath,

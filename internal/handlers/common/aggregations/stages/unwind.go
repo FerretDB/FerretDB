@@ -72,9 +72,9 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 					fmt.Sprintf("path option to $unwind stage should be prefixed with a '$': %v", types.FormatAnyValue(field)),
 					"$unwind (stage)",
 				)
-			case aggregations.ErrEmptyExpression:
+			case aggregations.ErrEmptyFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					//TODO
+					// TODO
 					commonerrors.ErrEmptyFieldPath,
 					"Expression cannot be constructed with empty string",
 					"$unwind (stage)",

@@ -9,15 +9,15 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[ErrNotExpression-1]
-	_ = x[ErrEmptyExpression-2]
-	_ = x[ErrInvalidExpression-3]
+	_ = x[ErrInvalidExpression-2]
+	_ = x[ErrEmptyFieldPath-3]
 	_ = x[ErrUndefinedVariable-4]
 	_ = x[ErrEmptyVariable-5]
 }
 
-const _ExpressionErrorCode_name = "ErrNotExpressionErrEmptyExpressionErrInvalidExpressionErrUndefinedVariableErrEmptyVariable"
+const _ExpressionErrorCode_name = "ErrNotExpressionErrInvalidExpressionErrEmptyFieldPathErrUndefinedVariableErrEmptyVariable"
 
-var _ExpressionErrorCode_index = [...]uint8{0, 16, 34, 54, 74, 90}
+var _ExpressionErrorCode_index = [...]uint8{0, 16, 36, 53, 73, 89}
 
 func (i ExpressionErrorCode) String() string {
 	i -= 1
