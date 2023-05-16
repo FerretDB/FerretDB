@@ -19,6 +19,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,7 +27,7 @@ import (
 
 // sum represents $sum aggregation operator.
 type sum struct {
-	expression types.Expression
+	expression aggregations.Expression
 	number     any
 }
 
@@ -46,7 +47,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 		accumulator.number = expr
 	case string:
 		var err error
-		if accumulator.expression, err = types.NewExpression(expr); err != nil {
+		if accumulator.expression, err = aggregations.NewExpression(expr); err != nil {
 			// $sum returns 0 on non-existent field.
 			accumulator.number = int32(0)
 		}

@@ -30,7 +30,7 @@ import (
 
 // unwind represents $unwind stage.
 type unwind struct {
-	field types.Expression
+	field aggregations.Expression
 }
 
 // newUnwind creates a new $unwind stage.
@@ -40,7 +40,7 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 		return nil, err
 	}
 
-	var expr types.Expression
+	var expr aggregations.Expression
 
 	switch field := field.(type) {
 	case *types.Document:
@@ -54,31 +54,31 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 			)
 		}
 
-		opts := types.ExpressionOpts{
+		opts := aggregations.ExpressionOpts{
 			IgnoreArrays: true,
 		}
-		expr, err = types.NewExpressionWithOpts(field, &opts)
+		expr, err = aggregations.NewExpressionWithOpts(field, &opts)
 
 		if err != nil {
-			var fieldPathErr *types.FieldPathError
+			var fieldPathErr *aggregations.FieldPathError
 			if !errors.As(err, &fieldPathErr) {
 				return nil, lazyerrors.Error(err)
 			}
 
 			switch fieldPathErr.Code() {
-			case types.ErrNotFieldPath:
+			case aggregations.ErrNotFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrStageUnwindNoPrefix,
 					fmt.Sprintf("path option to $unwind stage should be prefixed with a '$': %v", types.FormatAnyValue(field)),
 					"$unwind (stage)",
 				)
-			case types.ErrEmptyFieldPath:
+			case aggregations.ErrEmptyFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrEmptyFieldPath,
 					"FieldPath cannot be constructed with empty string",
 					"$unwind (stage)",
 				)
-			case types.ErrEmptyVariable, types.ErrInvalidFieldPath, types.ErrUndefinedVariable:
+			case aggregations.ErrEmptyVariable, aggregations.ErrInvalidFieldPath, aggregations.ErrUndefinedVariable:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFieldPathInvalidName,
 					"FieldPath field names may not start with '$'. Consider using $getField or $setField",
