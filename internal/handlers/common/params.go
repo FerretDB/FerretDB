@@ -206,9 +206,8 @@ func GetSkipStageParam(value any) (int64, error) {
 // Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
 //
 // Returned errors:
-//   - ErrBadValue if positional argument is not a number;
+//   - ErrBadValue if positional argument is not a whole number of type [int, long, double];
 //   - ErrBadValue if positional argument is negative;
-//   - ErrBadValue if bitmask argument is not a whole number;
 //   - ErrFailedToParse if bitmask argument is not a whole number or negative;
 //   - ErrBadValue if the type of the value is not [int, long, double, binary, array];
 func getBinaryMaskParam(operator string, mask any) (uint64, error) {
@@ -219,13 +218,24 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 		// {field: {$bitsAllClear: [position1, position2]}}
 		for i := 0; i < mask.Len(); i++ {
 			val := must.NotFail(mask.Get(i))
-			b, ok := val.(int32)
-			if !ok {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
-					fmt.Sprintf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
-					operator,
-				)
+
+			b, err := commonparams.GetWholeNumberParam(val)
+			if err != nil {
+				switch {
+				case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity),
+					errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
+					return 0, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						fmt.Sprintf(`Failed to parse bit position. Expected integer: %d: %#v`, i, val),
+						operator,
+					)
+				default:
+					return 0, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						fmt.Sprintf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
+						operator,
+					)
+				}
 			}
 
 			if b < 0 {
