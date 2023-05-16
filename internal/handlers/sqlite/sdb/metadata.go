@@ -2,7 +2,6 @@ package sdb
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -10,12 +9,9 @@ import (
 	"sync"
 
 	"golang.org/x/exp/maps"
-)
 
-var (
-	ErrCollectionNotFound = errors.New("collection not found")
-	ErrDatabaseNotFound   = errors.New("database not found")
-	ErrMalformedMetadata  = errors.New("malformed metadata")
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -36,13 +32,17 @@ func NewMetadata(dbPath string) (*Metadata, error) {
 	}
 
 	return &Metadata{
-		dbPath: dbPath,
-		dbs:    make(map[string]*dbData),
+		// TODO: might be passed as parameter.
+		connPool: newConnPool(),
+		dbPath:   dbPath,
+		dbs:      make(map[string]*dbData),
 	}, nil
 }
 
 type Metadata struct {
 	dbPath string
+
+	connPool *connPool
 
 	mx  sync.Mutex
 	dbs map[string]*dbData
@@ -50,10 +50,10 @@ type Metadata struct {
 
 type dbData struct {
 	collections map[string]string
-	// indexes, etc.
+	// TODO: add indexes, etc.
 }
 
-func (m *Metadata) GetDatabasesList(ctx context.Context) ([]string, error) {
+func (m *Metadata) ListDatabases() ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
@@ -79,66 +79,36 @@ func (m *Metadata) GetDatabasesList(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	for _, dbName := range dbs {
-		conn, err := sql.Open("sqlite", dbName)
-		if err != nil {
-			return nil, err
-		}
-
-		query := fmt.Sprintf("SELECT sjson FROM %s", dbMetadataTableName)
-
-		result, err := conn.QueryContext(ctx, query)
-		if err != nil {
-			return nil, err
-		}
-
-		var doc []byte
-
-		err = result.Scan(&doc)
-		if err != nil {
-			return nil, err
-		}
-
-		metadata, err := m.documentToMetadata(doc)
-		if err != nil {
-			return nil, err
-		}
-
-		m.dbs[dbName] = metadata
+	// fill in all databases that were found.
+	for _, db := range dbs {
+		m.dbs[db] = nil
 	}
 
-	return nil, nil
+	return dbs, nil
 }
 
-func (m *Metadata) GetCollectionsList(database string) ([]string, error) {
+func (m *Metadata) ListCollections(ctx context.Context, database string) ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
 	db, ok := m.dbs[database]
 	if !ok {
-		return nil, ErrDatabaseNotFound
+		return nil, errors.New("database not found")
+	}
+
+	// no metadata about collections loaded, load now
+	if db == nil {
+		var err error
+
+		db, err = m.load(ctx, database)
+		if err != nil {
+			return nil, err
+		}
+
+		m.dbs[database] = db
 	}
 
 	return maps.Keys(db.collections), nil
-}
-
-func (m *Metadata) RemoveCollection(database, collection string) error {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-
-	db, ok := m.dbs[database]
-	if !ok {
-		return ErrDatabaseNotFound
-	}
-
-	_, ok = db.collections[collection]
-	if !ok {
-		return ErrCollectionNotFound
-	}
-
-	delete(db.collections, collection)
-
-	return nil
 }
 
 func (m *Metadata) RemoveDatabase(database string) error {
@@ -147,7 +117,7 @@ func (m *Metadata) RemoveDatabase(database string) error {
 
 	_, ok := m.dbs[database]
 	if !ok {
-		return ErrDatabaseNotFound
+		return errors.New("database not found")
 	}
 
 	delete(m.dbs, database)
@@ -155,6 +125,63 @@ func (m *Metadata) RemoveDatabase(database string) error {
 	return nil
 }
 
-func (m *Metadata) documentToMetadata(raw []byte) (*dbData, error) {
-	return &dbData{}, nil
+func (m *Metadata) RemoveCollection(database, collection string) error {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
+	db, ok := m.dbs[database]
+	if !ok {
+		return errors.New("database not found")
+	}
+
+	_, ok = db.collections[collection]
+	if !ok {
+		return errors.New("collection not found")
+	}
+
+	delete(db.collections, collection)
+
+	return nil
+}
+
+func (m *Metadata) load(ctx context.Context, dbName string) (*dbData, error) {
+	conn, err := m.connPool.DB(dbName)
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf("SELECT sjson FROM %s", dbMetadataTableName)
+
+	result, err := conn.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: check error
+	defer result.Close()
+
+	var metadata = dbData{
+		collections: make(map[string]string),
+	}
+
+	for result.Next() {
+		var rawBytes []byte
+
+		err = result.Scan(rawBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		doc, err := sjson.Unmarshal(rawBytes)
+		if err != nil {
+			return nil, errors.New("failed to unmarshal collection metadata")
+		}
+
+		// TODO: proper errors check
+		collName := must.NotFail(doc.Get("collection")).(string)
+		tableName := must.NotFail(doc.Get("table")).(string)
+
+		metadata.collections[collName] = tableName
+	}
+
+	return &metadata, nil
 }
