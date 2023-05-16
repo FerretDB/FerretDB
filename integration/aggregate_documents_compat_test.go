@@ -1581,6 +1581,58 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"_id", bson.D{}}}}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2633",
+		},
+		"DotNotationInclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+				}}},
+			},
+		},
+		"DotNotationIncludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array", true},
+				}}},
+			},
+		},
+		"DotNotationExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+					{"v.array", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.array.42", false},
+				}}},
+			},
+		},
+		"DotNotationIncludeExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array.42", false},
+				}}},
+			},
 			resultType: emptyResult,
 		},
 	}
