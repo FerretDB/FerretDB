@@ -1569,20 +1569,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
 		},
-		"Empty": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{}}},
-			},
-			resultType: emptyResult,
-		},
-		"DocumentID": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"_id", bson.D{}}}}},
-			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2633",
-		},
 		"DotNotationInclude": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{

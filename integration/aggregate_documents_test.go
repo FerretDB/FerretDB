@@ -22,7 +22,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
 
 func TestAggregateProjectErrors(t *testing.T) {
@@ -31,6 +30,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		expectedErr *mongo.CommandError
 		altMessage  string
+		skip        string
 		pipeline    bson.A
 	}{
 		"EmptyPipeline": {
@@ -38,14 +38,29 @@ func TestAggregateProjectErrors(t *testing.T) {
 				bson.D{{"$project", bson.D{}}},
 			},
 			expectedErr: &mongo.CommandError{
-				Code:    int32(commonerrors.ErrEmptyProject),
-				Name:    commonerrors.ErrEmptyProject.String(),
+				Code:    51272,
+				Name:    "Location51272",
 				Message: "Invalid $project :: caused by :: projection specification must have at least one field",
 			},
+		},
+		"EmptyProjectionField": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
+			},
+			expectedErr: &mongo.CommandError{
+				Code:    51270,
+				Name:    "Location51270",
+				Message: "Invalid $project :: caused by :: An empty sub-projection is not a valid value. Found empty object at path",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2633",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 			ctx, collection := setup.Setup(t)
 
