@@ -49,7 +49,7 @@ import (
 // If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
 // the field must be of type `any`.
 //
-// Errors list:
+// It returns command errors with the following codes:
 //   - `ErrFailedToParse` when provided field is not present in passed structure;
 //   - `ErrFailedToParse` when provided field must be 0 or 1, but it is not;
 //   - `ErrNotImplemented` when support for provided field is not implemented yet;
