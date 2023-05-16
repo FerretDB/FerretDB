@@ -60,28 +60,29 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 		expr, err = aggregations.NewExpressionWithOpts(field, &opts)
 
 		if err != nil {
-			var fieldPathErr *aggregations.FieldPathError
-			if !errors.As(err, &fieldPathErr) {
+			var exprErr *aggregations.ExpressionError
+			if !errors.As(err, &exprErr) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			switch fieldPathErr.Code() {
-			case aggregations.ErrNotFieldPath:
+			switch exprErr.Code() {
+			case aggregations.ErrNotExpression:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrStageUnwindNoPrefix,
 					fmt.Sprintf("path option to $unwind stage should be prefixed with a '$': %v", types.FormatAnyValue(field)),
 					"$unwind (stage)",
 				)
-			case aggregations.ErrEmptyFieldPath:
+			case aggregations.ErrEmptyExpression:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					//TODO
 					commonerrors.ErrEmptyFieldPath,
-					"FieldPath cannot be constructed with empty string",
+					"Expression cannot be constructed with empty string",
 					"$unwind (stage)",
 				)
-			case aggregations.ErrEmptyVariable, aggregations.ErrInvalidFieldPath, aggregations.ErrUndefinedVariable:
+			case aggregations.ErrEmptyVariable, aggregations.ErrInvalidExpression, aggregations.ErrUndefinedVariable:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFieldPathInvalidName,
-					"FieldPath field names may not start with '$'. Consider using $getField or $setField",
+					"Expression field names may not start with '$'. Consider using $getField or $setField",
 					"$unwind (stage)",
 				)
 			default:

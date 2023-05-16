@@ -189,25 +189,26 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 
 	expression, err := aggregations.NewExpression(groupKey)
 	if err != nil {
-		var fieldPathErr *aggregations.FieldPathError
-		if !errors.As(err, &fieldPathErr) {
+		var exprErr *aggregations.ExpressionError
+		if !errors.As(err, &exprErr) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		switch fieldPathErr.Code() {
-		case aggregations.ErrNotFieldPath:
+		switch exprErr.Code() {
+		case aggregations.ErrNotExpression:
 			// constant value aggregates values of all `in` documents into one aggregated document.
 			return []groupedDocuments{{
 				groupID:   groupKey,
 				documents: in,
 			}}, nil
-		case aggregations.ErrEmptyFieldPath:
+		case aggregations.ErrEmptyExpression:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				// TODO
 				commonerrors.ErrGroupInvalidFieldPath,
-				"'$' by itself is not a valid FieldPath",
+				"'$' by itself is not a valid Expression",
 				"$group (stage)",
 			)
-		case aggregations.ErrInvalidFieldPath:
+		case aggregations.ErrInvalidExpression:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
@@ -226,7 +227,7 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 				"$group (stage)",
 			)
 		default:
-			panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
+			panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
 		}
 	}
 

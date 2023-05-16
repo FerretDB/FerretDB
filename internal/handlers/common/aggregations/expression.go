@@ -24,20 +24,20 @@ import (
 
 //go:generate ../../../../bin/stringer -linecomment -type ExpressionErrorCode
 
-// ExpressionErrorCode represents FieldPath error code.
+// ExpressionErrorCode represents Expression error code.
 type ExpressionErrorCode int
 
 const (
 	_ ExpressionErrorCode = iota
 
-	// ErrNotFieldPath indicates that field is not a path.
-	ErrNotFieldPath
+	// ErrNotExpression indicates that field is not a path.
+	ErrNotExpression
 
-	// ErrEmptyFieldPath indicates that path is empty.
-	ErrEmptyFieldPath
+	// ErrEmptyExpression indicates that path is empty.
+	ErrEmptyExpression
 
-	// ErrInvalidFieldPath indicates that path is invalid.
-	ErrInvalidFieldPath
+	// ErrInvalidExpression indicates that path is invalid.
+	ErrInvalidExpression
 
 	// ErrUndefinedVariable indicates that variable name is not defined.
 	ErrUndefinedVariable
@@ -46,23 +46,23 @@ const (
 	ErrEmptyVariable
 )
 
-// FieldPathError describes an error that occurs getting path from field.
-type FieldPathError struct {
+// ExpressionError describes an error that occurs getting path from field.
+type ExpressionError struct {
 	code ExpressionErrorCode
 }
 
-// newFieldPathError creates a new FieldPathError.
-func newFieldPathError(code ExpressionErrorCode) error {
-	return &FieldPathError{code: code}
+// newExpressionError creates a new ExpressionError.
+func newExpressionError(code ExpressionErrorCode) error {
+	return &ExpressionError{code: code}
 }
 
 // Error implements the error interface.
-func (e *FieldPathError) Error() string {
+func (e *ExpressionError) Error() string {
 	return e.code.String()
 }
 
-// Code returns the FieldPathError code.
-func (e *FieldPathError) Code() ExpressionErrorCode {
+// Code returns the ExpressionError code.
+func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
 }
 
@@ -98,24 +98,24 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression
 		// `$$` indicates field is a variable.
 		v := strings.TrimPrefix(expression, "$$")
 		if v == "" {
-			return nil, newFieldPathError(ErrEmptyVariable)
+			return nil, newExpressionError(ErrEmptyVariable)
 		}
 
 		if strings.HasPrefix(v, "$") {
-			return nil, newFieldPathError(ErrInvalidFieldPath)
+			return nil, newExpressionError(ErrInvalidExpression)
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/2275
-		return nil, newFieldPathError(ErrUndefinedVariable)
+		return nil, newExpressionError(ErrUndefinedVariable)
 	case strings.HasPrefix(expression, "$"):
 		// `$` indicates field is a path.
 		val = strings.TrimPrefix(expression, "$")
 
 		if val == "" {
-			return nil, newFieldPathError(ErrEmptyFieldPath)
+			return nil, newExpressionError(ErrEmptyExpression)
 		}
 	default:
-		return nil, newFieldPathError(ErrNotFieldPath)
+		return nil, newExpressionError(ErrNotExpression)
 	}
 
 	var err error

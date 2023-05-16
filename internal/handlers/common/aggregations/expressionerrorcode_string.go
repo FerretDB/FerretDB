@@ -8,16 +8,16 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[ErrNotFieldPath-1]
-	_ = x[ErrEmptyFieldPath-2]
-	_ = x[ErrInvalidFieldPath-3]
+	_ = x[ErrNotExpression-1]
+	_ = x[ErrEmptyExpression-2]
+	_ = x[ErrInvalidExpression-3]
 	_ = x[ErrUndefinedVariable-4]
 	_ = x[ErrEmptyVariable-5]
 }
 
-const _ExpressionErrorCode_name = "ErrNotFieldPathErrEmptyFieldPathErrInvalidFieldPathErrUndefinedVariableErrEmptyVariable"
+const _ExpressionErrorCode_name = "ErrNotExpressionErrEmptyExpressionErrInvalidExpressionErrUndefinedVariableErrEmptyVariable"
 
-var _ExpressionErrorCode_index = [...]uint8{0, 15, 32, 51, 71, 87}
+var _ExpressionErrorCode_index = [...]uint8{0, 16, 34, 54, 74, 90}
 
 func (i ExpressionErrorCode) String() string {
 	i -= 1
