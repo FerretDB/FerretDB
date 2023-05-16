@@ -906,7 +906,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 
 // newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
 func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
-	if command == "findAndModify" {
+	if strings.EqualFold(command, "findAndModify") {
 		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
 	}
 

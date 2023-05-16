@@ -88,7 +88,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		lookup := key
 
 		// If the key is the same as the command name, then it is a collection name.
-		if key == command {
+		if strings.EqualFold(key, command) {
 			lookup = "collection"
 		}
 
@@ -179,7 +179,7 @@ func lookupFieldTag(key string, value *reflect.Value) (*int, *tagOptions, error)
 
 		optionsList := strings.Split(tag, ",")
 
-		if optionsList[0] != key {
+		if !strings.EqualFold(optionsList[0], key) {
 			continue
 		}
 
@@ -410,7 +410,7 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			continue
 		}
 
-		if !slices.Contains(keys, key) {
+		if !slices.Contains(keys, key) && !slices.Contains(keys, strings.ToLower(key)) {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrMissingField,
 				fmt.Sprintf("BSON field '%s.%s' is missing but a required field", command, key),

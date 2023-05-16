@@ -58,9 +58,10 @@ func TestFindAndModifyErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command       bson.D
+		findAndModify string // optional, defaults to "findAndModify"
+		err           *mongo.CommandError
+		altMessage    string
 	}{
 		"UpsertAndRemove": {
 			command: bson.D{
@@ -122,13 +123,32 @@ func TestFindAndModifyErrors(t *testing.T) {
 			},
 			altMessage: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected type 'bool'",
 		},
+		"LowerCaseCommand": {
+			// go driver sends `findAndModify` in camel case, but
+			// js driver sends `findandmodify` in lower case.
+			findAndModify: "findandmodify",
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    66,
+				Name:    "ImmutableField",
+				Message: "Plan executor error during findAndModify :: caused by :: Performing an update on the path '_id' would modify the immutable field '_id'",
+			},
+			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-			command := bson.D{{"findAndModify", collection.Name()}}
+			findAndModify := "findAndModify"
+			if tc.findAndModify != "" {
+				findAndModify = tc.findAndModify
+			}
+
+			command := bson.D{{findAndModify, collection.Name()}}
 			command = append(command, tc.command...)
 			if command.Map()["sort"] == nil {
 				command = append(command, bson.D{{"sort", bson.D{{"_id", 1}}}}...)
