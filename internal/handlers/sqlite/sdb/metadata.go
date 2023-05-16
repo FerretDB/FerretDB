@@ -92,7 +92,7 @@ func (m *Metadata) GetDatabasesList(ctx context.Context) ([]string, error) {
 			return nil, err
 		}
 
-		var doc string
+		var doc []byte
 
 		err = result.Scan(&doc)
 		if err != nil {
