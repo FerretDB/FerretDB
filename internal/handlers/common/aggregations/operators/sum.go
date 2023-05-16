@@ -27,7 +27,7 @@ import (
 
 // sum represents $sum aggregation operator.
 type sum struct {
-	expression aggregations.Expression
+	expression *aggregations.Expression
 	number     any
 }
 

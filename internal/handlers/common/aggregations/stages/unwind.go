@@ -30,7 +30,7 @@ import (
 
 // unwind represents $unwind stage.
 type unwind struct {
-	field aggregations.Expression
+	field *aggregations.Expression
 }
 
 // newUnwind creates a new $unwind stage.
@@ -40,7 +40,7 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 		return nil, err
 	}
 
-	var expr aggregations.Expression
+	var expr *aggregations.Expression
 
 	switch field := field.(type) {
 	case *types.Document:

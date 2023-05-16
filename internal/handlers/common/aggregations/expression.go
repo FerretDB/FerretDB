@@ -67,13 +67,13 @@ func (e *FieldPathError) Code() ExpressionErrorCode {
 }
 
 // Expression is an expression constructed from field value.
-type Expression interface {
-	Evaluate(doc *types.Document) any
-	GetExpressionSuffix() string
-}
+//type Expression interface {
+//	Evaluate(doc *types.Document) any
+//	GetExpressionSuffix() string
+//}
 
-// pathExpression is field path constructed from expression.
-type pathExpression struct {
+// Expression is field path constructed from expression.
+type Expression struct {
 	path types.Path
 	*ExpressionOpts
 }
@@ -89,7 +89,7 @@ type ExpressionOpts struct {
 
 // NewExpressionWithOpts creates a new instance by checking expression string.
 // It can take additional opts that specify how expressions should be evaluated.
-func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression, error) {
+func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	var val string
 
@@ -125,20 +125,20 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression,
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &pathExpression{
+	return &Expression{
 		path:           path,
 		ExpressionOpts: opts,
 	}, nil
 }
 
 // NewExpression creates a new instance by checking expression string.
-func NewExpression(expression string) (Expression, error) {
+func NewExpression(expression string) (*Expression, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	return NewExpressionWithOpts(expression, new(ExpressionOpts))
 }
 
 // Evaluate gets the value at the path.
-func (p *pathExpression) Evaluate(doc *types.Document) any {
+func (p *Expression) Evaluate(doc *types.Document) any {
 	path := p.path
 
 	if path.Len() == 1 {
@@ -186,7 +186,7 @@ func (p *pathExpression) Evaluate(doc *types.Document) any {
 }
 
 // GetExpressionSuffix returns suffix of pathExpression.
-func (p *pathExpression) GetExpressionSuffix() string {
+func (p *Expression) GetExpressionSuffix() string {
 	return p.path.Suffix()
 }
 
@@ -201,7 +201,7 @@ func (p *pathExpression) GetExpressionSuffix() string {
 // It is different from `getDocumentsAtSuffix`, it does not find array item by
 // array dot notation `foo.0.bar`. It returns empty array [] because using index
 // such as `0` does not match using expression path.
-func (p *pathExpression) getExpressionPathValue(doc *types.Document, path types.Path) []any {
+func (p *Expression) getExpressionPathValue(doc *types.Document, path types.Path) []any {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	keys := path.Slice()
 	vals := []any{doc}
