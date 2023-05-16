@@ -63,7 +63,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			return nil, false, lazyerrors.Error(err)
 		}
 
-		if strings.Contains(key, "$") {
+		if strings.HasPrefix(key, "$") {
 			return nil, false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("projection operator $ is not supported in %s", key),
