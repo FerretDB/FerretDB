@@ -77,11 +77,11 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	pairs = append(pairs,
-		"dataSize", stats.SizeCollections/scale,
-		"storageSize", stats.SizeCollections/scale,
+		"dataSize", stats.SizeCollections/int64(scale),
+		"storageSize", stats.SizeCollections/int64(scale),
 		"indexes", stats.CountIndexes,
-		"indexSize", stats.SizeIndexes/scale,
-		"totalSize", stats.SizeTotal/scale,
+		"indexSize", stats.SizeIndexes/int64(scale),
+		"totalSize", stats.SizeTotal/int64(scale),
 		"scaleFactor", float64(scale),
 		"ok", float64(1),
 	)

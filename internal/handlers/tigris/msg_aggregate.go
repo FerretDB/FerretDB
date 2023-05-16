@@ -269,18 +269,18 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(dbStats.Size),
+				"size", dbStats.Size,
 				"count", dbStats.NumObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(dbStats.Size),
-				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"storageSize", dbStats.Size,
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", int32(0), // Not supported for Tigris
+				"nindexes", int64(0), // Not supported for Tigris
 				"indexDetails", must.NotFail(types.NewDocument()), // Not supported for Tigris
 				"indexBuilds", must.NotFail(types.NewDocument()), // Not supported for Tigris
-				"totalIndexSize", int32(0), // Not supported for Tigris
-				"totalSize", int32(dbStats.Size),
+				"totalIndexSize", int64(0), // Not supported for Tigris
+				"totalSize", dbStats.Size,
 				"indexSizes", must.NotFail(types.NewDocument()), // Not supported for Tigris
 			)),
 		)
