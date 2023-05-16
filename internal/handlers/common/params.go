@@ -226,7 +226,7 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 					errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 					return 0, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrBadValue,
-						fmt.Sprintf(`Failed to parse bit position. Expected integer: %d: %#v`, i, val),
+						fmt.Sprintf(`Failed to parse bit position. Expected an integer: %d: %#v`, i, val),
 						operator,
 					)
 				default:
