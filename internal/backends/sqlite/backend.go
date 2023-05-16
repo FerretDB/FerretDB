@@ -24,8 +24,9 @@ import (
 
 type backend struct{}
 
+// NewBackend creates a new SQLite backend.
 func NewBackend() backends.Backend {
-	return backends.BackendContract(&backend{})
+	return backends.BackendContract(new(backend))
 }
 
 // Database implements backends.Backend interface.
@@ -34,10 +35,13 @@ func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams)
 }
 
 // ListDatabases implements backends.Backend interface.
+//
+//nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	panic("not implemented") // TODO: Implement
 }
 
+// DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
 	panic("not implemented") // TODO: Implement
 }

@@ -30,6 +30,7 @@ func newDatabase(b *backend) backends.Database {
 	})
 }
 
+// Collection implements backends.Database interface.
 func (db *database) Collection(params *backends.CollectionParams) backends.Collection {
 	return newCollection(db)
 }

@@ -19,9 +19,9 @@ import "context"
 // Database is a generic interface for all backends for accessing databases.
 //
 // Database object is expected to be stateless and temporary;
-// all state should be in the Backend that created that Database instance.
+// all state should be in the Backend that created this Database instance.
 // Handler can create and destroy Database objects on the fly.
-// Creating a Database object does not imply the create of the database itself.
+// Creating a Database object does not imply the creating of the database itself.
 //
 // Database methods should be thread-safe.
 //
@@ -81,6 +81,7 @@ type CollectionInfo struct {
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (res *ListCollectionsResult, err error) {
 	defer checkError(err)
 	res, err = dbc.db.ListCollections(ctx, params)
+
 	return
 }
 
@@ -95,6 +96,7 @@ type CreateCollectionParams struct {
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
 	defer checkError(err, ErrorCodeCollectionAlreadyExists, ErrorCodeCollectionNameIsInvalid)
 	err = dbc.db.CreateCollection(ctx, params)
+
 	return
 }
 
@@ -107,6 +109,7 @@ type DropCollectionParams struct {
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
 	defer checkError(err, ErrorCodeCollectionDoesNotExist)
 	err = dbc.db.DropCollection(ctx, params)
+
 	return
 }
 

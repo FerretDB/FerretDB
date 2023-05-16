@@ -16,7 +16,7 @@ package backends
 
 import "context"
 
-// Backends is a generic interface for all backends for accessing them.
+// Backend is a generic interface for all backends for accessing them.
 //
 // Backend object is expected to be stateful and wrap database connection(s).
 // Handler can create one Backend or multiple Backends with different authentication credentials.
@@ -65,7 +65,7 @@ func (bc *backendContract) Database(ctx context.Context, params *DatabaseParams)
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
 type ListDatabasesParams struct{}
 
-// ListCollectionsResult represents the results of Database.ListCollections method.
+// ListDatabasesResult represents the results of Backend.ListDatabases method.
 type ListDatabasesResult struct {
 	Databases []DatabaseInfo
 }
@@ -79,6 +79,7 @@ type DatabaseInfo struct {
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
 	defer checkError(err)
 	res, err = bc.b.ListDatabases(ctx, params)
+
 	return
 }
 
@@ -93,6 +94,7 @@ type DropDatabaseParams struct {
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
 	defer checkError(err)
 	err = bc.b.DropDatabase(ctx, params)
+
 	return
 }
 
