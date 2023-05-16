@@ -217,6 +217,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 | Command        | Argument | Status | Comments                                                  |
 | -------------- | -------- | ------ | --------------------------------------------------------- |
 | `authenticate` |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1731) |
+| `logout`       |          | ✅️      |                                                          |
 
 ### Role Management Commands
 
@@ -286,7 +287,6 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/153).
 | `killSessions`             |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1552) |
 | `refreshSessions`          |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1553) |
 | `startSession`             |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1554) |
-| `logout`                   |                | ✅️      |                                                          |
 
 
 ## Aggregation pipelines
