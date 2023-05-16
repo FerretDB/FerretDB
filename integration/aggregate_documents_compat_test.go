@@ -484,170 +484,139 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 func TestAggregateCompatGroup(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("FIXME")
-
 	testCases := map[string]aggregateStagesCompatTestCase{
-		//"NullID": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", nil},
-		//	}}}},
-		//},
-		//"DistinctID": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$_id"},
-		//	}}}},
-		//},
-		//"IDExpression": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", bson.D{{"v", "$v"}}},
-		//	}}}},
-		//	skip: "https://github.com/FerretDB/FerretDB/issues/2165",
-		//},
-		//"NonExistentID": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$invalid"},
-		//	}}}},
-		//},
-		//"NonExpressionID": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "v"},
-		//	}}}},
-		//},
-		//"NonStringID": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", bson.A{}},
-		//	}}}},
-		//},
-		//"OperatorNameAsExpression": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$add"},
-		//	}}}},
-		//},
-		"DotNotationSimple": {
+		"NullID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo"},
+				{"_id", nil},
 			}}}},
 		},
-		"DotNotationIndex": {
+		"DistinctID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0"},
+				{"_id", "$_id"},
 			}}}},
 		},
-		"DotNotationNested": {
+		"IDExpression": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo.bar"},
+				{"_id", bson.D{{"v", "$v"}}},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2165",
+		},
+		"NonExistentID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$invalid"},
 			}}}},
 		},
-		"DotNotationNestedIndex": {
+		"NonExpressionID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0.foo"},
+				{"_id", "v"},
 			}}}},
 		},
-		"DotNotationDeeplyNested": {
+		"NonStringID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.a.b.c"},
+				{"_id", bson.A{}},
 			}}}},
 		},
-		"DotNotationNonExistent": {
+		"OperatorNameAsExpression": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.non-existent-field"},
+				{"_id", "$add"},
 			}}}},
 		},
-		//"EmptyPath": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$"},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"EmptyVariable": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$$"},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"InvalidVariable$": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$$$"},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"InvalidVariable$s": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$$$s"},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"NonExistingVariable": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$$s"},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"SystemVariable": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", "$$NOW"},
-		//	}}}},
-		//	resultType: emptyResult,
-		//	skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
-		//},
-		//"GroupInvalidFields": {
-		//	pipeline:   bson.A{bson.D{{"$group", 1}}},
-		//	resultType: emptyResult,
-		//},
-		//"EmptyGroup": {
-		//	pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
-		//	resultType: emptyResult,
-		//},
-		//"MissingID": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"bla", 1},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"InvalidAccumulator": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", nil},
-		//		{"v", 1},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"EmptyAccumulator": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", nil},
-		//		{"v", bson.D{}},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"GroupMultipleAccumulator": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", nil},
-		//		{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
-		//	}}}},
-		//	resultType: emptyResult,
-		//},
-		//"GroupInvalidAccumulator": {
-		//	pipeline: bson.A{bson.D{{"$group", bson.D{
-		//		{"_id", nil},
-		//		{"v", bson.D{{"invalid", "v"}}},
-		//	}}}},
-		//	resultType: emptyResult,
-		//	skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
-		//},
+		"EmptyPath": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"EmptyVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$$"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidVariable$s": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$$s"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"NonExistingVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$s"},
+			}}}},
+			resultType: emptyResult,
+		},
+		"SystemVariable": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$$NOW"},
+			}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
+		},
+		"GroupInvalidFields": {
+			pipeline:   bson.A{bson.D{{"$group", 1}}},
+			resultType: emptyResult,
+		},
+		"EmptyGroup": {
+			pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
+			resultType: emptyResult,
+		},
+		"MissingID": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"bla", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+		"InvalidAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", 1},
+			}}}},
+			resultType: emptyResult,
+		},
+		"EmptyAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"GroupMultipleAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
+			}}}},
+			resultType: emptyResult,
+		},
+		"GroupInvalidAccumulator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", nil},
+				{"v", bson.D{{"invalid", "v"}}},
+			}}}},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
 	// testAggregateStagesCompatWithProviders(t, shareddata.Providers{shareddata.DocumentsDocuments}, testCases)
 }
 
-func TestAggregateCompatGroupDotNotation(t *testing.T) {
+func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	t.Parallel()
 
-	// Providers Composites, ArrayAndDocuments and Mixed
+	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
+	//
+	// Currently, providers Composites, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-	// https://github.com/FerretDB/FerretDB/issues/2276
 
 	providers := []shareddata.Provider{
 		shareddata.Scalars,
@@ -686,29 +655,24 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"DocDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo"},
-			}}}},
-		},
-		"ArrayDotNotation": {
+		"ArrayIndex": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0"},
 			}}}},
 		},
-		"ArrayDocDotNotation": {
+		"NestedInArray": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0.foo"},
 			}}}},
 		},
-		"NestedDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0.foo.0.bar"},
-			}}}},
-		},
-		"NonExistentDotNotation": {
+		"NonExistentParent": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$non.existent"},
+			}}}},
+		},
+		"NonExistentChild": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.non.existent"},
 			}}}},
 		},
 	}
@@ -716,55 +680,33 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
-func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
+func TestAggregateCompatGroupExpressionDottedFieldsDocs(t *testing.T) {
 	t.Parallel()
 
-	// Providers Composites and Mixed cannot be used due to sorting difference.
-	// FerretDB always sorts empty array is less than null.
-	// In compat, for `.sort()` an empty array is less than null.
-	// In compat, for aggregation `$sort` null is less than an empty array.
+	// TODO Merge the current function with TestAggregateCompatGroupExpressionDottedFields
+	// and use all providers when $sort problem is fixed:
 	// https://github.com/FerretDB/FerretDB/issues/2276
 
 	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
 		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
 		shareddata.ArrayAndDocuments,
+		shareddata.DocumentsDeeplyNested,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"DocDotNotation": {
+		"NestedInDocument": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
+			}}}},
+		},
+		"NestedArrayDocuments": { // Testing $group for mix of arrays and documents, see ArrayDocuments provider
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo.bar"},
+			}}}},
+		},
+		"DeeplyNested": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.a.b.c"},
 			}}}},
 		},
 	}
