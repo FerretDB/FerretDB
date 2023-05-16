@@ -74,7 +74,6 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 				)
 			case aggregations.ErrEmptyFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					// TODO
 					commonerrors.ErrEmptyFieldPath,
 					"Expression cannot be constructed with empty string",
 					"$unwind (stage)",
