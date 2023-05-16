@@ -14,7 +14,29 @@
 
 package integration
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+)
+
+func TestLogOut(t *testing.T) {
+	t.Helper()
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	db := collection.Database()
+
+	var res bson.D
+	err := db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
+
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+}
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/1568
