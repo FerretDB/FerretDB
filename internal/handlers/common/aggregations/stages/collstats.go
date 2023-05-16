@@ -102,7 +102,7 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 			for _, key := range scalable {
 				path := types.NewStaticPath("storageStats", key)
 				val := must.NotFail(res.GetByPath(path))
-				must.NoError(res.SetByPath(path, val.(int32)/scale))
+				must.NoError(res.SetByPath(path, val.(int64)/scale))
 			}
 		}
 
