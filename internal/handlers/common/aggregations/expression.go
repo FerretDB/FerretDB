@@ -46,7 +46,7 @@ const (
 	ErrEmptyVariable
 )
 
-// ExpressionError describes an error that occurs getting path from field.
+// ExpressionError describes an error that occurs while evaluating expression.
 type ExpressionError struct {
 	code ExpressionErrorCode
 }
@@ -132,13 +132,14 @@ func NewExpression(expression string) (*Expression, error) {
 }
 
 // Evaluate gets the value at the path.
+// It returns `types.Null` if the path does not exists.
 func (e *Expression) Evaluate(doc *types.Document) any {
 	path := e.path
 
 	if path.Len() == 1 {
 		val, err := doc.Get(path.String())
 		if err != nil {
-			// if the path does not exist, return nil.
+			// $group stage groups non-existent paths with `Null`
 			return types.Null
 		}
 
@@ -162,6 +163,7 @@ func (e *Expression) Evaluate(doc *types.Document) any {
 			return must.NotFail(types.NewArray())
 		}
 
+		// $group stage groups non-existent paths with `Null`
 		return types.Null
 	}
 

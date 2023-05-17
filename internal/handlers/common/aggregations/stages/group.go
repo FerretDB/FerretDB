@@ -220,6 +220,7 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 				"empty variable names are not allowed",
 				"$group (stage)",
 			)
+		// TODO https://github.com/FerretDB/FerretDB/issues/2275
 		case aggregations.ErrUndefinedVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupUndefinedVariable,
