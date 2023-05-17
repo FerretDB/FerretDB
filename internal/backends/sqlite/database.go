@@ -22,13 +22,12 @@ import (
 
 // database implements backends.Database interface.
 type database struct {
+	b    *backend
 	name string
-
-	b *backend
 }
 
 // newDatabase creates a new Database.
-func newDatabase(name string, b *backend) backends.Database {
+func newDatabase(b *backend, name string) backends.Database {
 	return backends.DatabaseContract(&database{
 		b:    b,
 		name: name,
@@ -36,8 +35,8 @@ func newDatabase(name string, b *backend) backends.Database {
 }
 
 // Collection implements backends.Database interface.
-func (db *database) Collection(params *backends.CollectionParams) backends.Collection {
-	return newCollection(db)
+func (db *database) Collection(name string) backends.Collection {
+	return newCollection(db, name)
 }
 
 // ListCollections implements backends.Database interface.

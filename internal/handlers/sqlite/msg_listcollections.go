@@ -17,8 +17,8 @@ package sqlite
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -32,23 +32,53 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.L, "comment", "authorizedCollections")
+
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := h.b.Database(ctx, &backends.DatabaseParams{Name: db}).ListCollections(ctx, nil)
+	var nameOnly bool
+
+	if v, _ := document.Get("nameOnly"); v != nil {
+		if nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v); err != nil {
+			return nil, err
+		}
+	}
+
+	res, err := h.b.Database(db).ListCollections(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	collections := types.MakeArray(len(result.Collections))
+	collections := types.MakeArray(len(res.Collections))
 
-	for _, col := range result.Collections {
+	for _, collection := range res.Collections {
 		d := must.NotFail(types.NewDocument(
-			"name", col.Name,
+			"name", collection.Name,
 			"type", "collection",
 		))
+
+		matches, err := common.FilterDocument(d, filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !matches {
+			continue
+		}
+
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", collection.Name,
+			))
+		}
 
 		collections.Append(d)
 	}

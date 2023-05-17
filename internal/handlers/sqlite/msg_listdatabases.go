@@ -17,6 +17,8 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -25,31 +27,81 @@ import (
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	response, err := h.b.ListDatabases(ctx, nil)
+	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	databases := types.MakeArray(len(response.Databases))
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+		return nil, err
+	}
 
-	for _, db := range response.Databases {
-		databases.Append(types.NewDocument(
+	common.Ignored(document, h.L, "comment", "authorizedDatabases")
+
+	var nameOnly bool
+
+	if v, _ := document.Get("nameOnly"); v != nil {
+		if nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v); err != nil {
+			return nil, err
+		}
+	}
+
+	res, err := h.b.ListDatabases(ctx, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var totalSize int64
+	var databases *types.Array
+
+	for _, db := range res.Databases {
+		d := must.NotFail(types.NewDocument(
 			"name", db.Name,
-			"sizeOnDisk", int64(0),
-			"empty", false,
+			"sizeOnDisk", db.Size,
+			"empty", db.Size == 0,
 		))
+
+		totalSize += db.Size
+
+		matches, err := common.FilterDocument(d, filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !matches {
+			continue
+		}
+
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", db.Name,
+			))
+		}
+
+		databases.Append(d)
 	}
 
 	var reply wire.OpMsg
 
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"databases", databases,
-			"totalSize", int64(0),
-			"totalSizeMb", int64(0),
-			"ok", float64(1),
-		))},
-	}))
+	switch {
+	case nameOnly:
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+				"ok", float64(1),
+			))},
+		}))
+	default:
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+				"totalSize", totalSize,
+				"totalSizeMb", totalSize/1024/1024,
+				"ok", float64(1),
+			))},
+		}))
+	}
 
 	return &reply, nil
 }
