@@ -15,11 +15,13 @@
 package projection
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -142,12 +144,13 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 		switch idValue := idValue.(type) {
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
-				fmt.Sprintf("projection %s is not supported",
-					types.FormatAnyValue(idValue),
-				),
-			)
+		//TODO
+		//return nil, commonerrors.NewCommandErrorMsg(
+		//	commonerrors.ErrCommandNotFound,
+		//	fmt.Sprintf("projection %s is not supported",
+		//		types.FormatAnyValue(idValue),
+		//	),
+		//)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
@@ -213,6 +216,39 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
+			if value.Len() == 0 {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrStageGroupInvalidAccumulator,
+					fmt.Sprintf("The field '%s' must be an accumulator object", key),
+					"$project (stage)", //TODO
+				)
+			}
+			if value.Len() > 0 {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrStageGroupMultipleAccumulator,
+					fmt.Sprintf("The field '%s' must specify one accumulator", key),
+					"$project (stage)", //TODO
+				)
+			}
+
+			operator := value.Command()
+
+			newAccumulator, ok := operators.GroupAccumulators[operator]
+			if !ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrNotImplemented,
+					fmt.Sprintf("$group accumulator %q is not implemented yet", operator),
+					operator+" (accumulator)",
+				)
+			}
+
+			accumulator, err := newAccumulator(value)
+			if err != nil {
+				return nil, err
+			}
+
+			accumulator.Accumulate(context.TODO(), nil)
+
 			return nil, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrCommandNotFound,
 				fmt.Sprintf("projection %s is not supported",

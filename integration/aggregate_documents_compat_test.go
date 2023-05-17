@@ -1562,14 +1562,44 @@ func TestAggregateCompatProject(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
-func TestAggregateCompatProjectType(t *testing.T) {
+func TestAggregateCompatOperatorType(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"Simple": {
+		"SimpleExpression": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "$v"}}}}}},
+			},
+		},
+		"DotNotationExpression": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "$v.foo"}}}}}},
+			},
+		},
+		"NonExistentExpression": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "$non-existent"}}}}}},
+			},
+		},
+		"DotNotationNonExistentExpression": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "$v.non-existent"}}}}}},
+			},
+		},
+		"String": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}}}}}},
+			},
+		},
+		"Null": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", nil}}}}}},
 			},
 		},
 	}
