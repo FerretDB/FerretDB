@@ -62,7 +62,7 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	_, err := db.b.metadataStorage.CreateCollection(ctx, db.name, params.Name)
+	tableName, err := db.b.metadataStorage.CreateCollection(ctx, db.name, params.Name)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 		return err
 	}
 
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson string)", params.Name)
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson string)", tableName)
 
 	_, err = conn.ExecContext(ctx, query)
 	if err != nil {
