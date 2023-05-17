@@ -12,18 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package registry
+package sqlite
 
-import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
-)
+import "testing"
 
-// init registers "sqlite" handler.
-func init() {
-	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("SQLite handler is in alpha. It is not supported yet.")
-
-		return sqlite.New(opts.Logger)
-	}
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
 }
