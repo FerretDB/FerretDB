@@ -38,8 +38,12 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	result, err := h.b.Database(ctx, &backends.DatabaseParams{Name: db}).ListCollections(ctx, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	collections := types.MakeArray(len(result.Collections))
+
 	for _, col := range result.Collections {
 		d := must.NotFail(types.NewDocument(
 			"name", col.Name,

@@ -17,7 +17,6 @@ package sqlite
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,7 +25,7 @@ import (
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	response, err := h.b.ListDatabases(ctx, &backends.ListDatabasesParams{})
+	response, err := h.b.ListDatabases(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
