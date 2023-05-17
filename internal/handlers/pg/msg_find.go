@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/projection"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -117,7 +118,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		iter, err = common.ProjectionIterator(iter, closer, params.Projection)
+		iter, err = projection.ProjectionIterator(iter, closer, params.Projection)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

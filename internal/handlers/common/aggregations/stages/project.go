@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/projection"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -52,7 +53,7 @@ func newProject(stage *types.Document) (aggregations.Stage, error) {
 
 	var cmdErr *commonerrors.CommandError
 
-	validated, inclusion, err := common.ValidateProjection(fields)
+	validated, inclusion, err := projection.ValidateProjection(fields)
 	if errors.As(err, &cmdErr) {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			cmdErr.Code(),
@@ -75,7 +76,7 @@ func newProject(stage *types.Document) (aggregations.Stage, error) {
 //
 //nolint:lll // for readability
 func (p *project) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return common.ProjectionIterator(iter, closer, p.projection)
+	return projection.ProjectionIterator(iter, closer, p.projection)
 }
 
 // Type implements Stage interface.
