@@ -16,8 +16,12 @@ package sqlite
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // collection implements backends.Collection interface.
@@ -36,7 +40,56 @@ func newCollection(db *database, name string) backends.Collection {
 
 // Insert implements backends.Collection interface.
 func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
-	panic("not implemented") // TODO: Implement
+	conn, err := c.db.b.pool.DB(c.db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	tableName, err := c.db.b.metadataStorage.CollectionInfo(c.db.name, c.name)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: check error
+	defer tx.Rollback()
+
+	var inserted int64
+
+	for {
+		_, doc, err := params.Docs.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		query := fmt.Sprintf("INSERT INTO %s (sjson) VALUES (?)", tableName)
+
+		bytes, err := sjson.Marshal(doc)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = tx.ExecContext(ctx, query, bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		inserted++
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &backends.InsertResult{InsertedCount: inserted}, nil
 }
 
 // check interfaces
