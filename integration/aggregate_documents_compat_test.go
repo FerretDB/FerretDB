@@ -604,7 +604,6 @@ func TestAggregateCompatGroup(t *testing.T) {
 	}
 
 	testAggregateStagesCompat(t, testCases)
-	// testAggregateStagesCompatWithProviders(t, shareddata.Providers{shareddata.DocumentsDocuments}, testCases)
 }
 
 func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
