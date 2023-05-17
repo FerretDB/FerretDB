@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
 
 func TestFindAndModifyEmptyCollectionName(t *testing.T) {
@@ -136,6 +137,17 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Message: "Plan executor error during findAndModify :: caused by :: Performing an update on the path '_id' would modify the immutable field '_id'",
 			},
 			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
+		},
+		"SetUnsuitableValueType": {
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"v.v.foo", "foo"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    28,
+				Name:    "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' in element {v: \"foo\"}",
+			},
+			altMessage: "Cannot create field 'foo' in element {v: { v: \"foo\" }}",
 		},
 	} {
 		name, tc := name, tc

@@ -36,7 +36,7 @@ import (
 // Returns true if document was changed.
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
 // TODO findAndModify returns CommandError https://github.com/FerretDB/FerretDB/issues/2440
-func UpdateDocument(doc, update *types.Document) (bool, error) {
+func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
 
@@ -64,13 +64,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$set":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), false)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
 			if err != nil {
 				return false, err
 			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), true)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
 			if err != nil {
 				return false, err
 			}
@@ -194,7 +194,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.
 // If the document was changed it returns true.
-func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
+func processSetFieldExpression(command string, doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
 	setDocKeys := setDoc.Keys()
@@ -230,10 +230,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 		}
 
 		if err := doc.SetByPath(path, setValue); err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrUnsuitableValueType,
-				err.Error(),
-			)
+			return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 		}
 
 		changed = true
@@ -906,6 +903,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 
 // newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
 func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
+	// Depending on the driver, the command may be camel case or lower case.
 	if strings.EqualFold(command, "findAndModify") {
 		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
 	}
