@@ -192,15 +192,15 @@ func (m *metadataStorage) CreateCollection(ctx context.Context, database, collec
 
 	db, ok := m.dbs[database]
 	if !ok {
-		return "", errors.New("database not found")
+		return "", errDatabaseNotFound
 	}
 
-	_, ok = db.collections[collection]
+	tableName, ok := db.collections[collection]
 	if ok {
-		return "", errors.New("collection already exists")
+		return tableName, nil
 	}
 
-	tableName := tableNameFromCollectionName(collection)
+	tableName = tableNameFromCollectionName(collection)
 
 	err := m.saveCollection(ctx, database, collection, tableName)
 	if err != nil {
