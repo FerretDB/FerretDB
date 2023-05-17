@@ -451,9 +451,9 @@ tasks:
         .
     vars:
       VERSION:
-        sh: cat build/version/version.txt
+        sh: go run ./cmd/envtool shell read build/version/version.txt
       COMMIT:
-        sh: cat build/version/commit.txt
+        sh: go run ./cmd/envtool shell read build/version/commit.txt
 
   # do not change that target much; see "Building and packaging" in README.md
   build-release:
@@ -528,7 +528,7 @@ tasks:
         env:
           ARCH: amd64
           VERSION:
-            sh: cat build/version/version.txt
+            sh: go run ./cmd/envtool shell read build/version/version.txt
           POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
 
@@ -546,7 +546,7 @@ tasks:
         env:
           ARCH: amd64
           VERSION:
-            sh: cat build/version/version.txt
+            sh: go run ./cmd/envtool shell read build/version/version.txt
           POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
 

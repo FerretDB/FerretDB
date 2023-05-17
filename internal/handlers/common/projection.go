@@ -27,9 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// errProjectionEmpty indicates projection field is empty.
-var errProjectionEmpty = errors.New("projection is empty")
-
 // ValidateProjection check projection document.
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
@@ -40,12 +37,12 @@ var errProjectionEmpty = errors.New("projection is empty")
 //   - `ErrProjectionExIn` when there is exclusion in inclusion projection;
 //   - `ErrProjectionInEx` when there is inclusion in exclusion projection;
 //   - `ErrNotImplemented` when there is unimplemented projection operators and expressions;
-//   - `errProjectionEmpty` when projection document is empty.
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
 	if projection.Len() == 0 {
-		return nil, false, errProjectionEmpty
+		// empty projection is exclusion project.
+		return types.MakeDocument(0), false, nil
 	}
 
 	var projectionVal *bool
@@ -63,7 +60,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			return nil, false, lazyerrors.Error(err)
 		}
 
-		if strings.Contains(key, "$") {
+		if strings.HasPrefix(key, "$") {
 			return nil, false, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("projection operator $ is not supported in %s", key),

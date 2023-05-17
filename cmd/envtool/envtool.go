@@ -347,6 +347,20 @@ func rmdir(paths ...string) error {
 	return errs
 }
 
+// read will show the content of a file.
+func read(paths ...string) error {
+	for _, path := range paths {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Print(string(b))
+	}
+
+	return nil
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
@@ -359,6 +373,9 @@ var cli struct {
 		Rmdir struct {
 			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
 		} `cmd:"" help:"Remove directories."`
+		Read struct {
+			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+		} `cmd:"" help:"read files"`
 	} `cmd:""`
 }
 
@@ -390,6 +407,8 @@ func main() {
 		err = mkdir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
 		err = rmdir(cli.Shell.Rmdir.Paths...)
+	case "shell read <path>":
+		err = read(cli.Shell.Read.Paths...)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}

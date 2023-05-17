@@ -67,7 +67,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	pairs := []any{
 		"ns", db + "." + collection,
-		"size", int32(stats.Size) / scale,
+		"size", stats.Size / int64(scale),
 		"count", stats.NumObjects,
 	}
 
