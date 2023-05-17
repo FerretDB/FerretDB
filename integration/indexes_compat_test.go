@@ -227,11 +227,14 @@ func TestIndexesCreate(t *testing.T) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
-					} else {
-						require.NoError(t, compatErr, "compat error; target returned no error")
+
+						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					assert.Equal(t, compatRes, targetRes)
 
@@ -371,13 +374,22 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 				},
 			).Decode(&compatRes)
 
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
 			if tc.resultType == emptyResult {
 				require.Nil(t, targetRes)
 				require.Nil(t, compatRes)
 			}
 
-			// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
-			AssertMatchesCommandError(t, compatErr, targetErr)
 			assert.Equal(t, compatRes, targetRes)
 
 			targetErr = targetCollection.Database().RunCommand(
@@ -391,8 +403,16 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			require.Nil(t, targetRes)
 			require.Nil(t, compatRes)
 
-			// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
-			AssertMatchesCommandError(t, compatErr, targetErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 		})
 	}
 }
@@ -686,17 +706,20 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					var compatRes bson.D
 					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
 					if tc.resultType == emptyResult {
 						require.Nil(t, targetRes)
 						require.Nil(t, compatRes)
-					}
-
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
-						AssertMatchesCommandError(t, compatErr, targetErr)
-					} else {
-						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
 
 					require.Equal(t, compatRes, targetRes)
