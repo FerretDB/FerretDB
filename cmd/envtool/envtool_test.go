@@ -15,6 +15,8 @@
 package main
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,6 +39,19 @@ func TestRmdirAbsentDir(t *testing.T) {
 
 	err := rmdir("absent")
 	assert.NoError(t, err)
+}
+
+func TestRead(t *testing.T) {
+	t.Parallel()
+	s := "test string in a file"
+	f := "file.temp"
+	err := os.WriteFile(f, []byte(s), 0644)
+	assert.NoError(t, err)
+	var output bytes.Buffer
+	read(&output, f)
+	if s != output.String() {
+		t.Errorf("got %s but expected %s", output.String(), s)
+	}
 }
 
 func TestMkdirAndRmdir(t *testing.T) {
