@@ -612,49 +612,24 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 
 	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
 	//
-	// Currently, providers Composites, ArrayAndDocuments and Mixed
+	// Currently, providers Composites, DocumentsDeeplyNested and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-
-	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
+	providers := shareddata.AllProviders().Remove("Mixed", "Composites", "DocumentsDeeplyNested")
 
 	testCases := map[string]aggregateStagesCompatTestCase{
+		"NestedInDocument": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.foo"},
+			}}}},
+		},
+		"DeeplyNested": { // Expect non-empty results for DocumentsDeeplyNested provider
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.a.b.c"},
+			}}}},
+		},
 		"ArrayIndex": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0"},
@@ -688,28 +663,17 @@ func TestAggregateCompatGroupExpressionDottedFieldsDocs(t *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/2276
 
 	providers := []shareddata.Provider{
-		shareddata.ArrayDocuments,
-		shareddata.ArrayAndDocuments,
 		shareddata.DocumentsDeeplyNested,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"NestedInDocument": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo"},
-			}}}},
-		},
-		"NestedArrayDocuments": { // Testing $group for mix of arrays and documents, see ArrayDocuments provider
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo.bar"},
-			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2276",
-		},
-		"DeeplyNested": {
+		"DeeplyNested": { // Expect non-empty results for DocumentsDeeplyNested provider
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.a.b.c"},
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2276",
+			// compat results [ { _id: null }, { _id: 12 }, { _id: { d: 123 } }, { _id: [ 1, 2 ] } ]
+			// target results [ { _id: null }, { _id: [ 1, 2 ] }, { _id: 12 }, { _id: { d: 123 } } ]
 		},
 	}
 
