@@ -45,13 +45,11 @@ func TestRead(t *testing.T) {
 	t.Parallel()
 	s := "test string in a file"
 	f := "file.temp"
-	err := os.WriteFile(f, []byte(s), 0644)
+	err := os.WriteFile(f, []byte(s), 0o644)
 	assert.NoError(t, err)
 	var output bytes.Buffer
 	read(&output, f)
-	if s != output.String() {
-		t.Errorf("got %s but expected %s", output.String(), s)
-	}
+	assert.EqualValues(t, s, output.String())
 }
 
 func TestMkdirAndRmdir(t *testing.T) {
