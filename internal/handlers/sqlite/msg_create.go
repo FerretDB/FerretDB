@@ -78,7 +78,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	err = h.b.Database(&backends.DatabaseParams{Name: db}).CreateCollection(ctx, &backends.CreateCollectionParams{
+	err = h.b.Database(db).CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collection,
 	})
 	switch {
