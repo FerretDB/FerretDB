@@ -26,7 +26,7 @@ import "context"
 //
 // See backendContract and its methods for additional details.
 type Backend interface {
-	Database(context.Context, *DatabaseParams) Database
+	Database(string) Database
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
@@ -50,16 +50,11 @@ type backendContract struct {
 	b Backend
 }
 
-// DatabaseParams represents the parameters of Backend.Database method.
-type DatabaseParams struct {
-	Name string
-}
-
-// Database returns a Database instance for given parameters.
+// Database returns a Database instance for the given name.
 //
 // The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(ctx context.Context, params *DatabaseParams) Database {
-	return bc.b.Database(ctx, params)
+func (bc *backendContract) Database(name string) Database {
+	return bc.b.Database(name)
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
@@ -73,6 +68,7 @@ type ListDatabasesResult struct {
 // DatabaseInfo represents information about a single database.
 type DatabaseInfo struct {
 	Name string
+	Size int64
 }
 
 // ListDatabases returns a Database instance for given parameters.
@@ -88,11 +84,9 @@ type DropDatabaseParams struct {
 	Name string
 }
 
-// DropDatabase drops database with given parameters.
-//
-// Database doesn't have to exist; that's not an error.
+// DropDatabase drops existing database for given parameters.
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
-	defer checkError(err)
+	defer checkError(err, ErrorCodeDatabaseDoesNotExist)
 	err = bc.b.DropDatabase(ctx, params)
 
 	return
