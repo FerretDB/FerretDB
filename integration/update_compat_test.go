@@ -117,8 +117,13 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
+
+								if targetErr.Error() == "update document must have at least one element" {
+									// mongo go driver sent error that the update document is empty.
+									require.Equal(t, compatErr, targetErr)
+
+									return
+								}
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
@@ -126,6 +131,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
+								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
 								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -239,8 +245,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
+								t.Logf("Compat error: %v", compatErr)
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
@@ -248,6 +253,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
+								// error messages are intentionally not compared
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -275,15 +281,17 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 								if targetErr != nil {
 									t.Logf("Target error: %v", targetErr)
+									t.Logf("Compat error: %v", compatErr)
+
+									// error messages are intentionally not compared
 									AssertMatchesCommandError(t, compatErr, targetErr)
 
 									return
 								}
 								require.NoError(t, compatErr, "compat error; target returned no error")
 
-								var targetRes, compatRes []bson.D
-								require.NoError(t, targetCursor.All(ctx, &targetRes))
-								require.NoError(t, compatCursor.All(ctx, &compatRes))
+								targetRes := FetchAll(t, ctx, targetCursor)
+								compatRes := FetchAll(t, ctx, compatCursor)
 
 								t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 								t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
@@ -371,9 +379,7 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
-
+								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
 								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -483,6 +489,15 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      int32(0),
 			resultType: emptyResult,
+		},
+		"TrueEmptyDocument": {
+			update: bson.D{},
+			multi:  true,
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2630",
+		},
+		"FalseEmptyDocument": {
+			update: bson.D{},
+			multi:  false,
 		},
 	}
 

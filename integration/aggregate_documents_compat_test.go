@@ -127,15 +127,16 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetCursor.All(ctx, &targetRes))
-					require.NoError(t, compatCursor.All(ctx, &compatRes))
+					targetRes := FetchAll(t, ctx, targetCursor)
+					compatRes := FetchAll(t, ctx, compatCursor)
 
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
@@ -205,6 +206,8 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
+
+					// error messages are intentionally not compared
 					AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return
