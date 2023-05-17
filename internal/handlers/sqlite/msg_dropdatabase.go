@@ -17,11 +17,49 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDropDatabase implements HandlerInterface.
 func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	common.Ignored(document, h.L, "writeConcern", "comment")
+
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.b.DropDatabase(ctx, &backends.DropDatabaseParams{
+		Name: db,
+	})
+
+	res := must.NotFail(types.NewDocument())
+
+	switch {
+	case err == nil:
+		res.Set("dropped", db)
+	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist):
+		// nothing
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.Set("ok", float64(1))
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{res},
+	}))
+
+	return &reply, nil
 }
