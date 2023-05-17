@@ -39,58 +39,68 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	indexName := "test_nested_field"
-	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		idx := Index{
-			Name: indexName,
-			Key:  []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}},
-		}
-		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
-	})
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		index             Index  // the index to create
+		expecteDefinition string // the expected index definition in postgresql
+	}{
+		"keyWithoutNestedField": {
+			index: Index{
+				Name: "foo_and_bar",
+				Key: []IndexKeyPair{
+					{Field: "foo", Order: types.Ascending},
+					{Field: "bar", Order: types.Descending},
+				},
+			},
+			expecteDefinition: "((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC",
+		},
+		"keyWithNestedField_level1": {
+			index: Index{
+				Name: "foo_dot_bar",
+				Key: []IndexKeyPair{
+					{Field: "foo.bar", Order: types.Ascending},
+				},
+			},
+			expecteDefinition: "(((_jsonb -> 'foo'::text) -> 'bar'::text))",
+		},
+		"keyWithNestedField_level2": {
+			index: Index{
+				Name: "foo_dot_bar_dot_c",
+				Key: []IndexKeyPair{
+					{Field: "foo.bar.c", Order: types.Ascending},
+				},
+			},
+			expecteDefinition: "((((_jsonb -> 'foo'::text) -> 'bar'::text) -> 'c'::text))",
+		},
+	} {
+		// https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721#how-to-solve-this
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				if err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &tc.index); err != nil {
+					return err
+				}
+				return nil
+			})
+			require.NoError(t, err)
+			tableName := collectionNameToTableName(collectionName)
+			pgIndexName := indexNameToPgIndexName(collectionName, tc.index.Name)
 
-	tableName := collectionNameToTableName(collectionName)
-	pgIndexName := indexNameToPgIndexName(collectionName, indexName)
+			var indexdef string
+			err = pool.p.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				databaseName, tableName, pgIndexName,
+			).Scan(&indexdef)
+			require.NoError(t, err)
 
-	var indexdef string
-	err = pool.p.QueryRow(
-		ctx,
-		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-		databaseName, tableName, pgIndexName,
-	).Scan(&indexdef)
-	require.NoError(t, err)
-
-	expectedIndexdef := fmt.Sprintf(
-		"CREATE INDEX %s ON \"%s\".%s USING btree ((((_jsonb -> 'foo'::text) -> 'bar'::text)))",
-		pgIndexName, databaseName, tableName,
-	)
-	assert.Equal(t, expectedIndexdef, indexdef)
-
-	indexName = "test"
-	err = pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		idx := Index{
-			Name: indexName,
-			Key:  []IndexKeyPair{{Field: "foo", Order: types.Ascending}, {Field: "bar", Order: types.Descending}},
-		}
-		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
-	})
-	require.NoError(t, err)
-
-	tableName = collectionNameToTableName(collectionName)
-	pgIndexName = indexNameToPgIndexName(collectionName, indexName)
-
-	err = pool.p.QueryRow(
-		ctx,
-		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-		databaseName, tableName, pgIndexName,
-	).Scan(&indexdef)
-	require.NoError(t, err)
-
-	expectedIndexdef = fmt.Sprintf(
-		"CREATE INDEX %s ON \"%s\".%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
-		pgIndexName, databaseName, tableName,
-	)
-	assert.Equal(t, expectedIndexdef, indexdef)
+			expectedIndexdef := fmt.Sprintf(
+				"CREATE INDEX %s ON \"%s\".%s USING btree (%s)",
+				pgIndexName, databaseName, tableName, tc.expecteDefinition,
+			)
+			assert.Equal(t, expectedIndexdef, indexdef)
+		})
+	}
 }
 
 // TestDropIndexes checks that we correctly drop indexes for various combination of existing indexes.
