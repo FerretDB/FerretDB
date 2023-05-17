@@ -276,6 +276,21 @@ func TestFindAndModifyErrors(t *testing.T) {
 			altMessage: "Failed to apply $inc operations to current value " +
 				"((NumberInt)42) for document {_id: \"int32\"}",
 		},
+		"MaxUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$max", bson.D{{"v.foo", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

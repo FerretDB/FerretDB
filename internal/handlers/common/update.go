@@ -107,7 +107,7 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 			}
 
 		case "$max":
-			changed, err = processMaxFieldExpression(doc, updateV)
+			changed, err = processMaxFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
@@ -437,7 +437,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 
 // processMaxFieldExpression changes document according to $max operator.
 // If the document was changed it returns true.
-func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
+func processMaxFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
 	maxExpression.SortFieldsByKey()
 
@@ -462,7 +462,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, maxVal)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, err.Error())
+				return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 			}
 
 			changed = true
