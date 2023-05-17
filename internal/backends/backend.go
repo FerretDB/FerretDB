@@ -88,11 +88,9 @@ type DropDatabaseParams struct {
 	Name string
 }
 
-// DropDatabase drops database with given parameters.
-//
-// Database doesn't have to exist; that's not an error.
+// DropDatabase drops existing database for given parameters.
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
-	defer checkError(err)
+	defer checkError(err, ErrorCodeDatabaseDoesNotExist)
 	err = bc.b.DropDatabase(ctx, params)
 
 	return
