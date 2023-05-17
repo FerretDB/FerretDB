@@ -245,6 +245,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
+								t.Logf("Compat error: %v", compatErr)
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
@@ -252,7 +253,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
-								// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+								// error messages are intentionally not compared
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -280,16 +281,17 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 								if targetErr != nil {
 									t.Logf("Target error: %v", targetErr)
-									// AssertMatchesCommandError compares error types, codes and names, it does not compare messages.
+									t.Logf("Compat error: %v", compatErr)
+
+									// error messages are intentionally not compared
 									AssertMatchesCommandError(t, compatErr, targetErr)
 
 									return
 								}
 								require.NoError(t, compatErr, "compat error; target returned no error")
 
-								var targetRes, compatRes []bson.D
-								require.NoError(t, targetCursor.All(ctx, &targetRes))
-								require.NoError(t, compatCursor.All(ctx, &compatRes))
+								targetRes := FetchAll(t, ctx, targetCursor)
+								compatRes := FetchAll(t, ctx, compatCursor)
 
 								t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 								t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
