@@ -169,6 +169,15 @@ func TestReporterReport(t *testing.T) {
 		s = r.P.Get()
 		assert.True(t, s.UpdateAvailable())
 		assert.Equal(t, "0.4.0", s.LatestVersion)
+
+		// Disable telemetry and call the telemetry server again.
+		require.NoError(t, provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(false) }))
+		r.report(testutil.Ctx(t))
+
+		// Expect no update to be available, and the latest version to be empty.
+		s = r.P.Get()
+		assert.False(t, s.UpdateAvailable())
+		assert.Equal(t, "", s.LatestVersion)
 	})
 
 	t.Run("TelemetryDisabled", func(t *testing.T) {
