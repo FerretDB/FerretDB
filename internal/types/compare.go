@@ -71,11 +71,13 @@ func Compare(docValue, filterValue any) CompareResult {
 // This is specially used for aggregation grouping comparison.
 func CompareForAggregation(docValue, filterValue any) CompareResult {
 	if docValue == nil {
-		panic("compare: docValue is nil")
+		docValue = Null
+		//panic("compare: docValue is nil")
 	}
 
 	if filterValue == nil {
-		panic("compare: filterValue is nil")
+		filterValue = Null
+		//panic("compare: filterValue is nil")
 	}
 
 	switch docValue := docValue.(type) {

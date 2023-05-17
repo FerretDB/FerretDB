@@ -142,8 +142,8 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 				newDoc := must.NotFail(types.NewDocument("_id", id, key, v))
 				out = append(out, newDoc)
 			}
-		case types.NullType:
-			// Ignore Nulls
+		case types.NullType, nil:
+			// Ignore Nulls and empty fields
 		default:
 			out = append(out, doc)
 		}

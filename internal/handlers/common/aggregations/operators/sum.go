@@ -67,6 +67,7 @@ func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Docu
 
 		for _, doc := range grouped {
 			v := s.expression.Evaluate(doc)
+			// TODO: check if there's a test for unset fields
 			values = append(values, v)
 		}
 
