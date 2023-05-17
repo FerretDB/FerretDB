@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
@@ -106,12 +105,8 @@ func TestReporterReport(t *testing.T) {
 		LatestVersion:   "0.3.4",
 		UpdateAvailable: true,
 	}
-	mx := new(sync.Mutex)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mx.Lock()
-		defer mx.Unlock()
-
 		if r.Method == http.MethodPost {
 			w.WriteHeader(http.StatusCreated)
 			require.NoError(t, json.NewEncoder(w).Encode(telemetryResponse))
@@ -150,9 +145,7 @@ func TestReporterReport(t *testing.T) {
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to false on the telemetry side, and call the telemetry server again.
-		mx.Lock()
 		telemetryResponse.UpdateAvailable = false
-		mx.Unlock()
 		r.report(testutil.Ctx(t))
 
 		// Expect the state of provider to be updated.
@@ -161,10 +154,9 @@ func TestReporterReport(t *testing.T) {
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to true and update version, and call the telemetry server again.
-		mx.Lock()
+		//	mx.Lock()
 		telemetryResponse.UpdateAvailable = true
 		telemetryResponse.LatestVersion = "0.4.0"
-		mx.Unlock()
 		r.report(testutil.Ctx(t))
 
 		// Expect the state and the version to be updated.
