@@ -16,6 +16,8 @@ package sqlite
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	_ "modernc.org/sqlite"
 
@@ -74,7 +76,17 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	panic("not implemented") // TODO: Implement
+	err := b.metadataStorage.RemoveDatabase(params.Name)
+	if err != nil {
+		return err
+	}
+
+	err = os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
 }
 
 // Close implements backends.Backend interface.
