@@ -84,14 +84,8 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 
 				path, err = types.NewPathFromString(key)
 				if err != nil {
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrEmptyName,
-						fmt.Sprintf("Cannot apply $unset to a value of non-numeric type. "+
-							"{_id: %s} has the field '%s' of non-numeric type object",
-							must.NotFail(doc.Get("_id")),
-							key,
-						),
-					)
+					// ValidateUpdateOperators checked already $unset contains valid path.
+					panic(err)
 				}
 
 				if doc.HasByPath(path) {
@@ -938,7 +932,8 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 	return nil
 }
 
-// extractValueFromUpdateOperator gets operator "op" value and returns WriteError error if it is not a document.
+// extractValueFromUpdateOperator gets operator "op" value and returns CommandError for `findAndModify`
+// WriteError error other commands if it is not a document.
 // For example, for update document
 //
 //	 bson.D{
