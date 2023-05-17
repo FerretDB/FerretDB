@@ -35,5 +35,6 @@ var GroupAccumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCount,
 	"$sum":   newSum,
+	"$type":  newType,
 	// please keep sorted alphabetically
 }

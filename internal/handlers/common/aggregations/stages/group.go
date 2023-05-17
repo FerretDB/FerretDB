@@ -101,6 +101,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		operator := accumulation.Command()
 
+		// TODO test for $type in group
 		newAccumulator, ok := operators.GroupAccumulators[operator]
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -234,10 +235,6 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 
 	for _, doc := range in {
 		val := expression.Evaluate(doc)
-		if val == nil {
-			val = types.Null
-		}
-
 		group.addOrAppend(val, doc)
 	}
 
