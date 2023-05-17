@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"golang.org/x/exp/maps"
@@ -54,11 +55,12 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 		connPool: pool,
 		dbPath:   dbPath,
 		dbs:      map[string]*dbInfo{},
+		mx:       sync.Mutex{},
 	}, nil
 }
 
 // metadataStorage provide access to database metadata.
-// It uses connection pool to load and store metadata.
+// It uses connection pool to loadCollections and store metadata.
 type metadataStorage struct { //nolint:vet // for readability
 	dbPath string
 
@@ -78,10 +80,6 @@ func (m *metadataStorage) ListDatabases() ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
-	if m.dbs != nil {
-		return maps.Keys(m.dbs), nil
-	}
-
 	var dbs []string
 
 	err := filepath.WalkDir(m.dbPath, func(path string, d fs.DirEntry, err error) error {
@@ -89,8 +87,10 @@ func (m *metadataStorage) ListDatabases() ([]string, error) {
 			return err
 		}
 
-		if filepath.Ext(path) == dbExtension {
-			dbs = append(dbs, path)
+		if strings.Contains(d.Name(), dbExtension) {
+			dbName, _ := strings.CutSuffix(d.Name(), dbExtension)
+
+			dbs = append(dbs, dbName)
 		}
 
 		return nil
@@ -117,11 +117,11 @@ func (m *metadataStorage) ListCollections(ctx context.Context, database string) 
 		return nil, errDatabaseNotFound
 	}
 
-	// no metadata about collections loaded, load now
+	// no metadata about collections loaded, loadCollections now
 	if db == nil {
 		var err error
 
-		db, err = m.load(ctx, database)
+		db, err = m.loadCollections(ctx, database)
 		if err != nil {
 			return nil, err
 		}
@@ -224,8 +224,8 @@ func (m *metadataStorage) CreateCollection(ctx context.Context, database, collec
 	return tableName, nil
 }
 
-// load loads database metadata from database file.
-func (m *metadataStorage) load(ctx context.Context, dbName string) (*dbInfo, error) {
+// loadCollections loads collections metadata from database file.
+func (m *metadataStorage) loadCollections(ctx context.Context, dbName string) (*dbInfo, error) {
 	conn, err := m.connPool.DB(dbName)
 	if err != nil {
 		return nil, err

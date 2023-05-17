@@ -45,6 +45,11 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
+	_, err = storage.ListDatabases()
+	if err != nil {
+		return nil, err
+	}
+
 	return backends.BackendContract(&backend{
 		dir:             params.Dir,
 		pool:            pool,

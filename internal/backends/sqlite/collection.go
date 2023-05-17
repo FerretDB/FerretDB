@@ -84,6 +84,8 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 		inserted++
 	}
 
+	params.Docs.Close()
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, err
