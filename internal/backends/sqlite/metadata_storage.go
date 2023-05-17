@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package sqlite
 
 import (
@@ -16,7 +30,6 @@ import (
 )
 
 const (
-
 	// Reserved prefix for database and collection names.
 	reservedPrefix = "_ferretdb_"
 
@@ -27,14 +40,13 @@ const (
 )
 
 // newMetadataStorage returns instance of metadata storage.
-func newMetadataStorage(dbPath string) (*metadataStorage, error) {
+func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error) {
 	if dbPath == "" {
 		return nil, errors.New("db path is empty")
 	}
 
 	return &metadataStorage{
-		// TODO: might be passed as parameter.
-		connPool: newConnPool(),
+		connPool: pool,
 		dbPath:   dbPath,
 		dbs:      make(map[string]*dbInfo),
 	}, nil
@@ -131,7 +143,7 @@ func (m *metadataStorage) RemoveDatabase(database string) error {
 }
 
 // RemoveCollection removes collection metadata.
-// It does not physically remove collection from database.
+// It does not remove collection from database.
 func (m *metadataStorage) RemoveCollection(database, collection string) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
@@ -151,6 +163,8 @@ func (m *metadataStorage) RemoveCollection(database, collection string) error {
 	return nil
 }
 
+// CreateDatabase adds database to metadata storage.
+// It doesn't create database file.
 func (m *metadataStorage) CreateDatabase(database string) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
@@ -165,7 +179,7 @@ func (m *metadataStorage) CreateDatabase(database string) error {
 	return nil
 }
 
-// CreateCollection saves collection metadata to database file
+// CreateCollection saves collection metadata to database file.
 func (m *metadataStorage) CreateCollection(ctx context.Context, database, collection string) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
@@ -180,7 +194,7 @@ func (m *metadataStorage) CreateCollection(ctx context.Context, database, collec
 		return errors.New("collection already exists")
 	}
 
-	tableName := mangleCollection(collection)
+	tableName := tableNameFromCollectionName(collection)
 
 	err := m.saveCollection(ctx, database, collection, tableName)
 	if err != nil {
@@ -257,8 +271,8 @@ func (m *metadataStorage) saveCollection(ctx context.Context, dbName, collName, 
 	return nil
 }
 
-// mangleCollection mangles collection name to table name.
+// tableNameFromCollectionName mangles collection name to table name.
 // TODO: implement proper mangle if needed.
-func mangleCollection(name string) string {
+func tableNameFromCollectionName(name string) string {
 	return name
 }

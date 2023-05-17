@@ -24,7 +24,8 @@ import (
 
 // backend implements backends.Backend interface.
 type backend struct {
-	dir string
+	dir             string
+	metadataStorage *metadataStorage
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
@@ -33,10 +34,19 @@ type NewBackendParams struct {
 }
 
 // NewBackend creates a new SQLite backend.
-func NewBackend(params *NewBackendParams) backends.Backend {
+func NewBackend(params *NewBackendParams) (backends.Backend, error) {
+	// TODO: we should close it when backend is closed.
+	pool := newConnPool()
+
+	storage, err := newMetadataStorage(params.Dir, pool)
+	if err != nil {
+		return nil, err
+	}
+
 	return backends.BackendContract(&backend{
-		dir: params.Dir,
-	})
+		dir:             params.Dir,
+		metadataStorage: storage,
+	}), nil
 }
 
 // Database implements backends.Backend interface.
