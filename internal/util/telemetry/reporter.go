@@ -239,8 +239,14 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 // with update available and latest version if any update is available.
 func (r *Reporter) report(ctx context.Context) {
 	s := r.P.Get()
+
 	if s.Telemetry != nil && !*s.Telemetry {
 		r.L.Debug("Telemetry is disabled, skipping reporting.")
+
+		// If telemetry is disabled, we can't say anything about update availability or latest version.
+		s.LatestVersion = ""
+		s.IsUpdateAvailable = false
+
 		return
 	}
 
