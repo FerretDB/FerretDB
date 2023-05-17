@@ -48,12 +48,12 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 	return &metadataStorage{
 		connPool: pool,
 		dbPath:   dbPath,
-		dbs:      make(map[string]*dbInfo),
+		dbs:      map[string]*dbInfo{},
 	}, nil
 }
 
 // metadataStorage provide access to database metadata.
-type metadataStorage struct {
+type metadataStorage struct { //nolint:vet // for readability
 	dbPath string
 
 	connPool *connPool
@@ -223,7 +223,7 @@ func (m *metadataStorage) load(ctx context.Context, dbName string) (*dbInfo, err
 	defer result.Close()
 
 	var metadata = dbInfo{
-		collections: make(map[string]string),
+		collections: map[string]string{},
 	}
 
 	for result.Next() {

@@ -24,14 +24,14 @@ import (
 func newConnPool() *connPool {
 	return &connPool{
 		mx:  sync.Mutex{},
-		dbs: make(map[string]*sql.DB),
+		dbs: map[string]*sql.DB{},
 	}
 }
 
 // connPool is a pool of database connections.
 type connPool struct {
-	mx  sync.Mutex
 	dbs map[string]*sql.DB
+	mx  sync.Mutex
 }
 
 // DB returns a database connection for the given name.
