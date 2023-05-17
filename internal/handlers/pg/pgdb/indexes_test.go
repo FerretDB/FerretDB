@@ -40,8 +40,8 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	for name, tc := range map[string]struct {
-		index             Index  // the index to create
 		expecteDefinition string // the expected index definition in postgresql
+		index             Index  // the index to create
 	}{
 		"keyWithoutNestedField": {
 			index: Index{
@@ -74,6 +74,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	} {
 		// https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721#how-to-solve-this
 		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
