@@ -22,13 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// ProjectionIterator returns an iterator that projects documents returned by the underlying iterator.
+// Iterator returns an iterator that projects documents returned by the underlying iterator.
 // It will be added to the given closer.
 //
 // Next method returns the next projected document.
 //
 // Close method closes the underlying iterator.
-func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
+func Iterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	projectionValidated, inclusion, err := ValidateProjection(projection)
 	if errors.Is(err, errProjectionEmpty) {
 		return iter, nil

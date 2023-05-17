@@ -101,7 +101,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		iter, err = projection.ProjectionIterator(iter, closer, params.Projection)
+		iter, err = projection.Iterator(iter, closer, params.Projection)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

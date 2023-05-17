@@ -76,7 +76,7 @@ func newProject(stage *types.Document) (aggregations.Stage, error) {
 //
 //nolint:lll // for readability
 func (p *project) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return projection.ProjectionIterator(iter, closer, p.projection)
+	return projection.Iterator(iter, closer, p.projection)
 }
 
 // Type implements Stage interface.
