@@ -257,7 +257,12 @@ type groupMap struct {
 
 // addOrAppend adds a groupID documents pair if the groupID does not exist,
 // if the groupID exists it appends the documents to the slice.
+// It treats nil as `types.Null`.
 func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
+	if groupKey == nil {
+		groupKey = types.Null
+	}
+
 	for i, g := range m.docs {
 		// groupID is a distinct key and can be any BSON type including array and Binary,
 		// so we cannot use structure like map.
