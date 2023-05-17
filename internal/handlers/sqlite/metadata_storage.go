@@ -151,7 +151,7 @@ func (m *metadataStorage) RemoveCollection(database, collection string) error {
 	return nil
 }
 
-func (m *metadataStorage) CreateDatabase(ctx context.Context, database string) error {
+func (m *metadataStorage) CreateDatabase(database string) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
