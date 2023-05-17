@@ -75,7 +75,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 			return nil, err
 		}
 
-		query := fmt.Sprintf("INSERT INTO %s (sjson) VALUES (?)", tableName)
+		query := fmt.Sprintf("INSERT INTO %s VALUES (?)", tableName)
 
 		bytes, err := sjson.Marshal(doc)
 		if err != nil {
