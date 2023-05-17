@@ -63,7 +63,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	s := mc.p.Get()
 
 	constLabels["telemetry"] = s.TelemetryString()
-	constLabels["update_available"] = strconv.FormatBool(s.UpdateAvailable())
+	constLabels["update_available"] = strconv.FormatBool(s.IsUpdateAvailable)
 
 	if mc.addUUIDToMetric {
 		constLabels["uuid"] = s.UUID

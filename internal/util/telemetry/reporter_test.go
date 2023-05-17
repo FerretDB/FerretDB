@@ -99,11 +99,11 @@ func TestReporterReport(t *testing.T) {
 	t.Parallel()
 
 	telemetryResponse := struct {
-		UpdateAvailable bool   `json:"update_available"`
 		LatestVersion   string `json:"latest_version"`
+		UpdateAvailable bool   `json:"update_available"`
 	}{
-		UpdateAvailable: true,
 		LatestVersion:   "0.3.4",
+		UpdateAvailable: true,
 	}
 	mx := new(sync.Mutex)
 
@@ -138,13 +138,13 @@ func TestReporterReport(t *testing.T) {
 		// Check the initial state of the provider, it has not called telemetry yet,
 		// no update is available and unaware of the latest version.
 		s := r.P.Get()
-		assert.False(t, s.UpdateAvailable())
+		assert.False(t, s.IsUpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 
 		// Call the telemetry server and check the state of the provider to be updated.
 		r.report(testutil.Ctx(t))
 		s = r.P.Get()
-		assert.True(t, s.UpdateAvailable())
+		assert.True(t, s.IsUpdateAvailable)
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to false on the telemetry side, and call the telemetry server again.
@@ -155,7 +155,7 @@ func TestReporterReport(t *testing.T) {
 
 		// Expect the state of provider to be updated.
 		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable())
+		assert.False(t, s.IsUpdateAvailable)
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to true and update version, and call the telemetry server again.
@@ -167,7 +167,7 @@ func TestReporterReport(t *testing.T) {
 
 		// Expect the state and the version to be updated.
 		s = r.P.Get()
-		assert.True(t, s.UpdateAvailable())
+		assert.True(t, s.IsUpdateAvailable)
 		assert.Equal(t, "0.4.0", s.LatestVersion)
 
 		// Disable telemetry and call the telemetry server again.
@@ -176,7 +176,7 @@ func TestReporterReport(t *testing.T) {
 
 		// Expect no update to be available, and the latest version to be empty.
 		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable())
+		assert.False(t, s.IsUpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 	})
 
@@ -196,13 +196,13 @@ func TestReporterReport(t *testing.T) {
 		// Check the initial state of the provider, it has not called telemetry yet,
 		// no update is available and unaware of the latest version.
 		s := r.P.Get()
-		assert.False(t, s.UpdateAvailable())
+		assert.False(t, s.IsUpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 
 		// Call the telemetry server, as telemetry is disabled, expect no update to the provider.
 		r.report(testutil.Ctx(t))
 		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable())
+		assert.False(t, s.IsUpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 	})
 }

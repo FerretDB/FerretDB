@@ -50,16 +50,6 @@ func (s *State) TelemetryString() string {
 	return "disabled"
 }
 
-// UpdateAvailable returns true if there is a newer version available.
-func (s *State) UpdateAvailable() bool {
-	// if telemetry was enabled and then disabled, then LatestVersion will never be updated
-	if s.Telemetry != nil && !*s.Telemetry {
-		return false
-	}
-
-	return s.IsUpdateAvailable
-}
-
 // fill replaces all unset or invalid values with default.
 func (s *State) fill() {
 	if _, err := uuid.Parse(s.UUID); err != nil {
