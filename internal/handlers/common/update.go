@@ -101,7 +101,7 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 			}
 
 		case "$inc":
-			changed, err = processIncFieldExpression(doc, updateV)
+			changed, err = processIncFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
@@ -319,7 +319,7 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 
 // processIncFieldExpression changes document according to $inc operator.
 // If the document was changed it returns true.
-func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
+func processIncFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	// updateV is document, checked in ValidateUpdateOperators.
 	incDoc := updateV.(*types.Document)
 
@@ -328,27 +328,29 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	for _, incKey := range incDoc.Keys() {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
+		// ensure incValue is a valid number type.
+		switch incValue.(type) {
+		case float64, int32, int64:
+		default:
+			return false, newUpdateError(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
+				command,
+			)
+		}
+
 		var err error
 
 		// incKey has valid path, checked in ValidateUpdateOperators.
 		path := must.NotFail(types.NewPathFromString(incKey))
 
 		if !doc.HasByPath(path) {
-			// ensure incValue is a valid number type.
-			switch incValue.(type) {
-			case float64, int32, int64:
-			default:
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrTypeMismatch,
-					fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
-				)
-			}
-
 			// $inc sets the field if it does not exist.
 			if err := doc.SetByPath(path, incValue); err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
 					err.Error(),
+					command,
 				)
 			}
 
@@ -388,22 +390,13 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		}
 
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrTypeMismatch,
-				fmt.Sprintf(
-					`Cannot increment with non-numeric argument: {%s: %#v}`,
-					incKey,
-					incValue,
-				),
-			)
 		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
 			}
 
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $inc to a value of non-numeric type. `+
@@ -412,24 +405,27 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					k,
 					commonparams.AliasFromType(docValue),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrIntExceeded):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		default:
 			return false, lazyerrors.Error(err)
