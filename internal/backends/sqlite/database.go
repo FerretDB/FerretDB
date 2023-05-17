@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
@@ -61,12 +62,48 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	panic("not implemented") // TODO: Implement
+	_, err := db.b.metadataStorage.CreateCollection(ctx, db.name, params.Name)
+	if err != nil {
+		return err
+	}
+
+	conn, err := db.b.pool.DB(db.name)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("CREATE TABLE ", params.Name)
+
+	conn.ExecContext(ctx, query)
+
+	return nil
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	panic("not implemented") // TODO: Implement
+	table, err := db.b.metadataStorage.CollectionInfo(db.name, params.Name)
+	if err != nil {
+		return err
+	}
+
+	err = db.b.metadataStorage.RemoveCollection(db.name, params.Name)
+	if err != nil {
+		return err
+	}
+
+	conn, err := db.b.pool.DB(db.name)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("DROP TABLE %s", table)
+
+	_, err = conn.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // check interfaces

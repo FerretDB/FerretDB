@@ -39,6 +39,11 @@ const (
 	dbExtension = ".sqlite"
 )
 
+var (
+	errDatabaseNotFound   = errors.New("database not found")
+	errCollectionNotFound = errors.New("collection not found")
+)
+
 // newMetadataStorage returns instance of metadata storage.
 func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error) {
 	if dbPath == "" {
@@ -181,30 +186,30 @@ func (m *metadataStorage) CreateDatabase(database string) error {
 }
 
 // CreateCollection saves collection metadata to database file.
-func (m *metadataStorage) CreateCollection(ctx context.Context, database, collection string) error {
+func (m *metadataStorage) CreateCollection(ctx context.Context, database, collection string) (string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
 	db, ok := m.dbs[database]
 	if !ok {
-		return errors.New("database not found")
+		return "", errors.New("database not found")
 	}
 
 	_, ok = db.collections[collection]
 	if ok {
-		return errors.New("collection already exists")
+		return "", errors.New("collection already exists")
 	}
 
 	tableName := tableNameFromCollectionName(collection)
 
 	err := m.saveCollection(ctx, database, collection, tableName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	db.collections[collection] = tableName
 
-	return nil
+	return tableName, nil
 }
 
 // load loads database metadata from database file.
@@ -270,6 +275,24 @@ func (m *metadataStorage) saveCollection(ctx context.Context, dbName, collName, 
 	}
 
 	return nil
+}
+
+// CollectionInfo returns table name for given database name and collection name.
+func (m *metadataStorage) CollectionInfo(dbName string, collName string) (string, error) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
+	db, ok := m.dbs[dbName]
+	if !ok {
+		return "", errDatabaseNotFound
+	}
+
+	table, ok := db.collections[collName]
+	if !ok {
+		return "", errCollectionNotFound
+	}
+
+	return table, nil
 }
 
 // tableNameFromCollectionName mangles collection name to table name.
