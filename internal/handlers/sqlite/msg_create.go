@@ -46,7 +46,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"pipeline",
 		"collation",
 	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
 		return nil, err
 	}
 
@@ -81,6 +81,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	err = h.b.Database(db).CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collection,
 	})
+
 	switch {
 	case err == nil:
 		var reply wire.OpMsg

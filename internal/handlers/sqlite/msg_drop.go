@@ -50,6 +50,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	err = h.b.Database(db).DropCollection(ctx, &backends.DropCollectionParams{
 		Name: collection,
 	})
+
 	switch {
 	case err == nil:
 		var reply wire.OpMsg

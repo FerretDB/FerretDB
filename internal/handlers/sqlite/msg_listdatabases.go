@@ -40,6 +40,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	common.Ignored(document, h.L, "comment", "authorizedDatabases")
 
 	var nameOnly bool
+
 	if v, _ := document.Get("nameOnly"); v != nil {
 		if nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v); err != nil {
 			return nil, err
