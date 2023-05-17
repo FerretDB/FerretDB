@@ -929,7 +929,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		Remove("ArrayAndDocuments").
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles")
+		Remove("Doubles").
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
+		Remove("ArrayDocuments")
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1192,13 +1194,19 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
-
-		"DotNotation": {
+		"AscendingValueDescendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
-				{"v.foo", 1},
-				{"_id", 1}, // sort by _id when v is the same.
+				{"v", 1},
+				{"_id", -1},
 			}}}},
 		},
+		"DescendingValueDescendingID": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v", -1},
+				{"_id", -1},
+			}}}},
+		},
+
 		"DotNotationIndex": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v.0", 1},
@@ -1237,6 +1245,25 @@ func TestAggregateCompatSort(t *testing.T) {
 	}
 
 	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatSortDotNotation(t *testing.T) {
+	t.Parallel()
+
+	providers := shareddata.AllProviders().
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
+		Remove("ArrayDocuments")
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DotNotation": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v.foo", 1},
+				{"_id", 1}, // sort by _id when v is the same.
+			}}}},
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatUnwind(t *testing.T) {
@@ -1545,6 +1572,58 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
+		},
+		"DotNotationInclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+				}}},
+			},
+		},
+		"DotNotationIncludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array", true},
+				}}},
+			},
+		},
+		"DotNotationExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+					{"v.array", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.array.42", false},
+				}}},
+			},
+		},
+		"DotNotationIncludeExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array.42", false},
+				}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 

@@ -31,3 +31,30 @@ func TestPrintDiagnosticData(t *testing.T) {
 		printDiagnosticData(nil, l.Sugar())
 	})
 }
+
+func TestRmdirAbsentDir(t *testing.T) {
+	t.Parallel()
+
+	err := rmdir("absent")
+	assert.NoError(t, err)
+}
+
+func TestMkdirAndRmdir(t *testing.T) {
+	t.Parallel()
+
+	paths := []string{"ab/c", "ab"}
+
+	err := mkdir(paths...)
+	assert.NoError(t, err)
+
+	for _, path := range paths {
+		assert.DirExists(t, path)
+	}
+
+	err = rmdir(paths...)
+	assert.NoError(t, err)
+
+	for _, path := range paths {
+		assert.NoDirExists(t, path)
+	}
+}
