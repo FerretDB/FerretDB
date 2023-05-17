@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -37,11 +38,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	iter := params.Docs.Iterator()
+	defer iter.Close()
+
 	res, err := h.b.Database(params.DB).
 		Collection(params.Collection).
 		Insert(ctx, &backends.InsertParams{
 			Ordered: params.Ordered,
-			Docs:    params.Docs.Iterator(),
+			Docs:    iterator.Values(iterator.ForSlice(params.DocSlice)),
 		})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -19,6 +19,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // InsertParams represents the parameters for an insert command.
@@ -27,6 +29,8 @@ type InsertParams struct {
 	DB         string       `ferretdb:"$db"`
 	Collection string       `ferretdb:"collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
+
+	DocSlice []*types.Document `ferretdb:"-"`
 
 	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
@@ -42,6 +46,18 @@ func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, er
 	err := commonparams.ExtractParams(document, "insert", &params, l)
 	if err != nil {
 		return nil, err
+	}
+
+	if params.Docs != nil {
+		for i := 0; i < params.Docs.Len(); i++ {
+			value := must.NotFail(params.Docs.Get(i))
+			doc, ok := value.(*types.Document)
+			if !ok {
+				return nil, lazyerrors.Errorf("expected document, got %v", value)
+			}
+
+			params.DocSlice = append(params.DocSlice, doc)
+		}
 	}
 
 	return &params, nil
