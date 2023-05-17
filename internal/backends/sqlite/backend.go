@@ -45,11 +45,6 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	_, err = storage.ListDatabases()
-	if err != nil {
-		return nil, err
-	}
-
 	return backends.BackendContract(&backend{
 		dir:             params.Dir,
 		pool:            pool,
@@ -66,7 +61,7 @@ func (b *backend) Database(name string) backends.Database {
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	list, err := b.metadataStorage.ListDatabases()
+	list, err := b.metadataStorage.listDatabases()
 	if err != nil {
 		return nil, err
 	}
@@ -81,12 +76,13 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	err := b.metadataStorage.RemoveDatabase(params.Name)
-	if err != nil {
-		return err
+	removed := b.metadataStorage.removeDatabase(params.Name)
+	// if no database was removed, then we don't need to do anything
+	if !removed {
+		return nil
 	}
 
-	err = os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
+	err := os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}

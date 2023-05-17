@@ -38,14 +38,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	iter := params.Docs.Iterator()
+	iter := iterator.Values(iterator.ForSlice(params.DocSlice))
 	defer iter.Close()
 
 	res, err := h.b.Database(params.DB).
 		Collection(params.Collection).
 		Insert(ctx, &backends.InsertParams{
 			Ordered: params.Ordered,
-			Docs:    iterator.Values(iterator.ForSlice(params.DocSlice)),
+			Docs:    iter,
 		})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -49,7 +49,7 @@ func (db *database) Collection(name string) backends.Collection {
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
 	var result backends.ListCollectionsResult
 
-	list, err := db.b.metadataStorage.ListCollections(ctx, db.name)
+	list, err := db.b.metadataStorage.listCollections(ctx, db.name)
 	if errors.Is(err, errDatabaseNotFound) {
 		if err = db.create(ctx); err != nil {
 			return &result, err
@@ -70,7 +70,7 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	tableName, err := db.b.metadataStorage.CreateCollection(ctx, db.name, params.Name)
+	tableName, err := db.b.metadataStorage.createCollection(ctx, db.name, params.Name)
 	if errors.Is(err, errDatabaseNotFound) {
 		if err = db.create(ctx); err != nil {
 			return err
@@ -97,12 +97,12 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	table, err := db.b.metadataStorage.CollectionInfo(db.name, params.Name)
+	table, err := db.b.metadataStorage.collectionInfo(db.name, params.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.b.metadataStorage.RemoveCollection(db.name, params.Name)
+	err = db.b.metadataStorage.removeCollection(db.name, params.Name)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,11 @@ func (db *database) create(ctx context.Context) error {
 		return err
 	}
 
-	db.b.metadataStorage.CreateDatabase(nil, db.name)
+	err = db.b.metadataStorage.createDatabase(nil, db.name)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

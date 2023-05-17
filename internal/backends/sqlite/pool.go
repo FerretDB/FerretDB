@@ -41,23 +41,24 @@ type connPool struct { //nolint:vet // for readability
 	dbs map[string]*sql.DB
 
 	token *resource.Token
+	dir   string
 }
 
 // DB returns a database connection for the given name.
-func (c *connPool) DB(name string) (*sql.DB, error) {
+func (c *connPool) DB(path string) (*sql.DB, error) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
 
-	if db, ok := c.dbs[name]; ok {
+	if db, ok := c.dbs[path]; ok {
 		return db, nil
 	}
 
-	db, err := sql.Open("sqlite", name)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
 	}
 
-	c.dbs[name] = db
+	c.dbs[path] = db
 
 	return db, nil
 }

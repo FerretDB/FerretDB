@@ -45,7 +45,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 		return nil, err
 	}
 
-	tableName, err := c.db.b.metadataStorage.CollectionInfo(c.db.name, c.name)
+	tableName, err := c.db.b.metadataStorage.collectionInfo(c.db.name, c.name)
 	if err != nil {
 		return nil, err
 	}
