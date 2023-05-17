@@ -96,7 +96,7 @@ func TestNewReporterLock(t *testing.T) {
 
 func TestReporterReport(t *testing.T) {
 	t.Parallel()
-
+	// TODO
 	for name, tc := range map[string]struct {
 		f                *Flag
 		telemetryReponse string
