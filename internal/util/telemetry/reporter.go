@@ -287,10 +287,6 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if !response.UpdateAvailable {
-		return
-	}
-
 	if err = r.P.Update(func(s *state.State) {
 		s.LatestVersion = response.LatestVersion
 		s.IsUpdateAvailable = response.UpdateAvailable
