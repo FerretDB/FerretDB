@@ -223,7 +223,7 @@ func (m *metadataStorage) load(ctx context.Context, dbName string) (*dbInfo, err
 	// TODO: check error
 	defer result.Close()
 
-	var metadata = dbInfo{
+	metadata := dbInfo{
 		collections: map[string]string{},
 	}
 

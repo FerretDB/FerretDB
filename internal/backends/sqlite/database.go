@@ -22,13 +22,16 @@ import (
 
 // database implements backends.Database interface.
 type database struct {
+	name string
+
 	b *backend
 }
 
 // newDatabase creates a new Database.
-func newDatabase(b *backend) backends.Database {
+func newDatabase(name string, b *backend) backends.Database {
 	return backends.DatabaseContract(&database{
-		b: b,
+		b:    b,
+		name: name,
 	})
 }
 
@@ -41,7 +44,20 @@ func (db *database) Collection(params *backends.CollectionParams) backends.Colle
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	panic("not implemented") // TODO: Implement
+	list, err := db.b.metadataStorage.ListCollections(ctx, db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	var result backends.ListCollectionsResult
+
+	for _, name := range list {
+		result.Collections = append(result.Collections, backends.CollectionInfo{
+			Name: name,
+		})
+	}
+
+	return &result, nil
 }
 
 // CreateCollection implements backends.Database interface.

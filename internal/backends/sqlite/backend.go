@@ -36,7 +36,6 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	// TODO: we should close it when backend is closed.
 	pool := newConnPool()
 
 	storage, err := newMetadataStorage(params.Dir, pool)
@@ -53,14 +52,24 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams) backends.Database {
-	return newDatabase(b)
+	return newDatabase(params.Name, b)
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	panic("not implemented") // TODO: Implement
+	list, err := b.metadataStorage.ListDatabases()
+	if err != nil {
+		return nil, err
+	}
+
+	var result backends.ListDatabasesResult
+	for _, db := range list {
+		result.Databases = append(result.Databases, backends.DatabaseInfo{Name: db})
+	}
+
+	return &result, nil
 }
 
 // DropDatabase implements backends.Backend interface.

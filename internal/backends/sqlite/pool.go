@@ -18,20 +18,29 @@ import (
 	"database/sql"
 	"errors"
 	"sync"
+
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // newConnPool creates a new connection pool.
 func newConnPool() *connPool {
-	return &connPool{
-		mx:  sync.Mutex{},
-		dbs: map[string]*sql.DB{},
+	pool := &connPool{
+		mx:    sync.Mutex{},
+		dbs:   map[string]*sql.DB{},
+		token: resource.NewToken(),
 	}
+
+	resource.Track(pool, pool.token)
+
+	return pool
 }
 
 // connPool is a pool of database connections.
-type connPool struct {
-	dbs map[string]*sql.DB
+type connPool struct { //nolint:vet // for readability
 	mx  sync.Mutex
+	dbs map[string]*sql.DB
+
+	token *resource.Token
 }
 
 // DB returns a database connection for the given name.
@@ -65,6 +74,8 @@ func (c *connPool) Close() error {
 			errors.Join(err)
 		}
 	}
+
+	resource.Untrack(c, c.token)
 
 	return errs
 }

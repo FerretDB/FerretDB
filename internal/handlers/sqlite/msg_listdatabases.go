@@ -17,11 +17,40 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	response, err := h.b.ListDatabases(ctx, &backends.ListDatabasesParams{})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	databases := types.MakeArray(len(response.Databases))
+
+	for _, db := range response.Databases {
+		databases.Append(types.NewDocument(
+			"name", db.Name,
+			"sizeOnDisk", int64(0),
+			"empty", false,
+		))
+	}
+
+	var reply wire.OpMsg
+
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"databases", databases,
+			"totalSize", int64(0),
+			"totalSizeMb", int64(0),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
