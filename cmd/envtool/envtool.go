@@ -354,6 +354,7 @@ func read(w io.Writer, paths ...string) error {
 		if err != nil {
 			return err
 		}
+
 		fmt.Fprint(w, string(b))
 	}
 
