@@ -40,8 +40,8 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	for name, tc := range map[string]struct {
-		expecteDefinition string // the expected index definition in postgresql
-		index             Index  // the index to create
+		expectedDefinition string // the expected index definition in postgresql
+		index              Index  // the index to create
 	}{
 		"keyWithoutNestedField": {
 			index: Index{
@@ -51,7 +51,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 					{Field: "bar", Order: types.Descending},
 				},
 			},
-			expecteDefinition: "((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC",
+			expectedDefinition: "((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC",
 		},
 		"keyWithNestedField_level1": {
 			index: Index{
@@ -60,7 +60,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 					{Field: "foo.bar", Order: types.Ascending},
 				},
 			},
-			expecteDefinition: "(((_jsonb -> 'foo'::text) -> 'bar'::text))",
+			expectedDefinition: "(((_jsonb -> 'foo'::text) -> 'bar'::text))",
 		},
 		"keyWithNestedField_level2": {
 			index: Index{
@@ -69,10 +69,9 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 					{Field: "foo.bar.c", Order: types.Ascending},
 				},
 			},
-			expecteDefinition: "((((_jsonb -> 'foo'::text) -> 'bar'::text) -> 'c'::text))",
+			expectedDefinition: "((((_jsonb -> 'foo'::text) -> 'bar'::text) -> 'c'::text))",
 		},
 	} {
-		// https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721#how-to-solve-this
 		tc := tc
 
 		t.Run(name, func(t *testing.T) {
@@ -97,7 +96,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 
 			expectedIndexdef := fmt.Sprintf(
 				"CREATE INDEX %s ON \"%s\".%s USING btree (%s)",
-				pgIndexName, databaseName, tableName, tc.expecteDefinition,
+				pgIndexName, databaseName, tableName, tc.expectedDefinition,
 			)
 			assert.Equal(t, expectedIndexdef, indexdef)
 		})
