@@ -247,7 +247,10 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				return nil, err
 			}
 
-			accumulator.Accumulate(context.TODO(), nil)
+			res, err := accumulator.Accumulate(context.TODO(), nil, []*types.Document{doc})
+			if err != nil {
+				return nil, err
+			}
 
 			return nil, commonerrors.NewCommandErrorMsg(
 				commonerrors.ErrCommandNotFound,
