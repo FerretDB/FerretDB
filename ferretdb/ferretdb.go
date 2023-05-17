@@ -40,15 +40,21 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
+	// Handler to use; one of `pg`, `sqlite`, or `tigris` (if enabled at compile-time).
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
 	// See:
-	// * https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
 	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
+
+	// SQLite directory path or `file:` URI for `sqlite` handler.
+	// See:
+	//   - https://www.sqlite.org/c3ref/open.html
+	//   - https://www.sqlite.org/uri.html
+	SQLiteURI string
 
 	// Tigris parameters for `tigris` handler.
 	// See https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
@@ -121,6 +127,8 @@ func New(config *Config) (*FerretDB, error) {
 		StateProvider: p,
 
 		PostgreSQLURL: config.PostgreSQLURL,
+
+		SQLiteURI: config.SQLiteURI,
 
 		TigrisURL:          config.TigrisURL,
 		TigrisClientID:     config.TigrisClientID,
