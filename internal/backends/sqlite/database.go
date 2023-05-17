@@ -128,7 +128,7 @@ func (db *database) create(ctx context.Context) error {
 		return err
 	}
 
-	err = db.b.metadataStorage.createDatabase(nil, db.name)
+	err = db.b.metadataStorage.createDatabase(ctx, db.name)
 	if err != nil {
 		return err
 	}

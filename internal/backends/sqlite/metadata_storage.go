@@ -52,7 +52,7 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 		return nil, errors.New("db path is empty")
 	}
 
-	storage := &metadataStorage{
+	storage := metadataStorage{
 		connPool: pool,
 		dbPath:   dbPath,
 		dbs:      map[string]*dbInfo{},
@@ -64,7 +64,7 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 		return nil, err
 	}
 
-	return storage, nil
+	return &storage, nil
 }
 
 // metadataStorage provide access to database metadata.
@@ -89,7 +89,7 @@ func (m *metadataStorage) listDatabases() ([]string, error) {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
-	var dbs map[string]*dbInfo
+	dbs := map[string]*dbInfo{}
 
 	err := filepath.WalkDir(m.dbPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -110,6 +110,8 @@ func (m *metadataStorage) listDatabases() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	m.dbs = dbs
 
 	return maps.Keys(dbs), nil
 }
@@ -151,6 +153,10 @@ func (m *metadataStorage) createDatabase(ctx context.Context, database string) e
 		return nil
 	}
 
+	db = &dbInfo{
+		path: filepath.Join(m.dbPath, database+dbExtension),
+	}
+
 	conn, err := m.connPool.DB(db.path)
 	if err != nil {
 		return err
@@ -163,11 +169,7 @@ func (m *metadataStorage) createDatabase(ctx context.Context, database string) e
 		return err
 	}
 
-	m.dbs[database] = &dbInfo{
-		collections: map[string]string{
-			dbMetadataTableName: dbMetadataTableName,
-		},
-	}
+	m.dbs[database] = db
 
 	return nil
 }
@@ -187,6 +189,10 @@ func (m *metadataStorage) createCollection(ctx context.Context, database, collec
 		return tableName, nil
 	}
 
+	if db.collections == nil {
+		db.collections = map[string]string{}
+	}
+
 	// TODO: transform table name if needed
 	tableName = collection
 
@@ -203,6 +209,13 @@ func (m *metadataStorage) createCollection(ctx context.Context, database, collec
 	}
 
 	_, err = conn.ExecContext(ctx, query, bytes)
+	if err != nil {
+		return "", err
+	}
+
+	tableQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson TEXT)", tableName)
+
+	_, err = conn.ExecContext(ctx, tableQuery)
 	if err != nil {
 		return "", err
 	}

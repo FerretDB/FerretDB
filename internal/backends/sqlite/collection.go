@@ -46,6 +46,12 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	}
 
 	tableName, err := c.db.b.metadataStorage.collectionInfo(c.db.name, c.name)
+	if errors.Is(err, errCollectionNotFound) {
+		if tableName, err = c.db.b.metadataStorage.createCollection(ctx, c.db.name, c.name); err != nil {
+			return nil, err
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
