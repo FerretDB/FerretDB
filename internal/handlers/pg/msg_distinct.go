@@ -44,10 +44,16 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
+	var filter *types.Document
+	filter, err = common.GetOptionalNullParam(document, "query", filter)
+	if err != nil {
+		return nil, err
+	}
+
 	qp := pgdb.QueryParams{
 		DB:         dp.DB,
+		Filter:     filter,
 		Collection: dp.Collection,
-		Filter:     dp.Filter,
 		Comment:    dp.Comment,
 	}
 
