@@ -23,16 +23,25 @@ import (
 )
 
 // backend implements backends.Backend interface.
-type backend struct{}
+type backend struct {
+	dir string
+}
+
+// NewBackendParams represents the parameters of NewBackend function.
+type NewBackendParams struct {
+	Dir string
+}
 
 // NewBackend creates a new SQLite backend.
-func NewBackend() backends.Backend {
-	return backends.BackendContract(new(backend))
+func NewBackend(params *NewBackendParams) backends.Backend {
+	return backends.BackendContract(&backend{
+		dir: params.Dir,
+	})
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams) backends.Database {
-	return newDatabase(b)
+func (b *backend) Database(name string) backends.Database {
+	return newDatabase(b, name)
 }
 
 // ListDatabases implements backends.Backend interface.

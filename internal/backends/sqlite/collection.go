@@ -22,13 +22,15 @@ import (
 
 // collection implements backends.Collection interface.
 type collection struct {
-	db *database
+	db   *database
+	name string
 }
 
 // newDatabase creates a new Collection.
-func newCollection(db *database) backends.Collection {
+func newCollection(db *database, name string) backends.Collection {
 	return backends.CollectionContract(&collection{
-		db: db,
+		db:   db,
+		name: name,
 	})
 }
 

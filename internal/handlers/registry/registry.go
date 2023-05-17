@@ -19,8 +19,6 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -45,6 +43,9 @@ type NewHandlerOpts struct {
 
 	// for `pg` handler
 	PostgreSQLURL string
+
+	// for `sqlite` handler
+	SQLiteURI string
 
 	// for `tigris` handler
 	TigrisURL          string
@@ -80,7 +81,16 @@ func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 
 // Handlers returns a list of all handlers registered at compile-time.
 func Handlers() []string {
-	handlers := maps.Keys(registry)
-	slices.Sort(handlers)
-	return handlers
+	res := make([]string, 0, len(registry))
+
+	// double check registered names and return them in the right order
+	for _, h := range []string{"pg", "sqlite", "tigris", "hana"} {
+		if _, ok := registry[h]; !ok {
+			continue
+		}
+
+		res = append(res, h)
+	}
+
+	return res
 }

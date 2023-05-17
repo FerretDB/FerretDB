@@ -27,7 +27,7 @@ import "context"
 //
 // See databaseContract and its methods for additional details.
 type Database interface {
-	Collection(*CollectionParams) Collection
+	Collection(string) Collection
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
@@ -50,14 +50,11 @@ type databaseContract struct {
 	db Database
 }
 
-// CollectionParams represents the parameters of Database.Collection method.
-type CollectionParams struct{}
-
-// Collection returns a Collection instance for given parameters.
+// Collection returns a Collection instance for the given name.
 //
 // The collection (or database) does not need to exist; even parameters like name could be invalid.
-func (dbc *databaseContract) Collection(params *CollectionParams) Collection {
-	return dbc.db.Collection(params)
+func (dbc *databaseContract) Collection(name string) Collection {
+	return dbc.db.Collection(name)
 }
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
