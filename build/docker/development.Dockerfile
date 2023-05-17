@@ -42,7 +42,8 @@ ENV GOCOVERDIR=cover
 ENV GORACE=halt_on_error=1,history_size=2
 ENV GOARM=7
 
-# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+# do not raise it without providing a v1 build because v2+ is problematic
+# for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170

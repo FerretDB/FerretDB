@@ -16,8 +16,6 @@ package stages
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -50,17 +48,7 @@ func newProject(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
-	var cmdErr *commonerrors.CommandError
-
 	validated, inclusion, err := aggregations.ValidateProjection(fields)
-	if errors.As(err, &cmdErr) {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			cmdErr.Code(),
-			fmt.Sprintf("Invalid $project :: caused by :: %s", cmdErr.Unwrap()),
-			"$project (stage)",
-		)
-	}
-
 	if err != nil {
 		return nil, err
 	}

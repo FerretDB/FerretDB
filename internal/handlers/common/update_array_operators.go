@@ -106,9 +106,9 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 // checkUnsuitableValueError returns ErrUnsuitableValueType if path contains
 // a non-document value. If no element exists on path, it returns nil.
-// For example, if the path is "v.foo" and
-// - doc is {v: 42}, it returns ErrUnsuitableValueType, v is used by unsuitable value type;
-// - doc is {c: 10}, it returns no error since the path does not exist.
+// For example, if the path is "v.foo" and:
+//   - doc is {v: 42}, it returns ErrUnsuitableValueType, v is used by unsuitable value type;
+//   - doc is {c: 10}, it returns no error since the path does not exist.
 func checkUnsuitableValueError(doc *types.Document, key string, path types.Path) error {
 	// return no error if path is suffix or key.
 	if path.Len() == 1 {

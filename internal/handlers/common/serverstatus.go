@@ -75,6 +75,10 @@ func ServerStatus(state *state.State, cm *connmetrics.ConnMetrics) (*types.Docum
 		"metrics", must.NotFail(types.NewDocument(
 			"commands", metricsDoc,
 		)),
+
+		// our extensions
+		"ferretdbVersion", version.Get().Version,
+
 		"ok", float64(1),
 	))
 
