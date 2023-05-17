@@ -36,7 +36,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			"maxWriteBatchSize", int32(100000),
 			"localTime", time.Now(),
 			// logicalSessionTimeoutMinutes
-			// connectionId
+			"connectionId", int32(42),
 			"minWireVersion", common.MinWireVersion,
 			"maxWireVersion", common.MaxWireVersion,
 			"readOnly", false,

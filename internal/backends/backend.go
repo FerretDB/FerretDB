@@ -68,6 +68,7 @@ type ListDatabasesResult struct {
 // DatabaseInfo represents information about a single database.
 type DatabaseInfo struct {
 	Name string
+	Size int64
 }
 
 // ListDatabases returns a Database instance for given parameters.

@@ -17,11 +17,90 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.L, "comment", "authorizedDatabases")
+
+	var nameOnly bool
+	if v, _ := document.Get("nameOnly"); v != nil {
+		if nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v); err != nil {
+			return nil, err
+		}
+	}
+
+	res, err := h.b.ListDatabases(ctx, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var totalSize int64
+	var databases *types.Array
+
+	for _, db := range res.Databases {
+		d := must.NotFail(types.NewDocument(
+			"name", db.Name,
+			"sizeOnDisk", db.Size,
+			"empty", db.Size == 0,
+		))
+
+		totalSize += db.Size
+
+		matches, err := common.FilterDocument(d, filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !matches {
+			continue
+		}
+
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", db.Name,
+			))
+		}
+
+		databases.Append(d)
+	}
+
+	var reply wire.OpMsg
+
+	switch {
+	case nameOnly:
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+				"ok", float64(1),
+			))},
+		}))
+	default:
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+				"totalSize", totalSize,
+				"totalSizeMb", totalSize/1024/1024,
+				"ok", float64(1),
+			))},
+		}))
+	}
+
+	return &reply, nil
 }
