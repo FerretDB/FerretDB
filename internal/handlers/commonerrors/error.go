@@ -72,7 +72,7 @@ const (
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
 	// ErrEmptyName indicates that the field name is empty.
-	ErrEmptyName = ErrorCode(56) // EmptyName
+	ErrEmptyName = ErrorCode(56) // EmptyFieldName
 
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound

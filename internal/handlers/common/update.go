@@ -128,7 +128,7 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 			changed = changed || mulChanged
 
 		case "$rename":
-			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
+			changed, err = processRenameFieldExpression(command, doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -241,7 +241,7 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
 
 // processRenameFieldExpression changes document according to $rename operator.
 // If the document was changed it returns true.
-func processRenameFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
+func processRenameFieldExpression(command string, doc *types.Document, update *types.Document) (bool, error) {
 	update.SortFieldsByKey()
 
 	var changed bool
@@ -250,7 +250,11 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
-			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrEmptyName, "An empty update path is not valid.")
+			return changed, newUpdateError(
+				commonerrors.ErrEmptyName,
+				"An empty update path is not valid.",
+				command,
+			)
 		}
 
 		// this is covered in validateRenameExpression
@@ -260,13 +264,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		if err != nil {
 			var pathErr *types.DocumentPathError
 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrEmptyName,
-					fmt.Sprintf("Cannot apply $rename to a value of non-numeric type. "+
-						"{_id: %s} has the field '%s' of non-numeric type object",
-						must.NotFail(doc.Get("_id")),
+					fmt.Sprintf(
+						"The update path '%s' contains an empty field name, which is not allowed.",
 						key,
 					),
+					command,
 				)
 			}
 		}
@@ -289,13 +293,14 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 			}
 
 			if dpe.Code() == types.ErrDocumentPathArrayInvalidIndex {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
-					fmt.Sprintf("cannot use path %s to traverse the document", sourcePath),
+					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
+					command,
 				)
 			}
 
-			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
+			return changed, newUpdateError(commonerrors.ErrUnsuitableValueType, dpe.Error(), command)
 		}
 
 		// Remove old document

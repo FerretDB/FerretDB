@@ -24,7 +24,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
 
 func TestFindAndModifyEmptyCollectionName(t *testing.T) {
@@ -140,20 +139,67 @@ func TestFindAndModifyErrors(t *testing.T) {
 		},
 		"SetUnsuitableValueType": {
 			command: bson.D{
-				{"update", bson.D{{"$set", bson.D{{"v.v.foo", "foo"}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v.foo", "foo"}}}}},
 			},
 			err: &mongo.CommandError{
-				Code:    28,
-				Name:    "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' in element {v: \"foo\"}",
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' " +
+					"in element {v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
 			},
-			altMessage: "Cannot create field 'foo' in element {v: { v: \"foo\" }}",
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"RenameEmptyFieldName": {
+			command: bson.D{
+				{"update", bson.D{{"$rename", bson.D{{"", "v"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    56,
+				Name:    "EmptyFieldName",
+				Message: "An empty update path is not valid.",
+			},
+		},
+		"RenameEmptyPath": {
+			command: bson.D{
+				{"update", bson.D{{"$rename", bson.D{{"v.", "v"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    56,
+				Name:    "EmptyFieldName",
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"RenameArrayInvalidIndex": {
+			command: bson.D{
+				{"update", bson.D{{"$rename", bson.D{{"v.-1", "f"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"cannot use the part (v of v.-1) to traverse the element " +
+					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+			},
+			altMessage: "cannot use path 'v.-1' to traverse the document",
+		},
+		"RenameUnsuitableValue": {
+			command: bson.D{
+				{"update", bson.D{{"$rename", bson.D{{"v.0.foo.0.bar.z", "f"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: \"hello\"})",
+			},
+			altMessage: "types.getByPath: can't access string by path \"z\"",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+			ctx, collection := setup.Setup(t, shareddata.ArrayDocuments)
 
 			findAndModify := "findAndModify"
 			if tc.findAndModify != "" {

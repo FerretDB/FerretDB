@@ -81,3 +81,71 @@ func TestUpdateFieldSet(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateFieldErrors(t *testing.T) {
+	setup.SkipForTigris(t)
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		id         string
+		update     bson.D
+		err        *mongo.WriteError
+		altMessage string
+	}{
+		"SetUnsuitableValueType": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.foo", "foo"}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "cannot use the part (v of v.foo) to traverse the element " +
+					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+			},
+			altMessage: "cannot use path 'v.foo' to traverse the document",
+		},
+		"RenameEmptyFieldName": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"", "v"}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "An empty update path is not valid.",
+			},
+		},
+		"RenameEmptyPath": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.", "v"}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"RenameArrayInvalidIndex": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.-1", "f"}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "cannot use the part (v of v.-1) to traverse the element " +
+					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+			},
+			altMessage: "cannot use path 'v.-1' to traverse the document",
+		},
+		"RenameUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.0.foo.0.bar.z", "f"}}}},
+			err: &mongo.WriteError{
+				Code:    28,
+				Message: "cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: \"hello\"})",
+			},
+			altMessage: "types.getByPath: can't access string by path \"z\"",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t, shareddata.ArrayDocuments)
+
+			_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			AssertEqualAltWriteError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
