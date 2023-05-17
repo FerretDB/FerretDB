@@ -38,7 +38,8 @@ ENV GOPROXY https://proxy.golang.org
 ENV CGO_ENABLED=0
 ENV GOARM=7
 
-# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+# do not raise it without providing a v1 build because v2+ is problematic
+# for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170

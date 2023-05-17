@@ -12,18 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package registry
-
-import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
-)
-
-// init registers "sqlite" handler.
-func init() {
-	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("SQLite handler is in alpha. It is not supported yet.")
-
-		return sqlite.New(opts.Logger)
-	}
-}
+// Package sqlite provides SQLite backend.
+package sqlite

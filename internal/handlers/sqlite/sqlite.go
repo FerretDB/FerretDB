@@ -20,6 +20,7 @@ package sqlite
 import (
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
@@ -49,6 +50,8 @@ type Handler struct {
 
 // New returns a new handler.
 func New(l *zap.Logger) (handlers.Interface, error) {
+	_ = sqlite.NewBackend()
+
 	return &Handler{
 		L: l,
 	}, nil

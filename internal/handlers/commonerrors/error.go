@@ -227,6 +227,9 @@ const (
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 
+	// ErrEmptyProject indicates that projection specification must have at least one field.
+	ErrEmptyProject = ErrorCode(51272) // Location51272
+
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
 
