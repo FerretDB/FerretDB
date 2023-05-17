@@ -17,11 +17,49 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgInsert implements HandlerInterface.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	params, err := common.GetInsertParams(document, h.L)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := h.b.Database(params.DB).
+		Collection(params.Collection).
+		Insert(ctx, &backends.InsertParams{
+			Ordered: params.Ordered,
+			Docs:    params.Docs.Iterator(),
+		})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	replyDoc := must.NotFail(types.NewDocument(
+		"n", res.InsertedCount,
+		"ok", float64(1),
+	))
+
+	if res.Errors.Len() > 0 {
+		replyDoc = res.Errors.Document()
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{replyDoc},
+	}))
+
+	return &reply, nil
 }

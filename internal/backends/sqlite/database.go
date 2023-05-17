@@ -16,7 +16,10 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
@@ -44,12 +47,17 @@ func (db *database) Collection(name string) backends.Collection {
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
+	var result backends.ListCollectionsResult
+
 	list, err := db.b.metadataStorage.ListCollections(ctx, db.name)
+	if errors.Is(err, errDatabaseNotFound) {
+		if err = db.create(ctx); err != nil {
+			return &result, err
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	var result backends.ListCollectionsResult
 
 	for _, name := range list {
 		result.Collections = append(result.Collections, backends.CollectionInfo{
@@ -63,6 +71,11 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
 	tableName, err := db.b.metadataStorage.CreateCollection(ctx, db.name, params.Name)
+	if errors.Is(err, errDatabaseNotFound) {
+		if err = db.create(ctx); err != nil {
+			return err
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -106,6 +119,16 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 		return err
 	}
 
+	return nil
+}
+
+func (db *database) create(ctx context.Context) error {
+	_, err := os.Create(filepath.Join(db.b.dir, db.name+dbExtension))
+	if err != nil {
+		return err
+	}
+
+	db.b.metadataStorage.CreateDatabase(nil, db.name)
 	return nil
 }
 

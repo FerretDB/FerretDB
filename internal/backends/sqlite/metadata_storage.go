@@ -114,7 +114,7 @@ func (m *metadataStorage) ListCollections(ctx context.Context, database string) 
 
 	db, ok := m.dbs[database]
 	if !ok {
-		return nil, errors.New("database not found")
+		return nil, errDatabaseNotFound
 	}
 
 	// no metadata about collections loaded, load now
@@ -140,7 +140,7 @@ func (m *metadataStorage) RemoveDatabase(database string) error {
 
 	_, ok := m.dbs[database]
 	if !ok {
-		return errors.New("database not found")
+		return errDatabaseNotFound
 	}
 
 	delete(m.dbs, database)
@@ -156,12 +156,12 @@ func (m *metadataStorage) RemoveCollection(database, collection string) error {
 
 	db, ok := m.dbs[database]
 	if !ok {
-		return errors.New("database not found")
+		return errDatabaseNotFound
 	}
 
 	_, ok = db.collections[collection]
 	if !ok {
-		return errors.New("collection not found")
+		return errCollectionNotFound
 	}
 
 	delete(db.collections, collection)
@@ -171,16 +171,28 @@ func (m *metadataStorage) RemoveCollection(database, collection string) error {
 
 // CreateDatabase adds database to metadata storage.
 // It doesn't create database file.
-func (m *metadataStorage) CreateDatabase(database string) error {
+func (m *metadataStorage) CreateDatabase(ctx context.Context, database string) error {
 	m.mx.Lock()
 	defer m.mx.Unlock()
 
 	_, ok := m.dbs[database]
 	if ok {
-		return errors.New("database already exists")
+		return nil
 	}
 
 	m.dbs[database] = nil
+
+	conn, err := m.connPool.DB(database)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson TEXT)", dbMetadataTableName)
+
+	_, err = conn.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
