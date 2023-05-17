@@ -40,7 +40,7 @@ func NewBackend(params *NewBackendParams) backends.Backend {
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams) backends.Database {
+func (b *backend) Database(params *backends.DatabaseParams) backends.Database {
 	return newDatabase(b)
 }
 

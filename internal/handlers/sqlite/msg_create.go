@@ -16,12 +16,91 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	unimplementedFields := []string{
+		"timeseries",
+		"expireAfterSeconds",
+		"size",
+		"max",
+		"validator",
+		"validationLevel",
+		"validationAction",
+		"viewOn",
+		"pipeline",
+		"collation",
+	}
+	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
+		return nil, err
+	}
+
+	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
+		b, ok := v.(bool)
+		return ok && !b
+	}); err != nil {
+		return nil, err
+	}
+
+	ignoredFields := []string{
+		"autoIndexId",
+		"storageEngine",
+		"indexOptionDefaults",
+		"writeConcern",
+		"comment",
+	}
+	common.Ignored(document, h.L, ignoredFields...)
+
+	command := document.Command()
+
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.b.Database(&backends.DatabaseParams{Name: db}).CreateCollection(ctx, &backends.CreateCollectionParams{
+		Name: collection,
+	})
+	switch {
+	case err == nil:
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
+		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
+
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+
+	default:
+		return nil, lazyerrors.Error(err)
+	}
 }

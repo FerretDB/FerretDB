@@ -26,7 +26,7 @@ import "context"
 //
 // See backendContract and its methods for additional details.
 type Backend interface {
-	Database(context.Context, *DatabaseParams) Database
+	Database(*DatabaseParams) Database
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
@@ -58,8 +58,8 @@ type DatabaseParams struct {
 // Database returns a Database instance for given parameters.
 //
 // The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(ctx context.Context, params *DatabaseParams) Database {
-	return bc.b.Database(ctx, params)
+func (bc *backendContract) Database(params *DatabaseParams) Database {
+	return bc.b.Database(params)
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
