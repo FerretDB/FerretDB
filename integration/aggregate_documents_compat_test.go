@@ -1503,6 +1503,58 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
 		},
+		"DotNotationInclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+				}}},
+			},
+		},
+		"DotNotationIncludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array", true},
+				}}},
+			},
+		},
+		"DotNotationExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+					{"v.array", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.array.42", false},
+				}}},
+			},
+		},
+		"DotNotationIncludeExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array.42", false},
+				}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
