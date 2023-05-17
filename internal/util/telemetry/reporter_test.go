@@ -98,6 +98,7 @@ func TestNewReporterLock(t *testing.T) {
 func TestReporterReport(t *testing.T) {
 	t.Parallel()
 
+	// Mock response from telemetry server.
 	telemetryResponse := struct {
 		LatestVersion   string `json:"latest_version"`
 		UpdateAvailable bool   `json:"update_available"`
@@ -107,7 +108,6 @@ func TestReporterReport(t *testing.T) {
 	}
 	mx := new(sync.Mutex)
 
-	// Mock telemetry server.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mx.Lock()
 		defer mx.Unlock()
@@ -121,6 +121,8 @@ func TestReporterReport(t *testing.T) {
 
 	provider, err := state.NewProvider("")
 	require.NoError(t, err)
+
+	// Subtests are not run in parallel because they share the same telemetry mock.
 
 	t.Run("TelemetryEnabled", func(t *testing.T) {
 		opts := NewReporterOpts{
