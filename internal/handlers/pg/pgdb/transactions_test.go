@@ -17,7 +17,7 @@ package pgdb
 import (
 	"testing"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"

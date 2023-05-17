@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// Handler implements handlers.Interface on top of PostgreSQL.
+// Handler implements handlers.Interface on PostgreSQL.
 type Handler struct {
 	*NewOpts
 
@@ -53,8 +53,9 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisablePushdown bool
-	EnableCursors   bool
+	DisableFilterPushdown bool
+	EnableSortPushdown    bool
+	EnableCursors         bool
 }
 
 // New returns a new handler.
@@ -133,11 +134,11 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 
 	p, err := pgdb.NewPool(ctx, url, h.L, h.StateProvider)
 	if err != nil {
-		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
+		h.L.Warn("DBPool: connection failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.L.Info("DBPool: authentication succeed", zap.String("username", username))
+	h.L.Info("DBPool: connection succeed", zap.String("username", username))
 	h.pools[url] = p
 
 	return p, nil

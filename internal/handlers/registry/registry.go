@@ -19,13 +19,9 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/dummy"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -48,6 +44,9 @@ type NewHandlerOpts struct {
 	// for `pg` handler
 	PostgreSQLURL string
 
+	// for `sqlite` handler
+	SQLiteURI string
+
 	// for `tigris` handler
 	TigrisURL          string
 	TigrisClientID     string
@@ -61,8 +60,9 @@ type NewHandlerOpts struct {
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisablePushdown bool
-	EnableCursors   bool
+	DisableFilterPushdown bool
+	EnableSortPushdown    bool
+	EnableCursors         bool
 }
 
 // NewHandler constructs a new handler.
@@ -81,28 +81,16 @@ func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 
 // Handlers returns a list of all handlers registered at compile-time.
 func Handlers() []string {
-	handlers := maps.Keys(registry)
-	slices.Sort(handlers)
-	return handlers
-}
+	res := make([]string, 0, len(registry))
 
-// init registers handlers that are always enabled.
-func init() {
-	registry["dummy"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		return dummy.New(opts.Logger)
-	}
-
-	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		handlerOpts := &pg.NewOpts{
-			PostgreSQLURL: opts.PostgreSQLURL,
-
-			L:             opts.Logger,
-			Metrics:       opts.Metrics,
-			StateProvider: opts.StateProvider,
-
-			DisablePushdown: opts.DisablePushdown,
-			EnableCursors:   opts.EnableCursors,
+	// double check registered names and return them in the right order
+	for _, h := range []string{"pg", "sqlite", "tigris", "hana"} {
+		if _, ok := registry[h]; !ok {
+			continue
 		}
-		return pg.New(handlerOpts)
+
+		res = append(res, h)
 	}
+
+	return res
 }

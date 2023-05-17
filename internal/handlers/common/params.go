@@ -20,80 +20,66 @@ import (
 	"math"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetRequiredParam returns doc's value for key or protocol error for missing or invalid parameter.
+// GetRequiredParam returns doc's value for key
+// or protocol error for missing key or invalid type.
 func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
-	v, err := doc.Get(key)
-	if err != nil {
+	v, _ := doc.Get(key)
+	if v == nil {
 		msg := fmt.Sprintf("required parameter %q is missing", key)
-		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
+		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
 	}
 
 	res, ok := v.(T)
 	if !ok {
 		msg := fmt.Sprintf("required parameter %q has type %T (expected %T)", key, v, zero)
-		return zero, NewCommandErrorMsgWithArgument(ErrBadValue, msg, key)
+		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
 	}
 
 	return res, nil
 }
 
-// GetOptionalParam returns doc's value for key, default value for missing parameter, or protocol error for invalid parameter.
+// GetOptionalParam returns doc's value for key, default value for missing parameter,
+// or protocol error for invalid type.
 func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
-	v, err := doc.Get(key)
-	if err != nil {
+	v, _ := doc.Get(key)
+	if v == nil {
 		return defaultValue, nil
 	}
 
+	// require exact type; do not threat nulls as default values in this helper
 	res, ok := v.(T)
 	if !ok {
 		msg := fmt.Sprintf(
 			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
-			key, AliasFromType(v), AliasFromType(defaultValue),
+			key, commonparams.AliasFromType(v), commonparams.AliasFromType(defaultValue),
 		)
 
-		return defaultValue, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
+		return defaultValue, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
 	}
 
 	return res, nil
 }
 
-// GetBoolOptionalParam returns doc's bool value for key.
-// Non-zero double, long, and int values return true.
-// Zero values for those types, as well as nulls and missing fields, return false.
-// Other types return a protocol error.
-func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
-	v, err := doc.Get(key)
+// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null,
+// or protocol error for other invalid type.
+func GetOptionalNullParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
+	v, err := GetOptionalParam(doc, key, defaultValue)
 	if err != nil {
-		return false, nil
+		// the only possible error here is type mismatch, so the key is present
+		if _, ok := must.NotFail(doc.Get(key)).(types.NullType); ok {
+			err = nil
+		}
 	}
 
-	switch v := v.(type) {
-	case float64:
-		return v != 0, nil
-	case bool:
-		return v, nil
-	case types.NullType:
-		return false, nil
-	case int32:
-		return v != 0, nil
-	case int64:
-		return v != 0, nil
-	default:
-		msg := fmt.Sprintf(
-			`BSON field '%s' is the wrong type '%s', expected types '[bool, long, int, decimal, double]'`,
-			key,
-			AliasFromType(v),
-		)
-
-		return false, NewCommandErrorMsgWithArgument(ErrTypeMismatch, msg, key)
-	}
+	return v, err
 }
 
 // AssertType asserts value's type, returning protocol error for unexpected types.
@@ -102,79 +88,38 @@ func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
 //
 //	d, ok := value.(*types.Document)
 //	if !ok {
-//	  return NewCommandErrorMsg(ErrBadValue, "expected document")
+//	  return commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, "expected document")
 //	}
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
 		msg := fmt.Sprintf("got type %T, expected %T", value, res)
-		return res, NewCommandErrorMsg(ErrBadValue, msg)
+		return res, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, msg)
 	}
 
 	return res, nil
 }
 
-var (
-	errUnexpectedType        = fmt.Errorf("unexpected type")
-	errNotWholeNumber        = fmt.Errorf("not a whole number")
-	errNegativeNumber        = fmt.Errorf("negative number")
-	errNotBinaryMask         = fmt.Errorf("not a binary mask")
-	errUnexpectedLeftOpType  = fmt.Errorf("unexpected left operand type")
-	errUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
-	errLongExceeded          = fmt.Errorf("long exceeded")
-	errIntExceeded           = fmt.Errorf("int exceeded")
-	errInfinity              = fmt.Errorf("infinity")
-)
-
-// GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
-// such as used in the limit, $size, etc.
-func GetWholeNumberParam(value any) (int64, error) {
-	switch value := value.(type) {
-	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
-	case float64:
-		if math.IsInf(value, 1) {
-			return 0, errInfinity
-		}
-
-		if value > float64(math.MaxInt64) ||
-			value < float64(math.MinInt64) {
-			return 0, errLongExceeded
-		}
-
-		if value != math.Trunc(value) {
-			return 0, errNotWholeNumber
-		}
-
-		return int64(value), nil
-	case int32:
-		return int64(value), nil
-	case int64:
-		return value, nil
-	default:
-		return 0, errUnexpectedType
-	}
-}
-
 // GetLimitStageParam returns $limit stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {
-	limit, err := GetWholeNumberParam(value)
+	limit, err := commonparams.GetWholeNumberParam(value)
 
 	switch {
 	case err == nil:
-	case errors.Is(err, errUnexpectedType):
+	case errors.Is(err, commonparams.ErrUnexpectedType):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity):
+	case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
@@ -205,17 +150,19 @@ func GetLimitStageParam(value any) (int64, error) {
 // GetSkipStageParam returns $skip stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetSkipStageParam(value any) (int64, error) {
-	limit, err := GetWholeNumberParam(value)
+	limit, err := commonparams.GetWholeNumberParam(value)
 
 	switch {
 	case err == nil:
-	case errors.Is(err, errNotWholeNumber), errors.Is(err, errInfinity), errors.Is(err, errUnexpectedType):
+	case errors.Is(err, commonparams.ErrNotWholeNumber),
+		errors.Is(err, commonparams.ErrInfinity),
+		errors.Is(err, commonparams.ErrUnexpectedType):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
-	case errors.Is(err, errLongExceeded):
+	case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
@@ -249,15 +196,15 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 			val := must.NotFail(mask.Get(i))
 			b, ok := val.(int32)
 			if !ok {
-				return 0, NewCommandError(
-					ErrBadValue,
+				return 0, commonerrors.NewCommandError(
+					commonerrors.ErrBadValue,
 					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
 				)
 			}
 
 			if b < 0 {
-				return 0, NewCommandError(
-					ErrBadValue,
+				return 0, commonerrors.NewCommandError(
+					commonerrors.ErrBadValue,
 					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
 				)
 			}
@@ -268,11 +215,11 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask != math.Trunc(mask) || math.IsInf(mask, 0) {
-			return 0, errNotWholeNumber
+			return 0, commonparams.ErrNotWholeNumber
 		}
 
 		if mask < 0 {
-			return 0, errNegativeNumber
+			return 0, commonparams.ErrNegativeNumber
 		}
 
 		bitmask = uint64(mask)
@@ -296,7 +243,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, errNegativeNumber
+			return 0, commonparams.ErrNegativeNumber
 		}
 
 		bitmask = uint64(mask)
@@ -304,26 +251,16 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, errNegativeNumber
+			return 0, commonparams.ErrNegativeNumber
 		}
 
 		bitmask = uint64(mask)
 
 	default:
-		return 0, errNotBinaryMask
+		return 0, commonparams.ErrNotBinaryMask
 	}
 
 	return bitmask, nil
-}
-
-// parseTypeCode returns typeCode and error by given type code alias.
-func parseTypeCode(alias string) (typeCode, error) {
-	code, ok := aliasToTypeCode[alias]
-	if !ok {
-		return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf(`Unknown type name alias: %s`, alias), "$type")
-	}
-
-	return code, nil
 }
 
 // addNumbers returns the result of v1 and v2 addition and error if addition failed.
@@ -340,7 +277,7 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			return v1 + float64(v2), nil
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	case int32:
 		switch v2 := v2.(type) {
@@ -359,17 +296,17 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if int64(v1) > math.MaxInt64-v2 {
-					return nil, errLongExceeded
+					return nil, commonparams.ErrLongExceededPositive
 				}
 			} else {
 				if int64(v1) < math.MinInt64-v2 {
-					return nil, errLongExceeded
+					return nil, commonparams.ErrLongExceededNegative
 				}
 			}
 
 			return v2 + int64(v1), nil
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	case int64:
 		switch v2 := v2.(type) {
@@ -378,11 +315,11 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int32:
 			if v2 > 0 {
 				if v1 > math.MaxInt64-int64(v2) {
-					return nil, errIntExceeded
+					return nil, commonparams.ErrIntExceeded
 				}
 			} else {
 				if v1 < math.MinInt64-int64(v2) {
-					return nil, errIntExceeded
+					return nil, commonparams.ErrIntExceeded
 				}
 			}
 
@@ -390,20 +327,20 @@ func addNumbers(v1, v2 any) (any, error) {
 		case int64:
 			if v2 > 0 {
 				if v1 > math.MaxInt64-v2 {
-					return nil, errLongExceeded
+					return nil, commonparams.ErrLongExceededPositive
 				}
 			} else {
 				if v1 < math.MinInt64-v2 {
-					return nil, errLongExceeded
+					return nil, commonparams.ErrLongExceededNegative
 				}
 			}
 
 			return v1 + v2, nil
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	default:
-		return nil, errUnexpectedLeftOpType
+		return nil, commonparams.ErrUnexpectedLeftOpType
 	}
 }
 
@@ -425,7 +362,7 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case int64:
 			res = v1 * float64(v2)
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 
 		return res, nil
@@ -444,7 +381,7 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 			return multiplyLongSafely(int64(v1), v2)
 
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	case int64:
 		switch v2 := v2.(type) {
@@ -457,10 +394,10 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 			return multiplyLongSafely(v1, v2)
 
 		default:
-			return nil, errUnexpectedRightOpType
+			return nil, commonparams.ErrUnexpectedRightOpType
 		}
 	default:
-		return nil, errUnexpectedLeftOpType
+		return nil, commonparams.ErrUnexpectedLeftOpType
 	}
 }
 
@@ -479,60 +416,13 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	// This check is necessary only for MinInt64, as multiplying MinInt64 by -1
 	// results in overflow with the MinInt64 as result.
 	case v1 == math.MinInt64 || v2 == math.MinInt64:
-		return 0, errLongExceeded
+		return 0, commonparams.ErrLongExceededNegative
 	}
 
 	res := v1 * v2
 	if res/v2 != v1 {
-		return 0, errLongExceeded
+		return 0, commonparams.ErrLongExceededPositive
 	}
 
 	return res, nil
-}
-
-// GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
-func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
-	v, err := document.Get(key)
-	if err != nil {
-		return 0, nil
-	}
-
-	wholeNumberParam, err := GetWholeNumberParam(v)
-	if err != nil {
-		switch err {
-		case errUnexpectedType:
-			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s must be a number", key), key)
-		case errNotWholeNumber:
-			if _, ok := v.(float64); ok {
-				return 0, NewCommandErrorMsgWithArgument(
-					ErrBadValue,
-					fmt.Sprintf("%v has non-integral value", key),
-					key,
-				)
-			}
-
-			return 0, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("%s must be a whole number", key), key)
-		default:
-			return 0, err
-		}
-	}
-
-	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
-		return 0, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
-			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
-			key,
-		)
-	}
-
-	value := int32(wholeNumberParam)
-	if value < 0 {
-		return 0, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
-			fmt.Sprintf("%v value for %s is out of range", value, key),
-			key,
-		)
-	}
-
-	return value, nil
 }

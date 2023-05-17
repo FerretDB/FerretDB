@@ -43,5 +43,5 @@ And if you decide to opt out, we hope that you can join our community and provid
 Most importantly, we remain committed to the principles of open source and community, recognizing that we cannot do this without your help and support.
 In light of this, we’d like to get your opinion on some of the concerns you might have regarding the use of FerretDB Beacon and how we can ease those fears.
 
-If you have any questions or concerns you would like to raise, kindly reach out to us on [Slack  chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) and [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for more information.
+If you have any questions or concerns you would like to raise, kindly reach out to us on [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) and [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for more information.
 You can also join our [open office hours meeting](https://calendar.google.com/event?action=TEMPLATE&amp;tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&amp;tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&amp;scp=ALL) every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).

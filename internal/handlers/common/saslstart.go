@@ -49,7 +49,7 @@ func SASLStartPlain(doc *types.Document) (string, string, error) {
 
 	parts := bytes.Split(payload, []byte{0})
 	if l := len(parts); l != 3 {
-		return "", "", NewCommandErrorMsgWithArgument(
+		return "", "", commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			fmt.Sprintf("Invalid payload (expected 3 parts, got %d)", l),
 			"payload",

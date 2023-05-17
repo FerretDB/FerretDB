@@ -18,9 +18,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,9 +53,12 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	nameOnly, err := common.GetBoolOptionalParam(document, "nameOnly")
-	if err != nil {
-		return nil, err
+	var nameOnly bool
+	if v, _ := document.Get("nameOnly"); v != nil {
+		nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var names []string

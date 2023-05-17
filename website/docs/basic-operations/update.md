@@ -9,12 +9,12 @@ FerretDB supports update operators, such as `$set` and `$setOnInsert` to update 
 
 At present, FerretDB currently supports the following update operators:
 
-| Operator name  | Description                                                                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `$set`         | Assigns the value for an updated field to the document.                                                                                                            |
-| `$setOnInsert` | Specifies the value of a field when an update operation results in the addition of a document.  However, there is no effect when it modifies an existing document. |
-| `$unset`       | Removes a specific field from a document.                                                                                                                          |
-| `$pop`         | In an array, this operator removes the first or last item.                                                                                                         |
+| Operator name  | Description                                                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `$set`         | Assigns the value for an updated field to the document.                                                                                                           |
+| `$setOnInsert` | Specifies the value of a field when an update operation results in the addition of a document. However, there is no effect when it modifies an existing document. |
+| `$unset`       | Removes a specific field from a document.                                                                                                                         |
+| `$pop`         | In an array, this operator removes the first or last item.                                                                                                        |
 
 ## Update a single document
 

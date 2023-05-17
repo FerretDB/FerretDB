@@ -18,7 +18,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )

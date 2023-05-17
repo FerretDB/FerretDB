@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// Handler implements handlers.Interface on top of Tigris.
+// Handler implements handlers.Interface on Tigris.
 //
 //nolint:vet // for readability
 type Handler struct {
@@ -54,8 +54,8 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisablePushdown bool
-	EnableCursors   bool
+	DisableFilterPushdown bool
+	EnableCursors         bool
 }
 
 // AuthParams represents authentication parameters.

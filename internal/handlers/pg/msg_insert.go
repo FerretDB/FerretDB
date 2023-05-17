@@ -20,10 +20,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,49 +44,26 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
-
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetInsertParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	qp := pgdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
 	}
 
-	var docs *types.Array
-	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
-		return nil, err
-	}
-
-	ordered := true
-	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
-		return nil, err
-	}
-
-	inserted, insErrors := insertMany(ctx, dbPool, &qp, docs, ordered)
+	inserted, insErrors := insertMany(ctx, dbPool, &qp, params.Docs, params.Ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
+		"n", inserted,
 		"ok", float64(1),
 	))
 
 	if insErrors.Len() > 0 {
 		replyDoc = insErrors.Document()
 	}
-
-	replyDoc.Set("n", inserted)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -101,48 +79,73 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // If insert is unordered, a document fails to insert, handling of the remaining documents will be continued.
 //
 // It always returns the number of successfully inserted documents and a document with errors.
-func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs *types.Array, ordered bool) (int32, *common.WriteErrors) { //nolint:lll // argument list is too long
+func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, docs *types.Array, ordered bool) (int32, *commonerrors.WriteErrors) { //nolint:lll // argument list is too long
 	var inserted int32
 	var insErrors commonerrors.WriteErrors
 
-	for i := 0; i < docs.Len(); i++ {
-		doc := must.NotFail(docs.Get(i))
+	// attempt to insert all documents in a single transaction
+	err := dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+		for i := 0; i < docs.Len(); i++ {
+			doc := must.NotFail(docs.Get(i))
 
-		err := insertDocument(ctx, dbPool, qp, doc)
+			err := insertDocument(ctx, tx, qp, doc)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	// if transaction fails with err
+	// try inserting one document at a time
+	if err != nil {
+		for i := 0; i < docs.Len(); i++ {
+			doc := must.NotFail(docs.Get(i))
 
-		var we *commonerrors.WriteErrors
+			err := insertDocumentSeparately(ctx, dbPool, qp, doc)
 
-		switch {
-		case err == nil:
-			inserted++
-			continue
-		case errors.As(err, &we):
-			insErrors.Merge(we, int32(i))
-		default:
-			insErrors.Append(err, int32(i))
+			var we *commonerrors.WriteErrors
+
+			switch {
+			case err == nil:
+				inserted++
+				continue
+			case errors.As(err, &we):
+				insErrors.Merge(we, int32(i))
+			default:
+				insErrors.Append(err, int32(i))
+			}
+
+			if ordered {
+				return inserted, &insErrors
+			}
 		}
 
-		if ordered {
-			return inserted, &insErrors
-		}
+		return inserted, &insErrors
 	}
 
-	return inserted, &insErrors
+	return int32(docs.Len()), &insErrors
 }
 
-// insertDocument prepares and executes actual INSERT request to Postgres.
-func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
+// insertDocument prepares and executes actual INSERT request to Postgres in provided transaction.
+func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc any) error {
 	d, ok := doc.(*types.Document)
 	if !ok {
 		return commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("document has invalid type %s", common.AliasFromType(doc)),
+			fmt.Sprintf("document has invalid type %s", commonparams.AliasFromType(doc)),
 		)
 	}
 
-	err := dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, d)
-	})
+	toInsert := d
+
+	if !toInsert.Has("_id") {
+		// Make a copy so that original document could be sent to the proxy as it is.
+		toInsert = d.DeepCopy()
+
+		toInsert.Set("_id", types.NewObjectID())
+	}
+
+	err := pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, toInsert)
 
 	switch {
 	case err == nil:
@@ -167,4 +170,13 @@ func insertDocument(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams
 	default:
 		return commonerrors.CheckError(err)
 	}
+}
+
+// insertDocumentSeparately prepares and executes actual INSERT request to Postgres in separate transaction.
+//
+// It should be used in places where we don't want to rollback previous inserted documents on error.
+func insertDocumentSeparately(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
+	return dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		return insertDocument(ctx, tx, qp, doc)
+	})
 }

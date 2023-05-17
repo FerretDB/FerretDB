@@ -17,23 +17,31 @@ package common
 import (
 	"bufio"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// parseOSRelease parses the /etc/os-release file.
-func parseOSRelease(reader io.Reader) (string, string, error) {
-	scanner := bufio.NewScanner(reader)
+// parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,
+// returning the OS name and version.
+func parseOSRelease(r io.Reader) (string, string, error) {
+	scanner := bufio.NewScanner(r)
 
 	configParams := map[string]string{}
 	for scanner.Scan() {
-		str := strings.Split(scanner.Text(), "=")
-		if len(str) == 1 {
+		key, value, ok := strings.Cut(scanner.Text(), "=")
+		if !ok {
 			continue
 		}
-		configParams[str[0]] = str[1]
+
+		if v, err := strconv.Unquote(value); err == nil {
+			value = v
+		}
+
+		configParams[key] = value
 	}
+
 	if err := scanner.Err(); err != nil {
 		return "", "", lazyerrors.Error(err)
 	}

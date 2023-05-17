@@ -108,8 +108,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		TigrisURL: nextTigrisUrl(),
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: *disablePushdownF,
-			EnableCursors:   *enableCursorsF,
+			DisableFilterPushdown: *disableFilterPushdownF,
+			EnableSortPushdown:    *enableSortPushdownF,
+			EnableCursors:         *enableCursorsF,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)

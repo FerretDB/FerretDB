@@ -39,15 +39,20 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	command := document.Command()
+
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	m := document.Map()
-	scale, ok := m["scale"].(float64)
-	if !ok {
-		scale = 1
+	scale := int32(1)
+
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = common.GetScaleParam(command, s); err != nil {
+			return nil, err
+		}
 	}
 
 	stats, err := dbPool.Driver.DescribeDatabase(ctx, db)
@@ -94,11 +99,12 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"objects", int32(objects),
 			"avgObjSize", float64(avgObjSize),
 			"dataSize", float64(stats.Size),
+			"storageSize", float64(stats.Size),
 			// Tigris indexes all the fields https://docs.tigrisdata.com/apidocs/#operation/Tigris_Read
 			"indexes", int32(0),
 			"indexSize", int32(0),
 			"totalSize", int32(0),
-			"scaleFactor", scale,
+			"scaleFactor", float64(scale),
 			"ok", float64(1),
 		))},
 	}))

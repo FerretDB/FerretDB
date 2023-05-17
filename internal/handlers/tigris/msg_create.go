@@ -22,6 +22,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -98,13 +99,13 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		// do nothing
 	case *driver.Error:
 		if tigrisdb.IsInvalidArgument(err) {
-			return nil, common.NewCommandError(common.ErrBadValue, err)
+			return nil, commonerrors.NewCommandError(commonerrors.ErrBadValue, err)
 		}
 
 		// Tigris returns Code_ABORTED if concurrent create collection request is detected.
 		if tigrisdb.IsAborted(err) {
 			msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-			return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
+			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -114,7 +115,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	if !created {
 		msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-		return nil, common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
 	}
 
 	var reply wire.OpMsg

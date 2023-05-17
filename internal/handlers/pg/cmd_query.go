@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -40,7 +41,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 					"maxWriteBatchSize", int32(100000),
 					"localTime", time.Now(),
 					// logicalSessionTimeoutMinutes
-					// connectionId
+					"connectionId", int32(42),
 					"minWireVersion", common.MinWireVersion,
 					"maxWireVersion", common.MaxWireVersion,
 					"readOnly", false,
@@ -51,11 +52,11 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		default:
 			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
-			return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
+			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, msg)
 		}
 	}
 
 	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
 
-	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
+	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, msg)
 }

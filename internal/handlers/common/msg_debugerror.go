@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -38,13 +40,13 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}
 
 	// check if parameter is an error code
-	if n, err := strconv.Atoi(expected); err == nil {
-		errCode := ErrorCode(n)
+	if n, err := strconv.ParseInt(expected, 10, 32); err == nil {
+		errCode := commonerrors.ErrorCode(n)
 		return nil, errors.New(errCode.String())
 	}
 
-	switch expected {
-	case "ok":
+	switch {
+	case expected == "ok":
 		var reply wire.OpMsg
 
 		replyDoc := must.NotFail(types.NewDocument(
@@ -57,8 +59,11 @@ func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 		return &reply, nil
 
-	case "panic":
-		panic("debugError panic")
+	case strings.HasPrefix(expected, "panic"):
+		panic("debugError " + expected)
+
+	case strings.HasPrefix(expected, "lazy"):
+		return nil, lazyerrors.New(expected)
 
 	default:
 		return nil, errors.New(expected)

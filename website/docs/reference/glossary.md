@@ -93,6 +93,7 @@ They are represented as field name-value pairs and describe the kind of data in 
 A data structure used for identifying and querying records in a collection.
 It helps to limit the number of documents to search through or inspect in a collection.
 Examples include `_id` index, user-defined index, hashed index, and partial index.
+See [Indexes](../indexes.md) for more.
 
 ---
 

@@ -45,7 +45,7 @@ var orderTypes = map[string]int{
 	"bool":     7,
 	"boolType": 7,
 
-	"time.Time":    8,
+	"Time":         8,
 	"dateTimeType": 8,
 
 	"NullType": 9,

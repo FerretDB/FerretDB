@@ -21,11 +21,11 @@ import (
 )
 
 // SortIterator returns an iterator of sorted documents.
+// It will be added to the given closer.
 //
 // Since sorting iterator is impossible, this function fully consumes and closes the underlying iterator,
 // sorts documents in memory and returns a new iterator over the sorted slice.
-// That iterator should be closed by the caller.
-func SortIterator(iter types.DocumentsIterator, sort *types.Document) (types.DocumentsIterator, error) {
+func SortIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, sort *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// don't consume all documents if there is no sort
 	if sort.Len() == 0 {
 		return iter, nil
@@ -40,7 +40,8 @@ func SortIterator(iter types.DocumentsIterator, sort *types.Document) (types.Doc
 		return nil, lazyerrors.Error(err)
 	}
 
-	sliceIter := iterator.ForSlice(docs)
+	res := iterator.Values(iterator.ForSlice(docs))
+	closer.Add(res)
 
-	return iterator.Values(sliceIter), nil
+	return res, nil
 }

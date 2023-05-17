@@ -81,7 +81,7 @@ Here is a list of the most commonly used operators.
 
 `$gt`: selects records that are greater than a specific value
 
-`$lt`:  selects records that are less than a specific value
+`$lt`: selects records that are less than a specific value
 
 `$gte`: selects records greater or equal to a specific value
 

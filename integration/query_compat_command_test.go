@@ -169,6 +169,8 @@ func testQueryCompatCommand(t *testing.T, testCases map[string]queryCompatComman
 }
 
 func TestQueryCompatCommandSkip(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatCommandTestCase{
 		"MaxInt64": {
 			filter:     bson.D{},

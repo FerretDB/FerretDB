@@ -4,11 +4,11 @@ sidebar_position: 1
 
 # Array update operators
 
-Array update operators  allow you to modify the elements of an array field in a document.
+Array update operators allow you to modify the elements of an array field in a document.
 
 | Operator                 | Description                                                                                  |
 | ------------------------ | -------------------------------------------------------------------------------------------- |
-| [`$push`](#push)         | Adds an element to an array                                                                 |
+| [`$push`](#push)         | Adds an element to an array                                                                  |
 | [`$addToSet`](#addtoset) | Adds elements to a specific array as long as the element does not already exist in the array |
 | [`$pop`](#pop)           | Removes either the first or the last element of an array                                     |
 | [`$pullAll`](#pullall)   | Removes all matching values in a specified query from an array                               |

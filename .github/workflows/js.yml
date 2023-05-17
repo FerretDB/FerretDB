@@ -3,7 +3,7 @@ name: JS
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -13,7 +13,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       - name: Checkout code
@@ -79,13 +79,16 @@ jobs:
       - name: Run testjs for FerretDB
         run: bin/task testjs
 
-      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
+      - name: Compress FerretDB log before upload
+        if: failure()
+        run: zip -q -9 ferretdb-log.zip ferretdb.log
+
       - name: Upload FerretDB log
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.log
-          path: ferretdb.log
+          name: ferretdb-log
+          path: ferretdb-log.zip
           retention-days: 1
           if-no-files-found: error
 

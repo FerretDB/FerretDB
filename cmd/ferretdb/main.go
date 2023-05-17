@@ -30,8 +30,6 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -65,8 +63,6 @@ var cli struct {
 	ProxyAddr string `default:""                help:"Proxy address."`
 	DebugAddr string `default:"127.0.0.1:8088"  help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
-
 	// see setCLIPlugins
 	kong.Plugins
 
@@ -80,9 +76,10 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Test struct {
-		RecordsDir      string `default:"" help:"Experimental: directory for record files."`
-		DisablePushdown bool   `default:"false" help:"Experimental: disable query pushdown."`
-		EnableCursors   bool   `default:"false" help:"Experimental: enable cursors."`
+		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
+		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
+		EnableCursors         bool   `default:"false" help:"Experimental: enable cursors."`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -95,7 +92,21 @@ var cli struct {
 	} `embed:"" prefix:"test-"`
 }
 
-// The tigrisFlags struct represents flags that are used specifically by "tigris" handler.
+// The pgFlags struct represents flags that are used by the "pg" handler.
+//
+// See main_pg.go.
+var pgFlags struct {
+	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+}
+
+// The sqliteFlags struct represents flags that are used by the "sqlite" handler.
+//
+// See main_sqlite.go.
+var sqliteFlags struct {
+	SQLiteURI string `name:"sqlite-uri" default:"." help:"Directory path or 'file' URI for 'sqlite' handler."`
+}
+
+// The tigrisFlags struct represents flags that are used by the "tigris" handler.
 //
 // See main_tigris.go.
 var tigrisFlags struct {
@@ -104,7 +115,7 @@ var tigrisFlags struct {
 	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
 }
 
-// The hanaFlags struct represents flags that are used specifically by "hana" handler.
+// The hanaFlags struct represents flags that are used by the "hana" handler.
 //
 // See main_hana.go.
 var hanaFlags struct {
@@ -114,13 +125,21 @@ var hanaFlags struct {
 // handlerFlags is a map of handler names to their flags.
 var handlerFlags = map[string]any{}
 
-// setCLIPlugins adds Kong flags for handlers in the stable order.
+// setCLIPlugins adds Kong flags for handlers in the right order.
 func setCLIPlugins() {
-	handlers := maps.Keys(handlerFlags)
-	slices.Sort(handlers)
+	handlers := registry.Handlers()
+
+	if len(handlers) != len(handlerFlags) {
+		panic("handlers and handlerFlags are not in sync")
+	}
 
 	for _, h := range handlers {
-		cli.Plugins = append(cli.Plugins, handlerFlags[h])
+		f := handlerFlags[h]
+		if f == nil {
+			panic(fmt.Sprintf("handler %q has no flags", h))
+		}
+
+		cli.Plugins = append(cli.Plugins, f)
 	}
 }
 
@@ -329,7 +348,9 @@ func run() {
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
-		PostgreSQLURL: cli.PostgreSQLURL,
+		PostgreSQLURL: pgFlags.PostgreSQLURL,
+
+		SQLiteURI: sqliteFlags.SQLiteURI,
 
 		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
@@ -338,8 +359,9 @@ func run() {
 		HANAURL: hanaFlags.HANAURL,
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: cli.Test.DisablePushdown,
-			EnableCursors:   cli.Test.EnableCursors,
+			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
+			EnableSortPushdown:    cli.Test.EnableSortPushdown,
+			EnableCursors:         cli.Test.EnableCursors,
 		},
 	})
 	if err != nil {

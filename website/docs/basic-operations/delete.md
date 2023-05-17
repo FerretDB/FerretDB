@@ -78,7 +78,7 @@ This operation returns a response that shows that a single document was deleted 
 
 ## Deletes multiple documents
 
-To delete multiple documents at once, use the  `deleteMany()` method.
+To delete multiple documents at once, use the `deleteMany()` method.
 Using the same record from earlier, let's delete all the documents with `nobel` set to false.
 
 ```js

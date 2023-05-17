@@ -18,9 +18,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -53,7 +53,7 @@ func setById(ctx context.Context, tx pgx.Tx, schema, table, comment string, id a
 
 	sql += pgx.Identifier{schema, table}.Sanitize() + " SET _jsonb = $1 WHERE _jsonb->'_id' = $2"
 
-	tag, err := tx.Exec(ctx, sql, must.NotFail(pjson.Marshal(doc)), must.NotFail(pjson.MarshalSingleValue(id)))
+	tag, err := tx.Exec(ctx, sql, must.NotFail(sjson.Marshal(doc)), must.NotFail(sjson.MarshalSingleValue(id)))
 	if err != nil {
 		return 0, err
 	}

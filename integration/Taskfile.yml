@@ -3,7 +3,10 @@
 version: 3
 
 vars:
-  RACEFLAG: -race={{ne OS "windows"}}
+  COUNT: 10
+  BENCHTIME: 5s
+  BENCHNAME: .
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
   env-data:
@@ -48,3 +51,31 @@ tasks:
   integration-security:
     cmds:
       - ../bin/govulncheck{{exeExt}} -v -test ./...
+
+  bench-pg:
+    desc: "Run benchmarks for `pg` handler"
+    cmds:
+      - >
+        go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        -target-backend=ferretdb-pg
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb | tee new-pg.txt
+      - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
+
+  bench-pg-no-pushdown:
+    desc: "Run benchmarks for `pg` with query pushdown disabled"
+    cmds:
+      - >
+        go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        -target-backend=ferretdb-pg
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb | tee new-pg-no-pushdown.txt
+        -- -disable-pushdown
+      - ../bin/benchstat{{exeExt}} old-pg-no-pushdown.txt new-pg-no-pushdown.txt
+
+  bench-mongodb:
+    desc: "Run benchmarks for MongoDB"
+    cmds:
+      - >
+        go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        -target-backend=mongodb
+        -target-url=mongodb://127.0.0.1:47017/ | tee new-mongodb.txt
+      - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt

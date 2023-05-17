@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -88,11 +89,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	stages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]aggregations.Stage, 0, len(stages))
-	stagesStats := make([]aggregations.Stage, 0, len(stages))
+	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
+	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
+	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
 
-	for i, d := range stages {
+	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -104,7 +105,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 
-		if s, err = aggregations.NewStage(d); err != nil {
+		if s, err = stages.NewStage(d); err != nil {
 			return nil, err
 		}
 
@@ -136,10 +137,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := tigrisdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     aggregations.GetPushdownQuery(stages),
 		}
 
-		qp.Filter = aggregations.GetPushdownQuery(stages)
+		qp.Filter, _ = aggregations.GetPushdownQuery(aggregationStages)
 
 		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
 			dbPool, &qp, stagesDocuments,
@@ -147,7 +147,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 	} else {
-		statistics := aggregations.GetStatistics(stagesStats)
+		statistics := stages.GetStatistics(stagesStats)
 
 		if resDocs, err = processStagesStats(ctx, &stagesStatsParams{
 			dbPool, db, collection, statistics, stagesStats,
@@ -186,27 +186,25 @@ type stagesDocumentsParams struct {
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
 func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*types.Document, error) { //nolint:lll // for readability
-	var docs []*types.Document
-
 	iter, err := p.dbPool.QueryDocuments(ctx, p.qp)
 	if err != nil {
 		return nil, err
 	}
 
-	defer iter.Close()
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
-	docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, s := range p.stages {
-		if docs, err = s.Process(ctx, docs); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
 
-	return docs, nil
+	return iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 }
 
 // stagesStatsParams contains the parameters for processStagesStats.
@@ -214,15 +212,15 @@ type stagesStatsParams struct {
 	dbPool     *tigrisdb.TigrisDB
 	db         string
 	collection string
-	statistics map[aggregations.Statistic]struct{}
+	statistics map[stages.Statistic]struct{}
 	stages     []aggregations.Stage
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
 func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Document, error) {
 	// Clarify what needs to be retrieved from the database and retrieve it.
-	_, hasCount := p.statistics[aggregations.StatisticCount]
-	_, hasStorage := p.statistics[aggregations.StatisticStorage]
+	_, hasCount := p.statistics[stages.StatisticCount]
+	_, hasStorage := p.statistics[stages.StatisticStorage]
 
 	var host string
 	var err error
@@ -271,18 +269,18 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(dbStats.Size),
+				"size", dbStats.Size,
 				"count", dbStats.NumObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(dbStats.Size),
-				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"storageSize", dbStats.Size,
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", int32(0), // Not supported for Tigris
+				"nindexes", int64(0), // Not supported for Tigris
 				"indexDetails", must.NotFail(types.NewDocument()), // Not supported for Tigris
 				"indexBuilds", must.NotFail(types.NewDocument()), // Not supported for Tigris
-				"totalIndexSize", int32(0), // Not supported for Tigris
-				"totalSize", int32(dbStats.Size),
+				"totalIndexSize", int64(0), // Not supported for Tigris
+				"totalSize", dbStats.Size,
 				"indexSizes", must.NotFail(types.NewDocument()), // Not supported for Tigris
 			)),
 		)
@@ -295,13 +293,16 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	// Process the retrieved statistics through the stages.
-	var res []*types.Document
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
+
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
 	for _, s := range p.stages {
-		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
 
-	return res, nil
+	return iterator.ConsumeValues(iter)
 }

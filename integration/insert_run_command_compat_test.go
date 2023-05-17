@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,11 +76,12 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 
+						// TODO https://github.com/FerretDB/FerretDB/issues/2545
 						if tc.altErrorMsg != "" {
 							AssertMatchesCommandError(t, compatErr, targetErr)
 
 							var expectedErr mongo.CommandError
-							require.True(t, errors.As(compatErr, &expectedErr))
+							require.ErrorAs(t, targetErr, &expectedErr)
 							AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
 						} else {
 							require.Equal(t, compatErr, targetErr)
@@ -117,7 +117,6 @@ func TestInsertRunCommandCompat(t *testing.T) {
 				bson.D{{}},
 			},
 			ordered: true,
-			skip:    "https://github.com/FerretDB/FerretDB/issues/1714",
 		},
 	}
 

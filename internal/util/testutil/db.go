@@ -63,8 +63,8 @@ func stack() []byte {
 func DatabaseName(tb testing.TB) string {
 	tb.Helper()
 
-	// database names are always lowercase
-	name := strings.ToLower(tb.Name())
+	// database names may contain lowercase and uppercase characters
+	name := tb.Name()
 
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, " ", "_")

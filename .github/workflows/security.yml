@@ -3,7 +3,7 @@ name: Security
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -11,7 +11,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       - name: Checkout code
@@ -51,6 +51,14 @@ jobs:
 
       - name: Scan
         run: bin/task --exit-code security
+
+      # disabled until https://github.com/actions/dependency-review-action/issues/459 is resolved
+      - name: Check dependencies for PRs
+        # if: github.event_name == 'pull_request'
+        if: false
+        uses: actions/dependency-review-action@v3
+        with:
+          allow-licenses: Apache-2.0, BSD-3-Clause, MIT
 
       # Workaround for `hashFiles` issue.
       # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.

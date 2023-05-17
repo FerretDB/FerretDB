@@ -19,9 +19,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -42,70 +43,31 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.Unimplemented(document, "let"); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "writeConcern")
-
-	var deletes *types.Array
-	if deletes, err = common.GetOptionalParam(document, "deletes", deletes); err != nil {
-		return nil, err
-	}
-
-	ordered := true
-	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
-		return nil, err
-	}
-
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetDeleteParams(document, h.L)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
-	}
-
-	// get comment from options.Delete().SetComment() method
-	if qp.Comment, err = common.GetOptionalParam(document, "comment", qp.Comment); err != nil {
-		return nil, err
+	qp := pgdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
+		Comment:    params.Comment,
 	}
 
 	var deleted int32
-	var delErrors common.WriteErrors
+	var delErrors commonerrors.WriteErrors
 
 	// process every delete filter
-	for i := 0; i < deletes.Len(); i++ {
-		// get document with filter
-		deleteDoc, err := common.AssertType[*types.Document](must.NotFail(deletes.Get(i)))
-		if err != nil {
-			return nil, err
-		}
+	for i, deleteParams := range params.Deletes {
+		qp.Filter = deleteParams.Filter
+		qp.Comment = deleteParams.Comment
 
-		var limited bool
-		qp.Filter, limited, err = h.prepareDeleteParams(deleteDoc)
-		if err != nil {
-			return nil, err
-		}
-
-		// get comment from query, e.g. db.collection.DeleteOne({"_id":"string", "$comment: "test"})
-		if qp.Comment, err = common.GetOptionalParam(qp.Filter, "$comment", qp.Comment); err != nil {
-			return nil, err
-		}
-
-		del, err := execDelete(ctx, &execDeleteParams{dbPool, &qp, h.DisablePushdown, limited})
+		del, err := execDelete(ctx, &execDeleteParams{
+			dbPool,
+			&qp,
+			h.DisableFilterPushdown,
+			deleteParams.Limited,
+		})
 		if err == nil {
 			deleted += del
 			continue
@@ -113,7 +75,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		delErrors.Append(err, int32(i))
 
-		if ordered {
+		if params.Ordered {
 			break
 		}
 	}
@@ -136,51 +98,12 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// prepareDeleteParams extracts query filter and limit from delete document.
-func (h *Handler) prepareDeleteParams(deleteDoc *types.Document) (*types.Document, bool, error) {
-	var err error
-
-	if err = common.Unimplemented(deleteDoc, "collation"); err != nil {
-		return nil, false, err
-	}
-
-	common.Ignored(deleteDoc, h.L, "hint")
-
-	// get filter from document
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(deleteDoc, "q", filter); err != nil {
-		return nil, false, err
-	}
-
-	// TODO use `GetLimitParam`
-	// https://github.com/FerretDB/FerretDB/issues/2255
-	l, err := deleteDoc.Get("limit")
-	if err != nil {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrMissingField,
-			"BSON field 'delete.deletes.limit' is missing but a required field",
-			"limit",
-		)
-	}
-
-	var limit int64
-	if limit, err = common.GetWholeNumberParam(l); err != nil || limit < 0 || limit > 1 {
-		return nil, false, common.NewCommandErrorMsgWithArgument(
-			common.ErrFailedToParse,
-			fmt.Sprintf("The limit field in delete objects must be 0 or 1. Got %v", l),
-			"limit",
-		)
-	}
-
-	return filter, limit == 1, nil
-}
-
 // execDeleteParams contains parameters for execDelete function.
 type execDeleteParams struct {
-	dbPool          *pgdb.Pool
-	qp              *pgdb.QueryParams
-	disablePushdown bool
-	limited         bool
+	dbPool                *pgdb.Pool
+	qp                    *pgdb.QueryParams
+	disableFilterPushdown bool
+	limited               bool
 }
 
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
@@ -193,12 +116,12 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
 	filter := dp.qp.Filter
 
-	if dp.disablePushdown {
+	if dp.disableFilterPushdown {
 		dp.qp.Filter = nil
 	}
 
 	err := dp.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err := pgdb.QueryDocuments(ctx, tx, dp.qp)
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, dp.qp)
 		if err != nil {
 			return err
 		}
@@ -271,7 +194,7 @@ func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam
 	})
 	if err != nil {
 		// TODO check error code
-		return 0, common.NewCommandError(common.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
+		return 0, commonerrors.NewCommandError(commonerrors.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
 
 	return rowsDeleted, nil

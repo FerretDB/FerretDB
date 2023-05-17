@@ -19,10 +19,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -180,7 +181,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			var order int64
 
 			if val, err = keyDoc.Get("_id"); err == nil {
-				if order, err = common.GetWholeNumberParam(val); err == nil && order == -1 {
+				if order, err = commonparams.GetWholeNumberParam(val); err == nil && order == -1 {
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrBadValue,
 						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
@@ -212,6 +213,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "unique":
 			// TODO https://github.com/FerretDB/FerretDB/issues/2045
 			// just ignore it for now, don't return error
+
+		case "background":
+			// ignore deprecated options
 
 		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
@@ -268,7 +272,7 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 
 		var orderParam int64
 
-		if orderParam, err = common.GetWholeNumberParam(order); err != nil {
+		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
 			// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

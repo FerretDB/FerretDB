@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
@@ -59,6 +59,7 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
 
+	var retry int64
 	for ctx.Err() == nil {
 		conn, err := net.Dial("tcp", addr)
 		if err == nil {
@@ -67,7 +68,9 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 		}
 
 		logger.Infof("%s: %s", addr, err)
-		ctxutil.Sleep(ctx, time.Second)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
 	return fmt.Errorf("failed to connect to %s", addr)
@@ -96,13 +99,20 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	var pgPool *pgdb.Pool
 
+	var retry int64
 	for ctx.Err() == nil {
 		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), p); err == nil {
 			break
 		}
 
 		logger.Infof("%s: %s", uri, err)
-		ctxutil.Sleep(ctx, time.Second)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	defer pgPool.Close()
@@ -162,13 +172,20 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 
 	var db *tigrisdb.TigrisDB
 
+	var retry int64
 	for ctx.Err() == nil {
 		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
 			break
 		}
 
 		logger.Infof("%s: %s", cfg.URL, err)
-		ctxutil.Sleep(ctx, time.Second)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	defer db.Driver.Close()
@@ -304,14 +321,66 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
+// mkdir creates all directories from given paths.
+func mkdir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.MkdirAll(path, 0o700); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// rmdir removes all directories from given paths.
+func rmdir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// read will show the content of a file.
+func read(paths ...string) error {
+	for _, path := range paths {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Print(string(b))
+	}
+
+	return nil
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool `help:"Enable debug mode."`
+	Debug bool     `help:"Enable debug mode."`
+	Setup struct{} `cmd:"" help:"Setup development environment."`
+	Shell struct {
+		Mkdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+		} `cmd:"" help:"Create directories if they do not already exist."`
+		Rmdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+		} `cmd:"" help:"Remove directories."`
+		Read struct {
+			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+		} `cmd:"" help:"read files"`
+	} `cmd:""`
 }
 
 func main() {
-	kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli)
 
 	// always enable debug logging on CI
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
@@ -329,7 +398,22 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	if err := setup(ctx, logger); err != nil {
+	var err error
+
+	switch cmd := kongCtx.Command(); cmd {
+	case "setup":
+		err = setup(ctx, logger)
+	case "shell mkdir <path>":
+		err = mkdir(cli.Shell.Mkdir.Paths...)
+	case "shell rmdir <path>":
+		err = rmdir(cli.Shell.Rmdir.Paths...)
+	case "shell read <path>":
+		err = read(cli.Shell.Read.Paths...)
+	default:
+		err = fmt.Errorf("unknown command: %s", cmd)
+	}
+
+	if err != nil {
 		printDiagnosticData(err, logger)
 		os.Exit(1)
 	}

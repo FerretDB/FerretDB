@@ -44,6 +44,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrIllegalOperation indicated that operation is illegal.
+	ErrIllegalOperation = ErrorCode(20) // IllegalOperation
+
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
@@ -62,6 +65,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrDollarPrefixedFieldName indicates the field name is prefixed with $.
+	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
+
 	// ErrInvalidID indicates that _id field is invalid.
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
@@ -71,11 +77,14 @@ const (
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
 
-	// ErrInvalidOptions indicates that _id index cannot be deleted.
-	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
+	// ErrImmutableField indicates that _id field is immutable.
+	ErrImmutableField = ErrorCode(66) // ImmutableField
 
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
+
+	// ErrInvalidOptions indicates that _id index cannot be deleted.
+	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
 	// ErrInvalidNamespace indicates that the collection name is invalid.
 	ErrInvalidNamespace = ErrorCode(73) // InvalidNamespace
@@ -115,6 +124,9 @@ const (
 
 	// ErrMatchBadExpression indicates match filter is not object.
 	ErrMatchBadExpression = ErrorCode(15959) // Location15959
+
+	// ErrProjectBadExpression indicates projection value wrong type.
+	ErrProjectBadExpression = ErrorCode(15969) // Location15969
 
 	// ErrSortBadExpression indicates sort expression is not object.
 	ErrSortBadExpression = ErrorCode(15973) // Location15973
@@ -181,11 +193,11 @@ const (
 	// ErrStageGroupMultipleAccumulator indicates that group field must specify one accumulator.
 	ErrStageGroupMultipleAccumulator = ErrorCode(40238) // Location40238
 
-	// ErrStageInvalid indicates invalid aggregation pipeline stage.
-	ErrStageInvalid = ErrorCode(40323) // Location40323
-
 	// ErrStageGroupInvalidAccumulator indicates invalid accumulator field.
 	ErrStageGroupInvalidAccumulator = ErrorCode(40234) // Location40234
+
+	// ErrStageInvalid indicates invalid aggregation pipeline stage.
+	ErrStageInvalid = ErrorCode(40323) // Location40323
 
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
@@ -214,6 +226,9 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
+
+	// ErrEmptyProject indicates that projection specification must have at least one field.
+	ErrEmptyProject = ErrorCode(51272) // Location51272
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
@@ -248,31 +263,33 @@ type ProtoErr interface {
 
 // ProtocolError converts any error to wire protocol error.
 //
-// Nil panics, *CommandError or *WriteErrors (possibly wrapped) is returned unwrapped with true,
-// any other value is wrapped with InternalError and returned with false.
-func ProtocolError(err error) (ProtoErr, bool) {
+// Nil panics (it never should be passed),
+// *CommandError or *WriteErrors (possibly wrapped) are returned unwrapped,
+// *wire.ValidationError (possibly wrapped) is returned as CommandError with BadValue code,
+// any other values (including lazy errors) are returned as CommandError with InternalError code.
+func ProtocolError(err error) ProtoErr {
 	if err == nil {
 		panic("err is nil")
 	}
 
-	var e *CommandError
-	if errors.As(err, &e) {
-		return e, true
+	var commandErr *CommandError
+	if errors.As(err, &commandErr) {
+		return commandErr
 	}
 
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
-		return writeErr, true
+		return writeErr
 	}
 
 	var validationErr *wire.ValidationError
 	if errors.As(err, &validationErr) {
-		return NewCommandError(ErrBadValue, err).(*CommandError), true //nolint:errorlint // false positive
+		//nolint:errorlint // only *CommandError could be returned
+		return NewCommandError(ErrBadValue, err).(*CommandError)
 	}
 
-	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
-
-	return e, false
+	//nolint:errorlint // only *CommandError could be returned
+	return NewCommandError(errInternalError, err).(*CommandError)
 }
 
 // CheckError checks error type and returns properly translated error.

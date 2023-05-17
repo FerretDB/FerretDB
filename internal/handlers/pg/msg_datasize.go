@@ -16,11 +16,10 @@ package pg
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -57,32 +56,31 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if len(targets) != 2 {
 		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
 	}
+
 	db, collection := targets[0], targets[1]
 
+	var stats *pgdb.CollStats
+
 	started := time.Now()
-	stats, err := dbPool.Stats(ctx, db, collection)
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateCollStats(ctx, tx, db, collection)
+		return err
+	}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	elapses := time.Since(started)
 
 	addEstimate := true
-
-	switch {
-	case err == nil, errors.Is(err, pgx.ErrNoRows):
-		// do nothing
-	case errors.Is(err, pgdb.ErrTableNotExist):
-		// return zeroes for non-existent collection
-		stats = new(pgdb.DBStats)
-		addEstimate = false
-	default:
-		return nil, lazyerrors.Error(err)
-	}
 
 	var pairs []any
 	if addEstimate {
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", int32(stats.SizeTotal),
-		"numObjects", stats.CountRows,
+		"size", stats.SizeTotal,
+		"numObjects", stats.CountObjects,
 		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),
 	)

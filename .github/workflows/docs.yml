@@ -3,7 +3,7 @@ name: Docs
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -11,7 +11,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "42 3 * * *" # after Integration workflow
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change or branch push
 # to prevent concurrent deployments to GitHub Pages.
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       - name: Checkout code

@@ -16,25 +16,232 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]queryCompatTestCase{
-		"FindProjectionInclusions": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"foo", int32(1)}, {"42", true}},
-			skipForTigris:  "Tigris does not support field names started from numbers (`42`)",
-			resultPushdown: true,
+	// topLevelFieldsIntegers contains documents with several top level fields with integer values.
+	topLevelFieldsIntegers := shareddata.NewTopLevelFieldsProvider(
+		"TopLevelFieldsIntegers",
+		[]string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+		map[string]map[string]any{
+			"ferretdb-tigris": {
+				"$tigrisSchemaString": `{
+				"title": "%%collection%%",
+				"primary_key": ["_id"],
+				"properties": {
+					"foo": {"type": "integer", "format": "int32"},
+					"bar": {"type": "integer", "format": "int32"},
+					"_id": {"type": "string"}
+				}
+			}`,
+			},
 		},
-		"FindProjectionExclusions": {
-			filter:         bson.D{{"_id", "document-composite"}},
-			projection:     bson.D{{"foo", int32(0)}, {"array", false}},
-			skipForTigris:  "Tigris does not support language keyword 'array' as field name",
-			resultPushdown: true,
+		map[string]shareddata.Fields{
+			"int32-two": {
+				{Key: "foo", Value: int32(1)},
+				{Key: "bar", Value: int32(2)},
+			},
+		},
+	)
+
+	providers := append(shareddata.AllProviders(), topLevelFieldsIntegers)
+
+	testCases := map[string]queryCompatTestCase{
+		"EmptyProjection": {
+			filter:     bson.D{},
+			projection: bson.D{},
+		},
+		"NilProjection": {
+			filter:     bson.D{},
+			projection: nil,
+		},
+		"Include1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", int32(1)}},
+		},
+		"Exclude1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", int32(0)}},
+		},
+		"Include2Fields": {
+			filter:     bson.D{},
+			projection: bson.D{{"foo", 1.24}, {"bar", true}},
+		},
+		"Include2FieldsReverse": {
+			filter:     bson.D{},
+			projection: bson.D{{"bar", true}, {"foo", 1.24}},
+		},
+		"Exclude2Fields": {
+			filter:     bson.D{},
+			projection: bson.D{{"foo", int32(0)}, {"bar", false}},
+		},
+		"Include1FieldExclude1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"foo", int32(0)}, {"bar", true}},
+			resultType: emptyResult,
+		},
+		"Exclude1FieldInclude1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"foo", int32(1)}, {"bar", false}},
+			resultType: emptyResult,
+		},
+		"IncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", int64(-1)}},
+		},
+		"ExcludeID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}},
+			skipIDCheck: true,
+		},
+		"IncludeFieldExcludeID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}, {"v", true}},
+			skipIDCheck: true,
+		},
+		"ExcludeFieldIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"v", false}},
+		},
+		"ExcludeFieldExcludeID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}, {"v", false}},
+			skipIDCheck: true,
+		},
+		"IncludeFieldIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"v", true}},
+		},
+		"Assign1Field": {
+			filter:     bson.D{},
+			projection: bson.D{{"foo", primitive.NewObjectID()}},
+		},
+		"AssignID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
+			skipIDCheck: true,
+		},
+		"Assign1FieldIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"foo", primitive.NewDateTimeFromTime(time.Unix(0, 0))}},
+		},
+		"Assign2FieldsIncludeID": {
+			filter:     bson.D{},
+			projection: bson.D{{"_id", true}, {"foo", nil}, {"bar", "qux"}},
+		},
+		"Assign1FieldExcludeID": {
+			filter:      bson.D{},
+			projection:  bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}},
+			skipIDCheck: true,
+		},
+		"DotNotationInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}},
+		},
+		"DotNotationIncludeTwo": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.array", true}},
+		},
+		"DotNotationIncludeTwoReverse": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array", true}, {"v.foo", true}},
+		},
+		"DotNotationIncludeTwoArray": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.bar", true}},
+		},
+		"DotNotationExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", false}},
+		},
+		"DotNotationExcludeTwo": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", false}, {"v.array", false}},
+		},
+		"DotNotationExcludeSecondLevel": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.42", false}},
+		},
+		"DotNotationIncludeSecondLevel": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.42", true}},
+		},
+		"DotNotationIncludeExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.foo", true}, {"v.array", false}},
+			resultType: emptyResult,
+		},
+		"DotNotation5LevelInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c.d", true}},
+		},
+		"DotNotation5LevelExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c.d", false}},
+		},
+		"DotNotation4LevelInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c", true}},
+		},
+		"DotNotation4LevelExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.a.b.c", false}},
+		},
+		"DotNotationArrayInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.0", true}},
+		},
+		"DotNotationArrayExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.array.0", false}},
+		},
+		"DotNotationArrayPathInclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.0.foo", true}},
+		},
+		"DotNotationArrayPathExclude": {
+			filter:     bson.D{},
+			projection: bson.D{{"v.0.foo", false}},
+		},
+		"DotNotationManyInclude": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"v.42", true},
+				{"v.non-existent", true},
+				{"v.foo", true},
+				{"v.array", true},
+			},
+		},
+		"DotNotationManyExclude": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"v.42", false},
+				{"v.non-existent", false},
+				{"v.foo", false},
+				{"v.array", false},
+			},
+		},
+	}
+
+	testQueryCompatWithProviders(t, providers, testCases)
+}
+
+func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"PositionalOperator": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 45.5}}}},
+			projection: bson.D{{"v.$", true}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1709",
 		},
 	}
 

@@ -19,9 +19,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -94,15 +95,15 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		case errors.Is(err, pgdb.ErrAlreadyExist):
 			msg := fmt.Sprintf("Collection %s.%s already exists.", db, collection)
-			return common.NewCommandErrorMsg(common.ErrNamespaceExists, msg)
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
 
 		case errors.Is(err, pgdb.ErrInvalidDatabaseName):
 			msg := fmt.Sprintf("Invalid namespace: %s.%s", db, collection)
-			return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
 		case errors.Is(err, pgdb.ErrInvalidCollectionName):
 			msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
-			return common.NewCommandErrorMsg(common.ErrInvalidNamespace, msg)
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
 		default:
 			return lazyerrors.Error(err)

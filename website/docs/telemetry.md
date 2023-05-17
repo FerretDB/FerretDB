@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 10
 slug: /telemetry/ # referenced in many places; must not change
 ---
 

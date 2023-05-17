@@ -288,7 +288,7 @@ The output:
 
 ## $nor
 
-*Syntax*: `{ $nor: [ { <condition1> }, { <condition2> }, ...  { <conditionN> } ] }`
+*Syntax*: `{ $nor: [ { <condition1> }, { <condition2> }, ... { <conditionN> } ] }`
 
 To select documents that fail to match any of the conditions in a specified query, use the `$nor` operator.
 

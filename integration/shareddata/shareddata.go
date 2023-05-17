@@ -12,37 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package shareddata provides data for tests and benchmarks.
 package shareddata
 
 import (
 	"fmt"
-	"strings"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // unset represents a field that should not be set.
 var unset = struct{}{}
-
-// Provider is implemented by shared data sets that provide documents.
-type Provider interface {
-	// Name returns provider name.
-	Name() string
-
-	// Validators returns validators for the given backend and collection.
-	// For example, for ferretdb-tigris it should return a map with the key $tigrisSchemaString
-	// and the value containing Tigris' JSON schema string.
-	Validators(backend, collection string) map[string]any
-
-	// Docs returns shared data documents.
-	// All calls should return the same set of documents, but may do so in different order.
-	Docs() []bson.D
-
-	// IsCompatible returns true if the given backend is compatible with this provider.
-	IsCompatible(backend string) bool
-}
 
 // AllProviders returns all providers in random order.
 func AllProviders() Providers {
@@ -71,6 +51,7 @@ func AllProviders() Providers {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+		DocumentsDeeplyNested,
 
 		ArrayStrings,
 		ArrayDoubles,
@@ -147,57 +128,3 @@ func IDs(providers ...Provider) []any {
 	}
 	return res
 }
-
-// Values stores shared data documents as {"_id": key, "v": value} documents.
-type Values[idType comparable] struct {
-	name       string
-	backends   []string
-	validators map[string]map[string]any // backend -> validator name -> validator
-	data       map[idType]any
-}
-
-// Name implement Provider interface.
-func (values *Values[idType]) Name() string {
-	return values.name
-}
-
-// Validators implement Provider interface.
-func (values *Values[idType]) Validators(backend, collection string) map[string]any {
-	switch backend {
-	case "ferretdb-tigris":
-		validators := make(map[string]any, len(values.validators[backend]))
-		for key, value := range values.validators[backend] {
-			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
-		}
-		return validators
-	default:
-		return values.validators[backend]
-	}
-}
-
-// Docs implement Provider interface.
-func (values *Values[idType]) Docs() []bson.D {
-	ids := maps.Keys(values.data)
-
-	res := make([]bson.D, 0, len(values.data))
-	for _, id := range ids {
-		doc := bson.D{{"_id", id}}
-		v := values.data[id]
-		if v != unset {
-			doc = append(doc, bson.E{"v", v})
-		}
-		res = append(res, doc)
-	}
-
-	return res
-}
-
-// IsCompatible returns true if the given backend is compatible with this provider.
-func (values *Values[idType]) IsCompatible(backend string) bool {
-	return slices.Contains(values.backends, backend)
-}
-
-// check interfaces
-var (
-	_ Provider = (*Values[string])(nil)
-)

@@ -34,7 +34,7 @@ func notImplemented(command string) error {
 	return commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, "I'm a stub, not a real handler for "+command)
 }
 
-// Handler implements handlers.Interface on top of SAP HANA.
+// Handler implements handlers.Interface on SAP HANA.
 type Handler struct {
 	pools map[string]*hanadb.Pool
 	*NewOpts
