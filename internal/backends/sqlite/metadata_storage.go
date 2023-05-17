@@ -53,6 +53,7 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 }
 
 // metadataStorage provide access to database metadata.
+// It uses connection pool to load and store metadata.
 type metadataStorage struct { //nolint:vet // for readability
 	dbPath string
 

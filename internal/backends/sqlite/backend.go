@@ -25,6 +25,7 @@ import (
 // backend implements backends.Backend interface.
 type backend struct {
 	dir             string
+	pool            *connPool
 	metadataStorage *metadataStorage
 }
 
@@ -45,6 +46,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 	return backends.BackendContract(&backend{
 		dir:             params.Dir,
+		pool:            pool,
 		metadataStorage: storage,
 	}), nil
 }
@@ -64,6 +66,11 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
 	panic("not implemented") // TODO: Implement
+}
+
+// Close implements backends.Backend interface.
+func (b *backend) Close() error {
+	return b.pool.Close()
 }
 
 // check interfaces
