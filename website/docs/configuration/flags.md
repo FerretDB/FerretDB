@@ -54,6 +54,8 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
 
+<!-- SQLite backend flags should be there once it is out of alpha -->
+
 ### Tigris (beta)
 
 [Tigris backend](../understanding-ferretdb.md#tigris-beta) can be enabled by

@@ -278,25 +278,25 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	if hasStorage {
-		var avgObjSize int32
+		var avgObjSize int64
 		if collStats.CountObjects > 0 {
-			avgObjSize = int32(collStats.SizeCollection) / collStats.CountObjects
+			avgObjSize = collStats.SizeCollection / collStats.CountObjects
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(collStats.SizeTotal),
+				"size", collStats.SizeTotal,
 				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(collStats.SizeCollection),
-				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"storageSize", collStats.SizeCollection,
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", int32(collStats.SizeIndexes),
-				"totalSize", int32(collStats.SizeTotal),
+				"totalIndexSize", collStats.SizeIndexes,
+				"totalSize", collStats.SizeTotal,
 				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
 		)

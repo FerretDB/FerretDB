@@ -190,9 +190,9 @@ func (e *Expression) GetExpressionSuffix() string {
 // find values that exist at suffix.
 // An array may return multiple values.
 // At each key of the path, it checks:
-// - if the document has the key.
-// - if the array contains documents which have the key. (This check can
-// be disabled by setting ExpressionOpts.IgnoreArrays field).
+//   - if the document has the key.
+//   - if the array contains documents which have the key. (This check can
+//     be disabled by setting ExpressionOpts.IgnoreArrays field).
 //
 // It is different from `common.getDocumentsAtSuffix`, it does not find array item by
 // array dot notation `foo.0.bar`. It returns empty array [] because using index
