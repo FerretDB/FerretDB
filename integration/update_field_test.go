@@ -203,6 +203,68 @@ func TestUpdateFieldErrors(t *testing.T) {
 					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
 			},
 		},
+		"MulTypeMismatch": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v", "string"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: "Cannot multiply with non-numeric argument: {v: \"string\"}",
+			},
+		},
+		"MulTypeMismatchNonExistent": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"non-existent", "string"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: "Cannot multiply with non-numeric argument: {non-existent: \"string\"}",
+			},
+		},
+		"MulUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v.foo", 1}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"MulNonNumeric": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v.0.foo.0.bar", 1}}}},
+			err: &mongo.WriteError{
+				Code: 14,
+				Message: "Cannot apply $mul to a value of non-numeric type. " +
+					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			},
+		},
+		"MulInt64BadValue": {
+			id:     "int64-max",
+			update: bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Failed to apply $mul operations to current value " +
+					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			},
+			provider: shareddata.Int64s,
+		},
+		"MulInt32BadValue": {
+			id:     "int32",
+			update: bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Failed to apply $mul operations to current value " +
+					"((NumberInt)42) for document {_id: \"int32\"}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"MulEmptyPath": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v.", "v"}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

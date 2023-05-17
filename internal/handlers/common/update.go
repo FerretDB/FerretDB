@@ -121,7 +121,7 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 		case "$mul":
 			var mulChanged bool
 
-			if mulChanged, err = processMulFieldExpression(doc, updateV); err != nil {
+			if mulChanged, err = processMulFieldExpression(command, doc, updateV); err != nil {
 				return false, err
 			}
 
@@ -566,17 +566,9 @@ func processMinFieldExpression(command string, doc *types.Document, updateV any)
 
 // processMulFieldExpression updates document according to $mul operator.
 // If the document was changed it returns true.
-func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
-	mulDoc, ok := updateV.(*types.Document)
-	if !ok {
-		return false, commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrFailedToParse,
-			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-				`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
-				commonparams.AliasFromType(updateV),
-			),
-		)
-	}
+func processMulFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
+	// updateV is document, checked in ValidateUpdateOperators.
+	mulDoc := updateV.(*types.Document)
 
 	var changed bool
 
@@ -588,14 +580,8 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(mulKey)
 		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
-					"{_id: %s} has the field '%s' of non-numeric type object",
-					must.NotFail(doc.Get("_id")),
-					mulKey,
-				),
-			)
+			// ValidateUpdateOperators checked already $mul contains valid path.
+			panic(err)
 		}
 
 		if !doc.HasByPath(path) {
@@ -608,17 +594,19 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			case int64:
 				mulValue = int64(0)
 			default:
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
+					command,
 				)
 			}
 
 			err := doc.SetByPath(path, mulValue)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
 					err.Error(),
+					command,
 				)
 			}
 
@@ -648,10 +636,8 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 			err = doc.SetByPath(path, multiplied)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrUnsuitableValueType,
-					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
-				)
+				// after successfully getting value from path, setting it back cannot fail.
+				panic(err)
 			}
 
 			// A change from int32(0) to int64(0) is considered changed.
@@ -666,13 +652,14 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 
 		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot multiply with non-numeric argument: {%s: %#v}`,
 					mulKey,
 					mulValue,
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := mulKey
@@ -680,7 +667,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				k = path.Suffix()
 			}
 
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $mul to a value of non-numeric type. `+
@@ -689,24 +676,27 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					k,
 					commonparams.AliasFromType(docValue),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $mul operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrIntExceeded):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $mul operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		default:
 			return false, err

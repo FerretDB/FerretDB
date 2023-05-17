@@ -306,6 +306,101 @@ func TestFindAndModifyErrors(t *testing.T) {
 			altMessage: "Cannot create field 'foo' in element " +
 				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
 		},
+		"MulTypeMismatch": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v", "string"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Cannot multiply with non-numeric argument: {v: \"string\"}",
+			},
+		},
+		"MulTypeMismatchNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"non-existent", "string"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Cannot multiply with non-numeric argument: {non-existent: \"string\"}",
+			},
+		},
+		"MulUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v.foo", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"MulNonNumeric": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v.0.foo.0.bar", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 14,
+				Name: "TypeMismatch",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot apply $mul to a value of non-numeric type. " +
+					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			},
+			altMessage: "Cannot apply $mul to a value of non-numeric type. " +
+				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+		},
+		"MulInt64BadValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64-max"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: "Failed to apply $mul operations to current value " +
+					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			},
+			provider: shareddata.Int64s,
+			altMessage: "Plan executor error during findAndModify :: caused by :: " +
+				"Failed to apply $mul operations to current value " +
+				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+		},
+		"MulInt32BadValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Failed to apply $mul operations to current value " +
+					"((NumberInt)42) for document {_id: \"int32\"}",
+			},
+			provider: shareddata.Int32s,
+			altMessage: "Failed to apply $mul operations to current value " +
+				"((NumberInt)42) for document {_id: \"int32\"}",
+		},
+		"MulEmptyPath": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v.", "v"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    56,
+				Name:    "EmptyFieldName",
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
