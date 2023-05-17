@@ -35,7 +35,8 @@ import (
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
-// TODO findAndModify returns CommandError https://github.com/FerretDB/FerretDB/issues/2440
+// UpdateDocument returns CommandError for findAndModify case-insensitive command name,
+// WriteError for other commands.
 func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
@@ -742,6 +743,8 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 }
 
 // ValidateUpdateOperators validates update statement.
+// ValidateUpdateOperators returns CommandError for findAndModify case-insensitive command name,
+// WriteError for other commands.
 func ValidateUpdateOperators(command string, update *types.Document) error {
 	var err error
 	if _, err = HasSupportedUpdateModifiers(command, update); err != nil {
