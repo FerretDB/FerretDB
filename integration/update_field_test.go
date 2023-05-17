@@ -194,6 +194,15 @@ func TestUpdateFieldErrors(t *testing.T) {
 					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
 			},
 		},
+		"MinUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$min", bson.D{{"v.foo", 1}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

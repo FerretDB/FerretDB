@@ -113,7 +113,7 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 			}
 
 		case "$min":
-			changed, err = processMinFieldExpression(doc, updateV)
+			changed, err = processMinFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
@@ -505,7 +505,7 @@ func processMaxFieldExpression(command string, doc *types.Document, updateV any)
 
 // processMinFieldExpression changes document according to $min operator.
 // If the document was changed it returns true.
-func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
+func processMinFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	minExpression := updateV.(*types.Document)
 	minExpression.SortFieldsByKey()
 
@@ -530,7 +530,7 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, minVal)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, err.Error())
+				return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 			}
 
 			changed = true
