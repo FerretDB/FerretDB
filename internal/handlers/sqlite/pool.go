@@ -1,4 +1,4 @@
-package sdb
+package sqlite
 
 import (
 	"database/sql"
