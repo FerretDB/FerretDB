@@ -12,24 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package registry
+package main
 
-import (
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
-)
-
-// init registers "sqlite" handler.
+// init adds "pg" handler flags.
 func init() {
-	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("SQLite handler is in alpha. It is not supported yet.")
-
-		handlerOpts := &sqlite.NewOpts{
-			Dir: opts.SQLiteURI,
-
-			L: opts.Logger,
-		}
-
-		return sqlite.New(handlerOpts)
-	}
+	handlerFlags["pg"] = &pgFlags
 }

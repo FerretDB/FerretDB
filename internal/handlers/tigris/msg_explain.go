@@ -77,6 +77,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"host", hostname,
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
+
+		// our extensions
 		"ferretdbVersion", version.Get().Version,
 	))
 
