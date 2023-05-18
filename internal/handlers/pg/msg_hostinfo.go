@@ -17,11 +17,11 @@ package pg
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHostInfo implements HandlerInterface.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgHostInfo(ctx, msg)
+	return commoncommands.MsgHostInfo(ctx, msg)
 }

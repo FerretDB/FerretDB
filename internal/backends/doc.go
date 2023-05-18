@@ -25,7 +25,9 @@
 //     That shifts some complexity from a single handler into multiple backend implementations;
 //     for example, support for `insert` with `ordered: true` and `ordered: false` should be implemented multiple times.
 //     But that allows those implementations to be much more effective.
-//  2. Backend objects are stateful. Database and Collection objects are stateless.
+//  2. Backend objects are stateful.
+//     Database objects are almost stateless but should be Close()'d to avoid connection leaks.
+//     Collection objects are fully stateless.
 //  3. Contexts are per-operation and should not be stored.
 //  4. Errors returned by methods could be nil, *Error, or some other opaque error type.
 //     Contracts enforce *Error codes; they are not documented in the code comments

@@ -26,8 +26,8 @@ import (
 // newStageFunc is a type for a function that creates a new aggregation stage.
 type newStageFunc func(stage *types.Document) (aggregations.Stage, error)
 
-// stages maps all supported aggregation stages.
-var stages = map[string]newStageFunc{
+// Stages maps all supported aggregation Stages.
+var Stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$collStats": newCollStats,
 	"$count":     newCount,
@@ -89,7 +89,7 @@ func NewStage(stage *types.Document) (aggregations.Stage, error) {
 
 	name := stage.Command()
 
-	f, supported := stages[name]
+	f, supported := Stages[name]
 	_, unsupported := unsupportedStages[name]
 
 	switch {
