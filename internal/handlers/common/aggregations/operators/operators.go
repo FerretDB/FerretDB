@@ -27,7 +27,13 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 // Accumulator is a common interface for aggregation accumulation operators.
 type Accumulator interface {
 	// Accumulate documents and returns the result of applying operator.
-	Accumulate(ctx context.Context, groupID any, in []*types.Document) (any, error)
+	Accumulate(ctx context.Context, in []*types.Document) (any, error)
+}
+
+// Accumulator is a common interface for aggregation accumulation operators.
+type Operator interface {
+	// Accumulate documents and returns the result of applying operator.
+	Process(ctx context.Context, in *types.Document) (any, error)
 }
 
 // GroupAccumulators maps supported accumulators of $group aggregation stage.

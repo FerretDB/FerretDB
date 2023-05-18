@@ -62,7 +62,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+func (s *sum) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
 	if s.expression != nil {
 		var values []any
 

@@ -44,7 +44,7 @@ type group struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(ctx context.Context, groupID any, in []*types.Document) (any, error)
+	accumulate  func(ctx context.Context, in []*types.Document) (any, error)
 	outputField string
 }
 

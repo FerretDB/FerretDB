@@ -40,7 +40,7 @@ func newCount(expr *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (c *count) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+func (c *count) Accumulate(ctx context.Context, grouped []*types.Document) (any, error) {
 	return int32(len(grouped)), nil
 }
 
