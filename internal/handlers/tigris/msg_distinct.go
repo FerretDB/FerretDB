@@ -37,7 +37,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	f, err := common.GetOptionalNullParam(document, "query", document)
+	filter, err := common.GetOptionalNullParam(document, "query", &types.Document{})
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	qp := tigrisdb.QueryParams{
 		DB:         dp.DB,
 		Collection: dp.Collection,
-		Filter:     f,
+		Filter:     filter,
 	}
 
 	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})

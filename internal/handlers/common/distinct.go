@@ -49,6 +49,13 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 		return nil, err
 	}
 
+	switch dp.Filter.(type) {
+	case *types.Document:
+		dp.Filter = dp.Filter.(*types.Document)
+	case *types.NullType:
+		dp.Filter = &types.Document{}
+	}
+
 	if dp.Key == "" {
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrEmptyFieldPath,
