@@ -16,7 +16,6 @@ package sqlite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,12 +49,16 @@ func (db *database) Collection(name string) backends.Collection {
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
 	var result backends.ListCollectionsResult
 
-	list, err := db.b.metadataStorage.listCollections(ctx, db.name)
-	if errors.Is(err, errDatabaseNotFound) {
-		if err = db.create(ctx); err != nil {
-			return &result, err
-		}
+	exists, err := db.b.metadataStorage.dbExists(db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+
+	if !exists {
+		return &result, nil
+	}
+
+	list, err := db.b.metadataStorage.listCollections(ctx, db.name)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +107,7 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	table, err := db.b.metadataStorage.collectionInfo(ctx, db.name, params.Name)
+	table, err := db.b.metadataStorage.tableName(ctx, db.name, params.Name)
 	if err != nil {
 		return err
 	}

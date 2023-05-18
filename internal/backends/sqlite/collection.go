@@ -51,7 +51,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 		return nil, err
 	}
 
-	tableName, err := c.db.b.metadataStorage.collectionInfo(ctx, c.db.name, c.name)
+	table, err := c.db.b.metadataStorage.tableName(ctx, c.db.name, c.name)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 			return nil, err
 		}
 
-		query := fmt.Sprintf(`INSERT INTO %s (sjson) VALUES (?)`, tableName)
+		query := fmt.Sprintf(`INSERT INTO %s (sjson) VALUES (?)`, table)
 
 		bytes, err := sjson.Marshal(doc)
 		if err != nil {

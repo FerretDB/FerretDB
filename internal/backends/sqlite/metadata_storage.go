@@ -97,21 +97,42 @@ func (m *metadataStorage) listDatabases() ([]string, error) {
 
 // listCollections list collection names for given database.
 func (m *metadataStorage) listCollections(ctx context.Context, database string) ([]string, error) {
-	exists, err := m.dbExists(database)
+	conn, err := m.connPool.DB(database)
 	if err != nil {
 		return nil, err
 	}
 
-	if !exists {
-		return nil, errDatabaseNotFound
-	}
+	query := fmt.Sprintf("SELECT sjson FROM %s", dbMetadataTableName)
 
-	colls, err := m.loadCollections(ctx, database)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
+	// TODO: check error
+	defer rows.Close()
 
-	return colls, nil
+	var collections []string
+
+	for rows.Next() {
+		var rawBytes []byte
+
+		err = rows.Scan(rawBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		doc, err := sjson.Unmarshal(rawBytes)
+		if err != nil {
+			return nil, errors.New("failed to unmarshal collection metadata")
+		}
+
+		// TODO: proper errors check
+		collName := must.NotFail(doc.Get("collection")).(string)
+
+		collections = append(collections, collName)
+	}
+
+	return collections, nil
 }
 
 // createDatabase adds database to metadata storage.
@@ -122,8 +143,8 @@ func (m *metadataStorage) createDatabase(ctx context.Context, database string) e
 		return err
 	}
 
-	if exists {
-		return nil
+	if !exists {
+		return errDatabaseNotFound
 	}
 
 	conn, err := m.connPool.DB(database)
@@ -143,10 +164,7 @@ func (m *metadataStorage) createDatabase(ctx context.Context, database string) e
 
 // createCollection saves collection metadata to database file.
 func (m *metadataStorage) createCollection(ctx context.Context, database, collection string) (string, error) {
-	tableName, err := m.collectionInfo(ctx, database, collection)
-	if err != nil {
-		return "", err
-	}
+	tableName := collection
 
 	conn, err := m.connPool.DB(database)
 	if err != nil {
@@ -175,8 +193,8 @@ func (m *metadataStorage) createCollection(ctx context.Context, database, collec
 	return tableName, nil
 }
 
-// collectionInfo returns table name for given database name and collection name.
-func (m *metadataStorage) collectionInfo(ctx context.Context, dbName, collName string) (string, error) {
+// tableName returns table name for given database name and collection name.
+func (m *metadataStorage) tableName(ctx context.Context, dbName, collName string) (string, error) {
 	exists, err := m.dbExists(dbName)
 	if err != nil {
 		return "", err
@@ -221,46 +239,6 @@ func (m *metadataStorage) collectionInfo(ctx context.Context, dbName, collName s
 	return table, nil
 }
 
-// loadCollections loads collections metadata from database file.
-func (m *metadataStorage) loadCollections(ctx context.Context, dbPath string) ([]string, error) {
-	conn, err := m.connPool.DB(dbPath)
-	if err != nil {
-		return nil, err
-	}
-
-	query := fmt.Sprintf("SELECT sjson FROM %s", dbMetadataTableName)
-
-	rows, err := conn.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: check error
-	defer rows.Close()
-
-	var collections []string
-
-	for rows.Next() {
-		var rawBytes []byte
-
-		err = rows.Scan(rawBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		doc, err := sjson.Unmarshal(rawBytes)
-		if err != nil {
-			return nil, errors.New("failed to unmarshal collection metadata")
-		}
-
-		// TODO: proper errors check
-		collName := must.NotFail(doc.Get("collection")).(string)
-
-		collections = append(collections, collName)
-	}
-
-	return collections, nil
-}
-
 // removeCollection removes collection metadata.
 // It does not remove collection from database.
 func (m *metadataStorage) removeCollection(ctx context.Context, database, collection string) error {
@@ -273,7 +251,7 @@ func (m *metadataStorage) removeCollection(ctx context.Context, database, collec
 		return errDatabaseNotFound
 	}
 
-	colls, err := m.loadCollections(ctx, database)
+	colls, err := m.listCollections(ctx, database)
 	if err != nil {
 		return err
 	}
