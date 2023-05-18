@@ -54,7 +54,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	panic("not implemented") // TODO: Implement
+	b.pool.Close()
 }
 
 // Database implements backends.Backend interface.
@@ -87,11 +87,6 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
-}
-
-// Close implements backends.Backend interface.
-func (b *backend) Close() error {
-	return b.pool.Close()
 }
 
 // check interfaces

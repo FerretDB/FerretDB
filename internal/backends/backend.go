@@ -36,7 +36,6 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
-	Close() error
 	// There is no interface method to create a database; see package documentation.
 }
 
@@ -108,14 +107,6 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeDatabaseDoesNotExist)
 	err = bc.b.DropDatabase(ctx, params)
-
-	return
-}
-
-// Close closes the backend.
-func (bc *backendContract) Close() (err error) {
-	defer checkError(err)
-	err = bc.b.Close()
 
 	return
 }
