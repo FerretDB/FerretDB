@@ -71,7 +71,9 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	defer iter.Close()
 
 	for {
-		_, val, err := iter.Next()
+		var val any
+
+		_, val, err = iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
