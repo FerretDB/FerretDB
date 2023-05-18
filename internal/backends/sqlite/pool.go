@@ -84,3 +84,21 @@ func (c *connPool) Close() error {
 
 	return errs
 }
+
+func (c *connPool) CloseDB(name string) {
+	c.mx.Lock()
+	defer c.mx.Unlock()
+
+	path := filepath.Join(c.dir, name+dbExtension)
+
+	db, ok := c.dbs[path]
+	if !ok {
+		return
+	}
+
+	if err := db.Close(); err != nil {
+		errors.Join(err)
+	}
+
+	delete(c.dbs, path)
+}

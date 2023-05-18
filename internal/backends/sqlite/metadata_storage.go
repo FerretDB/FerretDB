@@ -116,7 +116,7 @@ func (m *metadataStorage) listCollections(ctx context.Context, database string) 
 	for rows.Next() {
 		var rawBytes []byte
 
-		err = rows.Scan(rawBytes)
+		err = rows.Scan(&rawBytes)
 		if err != nil {
 			return nil, err
 		}
