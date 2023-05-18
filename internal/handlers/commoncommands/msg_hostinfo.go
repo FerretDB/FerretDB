@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commoncommands
 
 import (
+	"bufio"
 	"context"
+	"io"
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -81,4 +84,31 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	}))
 
 	return &reply, nil
+}
+
+// parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,
+// returning the OS name and version.
+func parseOSRelease(r io.Reader) (string, string, error) {
+	scanner := bufio.NewScanner(r)
+
+	configParams := map[string]string{}
+
+	for scanner.Scan() {
+		key, value, ok := strings.Cut(scanner.Text(), "=")
+		if !ok {
+			continue
+		}
+
+		if v, err := strconv.Unquote(value); err == nil {
+			value = v
+		}
+
+		configParams[key] = value
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", "", lazyerrors.Error(err)
+	}
+
+	return configParams["NAME"], configParams["VERSION"], nil
 }
