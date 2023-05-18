@@ -17,11 +17,11 @@ package pg
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgBuildInfo implements HandlerInterface.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgBuildInfo(ctx, msg)
+	return commoncommands.MsgBuildInfo(ctx, msg)
 }

@@ -17,11 +17,11 @@ package tigris
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgConnectionStatus implements HandlerInterface.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgConnectionStatus(ctx, msg)
+	return commoncommands.MsgConnectionStatus(ctx, msg)
 }
