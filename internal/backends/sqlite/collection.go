@@ -40,6 +40,11 @@ func newCollection(db *database, name string) backends.Collection {
 	})
 }
 
+// Query implements backends.Collection interface.
+func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
+	panic("TODO")
+}
+
 // Insert implements backends.Collection interface.
 func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
 	err := c.db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: c.name})
