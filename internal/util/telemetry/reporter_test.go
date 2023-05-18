@@ -154,7 +154,6 @@ func TestReporterReport(t *testing.T) {
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to true and update version, and call the telemetry server again.
-		//	mx.Lock()
 		telemetryResponse.UpdateAvailable = true
 		telemetryResponse.LatestVersion = "0.4.0"
 		r.report(testutil.Ctx(t))
