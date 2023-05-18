@@ -29,11 +29,11 @@ import (
 //
 //nolint:vet // for readability
 type DistinctParams struct {
-	DB         string          `ferretdb:"$db"`
-	Collection string          `ferretdb:"collection"`
-	Key        string          `ferretdb:"key"`
-	Filter     *types.Document `ferretdb:"query,opt"`
-	Comment    string          `ferretdb:"comment,opt"`
+	DB         string `ferretdb:"$db"`
+	Collection string `ferretdb:"collection"`
+	Key        string `ferretdb:"key"`
+	Filter     any    `ferretdb:"query,opt"`
+	Comment    string `ferretdb:"comment,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
