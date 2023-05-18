@@ -92,6 +92,7 @@ func parseOSRelease(r io.Reader) (string, string, error) {
 	scanner := bufio.NewScanner(r)
 
 	configParams := map[string]string{}
+
 	for scanner.Scan() {
 		key, value, ok := strings.Cut(scanner.Text(), "=")
 		if !ok {
