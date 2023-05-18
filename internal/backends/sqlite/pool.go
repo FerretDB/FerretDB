@@ -24,11 +24,12 @@ import (
 )
 
 // newConnPool creates a new connection pool.
-func newConnPool() *connPool {
+func newConnPool(dir string) *connPool {
 	pool := &connPool{
 		mx:    sync.Mutex{},
 		dbs:   map[string]*sql.DB{},
 		token: resource.NewToken(),
+		dir:   dir,
 	}
 
 	resource.Track(pool, pool.token)

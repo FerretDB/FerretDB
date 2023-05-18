@@ -38,7 +38,7 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	pool := newConnPool()
+	pool := newConnPool(params.Dir)
 
 	storage, err := newMetadataStorage(params.Dir, pool)
 	if err != nil {
