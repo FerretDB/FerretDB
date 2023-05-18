@@ -16,11 +16,8 @@ package tigris
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -40,26 +37,14 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	dp, err := common.GetDistinctParams(document, h.L)
+	f, err := common.GetOptionalNullParam(document, "query", document)
 	if err != nil {
 		return nil, err
 	}
 
-	f := &types.Document{}
-	switch dp.Filter.(type) {
-	case types.NullType:
-		// do nothing
-	case types.Document:
-		f = dp.Filter.(*types.Document)
-	default:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf(
-				"BSON field 'distinct.query' is the wrong type '%s', expected type 'object'",
-				commonparams.AliasFromType(dp.Filter),
-			),
-			document.Command(),
-		)
+	dp, err := common.GetDistinctParams(document, h.L)
+	if err != nil {
+		return nil, err
 	}
 
 	qp := tigrisdb.QueryParams{

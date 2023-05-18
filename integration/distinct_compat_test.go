@@ -23,12 +23,13 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // distinctCompatTestCase describes count compatibility test case.
 type distinctCompatTestCase struct {
 	field      string                   // required
-	filter     bson.D                   // required
+	filter     any                      // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -154,6 +155,10 @@ func TestDistinctCompat(t *testing.T) {
 		"DotNotationArrayFirstLevel": {
 			field:  "v.0.foo",
 			filter: bson.D{},
+		},
+		"QueryNullType": {
+			field:  "v",
+			filter: types.Null,
 		},
 	}
 
