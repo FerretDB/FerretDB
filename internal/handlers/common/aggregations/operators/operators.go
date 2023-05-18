@@ -17,7 +17,9 @@ package operators
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -30,16 +32,64 @@ type Accumulator interface {
 	Accumulate(ctx context.Context, in []*types.Document) (any, error)
 }
 
-// Accumulator is a common interface for aggregation accumulation operators.
-type Operator interface {
-	// Accumulate documents and returns the result of applying operator.
-	Process(ctx context.Context, in *types.Document) (any, error)
+// GetAccumulator returns accumulator for provided value v with key.
+// TODO consider better design
+func GetAccumulator(stage, key string, v any) (Accumulator, error) {
+	accumulation, ok := v.(*types.Document)
+	if !ok || accumulation.Len() == 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupInvalidAccumulator,
+			fmt.Sprintf("The field '%s' must be an accumulator object", key),
+			stage+" (stage)",
+		)
+	}
+
+	// accumulation document contains only one field.
+	if accumulation.Len() > 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupMultipleAccumulator,
+			fmt.Sprintf("The field '%s' must specify one accumulator", key),
+			stage+" (stage)",
+		)
+	}
+
+	operator := accumulation.Command()
+
+	newAccumulator, ok := Accumulators[operator]
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("%s accumulator %q is not implemented yet", stage, operator),
+			operator+" (accumulator)",
+		)
+	}
+
+	return newAccumulator(accumulation)
 }
 
-// GroupAccumulators maps supported accumulators of $group aggregation stage.
-var GroupAccumulators = map[string]newAccumulatorFunc{
+// Accumulators maps all aggregation accumulators.
+var Accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCount,
 	"$sum":   newSum,
+	// please keep sorted alphabetically
+}
+
+// newOperatorFunc is a type for a function that creates a standard aggregation operator.
+type newOperatorFunc func(expression *types.Document) (Operator, error)
+
+// Operator is a common interface for standard aggregation operators.
+// TODO consider not creating operators as structs - they don't require to store the state.
+type Operator interface {
+	// Process document and returns the result of applying operator.
+	//
+	// TODO make sure that operators work always the same for every stage,
+	// if not - provide calling stage as an argument.
+	Process(ctx context.Context, in *types.Document) (any, error)
+}
+
+// Operators maps all standard aggregation operators.
+var Operators = map[string]newOperatorFunc{
+	// sorted alphabetically
 	// please keep sorted alphabetically
 }

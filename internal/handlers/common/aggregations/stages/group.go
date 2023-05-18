@@ -81,36 +81,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 			continue
 		}
 
-		accumulation, ok := v.(*types.Document)
-		if !ok || accumulation.Len() == 0 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupInvalidAccumulator,
-				fmt.Sprintf("The field '%s' must be an accumulator object", field),
-				"$group (stage)",
-			)
-		}
-
-		// accumulation document contains only one field.
-		if accumulation.Len() > 1 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupMultipleAccumulator,
-				fmt.Sprintf("The field '%s' must specify one accumulator", field),
-				"$group (stage)",
-			)
-		}
-
-		operator := accumulation.Command()
-
-		newAccumulator, ok := operators.GroupAccumulators[operator]
-		if !ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("$group accumulator %q is not implemented yet", operator),
-				operator+" (accumulator)",
-			)
-		}
-
-		accumulator, err := newAccumulator(accumulation)
+		accumulator, err := operators.GetAccumulator("$group", field, v)
 		if err != nil {
 			return nil, err
 		}
