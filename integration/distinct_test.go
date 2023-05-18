@@ -17,26 +17,46 @@ package integration
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestGetDistinctCommandInvalidQuery(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
+	for name, tc := range map[string]struct {
+		command    bson.D
+		err        *mongo.CommandError
+		altMessage string
+	}{
+		"Int": {
+			command: bson.D{{"query", 1}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field 'distinct.query' is the wrong type 'int', expected type 'object'`,
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	db := collection.Database()
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-	_, err := db.RunCommand(
-		ctx, bson.D{{"distinct", collection.Name()}, {"key", "a"}, {"query", 1}},
-	).DecodeBytes()
+			db := collection.Database()
 
-	expectedErr := mongo.CommandError{
-		Code:    14,
-		Name:    "TypeMismatch",
-		Message: `BSON field 'distinct.query' is the wrong type 'int', expected type 'object'`,
+			command := bson.D{{"distinct", collection.Name()}}
+			command = append(command, bson.E{"key", "a"})
+
+			command = append(command, tc.command...)
+			_, err := db.RunCommand(ctx, command).DecodeBytes()
+
+			assert.EqualError(t, err, tc.err.Error())
+		})
 	}
-	AssertEqualError(t, expectedErr, err)
 }
