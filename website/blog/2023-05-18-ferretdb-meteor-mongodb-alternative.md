@@ -16,7 +16,7 @@ Its flexibility, real-time capabilities, and rich ecosystem have made it a devel
 
 <!--truncate-->
 
-However, its built-in database, MongoDB, presents significant concerns about vendor lock-in, especially since its move away from its open-source roots.
+However, the default database for Meteor.js applications, MongoDB, presents significant concerns about vendor lock-in, especially since its move away from its open-source roots.
 To mitigate this, open-source alternatives like [FerretDB](https://www.ferretdb.io/) offer the opportunity to seamlessly replace MongoDB without compromising the commands and syntax you already know.
 
 In this article, we'll explore the possible synergy between FerretDB and Meteor.js and how you can build your applications without any concern for lock-in.
@@ -24,7 +24,7 @@ In this article, we'll explore the possible synergy between FerretDB and Meteor.
 ## Brief History of Meteor.js
 
 Meteor.js is an open-source, all-in-one JavaScript framework, available publicly under the MIT license.
-Built with Node.js, Meteor.js comes with built-in MongoDB database, Blaze handlebars for efficient templating, a powerful pub/sub method for real-time data synchronization, and seamless integration with various Meteor.js plugins, and `npm` packages you need.
+Built with Node.js, Meteor.js uses MongoDB as its core database for applications, Blaze handlebars for efficient templating, a powerful pub/sub method for real-time data synchronization, and seamless integration with various Meteor.js plugins, and `npm` packages you need.
 
 This extensive ecosystem empowers developers to rapidly create quick cross-platform prototypes or large, complex applications with ease.
 With its open-source nature and availability under the MIT license, Meteor.js has gained popularity among not only mid-sized and enterprise companies like  [IKEA](https://www.ikea.com/), [Workpop](https://www.betterteam.com/workpop), [Accenture](https://www.accenture.com/us-en) but also individual developers and startups.
@@ -75,7 +75,7 @@ While dealing with these compatibility issues, one of the [issues the FerretDB t
 The introduction of  `ChangeStreams` in MongoDB 3.6 and later allows real-time data access that bypasses the complications associated with `OpLog` tailing.
 
 Even though Meteor.js traditionally supports MongoDB’s `OpLog` tailing for real-time data sync, Meteor.js falls back to polling when `OpLog` is not available; however, while this is not ideal for many production use cases, it can occasionally do the job.
-At this stage, it’s unclear whether the hassles of implementing `OpLog` will be worth it, especially with a few Meteor.js apps, like Rocket.Chat, moving to `ChangeStreams`.
+At this stage, it’s unclear whether the hassles of implementing `OpLog` will be worth it, [especially with a few Meteor.js apps, like Rocket.Chat, moving to `ChangeStreams`](https://github.com/FerretDB/FerretDB/issues/1993#issuecomment-1518978149).
 
 Some of the other planned feature additions to help improve compatibility with Meteor.js include support for dot notation in query projections, `createIndexes` for unique indexes, support for partial indexes, and many more.
 In addition to these feature additions, FerretDB will also be publishing more blog posts that showcase how different applications can use FerretDB in Meteor.js.
