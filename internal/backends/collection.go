@@ -97,10 +97,12 @@ func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) 
 	return
 }
 
+// UpdateParams represents the parameters of Collection.Update method.
 type UpdateParams struct {
 	// TODO
 }
 
+// UpdateResult represents the results of Collection.Update method.
 type UpdateResult struct {
 	// TODO
 }
@@ -114,10 +116,12 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 	return
 }
 
+// DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
 	// TODO
 }
 
+// DeleteResult represents the results of Collection.Delete method.
 type DeleteResult struct {
 	// TODO
 }
