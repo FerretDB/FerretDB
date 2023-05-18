@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // collection implements backends.Collection interface.
@@ -66,16 +67,22 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	var inserted int64
 
-	for {
-		var doc *types.Document
+	iter := params.Docs.Iterator()
+	defer iter.Close()
 
-		_, doc, err = params.Docs.Next()
+	for {
+		_, val, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
 
 		if err != nil {
 			return nil, err
+		}
+
+		doc, ok := val.(*types.Document)
+		if !ok {
+			return nil, lazyerrors.Errorf("expected document, got %T", val)
 		}
 
 		query := fmt.Sprintf(`INSERT INTO %s (sjson) VALUES (?)`, table)
