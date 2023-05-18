@@ -47,6 +47,22 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx = ctxWithTimeout
 	}
 
+	if params.BatchSize == 0 {
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"cursor", must.NotFail(types.NewDocument(
+					"firstBatch", types.MakeArray(0),
+					"id", int64(0),
+					"ns", params.DB+"."+params.Collection,
+				)),
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
 	var iter types.DocumentsIterator
 
 	res, err := h.b.Database(params.DB).
