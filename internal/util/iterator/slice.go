@@ -27,7 +27,6 @@ func ForSlice[V any](s []V) Interface[int, V] {
 		s:     s,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(res, res.token)
 
 	return res

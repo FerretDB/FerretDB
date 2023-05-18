@@ -40,7 +40,6 @@ func ForFunc[K, V any](f NextFunc[K, V]) Interface[K, V] {
 		f:     f,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter
