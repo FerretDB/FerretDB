@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
@@ -40,7 +41,14 @@ func newCollection(db *database, name string) backends.Collection {
 
 // Insert implements backends.Collection interface.
 func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
-	conn, err := c.db.b.pool.DB(c.db.name)
+	path, err := c.db.b.metadataStorage.databasePath(c.db.name)
+	if errors.Is(err, errDatabaseNotFound) {
+		if err = c.db.create(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	conn, err := c.db.b.pool.DB(path)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +105,10 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 		return nil, err
 	}
 
-	return &backends.InsertResult{InsertedCount: inserted}, nil
+	return &backends.InsertResult{
+		InsertedCount: inserted,
+		Errors:        &commonerrors.WriteErrors{},
+	}, nil
 }
 
 // check interfaces

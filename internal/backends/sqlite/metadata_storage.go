@@ -201,6 +201,13 @@ func (m *metadataStorage) createCollection(ctx context.Context, database, collec
 		return "", err
 	}
 
+	tableQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson TEXT)", tableName)
+
+	_, err = conn.ExecContext(ctx, tableQuery)
+	if err != nil {
+		return "", err
+	}
+
 	query := fmt.Sprintf("INSERT INTO %s (sjson) VALUES (?)", dbMetadataTableName)
 
 	bytes, err := sjson.Marshal(must.NotFail(types.NewDocument("collection", collection, "table", tableName)))
@@ -213,16 +220,21 @@ func (m *metadataStorage) createCollection(ctx context.Context, database, collec
 		return "", err
 	}
 
-	tableQuery := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson TEXT)", tableName)
-
-	_, err = conn.ExecContext(ctx, tableQuery)
-	if err != nil {
-		return "", err
-	}
-
 	db.collections[collection] = tableName
 
 	return tableName, nil
+}
+
+func (m *metadataStorage) databasePath(database string) (string, error) {
+	m.mx.Lock()
+	defer m.mx.Unlock()
+
+	db, ok := m.dbs[database]
+	if !ok {
+		return "", errDatabaseNotFound
+	}
+
+	return db.path, nil
 }
 
 // collectionInfo returns table name for given database name and collection name.
