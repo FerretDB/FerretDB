@@ -60,7 +60,7 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	Docs []*types.Document
+	DocsIterator types.DocumentsIterator
 }
 
 // Query executes a query against the collection.

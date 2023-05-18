@@ -54,31 +54,13 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	query := fmt.Sprintf("SELECT sjson FROM %s", table)
 
-	res, err := conn.QueryContext(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 
-	var docs []*types.Document
-
-	for res.Next() {
-		var raw []byte
-
-		err = res.Scan(&raw)
-		if err != nil {
-			return nil, err
-		}
-
-		doc, err := sjson.Unmarshal(raw)
-		if err != nil {
-			return nil, err
-		}
-
-		docs = append(docs, doc)
-	}
-
 	return &backends.QueryResult{
-		Docs: docs,
+		DocsIterator: newQueryIterator(ctx, rows, nil),
 	}, nil
 }
 
