@@ -53,7 +53,8 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	var totalSize int64
-	var databases *types.Array
+
+	databases := types.MakeArray(len(res.Databases))
 
 	for _, db := range res.Databases {
 		d := must.NotFail(types.NewDocument(
