@@ -37,7 +37,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter, err := common.GetOptionalNullParam(document, "query", &types.Document{})
+	filter, err := common.GetOptionalNullParam(document, "query", new(types.Document))
 	if err != nil {
 		return nil, err
 	}

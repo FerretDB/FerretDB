@@ -53,7 +53,7 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	case *types.Document:
 		dp.Filter = dp.Filter.(*types.Document)
 	case *types.NullType:
-		dp.Filter = &types.Document{}
+		dp.Filter = new(types.Document)
 	}
 
 	if dp.Key == "" {
