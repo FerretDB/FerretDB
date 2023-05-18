@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,8 +53,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"ok", float64(1),
 	))
 
-	if res.Errors.Len() > 0 {
-		replyDoc = res.Errors.Document()
+	if len(res.Errors) > 0 {
+		var errs *commonerrors.WriteErrors
+
+		for i := 0; i < len(res.Errors); i++ {
+			errs.Append(err, int32(i))
+		}
+
+		replyDoc = errs.Document()
 	}
 
 	var reply wire.OpMsg

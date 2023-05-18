@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -111,7 +110,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	return &backends.InsertResult{
 		InsertedCount: inserted,
-		Errors:        new(commonerrors.WriteErrors),
+		Errors:        []error{},
 	}, nil
 }
 

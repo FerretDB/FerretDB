@@ -17,7 +17,6 @@ package backends
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -61,7 +60,7 @@ type InsertParams struct {
 
 // InsertResult represents the results of Collection.Insert method.
 type InsertResult struct {
-	Errors        *commonerrors.WriteErrors
+	Errors        []error
 	InsertedCount int64
 }
 
