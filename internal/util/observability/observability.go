@@ -14,39 +14,3 @@
 
 // Package observability provides abstractions for tracing, metrics, etc.
 package observability
-
-import (
-	"context"
-	"runtime"
-	"runtime/trace"
-
-	"github.com/FerretDB/FerretDB/internal/util/resource"
-)
-
-type funcCall struct {
-	token  *resource.Token
-	region *trace.Region
-}
-
-func (fc *funcCall) leave() {
-	fc.region.End()
-	resource.Untrack(fc, fc.token)
-}
-
-// FuncCall TODO.
-func FuncCall(ctx context.Context) func() {
-	fc := &funcCall{
-		token: resource.NewToken(),
-	}
-
-	resource.Track(fc, fc.token)
-
-	pc := make([]uintptr, 1)
-	runtime.Callers(1, pc)
-	f, _ := runtime.CallersFrames(pc).Next()
-	funcName := f.Function
-
-	fc.region = trace.StartRegion(ctx, funcName)
-
-	return fc.leave
-}

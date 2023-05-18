@@ -23,9 +23,9 @@ import (
 
 // Database is a generic interface for all backends for accessing databases.
 //
-// Database object is expected to be stateless and temporary;
+// Database object is expected to be mostly stateless and temporary;
 // all state should be in the Backend that created this Database instance.
-// Handler can create and destroy Database objects on the fly.
+// Handler can create and destroy Database objects on the fly (but it should Close() them).
 // Creating a Database object does not imply the creating of the database itself.
 //
 // Database methods should be thread-safe.
@@ -56,7 +56,6 @@ func DatabaseContract(db Database) Database {
 		db:    db,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(dbc, dbc.token)
 
 	return dbc

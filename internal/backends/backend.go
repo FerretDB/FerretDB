@@ -56,7 +56,6 @@ func BackendContract(b Backend) Backend {
 		b:     b,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(bc, bc.token)
 
 	return bc
