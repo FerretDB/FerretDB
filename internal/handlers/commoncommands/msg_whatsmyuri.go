@@ -12,16 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package commoncommands
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetCmdLineOpts implements HandlerInterface.
-func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgGetCmdLineOpts(ctx, msg)
+// MsgWhatsMyURI is a common implementation of the whatsMyURI command.
+func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"you", conninfo.Get(ctx).PeerAddr,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // Collection is a generic interface for all backends for accessing collection.
@@ -35,6 +36,11 @@ type Collection interface {
 	Insert(context.Context, *InsertParams) (*InsertResult, error)
 }
 
+// collectionContract implements Collection interface.
+type collectionContract struct {
+	c Collection
+}
+
 // CollectionContract wraps Collection and enforces its contract.
 //
 // All backend implementations should use that function when they create new Collection instances.
@@ -45,11 +51,6 @@ func CollectionContract(c Collection) Collection {
 	return &collectionContract{
 		c: c,
 	}
-}
-
-// collectionContract implements Collection interface.
-type collectionContract struct {
-	c Collection
 }
 
 // InsertParams represents the parameters of Collection.Insert method.
@@ -68,6 +69,7 @@ type InsertResult struct {
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (res *InsertResult, err error) {
+	defer observability.FuncCall(ctx)()
 	defer checkError(err)
 	res, err = cc.c.Insert(ctx, params)
 

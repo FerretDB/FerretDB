@@ -17,11 +17,11 @@ package hana
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDebugError implements HandlerInterface.
 func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgDebugError(ctx, msg)
+	return commoncommands.MsgDebugError(ctx, msg)
 }

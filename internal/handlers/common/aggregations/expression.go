@@ -12,31 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package aggregations
 
 import (
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-//go:generate ../../bin/stringer -linecomment -type ExpressionErrorCode
+//go:generate ../../../../bin/stringer -linecomment -type ExpressionErrorCode
 
-// ExpressionErrorCode represents FieldPath error code.
+// ExpressionErrorCode represents Expression error code.
 type ExpressionErrorCode int
 
 const (
 	_ ExpressionErrorCode = iota
 
-	// ErrNotFieldPath indicates that field is not a path.
-	ErrNotFieldPath
+	// ErrNotExpression indicates that field is not an expression.
+	ErrNotExpression
 
-	// ErrEmptyFieldPath indicates that path is empty.
+	// ErrInvalidExpression indicates that expression is invalid.
+	ErrInvalidExpression
+
+	// ErrEmptyFieldPath indicates that field path expression is empty.
 	ErrEmptyFieldPath
-
-	// ErrInvalidFieldPath indicates that path is invalid.
-	ErrInvalidFieldPath
 
 	// ErrUndefinedVariable indicates that variable name is not defined.
 	ErrUndefinedVariable
@@ -45,36 +46,30 @@ const (
 	ErrEmptyVariable
 )
 
-// FieldPathError describes an error that occurs getting path from field.
-type FieldPathError struct {
+// ExpressionError describes an error that occurs while evaluating expression.
+type ExpressionError struct {
 	code ExpressionErrorCode
 }
 
-// newFieldPathError creates a new FieldPathError.
-func newFieldPathError(code ExpressionErrorCode) error {
-	return &FieldPathError{code: code}
+// newExpressionError creates a new ExpressionError.
+func newExpressionError(code ExpressionErrorCode) error {
+	return &ExpressionError{code: code}
 }
 
 // Error implements the error interface.
-func (e *FieldPathError) Error() string {
+func (e *ExpressionError) Error() string {
 	return e.code.String()
 }
 
-// Code returns the FieldPathError code.
-func (e *FieldPathError) Code() ExpressionErrorCode {
+// Code returns the ExpressionError code.
+func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
 }
 
 // Expression is an expression constructed from field value.
-type Expression interface {
-	Evaluate(doc *Document) any
-	GetExpressionSuffix() string
-}
-
-// pathExpression is field path constructed from expression.
-type pathExpression struct {
-	path Path
+type Expression struct {
 	*ExpressionOpts
+	path types.Path
 }
 
 // ExpressionOpts represents options used to modify behavior of Expression functions.
@@ -88,7 +83,7 @@ type ExpressionOpts struct {
 
 // NewExpressionWithOpts creates a new instance by checking expression string.
 // It can take additional opts that specify how expressions should be evaluated.
-func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression, error) {
+func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	var val string
 
@@ -97,54 +92,55 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (Expression,
 		// `$$` indicates field is a variable.
 		v := strings.TrimPrefix(expression, "$$")
 		if v == "" {
-			return nil, newFieldPathError(ErrEmptyVariable)
+			return nil, newExpressionError(ErrEmptyVariable)
 		}
 
 		if strings.HasPrefix(v, "$") {
-			return nil, newFieldPathError(ErrInvalidFieldPath)
+			return nil, newExpressionError(ErrInvalidExpression)
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/2275
-		return nil, newFieldPathError(ErrUndefinedVariable)
+		return nil, newExpressionError(ErrUndefinedVariable)
 	case strings.HasPrefix(expression, "$"):
 		// `$` indicates field is a path.
 		val = strings.TrimPrefix(expression, "$")
 
 		if val == "" {
-			return nil, newFieldPathError(ErrEmptyFieldPath)
+			return nil, newExpressionError(ErrEmptyFieldPath)
 		}
 	default:
-		return nil, newFieldPathError(ErrNotFieldPath)
+		return nil, newExpressionError(ErrNotExpression)
 	}
 
 	var err error
 
-	path, err := NewPathFromString(val)
+	path, err := types.NewPathFromString(val)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &pathExpression{
+	return &Expression{
 		path:           path,
 		ExpressionOpts: opts,
 	}, nil
 }
 
 // NewExpression creates a new instance by checking expression string.
-func NewExpression(expression string) (Expression, error) {
+func NewExpression(expression string) (*Expression, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	return NewExpressionWithOpts(expression, new(ExpressionOpts))
 }
 
 // Evaluate gets the value at the path.
-func (p *pathExpression) Evaluate(doc *Document) any {
-	path := p.path
+// It returns `types.Null` if the path does not exists.
+func (e *Expression) Evaluate(doc *types.Document) any {
+	path := e.path
 
 	if path.Len() == 1 {
 		val, err := doc.Get(path.String())
 		if err != nil {
-			// if the path does not exist, return nil.
-			return Null
+			// $group stage groups non-existent paths with `Null`
+			return types.Null
 		}
 
 		return val
@@ -154,20 +150,21 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 	prefix := path.Prefix()
 
 	if v, err := doc.Get(prefix); err == nil {
-		if _, isArray := v.(*Array); isArray {
+		if _, isArray := v.(*types.Array); isArray {
 			isPrefixArray = true
 		}
 	}
 
-	vals := p.getExpressionPathValue(doc, path)
+	vals := e.getPathValue(doc, path)
 
 	if len(vals) == 0 {
 		if isPrefixArray {
 			// when the prefix is array, return empty array.
-			return must.NotFail(NewArray())
+			return must.NotFail(types.NewArray())
 		}
 
-		return Null
+		// $group stage groups non-existent paths with `Null`
+		return types.Null
 	}
 
 	if len(vals) == 1 && !isPrefixArray {
@@ -176,7 +173,7 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 	}
 
 	// when the prefix is array, return an array of value.
-	arr := MakeArray(len(vals))
+	arr := types.MakeArray(len(vals))
 	for _, v := range vals {
 		arr.Append(v)
 	}
@@ -185,11 +182,11 @@ func (p *pathExpression) Evaluate(doc *Document) any {
 }
 
 // GetExpressionSuffix returns suffix of pathExpression.
-func (p *pathExpression) GetExpressionSuffix() string {
-	return p.path.Suffix()
+func (e *Expression) GetExpressionSuffix() string {
+	return e.path.Suffix()
 }
 
-// getExpressionPathValue go through each key of the path iteratively to
+// getPathValue go through each key of the path iteratively to
 // find values that exist at suffix.
 // An array may return multiple values.
 // At each key of the path, it checks:
@@ -197,10 +194,10 @@ func (p *pathExpression) GetExpressionSuffix() string {
 //   - if the array contains documents which have the key. (This check can
 //     be disabled by setting ExpressionOpts.IgnoreArrays field).
 //
-// It is different from `getDocumentsAtSuffix`, it does not find array item by
+// It is different from `common.getDocumentsAtSuffix`, it does not find array item by
 // array dot notation `foo.0.bar`. It returns empty array [] because using index
 // such as `0` does not match using expression path.
-func (p *pathExpression) getExpressionPathValue(doc *Document, path Path) []any {
+func (e *Expression) getPathValue(doc *types.Document, path types.Path) []any {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	keys := path.Slice()
 	vals := []any{doc}
@@ -211,22 +208,22 @@ func (p *pathExpression) getExpressionPathValue(doc *Document, path Path) []any 
 
 		for _, valAtKey := range vals {
 			switch val := valAtKey.(type) {
-			case *Document:
+			case *types.Document:
 				embeddedVal, err := val.Get(key)
 				if err != nil {
 					continue
 				}
 
 				embeddedVals = append(embeddedVals, embeddedVal)
-			case *Array:
-				if p.IgnoreArrays {
+			case *types.Array:
+				if e.IgnoreArrays {
 					continue
 				}
 				// iterate elements to get documents that contain the key.
 				for j := 0; j < val.Len(); j++ {
 					elem := must.NotFail(val.Get(j))
 
-					docElem, isDoc := elem.(*Document)
+					docElem, isDoc := elem.(*types.Document)
 					if !isDoc {
 						continue
 					}

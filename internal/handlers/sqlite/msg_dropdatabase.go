@@ -34,20 +34,20 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	common.Ignored(document, h.L, "writeConcern", "comment")
 
-	db, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
 	err = h.b.DropDatabase(ctx, &backends.DropDatabaseParams{
-		Name: db,
+		Name: dbName,
 	})
 
 	res := must.NotFail(types.NewDocument())
 
 	switch {
 	case err == nil:
-		res.Set("dropped", db)
+		res.Set("dropped", dbName)
 	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist):
 		// nothing
 	default:

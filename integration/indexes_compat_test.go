@@ -64,10 +64,9 @@ func TestIndexesCreate(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		models      []mongo.IndexModel
-		altErrorMsg string                   // optional, alternative error message in case of error
-		resultType  compatTestCaseResultType // defaults to nonEmptyResult
-		skip        string                   // optional, skip test with a specified reason
+		models     []mongo.IndexModel
+		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		skip       string                   // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -121,8 +120,7 @@ func TestIndexesCreate(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+			resultType: emptyResult,
 		},
 		"CustomName": {
 			models: []mongo.IndexModel{
@@ -170,8 +168,7 @@ func TestIndexesCreate(t *testing.T) {
 					Keys: bson.D{{"v", -1}, {"v", 1}},
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+			resultType: emptyResult,
 		},
 		"SameKeyDifferentNames": {
 			models: []mongo.IndexModel{
@@ -184,8 +181,7 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("bar"),
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: "One of the specified indexes already exists with a different name",
+			resultType: emptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -198,8 +194,7 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("index-name"),
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: "One of the specified indexes already exists with a different key",
+			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -230,17 +225,16 @@ func TestIndexesCreate(t *testing.T) {
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
 
-					// TODO https://github.com/FerretDB/FerretDB/issues/2545
-					if tc.altErrorMsg != "" {
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
-						var expectedErr mongo.CommandError
-						require.ErrorAs(t, compatErr, &expectedErr)
-						expectedErr.Raw = nil
-						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
+						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					assert.Equal(t, compatRes, targetRes)
 
@@ -380,12 +374,22 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 				},
 			).Decode(&compatRes)
 
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
 			if tc.resultType == emptyResult {
 				require.Nil(t, targetRes)
 				require.Nil(t, compatRes)
 			}
 
-			AssertMatchesCommandError(t, compatErr, targetErr)
 			assert.Equal(t, compatRes, targetRes)
 
 			targetErr = targetCollection.Database().RunCommand(
@@ -399,7 +403,16 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			require.Nil(t, targetRes)
 			require.Nil(t, compatRes)
 
-			AssertMatchesCommandError(t, compatErr, targetErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 		})
 	}
 }
@@ -693,21 +706,20 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					var compatRes bson.D
 					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
 					if tc.resultType == emptyResult {
 						require.Nil(t, targetRes)
 						require.Nil(t, compatRes)
-					}
-
-					// TODO https://github.com/FerretDB/FerretDB/issues/2545
-					if tc.altErrorMsg != "" {
-						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						var expectedErr mongo.CommandError
-						require.ErrorAs(t, compatErr, &expectedErr)
-						expectedErr.Raw = nil
-						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
 					}
 
 					require.Equal(t, compatRes, targetRes)
