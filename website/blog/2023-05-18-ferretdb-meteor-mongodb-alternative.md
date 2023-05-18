@@ -17,7 +17,7 @@ Its flexibility, real-time capabilities, and rich ecosystem have made it a devel
 <!--truncate-->
 
 However, its built-in MongoDB layer, MiniMongo, presents significant concerns about vendor lock-in, especially since its move away from its open-source roots.
-To mitigate this, open-source alternatives like [FerretDB](https://www.ferretdb.io/) offer the opportunity to seamlessly replace MongoDB without compromising the commands and syntaxes you already know.
+To mitigate this, open-source alternatives like [FerretDB](https://www.ferretdb.io/) offer the opportunity to seamlessly replace MongoDB without compromising the commands and syntax you already know.
 
 In this article, we'll explore the possible synergy between FerretDB and Meteor.js and how you can build your applications without any concern for lock-in.
 
