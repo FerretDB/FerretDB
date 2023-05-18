@@ -34,6 +34,8 @@ import (
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
 	Insert(context.Context, *InsertParams) (*InsertResult, error)
+	Update(context.Context, *UpdateParams) (*UpdateResult, error)
+	Delete(context.Context, *DeleteParams) (*DeleteResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -91,6 +93,40 @@ func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) 
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
 	res, err = cc.c.Insert(ctx, params)
+
+	return
+}
+
+type UpdateParams struct {
+	// TODO
+}
+
+type UpdateResult struct {
+	// TODO
+}
+
+// Update updates documents in collection.
+func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (res *UpdateResult, err error) {
+	defer observability.FuncCall(ctx)()
+	defer checkError(err)
+	res, err = cc.c.Update(ctx, params)
+
+	return
+}
+
+type DeleteParams struct {
+	// TODO
+}
+
+type DeleteResult struct {
+	// TODO
+}
+
+// Delete deletes documents in collection.
+func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (res *DeleteResult, err error) {
+	defer observability.FuncCall(ctx)()
+	defer checkError(err)
+	res, err = cc.c.Delete(ctx, params)
 
 	return
 }

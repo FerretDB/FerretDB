@@ -119,6 +119,16 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	}, nil
 }
 
+// Update implements backends.Collection interface.
+func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
+	panic("TODO")
+}
+
+// Delete implements backends.Collection interface.
+func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+	panic("TODO")
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)
