@@ -17,6 +17,7 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
+	"path/filepath"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -45,9 +46,11 @@ type connPool struct { //nolint:vet // for readability
 }
 
 // DB returns a database connection for the given name.
-func (c *connPool) DB(path string) (*sql.DB, error) {
+func (c *connPool) DB(name string) (*sql.DB, error) {
 	c.mx.Lock()
 	defer c.mx.Unlock()
+
+	path := filepath.Join(c.dir, name+dbExtension)
 
 	if db, ok := c.dbs[path]; ok {
 		return db, nil

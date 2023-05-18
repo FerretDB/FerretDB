@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
@@ -70,6 +71,17 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
+	exists, err := db.b.metadataStorage.dbExists(db.name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !exists {
+		if err := db.create(ctx); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
 	tableName, err := db.b.metadataStorage.createCollection(ctx, db.name, params.Name)
 	if errors.Is(err, errDatabaseNotFound) {
 		if err = db.create(ctx); err != nil {
@@ -97,12 +109,12 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	table, err := db.b.metadataStorage.collectionInfo(db.name, params.Name)
+	table, err := db.b.metadataStorage.collectionInfo(ctx, db.name, params.Name)
 	if err != nil {
 		return err
 	}
 
-	err = db.b.metadataStorage.removeCollection(db.name, params.Name)
+	err = db.b.metadataStorage.removeCollection(ctx, db.name, params.Name)
 	if err != nil {
 		return err
 	}
@@ -123,8 +135,12 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 }
 
 func (db *database) create(ctx context.Context) error {
-	_, err := os.Create(filepath.Join(db.b.dir, db.name+dbExtension))
+	f, err := os.Create(filepath.Join(db.b.dir, db.name+dbExtension))
 	if err != nil {
+		return err
+	}
+
+	if err := f.Close(); err != nil {
 		return err
 	}
 

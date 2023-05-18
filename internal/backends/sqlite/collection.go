@@ -41,25 +41,17 @@ func newCollection(db *database, name string) backends.Collection {
 
 // Insert implements backends.Collection interface.
 func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
-	path, err := c.db.b.metadataStorage.databasePath(c.db.name)
-	if errors.Is(err, errDatabaseNotFound) {
-		if err = c.db.create(ctx); err != nil {
-			return nil, err
-		}
-	}
-
-	conn, err := c.db.b.pool.DB(path)
+	err := c.db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: c.name})
 	if err != nil {
 		return nil, err
 	}
 
-	tableName, err := c.db.b.metadataStorage.collectionInfo(c.db.name, c.name)
-	if errors.Is(err, errCollectionNotFound) {
-		if tableName, err = c.db.b.metadataStorage.createCollection(ctx, c.db.name, c.name); err != nil {
-			return nil, err
-		}
+	conn, err := c.db.b.pool.DB(c.db.name)
+	if err != nil {
+		return nil, err
 	}
 
+	tableName, err := c.db.b.metadataStorage.collectionInfo(ctx, c.db.name, c.name)
 	if err != nil {
 		return nil, err
 	}

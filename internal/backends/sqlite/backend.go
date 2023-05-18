@@ -76,12 +76,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	removed := b.metadataStorage.removeDatabase(params.Name)
-	// if no database was removed, then we don't need to do anything
-	if !removed {
-		return nil
-	}
-
 	err := os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
 	if err != nil && !os.IsNotExist(err) {
 		return err

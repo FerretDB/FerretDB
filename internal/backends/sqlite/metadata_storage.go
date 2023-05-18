@@ -21,9 +21,8 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
-	"sync"
 
-	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -45,7 +44,7 @@ var (
 	errCollectionNotFound = errors.New("collection not found")
 )
 
-// newMetadataStorage checks that dbPath is not empty,
+// newMetadataStorage checks that dir is not empty,
 // creates instance of metadataStorage and populates it with databases info.
 func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error) {
 	if dbPath == "" {
@@ -54,9 +53,7 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 
 	storage := metadataStorage{
 		connPool: pool,
-		dbPath:   dbPath,
-		dbs:      map[string]*dbInfo{},
-		mx:       sync.Mutex{},
+		dir:      dbPath,
 	}
 
 	_, err := storage.listDatabases()
@@ -70,28 +67,15 @@ func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error)
 // metadataStorage provide access to database metadata.
 // It uses connection pool to load and store metadata.
 type metadataStorage struct { //nolint:vet // for readability
-	dbPath string
-
+	dir      string
 	connPool *connPool
-
-	mx  sync.Mutex
-	dbs map[string]*dbInfo
-}
-
-type dbInfo struct {
-	path        string
-	collections map[string]string
-	// TODO: add indexes, etc.
 }
 
 // listDatabases list database names.
 func (m *metadataStorage) listDatabases() ([]string, error) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
+	var dbs []string
 
-	dbs := map[string]*dbInfo{}
-
-	err := filepath.WalkDir(m.dbPath, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(m.dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -99,10 +83,7 @@ func (m *metadataStorage) listDatabases() ([]string, error) {
 		if strings.Contains(d.Name(), dbExtension) {
 			dbName, _ := strings.CutSuffix(d.Name(), dbExtension)
 
-			dbs[dbName] = &dbInfo{
-				path:        path,
-				collections: nil,
-			}
+			dbs = append(dbs, dbName)
 		}
 
 		return nil
@@ -111,53 +92,41 @@ func (m *metadataStorage) listDatabases() ([]string, error) {
 		return nil, err
 	}
 
-	m.dbs = dbs
-
-	return maps.Keys(dbs), nil
+	return dbs, nil
 }
 
 // listCollections list collection names for given database.
 func (m *metadataStorage) listCollections(ctx context.Context, database string) ([]string, error) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
+	exists, err := m.dbExists(database)
+	if err != nil {
+		return nil, err
+	}
 
-	db, ok := m.dbs[database]
-	if !ok {
+	if !exists {
 		return nil, errDatabaseNotFound
 	}
 
-	// no metadata about collections loaded, load it
-	if db.collections == nil {
-		var err error
-
-		db, err = m.loadCollections(ctx, db.path)
-		if err != nil {
-			return nil, err
-		}
-
-		m.dbs[database] = db
+	colls, err := m.loadCollections(ctx, database)
+	if err != nil {
+		return nil, err
 	}
 
-	return maps.Keys(db.collections), nil
+	return colls, nil
 }
 
 // createDatabase adds database to metadata storage.
 // It doesn't create database file.
 func (m *metadataStorage) createDatabase(ctx context.Context, database string) error {
-	m.mx.Lock()
-	defer m.mx.Unlock()
+	exists, err := m.dbExists(database)
+	if err != nil {
+		return err
+	}
 
-	db, ok := m.dbs[database]
-	// database already exists
-	if ok {
+	if exists {
 		return nil
 	}
 
-	db = &dbInfo{
-		path: filepath.Join(m.dbPath, database+dbExtension),
-	}
-
-	conn, err := m.connPool.DB(db.path)
+	conn, err := m.connPool.DB(database)
 	if err != nil {
 		return err
 	}
@@ -169,34 +138,17 @@ func (m *metadataStorage) createDatabase(ctx context.Context, database string) e
 		return err
 	}
 
-	m.dbs[database] = db
-
 	return nil
 }
 
 // createCollection saves collection metadata to database file.
 func (m *metadataStorage) createCollection(ctx context.Context, database, collection string) (string, error) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-
-	db, ok := m.dbs[database]
-	if !ok {
-		return "", errDatabaseNotFound
+	tableName, err := m.collectionInfo(ctx, database, collection)
+	if err != nil {
+		return "", err
 	}
 
-	tableName, ok := db.collections[collection]
-	if ok {
-		return tableName, nil
-	}
-
-	if db.collections == nil {
-		db.collections = map[string]string{}
-	}
-
-	// TODO: transform table name if needed
-	tableName = collection
-
-	conn, err := m.connPool.DB(db.path)
+	conn, err := m.connPool.DB(database)
 	if err != nil {
 		return "", err
 	}
@@ -220,59 +172,57 @@ func (m *metadataStorage) createCollection(ctx context.Context, database, collec
 		return "", err
 	}
 
-	db.collections[collection] = tableName
-
 	return tableName, nil
 }
 
-func (m *metadataStorage) databasePath(database string) (string, error) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-
-	db, ok := m.dbs[database]
-	if !ok {
-		return "", errDatabaseNotFound
-	}
-
-	return db.path, nil
-}
-
 // collectionInfo returns table name for given database name and collection name.
-func (m *metadataStorage) collectionInfo(dbName string, collName string) (string, error) {
-	m.mx.Lock()
-	defer m.mx.Unlock()
+func (m *metadataStorage) collectionInfo(ctx context.Context, dbName, collName string) (string, error) {
+	exists, err := m.dbExists(dbName)
+	if err != nil {
+		return "", err
+	}
 
-	db, ok := m.dbs[dbName]
-	if !ok {
+	if !exists {
 		return "", errDatabaseNotFound
 	}
 
-	table, ok := db.collections[collName]
-	if !ok {
+	conn, err := m.connPool.DB(dbName)
+	if err != nil {
+		return "", err
+	}
+
+	query := fmt.Sprintf("SELECT sjson FROM %s WHERE json_extract(sjson, '$.collection') = ?", dbMetadataTableName)
+
+	rows, err := conn.QueryContext(ctx, query, collName)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var bytes []byte
+
+	if !rows.Next() {
 		return "", errCollectionNotFound
 	}
+
+	err = rows.Scan(&bytes)
+	if err != nil {
+		return "", err
+	}
+
+	doc, err := sjson.Unmarshal(bytes)
+	if err != nil {
+		return "", err
+	}
+
+	// TODO: proper error handling
+	table := must.NotFail(doc.Get("table")).(string)
 
 	return table, nil
 }
 
-// removeDatabase removes database metadata.
-// It does not remove database file.
-func (m *metadataStorage) removeDatabase(database string) bool {
-	m.mx.Lock()
-	defer m.mx.Unlock()
-
-	_, ok := m.dbs[database]
-	if !ok {
-		return false
-	}
-
-	delete(m.dbs, database)
-
-	return true
-}
-
 // loadCollections loads collections metadata from database file.
-func (m *metadataStorage) loadCollections(ctx context.Context, dbPath string) (*dbInfo, error) {
+func (m *metadataStorage) loadCollections(ctx context.Context, dbPath string) ([]string, error) {
 	conn, err := m.connPool.DB(dbPath)
 	if err != nil {
 		return nil, err
@@ -280,21 +230,19 @@ func (m *metadataStorage) loadCollections(ctx context.Context, dbPath string) (*
 
 	query := fmt.Sprintf("SELECT sjson FROM %s", dbMetadataTableName)
 
-	result, err := conn.QueryContext(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	// TODO: check error
-	defer result.Close()
+	defer rows.Close()
 
-	metadata := dbInfo{
-		collections: map[string]string{},
-	}
+	var collections []string
 
-	for result.Next() {
+	for rows.Next() {
 		var rawBytes []byte
 
-		err = result.Scan(rawBytes)
+		err = rows.Scan(rawBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -306,31 +254,64 @@ func (m *metadataStorage) loadCollections(ctx context.Context, dbPath string) (*
 
 		// TODO: proper errors check
 		collName := must.NotFail(doc.Get("collection")).(string)
-		tableName := must.NotFail(doc.Get("table")).(string)
 
-		metadata.collections[collName] = tableName
+		collections = append(collections, collName)
 	}
 
-	return &metadata, nil
+	return collections, nil
 }
 
 // removeCollection removes collection metadata.
 // It does not remove collection from database.
-func (m *metadataStorage) removeCollection(database, collection string) error {
-	m.mx.Lock()
-	defer m.mx.Unlock()
+func (m *metadataStorage) removeCollection(ctx context.Context, database, collection string) error {
+	exists, err := m.dbExists(database)
+	if err != nil {
+		return err
+	}
 
-	db, ok := m.dbs[database]
-	if !ok {
+	if !exists {
 		return errDatabaseNotFound
 	}
 
-	_, ok = db.collections[collection]
-	if !ok {
-		return errCollectionNotFound
+	colls, err := m.loadCollections(ctx, database)
+	if err != nil {
+		return err
 	}
 
-	delete(db.collections, collection)
+	// collection not found, nothing to do
+	if !slices.Contains(colls, collection) {
+		return nil
+	}
+
+	conn, err := m.connPool.DB(database)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE json_extract(sjson, '$.collection') = ?", dbMetadataTableName)
+
+	res, err := conn.ExecContext(ctx, query, collection)
+	if err != nil {
+		return err
+	}
+
+	deleted, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if deleted != 1 {
+		return errors.New("failed to remove collection")
+	}
 
 	return nil
+}
+
+func (m *metadataStorage) dbExists(database string) (bool, error) {
+	dbs, err := m.listDatabases()
+	if err != nil {
+		return false, err
+	}
+
+	return slices.Contains(dbs, database), nil
 }
