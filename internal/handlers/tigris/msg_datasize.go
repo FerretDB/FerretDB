@@ -75,7 +75,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", int32(stats.Size),
+		"size", stats.Size,
 		"numObjects", stats.NumObjects,
 		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),

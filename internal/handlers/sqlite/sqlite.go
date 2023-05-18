@@ -20,6 +20,8 @@ package sqlite
 import (
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 )
@@ -32,25 +34,33 @@ func notImplemented(command string) error {
 	)
 }
 
-// Handler implements handlers.Interface by stubbing all methods except the following handler-independent commands:
-//
-//   - buildInfo;
-//   - connectionStatus;
-//   - debugError;
-//   - getCmdLineOpts;
-//   - getFreeMonitoringStatus;
-//   - hostInfo;
-//   - listCommands;
-//   - setFreeMonitoringStatus;
-//   - whatsmyuri.
+// Handler implements handlers.Interface.
 type Handler struct {
+	*NewOpts
+	b backends.Backend
+}
+
+// NewOpts represents handler configuration.
+//
+//nolint:vet // for readability
+type NewOpts struct {
+	Dir string
+
 	L *zap.Logger
 }
 
 // New returns a new handler.
-func New(l *zap.Logger) (handlers.Interface, error) {
+func New(opts *NewOpts) (handlers.Interface, error) {
+	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
+		Dir: opts.Dir,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &Handler{
-		L: l,
+		NewOpts: opts,
+		b:       b,
 	}, nil
 }
 

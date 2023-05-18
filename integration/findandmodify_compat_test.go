@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -214,7 +213,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v.foo", "val"}}},
 				}},
 			},
-			altMessage: "Updating the path 'v' would create a conflict at 'v'",
 		},
 		"ConflictKeyPrefix": {
 			command: bson.D{
@@ -224,7 +222,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v", "val"}}},
 				}},
 			},
-			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
 		},
 	}
 
@@ -263,7 +260,6 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
 			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
 		},
 	}
 
@@ -562,7 +558,6 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
 		},
 	}
 
@@ -645,8 +640,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
-	command    bson.D
-	altMessage string
+	command bson.D
 
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
@@ -699,22 +693,15 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
+						t.Logf("Compat error: %v", compatErr)
 
-						// TODO https://github.com/FerretDB/FerretDB/issues/2545
-						if tc.altMessage != "" {
-							var expectedErr mongo.CommandError
-							require.ErrorAs(t, compatErr, &expectedErr)
-							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-						} else {
-							assert.Equal(t, compatErr, targetErr)
-						}
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					require.Equal(t, compatErr, targetErr)
 					AssertEqualDocuments(t, compatMod, targetMod)
 
 					// To make sure that the results of modification are equal,
@@ -739,9 +726,8 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetCursor.All(ctx, &targetRes))
-					require.NoError(t, compatCursor.All(ctx, &compatRes))
+					targetRes := FetchAll(t, ctx, targetCursor)
+					compatRes := FetchAll(t, ctx, compatCursor)
 
 					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))

@@ -16,12 +16,33 @@ package sqlite
 
 import (
 	"context"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"isWritablePrimary", true,
+			// topologyVersion
+			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+			"maxWriteBatchSize", int32(100000),
+			"localTime", time.Now(),
+			// logicalSessionTimeoutMinutes
+			"connectionId", int32(42),
+			"minWireVersion", common.MinWireVersion,
+			"maxWireVersion", common.MaxWireVersion,
+			"readOnly", false,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

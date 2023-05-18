@@ -8,6 +8,7 @@
 /integration/               @FerretDB/leads
 /internal/                  @FerretDB/leads
 
+/internal/backends/         @AlekSi
 /internal/handlers/hana/    @AlekSi
 
 # @AlekSi for engineering, @ptrfarkas for marketing.
