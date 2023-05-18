@@ -109,6 +109,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		PostgreSQLURL: *postgreSQLURLF,
 
+		SQLiteURI: filepath.Join("..", "tmp"),
+
 		TigrisURL: nextTigrisUrl(),
 
 		TestOpts: registry.TestOpts{
