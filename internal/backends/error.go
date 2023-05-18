@@ -15,7 +15,6 @@
 package backends
 
 import (
-	"errors"
 	"fmt"
 
 	"golang.org/x/exp/slices"
@@ -31,6 +30,8 @@ type ErrorCode int
 // Error codes.
 const (
 	_ ErrorCode = iota
+
+	ErrorCodeDatabaseDoesNotExist
 
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
@@ -74,6 +75,20 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %v", err.code, err.err)
 }
 
+// ErrorCodeIs returns true if err is *Error with one of the given error codes.
+func ErrorCodeIs(err error, codes ...ErrorCode) bool {
+	if len(codes) == 0 {
+		panic("zero error codes")
+	}
+
+	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
+	if !ok {
+		return false
+	}
+
+	return slices.Contains(codes, e.code)
+}
+
 // checkError enforces backend interfaces contracts.
 //
 // Err must be nil, *Error, or some other opaque error.
@@ -90,8 +105,8 @@ func checkError(err error, codes ...ErrorCode) {
 		return
 	}
 
-	var e *Error
-	if !errors.As(err, &e) {
+	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
+	if !ok {
 		return
 	}
 
