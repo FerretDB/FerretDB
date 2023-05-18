@@ -63,7 +63,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	for _, databaseName := range databaseNames {
 		res, err := dbPool.Driver.DescribeDatabase(ctx, databaseName)
 		if err != nil {
-			// check if database was removed between listDatabases and DescribeDatabase calls
+			// check if database was removed between ListDatabases and DescribeDatabase calls
 			if tigrisdb.IsNotFound(err) {
 				continue
 			}
