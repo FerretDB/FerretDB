@@ -85,6 +85,7 @@ func (c *connPool) Close() error {
 	return errs
 }
 
+// CloseDB closes a database connection for the given name.
 func (c *connPool) CloseDB(name string) {
 	c.mx.Lock()
 	defer c.mx.Unlock()

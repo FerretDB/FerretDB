@@ -27,7 +27,7 @@ import (
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
-type queryIterator struct {
+type queryIterator struct { //nolint:vet // for readability
 	ctx       context.Context
 	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
 
