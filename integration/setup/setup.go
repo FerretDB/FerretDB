@@ -62,7 +62,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-tigris", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )

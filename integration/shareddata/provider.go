@@ -43,9 +43,9 @@ type Provider interface {
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
 	name       string
+	backends   []string                  // empty values means all backends
 	validators map[string]map[string]any // backend -> validator name -> validator
 	data       map[idType]any
-	backends   []string
 }
 
 // Name implement Provider interface.
@@ -89,6 +89,10 @@ func (values *Values[idType]) Docs() []bson.D {
 
 // IsCompatible returns true if the given backend is compatible with this provider.
 func (values *Values[idType]) IsCompatible(backend string) bool {
+	if len(values.backends) == 0 {
+		return true
+	}
+
 	return slices.Contains(values.backends, backend)
 }
 
@@ -117,7 +121,7 @@ func NewTopLevelFieldsProvider[id comparable](name string, backends []string, va
 //nolint:vet // for readability
 type topLevelValues[id comparable] struct {
 	name       string
-	backends   []string
+	backends   []string                  // empty values means all backends
 	validators map[string]map[string]any // backend -> validator name -> validator
 	data       map[id]Fields
 }
@@ -166,6 +170,10 @@ func (t *topLevelValues[id]) Docs() []bson.D {
 
 // IsCompatible implements Provider interface.
 func (t *topLevelValues[id]) IsCompatible(backend string) bool {
+	if len(t.backends) == 0 {
+		return true
+	}
+
 	return slices.Contains(t.backends, backend)
 }
 
