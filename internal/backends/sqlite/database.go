@@ -83,11 +83,6 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 	}
 
 	tableName, err := db.b.metadataStorage.createCollection(ctx, db.name, params.Name)
-	if errors.Is(err, errDatabaseNotFound) {
-		if err = db.create(ctx); err != nil {
-			return err
-		}
-	}
 	if err != nil {
 		return err
 	}
