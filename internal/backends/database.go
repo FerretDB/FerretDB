@@ -61,7 +61,8 @@ func DatabaseContract(db Database) Database {
 	return dbc
 }
 
-// Close TODO.
+// Close marks this Database instance as not being used anymore.
+// The implementation may close an associated database connection, decrease a reference counter, etc.
 func (dbc *databaseContract) Close() {
 	dbc.db.Close()
 

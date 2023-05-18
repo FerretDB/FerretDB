@@ -41,7 +41,7 @@ func NewBackend(params *NewBackendParams) backends.Backend {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	// TODO
+	panic("not implemented") // TODO: Implement
 }
 
 // Database implements backends.Backend interface.

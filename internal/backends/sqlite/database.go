@@ -36,7 +36,7 @@ func newDatabase(b *backend, name string) backends.Database {
 
 // Close implements backends.Database interface.
 func (db *database) Close() {
-	// TODO
+	panic("not implemented") // TODO: Implement
 }
 
 // Collection implements backends.Database interface.

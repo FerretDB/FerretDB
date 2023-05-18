@@ -61,7 +61,7 @@ func BackendContract(b Backend) Backend {
 	return bc
 }
 
-// Close TODO.
+// Close closes all database connections and frees all resources associated with the backend.
 func (bc *backendContract) Close() {
 	bc.b.Close()
 
