@@ -33,10 +33,10 @@ func TestGetDistinctCommandInvalidQuery(t *testing.T) {
 		ctx, bson.D{{"distinct", collection.Name()}, {"key", "a"}, {"query", 1}},
 	).DecodeBytes()
 
-	AssertEqualError(t, mongo.CommandError{
+	expectedErr := mongo.CommandError{
 		Code:    14,
 		Name:    "TypeMismatch",
-		Message: `BSON field 'query' is the wrong type 'int', expected type 'object'`},
-		err,
-	)
+		Message: `BSON field 'distinct.query' is the wrong type 'int', expected type 'object'`,
+	}
+	AssertEqualError(t, expectedErr, err)
 }
