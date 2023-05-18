@@ -16,12 +16,96 @@ package sqlite
 
 import (
 	"context"
+	"errors"
+	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgFind implements HandlerInterface.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	params, err := common.GetFindParams(document, h.L)
+	if err != nil {
+		return nil, err
+	}
+
+	if params.MaxTimeMS != 0 {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+		defer cancel()
+
+		ctx = ctxWithTimeout
+	}
+
+	docs, err := h.b.Database(params.DB).
+		Collection(params.Collection).
+		Query(ctx, nil)
+
+	var iter types.DocumentsIterator
+
+	closer := iterator.NewMultiCloser(iterator.ForSlice(docs.Docs))
+	defer closer.Close()
+
+	iter = common.FilterIterator(iter, closer, params.Filter)
+
+	iter, err = common.SortIterator(iter, closer, params.Sort)
+	if err != nil {
+		var pathErr *types.DocumentPathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter = common.SkipIterator(iter, closer, params.Skip)
+
+	iter = common.LimitIterator(iter, closer, params.Limit)
+
+	iter, err = common.ProjectionIterator(iter, closer, params.Projection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var resDocs []*types.Document
+
+	resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cursorID int64
+
+	firstBatch := types.MakeArray(len(resDocs))
+	for _, doc := range resDocs {
+		firstBatch.Append(doc)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"firstBatch", firstBatch,
+				"id", cursorID,
+				"ns", params.DB+"."+params.Collection,
+			)),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

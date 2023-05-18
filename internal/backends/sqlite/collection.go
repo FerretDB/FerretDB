@@ -42,7 +42,44 @@ func newCollection(db *database, name string) backends.Collection {
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
-	panic("TODO")
+	conn, err := c.db.b.pool.DB(c.db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	table, err := c.db.b.metadataStorage.tableName(ctx, c.db.name, c.name)
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf("SELECT sjson FROM %s", table)
+
+	res, err := conn.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	var docs []*types.Document
+
+	for res.Next() {
+		var raw []byte
+
+		err = res.Scan(&raw)
+		if err != nil {
+			return nil, err
+		}
+
+		doc, err := sjson.Unmarshal(raw)
+		if err != nil {
+			return nil, err
+		}
+
+		docs = append(docs, doc)
+	}
+
+	return &backends.QueryResult{
+		Docs: docs,
+	}, nil
 }
 
 // Insert implements backends.Collection interface.
