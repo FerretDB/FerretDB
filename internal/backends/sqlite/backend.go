@@ -39,6 +39,11 @@ func NewBackend(params *NewBackendParams) backends.Backend {
 	})
 }
 
+// Close implements backends.Backend interface.
+func (b *backend) Close() {
+	// TODO
+}
+
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) backends.Database {
 	return newDatabase(b, name)
