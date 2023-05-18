@@ -60,7 +60,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		DocsIterator: newQueryIterator(ctx, rows, nil),
+		DocsIterator: newQueryIterator(ctx, rows, &queryIteratorParams{unmarshal: sjson.Unmarshal}),
 	}, nil
 }
 
