@@ -153,7 +153,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(ctx, groupedDocument.groupID, groupedDocument.documents)
+			out, err := accumulation.accumulate(ctx, groupedDocument.documents)
 			if err != nil {
 				return nil, err
 			}
