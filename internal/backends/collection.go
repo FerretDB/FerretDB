@@ -54,12 +54,15 @@ func CollectionContract(c Collection) Collection {
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	Docs    types.DocumentsIterator
+	Docs    *types.Array
 	Ordered bool
 }
 
 // InsertResult represents the results of Collection.Insert method.
-type InsertResult struct{}
+type InsertResult struct {
+	Errors        []error
+	InsertedCount int64
+}
 
 // Insert inserts documents into the collection.
 //
