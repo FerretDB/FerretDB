@@ -32,6 +32,7 @@ import (
 //
 // See collectionContract and its methods for additional details.
 type Collection interface {
+	Query(context.Context, *QueryParams) (*QueryResult, error)
 	Insert(context.Context, *InsertParams) (*InsertResult, error)
 }
 
@@ -50,6 +51,25 @@ func CollectionContract(c Collection) Collection {
 	return &collectionContract{
 		c: c,
 	}
+}
+
+// QueryParams represents the parameters of Collection.Query method.
+type QueryParams struct {
+	// nothing for now - no pushdowns yet
+}
+
+// QueryResult represents the results of Collection.Query method.
+type QueryResult struct {
+	// TODO
+}
+
+// Query executes a query against the collection.
+func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (res *QueryResult, err error) {
+	defer observability.FuncCall(ctx)()
+	defer checkError(err)
+	res, err = cc.c.Query(ctx, params)
+
+	return
 }
 
 // InsertParams represents the parameters of Collection.Insert method.
