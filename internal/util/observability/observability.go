@@ -12,16 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
-
-import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgGetCmdLineOpts implements HandlerInterface.
-func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgGetCmdLineOpts(ctx, msg)
-}
+// Package observability provides abstractions for tracing, metrics, etc.
+package observability

@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // Collection is a generic interface for all backends for accessing collection.
@@ -31,7 +32,13 @@ import (
 //
 // See collectionContract and its methods for additional details.
 type Collection interface {
+	Query(context.Context, *QueryParams) (*QueryResult, error)
 	Insert(context.Context, *InsertParams) (*InsertResult, error)
+}
+
+// collectionContract implements Collection interface.
+type collectionContract struct {
+	c Collection
 }
 
 // CollectionContract wraps Collection and enforces its contract.
@@ -46,24 +53,42 @@ func CollectionContract(c Collection) Collection {
 	}
 }
 
-// collectionContract implements Collection interface.
-type collectionContract struct {
-	c Collection
+// QueryParams represents the parameters of Collection.Query method.
+type QueryParams struct {
+	// nothing for now - no pushdowns yet
+}
+
+// QueryResult represents the results of Collection.Query method.
+type QueryResult struct {
+	// TODO
+}
+
+// Query executes a query against the collection.
+func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (res *QueryResult, err error) {
+	defer observability.FuncCall(ctx)()
+	defer checkError(err)
+	res, err = cc.c.Query(ctx, params)
+
+	return
 }
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	Docs    types.DocumentsIterator
+	Docs    *types.Array
 	Ordered bool
 }
 
 // InsertResult represents the results of Collection.Insert method.
-type InsertResult struct{}
+type InsertResult struct {
+	Errors        []error
+	InsertedCount int64
+}
 
 // Insert inserts documents into the collection.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (res *InsertResult, err error) {
+	defer observability.FuncCall(ctx)()
 	defer checkError(err)
 	res, err = cc.c.Insert(ctx, params)
 
