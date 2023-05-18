@@ -80,7 +80,7 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 	}
 
 	if !exists {
-		if err := db.create(ctx); err != nil {
+		if err = db.create(ctx); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
@@ -138,7 +138,7 @@ func (db *database) create(ctx context.Context) error {
 		return err
 	}
 
-	if err := f.Close(); err != nil {
+	if err = f.Close(); err != nil {
 		return err
 	}
 

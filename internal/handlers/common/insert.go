@@ -51,6 +51,7 @@ func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, er
 	if params.Docs != nil {
 		for i := 0; i < params.Docs.Len(); i++ {
 			value := must.NotFail(params.Docs.Get(i))
+
 			doc, ok := value.(*types.Document)
 			if !ok {
 				return nil, lazyerrors.Errorf("expected document, got %v", value)

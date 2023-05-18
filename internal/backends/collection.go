@@ -60,8 +60,8 @@ type InsertParams struct {
 
 // InsertResult represents the results of Collection.Insert method.
 type InsertResult struct {
-	InsertedCount int64
 	Errors        *commonerrors.WriteErrors
+	InsertedCount int64
 }
 
 // Insert inserts documents into the collection.

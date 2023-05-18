@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
@@ -66,7 +67,9 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	var inserted int64
 
 	for {
-		_, doc, err := params.Docs.Next()
+		var doc *types.Document
+
+		_, doc, err = params.Docs.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
@@ -77,7 +80,9 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 		query := fmt.Sprintf(`INSERT INTO %s (sjson) VALUES (?)`, table)
 
-		bytes, err := sjson.Marshal(doc)
+		var bytes []byte
+
+		bytes, err = sjson.Marshal(doc)
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +104,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	return &backends.InsertResult{
 		InsertedCount: inserted,
-		Errors:        &commonerrors.WriteErrors{},
+		Errors:        new(commonerrors.WriteErrors),
 	}, nil
 }
 
