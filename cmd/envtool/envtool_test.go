@@ -43,12 +43,14 @@ func TestRmdirAbsentDir(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	t.Parallel()
+	tDir := t.TempDir()
+	f, err := os.CreateTemp(tDir, "test_red")
+	assert.NoError(t, err)
 	s := "test string in a file"
-	f := "file.temp"
-	err := os.WriteFile(f, []byte(s), 0o644)
+	err = os.WriteFile(f.Name(), []byte(s), 0o644)
 	assert.NoError(t, err)
 	var output bytes.Buffer
-	read(&output, f)
+	read(&output, f.Name())
 	assert.EqualValues(t, s, output.String())
 }
 
