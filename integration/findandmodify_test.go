@@ -59,9 +59,8 @@ func TestFindAndModifyErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
-		command       bson.D
-		findAndModify string              // optional, defaults to "findAndModify"
-		provider      shareddata.Provider // optional, default uses shareddata.ArrayDocuments
+		command  bson.D
+		provider shareddata.Provider // optional, default uses shareddata.ArrayDocuments
 
 		err        *mongo.CommandError
 		altMessage string
@@ -399,12 +398,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 
 			ctx, collection := setup.Setup(t, provider)
 
-			findAndModify := "findAndModify"
-			if tc.findAndModify != "" {
-				findAndModify = tc.findAndModify
-			}
-
-			command := bson.D{{findAndModify, collection.Name()}}
+			command := bson.D{{"findAndModify", collection.Name()}}
 			command = append(command, tc.command...)
 			if command.Map()["sort"] == nil {
 				command = append(command, bson.D{{"sort", bson.D{{"_id", 1}}}}...)
