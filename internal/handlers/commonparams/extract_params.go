@@ -89,7 +89,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 
 		// If the key is the same as the command name, then it is a collection name.
 		// Depending on the driver, the key may be camel case or lower case for a collection name.
-		if strings.EqualFold(key, command) {
+		if strings.ToLower(key) == strings.ToLower(command) { //nolint:staticcheck // for clarity
 			lookup = "collection"
 		}
 
@@ -180,8 +180,7 @@ func lookupFieldTag(key string, value *reflect.Value) (*int, *tagOptions, error)
 
 		optionsList := strings.Split(tag, ",")
 
-		// Depending on the driver, the key may be camel case or lower case for a collection name.
-		if !strings.EqualFold(optionsList[0], key) {
+		if optionsList[0] != key {
 			continue
 		}
 

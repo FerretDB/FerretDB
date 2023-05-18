@@ -892,7 +892,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 // newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
 func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 	// Depending on the driver, the command may be camel case or lower case.
-	if strings.EqualFold(command, "findAndModify") {
+	if strings.ToLower(command) == "findandmodify" {
 		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
 	}
 

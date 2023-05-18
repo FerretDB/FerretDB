@@ -126,20 +126,6 @@ func TestFindAndModifyErrors(t *testing.T) {
 			},
 			altMessage: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected type 'bool'",
 		},
-		"LowerCaseCommand": {
-			// go driver sends `findAndModify` in camel case, but
-			// js driver sends `findandmodify` in lower case.
-			findAndModify: "findandmodify",
-			command: bson.D{
-				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
-			},
-			err: &mongo.CommandError{
-				Code:    66,
-				Name:    "ImmutableField",
-				Message: "Plan executor error during findAndModify :: caused by :: Performing an update on the path '_id' would modify the immutable field '_id'",
-			},
-			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
-		},
 		"SetUnsuitableValue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-nested"}}},
