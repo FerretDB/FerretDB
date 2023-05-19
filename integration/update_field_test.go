@@ -65,7 +65,7 @@ func TestUpdateFieldSet(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, tc.opts)
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
