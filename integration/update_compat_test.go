@@ -35,11 +35,12 @@ import (
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update     bson.D                   // required if replace is nil
-	replace    bson.D                   // required if update is nil
-	filter     bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
+	update      bson.D                   // required if replace is nil
+	replace     bson.D                   // required if update is nil
+	filter      bson.D                   // defaults to bson.D{{"_id", id}}
+	replaceOpts *options.ReplaceOptions  // defaults to nil
+	resultType  compatTestCaseResultType // defaults to nonEmptyResult
+	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
@@ -111,8 +112,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
 								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)
 							} else {
-								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace)
-								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace)
+								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace, tc.replaceOpts)
+								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace, tc.replaceOpts)
 							}
 
 							if targetErr != nil {
@@ -440,6 +441,12 @@ func TestUpdateCompat(t *testing.T) {
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
+		},
+		"ReplaceNonExistentUpsert": {
+			filter:      bson.D{{"non-existent", "no-match"}},
+			replace:     bson.D{{"_id", "new"}},
+			replaceOpts: &options.ReplaceOptions{Upsert: pointer.ToBool(true)},
+			resultType:  emptyResult,
 		},
 	}
 

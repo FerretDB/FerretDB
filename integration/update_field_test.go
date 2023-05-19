@@ -18,9 +18,11 @@ import (
 	"math"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -34,6 +36,7 @@ func TestUpdateFieldSet(t *testing.T) {
 	for name, tc := range map[string]struct {
 		id       string
 		update   bson.D
+		opts     *options.UpdateOptions
 		expected bson.D
 		err      *mongo.WriteError
 		stat     *mongo.UpdateResult
@@ -59,13 +62,26 @@ func TestUpdateFieldSet(t *testing.T) {
 				UpsertedCount: 0,
 			},
 		},
+		"NonExistentUpsert": {
+			id:       "non-existent",
+			update:   bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			opts:     &options.UpdateOptions{Upsert: pointer.ToBool(true)},
+			expected: bson.D{{"_id", "non-existent"}, {"v", int32(42)}},
+
+			stat: &mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 1,
+				UpsertedID:    "non-existent",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update, tc.opts)
 			if tc.err != nil {
 				require.Nil(t, tc.expected)
 				AssertEqualAltWriteError(t, *tc.err, tc.alt, err)
