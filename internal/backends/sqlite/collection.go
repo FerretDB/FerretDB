@@ -197,9 +197,18 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		idBytes := must.NotFail(sjson.MarshalSingleValue(id))
 		docBytes := must.NotFail(sjson.Marshal(doc))
 
-		_, err = tx.ExecContext(ctx, query, docBytes, idBytes)
+		res, err := tx.ExecContext(ctx, query, docBytes, idBytes)
 		if err != nil {
 			return nil, err
+		}
+
+		rowsUpdated, err := res.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+
+		if rowsUpdated == 0 {
+			return nil, lazyerrors.Errorf("no rows where updated for id %s", idBytes)
 		}
 
 		updated++
