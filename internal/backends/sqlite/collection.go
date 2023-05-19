@@ -160,8 +160,6 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 
 	iter := res.DocsIterator
 
-	defer iter.Close()
-
 	resDocs := make([]*types.Document, 0, 16)
 
 	for {
@@ -193,9 +191,11 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 		}
 	}
 
+	iter.Close()
+
 	// if no documents matched, there is nothing to delete
 	if len(resDocs) == 0 {
-		return nil, nil
+		return new(backends.DeleteResult), nil
 	}
 
 	rowsDeleted, err := c.deleteDocuments(ctx, conn, resDocs)

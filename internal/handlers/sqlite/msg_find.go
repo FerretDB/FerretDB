@@ -65,7 +65,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var iter types.DocumentsIterator
 
-	res, err := h.b.Database(params.DB).
+	db := h.b.Database(params.DB)
+	defer db.Close()
+
+	res, err := db.
 		Collection(params.Collection).
 		Query(ctx, nil)
 	if err != nil {
