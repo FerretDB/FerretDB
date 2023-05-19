@@ -194,8 +194,10 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		}
 
 		id := must.NotFail(doc.Get("_id"))
+		idBytes := must.NotFail(sjson.MarshalSingleValue(id))
+		docBytes := must.NotFail(sjson.Marshal(doc))
 
-		_, err = tx.ExecContext(ctx, query, must.NotFail(sjson.MarshalSingleValue(id)), must.NotFail(sjson.Marshal(doc)))
+		_, err = tx.ExecContext(ctx, query, docBytes, idBytes)
 		if err != nil {
 			return nil, err
 		}
