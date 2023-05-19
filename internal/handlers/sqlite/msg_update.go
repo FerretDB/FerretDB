@@ -121,7 +121,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			}
 
 			doc := u.Filter.DeepCopy()
-			if _, err = common.UpdateDocument(doc, u.Update); err != nil {
+			if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
 				return 0, 0, nil, err
 			}
 
@@ -155,7 +155,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			changed, err := common.UpdateDocument(doc, u.Update)
+			changed, err := common.UpdateDocument("update", doc, u.Update)
 			if err != nil {
 				return 0, 0, nil, err
 			}
