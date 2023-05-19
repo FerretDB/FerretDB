@@ -167,7 +167,7 @@ func TestReporterReport(t *testing.T) {
 		require.NoError(t, provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(false) }))
 		r.report(testutil.Ctx(t))
 
-		// Expect no update to be available, and the latest version to be previous received version.
+		// Expect no update to be available, and the latest version to be the version received before.
 		s = r.P.Get()
 		assert.False(t, s.UpdateAvailable)
 		assert.Equal(t, "0.4.0", s.LatestVersion)
