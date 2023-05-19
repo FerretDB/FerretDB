@@ -19,6 +19,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -211,26 +212,30 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 func (c *collection) deleteDocuments(ctx context.Context, db *sql.DB, docs []*types.Document) (int64, error) {
 	var deleted int64
 
+	var ids []any
 	for _, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 
-		query := fmt.Sprintf("DELETE FROM %s WHERE json_extract(sjson, '$._id') = ?", c.name)
-
-		value := must.NotFail(sjson.MarshalSingleValue(id))
-
-		res, err := db.ExecContext(ctx, query, value)
-		if err != nil {
-			return 0, err
-		}
-
-		d, err := res.RowsAffected()
-		if err != nil {
-			return 0, err
-		}
-
-		deleted += d
+		ids = append(ids, must.NotFail(sjson.MarshalSingleValue(id)))
 	}
 
+	query := fmt.Sprintf(
+		"DELETE FROM %s WHERE json_extract(sjson, '$._id') IN (?%s)",
+		c.name,
+		strings.Repeat(", ?", len(ids)-1),
+	)
+
+	res, err := db.ExecContext(ctx, query, ids...)
+	if err != nil {
+		return 0, err
+	}
+
+	d, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	deleted += d
 	return deleted, nil
 }
 
