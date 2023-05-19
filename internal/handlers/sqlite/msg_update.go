@@ -28,7 +28,6 @@ import (
 
 // MsgUpdate implements HandlerInterface.
 func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -63,6 +62,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
+// updateDocument iterate through all documents in collection and update them.
 func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesParams) (int32, int32, *types.Array, error) {
 	var matched, modified int32
 	var upserted *types.Array
