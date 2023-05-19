@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // collection implements backends.Collection interface.
@@ -85,8 +86,12 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	if err != nil {
 		return nil, err
 	}
-	// TODO: check error
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			// TODO: check error
+			tx.Rollback()
+		}
+	}()
 
 	var inserted int64
 
@@ -140,7 +145,68 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 // Update implements backends.Collection interface.
 func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
-	panic("TODO")
+	var err error
+
+	conn, err := c.db.b.pool.DB(c.db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	table, err := c.db.b.metadataStorage.tableName(ctx, c.db.name, c.name)
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf("UPDATE %s SET sjson = ? WHERE json_extract(sjson, '$._id') = ?", table)
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	iter := params.Docs.Iterator()
+	defer iter.Close()
+
+	var updated int64
+
+	for {
+		_, val, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		doc, ok := val.(*types.Document)
+		if !ok {
+			panic(fmt.Sprintf("expected document, got %T", val))
+		}
+
+		id := must.NotFail(doc.Get("_id"))
+
+		_, err = tx.ExecContext(ctx, query, must.NotFail(sjson.MarshalSingleValue(id)), must.NotFail(sjson.Marshal(doc)))
+		if err != nil {
+			return nil, err
+		}
+
+		updated++
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &backends.UpdateResult{
+		Updated: updated,
+	}, nil
 }
 
 // Delete implements backends.Collection interface.
