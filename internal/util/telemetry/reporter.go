@@ -245,8 +245,7 @@ func (r *Reporter) report(ctx context.Context) {
 
 		// If telemetry is disabled, we can't say anything about update availability or latest version.
 		if err := r.P.Update(func(s *state.State) {
-			s.LatestVersion = ""
-			s.IsUpdateAvailable = false
+			s.UpdateAvailable = false
 		}); err != nil {
 			r.L.Error("Failed to reset state.", zap.Error(err))
 		}
@@ -299,7 +298,7 @@ func (r *Reporter) report(ctx context.Context) {
 
 	if err = r.P.Update(func(s *state.State) {
 		s.LatestVersion = response.LatestVersion
-		s.IsUpdateAvailable = response.UpdateAvailable
+		s.UpdateAvailable = response.UpdateAvailable
 	}); err != nil {
 		r.L.Error("Failed to update state with latest version.", zap.Error(err))
 		return

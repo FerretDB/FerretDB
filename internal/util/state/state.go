@@ -30,11 +30,11 @@ type State struct {
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	TelemetryLocked   bool      `json:"-"`
-	Start             time.Time `json:"-"`
-	LatestVersion     string    `json:"-"` // empty if telemetry is disabled; latest version reported by telemetry otherwise
-	HandlerVersion    string    `json:"-"` // may be empty
-	IsUpdateAvailable bool      `json:"-"`
+	TelemetryLocked bool      `json:"-"`
+	Start           time.Time `json:"-"`
+	LatestVersion   string    `json:"-"` // latest version reported by telemetry
+	HandlerVersion  string    `json:"-"` // may be empty
+	UpdateAvailable bool      `json:"-"` // false if telemetry is disabled; latest state reported by telemetry otherwise
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -69,12 +69,12 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:              s.UUID,
-		Telemetry:         telemetry,
-		TelemetryLocked:   s.TelemetryLocked,
-		Start:             s.Start,
-		LatestVersion:     s.LatestVersion,
-		HandlerVersion:    s.HandlerVersion,
-		IsUpdateAvailable: s.IsUpdateAvailable,
+		UUID:            s.UUID,
+		Telemetry:       telemetry,
+		TelemetryLocked: s.TelemetryLocked,
+		Start:           s.Start,
+		LatestVersion:   s.LatestVersion,
+		HandlerVersion:  s.HandlerVersion,
+		UpdateAvailable: s.UpdateAvailable,
 	}
 }

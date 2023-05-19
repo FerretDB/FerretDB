@@ -114,12 +114,12 @@ func TestReporterReport(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	provider, err := state.NewProvider("")
-	require.NoError(t, err)
-
 	// Subtests are not run in parallel because they share the same telemetry mock.
 
 	t.Run("TelemetryEnabled", func(t *testing.T) {
+		provider, err := state.NewProvider("")
+		require.NoError(t, err)
+
 		opts := NewReporterOpts{
 			URL:           ts.URL,
 			F:             &Flag{v: pointer.ToBool(true)},
@@ -135,13 +135,13 @@ func TestReporterReport(t *testing.T) {
 		// Check the initial state of the provider, it has not called telemetry yet,
 		// no update is available and unaware of the latest version.
 		s := r.P.Get()
-		assert.False(t, s.IsUpdateAvailable)
+		assert.False(t, s.UpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 
 		// Call the telemetry server and check the state of the provider to be updated.
 		r.report(testutil.Ctx(t))
 		s = r.P.Get()
-		assert.True(t, s.IsUpdateAvailable)
+		assert.True(t, s.UpdateAvailable)
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to false on the telemetry side, and call the telemetry server again.
@@ -150,7 +150,7 @@ func TestReporterReport(t *testing.T) {
 
 		// Expect the state of provider to be updated.
 		s = r.P.Get()
-		assert.False(t, s.IsUpdateAvailable)
+		assert.False(t, s.UpdateAvailable)
 		assert.Equal(t, "0.3.4", s.LatestVersion)
 
 		// Set update available to true and update version, and call the telemetry server again.
@@ -160,20 +160,23 @@ func TestReporterReport(t *testing.T) {
 
 		// Expect the state and the version to be updated.
 		s = r.P.Get()
-		assert.True(t, s.IsUpdateAvailable)
+		assert.True(t, s.UpdateAvailable)
 		assert.Equal(t, "0.4.0", s.LatestVersion)
 
 		// Disable telemetry and call the telemetry server again.
 		require.NoError(t, provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(false) }))
 		r.report(testutil.Ctx(t))
 
-		// Expect no update to be available, and the latest version to be empty.
+		// Expect no update to be available, and the latest version to be previous received version.
 		s = r.P.Get()
-		assert.False(t, s.IsUpdateAvailable)
-		assert.Equal(t, "", s.LatestVersion)
+		assert.False(t, s.UpdateAvailable)
+		assert.Equal(t, "0.4.0", s.LatestVersion)
 	})
 
 	t.Run("TelemetryDisabled", func(t *testing.T) {
+		provider, err := state.NewProvider("")
+		require.NoError(t, err)
+
 		opts := NewReporterOpts{
 			URL:           ts.URL,
 			F:             &Flag{v: pointer.ToBool(false)},
@@ -189,13 +192,13 @@ func TestReporterReport(t *testing.T) {
 		// Check the initial state of the provider, it has not called telemetry yet,
 		// no update is available and unaware of the latest version.
 		s := r.P.Get()
-		assert.False(t, s.IsUpdateAvailable)
+		assert.False(t, s.UpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 
 		// Call the telemetry server, as telemetry is disabled, expect no update to the provider.
 		r.report(testutil.Ctx(t))
 		s = r.P.Get()
-		assert.False(t, s.IsUpdateAvailable)
+		assert.False(t, s.UpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)
 	})
 }
