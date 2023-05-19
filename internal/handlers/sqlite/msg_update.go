@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -82,19 +83,24 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		}
 
 		var resDocs []*types.Document
+
 		defer res.DocsIterator.Close()
 
 		for {
-			_, doc, err := res.DocsIterator.Next()
+			var doc *types.Document
+
+			_, doc, err = res.DocsIterator.Next()
 			if err != nil {
-				if err == iterator.ErrIteratorDone {
+				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}
 
 				return 0, 0, nil, err
 			}
 
-			matches, err := common.FilterDocument(doc, u.Filter)
+			var matches bool
+
+			matches, err = common.FilterDocument(doc, u.Filter)
 			if err != nil {
 				return 0, 0, nil, err
 			}
@@ -117,8 +123,8 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			doc := u.Filter.DeepCopy()
 			if _, err = common.UpdateDocument(doc, u.Update); err != nil {
 				return 0, 0, nil, err
-
 			}
+
 			if !doc.Has("_id") {
 				doc.Set("_id", types.NewObjectID())
 			}
@@ -138,6 +144,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			}
 
 			matched++
+
 			continue
 		}
 
@@ -151,16 +158,15 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			changed, err := common.UpdateDocument(doc, u.Update)
 			if err != nil {
 				return 0, 0, nil, err
-
 			}
 
 			if !changed {
 				continue
 			}
 
-			updateRes, err := db.Collection(params.Collection).Update(ctx, &backends.UpdateParams{
-				Docs: must.NotFail(types.NewArray(doc)),
-			})
+			updateRes, err := db.
+				Collection(params.Collection).
+				Update(ctx, &backends.UpdateParams{Docs: must.NotFail(types.NewArray(doc))})
 			if err != nil {
 				return 0, 0, nil, err
 			}
@@ -170,5 +176,4 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	}
 
 	return matched, modified, upserted, nil
-
 }

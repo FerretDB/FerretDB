@@ -86,6 +86,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		if err != nil {
 			// TODO: check error
@@ -163,6 +164,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		if err != nil {
 			tx.Rollback()
@@ -175,7 +177,9 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 	var updated int64
 
 	for {
-		_, val, err := iter.Next()
+		var val any
+
+		_, val, err = iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
