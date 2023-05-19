@@ -106,8 +106,11 @@ func TestReporterReport(t *testing.T) {
 		UpdateAvailable: true,
 	}
 
+	var serverCalled int // Number of times the server was called.
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
+			serverCalled++
 			w.WriteHeader(http.StatusCreated)
 			require.NoError(t, json.NewEncoder(w).Encode(telemetryResponse))
 		}
@@ -140,6 +143,7 @@ func TestReporterReport(t *testing.T) {
 
 		// Call the telemetry server and check the state of the provider to be updated.
 		r.report(testutil.Ctx(t))
+		assert.Equal(t, 1, serverCalled)
 		s = r.P.Get()
 		assert.True(t, s.UpdateAvailable)
 		assert.Equal(t, "0.3.4", s.LatestVersion)
@@ -147,6 +151,7 @@ func TestReporterReport(t *testing.T) {
 		// Set update available to false on the telemetry side, and call the telemetry server again.
 		telemetryResponse.UpdateAvailable = false
 		r.report(testutil.Ctx(t))
+		assert.Equal(t, 2, serverCalled)
 
 		// Expect the state of provider to be updated.
 		s = r.P.Get()
@@ -157,6 +162,7 @@ func TestReporterReport(t *testing.T) {
 		telemetryResponse.UpdateAvailable = true
 		telemetryResponse.LatestVersion = "0.4.0"
 		r.report(testutil.Ctx(t))
+		assert.Equal(t, 3, serverCalled)
 
 		// Expect the state and the version to be updated.
 		s = r.P.Get()
@@ -167,10 +173,8 @@ func TestReporterReport(t *testing.T) {
 		require.NoError(t, provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(false) }))
 		r.report(testutil.Ctx(t))
 
-		// Expect no update to be available, and the latest version to be the version received before.
-		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "0.4.0", s.LatestVersion)
+		// Expect no call to the telemetry server (number of calls should not change).
+		assert.Equal(t, 3, serverCalled)
 	})
 
 	t.Run("TelemetryDisabled", func(t *testing.T) {
@@ -197,6 +201,10 @@ func TestReporterReport(t *testing.T) {
 
 		// Call the telemetry server, as telemetry is disabled, expect no update to the provider.
 		r.report(testutil.Ctx(t))
+
+		// Expect no call to the telemetry server (number of calls should not change).
+		assert.Equal(t, 3, serverCalled)
+
 		s = r.P.Get()
 		assert.False(t, s.UpdateAvailable)
 		assert.Equal(t, "", s.LatestVersion)

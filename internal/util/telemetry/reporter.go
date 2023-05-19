@@ -243,13 +243,6 @@ func (r *Reporter) report(ctx context.Context) {
 	if s.Telemetry != nil && !*s.Telemetry {
 		r.L.Debug("Telemetry is disabled, skipping reporting.")
 
-		// If telemetry is disabled, we can't say anything about update availability, but we keep latest version info.
-		if err := r.P.Update(func(s *state.State) {
-			s.UpdateAvailable = false
-		}); err != nil {
-			r.L.Error("Failed to reset state.", zap.Error(err))
-		}
-
 		return
 	}
 
