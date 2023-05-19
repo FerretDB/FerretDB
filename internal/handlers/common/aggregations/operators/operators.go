@@ -43,8 +43,8 @@ var Operators = map[string]newOperatorFunc{
 	// please keep sorted alphabetically
 }
 
-func Get(v any) (Operator, error) {
-	operatorDoc, ok := v.(*types.Document)
+func Get(value any, stage, key string) (Operator, error) {
+	operatorDoc, ok := value.(*types.Document)
 	if !ok || operatorDoc.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidAccumulator,

@@ -75,19 +75,13 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			_, err := operators.Get(value)
-			if err != nil {
-				return nil, false, err
-				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
-				//	return nil, commonerrors.NewCommandErrorMsg(
-				//		commonerrors.ErrCommandNotFound,
-				//		fmt.Sprintf("projection %s is not supported",
-				//			types.FormatAnyValue(value),
-				//		),
-				//	)
-			}
-
-			validated.Set(key, value)
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
+			return nil, false, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrCommandNotFound,
+				fmt.Sprintf("projection %s is not supported",
+					types.FormatAnyValue(value),
+				),
+			)
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
 			result = true

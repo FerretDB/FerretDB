@@ -16,7 +16,6 @@
 package accumulators
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -29,13 +28,13 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 // Accumulator is a common interface for aggregation accumulation operators.
 type Accumulator interface {
 	// Accumulate documents and returns the result of applying operator.
-	Accumulate(ctx context.Context, in []*types.Document) (any, error)
+	Accumulate(in []*types.Document) (any, error)
 }
 
-// Get returns accumulator for provided value v with key.
+// Get returns accumulator for provided value.
 // TODO consider better design.
-func Get(stage, key string, v any) (Accumulator, error) {
-	accumulation, ok := v.(*types.Document)
+func Get(value any, stage, key string) (Accumulator, error) {
+	accumulation, ok := value.(*types.Document)
 	if !ok || accumulation.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidAccumulator,
@@ -72,24 +71,5 @@ var Accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCount,
 	"$sum":   newSum,
-	// please keep sorted alphabetically
-}
-
-// newOperatorFunc is a type for a function that creates a standard aggregation operator.
-type newOperatorFunc func(expression *types.Document) (Operator, error)
-
-// Operator is a common interface for standard aggregation operators.
-// TODO consider not creating operators as structs - they don't require to store the state.
-type Operator interface {
-	// Process document and returns the result of applying operator.
-	//
-	// TODO make sure that operators work always the same for every stage,
-	// if not - provide calling stage as an argument.
-	Process(ctx context.Context, in *types.Document) (any, error)
-}
-
-// Operators maps all standard aggregation operators.
-var Operators = map[string]newOperatorFunc{
-	// sorted alphabetically
 	// please keep sorted alphabetically
 }
