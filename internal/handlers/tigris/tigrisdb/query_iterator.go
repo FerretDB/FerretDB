@@ -50,7 +50,6 @@ func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.
 		iter:   titer,
 		token:  resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter

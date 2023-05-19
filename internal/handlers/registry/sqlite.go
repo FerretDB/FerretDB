@@ -24,6 +24,13 @@ func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		opts.Logger.Warn("SQLite handler is in alpha. It is not supported yet.")
 
-		return sqlite.New(opts.Logger)
+		handlerOpts := &sqlite.NewOpts{
+			Dir: opts.SQLiteURI,
+
+			L:             opts.Logger,
+			StateProvider: opts.StateProvider,
+		}
+
+		return sqlite.New(handlerOpts)
 	}
 }

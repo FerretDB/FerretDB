@@ -12,35 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commoncommands
 
 import (
 	"context"
+	"strconv"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgConnectionStatus is a common implementation of the connectionStatus command.
-func MsgConnectionStatus(ctx context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
-	users := types.MakeArray(1)
-
-	if username, _ := conninfo.Get(ctx).Auth(); username != "" {
-		users.Append(must.NotFail(types.NewDocument(
-			"user", username,
-		)))
-	}
+// MsgBuildInfo is a common implementation of the buildInfo command.
+func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2650
+	_ = stages.Stages
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"authInfo", must.NotFail(types.NewDocument(
-				"authenticatedUsers", users,
-				"authenticatedUserRoles", must.NotFail(types.NewArray()),
-				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
-			)),
+			"version", version.Get().MongoDBVersion,
+			"gitVersion", version.Get().Commit,
+			"modules", must.NotFail(types.NewArray()),
+			"sysInfo", "deprecated",
+			"versionArray", version.Get().MongoDBVersionArray,
+			"bits", int32(strconv.IntSize),
+			"debug", version.Get().DebugBuild,
+			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"buildEnvironment", version.Get().BuildEnvironment,
+
+			// our extensions
+			"ferretdbVersion", version.Get().Version,
+
 			"ok", float64(1),
 		))},
 	}))

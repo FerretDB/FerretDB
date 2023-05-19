@@ -41,7 +41,6 @@ func New(params *NewParams) *cursor {
 		NewParams: params,
 		token:     resource.NewToken(),
 	}
-
 	resource.Track(c, c.token)
 
 	return c

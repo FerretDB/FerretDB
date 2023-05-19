@@ -217,6 +217,9 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 | Command        | Argument | Status | Comments                                                  |
 | -------------- | -------- | ------ | --------------------------------------------------------- |
 | `authenticate` |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1731) |
+| `getnonce`     |          | ❌      | Deprecated                                                |
+| `logout`       |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1750) |
+| `saslStart`    |          | ✅      |                                                           |
 
 ### Role Management Commands
 

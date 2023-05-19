@@ -16,6 +16,8 @@ package sqlite
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	_ "modernc.org/sqlite"
 
@@ -23,28 +25,68 @@ import (
 )
 
 // backend implements backends.Backend interface.
-type backend struct{}
+type backend struct {
+	dir             string
+	pool            *connPool
+	metadataStorage *metadataStorage
+}
+
+// NewBackendParams represents the parameters of NewBackend function.
+type NewBackendParams struct {
+	Dir string
+}
 
 // NewBackend creates a new SQLite backend.
-func NewBackend() backends.Backend {
-	return backends.BackendContract(new(backend))
+func NewBackend(params *NewBackendParams) (backends.Backend, error) {
+	pool := newConnPool(params.Dir)
+
+	storage, err := newMetadataStorage(params.Dir, pool)
+	if err != nil {
+		return nil, err
+	}
+
+	return backends.BackendContract(&backend{
+		dir:             params.Dir,
+		pool:            pool,
+		metadataStorage: storage,
+	}), nil
+}
+
+// Close implements backends.Backend interface.
+func (b *backend) Close() {
+	b.pool.Close()
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams) backends.Database {
-	return newDatabase(b)
+func (b *backend) Database(name string) backends.Database {
+	return newDatabase(b, name)
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	panic("not implemented") // TODO: Implement
+	list, err := b.metadataStorage.listDatabases()
+	if err != nil {
+		return nil, err
+	}
+
+	var result backends.ListDatabasesResult
+	for _, db := range list {
+		result.Databases = append(result.Databases, backends.DatabaseInfo{Name: db})
+	}
+
+	return &result, nil
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	panic("not implemented") // TODO: Implement
+	err := os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return nil
 }
 
 // check interfaces

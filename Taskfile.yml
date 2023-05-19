@@ -176,10 +176,11 @@ tasks:
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
-    desc: "Run integration tests for `pg` and `tigris` in parallel"
+    desc: "Run integration tests for several backends in parallel"
     deps:
       - test-integration-pg
       - test-integration-mongodb
+      # no test-integration-sqlite yet
       # disable for now - test-integration-tigris
       # no test-integration-hana
 
@@ -193,6 +194,17 @@ tasks:
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+
+  test-integration-sqlite:
+    desc: "Run integration tests for `sqlite` handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-sqlite.txt .
+        -target-backend=ferretdb-sqlite
+        -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
 
   test-integration-tigris:
@@ -282,6 +294,18 @@ tasks:
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        --test-records-dir=tmp/records
+
+  run-sqlite:
+    desc: "Run FerretDB with `sqlite` handler"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=sqlite
         --test-records-dir=tmp/records
 
   run-tigris:
@@ -405,6 +429,11 @@ tasks:
     desc: "Run psql"
     cmds:
       - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
+
+  sqlite3:
+    desc: "Run sqlite3"
+    cmds:
+      - sqlite3 *.sqlite
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
