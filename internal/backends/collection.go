@@ -118,12 +118,13 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 
 // DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
-	// TODO
+	Filter  *types.Document
+	Limited bool
 }
 
 // DeleteResult represents the results of Collection.Delete method.
 type DeleteResult struct {
-	// TODO
+	Deleted int64
 }
 
 // Delete deletes documents in collection.

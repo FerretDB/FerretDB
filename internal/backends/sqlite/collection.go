@@ -16,14 +16,17 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // collection implements backends.Collection interface.
@@ -145,7 +148,90 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 // Delete implements backends.Collection interface.
 func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
-	panic("TODO")
+	conn, err := c.db.b.pool.DB(c.db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.Query(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	iter := res.DocsIterator
+
+	defer iter.Close()
+
+	resDocs := make([]*types.Document, 0, 16)
+
+	for {
+		var doc *types.Document
+
+		if _, doc, err = iter.Next(); err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, err
+		}
+
+		var matches bool
+
+		if matches, err = common.FilterDocument(doc, params.Filter); err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		resDocs = append(resDocs, doc)
+
+		// if limit is set, no need to fetch all the documents
+		if params.Limited {
+			break
+		}
+	}
+
+	// if no documents matched, there is nothing to delete
+	if len(resDocs) == 0 {
+		return nil, nil
+	}
+
+	rowsDeleted, err := c.deleteDocuments(ctx, conn, resDocs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &backends.DeleteResult{
+		Deleted: rowsDeleted,
+	}, nil
+}
+
+func (c *collection) deleteDocuments(ctx context.Context, db *sql.DB, docs []*types.Document) (int64, error) {
+	var deleted int64
+
+	for _, doc := range docs {
+		id := must.NotFail(doc.Get("_id"))
+
+		query := fmt.Sprintf("DELETE FROM %s WHERE json_extract(sjson, '$._id') = ?", c.name)
+
+		value := must.NotFail(sjson.MarshalSingleValue(id))
+
+		res, err := db.ExecContext(ctx, query, value)
+		if err != nil {
+			return 0, err
+		}
+
+		d, err := res.RowsAffected()
+		if err != nil {
+			return 0, err
+		}
+
+		deleted += d
+	}
+
+	return deleted, nil
 }
 
 // check interfaces
