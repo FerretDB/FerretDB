@@ -53,7 +53,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT sjson FROM %s", table)
+	query := fmt.Sprintf(`SELECT sjson FROM "%s"`, table)
 
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 			return nil, lazyerrors.Errorf("expected document, got %T", val)
 		}
 
-		query := fmt.Sprintf(`INSERT INTO %s (sjson) VALUES (?)`, table)
+		query := fmt.Sprintf(`INSERT INTO "%s" (sjson) VALUES (?)`, table)
 
 		var bytes []byte
 
@@ -158,7 +158,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, err
 	}
 
-	query := fmt.Sprintf("UPDATE %s SET sjson = ? WHERE json_extract(sjson, '$._id') = ?", table)
+	query := fmt.Sprintf(`UPDATE "%s" SET sjson = ? WHERE json_extract(sjson, '$._id') = ?`, table)
 
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
