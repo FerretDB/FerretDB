@@ -1,10 +1,9 @@
 ---
 sidebar_position: 1
+slug: /aggregation-pipeline-and-commands/
 ---
 
-# Aggregation operations
-
-Here we should mention the differences between the commands, stages, and operators, and what they are all used for.
+# Aggregation pipeline and commands
 
 Aggregation operations involve performing various operations on a large number of data records, such as data grouping, sorting, restructuring, or modifying.
 These operations pass through one or more stages, which make up a pipeline.
@@ -16,7 +15,7 @@ As shown above, the documents pass through the pipeline with the result of the p
 
 In the pipeline, a complex query is broken down into separate stages where the record goes through a series of transformations until it finally produces the desired result.
 
-This section of the documentation will focus on [aggregation commands](#aggregation-commands), [aggregation stages](aggregation-stages), and aggregation operators.
+This section of the documentation will focus on [aggregation commands](#aggregation-commands), [aggregation stages](../aggregation-stages), and aggregation operators.
 
 ## Aggregation commands
 
@@ -28,9 +27,7 @@ The `aggregate` command is used for performing aggregation operations on a colle
 It lets you specify aggregation operations in a pipeline consisting of one or more stages and operators for transforming and analyzing data, such as grouping, filtering, sorting, projecting, and calculating aggregates.
 
 ```js
-
 // Aggregation pipeline to perform aggregation operations on a collection
-
 db.collection.aggregate([
   // Stage 1: Matching documents based on a specific field and value
   { $match: { field: value } },
@@ -38,8 +35,6 @@ db.collection.aggregate([
   { $group: { _id: "$category", total: { $sum: "$quantity" } } }
 ])
 ```
-
-See aggregation pipelines for more details on the various stages.
 
 ### `count`
 
