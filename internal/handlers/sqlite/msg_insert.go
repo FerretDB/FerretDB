@@ -38,12 +38,13 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	res, err := h.b.Database(params.DB).
-		Collection(params.Collection).
-		Insert(ctx, &backends.InsertParams{
-			Ordered: params.Ordered,
-			Docs:    params.Docs,
-		})
+	db := h.b.Database(params.DB)
+	defer db.Close()
+
+	res, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
+		Ordered: params.Ordered,
+		Docs:    params.Docs,
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
