@@ -28,6 +28,7 @@ func init() {
 			Dir: opts.SQLiteURI,
 
 			L:             opts.Logger,
+			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 		}
 

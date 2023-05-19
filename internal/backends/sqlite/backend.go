@@ -82,11 +82,11 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
 	err := os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
-	if err != nil && !os.IsNotExist(err) {
-		return err
+	if os.IsNotExist(err) {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
 	}
 
-	return nil
+	return err
 }
 
 // check interfaces
