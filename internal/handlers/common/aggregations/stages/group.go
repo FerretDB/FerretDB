@@ -22,7 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators/accumulators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -91,7 +91,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 			continue
 		}
 
-		accumulator, err := operators.GetAccumulator("$group", field, v)
+		accumulator, err := accumulators.Get("$group", field, v)
 		if err != nil {
 			return nil, err
 		}

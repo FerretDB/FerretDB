@@ -17,63 +17,9 @@ package operators
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
-
-// newAccumulatorFunc is a type for a function that creates an accumulation operator.
-type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
-
-// Accumulator is a common interface for aggregation accumulation operators.
-type Accumulator interface {
-	// Accumulate documents and returns the result of applying operator.
-	Accumulate(ctx context.Context, in []*types.Document) (any, error)
-}
-
-// GetAccumulator returns accumulator for provided value v with key.
-// TODO consider better design.
-func GetAccumulator(stage, key string, v any) (Accumulator, error) {
-	accumulation, ok := v.(*types.Document)
-	if !ok || accumulation.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupInvalidAccumulator,
-			fmt.Sprintf("The field '%s' must be an accumulator object", key),
-			stage+" (stage)",
-		)
-	}
-
-	// accumulation document contains only one field.
-	if accumulation.Len() > 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupMultipleAccumulator,
-			fmt.Sprintf("The field '%s' must specify one accumulator", key),
-			stage+" (stage)",
-		)
-	}
-
-	operator := accumulation.Command()
-
-	newAccumulator, ok := Accumulators[operator]
-	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			fmt.Sprintf("%s accumulator %q is not implemented yet", stage, operator),
-			operator+" (accumulator)",
-		)
-	}
-
-	return newAccumulator(accumulation)
-}
-
-// Accumulators maps all aggregation accumulators.
-var Accumulators = map[string]newAccumulatorFunc{
-	// sorted alphabetically
-	"$count": newCount,
-	"$sum":   newSum,
-	// please keep sorted alphabetically
-}
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
 type newOperatorFunc func(expression *types.Document) (Operator, error)
