@@ -200,7 +200,7 @@ func prepareDocumentForInsert(params *FindAndModifyParams) (*types.Document, err
 	insert := must.NotFail(types.NewDocument())
 
 	if params.HasUpdateOperators {
-		if _, err := UpdateDocument(insert, params.Update); err != nil {
+		if _, err := UpdateDocument("findAndModify", insert, params.Update); err != nil {
 			return nil, err
 		}
 	} else {
@@ -224,7 +224,7 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 	update := docs[0].DeepCopy()
 
 	if params.HasUpdateOperators {
-		if _, err := UpdateDocument(update, params.Update); err != nil {
+		if _, err := UpdateDocument("findAndModify", update, params.Update); err != nil {
 			return nil, err
 		}
 
