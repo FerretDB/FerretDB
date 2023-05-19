@@ -202,7 +202,9 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 			return nil, err
 		}
 
-		rowsUpdated, err := res.RowsAffected()
+		var rowsUpdated int64
+
+		rowsUpdated, err = res.RowsAffected()
 		if err != nil {
 			return nil, err
 		}
