@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package aggregations
+package projection
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -73,10 +75,19 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			return nil, false, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
-			)
+			_, err := operators.Get(value)
+			if err != nil {
+				return nil, false, err
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
+				//	return nil, commonerrors.NewCommandErrorMsg(
+				//		commonerrors.ErrCommandNotFound,
+				//		fmt.Sprintf("projection %s is not supported",
+				//			types.FormatAnyValue(value),
+				//		),
+				//	)
+			}
+
+			validated.Set(key, value)
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
 			result = true
@@ -223,13 +234,24 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
-				fmt.Sprintf("projection %s is not supported",
-					types.FormatAnyValue(value),
-				),
-			)
+			op, err := operators.Get(value)
+			if err != nil {
+				return nil, err
+				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
+				//	return nil, commonerrors.NewCommandErrorMsg(
+				//		commonerrors.ErrCommandNotFound,
+				//		fmt.Sprintf("projection %s is not supported",
+				//			types.FormatAnyValue(value),
+				//		),
+				//	)
+			}
+
+			v, err := op.Process(context.TODO(), doc)
+			if err != nil {
+				return nil, err
+			}
+
+			projected.Set(key, v)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all these types are treated as new fields value
