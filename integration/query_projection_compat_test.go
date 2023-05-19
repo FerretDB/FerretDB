@@ -30,7 +30,7 @@ func TestQueryProjectionCompat(t *testing.T) {
 	// topLevelFieldsIntegers contains documents with several top level fields with integer values.
 	topLevelFieldsIntegers := shareddata.NewTopLevelFieldsProvider(
 		"TopLevelFieldsIntegers",
-		[]string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+		nil,
 		map[string]map[string]any{
 			"ferretdb-tigris": {
 				"$tigrisSchemaString": `{

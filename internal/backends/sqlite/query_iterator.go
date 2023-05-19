@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigrisdb
+package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 
-	"github.com/tigrisdata/tigris-client-go/driver"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -28,27 +27,36 @@ import (
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
-type queryIterator struct {
-	ctx    context.Context
-	schema *tjson.Schema
+type queryIterator struct { //nolint:vet // for readability
+	ctx       context.Context
+	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
 
 	m    sync.Mutex
-	iter driver.Iterator
+	rows *sql.Rows
 
 	token *resource.Token
 }
 
-// newIterator returns a new queryIterator for the given driver.Iterator.
+type queryIteratorParams struct {
+	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
+}
+
+// newQueryIterator returns a new queryIterator for the given pgx.Rows.
 //
-// Iterator's Close method closes driver.Iterator.
+// Iterator's Close method closes rows.
 //
-// No documents are possible and return already done iterator.
-func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.Schema) types.DocumentsIterator {
+// Nil rows are possible and return already done iterator.
+func newQueryIterator(ctx context.Context, rows *sql.Rows, params *queryIteratorParams) types.DocumentsIterator {
+	unmarshalFunc := params.unmarshal
+	if unmarshalFunc == nil {
+		unmarshalFunc = sjson.Unmarshal
+	}
+
 	iter := &queryIterator{
-		ctx:    ctx,
-		schema: schema,
-		iter:   titer,
-		token:  resource.NewToken(),
+		ctx:       ctx,
+		unmarshal: unmarshalFunc,
+		rows:      rows,
+		token:     resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
@@ -72,29 +80,16 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
 	// ignore context error, if any, if iterator is already closed
-	if iter.iter == nil {
+	if iter.rows == nil {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
 	if err := context.Cause(iter.ctx); err != nil {
-		return unused, nil, err
+		return unused, nil, lazyerrors.Error(err)
 	}
 
-	var document driver.Document
-
-	ok := iter.iter.Next(&document)
-	if !ok {
-		err := iter.iter.Err()
-
-		switch {
-		case err == nil:
-			// nothing
-		case IsInvalidArgument(err):
-			// Skip errors from filtering different types.
-			// For example, given document {v: 42} and filter {v: "42"},
-			// MongoDB would skip that document because the type is different.
-			// Tigris returns a schema error in such cases that we ignore.
-		default:
+	if !iter.rows.Next() {
+		if err := iter.rows.Err(); err != nil {
 			return unused, nil, lazyerrors.Error(err)
 		}
 
@@ -105,12 +100,17 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	doc, err := tjson.Unmarshal(document, iter.schema)
+	var b []byte
+	if err := iter.rows.Scan(&b); err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	doc, err := iter.unmarshal(b)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	return unused, doc.(*types.Document), nil
+	return unused, doc, nil
 }
 
 // Close implements iterator.Interface.
@@ -125,10 +125,9 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	if iter.iter != nil {
-		iter.iter.Close()
-
-		iter.iter = nil
+	if iter.rows != nil {
+		iter.rows.Close()
+		iter.rows = nil
 	}
 
 	resource.Untrack(iter, iter.token)

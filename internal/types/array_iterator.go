@@ -34,7 +34,6 @@ func newArrayIterator(array *Array) iterator.Interface[int, any] {
 		arr:   array,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter

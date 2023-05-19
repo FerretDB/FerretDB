@@ -39,7 +39,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
-	db, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,10 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		}
 	}
 
-	res, err := h.b.Database(db).ListCollections(ctx, nil)
+	db := h.b.Database(dbName)
+	defer db.Close()
+
+	res, err := db.ListCollections(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -89,7 +92,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
-				"ns", db+".$cmd.listCollections",
+				"ns", dbName+".$cmd.listCollections",
 				"firstBatch", collections,
 			)),
 			"ok", float64(1),

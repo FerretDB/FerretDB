@@ -44,7 +44,6 @@ func NewConnInfo() *ConnInfo {
 	connInfo := &ConnInfo{
 		token: resource.NewToken(),
 	}
-
 	resource.Track(connInfo, connInfo.token)
 
 	return connInfo

@@ -167,10 +167,13 @@ issues:
       path: cmd/envtool
       text: pgdb
 
-    # only `pg` handler can import `sjson` package, no other handler can do that
+    # only `pg` handler and `sqlite` backend can import `sjson` package, no other handlers or backends can do that
     - linters: [depguard]
       path: internal/handlers/pg
       text: sjson
+    - linters: [depguard]
+      path: internal/backends/sqlite
+      test: sjson
 
     # only `tigris` handler can import `tigrisdb` package, no other handler can do that
     - linters: [depguard]

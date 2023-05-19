@@ -55,7 +55,6 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 		rows:      rows,
 		token:     resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter
