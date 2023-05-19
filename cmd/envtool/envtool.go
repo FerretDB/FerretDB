@@ -348,14 +348,14 @@ func rmdir(paths ...string) error {
 }
 
 // read will show the content of a file.
-func read(paths ...string) error {
+func read(w io.Writer, paths ...string) error {
 	for _, path := range paths {
 		b, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
 
-		fmt.Print(string(b))
+		fmt.Fprint(w, string(b))
 	}
 
 	return nil
@@ -408,7 +408,7 @@ func main() {
 	case "shell rmdir <path>":
 		err = rmdir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
-		err = read(cli.Shell.Read.Paths...)
+		err = read(os.Stdout, cli.Shell.Read.Paths...)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
