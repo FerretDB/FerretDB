@@ -17,7 +17,9 @@ package operators
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -37,5 +39,39 @@ type Operator interface {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
+	"$type": newType,
 	// please keep sorted alphabetically
+}
+
+func Get(v any) (Operator, error) {
+	operatorDoc, ok := v.(*types.Document)
+	if !ok || operatorDoc.Len() == 0 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupInvalidAccumulator,
+			fmt.Sprintf("The field '' must be an accumulator object"),
+			" (stage)",
+		)
+	}
+
+	// accumulation document contains only one field.
+	if operatorDoc.Len() > 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupMultipleAccumulator,
+			fmt.Sprintf("The field '' must specify one accumulator"),
+			" (stage)",
+		)
+	}
+
+	operator := operatorDoc.Command()
+
+	newOperator, ok := Operators[operator]
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("%s accumulator %q is not implemented yet", "", operator),
+			operator+" (operator)",
+		)
+	}
+
+	return newOperator(operatorDoc)
 }
