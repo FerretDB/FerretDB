@@ -50,6 +50,20 @@ func (s *State) TelemetryString() string {
 	return "disabled"
 }
 
+// DisableTelemetry disables telemetry.
+//
+// It also sets UpdateAvailable to false because if telemetry is disabled then there is no way to check for updates
+// and no guarantee if update is available.
+func (s *State) DisableTelemetry() {
+	s.Telemetry = pointer.ToBool(false)
+	s.UpdateAvailable = false
+}
+
+// EnableTelemetry enables telemetry.
+func (s *State) EnableTelemetry() {
+	s.Telemetry = pointer.ToBool(true)
+}
+
 // fill replaces all unset or invalid values with default.
 func (s *State) fill() {
 	if _, err := uuid.Parse(s.UUID); err != nil {

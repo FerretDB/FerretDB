@@ -120,6 +120,8 @@ func TestReporterReport(t *testing.T) {
 	// Subtests are not run in parallel because they share the same telemetry mock.
 
 	t.Run("TelemetryEnabled", func(t *testing.T) {
+		serverCalled = 0 // telemetry server was not called yet.
+
 		provider, err := state.NewProvider("")
 		require.NoError(t, err)
 
@@ -170,14 +172,34 @@ func TestReporterReport(t *testing.T) {
 		assert.Equal(t, "0.4.0", s.LatestVersion)
 
 		// Disable telemetry and call the telemetry server again.
-		require.NoError(t, provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(false) }))
+		require.NoError(t, provider.Update(func(s *state.State) { s.DisableTelemetry() }))
 		r.report(testutil.Ctx(t))
 
 		// Expect no call to the telemetry server (number of calls should not change).
 		assert.Equal(t, 3, serverCalled)
+
+		// Expect no update available and latest version equal to the previous state.
+		s = r.P.Get()
+		assert.False(t, s.UpdateAvailable)
+		assert.Equal(t, "0.4.0", s.LatestVersion)
+
+		// Enable telemetry
+		require.NoError(t, provider.Update(func(s *state.State) { s.EnableTelemetry() }))
+
+		// Set a newer version to expect.
+		telemetryResponse.LatestVersion = "0.5.0"
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 4, serverCalled)
+
+		// Expect no update available and latest version equal to the previous state.
+		s = r.P.Get()
+		assert.True(t, s.UpdateAvailable)
+		assert.Equal(t, "0.5.0", s.LatestVersion)
 	})
 
 	t.Run("TelemetryDisabled", func(t *testing.T) {
+		serverCalled = 0 // telemetry server was not called yet.
+
 		provider, err := state.NewProvider("")
 		require.NoError(t, err)
 
@@ -203,7 +225,7 @@ func TestReporterReport(t *testing.T) {
 		r.report(testutil.Ctx(t))
 
 		// Expect no call to the telemetry server (number of calls should not change).
-		assert.Equal(t, 3, serverCalled)
+		assert.Equal(t, 0, serverCalled)
 
 		s = r.P.Get()
 		assert.False(t, s.UpdateAvailable)
