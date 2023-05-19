@@ -17,11 +17,34 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgServerStatus implements HandlerInterface.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	res, err := common.ServerStatus(h.StateProvider.Get(), h.Metrics)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.Set("catalogStats", must.NotFail(types.NewDocument(
+		"collections", int32(0), // TODO
+		"capped", int32(0),
+		"clustered", int32(0),
+		"timeseries", int32(0),
+		"views", int32(0),
+		"internalCollections", int32(0),
+		"internalViews", int32(0),
+	)))
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{res},
+	}))
+
+	return &reply, nil
 }
