@@ -80,7 +80,7 @@ EOF
 
 # final stage
 
-FROM postgres:15.2 AS all-in-one
+FROM postgres:15.3 AS all-in-one
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
