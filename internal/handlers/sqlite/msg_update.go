@@ -39,8 +39,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO: check if we have to create collection by hand here
-
 	matched, modified, upserted, err := h.updateDocument(ctx, params)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -71,6 +69,11 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 
 	db := h.b.Database(params.DB)
 	defer db.Close()
+
+	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
+	if err != nil {
+		return 0, 0, nil, err
+	}
 
 	for _, u := range params.Updates {
 		res, err := db.Collection(params.Collection).Query(ctx, nil)
