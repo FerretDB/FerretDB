@@ -38,6 +38,7 @@ type updateCompatTestCase struct {
 	update      bson.D                   // required if replace is nil
 	replace     bson.D                   // required if update is nil
 	filter      bson.D                   // defaults to bson.D{{"_id", id}}
+	updateOpts  *options.UpdateOptions   // defaults to nil
 	replaceOpts *options.ReplaceOptions  // defaults to nil
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
@@ -109,8 +110,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							// TODO replace with UpdateMany/ReplaceMany
 							// https://github.com/FerretDB/FerretDB/issues/1507
 							if update != nil {
-								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
-								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)
+								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update, tc.updateOpts)
+								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update, tc.updateOpts)
 							} else {
 								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace, tc.replaceOpts)
 								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace, tc.replaceOpts)
@@ -447,6 +448,12 @@ func TestUpdateCompat(t *testing.T) {
 			replace:     bson.D{{"_id", "new"}},
 			replaceOpts: &options.ReplaceOptions{Upsert: pointer.ToBool(true)},
 			resultType:  emptyResult,
+		},
+		"UpdateNonExistentUpsert": {
+			filter:     bson.D{{"_id", "non-existent"}},
+			update:     bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			updateOpts: &options.UpdateOptions{Upsert: pointer.ToBool(true)},
+			resultType: emptyResult,
 		},
 	}
 
