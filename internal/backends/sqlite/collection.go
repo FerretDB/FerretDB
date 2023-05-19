@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -165,9 +166,17 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, err
 	}
 
+	var committed bool
+
 	defer func() {
-		if err != nil {
-			tx.Rollback()
+		if committed {
+			return
+		}
+
+		if rerr := tx.Rollback(); rerr != nil {
+			if err == nil {
+				err = rerr
+			}
 		}
 	}()
 
@@ -197,7 +206,8 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		idBytes := must.NotFail(sjson.MarshalSingleValue(id))
 		docBytes := must.NotFail(sjson.Marshal(doc))
 
-		res, err := tx.ExecContext(ctx, query, docBytes, idBytes)
+		var res sql.Result
+		res, err = tx.ExecContext(ctx, query, docBytes, idBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -220,6 +230,8 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 	if err != nil {
 		return nil, err
 	}
+
+	committed = true
 
 	return &backends.UpdateResult{
 		Updated: updated,
