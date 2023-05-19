@@ -208,9 +208,9 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 		fs := strings.Split(field.Field, ".")
 		transformedParts := make([]string, len(fs))
 
-		for i, f := range fs {
+		for j, f := range fs {
 			// It's important to sanitize field.Field data here, as it's a user-provided value.
-			transformedParts[i] = quoteString(f)
+			transformedParts[j] = quoteString(f)
 		}
 		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, strings.Join(transformedParts, " -> "), order)
 	}
