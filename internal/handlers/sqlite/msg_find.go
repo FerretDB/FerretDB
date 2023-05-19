@@ -63,19 +63,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return &reply, nil
 	}
 
-	var iter types.DocumentsIterator
-
 	db := h.b.Database(params.DB)
 	defer db.Close()
 
-	res, err := db.
-		Collection(params.Collection).
-		Query(ctx, nil)
+	res, err := db.Collection(params.Collection).Query(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter = res.DocsIterator
+	iter := res.DocsIterator
 
 	closer := iterator.NewMultiCloser(iter)
 	defer closer.Close()
