@@ -12,25 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
-
-import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgCurrentOp is a common implementation of currentOp command.
-func MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"inprog", must.NotFail(types.NewArray()),
-			"ok", float64(1),
-		))},
-	}))
-
-	return &reply, nil
-}
+// Package sqlite provides SQLite backend.
+package sqlite

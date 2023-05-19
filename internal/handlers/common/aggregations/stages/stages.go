@@ -26,8 +26,8 @@ import (
 // newStageFunc is a type for a function that creates a new aggregation stage.
 type newStageFunc func(stage *types.Document) (aggregations.Stage, error)
 
-// stages maps all supported aggregation stages.
-var stages = map[string]newStageFunc{
+// Stages maps all supported aggregation Stages.
+var Stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$collStats": newCollStats,
 	"$count":     newCount,
@@ -56,7 +56,6 @@ var unsupportedStages = map[string]struct{}{
 	"$geoNear":                {},
 	"$graphLookup":            {},
 	"$indexStats":             {},
-	"$limit":                  {},
 	"$listLocalSessions":      {},
 	"$listSessions":           {},
 	"$lookup":                 {},
@@ -72,7 +71,6 @@ var unsupportedStages = map[string]struct{}{
 	"$set":                    {},
 	"$setWindowFields":        {},
 	"$sharedDataDistribution": {},
-	"$skip":                   {},
 	"$sortByCount":            {},
 	"$unionWith":              {},
 	"$unset":                  {},
@@ -91,16 +89,24 @@ func NewStage(stage *types.Document) (aggregations.Stage, error) {
 
 	name := stage.Command()
 
-	f, ok := stages[name]
-	if !ok {
-		if _, ok := unsupportedStages[name]; ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
-				name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
-			)
-		}
+	f, supported := Stages[name]
+	_, unsupported := unsupportedStages[name]
 
+	switch {
+	case supported && unsupported:
+		panic(fmt.Sprintf("stage %q is in both `stages` and `unsupportedStages`", name))
+
+	case supported && !unsupported:
+		return f(stage)
+
+	case !supported && unsupported:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+		)
+
+	case !supported && !unsupported:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidAccumulator,
 			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
@@ -108,5 +114,5 @@ func NewStage(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
-	return f(stage)
+	panic("not reached")
 }

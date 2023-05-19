@@ -15,8 +15,6 @@
 package aggregations
 
 import (
-	"errors"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -30,13 +28,8 @@ import (
 // Close method closes the underlying iterator.
 func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	projectionValidated, inclusion, err := ValidateProjection(projection)
-	if errors.Is(err, errProjectionEmpty) {
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
-		return iter, nil
-	}
-
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	res := &projectionIterator{

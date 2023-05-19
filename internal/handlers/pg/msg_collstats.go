@@ -82,7 +82,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	pairs := []any{
 		"ns", db + "." + collection,
-		"size", stats.SizeCollection / scale,
+		"size", stats.SizeCollection / int64(scale),
 		"count", stats.CountObjects,
 	}
 
@@ -92,10 +92,10 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	pairs = append(pairs,
-		"storageSize", stats.SizeTotal/scale,
+		"storageSize", stats.SizeTotal/int64(scale),
 		"nindexes", stats.CountIndexes,
-		"totalIndexSize", stats.SizeIndexes/scale,
-		"totalSize", stats.SizeTotal/scale,
+		"totalIndexSize", stats.SizeIndexes/int64(scale),
+		"totalSize", stats.SizeTotal/int64(scale),
 		"scaleFactor", scale,
 		"ok", float64(1),
 	)
