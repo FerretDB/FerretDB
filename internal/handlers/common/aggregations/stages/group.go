@@ -38,6 +38,10 @@ import (
 //		...
 //		<groupBy[N].outputField>: {accumulatorN: expressionN},
 //	}}
+//
+// $group uses group expression to group documents that have the same evaluated expression.
+// The evaluated expression becomes the _id for that group of documents.
+// For each group of documents, accumulators are applied.
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
