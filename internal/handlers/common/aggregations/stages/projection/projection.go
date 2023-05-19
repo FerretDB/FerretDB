@@ -228,16 +228,9 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			op, err := operators.Get(value)
+			op, err := operators.Get(value, "$project", key)
 			if err != nil {
 				return nil, err
-				// TODO: https://github.com/FerretDB/FerretDB/issues/2633
-				//	return nil, commonerrors.NewCommandErrorMsg(
-				//		commonerrors.ErrCommandNotFound,
-				//		fmt.Sprintf("projection %s is not supported",
-				//			types.FormatAnyValue(value),
-				//		),
-				//	)
 			}
 
 			v, err := op.Process(context.TODO(), doc)

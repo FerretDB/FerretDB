@@ -39,7 +39,6 @@ type Operator interface {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
-	"$type": newType,
 	// please keep sorted alphabetically
 }
 
