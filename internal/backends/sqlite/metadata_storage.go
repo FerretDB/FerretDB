@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -49,6 +51,10 @@ var (
 func newMetadataStorage(dbPath string, pool *connPool) (*metadataStorage, error) {
 	if dbPath == "" {
 		return nil, errors.New("db path is empty")
+	}
+
+	if err := os.MkdirAll(dbPath, 0o777); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	storage := metadataStorage{
