@@ -71,7 +71,14 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 		)
 	}
 
-	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
+	if err := provider.Update(func(s *state.State) {
+		s.Telemetry = pointer.ToBool(telemetryState)
+
+		// If telemetry is disabled, there shouldn't be information about updates.
+		if !telemetryState {
+			s.UpdateAvailable = false
+		}
+	}); err != nil {
 		return nil, err
 	}
 
