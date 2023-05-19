@@ -34,7 +34,7 @@ type State struct {
 	Start           time.Time `json:"-"`
 	LatestVersion   string    `json:"-"` // latest version reported by beacon
 	HandlerVersion  string    `json:"-"` // may be empty
-	UpdateAvailable bool      `json:"-"` // false if telemetry is disabled; latest state reported by telemetry otherwise
+	UpdateAvailable bool      `json:"-"` // false if telemetry is disabled; value reported by beacon otherwise
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
