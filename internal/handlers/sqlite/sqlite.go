@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // notImplemented returns error for stub command handlers.
@@ -46,7 +47,8 @@ type Handler struct {
 type NewOpts struct {
 	Dir string
 
-	L *zap.Logger
+	L             *zap.Logger
+	StateProvider *state.Provider
 }
 
 // New returns a new handler.

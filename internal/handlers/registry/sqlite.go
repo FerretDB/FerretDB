@@ -27,7 +27,8 @@ func init() {
 		handlerOpts := &sqlite.NewOpts{
 			Dir: opts.SQLiteURI,
 
-			L: opts.Logger,
+			L:             opts.Logger,
+			StateProvider: opts.StateProvider,
 		}
 
 		return sqlite.New(handlerOpts)
