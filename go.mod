@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/client_model v0.4.0
 	github.com/prometheus/common v0.43.0
 	github.com/stretchr/testify v1.8.2
-	github.com/tigrisdata/tigris-client-go v1.0.0-beta.37
+	github.com/tigrisdata/tigris-client-go v1.1.0-next.3
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/trace v1.15.1
 	go.uber.org/zap v1.24.0
