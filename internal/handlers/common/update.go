@@ -35,8 +35,9 @@ import (
 // UpdateDocument updates the given document with a series of update operators.
 // Returns true if document was changed.
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
-// TODO findAndModify returns CommandError https://github.com/FerretDB/FerretDB/issues/2440
-func UpdateDocument(doc, update *types.Document) (bool, error) {
+// UpdateDocument returns CommandError for findAndModify case-insensitive command name,
+// WriteError for other commands.
+func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
 
@@ -64,13 +65,13 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$set":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), false)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
 			if err != nil {
 				return false, err
 			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(doc, updateV.(*types.Document), true)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
 			if err != nil {
 				return false, err
 			}
@@ -84,14 +85,8 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 				path, err = types.NewPathFromString(key)
 				if err != nil {
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrEmptyName,
-						fmt.Sprintf("Cannot apply $unset to a value of non-numeric type. "+
-							"{_id: %s} has the field '%s' of non-numeric type object",
-							must.NotFail(doc.Get("_id")),
-							key,
-						),
-					)
+					// ValidateUpdateOperators checked already $unset contains valid path.
+					panic(err)
 				}
 
 				if doc.HasByPath(path) {
@@ -101,19 +96,19 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 			}
 
 		case "$inc":
-			changed, err = processIncFieldExpression(doc, updateV)
+			changed, err = processIncFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$max":
-			changed, err = processMaxFieldExpression(doc, updateV)
+			changed, err = processMaxFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$min":
-			changed, err = processMinFieldExpression(doc, updateV)
+			changed, err = processMinFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
@@ -121,14 +116,14 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 		case "$mul":
 			var mulChanged bool
 
-			if mulChanged, err = processMulFieldExpression(doc, updateV); err != nil {
+			if mulChanged, err = processMulFieldExpression(command, doc, updateV); err != nil {
 				return false, err
 			}
 
 			changed = changed || mulChanged
 
 		case "$rename":
-			changed, err = processRenameFieldExpression(doc, updateV.(*types.Document))
+			changed, err = processRenameFieldExpression(command, doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -194,7 +189,7 @@ func UpdateDocument(doc, update *types.Document) (bool, error) {
 
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.
 // If the document was changed it returns true.
-func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
+func processSetFieldExpression(command string, doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
 
 	setDocKeys := setDoc.Keys()
@@ -230,10 +225,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 		}
 
 		if err := doc.SetByPath(path, setValue); err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrUnsuitableValueType,
-				err.Error(),
-			)
+			return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 		}
 
 		changed = true
@@ -244,7 +236,7 @@ func processSetFieldExpression(doc, setDoc *types.Document, setOnInsert bool) (b
 
 // processRenameFieldExpression changes document according to $rename operator.
 // If the document was changed it returns true.
-func processRenameFieldExpression(doc *types.Document, update *types.Document) (bool, error) {
+func processRenameFieldExpression(command string, doc *types.Document, update *types.Document) (bool, error) {
 	update.SortFieldsByKey()
 
 	var changed bool
@@ -253,7 +245,11 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
-			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrEmptyName, "An empty update path is not valid.")
+			return changed, newUpdateError(
+				commonerrors.ErrEmptyName,
+				"An empty update path is not valid.",
+				command,
+			)
 		}
 
 		// this is covered in validateRenameExpression
@@ -263,13 +259,13 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 		if err != nil {
 			var pathErr *types.DocumentPathError
 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrEmptyName,
-					fmt.Sprintf("Cannot apply $rename to a value of non-numeric type. "+
-						"{_id: %s} has the field '%s' of non-numeric type object",
-						must.NotFail(doc.Get("_id")),
+					fmt.Sprintf(
+						"The update path '%s' contains an empty field name, which is not allowed.",
 						key,
 					),
+					command,
 				)
 			}
 		}
@@ -292,13 +288,14 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 			}
 
 			if dpe.Code() == types.ErrDocumentPathArrayInvalidIndex {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
-					fmt.Sprintf("cannot use path %s to traverse the document", sourcePath),
+					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
+					command,
 				)
 			}
 
-			return changed, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, dpe.Error())
+			return changed, newUpdateError(commonerrors.ErrUnsuitableValueType, dpe.Error(), command)
 		}
 
 		// Remove old document
@@ -317,7 +314,7 @@ func processRenameFieldExpression(doc *types.Document, update *types.Document) (
 
 // processIncFieldExpression changes document according to $inc operator.
 // If the document was changed it returns true.
-func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
+func processIncFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	// updateV is document, checked in ValidateUpdateOperators.
 	incDoc := updateV.(*types.Document)
 
@@ -326,27 +323,29 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 	for _, incKey := range incDoc.Keys() {
 		incValue := must.NotFail(incDoc.Get(incKey))
 
+		// ensure incValue is a valid number type.
+		switch incValue.(type) {
+		case float64, int32, int64:
+		default:
+			return false, newUpdateError(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
+				command,
+			)
+		}
+
 		var err error
 
 		// incKey has valid path, checked in ValidateUpdateOperators.
 		path := must.NotFail(types.NewPathFromString(incKey))
 
 		if !doc.HasByPath(path) {
-			// ensure incValue is a valid number type.
-			switch incValue.(type) {
-			case float64, int32, int64:
-			default:
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrTypeMismatch,
-					fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
-				)
-			}
-
 			// $inc sets the field if it does not exist.
 			if err := doc.SetByPath(path, incValue); err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
 					err.Error(),
+					command,
 				)
 			}
 
@@ -386,22 +385,13 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		}
 
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrTypeMismatch,
-				fmt.Sprintf(
-					`Cannot increment with non-numeric argument: {%s: %#v}`,
-					incKey,
-					incValue,
-				),
-			)
 		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
 			}
 
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $inc to a value of non-numeric type. `+
@@ -410,24 +400,27 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					k,
 					commonparams.AliasFromType(docValue),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrIntExceeded):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		default:
 			return false, lazyerrors.Error(err)
@@ -439,7 +432,7 @@ func processIncFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 // processMaxFieldExpression changes document according to $max operator.
 // If the document was changed it returns true.
-func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
+func processMaxFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	maxExpression := updateV.(*types.Document)
 	maxExpression.SortFieldsByKey()
 
@@ -464,7 +457,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, maxVal)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, err.Error())
+				return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 			}
 
 			changed = true
@@ -507,7 +500,7 @@ func processMaxFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 // processMinFieldExpression changes document according to $min operator.
 // If the document was changed it returns true.
-func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
+func processMinFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	minExpression := updateV.(*types.Document)
 	minExpression.SortFieldsByKey()
 
@@ -532,7 +525,7 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, minVal)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(commonerrors.ErrUnsuitableValueType, err.Error())
+				return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 			}
 
 			changed = true
@@ -568,17 +561,9 @@ func processMinFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 // processMulFieldExpression updates document according to $mul operator.
 // If the document was changed it returns true.
-func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
-	mulDoc, ok := updateV.(*types.Document)
-	if !ok {
-		return false, commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrFailedToParse,
-			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
-				`For example: {$mod: {<field>: ...}} not {$rename: %[1]s}`,
-				commonparams.AliasFromType(updateV),
-			),
-		)
-	}
+func processMulFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
+	// updateV is document, checked in ValidateUpdateOperators.
+	mulDoc := updateV.(*types.Document)
 
 	var changed bool
 
@@ -590,14 +575,8 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 		path, err = types.NewPathFromString(mulKey)
 		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrEmptyName,
-				fmt.Sprintf("Cannot apply $mul to a value of non-numeric type. "+
-					"{_id: %s} has the field '%s' of non-numeric type object",
-					must.NotFail(doc.Get("_id")),
-					mulKey,
-				),
-			)
+			// ValidateUpdateOperators checked already $mul contains valid path.
+			panic(err)
 		}
 
 		if !doc.HasByPath(path) {
@@ -610,17 +589,19 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			case int64:
 				mulValue = int64(0)
 			default:
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
+					command,
 				)
 			}
 
 			err := doc.SetByPath(path, mulValue)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
+				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
 					err.Error(),
+					command,
 				)
 			}
 
@@ -650,10 +631,8 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 
 			err = doc.SetByPath(path, multiplied)
 			if err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrUnsuitableValueType,
-					fmt.Sprintf(`Cannot create field in element {%s: %v}`, path.Prefix(), docValue),
-				)
+				// after successfully getting value from path, setting it back cannot fail.
+				panic(err)
 			}
 
 			// A change from int32(0) to int64(0) is considered changed.
@@ -668,13 +647,14 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 			continue
 
 		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot multiply with non-numeric argument: {%s: %#v}`,
 					mulKey,
 					mulValue,
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 			k := mulKey
@@ -682,7 +662,7 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 				k = path.Suffix()
 			}
 
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $mul to a value of non-numeric type. `+
@@ -691,24 +671,27 @@ func processMulFieldExpression(doc *types.Document, updateV any) (bool, error) {
 					k,
 					commonparams.AliasFromType(docValue),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $mul operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		case errors.Is(err, commonparams.ErrIntExceeded):
-			return false, commonerrors.NewWriteErrorMsg(
+			return false, newUpdateError(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $mul operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
 					docValue,
 					must.NotFail(doc.Get("_id")),
 				),
+				command,
 			)
 		default:
 			return false, err
@@ -760,6 +743,8 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 }
 
 // ValidateUpdateOperators validates update statement.
+// ValidateUpdateOperators returns CommandError for findAndModify case-insensitive command name,
+// WriteError for other commands.
 func ValidateUpdateOperators(command string, update *types.Document) error {
 	var err error
 	if _, err = HasSupportedUpdateModifiers(command, update); err != nil {
@@ -906,7 +891,8 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 
 // newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
 func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
-	if command == "findAndModify" {
+	// Depending on the driver, the command may be camel case or lower case.
+	if strings.ToLower(command) == "findandmodify" {
 		return commonerrors.NewCommandErrorMsgWithArgument(code, msg, command)
 	}
 
@@ -949,7 +935,8 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 	return nil
 }
 
-// extractValueFromUpdateOperator gets operator "op" value and returns WriteError error if it is not a document.
+// extractValueFromUpdateOperator gets operator "op" value and returns CommandError for `findAndModify`
+// WriteError error other commands if it is not a document.
 // For example, for update document
 //
 //	 bson.D{

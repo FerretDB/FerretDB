@@ -99,12 +99,12 @@ func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) 
 
 // UpdateParams represents the parameters of Collection.Update method.
 type UpdateParams struct {
-	// TODO
+	Docs *types.Array
 }
 
 // UpdateResult represents the results of Collection.Update method.
 type UpdateResult struct {
-	// TODO
+	Updated int64
 }
 
 // Update updates documents in collection.

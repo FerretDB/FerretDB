@@ -100,7 +100,7 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 		return err
 	}
 
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (sjson string)", tableName)
+	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (sjson string)`, tableName)
 
 	_, err = conn.ExecContext(ctx, query)
 	if err != nil {
