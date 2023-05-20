@@ -56,7 +56,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT sjson FROM %s", table)
+	query := fmt.Sprintf(`SELECT sjson FROM "%s"`, table)
 
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
@@ -89,8 +89,13 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	if err != nil {
 		return nil, err
 	}
-	// TODO: check error
-	defer tx.Rollback()
+
+	defer func() {
+		if err != nil {
+			// TODO: check error
+			tx.Rollback()
+		}
+	}()
 
 	var inserted int64
 
@@ -114,7 +119,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 			return nil, lazyerrors.Errorf("expected document, got %T", val)
 		}
 
-		query := fmt.Sprintf(`INSERT INTO %s (sjson) VALUES (?)`, table)
+		query := fmt.Sprintf(`INSERT INTO "%s" (sjson) VALUES (?)`, table)
 
 		var bytes []byte
 
@@ -144,7 +149,95 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 // Update implements backends.Collection interface.
 func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
-	panic("TODO")
+	var err error
+
+	conn, err := c.db.b.pool.DB(c.db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	table, err := c.db.b.metadataStorage.tableName(ctx, c.db.name, c.name)
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf(`UPDATE "%s" SET sjson = ? WHERE json_extract(sjson, '$._id') = ?`, table)
+
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var committed bool
+
+	defer func() {
+		if committed {
+			return
+		}
+
+		if rerr := tx.Rollback(); rerr != nil {
+			if err == nil {
+				err = rerr
+			}
+		}
+	}()
+
+	iter := params.Docs.Iterator()
+	defer iter.Close()
+
+	var updated int64
+
+	for {
+		var val any
+
+		_, val, err = iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		doc, ok := val.(*types.Document)
+		if !ok {
+			panic(fmt.Sprintf("expected document, got %T", val))
+		}
+
+		id := must.NotFail(doc.Get("_id"))
+		idBytes := must.NotFail(sjson.MarshalSingleValue(id))
+		docBytes := must.NotFail(sjson.Marshal(doc))
+
+		var res sql.Result
+		res, err = tx.ExecContext(ctx, query, docBytes, idBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		var rowsUpdated int64
+
+		rowsUpdated, err = res.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+
+		if rowsUpdated == 0 {
+			return nil, lazyerrors.Errorf("no rows where updated for id %s", idBytes)
+		}
+
+		updated++
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	committed = true
+
+	return &backends.UpdateResult{
+		Updated: updated,
+	}, nil
 }
 
 // Delete implements backends.Collection interface.
