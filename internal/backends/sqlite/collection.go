@@ -216,7 +216,7 @@ func (c *collection) deleteDocuments(ctx context.Context, db *sql.DB, docs []*ty
 	for _, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 
-		ids = append(ids, must.NotFail(sjson.MarshalSingleValue(id)))
+		ids = append(ids, strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), `"`, ``))
 	}
 
 	query := fmt.Sprintf(
