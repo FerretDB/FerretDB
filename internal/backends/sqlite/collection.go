@@ -163,7 +163,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 	query := `UPDATE "%s" SET sjson = '%s' WHERE json_extract(sjson, '$._id') = '%s'`
 
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{})
+	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +209,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		docBytes := must.NotFail(sjson.Marshal(doc))
 
 		var res sql.Result
+
 		res, err = tx.ExecContext(ctx, fmt.Sprintf(query, table, docBytes, idBytes))
 		if err != nil {
 			return nil, err
@@ -300,8 +301,8 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 
 func (c *collection) deleteDocuments(ctx context.Context, db *sql.DB, docs []*types.Document) (int64, error) {
 	var deleted int64
-
 	var ids []any
+
 	for _, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 
@@ -325,6 +326,7 @@ func (c *collection) deleteDocuments(ctx context.Context, db *sql.DB, docs []*ty
 	}
 
 	deleted += d
+
 	return deleted, nil
 }
 
