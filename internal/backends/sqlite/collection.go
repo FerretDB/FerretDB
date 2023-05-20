@@ -161,9 +161,9 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, err
 	}
 
-	query := fmt.Sprintf(`UPDATE "%s" SET sjson = ? WHERE json_extract(sjson, '$._id') = ?`, table)
+	query := `UPDATE "%s" SET sjson = '%s' WHERE json_extract(sjson, '$._id') = '%s'`
 
-	tx, err := conn.BeginTx(ctx, nil)
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -205,11 +205,11 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		}
 
 		id := must.NotFail(doc.Get("_id"))
-		idBytes := must.NotFail(sjson.MarshalSingleValue(id))
+		idBytes := strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), `"`, "")
 		docBytes := must.NotFail(sjson.Marshal(doc))
 
 		var res sql.Result
-		res, err = tx.ExecContext(ctx, query, docBytes, idBytes)
+		res, err = tx.ExecContext(ctx, fmt.Sprintf(query, table, docBytes, idBytes))
 		if err != nil {
 			return nil, err
 		}
@@ -221,11 +221,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 			return nil, err
 		}
 
-		if rowsUpdated == 0 {
-			return nil, lazyerrors.Errorf("no rows where updated for id %s", idBytes)
-		}
-
-		updated++
+		updated += rowsUpdated
 	}
 
 	err = tx.Commit()
