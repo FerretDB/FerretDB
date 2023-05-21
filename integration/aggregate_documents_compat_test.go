@@ -1608,3 +1608,47 @@ func TestAggregateCompatProject(t *testing.T) {
 
 	testAggregateStagesCompat(t, testCases)
 }
+
+func TestAggregateCompatUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"Unset1Field": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v"}},
+			},
+		},
+		"UnsetID": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "_id"}},
+			},
+		},
+		"Unset2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"foo", "bar"}}},
+			},
+		},
+		"DotNotationUnset": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.foo"}},
+			},
+		},
+		"DotNotationUnsetTwo": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v.foo", "v.array"}}},
+			},
+		},
+		"DotNotationUnsetSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.array.42"}},
+			},
+		},
+	}
+	testAggregateStagesCompat(t, testCases)
+}
