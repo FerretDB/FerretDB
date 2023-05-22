@@ -32,9 +32,9 @@ func TestDistinctErrors(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		command  any                // required
+		collName any                // optional
 		filter   bson.D             // required
 		err      mongo.CommandError // required
-		collName any                // optional
 	}{
 		"EmptyCollection": {
 			command:  "a",
