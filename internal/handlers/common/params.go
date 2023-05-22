@@ -27,7 +27,7 @@ import (
 )
 
 // GetRequiredParam returns doc's value for key
-// or protocol error for other invalid type.
+// or protocol error for missing key or invalid type.
 func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
@@ -46,8 +46,8 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	return res, nil
 }
 
-// GetOptionalParam returns doc's value for key or default value for missing parameter
-// or protocol error for other invalid type.
+// GetOptionalParam returns doc's value for key, default value for missing parameter,
+// or protocol error for invalid type.
 func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, _ := doc.Get(key)
 	if v == nil {
@@ -68,7 +68,7 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 	return res, nil
 }
 
-// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null
+// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null,
 // or protocol error for other invalid type.
 func GetOptionalNullParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, err := GetOptionalParam(doc, key, defaultValue)
