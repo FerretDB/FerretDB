@@ -10,8 +10,9 @@ bin/
 vendor/
 
 # development and build artifacts, temporary files, etc
-*.txt
 *.out
+*.sqlite
+*.txt
 **/testdata/fuzz/
 state.json
 tmp/

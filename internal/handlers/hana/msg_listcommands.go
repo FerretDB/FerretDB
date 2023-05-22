@@ -17,11 +17,11 @@ package hana
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListCommands implements handlers.Interface.
 func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgListCommands(ctx, msg)
+	return commoncommands.MsgListCommands(ctx, msg)
 }

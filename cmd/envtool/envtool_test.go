@@ -15,7 +15,7 @@
 package main
 
 import (
-	"errors"
+	"bytes"
 	"os"
 	"testing"
 
@@ -37,38 +37,42 @@ func TestPrintDiagnosticData(t *testing.T) {
 func TestRmdirAbsentDir(t *testing.T) {
 	t.Parallel()
 
-	err := rmdir([]string{"rz"})
+	err := rmdir("absent")
 	assert.NoError(t, err)
 }
 
 func TestMkdirAndRmdir(t *testing.T) {
 	t.Parallel()
 
-	paths := []string{"ab/c"}
+	paths := []string{"ab/c", "ab"}
 
-	err := mkdir(paths)
+	err := mkdir(paths...)
 	assert.NoError(t, err)
 
-	// check if paths exist.
-	var errs error
-
 	for _, path := range paths {
-		if _, err = os.Stat(path); err != nil {
-			errs = errors.Join(errs, err)
-		}
+		assert.DirExists(t, path)
 	}
 
-	assert.NoError(t, errs)
-
-	err = rmdir(paths)
+	err = rmdir(paths...)
 	assert.NoError(t, err)
 
-	// check if paths do not exist.
 	for _, path := range paths {
-		if _, err = os.Stat(path); !os.IsNotExist(err) {
-			errs = errors.Join(errs, err)
-		}
+		assert.NoDirExists(t, path)
 	}
+}
 
-	assert.NoError(t, errs)
+func TestRead(t *testing.T) {
+	t.Parallel()
+
+	f, err := os.CreateTemp("", "test_read")
+	assert.NoError(t, err)
+
+	s := "test string in a file"
+	_, err = f.Write([]byte(s))
+	assert.NoError(t, err)
+
+	var output bytes.Buffer
+	err = read(&output, f.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, s, output.String())
 }

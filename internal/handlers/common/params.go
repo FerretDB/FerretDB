@@ -82,38 +82,6 @@ func GetOptionalNullParam[T types.Type](doc *types.Document, key string, default
 	return v, err
 }
 
-// GetBoolOptionalParam returns doc's bool value for key.
-// Non-zero double, long, and int values return true.
-// Zero values for those types, as well as nulls and missing fields, return false.
-// Other types return a protocol error.
-func GetBoolOptionalParam(doc *types.Document, key string) (bool, error) {
-	v, _ := doc.Get(key)
-	if v == nil {
-		return false, nil
-	}
-
-	switch v := v.(type) {
-	case float64:
-		return v != 0, nil
-	case bool:
-		return v, nil
-	case types.NullType:
-		return false, nil
-	case int32:
-		return v != 0, nil
-	case int64:
-		return v != 0, nil
-	default:
-		msg := fmt.Sprintf(
-			`BSON field '%s' is the wrong type '%s', expected types '[bool, long, int, decimal, double]'`,
-			key,
-			commonparams.AliasFromType(v),
-		)
-
-		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
-	}
-}
-
 // AssertType asserts value's type, returning protocol error for unexpected types.
 //
 // If a custom error is needed, use a normal Go type assertion instead:
@@ -420,8 +388,12 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return float64(v1) * v2, nil
 		case int32:
-			return multiplyLongSafely(v1, int64(v2))
+			v, err := multiplyLongSafely(v1, int64(v2))
+			if err != nil {
+				return 0, commonparams.ErrIntExceeded
+			}
 
+			return v, nil
 		case int64:
 			return multiplyLongSafely(v1, v2)
 
@@ -457,59 +429,4 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	}
 
 	return res, nil
-}
-
-// GetOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
-func GetOptionalPositiveNumber(document *types.Document, key string) (int32, error) {
-	v, _ := document.Get(key)
-	if v == nil {
-		return 0, nil
-	}
-
-	wholeNumberParam, err := commonparams.GetWholeNumberParam(v)
-	if err != nil {
-		switch err {
-		case commonparams.ErrUnexpectedType:
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
-				fmt.Sprintf("%s must be a number", key),
-				key,
-			)
-		case commonparams.ErrNotWholeNumber:
-			if _, ok := v.(float64); ok {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
-					fmt.Sprintf("%v has non-integral value", key),
-					key,
-				)
-			}
-
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
-				fmt.Sprintf("%s must be a whole number", key),
-				key,
-			)
-		default:
-			return 0, err
-		}
-	}
-
-	if wholeNumberParam > math.MaxInt32 || wholeNumberParam < math.MinInt32 {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("%v value for %s is out of range", int64(wholeNumberParam), key),
-			key,
-		)
-	}
-
-	value := wholeNumberParam
-	if value < 0 {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("%v value for %s is out of range", value, key),
-			key,
-		)
-	}
-
-	return int32(value), nil
 }

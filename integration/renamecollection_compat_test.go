@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -52,7 +51,6 @@ func TestRenameCollectionCompat(t *testing.T) {
 		compatNSFrom any
 		targetNSTo   any
 		compatNSTo   any
-		altMessage   string
 		resultType   compatTestCaseResultType
 	}{
 		"Valid": {
@@ -172,7 +170,6 @@ func TestRenameCollectionCompat(t *testing.T) {
 			targetNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
 			compatNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
 			resultType:   emptyResult,
-			altMessage:   "error with target namespace: Invalid collection name: " + strings.Repeat("aB", 150),
 		},
 	} {
 		name, tc := name, tc
@@ -190,22 +187,16 @@ func TestRenameCollectionCompat(t *testing.T) {
 			compatCommand := bson.D{{"renameCollection", tc.compatNSFrom}, {"to", tc.compatNSTo}}
 			compatErr := compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 
-			if tc.resultType == emptyResult {
-				require.Error(t, compatErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
 
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				if tc.altMessage != "" {
-					var expectedErr mongo.CommandError
-					require.ErrorAs(t, compatErr, &expectedErr)
-					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-				} else {
-					assert.Equal(t, compatErr, targetErr)
-				}
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
 			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			// Collection lists after rename must be the same
 			targetNames, err := targetDB.ListCollectionNames(ctx, bson.D{})

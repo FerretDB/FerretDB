@@ -34,13 +34,33 @@ import (
 // Parameters are extracted by the field name or by the `ferretdb` tag.
 //
 // Possible tags:
-//   - `opt` - field is optional;
-//   - `non-default` - field is unimplemented for non-default values;
-//   - `unimplemented` - field is not implemented yet;
-//   - `ignored` - field is ignored.
+//   - `opt` - field is optional, the field value would not be set if it's not present in the document;
+//   - `unimplemented-non-default` - error would be returned if non-default value for the field is provided;
+//   - `unimplemented` - error would be returned if the value is present in the document;
+//   - `ignored` - field is ignored and would not be set, but it would be logged;
+//   - `positiveNumber` - provided value must be of types [int, long, double] and greater than 0,
+//     double values would be rounded to long;
+//   - `wholePositiveNumber` - provided value must be of types [int, long] and greater than 0;
+//   - `numericBool` - provided value must be of types [bool, int, long, double] and would be converted to bool;
+//   - `zeroOrOneAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
 //
 // Collection field processed in a special way. For the commands that require collection name
 // it is extracted from the command name.
+// If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
+// the field must be of type `any`.
+//
+// Errors list:
+//   - `ErrFailedToParse` when provided field is not present in passed structure;
+//   - `ErrFailedToParse` when provided field must be 0 or 1, but it is not;
+//   - `ErrNotImplemented` when support for provided field is not implemented yet;
+//   - `ErrNotImplemented`when support for non-default field value is not implemented yet;
+//   - `ErrValueNegative` - field of numeric type is negative;
+//   - `ErrTypeMismatch` - field is type is not matched with the type of the value;
+//   - `ErrBadValue` when field is not a number;
+//   - `ErrBadValue` when field is not of integer type;
+//   - `ErrBadValue` when field is out of integer range;
+//   - `ErrBadValue` when field has negative value;
+//   - `ErrInvalidNamespace` - collection name has invalid type.
 func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -68,7 +88,8 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		lookup := key
 
 		// If the key is the same as the command name, then it is a collection name.
-		if key == command {
+		// Depending on the driver, the key may be camel case or lower case for a collection name.
+		if strings.ToLower(key) == strings.ToLower(command) { //nolint:staticcheck // for clarity
 			lookup = "collection"
 		}
 
@@ -77,8 +98,12 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			panic(err)
 		}
 
-		if options == nil {
-			return lazyerrors.Errorf("unexpected field '%s' encountered", lookup)
+		if fieldIndex == nil {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("%s: unknown field %q", command, key),
+				command,
+			)
 		}
 
 		if options.ignored {
@@ -112,7 +137,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 			}
 		}
 
-		err = setStructField(&elem, fieldIndex, command, key, val)
+		err = setStructField(&elem, options, *fieldIndex, command, key, val, l)
 		if err != nil {
 			return err
 		}
@@ -128,15 +153,19 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 
 // tagOptions contains options for the structure field tag.
 type tagOptions struct {
-	optional      bool
-	nonDefault    bool
-	unimplemented bool
-	ignored       bool
+	optional            bool
+	nonDefault          bool
+	unimplemented       bool
+	ignored             bool
+	positiveNumber      bool
+	wholePositiveNumber bool
+	numericBool         bool
+	zeroOrOneAsBool     bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
-func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) {
-	var to tagOptions
+func lookupFieldTag(key string, value *reflect.Value) (*int, *tagOptions, error) {
+	var to *tagOptions
 	var i int
 	var found bool
 
@@ -145,30 +174,17 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 
 		tag := field.Tag.Get("ferretdb")
 
-		optionsList := strings.Split(tag, ",")
-
-		if len(optionsList) == 0 {
-			return 0, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
+		if tag == "" {
+			return nil, nil, lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
+
+		optionsList := strings.Split(tag, ",")
 
 		if optionsList[0] != key {
 			continue
 		}
 
-		for _, tt := range optionsList[1:] {
-			switch tt {
-			case "opt":
-				to.optional = true
-			case "non-default":
-				to.nonDefault = true
-			case "unimplemented":
-				to.unimplemented = true
-			case "ignored":
-				to.ignored = true
-			default:
-				return 0, nil, lazyerrors.Errorf("unknown tag option %s", tt)
-			}
-		}
+		to = tagOptionsFromList(optionsList[1:])
 
 		found = true
 
@@ -176,14 +192,43 @@ func lookupFieldTag(key string, value *reflect.Value) (int, *tagOptions, error) 
 	}
 
 	if !found {
-		return 0, nil, nil
+		return nil, nil, nil
 	}
 
-	return i, &to, nil
+	return &i, to, nil
+}
+
+func tagOptionsFromList(optionsList []string) *tagOptions {
+	var to tagOptions
+
+	for _, tt := range optionsList {
+		switch tt {
+		case "opt":
+			to.optional = true
+		case "non-default":
+			to.nonDefault = true
+		case "unimplemented":
+			to.unimplemented = true
+		case "ignored":
+			to.ignored = true
+		case "numericBool":
+			to.numericBool = true
+		case "positiveNumber":
+			to.positiveNumber = true
+		case "wholePositiveNumber":
+			to.wholePositiveNumber = true
+		case "zeroOrOneAsBool":
+			to.zeroOrOneAsBool = true
+		default:
+			panic(fmt.Sprintf("unknown tag option %s", tt))
+		}
+	}
+
+	return &to
 }
 
 // setStructField sets the value of the document field to the structure field.
-func setStructField(elem *reflect.Value, i int, command, key string, val any) error {
+func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key string, val any, l *zap.Logger) error {
 	var err error
 
 	field := elem.Type().Field(i)
@@ -198,8 +243,17 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
-		if key == "skip" || key == "limit" {
-			settable, err = GetWholeParamStrict(command, key, val)
+		if o.positiveNumber {
+			settable, err = getWholeParamStrict(command, key, val)
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
+		if o.wholePositiveNumber {
+			settable, err = getOptionalPositiveNumber(key, val)
 			if err != nil {
 				return err
 			}
@@ -211,8 +265,87 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 		if err != nil {
 			return err
 		}
-	case reflect.String, reflect.Bool, reflect.Struct, reflect.Pointer:
+	case reflect.String, reflect.Struct, reflect.Pointer, reflect.Interface:
 		settable = val
+	case reflect.Bool:
+		if o.numericBool {
+			settable, err = GetBoolOptionalParam(key, val)
+			if err != nil {
+				return err
+			}
+
+			break
+		}
+
+		if o.zeroOrOneAsBool {
+			var numeric int64
+
+			numeric, err = GetWholeNumberParam(val)
+			if err != nil || numeric < 0 || numeric > 1 {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf("The '%s.%s' field must be 0 or 1. Got %v", command, key, types.FormatAnyValue(val)),
+					command,
+				)
+			}
+
+			settable = numeric == 1
+
+			break
+		}
+
+		settable = val
+	case reflect.Slice:
+		array, ok := val.(*types.Array)
+		if !ok {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
+					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
+				),
+				command,
+			)
+		}
+
+		iter := array.Iterator()
+		defer iter.Close()
+
+		arrayToSet := reflect.MakeSlice(fv.Type(), array.Len(), array.Len())
+
+		for {
+			i, arrayDoc, err := iter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			doc, ok := arrayDoc.(*types.Document)
+			if !ok {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
+						command, key, AliasFromType(val), AliasFromType(fv.Interface()),
+					),
+					command,
+				)
+			}
+
+			params := reflect.New(fv.Type().Elem())
+
+			err = ExtractParams(doc, command+"."+key, params.Interface(), l)
+			if err != nil {
+				return err
+			}
+
+			arrayToSet.Index(i).Set(params.Elem())
+		}
+
+		settable = arrayToSet.Interface()
 	default:
 		panic(fmt.Sprintf("field %s type %s is not supported", field.Name, fv.Type()))
 	}
@@ -229,10 +362,15 @@ func setStructField(elem *reflect.Value, i int, command, key string, val any) er
 				)
 			}
 
+			if fv.Kind() == reflect.Interface {
+				fv.Set(reflect.ValueOf(v.Interface()))
+				return nil
+			}
+
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
 				fmt.Sprintf(
-					`BSON field '%s.%s' is the wrong type '%s', expected types '%s'`,
+					`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
 				),
 				command,
@@ -258,7 +396,8 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			return lazyerrors.Errorf("no tag provided for %s", field.Name)
 		}
 
-		if len(optionsList) != 1 {
+		to := tagOptionsFromList(optionsList[1:])
+		if to.ignored || to.optional || to.unimplemented || to.nonDefault {
 			continue
 		}
 
@@ -267,8 +406,18 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			key = command
 		}
 
-		if !slices.Contains(keys, key) {
-			return lazyerrors.Errorf("required field %q is not populated", key)
+		// Fields with "-" are ignored when parsing parameters.
+		if key == "-" {
+			continue
+		}
+
+		// Depending on the driver, the key may be camel case or lower case for a collection name.
+		if !slices.Contains(keys, key) && !slices.Contains(keys, strings.ToLower(key)) {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrMissingField,
+				fmt.Sprintf("BSON field '%s.%s' is missing but a required field", command, key),
+				command,
+			)
 		}
 	}
 

@@ -54,7 +54,7 @@ const (
 	ErrIndexNotFound = ErrorCode(27) // IndexNotFound
 
 	// ErrUnsuitableValueType indicates that field could not be created for given value.
-	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
+	ErrUnsuitableValueType = ErrorCode(28) // PathNotViable
 
 	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
 	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
@@ -72,7 +72,7 @@ const (
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
 	// ErrEmptyName indicates that the field name is empty.
-	ErrEmptyName = ErrorCode(56) // EmptyName
+	ErrEmptyName = ErrorCode(56) // EmptyFieldName
 
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
@@ -226,6 +226,9 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
+
+	// ErrEmptyProject indicates that projection specification must have at least one field.
+	ErrEmptyProject = ErrorCode(51272) // Location51272
 
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
