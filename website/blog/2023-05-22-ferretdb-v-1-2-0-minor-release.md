@@ -10,15 +10,15 @@ tags: [release]
 
 ![FerretDB v.1.2.0](/img/blog/ferretdb-1-2-0-minor-release.jpg)
 
-FerretDB v1.2.0 has just been released with minor changes that address some of the bugs in the previous release and enhance existing features and processes.
+FerretDB v1.2.0 has just been released with minor changes that address some of the bugs in previous versions and enhance existing features and processes.
 
 <!--truncate-->
 
-One of the major updates we're excited about is our progress towards providing support for [SQLite](https://www.sqlite.org/) database backend.
-This release includes a highly experimental and unsupported SQLite backend.
-While this isn't supported yet, there are a lot of promising developments on the way that are sure to appeal to [FerretDB](https://www.ferretdb.io/) users and admirers.
+One of the major updates we're excited about is the initial progress towards supporting [SQLite](https://www.sqlite.org/) database backend.
+This release includes a highly experimental SQLite backend.
+While this isn't ready yet, there are a lot of promising developments on the way that are sure to appeal to [FerretDB](https://www.ferretdb.io/) users and admirers.
 
-The potential implementation of SQLite reflects our goal to provide an open-source database alternative to MongoDB while also enabling other database backend support beyond [PostgreSQL](https://www.postgresql.org/).
+The potential implementation of SQLite reflects our goal to provide an open-source database alternative to MongoDB and also enable more database backend support beyond [PostgreSQL](https://www.postgresql.org/).
 
 Although this release doesn't come with any major feature additions, we are proud of our growing list of contributors, especially the two amazing new contributors in this release: [@adetunjii](https://github.com/adetunjii) and @[christiano](https://github.com/christiano).
 We appreciate every single line of code, bug discovery, comments, and feedback from the open-source community.
