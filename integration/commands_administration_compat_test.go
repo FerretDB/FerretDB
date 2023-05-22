@@ -15,14 +15,12 @@
 package integration
 
 import (
-	"errors"
 	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -42,7 +40,6 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
 		resultType compatTestCaseResultType
-		altMessage string
 	}{
 		"scaleOne":           {scale: int32(1)},
 		"scaleBig":           {scale: int64(1000)},
@@ -56,12 +53,10 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 		"scaleString": {
 			scale:      "1",
 			resultType: emptyResult,
-			altMessage: `BSON field 'collStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
 		"scaleObject": {
 			scale:      bson.D{{"a", 1}},
 			resultType: emptyResult,
-			altMessage: `BSON field 'collStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double]'`,
 		},
 		"scaleNull": {scale: nil},
 	} {
@@ -80,25 +75,16 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 			compatCommand := bson.D{{"collStats", compatCollection.Name()}, {"scale", tc.scale}}
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
-			if tc.resultType == emptyResult {
-				require.Error(t, compatErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
 
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				if tc.altMessage != "" {
-					var expectedErr mongo.CommandError
-					require.True(t, errors.As(compatErr, &expectedErr))
-					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-				} else {
-					assert.Equal(t, compatErr, targetErr)
-				}
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
 			}
-
-			require.NoError(t, compatErr)
-			require.NoError(t, targetErr)
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			targetDoc := ConvertDocument(t, targetRes)
 			compatDoc := ConvertDocument(t, compatRes)
@@ -124,7 +110,6 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
 		resultType compatTestCaseResultType
-		altMessage string
 	}{
 		"scaleOne":   {scale: int32(1)},
 		"scaleBig":   {scale: int64(1000)},
@@ -146,25 +131,16 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatCommand := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
 			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
-			if tc.resultType == emptyResult {
-				require.Error(t, compatErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
 
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-
-				if tc.altMessage != "" {
-					var expectedErr mongo.CommandError
-					require.True(t, errors.As(compatErr, &expectedErr))
-					AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-				} else {
-					assert.Equal(t, compatErr, targetErr)
-				}
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
 
 				return
 			}
-
-			require.NoError(t, compatErr)
-			require.NoError(t, targetErr)
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			targetDoc := ConvertDocument(t, targetRes)
 			compatDoc := ConvertDocument(t, compatRes)

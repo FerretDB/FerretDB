@@ -15,13 +15,11 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -74,18 +72,10 @@ func testInsertRunCommandCompat(t *testing.T, testCases map[string]insertRunComm
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
+						t.Logf("Compat error: %v", compatErr)
 
-						if tc.altErrorMsg != "" {
-							AssertMatchesCommandError(t, compatErr, targetErr)
-
-							var expectedErr mongo.CommandError
-							require.True(t, errors.As(compatErr, &expectedErr))
-							AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-						} else {
-							require.Equal(t, compatErr, targetErr)
-						}
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
@@ -117,7 +107,6 @@ func TestInsertRunCommandCompat(t *testing.T) {
 				bson.D{{}},
 			},
 			ordered: true,
-			skip:    "https://github.com/FerretDB/FerretDB/issues/1714",
 		},
 	}
 

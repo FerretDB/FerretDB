@@ -18,10 +18,11 @@ package clientconn
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"os"
 	"path/filepath"
@@ -37,7 +38,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -178,12 +179,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		// write to temporary file first, then rename to avoid partial files
 
-		var f *os.File
-
 		// use local directory so os.Rename below always works
+		var f *os.File
 		if f, err = os.CreateTemp(c.testRecordsDir, "_*.partial"); err != nil {
 			return
 		}
+
+		h := sha256.New()
 
 		defer func() {
 			// do not store partial files
@@ -203,16 +205,20 @@ func (c *conn) run(ctx context.Context) (err error) {
 				c.l.Warn(e)
 			}
 
-			path := filepath.Join(
-				c.testRecordsDir,
-				fmt.Sprintf("%s-%d.bin", time.Now().Format("2006.01.02.15.04.05.000"), rand.Uint64()),
-			)
+			fileName := hex.EncodeToString(h.Sum(nil))
+
+			hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
+			if e := os.MkdirAll(hashPath, 0o777); e != nil {
+				c.l.Warn(e)
+			}
+
+			path := filepath.Join(hashPath, fileName+".bin")
 			if e := os.Rename(f.Name(), path); e != nil {
 				c.l.Warn(e)
 			}
 		}()
 
-		r := io.TeeReader(c.netConn, f)
+		r := io.TeeReader(c.netConn, io.MultiWriter(f, h))
 		bufr = bufio.NewReader(r)
 	}
 
@@ -239,24 +245,22 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil && errors.As(err, &validationErr) {
-			var res wire.OpMsg
+			// Currently, we respond with OP_MSG containing an error and don't close the connection.
+			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.
+			// Second, we don't know what command it was, if any,
+			// and if the client could handle returned error for it.
+			//
+			// TODO https://github.com/FerretDB/FerretDB/issues/2412
 
 			// get protocol error to return correct error document
-			protoErr, ok := commonerrors.ProtocolError(validationErr)
-			if !ok {
-				panic(err)
-			}
+			protoErr := commonerrors.ProtocolError(validationErr)
 
+			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
 				Documents: []*types.Document{protoErr.Document()},
 			}))
 
-			var b []byte
-
-			b, err = res.MarshalBinary()
-			if err != nil {
-				panic(err)
-			}
+			b := must.NotFail(res.MarshalBinary())
 
 			resHeader = &wire.MsgHeader{
 				OpCode:        reqHeader.OpCode,
@@ -266,7 +270,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			if err = wire.WriteMessage(bufw, resHeader, &res); err != nil {
-				panic(err)
+				return
 			}
 
 			if err = bufw.Flush(); err != nil {
@@ -302,7 +306,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			proxyHeader, proxyBody, _ = c.proxy.Route(ctx, reqHeader, reqBody)
+			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
 			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
 				// In principle, normal and proxy responses should be logged with the same level
 				// as they behave the same way. If it's not true, there is a bug somewhere, so
@@ -325,11 +329,22 @@ func (c *conn) run(ctx context.Context) (err error) {
 				return
 			}
 
+			// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
+			var resBodyString, proxyBodyString string
+
+			if resBody != nil {
+				resBodyString = resBody.String()
+			}
+
+			if proxyBody != nil {
+				proxyBodyString = proxyBody.String()
+			}
+
 			var diffBody string
 			diffBody, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-				A:        difflib.SplitLines(resBody.String()),
+				A:        difflib.SplitLines(resBodyString),
 				FromFile: "res body",
-				B:        difflib.SplitLines(proxyBody.String()),
+				B:        difflib.SplitLines(proxyBodyString),
 				ToFile:   "proxy body",
 				Context:  1,
 			})
@@ -367,13 +382,10 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 // route sends request to a handler's command based on the op code provided in the request header.
 //
-// The possible resBody returns:
-//   - normal response  - to be returned to the client, closeConn is false;
-//   - protocol error - to be returned to the client, closeConn is false;
-//   - any other error - to be returned to the client as InternalError before terminating connection, closeConn is true.
-//
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
+//
+// Returned resBody can be nil.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 	var command, result, argument string
 	defer func() {
@@ -401,13 +413,28 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		resHeader.OpCode = wire.OpCodeMsg
 
 		if err == nil {
-			resBody, err = c.handleOpMsg(ctx, msg, command)
+			// do not store typed nil in interface, it makes it non-nil
+
+			var resMsg *wire.OpMsg
+			resMsg, err = c.handleOpMsg(ctx, msg, command)
+
+			if resMsg != nil {
+				resBody = resMsg
+			}
 		}
 
 	case wire.OpCodeQuery:
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
-		resBody, err = c.h.CmdQuery(ctx, query)
+
+		// do not store typed nil in interface, it makes it non-nil
+
+		var resReply *wire.OpReply
+		resReply, err = c.h.CmdQuery(ctx, query)
+
+		if resReply != nil {
+			resBody = resReply
+		}
 
 	case wire.OpCodeReply:
 		fallthrough
@@ -440,8 +467,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if err != nil {
 		switch resHeader.OpCode {
 		case wire.OpCodeMsg:
-			protoErr, recoverable := commonerrors.ProtocolError(err)
-			closeConn = !recoverable
+			protoErr := commonerrors.ProtocolError(err)
 
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
@@ -475,7 +501,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = "unhandled"
-			c.l.Error(
+
+			c.l.Desugar().Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
@@ -485,7 +512,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = "unexpected"
-			c.l.Error(
+
+			c.l.Desugar().Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
@@ -513,7 +541,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 }
 
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := common.Commands[command]; ok {
+	if cmd, ok := commoncommands.Commands[command]; ok {
 		if cmd.Handler != nil {
 			// TODO move it to route, closer to Prometheus metrics
 			defer trace.StartRegion(ctx, command).End()

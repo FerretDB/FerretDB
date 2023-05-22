@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"math"
 	"testing"
 
@@ -23,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -38,7 +36,6 @@ type countCompatTestCase struct {
 	optSkip any   // optional, skip option for the query, defaults to nil
 	limit   int64 // optional, limit option for the query, defaults to 0
 
-	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -89,16 +86,10 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
+						t.Logf("Compat error: %v", compatErr)
 
-						if tc.altMessage != "" {
-							var expectedErr mongo.CommandError
-							require.True(t, errors.As(compatErr, &expectedErr))
-							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-						} else {
-							assert.Equal(t, compatErr, targetErr)
-						}
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
@@ -223,7 +214,6 @@ func TestCountCompat(t *testing.T) {
 			filter:     bson.D{},
 			optSkip:    "foo",
 			resultType: emptyResult,
-			altMessage: `BSON field 'count.skip' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
 	}
 

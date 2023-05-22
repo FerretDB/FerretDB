@@ -61,7 +61,8 @@ type request struct {
 
 // response represents telemetry response.
 type response struct {
-	LatestVersion string `json:"latest_version"`
+	LatestVersion   string `json:"latest_version"`
+	UpdateAvailable bool   `json:"update_available"`
 }
 
 // Reporter sends telemetry reports if telemetry is enabled.
@@ -233,7 +234,9 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 	}
 }
 
-// report sends telemetry report unless telemetry is disabled.
+// report sends http POST request to telemetry unless telemetry is disabled.
+// It fetches available update and the latest version, then updates the state of provider
+// with update available and latest version if any update is available.
 func (r *Reporter) report(ctx context.Context) {
 	s := r.P.Get()
 	if s.Telemetry != nil && !*s.Telemetry {
@@ -284,18 +287,21 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if response.LatestVersion != s.LatestVersion {
-		err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
-		if err != nil {
-			r.L.Error("Failed to update state with latest version.", zap.Error(err))
-			return
-		}
+	if !response.UpdateAvailable {
+		return
 	}
 
-	if s = r.P.Get(); s.UpdateAvailable() {
-		r.L.Info(
-			"A new version available!",
-			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
-		)
+	if err = r.P.Update(func(s *state.State) {
+		s.LatestVersion = response.LatestVersion
+		s.IsUpdateAvailable = response.UpdateAvailable
+	}); err != nil {
+		r.L.Error("Failed to update state with latest version.", zap.Error(err))
+		return
 	}
+
+	s = r.P.Get()
+	r.L.Info(
+		"A new version available!",
+		zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
+	)
 }

@@ -205,6 +205,24 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				}},
 			},
 		},
+		"ConflictKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+		},
+		"ConflictKeyPrefix": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -236,6 +254,11 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"UpdateID": {
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
 			},
 		},
 	}
@@ -395,6 +418,13 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
 			},
 		},
+		"BadDollarStart": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
+				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
+				{"sort", bson.D{{"$v.foo", 1}, {"_id", 1}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -520,6 +550,13 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
+			},
+		},
+		"UpsertID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
 		},
 	}
@@ -653,7 +690,18 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					var targetErr, compatErr error
 					targetErr = targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetMod)
 					compatErr = compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatMod)
-					require.Equal(t, compatErr, targetErr)
+
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
 					AssertEqualDocuments(t, compatMod, targetMod)
 
 					// To make sure that the results of modification are equal,
@@ -678,9 +726,8 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetCursor.All(ctx, &targetRes))
-					require.NoError(t, compatCursor.All(ctx, &compatRes))
+					targetRes := FetchAll(t, ctx, targetCursor)
+					compatRes := FetchAll(t, ctx, compatCursor)
 
 					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))

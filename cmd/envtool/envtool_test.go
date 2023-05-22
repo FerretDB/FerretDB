@@ -15,6 +15,8 @@
 package main
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,4 +32,47 @@ func TestPrintDiagnosticData(t *testing.T) {
 		l := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
 		printDiagnosticData(nil, l.Sugar())
 	})
+}
+
+func TestRmdirAbsentDir(t *testing.T) {
+	t.Parallel()
+
+	err := rmdir("absent")
+	assert.NoError(t, err)
+}
+
+func TestMkdirAndRmdir(t *testing.T) {
+	t.Parallel()
+
+	paths := []string{"ab/c", "ab"}
+
+	err := mkdir(paths...)
+	assert.NoError(t, err)
+
+	for _, path := range paths {
+		assert.DirExists(t, path)
+	}
+
+	err = rmdir(paths...)
+	assert.NoError(t, err)
+
+	for _, path := range paths {
+		assert.NoDirExists(t, path)
+	}
+}
+
+func TestRead(t *testing.T) {
+	t.Parallel()
+
+	f, err := os.CreateTemp("", "test_read")
+	assert.NoError(t, err)
+
+	s := "test string in a file"
+	_, err = f.Write([]byte(s))
+	assert.NoError(t, err)
+
+	var output bytes.Buffer
+	err = read(&output, f.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, s, output.String())
 }

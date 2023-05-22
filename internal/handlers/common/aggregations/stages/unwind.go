@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -29,17 +30,17 @@ import (
 
 // unwind represents $unwind stage.
 type unwind struct {
-	field types.Expression
+	field *aggregations.Expression
 }
 
 // newUnwind creates a new $unwind stage.
-func newUnwind(stage *types.Document) (Stage, error) {
+func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 	field, err := stage.Get("$unwind")
 	if err != nil {
 		return nil, err
 	}
 
-	var expr types.Expression
+	var expr *aggregations.Expression
 
 	switch field := field.(type) {
 	case *types.Document:
@@ -53,34 +54,34 @@ func newUnwind(stage *types.Document) (Stage, error) {
 			)
 		}
 
-		opts := types.ExpressionOpts{
+		opts := aggregations.ExpressionOpts{
 			IgnoreArrays: true,
 		}
-		expr, err = types.NewExpressionWithOpts(field, &opts)
+		expr, err = aggregations.NewExpressionWithOpts(field, &opts)
 
 		if err != nil {
-			var fieldPathErr *types.FieldPathError
-			if !errors.As(err, &fieldPathErr) {
+			var exprErr *aggregations.ExpressionError
+			if !errors.As(err, &exprErr) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			switch fieldPathErr.Code() {
-			case types.ErrNotFieldPath:
+			switch exprErr.Code() {
+			case aggregations.ErrNotExpression:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrStageUnwindNoPrefix,
 					fmt.Sprintf("path option to $unwind stage should be prefixed with a '$': %v", types.FormatAnyValue(field)),
 					"$unwind (stage)",
 				)
-			case types.ErrEmptyFieldPath:
+			case aggregations.ErrEmptyFieldPath:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrEmptyFieldPath,
-					"FieldPath cannot be constructed with empty string",
+					"Expression cannot be constructed with empty string",
 					"$unwind (stage)",
 				)
-			case types.ErrEmptyVariable, types.ErrInvalidFieldPath, types.ErrUndefinedVariable:
+			case aggregations.ErrEmptyVariable, aggregations.ErrInvalidExpression, aggregations.ErrUndefinedVariable:
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFieldPathInvalidName,
-					"FieldPath field names may not start with '$'. Consider using $getField or $setField",
+					"Expression field names may not start with '$'. Consider using $getField or $setField",
 					"$unwind (stage)",
 				)
 			default:
@@ -104,7 +105,13 @@ func newUnwind(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
+func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	// TODO https://github.com/FerretDB/FerretDB/issues/2490
+	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var out []*types.Document
 
 	if u.field == nil {
@@ -113,7 +120,7 @@ func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 
 	key := u.field.GetExpressionSuffix()
 
-	for _, doc := range in {
+	for _, doc := range docs {
 		d := u.field.Evaluate(doc)
 		switch d := d.(type) {
 		case *types.Array:
@@ -142,15 +149,15 @@ func (u *unwind) Process(ctx context.Context, in []*types.Document) ([]*types.Do
 		}
 	}
 
-	return out, nil
+	return iterator.Values(iterator.ForSlice(out)), nil
 }
 
 // Type implements Stage interface.
-func (u *unwind) Type() StageType {
-	return StageTypeDocuments
+func (u *unwind) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*unwind)(nil)
+	_ aggregations.Stage = (*unwind)(nil)
 )

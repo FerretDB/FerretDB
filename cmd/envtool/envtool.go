@@ -321,14 +321,66 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
+// mkdir creates all directories from given paths.
+func mkdir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.MkdirAll(path, 0o777); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// rmdir removes all directories from given paths.
+func rmdir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// read will show the content of a file.
+func read(w io.Writer, paths ...string) error {
+	for _, path := range paths {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprint(w, string(b))
+	}
+
+	return nil
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool `help:"Enable debug mode."`
+	Debug bool     `help:"Enable debug mode."`
+	Setup struct{} `cmd:"" help:"Setup development environment."`
+	Shell struct {
+		Mkdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+		} `cmd:"" help:"Create directories if they do not already exist."`
+		Rmdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+		} `cmd:"" help:"Remove directories."`
+		Read struct {
+			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+		} `cmd:"" help:"read files"`
+	} `cmd:""`
 }
 
 func main() {
-	kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli)
 
 	// always enable debug logging on CI
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
@@ -346,7 +398,22 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	if err := setup(ctx, logger); err != nil {
+	var err error
+
+	switch cmd := kongCtx.Command(); cmd {
+	case "setup":
+		err = setup(ctx, logger)
+	case "shell mkdir <path>":
+		err = mkdir(cli.Shell.Mkdir.Paths...)
+	case "shell rmdir <path>":
+		err = rmdir(cli.Shell.Rmdir.Paths...)
+	case "shell read <path>":
+		err = read(os.Stdout, cli.Shell.Read.Paths...)
+	default:
+		err = fmt.Errorf("unknown command: %s", cmd)
+	}
+
+	if err != nil {
 		printDiagnosticData(err, logger)
 		os.Exit(1)
 	}

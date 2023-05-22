@@ -5,7 +5,7 @@ name: Integration
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -35,7 +35,7 @@ jobs:
       group: paid
     timeout-minutes: 45
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     strategy:
       fail-fast: false
@@ -43,6 +43,7 @@ jobs:
         include:
           - { name: "MongoDB", task: "mongodb" }
           - { name: "PostgreSQL", task: "pg" }
+          - { name: "SQLite", task: "sqlite" }
           # - { name: "Tigris", task: "tigris" }
           # - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
 
@@ -82,8 +83,8 @@ jobs:
       # Unfortunately, it seems that tokenless uploads fail too often.
       # See https://github.com/codecov/codecov-action/issues/837.
       #
-      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
-      - name: Upload coverage information
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
+      - name: Upload coverage information to codecov
         uses: codecov/codecov-action@v3
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
@@ -91,6 +92,13 @@ jobs:
           flags: integration,${{ matrix.task }}
           fail_ci_if_error: true
           verbose: true
+
+      - name: Upload coverage information to coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./integration/integration-${{ matrix.task }}.txt
+          flag-name: integration-${{ matrix.task }}
+          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -107,7 +115,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       - name: Checkout code
@@ -136,3 +144,17 @@ jobs:
 
       - name: Run env-data
         run: bin/task env-data
+
+  submit-coveralls:
+    name: Submit coveralls
+    runs-on: ubuntu-22.04
+
+    needs: test
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    steps:
+      - name: Submit coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+          carryforward: unit # workaround for https://github.com/lemurheavy/coveralls-public/issues/1636

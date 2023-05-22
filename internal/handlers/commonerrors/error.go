@@ -44,6 +44,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrIllegalOperation indicated that operation is illegal.
+	ErrIllegalOperation = ErrorCode(20) // IllegalOperation
+
 	// ErrNamespaceNotFound indicates that a collection is not found.
 	ErrNamespaceNotFound = ErrorCode(26) // NamespaceNotFound
 
@@ -51,7 +54,7 @@ const (
 	ErrIndexNotFound = ErrorCode(27) // IndexNotFound
 
 	// ErrUnsuitableValueType indicates that field could not be created for given value.
-	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
+	ErrUnsuitableValueType = ErrorCode(28) // PathNotViable
 
 	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
 	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
@@ -69,7 +72,7 @@ const (
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
 	// ErrEmptyName indicates that the field name is empty.
-	ErrEmptyName = ErrorCode(56) // EmptyName
+	ErrEmptyName = ErrorCode(56) // EmptyFieldName
 
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
@@ -224,6 +227,9 @@ const (
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 
+	// ErrEmptyProject indicates that projection specification must have at least one field.
+	ErrEmptyProject = ErrorCode(51272) // Location51272
+
 	// ErrDuplicateField indicates duplicate field is specified.
 	ErrDuplicateField = ErrorCode(4822819) // Location4822819
 
@@ -257,31 +263,33 @@ type ProtoErr interface {
 
 // ProtocolError converts any error to wire protocol error.
 //
-// Nil panics, *CommandError or *WriteErrors (possibly wrapped) is returned unwrapped with true,
-// any other value is wrapped with InternalError and returned with false.
-func ProtocolError(err error) (ProtoErr, bool) {
+// Nil panics (it never should be passed),
+// *CommandError or *WriteErrors (possibly wrapped) are returned unwrapped,
+// *wire.ValidationError (possibly wrapped) is returned as CommandError with BadValue code,
+// any other values (including lazy errors) are returned as CommandError with InternalError code.
+func ProtocolError(err error) ProtoErr {
 	if err == nil {
 		panic("err is nil")
 	}
 
-	var e *CommandError
-	if errors.As(err, &e) {
-		return e, true
+	var commandErr *CommandError
+	if errors.As(err, &commandErr) {
+		return commandErr
 	}
 
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
-		return writeErr, true
+		return writeErr
 	}
 
 	var validationErr *wire.ValidationError
 	if errors.As(err, &validationErr) {
-		return NewCommandError(ErrBadValue, err).(*CommandError), true //nolint:errorlint // false positive
+		//nolint:errorlint // only *CommandError could be returned
+		return NewCommandError(ErrBadValue, err).(*CommandError)
 	}
 
-	e = NewCommandError(errInternalError, err).(*CommandError) //nolint:errorlint // false positive
-
-	return e, false
+	//nolint:errorlint // only *CommandError could be returned
+	return NewCommandError(errInternalError, err).(*CommandError)
 }
 
 // CheckError checks error type and returns properly translated error.

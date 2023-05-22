@@ -82,6 +82,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		handler = "pg"
+	case "ferretdb-sqlite":
+		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
+		handler = "sqlite"
 	case "ferretdb-tigris":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
@@ -105,10 +109,13 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		PostgreSQLURL: *postgreSQLURLF,
 
+		SQLiteURI: filepath.Join("..", "tmp", "sqlite-tests"),
+
 		TigrisURL: nextTigrisUrl(),
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
+			EnableSortPushdown:    *enableSortPushdownF,
 			EnableCursors:         *enableCursorsF,
 		},
 	}

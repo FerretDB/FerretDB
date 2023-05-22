@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,7 +40,6 @@ func TestUpdateFieldSet(t *testing.T) {
 		alt      string
 	}{
 		"ArrayNil": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1662
 			id:       "string",
 			update:   bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
 			expected: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
@@ -50,7 +50,6 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetSameValueInt": {
-			// TODO remove https://github.com/FerretDB/FerretDB/issues/1662
 			id:       "int32",
 			update:   bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			expected: bson.D{{"_id", "int32"}, {"v", int32(42)}},
@@ -80,6 +79,206 @@ func TestUpdateFieldSet(t *testing.T) {
 			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestUpdateFieldErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
+		id       string
+		update   bson.D
+		provider shareddata.Provider // optional, default uses shareddata.ArrayDocuments
+
+		err        *mongo.WriteError
+		altMessage string
+	}{
+		"SetUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.foo", "foo"}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "cannot use the part (v of v.foo) to traverse the element " +
+					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+			},
+			altMessage: "cannot use path 'v.foo' to traverse the document",
+		},
+		"RenameEmptyFieldName": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"", "v"}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "An empty update path is not valid.",
+			},
+		},
+		"RenameEmptyPath": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.", "v"}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"RenameArrayInvalidIndex": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.-1", "f"}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "cannot use the part (v of v.-1) to traverse the element " +
+					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+			},
+			altMessage: "cannot use path 'v.-1' to traverse the document",
+		},
+		"RenameUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$rename", bson.D{{"v.0.foo.0.bar.z", "f"}}}},
+			err: &mongo.WriteError{
+				Code:    28,
+				Message: "cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: \"hello\"})",
+			},
+			altMessage: "types.getByPath: can't access string by path \"z\"",
+		},
+		"IncTypeMismatch": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$inc", bson.D{{"v", "string"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: "Cannot increment with non-numeric argument: {v: \"string\"}",
+			},
+		},
+		"IncUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$inc", bson.D{{"v.foo", 1}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"IncNonNumeric": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$inc", bson.D{{"v.0.foo.0.bar", 1}}}},
+			err: &mongo.WriteError{
+				Code: 14,
+				Message: "Cannot apply $inc to a value of non-numeric type. " +
+					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			},
+		},
+		"IncInt64BadValue": {
+			id:     "int64-max",
+			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Failed to apply $inc operations to current value " +
+					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			},
+			provider: shareddata.Int64s,
+		},
+		"IncInt32BadValue": {
+			id:     "int32",
+			update: bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Failed to apply $inc operations to current value " +
+					"((NumberInt)42) for document {_id: \"int32\"}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"MaxUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$max", bson.D{{"v.foo", 1}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"MinUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$min", bson.D{{"v.foo", 1}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"MulTypeMismatch": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v", "string"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: "Cannot multiply with non-numeric argument: {v: \"string\"}",
+			},
+		},
+		"MulTypeMismatchNonExistent": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"non-existent", "string"}}}},
+			err: &mongo.WriteError{
+				Code:    14,
+				Message: "Cannot multiply with non-numeric argument: {non-existent: \"string\"}",
+			},
+		},
+		"MulUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v.foo", 1}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"MulNonNumeric": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v.0.foo.0.bar", 1}}}},
+			err: &mongo.WriteError{
+				Code: 14,
+				Message: "Cannot apply $mul to a value of non-numeric type. " +
+					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			},
+		},
+		"MulInt64BadValue": {
+			id:     "int64-max",
+			update: bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Failed to apply $mul operations to current value " +
+					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			},
+			provider: shareddata.Int64s,
+		},
+		"MulInt32BadValue": {
+			id:     "int32",
+			update: bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Failed to apply $mul operations to current value " +
+					"((NumberInt)42) for document {_id: \"int32\"}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"MulEmptyPath": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$mul", bson.D{{"v.", "v"}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			provider := tc.provider
+			if provider == nil {
+				provider = shareddata.ArrayDocuments
+			}
+
+			ctx, collection := setup.Setup(t, provider)
+
+			_, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			AssertEqualAltWriteError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

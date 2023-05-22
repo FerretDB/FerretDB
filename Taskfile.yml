@@ -5,7 +5,7 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 30m
+  INTEGRATIONTIME: 35m
   BENCHTIME: 5s
   FUZZTIME: 15s
   FUZZCORPUS: ../fuzz-corpus
@@ -27,6 +27,7 @@ tasks:
       - task: test
       - task: lint
       - task: security
+      - task: fmt-yaml
       - task: docs
 
   init-tools:
@@ -65,7 +66,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - rm -fr .cache .task tools/.task integration/.task tmp
+      - go run ./cmd/envtool shell rmdir .cache .task tools/.task integration/.task tmp
       - task: env-pull
       - task: init
 
@@ -93,7 +94,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run {{.RACEFLAG}} ./cmd/envtool
+      - go run {{.RACEFLAG}} ./cmd/envtool setup
 
   env-logs:
     cmds:
@@ -141,14 +142,18 @@ tasks:
       - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
-    desc: "Generate (and format) code"
+    desc: "Generate (and format) Go code"
     cmds:
       - go generate -x ./...
       - bin/task{{exeExt}} -d integration integration-gen
-      - task: fmt
+      - task: fmt-go
 
+  # invoked by FerretDB/github-actions/linters action
   fmt:
-    desc: "Format code"
+    deps: [fmt-go]
+
+  fmt-go:
+    desc: "Format Go code"
     cmds:
       - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
@@ -171,10 +176,11 @@ tasks:
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
-    desc: "Run integration tests for `pg` and `tigris` in parallel"
+    desc: "Run integration tests for several backends in parallel"
     deps:
       - test-integration-pg
       - test-integration-mongodb
+      # no test-integration-sqlite yet
       # disable for now - test-integration-tigris
       # no test-integration-hana
 
@@ -188,6 +194,17 @@ tasks:
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+
+  test-integration-sqlite:
+    desc: "Run integration tests for `sqlite` handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-sqlite.txt .
+        -target-backend=ferretdb-sqlite
+        -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
 
   test-integration-tigris:
@@ -231,8 +248,8 @@ tasks:
       - echo 'Running five functions for {{.BENCHTIME}} each...'
       - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/pg/pjson/     | tee -a new.txt
+      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
+      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
       - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
@@ -252,8 +269,8 @@ tasks:
       - echo 'Running eight functions for {{.FUZZTIME}} each...'
       - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/bson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/pg/pjson/
+      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
+      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
       - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/tigris/tjson/
       - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZTIME}} ./internal/wire/
       - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZTIME}} ./internal/wire/
@@ -277,6 +294,19 @@ tasks:
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        --test-records-dir=tmp/records
+
+  run-sqlite:
+    desc: "Run FerretDB with `sqlite` handler"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=sqlite
+        --sqlite-uri=tmp/sqlite
         --test-records-dir=tmp/records
 
   run-tigris:
@@ -401,6 +431,11 @@ tasks:
     cmds:
       - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
+  sqlite3:
+    desc: "Run sqlite3"
+    cmds:
+      - sqlite3 *.sqlite
+
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
@@ -446,9 +481,9 @@ tasks:
         .
     vars:
       VERSION:
-        sh: cat build/version/version.txt
+        sh: go run ./cmd/envtool shell read build/version/version.txt
       COMMIT:
-        sh: cat build/version/commit.txt
+        sh: go run ./cmd/envtool shell read build/version/commit.txt
 
   # do not change that target much; see "Building and packaging" in README.md
   build-release:
@@ -512,7 +547,7 @@ tasks:
   packages-deb:
     cmds:
       - echo 'deb' > build/version/package.txt
-      - mkdir -p tmp/debs
+      - go run ./cmd/envtool shell mkdir tmp/debs
       - task: docker-build
         vars:
           FILE: production
@@ -523,13 +558,14 @@ tasks:
         env:
           ARCH: amd64
           VERSION:
-            sh: cat build/version/version.txt
+            sh: go run ./cmd/envtool shell read build/version/version.txt
+          POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
 
   packages-rpm:
     cmds:
       - echo 'rpm' > build/version/package.txt
-      - mkdir -p tmp/rpms
+      - go run ./cmd/envtool shell mkdir tmp/rpms
       - task: docker-build
         vars:
           FILE: production
@@ -540,8 +576,14 @@ tasks:
         env:
           ARCH: amd64
           VERSION:
-            sh: cat build/version/version.txt
+            sh: go run ./cmd/envtool shell read build/version/version.txt
+          POSTGRES_PACKAGE: postgresql
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
+
+  fmt-yaml:
+    desc: "Format YAML files"
+    cmds:
+      - docker compose run --rm prettier --write --parser=yaml "**/*.yml"
 
   docs:
     desc: "Format, lint and build documentation"
@@ -559,6 +601,7 @@ tasks:
   docs-fmt:
     desc: "Format and lint documentation"
     cmds:
+      - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 

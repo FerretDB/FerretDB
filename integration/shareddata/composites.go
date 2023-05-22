@@ -27,7 +27,7 @@ import (
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
 	name:     "Composites",
-	backends: []string{"ferretdb-pg", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
 	data: map[string]any{
 		"document": bson.D{{"foo", int32(42)}},
 		"document-composite": bson.D{
@@ -77,7 +77,7 @@ var Composites = &Values[string]{
 // mixture of array and scalar documents.
 var Mixed = &Values[string]{
 	name:     "Mixed",
-	backends: []string{"ferretdb-pg", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
 	data: map[string]any{
 		"null":        nil,
 		"unset":       unset,
@@ -90,7 +90,7 @@ var Mixed = &Values[string]{
 // dot notation to find values from both document and array.
 var ArrayAndDocuments = &Values[string]{
 	name:     "ArrayAndDocuments",
-	backends: []string{"ferretdb-pg", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
 	data: map[string]any{
 		"document": bson.D{{"foo", int32(42)}},
 		"array-documents": bson.A{
@@ -105,7 +105,7 @@ var ArrayAndDocuments = &Values[string]{
 // on pg backend.
 var PostgresEdgeCases = &Values[string]{
 	name:     "PostgresEdgeCases",
-	backends: []string{"ferretdb-pg", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
 	data: map[string]any{
 		"document-notations": bson.D{
 			{"foo[0]", int32(42)},
@@ -119,8 +119,7 @@ var PostgresEdgeCases = &Values[string]{
 
 // DocumentsDoubles contains documents with double values for tests.
 var DocumentsDoubles = &Values[string]{
-	name:     "DocumentsDoubles",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "DocumentsDoubles",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "number"}}`),
@@ -140,8 +139,7 @@ var DocumentsDoubles = &Values[string]{
 
 // DocumentsStrings contains documents with string values for tests.
 var DocumentsStrings = &Values[string]{
-	name:     "DocumentsStrings",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "DocumentsStrings",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "string"}}`),
@@ -159,8 +157,7 @@ var DocumentsStrings = &Values[string]{
 
 // DocumentsDocuments contains documents with documents for tests.
 var DocumentsDocuments = &Values[primitive.ObjectID]{
-	name:     "DocumentsDocuments",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "DocumentsDocuments",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
@@ -185,11 +182,42 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 	},
 }
 
+// DocumentsDeeplyNested contains documents nested in multiple levels for tests.
+var DocumentsDeeplyNested = &Values[string]{
+	name:     "DocumentsDeeplyNested",
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	data: map[string]any{
+		"two":   bson.D{{"a", bson.D{{"b", 12}}}},
+		"three": bson.D{{"a", bson.D{{"b", bson.D{{"c", 12}}}}}},
+		"four": bson.D{
+			{"a", bson.D{
+				{"b", bson.D{
+					{"c", bson.D{
+						{"d", 123},
+					}},
+					{"e", 13},
+				}},
+				{"f", 14},
+			}},
+			{"g", 15},
+		},
+		"array": bson.D{
+			{"a", bson.D{
+				{"b", bson.D{
+					{"c", bson.A{1, 2}},
+					{"e", 13},
+				}},
+				{"f", 14},
+			}},
+			{"g", 15},
+		},
+	},
+}
+
 // ArrayStrings contains an array with string values for tests.
 // Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
-	name:     "ArrayStrings",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "ArrayStrings",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
@@ -216,8 +244,7 @@ var ArrayStrings = &Values[string]{
 
 // ArrayDoubles contains an array with float64 values for tests.
 var ArrayDoubles = &Values[string]{
-	name:     "ArrayDoubles",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "ArrayDoubles",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
@@ -247,8 +274,7 @@ var ArrayDoubles = &Values[string]{
 
 // ArrayInt32s contains an array with int32 values for tests.
 var ArrayInt32s = &Values[string]{
-	name:     "ArrayInt32s",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "ArrayInt32s",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
@@ -275,10 +301,9 @@ var ArrayInt32s = &Values[string]{
 
 // ArrayInt64s contains an array with int64 values for tests.
 var ArrayInt64s = &Values[string]{
-	name:     "ArrayInt64s",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "ArrayInt64s",
 	validators: map[string]map[string]any{
-		"tigris": {
+		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
 				"title": "%%collection%%",
 				"primary_key": ["_id"],
@@ -300,8 +325,7 @@ var ArrayInt64s = &Values[string]{
 
 // ArrayRegexes contains an array with regex values for tests.
 var ArrayRegexes = &Values[string]{
-	name:     "ArrayRegexes",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "ArrayRegexes",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
@@ -330,8 +354,7 @@ var ArrayRegexes = &Values[string]{
 // ArrayDocuments contains array with documents with arrays: {"v": [{"foo": [{"bar": "hello"}]}, ...]}.
 // This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
-	name:     "ArrayDocuments",
-	backends: []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"},
+	name: "ArrayDocuments",
 	validators: map[string]map[string]any{
 		"ferretdb-tigris": {
 			"$tigrisSchemaString": `{
@@ -371,6 +394,20 @@ var ArrayDocuments = &Values[string]{
 			}},
 		},
 		"array-two-documents": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+		},
+		"array-three-documents": bson.A{
+			bson.D{{
+				"bar",
+				bson.A{bson.D{{"a", "b"}}},
+			}},
 			bson.D{{
 				"foo",
 				bson.A{bson.D{{"bar", "hello"}}},

@@ -16,12 +16,12 @@ package stages
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // project represents $project stage.
@@ -38,7 +38,7 @@ type project struct {
 }
 
 // newProject validates projection document and creates a new $project stage.
-func newProject(stage *types.Document) (Stage, error) {
+func newProject(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -48,17 +48,7 @@ func newProject(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	var cmdErr *commonerrors.CommandError
-
-	validated, inclusion, err := common.ValidateProjection(fields)
-	if errors.As(err, &cmdErr) {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			cmdErr.Code(),
-			fmt.Sprintf("Invalid $project :: caused by :: %s", cmdErr.Unwrap()),
-			"$project (stage)",
-		)
-	}
-
+	validated, inclusion, err := aggregations.ValidateProjection(fields)
 	if err != nil {
 		return nil, err
 	}
@@ -70,22 +60,18 @@ func newProject(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (p *project) Process(_ context.Context, in []*types.Document) ([]*types.Document, error) {
-	var out []*types.Document
-
-	for _, doc := range in {
-		projected, err := common.ProjectDocument(doc, p.projection, p.inclusion)
-		if err != nil {
-			return nil, err
-		}
-
-		out = append(out, projected)
-	}
-
-	return out, nil
+//
+//nolint:lll // for readability
+func (p *project) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return aggregations.ProjectionIterator(iter, closer, p.projection)
 }
 
 // Type implements Stage interface.
-func (p *project) Type() StageType {
-	return StageTypeDocuments
+func (p *project) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
+
+// check interfaces
+var (
+	_ aggregations.Stage = (*project)(nil)
+)

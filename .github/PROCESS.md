@@ -59,17 +59,20 @@ Try to estimate on the planning as best as you can.
 
 ## Pull requests
 
-For FerretDB Inc. engineers and long-term contributors, besides the guides in [CONTRIBUTING.md](../CONTRIBUTING.md), please follow these notes below when you working with pull request:
+For FerretDB Inc. engineers and long-term contributors,
+besides the guides in [CONTRIBUTING.md](../CONTRIBUTING.md),
+please follow these notes below when you working with pull request:
 
 1. Send pull requests from forks; do not make personal branches in the main repository.
    This way, we are similar to community members and could notice similar problems that we could fix for everyone,
    not just for us.
 2. Pull request **title** should be accurate and descriptive as it is used in the generated changelog.
-   It should not mention the issue number but describe the fixed issue instead.
+   It generally should start with imperative verb ("Fix …", not "Fixing …", "Fixed …" or other forms).
+   It should not mention the issue number.
 3. We provide a pull requests template that includes suggestions and readiness checklist.
    Please use it.
 4. It is fine to send several sequential pull requests for one issue to make them easier to review.
-   In that case, please still use the `Closes` word as described above
+   In that case, please still use the `Closes` word as described in [CONTRIBUTING.md](../CONTRIBUTING.md)
    (because [words like "refs" do not link PR to the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)),
    but don't forget to reopen the issue once PR is merged,
    but the issue as a whole is not done.
@@ -90,3 +93,11 @@ To make them useful,
 talk with [@GitHub bot in direct messages](https://ferretdb.slack.com/archives/D02P4EJPFGV)
 to link your Slack and GitHub identities,
 and then configure notification only for your name.
+
+## Creating issues
+
+1. Please use `Chore` type instead of `Enhancement` or `Feature` (but not `Bug`)
+   because its template is much more useful
+   (but may be too daunting for regular users, that's why templates for enhancements and features are much simpler).
+   After creating an issue, please change its type (label) manually.
+2. Do not change automatically applied labels, assignees, or projects.

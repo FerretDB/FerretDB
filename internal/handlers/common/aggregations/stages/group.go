@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -48,7 +49,7 @@ type groupBy struct {
 }
 
 // newGroup creates a new $group stage.
-func newGroup(stage *types.Document) (Stage, error) {
+func newGroup(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -135,8 +136,13 @@ func newGroup(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	groupedDocuments, err := g.groupDocuments(ctx, in)
+func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	groupedDocuments, err := g.groupDocuments(ctx, docs)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +173,7 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 		res = append(res, doc)
 	}
 
-	return res, nil
+	return iterator.Values(iterator.ForSlice(res)), nil
 }
 
 // groupDocuments groups documents by group expression.
@@ -181,46 +187,48 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 		}}, nil
 	}
 
-	expression, err := types.NewExpression(groupKey)
+	expression, err := aggregations.NewExpression(groupKey)
 	if err != nil {
-		var fieldPathErr *types.FieldPathError
-		if !errors.As(err, &fieldPathErr) {
+		var exprErr *aggregations.ExpressionError
+		if !errors.As(err, &exprErr) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		switch fieldPathErr.Code() {
-		case types.ErrNotFieldPath:
+		switch exprErr.Code() {
+		case aggregations.ErrNotExpression:
 			// constant value aggregates values of all `in` documents into one aggregated document.
 			return []groupedDocuments{{
 				groupID:   groupKey,
 				documents: in,
 			}}, nil
-		case types.ErrEmptyFieldPath:
+		case aggregations.ErrEmptyFieldPath:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				// TODO
 				commonerrors.ErrGroupInvalidFieldPath,
-				"'$' by itself is not a valid FieldPath",
+				"'$' by itself is not a valid Expression",
 				"$group (stage)",
 			)
-		case types.ErrInvalidFieldPath:
+		case aggregations.ErrInvalidExpression:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
 				"$group (stage)",
 			)
-		case types.ErrEmptyVariable:
+		case aggregations.ErrEmptyVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				"empty variable names are not allowed",
 				"$group (stage)",
 			)
-		case types.ErrUndefinedVariable:
+		// TODO https://github.com/FerretDB/FerretDB/issues/2275
+		case aggregations.ErrUndefinedVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupUndefinedVariable,
 				fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
 				"$group (stage)",
 			)
 		default:
-			panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
+			panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
 		}
 	}
 
@@ -266,11 +274,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 }
 
 // Type implements Stage interface.
-func (g *group) Type() StageType {
-	return StageTypeDocuments
+func (g *group) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*group)(nil)
+	_ aggregations.Stage = (*group)(nil)
 )

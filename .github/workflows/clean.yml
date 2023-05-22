@@ -1,0 +1,26 @@
+name: clean old packages
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  scan-old-package:
+    runs-on: ubuntu-latest
+
+    # disable for now
+    if: false
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - name: Install dependencies
+        run: cd tools; go get ./cleantool
+      - name: Scan old package versions and store the version id to env
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+        run: |
+          cd tools;go run ./cleantool/cleantool.go
