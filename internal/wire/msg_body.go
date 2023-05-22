@@ -42,6 +42,7 @@ type MsgBody interface {
 // indicating that connection was closed by the client.
 var ErrZeroRead = errors.New("zero bytes read")
 
+// FIXME
 const kFlagBitSize = 4
 
 // ReadMessage reads from reader and returns wire header and body.
