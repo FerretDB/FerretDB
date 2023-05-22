@@ -26,6 +26,7 @@ import (
 type typeOp struct{}
 
 func newType(expression *types.Document) (Operator, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2678
 	must.NotFail(expression.Get("$type"))
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
 		commonerrors.ErrNotImplemented,
@@ -35,6 +36,7 @@ func newType(expression *types.Document) (Operator, error) {
 }
 
 func (t *typeOp) Process(in *types.Document) (any, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2678
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
 		commonerrors.ErrNotImplemented,
 		fmt.Sprintf("$type aggregation operator is not implemented yet"),

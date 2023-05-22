@@ -62,6 +62,7 @@ func Get(value any, stage, key string) (Operator, error) {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
+	// TODO https://github.com/FerretDB/FerretDB/issues/2680
 	"$type": newType,
 	// please keep sorted alphabetically
 }
