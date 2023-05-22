@@ -445,8 +445,12 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return float64(v1) * v2, nil
 		case int32:
-			return multiplyLongSafely(v1, int64(v2))
+			v, err := multiplyLongSafely(v1, int64(v2))
+			if err != nil {
+				return 0, commonparams.ErrIntExceeded
+			}
 
+			return v, nil
 		case int64:
 			return multiplyLongSafely(v1, v2)
 

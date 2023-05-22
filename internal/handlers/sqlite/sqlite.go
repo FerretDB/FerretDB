@@ -22,8 +22,10 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // notImplemented returns error for stub command handlers.
@@ -46,14 +48,19 @@ type Handler struct {
 type NewOpts struct {
 	Dir string
 
-	L *zap.Logger
+	L             *zap.Logger
+	Metrics       *connmetrics.ConnMetrics
+	StateProvider *state.Provider
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	b := sqlite.NewBackend(&sqlite.NewBackendParams{
+	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 		Dir: opts.Dir,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &Handler{
 		NewOpts: opts,
