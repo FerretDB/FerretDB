@@ -15,10 +15,8 @@
 package projection
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
@@ -64,24 +62,17 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			return nil, false, lazyerrors.Error(err)
 		}
 
-		if strings.HasPrefix(key, "$") {
-			return nil, false, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("projection operator $ is not supported in %s", key),
-			)
-		}
-
 		var result bool
 
 		switch value := value.(type) {
 		case *types.Document:
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
-			return nil, false, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
-				fmt.Sprintf("projection %s is not supported",
-					types.FormatAnyValue(value),
-				),
-			)
+			_, err := operators.Get(value, "$project", key)
+			if err != nil {
+				return nil, false, err
+			}
+
+			validated.Set(key, value)
+
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
 			result = true
@@ -155,13 +146,17 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 		switch idValue := idValue.(type) {
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2633
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
-				fmt.Sprintf("projection %s is not supported",
-					types.FormatAnyValue(idValue),
-				),
-			)
+			op, err := operators.Get(idValue, "$project", "_id")
+			if err != nil {
+				return nil, err
+			}
+
+			value, err := op.Process(projected)
+			if err != nil {
+				return nil, err
+			}
+
+			projected.Set("_id", value)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
@@ -233,7 +228,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				return nil, err
 			}
 
-			v, err := op.Process(context.TODO(), doc)
+			v, err := op.Process(doc)
 			if err != nil {
 				return nil, err
 			}

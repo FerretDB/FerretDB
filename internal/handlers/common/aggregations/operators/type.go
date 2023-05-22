@@ -16,6 +16,9 @@
 package operators
 
 import (
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -24,9 +27,17 @@ type typeOp struct{}
 
 func newType(expression *types.Document) (Operator, error) {
 	must.NotFail(expression.Get("$type"))
-	return nil, types.ErrOptionNotImplemented
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrNotImplemented,
+		fmt.Sprintf("$type aggregation operator is not implemented yet"),
+		"$type",
+	)
 }
 
 func (t *typeOp) Process(in *types.Document) (any, error) {
-	return nil, types.ErrOptionNotImplemented
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrNotImplemented,
+		fmt.Sprintf("$type aggregation operator is not implemented yet"),
+		"$type",
+	)
 }

@@ -139,7 +139,6 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 				return nil, err
 			}
 
-			// $group: {$_id:$type, count: {$count:{}}}
 			if doc.Has(accumulation.outputField) {
 				// document has duplicate key
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
