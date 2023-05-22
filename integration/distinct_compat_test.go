@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// distinctCompatTestCase describes count compatibility test case.
+// distinctCompatTestCase describes distinct compatibility test case.
 type distinctCompatTestCase struct {
 	field      string                   // required
 	filter     bson.D                   // required
