@@ -32,7 +32,6 @@ type Accumulator interface {
 }
 
 // Get returns accumulator for provided value.
-// TODO consider better design.
 func Get(value any, stage, key string) (Accumulator, error) {
 	accumulation, ok := value.(*types.Document)
 	if !ok || accumulation.Len() == 0 {

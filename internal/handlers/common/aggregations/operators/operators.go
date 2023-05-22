@@ -16,24 +16,19 @@
 package operators
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
 type newOperatorFunc func(expression *types.Document) (Operator, error)
 
 // Operator is a common interface for standard aggregation operators.
-// TODO consider not creating operators as structs - they don't require to store the state.
 type Operator interface {
 	// Process document and returns the result of applying operator.
-	//
-	// TODO make sure that operators work always the same for every stage,
-	// if not - provide calling stage as an argument.
-	Process(ctx context.Context, in *types.Document) (any, error)
+	Process(in *types.Document) (any, error)
 }
 
 // Operators maps all standard aggregation operators.
@@ -42,22 +37,19 @@ var Operators = map[string]newOperatorFunc{
 	// please keep sorted alphabetically
 }
 
+// Get returns operator for provided value.
 func Get(value any, stage, key string) (Operator, error) {
 	operatorDoc, ok := value.(*types.Document)
 	if !ok || operatorDoc.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupInvalidAccumulator,
-			fmt.Sprintf("The field '' must be an accumulator object"),
-			" (stage)",
+		return nil, lazyerrors.New(
+			fmt.Sprintf("The field '%s' must be an object", key),
 		)
 	}
 
-	// accumulation document contains only one field.
+	// operator document contains only one field.
 	if operatorDoc.Len() > 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupMultipleAccumulator,
-			fmt.Sprintf("The field '' must specify one accumulator"),
-			" (stage)",
+		return nil, lazyerrors.New(
+			fmt.Sprintf("The field '%s' must specify one operator", key),
 		)
 	}
 
@@ -65,10 +57,8 @@ func Get(value any, stage, key string) (Operator, error) {
 
 	newOperator, ok := Operators[operator]
 	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			fmt.Sprintf("%s accumulator %q is not implemented yet", "", operator),
-			operator+" (operator)",
+		return nil, lazyerrors.New(
+			fmt.Sprintf("%s operator %q is not implemented yet", stage, operator),
 		)
 	}
 
