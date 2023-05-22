@@ -26,7 +26,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetRequiredParam returns doc's value for key.
+// GetRequiredParam returns doc's value for key
+// or protocol error for other invalid type.
 func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
@@ -45,7 +46,8 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	return res, nil
 }
 
-// GetOptionalParam returns doc's value for key or default value for missing parameter.
+// GetOptionalParam returns doc's value for key or default value for missing parameter
+// or protocol error for other invalid type.
 func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, _ := doc.Get(key)
 	if v == nil {
@@ -66,7 +68,8 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 	return res, nil
 }
 
-// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null.
+// GetOptionalNullParam returns doc's value for key, default value for missing parameter or null
+// or protocol error for other invalid type.
 func GetOptionalNullParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, err := GetOptionalParam(doc, key, defaultValue)
 	if err != nil {
@@ -79,7 +82,7 @@ func GetOptionalNullParam[T types.Type](doc *types.Document, key string, default
 	return v, err
 }
 
-// AssertType asserts value's type, returning ErrBadValue for unexpected types.
+// AssertType asserts value's type, returning protocol error for unexpected types.
 //
 // If a custom error is needed, use a normal Go type assertion instead:
 //
@@ -98,6 +101,7 @@ func AssertType[T types.Type](value any) (T, error) {
 }
 
 // GetLimitStageParam returns $limit stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {
 	limit, err := commonparams.GetWholeNumberParam(value)
 
@@ -144,6 +148,7 @@ func GetLimitStageParam(value any) (int64, error) {
 }
 
 // GetSkipStageParam returns $skip stage argument from the provided value.
+// It returns the proper error if value doesn't meet requirements.
 func GetSkipStageParam(value any) (int64, error) {
 	limit, err := commonparams.GetWholeNumberParam(value)
 
