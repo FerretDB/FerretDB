@@ -31,12 +31,6 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
-// Operators maps all standard aggregation operators.
-var Operators = map[string]newOperatorFunc{
-	// sorted alphabetically
-	// please keep sorted alphabetically
-}
-
 // Get returns operator for provided value.
 func Get(value any, stage, key string) (Operator, error) {
 	operatorDoc, ok := value.(*types.Document)
@@ -63,4 +57,11 @@ func Get(value any, stage, key string) (Operator, error) {
 	}
 
 	return newOperator(operatorDoc)
+}
+
+// Operators maps all standard aggregation operators.
+var Operators = map[string]newOperatorFunc{
+	// sorted alphabetically
+	"$type": newType,
+	// please keep sorted alphabetically
 }
