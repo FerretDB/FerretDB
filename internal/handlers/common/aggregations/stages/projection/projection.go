@@ -146,12 +146,15 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 		switch idValue := idValue.(type) {
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			op, err := operators.Get(idValue, "$project", "_id")
+			var op operators.Operator
+			var value any
+
+			op, err = operators.Get(idValue, "$project", "_id")
 			if err != nil {
 				return nil, err
 			}
 
-			value, err := op.Process(projected)
+			value, err = op.Process(projected)
 			if err != nil {
 				return nil, err
 			}
@@ -223,12 +226,15 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			op, err := operators.Get(value, "$project", key)
+			var op operators.Operator
+			var v any
+
+			op, err = operators.Get(value, "$project", key)
 			if err != nil {
 				return nil, err
 			}
 
-			v, err := op.Process(doc)
+			v, err = op.Process(doc)
 			if err != nil {
 				return nil, err
 			}
