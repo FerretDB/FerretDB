@@ -27,10 +27,6 @@ import (
 )
 
 // GetRequiredParam returns doc's value for key.
-//
-// It returns command errors with the following codes:
-//   - ErrBadValue if the document value is missing;
-//   - ErrBadValue if the document value is not of the expected type.
 func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) {
 	var zero T
 
@@ -50,8 +46,6 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 }
 
 // GetOptionalParam returns doc's value for key or default value for missing parameter.
-//
-// It returns command error with the ErrTypeMismatch code if the document value is not of the expected type.
 func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, _ := doc.Get(key)
 	if v == nil {
@@ -73,8 +67,6 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 }
 
 // GetOptionalNullParam returns doc's value for key, default value for missing parameter or null.
-//
-// It returns command error with ErrTypeMismatch code if the document value is not of the expected type.
 func GetOptionalNullParam[T types.Type](doc *types.Document, key string, defaultValue T) (T, error) {
 	v, err := GetOptionalParam(doc, key, defaultValue)
 	if err != nil {
@@ -95,8 +87,6 @@ func GetOptionalNullParam[T types.Type](doc *types.Document, key string, default
 //	if !ok {
 //	  return commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, "expected document")
 //	}
-//
-// It returns command error with ErrBadValue code if the value is not of the expected type.
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
@@ -108,13 +98,6 @@ func AssertType[T types.Type](value any) (T, error) {
 }
 
 // GetLimitStageParam returns $limit stage argument from the provided value.
-//
-// It returns command errors with the following codes:
-//   - ErrStageLimitInvalidArg if the value type is not [int, long, double];
-//   - ErrStageLimitInvalidArg if the value is not a whole number or is NaN;
-//   - ErrStageLimitInvalidArg if the value is not in the range of int64;
-//   - ErrStageLimitInvalidArg if the value is negative;
-//   - ErrStageLimitZero if the value is zero.
 func GetLimitStageParam(value any) (int64, error) {
 	limit, err := commonparams.GetWholeNumberParam(value)
 
@@ -161,12 +144,6 @@ func GetLimitStageParam(value any) (int64, error) {
 }
 
 // GetSkipStageParam returns $skip stage argument from the provided value.
-//
-// It returns command errors with the following codes:
-//   - ErrStageSkipBadValue if the value type is not [int, long, double];
-//   - ErrStageSkipBadValue if the value is not a whole number or is NaN;
-//   - ErrStageSkipBadValue if the value is not in the range of int64;
-//   - ErrStageSkipBadValue if the value is less than zero.
 func GetSkipStageParam(value any) (int64, error) {
 	limit, err := commonparams.GetWholeNumberParam(value)
 
@@ -204,12 +181,6 @@ func GetSkipStageParam(value any) (int64, error) {
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.
 // Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
-//
-// It returns command errors with the following codes:
-//   - ErrBadValue if positional argument is not a whole number of type [int, long, double];
-//   - ErrBadValue if positional argument is negative;
-//   - ErrFailedToParse if bitmask argument is not a whole number or negative;
-//   - ErrBadValue if the type of the value is not [int, long, double, binary, array];
 func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	var bitmask uint64
 
