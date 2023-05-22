@@ -406,7 +406,8 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			if v.Field(i).IsZero() {
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace,
 					fmt.Sprintf("Invalid namespace specified '%s.'", v.FieldByName("DB")),
-					command)
+					command,
+				)
 			}
 
 			key = command
