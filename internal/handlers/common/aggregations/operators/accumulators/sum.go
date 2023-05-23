@@ -53,7 +53,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	case int32, int64:
 		accumulator.number = expr
 	default:
-		// TODO if the value is a document, evaluate it as operators.Operator
+		// TODO https://github.com/FerretDB/FerretDB/issues/2694
 		accumulator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}

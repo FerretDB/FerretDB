@@ -37,48 +37,10 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
-//go:generate ../../../../../bin/stringer -linecomment -type OperatorErrorCode
-
-// OperatorErrorCode represents aggregation operator error code.
-type OperatorErrorCode int
-
-const (
-	// ErrWrongType indicates that operator field is not a document.
-	ErrWrongType OperatorErrorCode = iota + 1
-
-	// ErrEmptyField indicates that operator field does not specify any operator.
-	ErrEmptyField
-
-	// ErrTooManyFields indicates that operator field specifes more than one operators.
-	ErrTooManyFields
-
-	// ErrNotImplemented indicates that given operator is not implemented yet.
-	ErrNotImplemented
-)
-
-// newExpressionError creates a new ExpressionError.
-func newOperatorError(code OperatorErrorCode) error {
-	return &OperatorError{code: code}
-}
-
-// OperatorError describes an error that occurs while evaluating operator.
-type OperatorError struct {
-	code OperatorErrorCode
-}
-
-// Error implements the error interface.
-func (e *OperatorError) Error() string {
-	return e.code.String()
-}
-
-// Code returns the OperatorError code.
-func (e *OperatorError) Code() OperatorErrorCode {
-	return e.code
-}
-
-// NewOperator returns operator for provided value.
-func NewOperator(value any) (Operator, error) {
-	operatorDoc, ok := value.(*types.Document)
+// NewOperator returns operator from provided document.
+// The document should look like: `{<$operator>: <operator-value>}`
+func NewOperator(doc any) (Operator, error) {
+	operatorDoc, ok := doc.(*types.Document)
 
 	switch {
 	case !ok:
