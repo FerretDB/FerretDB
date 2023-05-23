@@ -25,12 +25,8 @@ import (
 )
 
 var (
-	// ErrNegativeNumber is returned when a negative number is given.
-	ErrNegativeNumber = fmt.Errorf("negative number")
 	// ErrNotWholeNumber is returned when a non-whole number is given.
 	ErrNotWholeNumber = fmt.Errorf("not a whole number")
-	// ErrNotBinaryMask is returned when a non-binary mask is given.
-	ErrNotBinaryMask = fmt.Errorf("not a binary mask")
 	// ErrUnexpectedLeftOpType is returned when an unexpected left operand type is given.
 	ErrUnexpectedLeftOpType = fmt.Errorf("unexpected left operand type")
 	// ErrUnexpectedRightOpType is returned when an unexpected right operand type is given.

@@ -116,7 +116,7 @@ func TestQueryBadFindType(t *testing.T) {
 	}
 }
 
-func TestQueryBadSortType(t *testing.T) {
+func TestQuerySortErrors(t *testing.T) {
 	setup.SkipForTigris(t)
 
 	t.Parallel()
@@ -127,7 +127,7 @@ func TestQueryBadSortType(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 	}{
-		"BadSortTypeDouble": {
+		"SortTypeDouble": {
 			command: bson.D{
 				{"find", collection.Name()},
 				{"projection", bson.D{{"v", "some"}}},
@@ -140,7 +140,7 @@ func TestQueryBadSortType(t *testing.T) {
 			},
 			altMessage: "BSON field 'find.sort' is the wrong type 'double', expected type 'object'",
 		},
-		"BadSortType": {
+		"SortTypeString": {
 			command: bson.D{
 				{"find", collection.Name()},
 				{"projection", bson.D{{"v", "some"}}},
@@ -153,7 +153,7 @@ func TestQueryBadSortType(t *testing.T) {
 			},
 			altMessage: "BSON field 'find.sort' is the wrong type 'string', expected type 'object'",
 		},
-		"BadSortTypeValue": {
+		"SortStringValue": {
 			command: bson.D{
 				{"find", collection.Name()},
 				{"projection", bson.D{{"v", 42}}},
@@ -166,6 +166,42 @@ func TestQueryBadSortType(t *testing.T) {
 			},
 			altMessage: `Illegal key in $sort specification: asc: 123`,
 		},
+		"DoubleValue": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"v", 42}}},
+				{"sort", bson.D{{"asc", 42.12}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: `$sort key ordering must be 1 (for ascending) or -1 (for descending)`,
+			},
+		},
+		"IncorrectIntValue": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"v", 42}}},
+				{"sort", bson.D{{"asc", int32(12)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: `$sort key ordering must be 1 (for ascending) or -1 (for descending)`,
+			},
+		},
+		"ExceedIntValue": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"projection", bson.D{{"v", 42}}},
+				{"sort", bson.D{{"asc", int64(math.MaxInt64)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15975,
+				Name:    "Location15975",
+				Message: `$sort key ordering must be 1 (for ascending) or -1 (for descending)`,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -174,12 +210,13 @@ func TestQueryBadSortType(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.Error(t, err)
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
-func TestQueryBadMaxTimeMSType(t *testing.T) {
+func TestQueryMaxTimeMSErrors(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
