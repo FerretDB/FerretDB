@@ -40,7 +40,7 @@ We’ve fixed issues with Unix socket listeners, where you get internal errors o
 
 In other changes, we've made it easier to configure FerretDB in container and cloud environments through environment variables.
 For identified errors, we’ve improved the accuracy of telemetry data in some cases where arguments or operators are present but not implemented, or return errors.
-Furthermore, we have enabled the use of  `-` in collection names in line with real-life app usages.
+Furthermore, we have enabled the use of `-` in collection names in line with real-life app usages.
 
 Please find more details on the latest FerretDB version release [here on GitHub](https://github.com/FerretDB/FerretDB/releases).
 And if you have any questions, feel free to [contact us](https://docs.ferretdb.io/#community).

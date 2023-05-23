@@ -3,9 +3,19 @@ slug: mongodb-vs-postgresql-database-comparison
 title: "MongoDB vs PostgreSQL: A Detailed Database Comparison"
 authors: [alex]
 description: >
-    Compare the features and benefits of MongoDB and PostgreSQL to determine which database management system is best for your application.
+  Compare the features and benefits of MongoDB and PostgreSQL to determine which database management system is best for your application.
 image: /img/blog/mongodb-postgres.jpg
-keywords: [MongoDB, PostgreSQL, NoSQL, relational databases, scalability, performance, data modeling, schema design]
+keywords:
+  [
+    MongoDB,
+    PostgreSQL,
+    NoSQL,
+    relational databases,
+    scalability,
+    performance,
+    data modeling,
+    schema design,
+  ]
 tags: [document database, mongodb alternative, mongodb compatible]
 ---
 
@@ -92,8 +102,8 @@ With MQL, you can query any field, embedded documents, or nested arrays in the M
 
 ```js
 db.users.find({
-  hobbies: { $all: ["reading", "cooking"] }
-})
+  hobbies: { $all: ["reading", "cooking"] },
+});
 ```
 
 ### ACID Compliance

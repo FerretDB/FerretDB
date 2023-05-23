@@ -37,7 +37,7 @@ In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`
 |                         |                                                                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | \x12\x00\x00\x00        | Document length in little-endian int32 (18 bytes document)                                                            |
-| \x02                    | string field type `\x02`, see the [BSON spec](https://bsonspec.org/spec.html "")                                      |
+| \x02                    | string field type `\x02`, see the [BSON spec](https://bsonspec.org/spec.html)                                         |
 | foo\x00                 | Cstring field name                                                                                                    |
 | \x04\x00\x00\x00bar\x00 | String length in little-endian int32 `\x04\x00\x00\x00` (4 bytes string) followed by string value and trailing `\x00` |
 | \x00                    | Document terminator                                                                                                   |
@@ -95,7 +95,7 @@ The current mappings to PJSON are defined below.
 | Timestamp                    | `{“$t”: “<number as string>”}`                                                                                   |
 | 64-bit integer               | `{“$l”: “<number as string>”}`                                                                                   |
 
-In addition to `$` prefixes, binary data have an additional field `s`  to indicate the type of binary.
+In addition to `$` prefixes, binary data have an additional field `s` to indicate the type of binary.
 Also, regular expressions have an additional field `o` to specify options such as case sensitivity.
 
 ## PJSON Example: Translating and storing BSON in JSONB
@@ -142,7 +142,7 @@ The BSON field name `_id\x00` is `cstring` type which is a UTF-8 `string` follow
 We convert `cstring` to `string` by dropping the `\x00`, and we have the field name `_id`.
 The `ObjectId` field value is specified in BSON spec as 12 bytes, we read subsequent 12 bytes as `ObjectId` which are `\x63\x52\x02\xc8\xf7\x5e\x48\x7c\x16\xad\xc1\x41`.
 
-The second field type `\x02` is `string`, the field name `name\x00`  is obtained by reading the `cstring` field name until the first `\x00`.
+The second field type `\x02` is `string`, the field name `name\x00` is obtained by reading the `cstring` field name until the first `\x00`.
 The string field value `\x05\x00\x00\x00milk\x00` contains the string length followed by the value.
 The first part `\x05\x00\x00\x00` is string length in little-endian int32 format which says the string is 5 bytes length.
 We read the subsequent 5 bytes `milk\x00` and we drop the `\x00` to get the field value of `milk`.

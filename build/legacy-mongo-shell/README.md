@@ -52,7 +52,7 @@ true
 >
 ```
 
- The `find()` method will return an object, the properties of which will not be parsed by the various assert functions:
+The `find()` method will return an object, the properties of which will not be parsed by the various assert functions:
 
 ```js
 > const res = db.foo.find({a: 1});
@@ -175,51 +175,51 @@ If no `intervalMS` argument is passed, it defaults to 0.
 ## All assert functions
 
 ```js
-assert.adminCommandWorkedAllowingNetworkError
-assert.between
-assert.betweenEx
-assert.betweenIn
-assert.bind
-assert.call
-assert.close
-assert.closeWithinMS
-assert.commandFailed
-assert.commandFailedWithCode
-assert.commandWorked
-assert.commandWorkedIgnoringWriteConcernErrors
-assert.commandWorkedIgnoringWriteErrors
-assert.commandWorkedIgnoringWriteErrorsAndWriteConcernErrors
-assert.commandWorkedOrFailedWithCode
-assert.contains
-assert.containsPrefix
-assert.docEq
-assert.doesNotThrow
-assert.dropExceptionsWithCode
-assert.eq
-assert.gt
-assert.gte
-assert.hasFields
-assert.includes
-assert.isnull
-assert.lt
-assert.lte
-assert.neq
-assert.noAPIParams
-assert.retry
-assert.retryNoExcept
-assert.sameMembers
-assert.setEq
-assert.soon
-assert.soonNoExcept
-assert.throws
-assert.throwsWithCode
-assert.time
-assert.toLocaleString
-assert.toString
-assert.valueOf
-assert.writeError
-assert.writeErrorWithCode
-assert.writeOK
+assert.adminCommandWorkedAllowingNetworkError;
+assert.between;
+assert.betweenEx;
+assert.betweenIn;
+assert.bind;
+assert.call;
+assert.close;
+assert.closeWithinMS;
+assert.commandFailed;
+assert.commandFailedWithCode;
+assert.commandWorked;
+assert.commandWorkedIgnoringWriteConcernErrors;
+assert.commandWorkedIgnoringWriteErrors;
+assert.commandWorkedIgnoringWriteErrorsAndWriteConcernErrors;
+assert.commandWorkedOrFailedWithCode;
+assert.contains;
+assert.containsPrefix;
+assert.docEq;
+assert.doesNotThrow;
+assert.dropExceptionsWithCode;
+assert.eq;
+assert.gt;
+assert.gte;
+assert.hasFields;
+assert.includes;
+assert.isnull;
+assert.lt;
+assert.lte;
+assert.neq;
+assert.noAPIParams;
+assert.retry;
+assert.retryNoExcept;
+assert.sameMembers;
+assert.setEq;
+assert.soon;
+assert.soonNoExcept;
+assert.throws;
+assert.throwsWithCode;
+assert.time;
+assert.toLocaleString;
+assert.toString;
+assert.valueOf;
+assert.writeError;
+assert.writeErrorWithCode;
+assert.writeOK;
 ```
 
 ## Error Codes

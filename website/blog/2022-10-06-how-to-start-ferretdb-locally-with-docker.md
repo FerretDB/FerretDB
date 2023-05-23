@@ -23,9 +23,9 @@ The process of installing and running FerretDB is not complicated at all, and yo
 
 To set up FerretDB locally using Docker, you will need to have the following installed:
 
-* [Docker](https://docs.docker.com/get-docker/)
-* [Docker Compose](https://docs.docker.com/compose/install/)
-* Text editor of choice
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- Text editor of choice
 
 ## How to set up FerretDB environment locally
 

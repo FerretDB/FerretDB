@@ -13,7 +13,7 @@ Using MongoDB Atlas only leads to lock-in, learn to avoid this problem and keep 
 
 <!--truncate-->
 
-Photo by[Masaaki Komori](https://unsplash.com/@gaspanik?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText) on [Unsplash](https://unsplash.com/s/photos/gate?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
+Photo by[Masaaki Komori](https://unsplash.com/@gaspanik?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/s/photos/gate?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
 
 No matter what stage a company is at, there’s always a palpable fear of vendor lock-in when adopting new software.
 This fear becomes heightened when it comes to database systems.
@@ -38,13 +38,13 @@ In its place, companies can enjoy all the benefits that their license covers, in
 
 Let’s take a look at some of the drawbacks of getting locked to a particular technology:
 
-* **Fear of deprecation or service decline**: If software suddenly shuts down or fails to meet your business requirements, you'd want to seek alternatives and migrate your data.
-But this may be sometimes impossible or difficult, meaning you’ll likely be stuck.
+- **Fear of deprecation or service decline**: If software suddenly shuts down or fails to meet your business requirements, you'd want to seek alternatives and migrate your data.
+  But this may be sometimes impossible or difficult, meaning you’ll likely be stuck.
 
-* **Sudden price surge**: A vendor may decide to raise its license costs or levy fees for particular services, knowing that you’re locked and cannot avoid paying.
+- **Sudden price surge**: A vendor may decide to raise its license costs or levy fees for particular services, knowing that you’re locked and cannot avoid paying.
 
-* **Lack of control**: Using proprietary software means you’ll have no control over new feature additions, upgrades, hosting, maintenance, and integrations.
-In the same vein, you won’t be able to customize or tailor the product to suit your specific business needs.
+- **Lack of control**: Using proprietary software means you’ll have no control over new feature additions, upgrades, hosting, maintenance, and integrations.
+  In the same vein, you won’t be able to customize or tailor the product to suit your specific business needs.
 
 ### The curious case of MongoDB Atlas
 
@@ -77,7 +77,7 @@ By building your application database on OSS, you can safely manage, build, main
 [FerretDB](https://www.ferretdb.io/) and [Tigris Data](https://www.tigrisdata.com/) offer a potential alternative to MongoDB Atlas, where users can safely take control of their own data without the needless stress of a lock-in.
 But how does it work?
 
-FerretDB is an [open-source proxy](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/) that converts MongoDB  wire protocol queries to an underlying backend.
+FerretDB is an [open-source proxy](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/) that converts MongoDB wire protocol queries to an underlying backend.
 When it comes to Tigris, FerretDB provides a MongoDB translation layer that converts MongoDB queries to Tigris requests.
 Adopting both solutions will ensure you have a developer-friendly, cloud-based, open-source database platform that can be deployed in any environment under your control – either on-prem or in the cloud under your account.
 
@@ -93,6 +93,6 @@ And just because a proprietary software like MongoDB promises a way out of the l
 Essentially, the possibility of avoiding a vendor lock-in situation doesn’t mean it's feasible.
 
 With FerretDB and Tigris, you’ll be able to build your application backend and have control of all your data without the fear of getting locked in.
-Click [here](https://www.tigrisdata.com/beta "") to sign up for the Tigris beta and get early access.
+Click [here](https://www.tigrisdata.com/beta) to sign up for the Tigris beta and get early access.
 
-Read this article to learn more on [why you need FerretDB as the ideal replacement for MongoDB](https://blog.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/ "").
+Read this article to learn more on [why you need FerretDB as the ideal replacement for MongoDB](https://blog.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/).

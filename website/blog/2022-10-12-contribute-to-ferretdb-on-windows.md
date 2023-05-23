@@ -22,30 +22,30 @@ For all Windows users fascinated and interested in contributing to FerretDB, thi
 
 To start contributing to FerretDB on Windows, this is a list of software we'll be using:
 
-* Git (for example, [GitHub for Windows](https://desktop.github.com/))
-* Go ([download here](https://go.dev/dl/))
-* Docker for Windows ([download here](https://docs.docker.com/desktop/install/windows-install/))
-* Text editor (there are plenty of them, you have to pick one! 😃)
+- Git (for example, [GitHub for Windows](https://desktop.github.com/))
+- Go ([download here](https://go.dev/dl/))
+- Docker for Windows ([download here](https://docs.docker.com/desktop/install/windows-install/))
+- Text editor (there are plenty of them, you have to pick one! 😃)
 
 ## Git options that are extremely useful for Windows systems
 
-* **Lines endings**: Most operating systems handle line endings differently.
-To ensure effective collaboration and consistency with people using other operating systems, we need to configure git’s line endings with the following command: git config --global core.autocrlf true
-* **Global .gitignore**: It would help you to avoid committing unrelated files like executables and IDE settings.
-With the global .gitignore setting, you only need to set it up once, which would work for all repositories.
+- **Lines endings**: Most operating systems handle line endings differently.
+  To ensure effective collaboration and consistency with people using other operating systems, we need to configure git’s line endings with the following command: git config --global core.autocrlf true
+- **Global .gitignore**: It would help you to avoid committing unrelated files like executables and IDE settings.
+  With the global .gitignore setting, you only need to set it up once, which would work for all repositories.
 
 ## Helpful Docker settings
 
 Apart from the Git settings, you also need to configure Docker.
 
-* **Check WSL2 is set up and running**: WSL2 provides an entire Linux kernel that allows Docker to run containers without having to manage any Virtual Machines.
-With WSL2, you can use a native Linux terminal and might want to develop inside that distribution.
-We do not recommend doing that to avoid any network-related issues.
-* **Disk space**: If you have two hard drives, consider moving the cache to the biggest one, as Docker often requires a lot of disk space.
-It is used for cache, docker images, and any volumes that your container would need.
-To stop cleaning all the caches every week or so, I recommend moving all docker caches to the bigger hard drive if you have one.
-* **Memory settings and swap**: By default, Docker uses all system resources available, resulting in insufficient RAM on your system.
-We should set up memory and swap parameters by hand to prevent that.
+- **Check WSL2 is set up and running**: WSL2 provides an entire Linux kernel that allows Docker to run containers without having to manage any Virtual Machines.
+  With WSL2, you can use a native Linux terminal and might want to develop inside that distribution.
+  We do not recommend doing that to avoid any network-related issues.
+- **Disk space**: If you have two hard drives, consider moving the cache to the biggest one, as Docker often requires a lot of disk space.
+  It is used for cache, docker images, and any volumes that your container would need.
+  To stop cleaning all the caches every week or so, I recommend moving all docker caches to the bigger hard drive if you have one.
+- **Memory settings and swap**: By default, Docker uses all system resources available, resulting in insufficient RAM on your system.
+  We should set up memory and swap parameters by hand to prevent that.
 
 ### Setting up the environment
 
@@ -73,7 +73,7 @@ Once the cloning is complete, navigate to the source code folder via
 cd FerretDB
 ```
 
-While working on the project code locally, it’s crucial to synchronize it with the upstream  repository and push changes to the forked repository.
+While working on the project code locally, it’s crucial to synchronize it with the upstream repository and push changes to the forked repository.
 To do so, we need to set up remotes.
 To check if the local repository is linked with the upstream one, enter this command:
 
@@ -134,7 +134,7 @@ bin\task run
 
 ![run FerretDB](/img/blog/image3.png)
 
-We can open another terminal window and run tests (*bin\task test*) or “mongosh” (*bin\task mongosh*).
+We can open another terminal window and run tests (_bin\task test_) or “mongosh” (_bin\task mongosh_).
 
 ![terminal window](/img/blog/image1-1.png)
 
@@ -144,8 +144,8 @@ For Windows users, starting your contribution journey to FerretDB might feel a b
 We’ve covered all the known Windows-specific issues you might encounter in this article when contributing to FerretDB on Windows.
 
 An excellent place to start contributing is to select any issue labeled as the [good first issue](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
-Not to mention, we have an awesome community [Slack group where you can connect!](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A)  And if you experience any other issues that aren't covered in this article or have any questions, please feel free to reach out to us on Slack or GitHub Discussions.
+Not to mention, we have an awesome community [Slack group where you can connect!](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) And if you experience any other issues that aren't covered in this article or have any questions, please feel free to reach out to us on Slack or GitHub Discussions.
 
 With your Windows environment configured and set up, read our contributing guide to start contributing to FerretDB on Windows.
 
-(Cover photo by [Max Duzij](https://unsplash.com/es/@max_duz?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText) on [Unsplash](https://unsplash.com/s/photos/computer?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText) )
+(Cover photo by [Max Duzij](https://unsplash.com/es/@max_duz?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/s/photos/computer?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) )

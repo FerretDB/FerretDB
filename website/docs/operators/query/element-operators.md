@@ -16,96 +16,96 @@ For the examples in this section, insert the following documents into the `elect
 ```js
 db.electronics.insertMany([
   {
-     product: "laptop",
-     price: 1500,
-     stock: 5,
-     discount: true,
-     specifications: [
-        {
-           processor: "Intel Core i7"
-        },
-        {
-           memory: 16
-        }
-     ]
+    product: "laptop",
+    price: 1500,
+    stock: 5,
+    discount: true,
+    specifications: [
+      {
+        processor: "Intel Core i7",
+      },
+      {
+        memory: 16,
+      },
+    ],
   },
   {
-     product: "phone",
-     price: 800,
-     stock: 10,
-     discount: true,
-     specifications: [
-        {
-           brand: "Apple"
-        },
-        {
-           model: "iPhone 12"
-        }
-     ]
+    product: "phone",
+    price: 800,
+    stock: 10,
+    discount: true,
+    specifications: [
+      {
+        brand: "Apple",
+      },
+      {
+        model: "iPhone 12",
+      },
+    ],
   },
   {
-     product: "tablet",
-     price: 500,
-     stock: 15,
-     discount: true,
-     specifications: [
-        {
-           brand: "Samsung"
-        },
-        {
-           model: "Galaxy Tab S7"
-        }
-     ]
+    product: "tablet",
+    price: 500,
+    stock: 15,
+    discount: true,
+    specifications: [
+      {
+        brand: "Samsung",
+      },
+      {
+        model: "Galaxy Tab S7",
+      },
+    ],
   },
   {
-     product: "keyboard",
-     price: 100,
-     stock: 20
+    product: "keyboard",
+    price: 100,
+    stock: 20,
   },
   {
-     product: "mouse",
-     price: 50,
-     stock: 25,
-     discount: null,
-     specifications: []
+    product: "mouse",
+    price: 50,
+    stock: 25,
+    discount: null,
+    specifications: [],
   },
   {
-     product: "monitor",
-     price: 250,
-     stock: 30,
-     discount: true,
-     specifications: [
-        {
-           size: 27
-        },
-        {
-           resolution: "4K"
-        }
-     ]
+    product: "monitor",
+    price: 250,
+    stock: 30,
+    discount: true,
+    specifications: [
+      {
+        size: 27,
+      },
+      {
+        resolution: "4K",
+      },
+    ],
   },
   {
-     product: "printer",
-     price: 150,
-     stock: 35,
-     discount: false
+    product: "printer",
+    price: 150,
+    stock: 35,
+    discount: false,
   },
   {
-     product: "scanner",
-     price: 100,
-     stock: 40,
-     discount: true,
-     specifications: [
-        {
-           type: "flatbed"
-        }
-     ]
-  }
-])
+    product: "scanner",
+    price: 100,
+    stock: 40,
+    discount: true,
+    specifications: [
+      {
+        type: "flatbed",
+      },
+    ],
+  },
+]);
 ```
 
 ## $exists
 
-*Syntax*: `{ <field>: { $exists: <boolean> } }`
+_Syntax_: `{ <field>: { $exists: <boolean> } }`
 
 To find out if a particular field exists in a document, use the `$exists` operator.
 
@@ -119,64 +119,64 @@ If the `<boolean>` value is `false`, the query returns documents where the speci
 ```js
 db.electronics.find({
   specifications: {
-     $exists: true
-  }
-})
+    $exists: true,
+  },
+});
 ```
 
 The output:
 
 ```js
 [
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
-   product: 'laptop',
-   price: 1500,
-   stock: 5,
-   discount: true,
-   specifications: [ { processor: 'Intel Core i7' }, { memory: 16 } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
-   product: 'phone',
-   price: 800,
-   stock: 10,
-   discount: true,
-   specifications: [ { brand: 'Apple' }, { model: 'iPhone 12' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b90"),
-   product: 'tablet',
-   price: 500,
-   stock: 15,
-   discount: true,
-   specifications: [ { brand: 'Samsung' }, { model: 'Galaxy Tab S7' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b92"),
-   product: 'mouse',
-   price: 50,
-   stock: 25,
-   discount: null,
-   specifications: []
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b93"),
-   product: 'monitor',
-   price: 250,
-   stock: 30,
-   discount: true,
-   specifications: [ { size: 27 }, { resolution: '4K' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b95"),
-   product: 'scanner',
-   price: 100,
-   stock: 40,
-   discount: true,
-   specifications: [ { type: 'flatbed' } ]
- }
-]
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
+    product: "laptop",
+    price: 1500,
+    stock: 5,
+    discount: true,
+    specifications: [{ processor: "Intel Core i7" }, { memory: 16 }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
+    product: "phone",
+    price: 800,
+    stock: 10,
+    discount: true,
+    specifications: [{ brand: "Apple" }, { model: "iPhone 12" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
+    product: "tablet",
+    price: 500,
+    stock: 15,
+    discount: true,
+    specifications: [{ brand: "Samsung" }, { model: "Galaxy Tab S7" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b92"),
+    product: "mouse",
+    price: 50,
+    stock: 25,
+    discount: null,
+    specifications: [],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
+    product: "monitor",
+    price: 250,
+    stock: 30,
+    discount: true,
+    specifications: [{ size: 27 }, { resolution: "4K" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
+    product: "scanner",
+    price: 100,
+    stock: 40,
+    discount: true,
+    specifications: [{ type: "flatbed" }],
+  },
+];
 ```
 
 In the above output, the query returns all documents where the `specifications` field exists, even when the `field` has an empty value.
@@ -188,70 +188,70 @@ If you want to find documents where the `specifications` field exists and has a 
 ```js
 db.electronics.find({
   specifications: {
-     $exists: true,
-     $type: "array"
-  }
-})
+    $exists: true,
+    $type: "array",
+  },
+});
 ```
 
 The output:
 
 ```js
 [
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
-   product: 'laptop',
-   price: 1500,
-   stock: 5,
-   discount: true,
-   specifications: [ { processor: 'Intel Core i7' }, { memory: 16 } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
-   product: 'phone',
-   price: 800,
-   stock: 10,
-   discount: true,
-   specifications: [ { brand: 'Apple' }, { model: 'iPhone 12' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b90"),
-   product: 'tablet',
-   price: 500,
-   stock: 15,
-   discount: true,
-   specifications: [ { brand: 'Samsung' }, { model: 'Galaxy Tab S7' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b92"),
-   product: 'mouse',
-   price: 50,
-   stock: 25,
-   discount: null,
-   specifications: []
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b93"),
-   product: 'monitor',
-   price: 250,
-   stock: 30,
-   discount: true,
-   specifications: [ { size: 27 }, { resolution: '4K' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b95"),
-   product: 'scanner',
-   price: 100,
-   stock: 40,
-   discount: true,
-   specifications: [ { type: 'flatbed' } ]
- }
-]
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
+    product: "laptop",
+    price: 1500,
+    stock: 5,
+    discount: true,
+    specifications: [{ processor: "Intel Core i7" }, { memory: 16 }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
+    product: "phone",
+    price: 800,
+    stock: 10,
+    discount: true,
+    specifications: [{ brand: "Apple" }, { model: "iPhone 12" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
+    product: "tablet",
+    price: 500,
+    stock: 15,
+    discount: true,
+    specifications: [{ brand: "Samsung" }, { model: "Galaxy Tab S7" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b92"),
+    product: "mouse",
+    price: 50,
+    stock: 25,
+    discount: null,
+    specifications: [],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
+    product: "monitor",
+    price: 250,
+    stock: 30,
+    discount: true,
+    specifications: [{ size: 27 }, { resolution: "4K" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
+    product: "scanner",
+    price: 100,
+    stock: 40,
+    discount: true,
+    specifications: [{ type: "flatbed" }],
+  },
+];
 ```
 
 ## $type
 
-*Syntax*: `{ <field>: { $type: <datatype> } }`
+_Syntax_: `{ <field>: { $type: <datatype> } }`
 
 Use the `$type` operator to select documents where the data type of a field matches the specified BSON type
 
@@ -293,9 +293,9 @@ FerretDB supports the alias `number` which matches the following BSON types: `Do
 ```js
 db.electronics.find({
   discount: {
-     $type: 8
-  }
-})
+    $type: 8,
+  },
+});
 ```
 
 This query can also be written using the alias of the specified data type.
@@ -303,61 +303,61 @@ This query can also be written using the alias of the specified data type.
 ```js
 db.electronics.find({
   discount: {
-     $type: "bool"
-  }
-})
+    $type: "bool",
+  },
+});
 ```
 
 The output:
 
 ```js
 [
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
-   product: 'laptop',
-   price: 1500,
-   stock: 5,
-   discount: true,
-   specifications: [ { processor: 'Intel Core i7' }, { memory: 16 } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
-   product: 'phone',
-   price: 800,
-   stock: 10,
-   discount: true,
-   specifications: [ { brand: 'Apple' }, { model: 'iPhone 12' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b90"),
-   product: 'tablet',
-   price: 500,
-   stock: 15,
-   discount: true,
-   specifications: [ { brand: 'Samsung' }, { model: 'Galaxy Tab S7' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b93"),
-   product: 'monitor',
-   price: 250,
-   stock: 30,
-   discount: true,
-   specifications: [ { size: 27 }, { resolution: '4K' } ]
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b94"),
-   product: 'printer',
-   price: 150,
-   stock: 35,
-   discount: false
- },
- {
-   _id: ObjectId("63a32fc7cf72d6203bb45b95"),
-   product: 'scanner',
-   price: 100,
-   stock: 40,
-   discount: true,
-   specifications: [ { type: 'flatbed' } ]
- }
-]
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
+    product: "laptop",
+    price: 1500,
+    stock: 5,
+    discount: true,
+    specifications: [{ processor: "Intel Core i7" }, { memory: 16 }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
+    product: "phone",
+    price: 800,
+    stock: 10,
+    discount: true,
+    specifications: [{ brand: "Apple" }, { model: "iPhone 12" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
+    product: "tablet",
+    price: 500,
+    stock: 15,
+    discount: true,
+    specifications: [{ brand: "Samsung" }, { model: "Galaxy Tab S7" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
+    product: "monitor",
+    price: 250,
+    stock: 30,
+    discount: true,
+    specifications: [{ size: 27 }, { resolution: "4K" }],
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b94"),
+    product: "printer",
+    price: 150,
+    stock: 35,
+    discount: false,
+  },
+  {
+    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
+    product: "scanner",
+    price: 100,
+    stock: 40,
+    discount: true,
+    specifications: [{ type: "flatbed" }],
+  },
+];
 ```

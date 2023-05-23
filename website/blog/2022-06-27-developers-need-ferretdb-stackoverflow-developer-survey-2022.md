@@ -25,10 +25,10 @@ We cannot praise MongoDB enough for changing the database industry by focusing o
 Developer experience with some of the relational databases of the past decades were questionable, at best.
 I hear the uproar of many DBAs as I am writing this, but let’s face it: most developers are not interested in operating a database, and definitely not interested in debugging, interfacing, replication, and the like.
 
-However,  one needs to remember that MongoDB’s great developer experience comes with the high cost of vendor lock-in.
+However, one needs to remember that MongoDB’s great developer experience comes with the high cost of vendor lock-in.
 There is simply no real open source alternative to MongoDB, and absolutely no compatible alternative to MongoDB Atlas.
 
-Back in 2016, shortly after launching MongoDB Atlas, MongoDB [published a blog post on the subject](https://www.mongodb.com/blog/post/avoiding-the-dark-side-of-the-cloud-platform-lock-in ""), and argues that MongoDB Atlas does not come with lock-in risks, since it runs on different cloud providers.
+Back in 2016, shortly after launching MongoDB Atlas, MongoDB [published a blog post on the subject](https://www.mongodb.com/blog/post/avoiding-the-dark-side-of-the-cloud-platform-lock-in), and argues that MongoDB Atlas does not come with lock-in risks, since it runs on different cloud providers.
 They also claimed back then that MongoDB Atlas is running the same software as MongoDB.
 
 We don’t think that their claims hold true anymore.

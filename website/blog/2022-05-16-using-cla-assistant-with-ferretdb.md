@@ -44,12 +44,12 @@ services:
 
 ```
 
-The first service starts PostgreSQL and creates “ferretdb” database, with data stored on the host system in “*./data/postgres*” directory.
+The first service starts PostgreSQL and creates “ferretdb” database, with data stored on the host system in “_./data/postgres_” directory.
 That ensures that data is not lost when you recreate this Compose project and makes the simplest way to do backups (by just copying this directory) possible.
 Of course, without more advanced backup solutions and with authentication disabled, that’s not a fully production-ready deployment, but good enough for an example.
 
 The second service starts FerretDB which would connect to this PostgreSQL instance and listen on the standard MongoDB port.
-FerretDB starts very fast and exits if it can’t connect to PostgreSQL; “*restart: on-failure*” ensures that it is restarted in that case.
+FerretDB starts very fast and exits if it can’t connect to PostgreSQL; “_restart: on-failure_” ensures that it is restarted in that case.
 
 Now we need to start CLA Assistant itself.
 They do not provide a prebuilt Docker image, but it is easy to build ourselves.
@@ -62,19 +62,19 @@ git checkout v2.13.0
 docker build --tag cla-assistant-local .
 ```
 
-That will produce a Docker image with tag “*cla-assistant-local:latest*” that you could see in the “*docker ls*” output.
+That will produce a Docker image with tag “_cla-assistant-local:latest_” that you could see in the “_docker ls_” output.
 
 Next, we will need to register an OAuth App [there](https://github.com/settings/developers) that will be used by CLA Assistant to receive webhooks from pull requests:
 
 ![Register an Oauth App](/img/blog/cla1.jpg)
 
-App’s Authorization callback URL should be *`https://<domain>/auth/github/callback`*
+App’s Authorization callback URL should be _`https://<domain>/auth/github/callback`_
 
 We also should register a [machine user account (a.k.a. bot)](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#personal-accounts) on GitHub and get a personal access token [there](https://github.com/settings/tokens) that will be used to call GitHub API on behalf of not authenticated users:
 
 ![Get personal token access](/img/blog/cla2.jpg)
 
-The only required scope is “*public_repo*”.
+The only required scope is “_public_repo_”.
 
 Now, let’s add CLA Assistant to our Docker Compose configuration:
 
@@ -129,6 +129,6 @@ For that, we need to create a file called “Caddyfile” on the host next to do
 Email is used by Let’s Encrypt to contact you if [something goes wrong](https://letsencrypt.org/docs/expiration-emails/).
 
 That’s all with the configuration!
-Now we can start our containers with *docker-compose up --detach*, start following logs with *docker-compose logs -f*, and open our domain in the browser to login with GitHub and configure our first CLA.
+Now we can start our containers with _docker-compose up --detach_, start following logs with _docker-compose logs -f_, and open our domain in the browser to login with GitHub and configure our first CLA.
 
 Hopefully, both CLA Assistant and FerretDB will work great for you; but if you encounter any problems, or just want to give us feedback about FerretDB, feel free to [join our community Slack or any other community place](https://github.com/FerretDB/FerretDB/#community) – we will be happy to help!

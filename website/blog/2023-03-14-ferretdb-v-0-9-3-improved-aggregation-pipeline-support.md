@@ -62,9 +62,7 @@ We can use the `$sort` aggregation pipeline stage to sort the documents in ascen
 For example, to sort the documents in descending order based on the `order_total` field, set the value to `-1`:
 
 ```js
-db.orders.aggregate([
-    { $sort: { order_total: -1 } }
-])
+db.orders.aggregate([{ $sort: { order_total: -1 } }]);
 ```
 
 This will return the documents, sorted in descending order based on the `order_total` field.
@@ -74,13 +72,13 @@ For example, the following query groups and counts the total number of documents
 
 ```js
 db.orders.aggregate([
-    {
-        $group: {
-            _id: null,
-            count: { $count: {} }
-        }
-    }
-])
+  {
+    $group: {
+      _id: null,
+      count: { $count: {} },
+    },
+  },
+]);
 ```
 
 As part of our mission to effectively enable more backends to run MongoDB workloads, basic aggregation pipeline support is now available for [Tigris](https://www.tigrisdata.com/).

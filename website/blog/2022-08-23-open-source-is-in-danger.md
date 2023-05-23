@@ -32,7 +32,7 @@ Anyone, including MongoDB, Elastic or Graylog should be allowed to release their
 Life happens, bad or strange decisions like this happen —- we can move on.
 
 However, in terms of what MongoDB did, the impact is just different.
-No one should decide to come up with their own terms on what to call Open Source, and  this is exactly what is happening.
+No one should decide to come up with their own terms on what to call Open Source, and this is exactly what is happening.
 The SSPL license was supposed to "save" open source companies from Amazon or GCP, so they can't make money on them without giving back to the community.
 
 Instead of "saving open source", however, what really happened, is that if you use MongoDB on a cloud provider, you will forever be at the mercy of MongoDB Inc. and the fees they will be charging you, through your infrastructure provider.

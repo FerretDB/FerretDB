@@ -17,122 +17,91 @@ For the examples in this section, insert the following documents into the `catal
 
 ```js
 db.catalog.insertMany([
-   {
-      product: "bottle",
-      price: 15,
-      stock: 1,
-      discount: true,
-      variation:[
-         {
-            size:[
-               "small",
-               "medium",
-               "large"
-            ]
-         },
-         {
-            color:[
-               "black",
-               "silver"
-            ]
-         }
-      ]
-   },
-   {
-      product: "spoon",
-      price: 500,
-      stock: 0,
-      discount: true,
-      variation:[
-         {
-            size:[
-               "small",
-               "medium",
-               "large"
-            ]
-         },
-         {
-            color:[
-               "silver",
-               "white"
-            ]
-         }
-      ]
-   },
-   {
-      product: "cup",
-      price: 100,
-      stock: 14,
-      discount: true,
-      variation:[
-         {
-            size:[
-               "small",
-               "medium",
-               "large"
-            ]
-         },
-         {
-            color:[
-               "red",
-               "black",
-               "white"
-            ]
-         }
-      ]
-   },
-   {
-      product: "bowl",
-      price: 56,
-      stock: 5,
-      discount: false,
-      variation:[
-         {
-            size:[
-               "small",
-               "medium",
-               "large"
-            ]
-         },
-         {
-            color:[
-               "pink",
-               "white",
-               "red"
-            ]
-         }
-      ]
-   },
-
-])
+  {
+    product: "bottle",
+    price: 15,
+    stock: 1,
+    discount: true,
+    variation: [
+      {
+        size: ["small", "medium", "large"],
+      },
+      {
+        color: ["black", "silver"],
+      },
+    ],
+  },
+  {
+    product: "spoon",
+    price: 500,
+    stock: 0,
+    discount: true,
+    variation: [
+      {
+        size: ["small", "medium", "large"],
+      },
+      {
+        color: ["silver", "white"],
+      },
+    ],
+  },
+  {
+    product: "cup",
+    price: 100,
+    stock: 14,
+    discount: true,
+    variation: [
+      {
+        size: ["small", "medium", "large"],
+      },
+      {
+        color: ["red", "black", "white"],
+      },
+    ],
+  },
+  {
+    product: "bowl",
+    price: 56,
+    stock: 5,
+    discount: false,
+    variation: [
+      {
+        size: ["small", "medium", "large"],
+      },
+      {
+        color: ["pink", "white", "red"],
+      },
+    ],
+  },
+]);
 ```
 
 ## $and
 
-*Syntax*: `{ $and: [ { <condition1> }, { <condition2> } , ... , { <condition3> } ] }`
+_Syntax_: `{ $and: [ { <condition1> }, { <condition2> } , ... , { <condition3> } ] }`
 
 To satisfy more than one query condition when selecting documents, use the `$and` operator.
 
 **Example:** Select documents that satisfy both of these expressions in the `catalog` collection:
 
-* `price` field is less than `100` **AND**
-* `stock` field is not `0`
+- `price` field is less than `100` **AND**
+- `stock` field is not `0`
 
 ```js
 db.catalog.find({
-   $and:[
-      {
-         price:{
-            $lt: 100
-         }
+  $and: [
+    {
+      price: {
+        $lt: 100,
       },
-      {
-         stock:{
-            $ne: 0
-         }
-      }
-   ]
-})
+    },
+    {
+      stock: {
+        $ne: 0,
+      },
+    },
+  ],
+});
 ```
 
 The output:
@@ -141,62 +110,62 @@ The output:
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
-    product: 'bottle',
+    product: "bottle",
     price: 15,
     stock: 1,
     discount: true,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'black', 'silver' ] }
-    ]
+      { size: ["small", "medium", "large"] },
+      { color: ["black", "silver"] },
+    ],
   },
   {
     _id: ObjectId("639ba4a0071b6bed396a8f16"),
-    product: 'bowl',
+    product: "bowl",
     price: 56,
     stock: 5,
     discount: false,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'pink', 'white', 'red' ] }
-    ]
-  }
-]
+      { size: ["small", "medium", "large"] },
+      { color: ["pink", "white", "red"] },
+    ],
+  },
+];
 ```
 
 ## $or
 
-*Syntax*: `{ $or: [ { <condition1> }, { <condition2> } , ... , { <conditionN> } ] }`
+_Syntax_: `{ $or: [ { <condition1> }, { <condition2> } , ... , { <conditionN> } ] }`
 
 To satisfy either one or more conditions in a query, use the `$or` operator to join the conditions.
 
 **Example:** Select the documents that match these expressions:
 
-* `discount` field is `true` *and* `stock` field is not `0` **OR**
-* `price` field is less than or equal to `60`
+- `discount` field is `true` _and_ `stock` field is not `0` **OR**
+- `price` field is less than or equal to `60`
 
 ```js
 db.catalog.find({
-   $or:[
-      {
-         $and:[
-            {
-               discount: true
-            },
-            {
-               stock:{
-                  $ne: 0
-               }
-            }
-         ]
+  $or: [
+    {
+      $and: [
+        {
+          discount: true,
+        },
+        {
+          stock: {
+            $ne: 0,
+          },
+        },
+      ],
+    },
+    {
+      price: {
+        $lte: 60,
       },
-      {
-         price:{
-            $lte: 60
-         }
-      }
-   ]
-})
+    },
+  ],
+});
 ```
 
 The output:
@@ -205,43 +174,43 @@ The output:
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
-    product: 'bottle',
+    product: "bottle",
     price: 15,
     stock: 1,
     discount: true,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'black', 'silver' ] }
-    ]
+      { size: ["small", "medium", "large"] },
+      { color: ["black", "silver"] },
+    ],
   },
   {
     _id: ObjectId("639ba4a0071b6bed396a8f15"),
-    product: 'cup',
+    product: "cup",
     price: 100,
     stock: 14,
     discount: true,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'red', 'black', 'white' ] }
-    ]
+      { size: ["small", "medium", "large"] },
+      { color: ["red", "black", "white"] },
+    ],
   },
   {
     _id: ObjectId("639ba4a0071b6bed396a8f16"),
-    product: 'bowl',
+    product: "bowl",
     price: 56,
     stock: 5,
     discount: false,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'pink', 'white', 'red' ] }
-    ]
-  }
-]
+      { size: ["small", "medium", "large"] },
+      { color: ["pink", "white", "red"] },
+    ],
+  },
+];
 ```
 
 ## $not
 
-*Syntax*: `{ <field>: { $not: { <condition> } } }`
+_Syntax_: `{ <field>: { $not: { <condition> } } }`
 
 To select documents that fail to match a particular query condition, use the `$not` operator.
 
@@ -249,12 +218,12 @@ To select documents that fail to match a particular query condition, use the `$n
 
 ```js
 db.catalog.find({
-    stock: {
-        $not: {
-            $lt: 5
-        }
-    }
-})
+  stock: {
+    $not: {
+      $lt: 5,
+    },
+  },
+});
 ```
 
 The output:
@@ -263,62 +232,62 @@ The output:
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f15"),
-    product: 'cup',
+    product: "cup",
     price: 100,
     stock: 14,
     discount: true,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'red', 'black', 'white' ] }
-    ]
+      { size: ["small", "medium", "large"] },
+      { color: ["red", "black", "white"] },
+    ],
   },
   {
     _id: ObjectId("639ba4a0071b6bed396a8f16"),
-    product: 'bowl',
+    product: "bowl",
     price: 56,
     stock: 5,
     discount: false,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'pink', 'white', 'red' ] }
-    ]
-  }
-]
+      { size: ["small", "medium", "large"] },
+      { color: ["pink", "white", "red"] },
+    ],
+  },
+];
 ```
 
 ## $nor
 
-*Syntax*: `{ $nor: [ { <condition1> }, { <condition2> }, ... { <conditionN> } ] }`
+_Syntax_: `{ $nor: [ { <condition1> }, { <condition2> }, ... { <conditionN> } ] }`
 
 To select documents that fail to match any of the conditions in a specified query, use the `$nor` operator.
 
 **Example:** Select the documents that fail to match any of these conditions:
 
-* `discount` field is `true` *and* `stock` field is not `0`
-* `price` field is less than or equal to `60`
+- `discount` field is `true` _and_ `stock` field is not `0`
+- `price` field is less than or equal to `60`
 
 ```js
 db.catalog.find({
-   $nor:[
-      {
-         $and:[
-            {
-               discount: true
-            },
-            {
-               stock:{
-                  $ne: 0
-               }
-            }
-         ]
+  $nor: [
+    {
+      $and: [
+        {
+          discount: true,
+        },
+        {
+          stock: {
+            $ne: 0,
+          },
+        },
+      ],
+    },
+    {
+      price: {
+        $lte: 60,
       },
-      {
-         price:{
-            $lte: 60
-         }
-      }
-   ]
-})
+    },
+  ],
+});
 ```
 
 The output:
@@ -327,14 +296,14 @@ The output:
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f14"),
-    product: 'spoon',
+    product: "spoon",
     price: 500,
     stock: 0,
     discount: true,
     variation: [
-      { size: [ 'small', 'medium', 'large' ] },
-      { color: [ 'silver', 'white' ] }
-    ]
-  }
-]
+      { size: ["small", "medium", "large"] },
+      { color: ["silver", "white"] },
+    ],
+  },
+];
 ```

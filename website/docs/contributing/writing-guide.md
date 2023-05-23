@@ -48,8 +48,8 @@ because it works for both editors/IDEs (Ctrl/⌘+click works) and Docusaurus.
 Always add `.md` extension to the file paths.
 Examples:
 
-* [file in the same directory](writing-guide.md)
-* [file in a parent directory](../telemetry.md)
+- [file in the same directory](writing-guide.md)
+- [file in a parent directory](../telemetry.md)
 
 ## Images
 
@@ -67,7 +67,7 @@ When you add a banner image, please use the title of the article as the alt text
 ### Image names
 
 Use of two or three descriptive words written in `kebab-case-with-dashes` as the names for the images.
-For example, *ferretdb-queries.jpg*.
+For example, _ferretdb-queries.jpg_.
 
 ### Image links
 

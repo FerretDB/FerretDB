@@ -604,6 +604,7 @@ tasks:
       - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
+      - docker compose run --rm prettier --write --parser=markdown "**/*.md" --excludeFiles="CHANGELOG.md"
 
   docs-dev:
     desc: "Start documentation development server"

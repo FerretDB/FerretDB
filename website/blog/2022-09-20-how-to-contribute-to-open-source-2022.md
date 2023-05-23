@@ -71,10 +71,10 @@ It’s essential to find some “low-hanging fruit” that will give you inspira
 On GitHub, it might make sense to look for “good-first-issue” labels.
 Usually, issues that are marked with such a label don’t require special knowledge about the project.
 
-There is one more tradition here, in October, some open source projects mark their issues with the “[hacktoberfest](https://github.com/search?q=label%3Ahacktoberfest&amp;type=issues)” label, and such issues are often suitable for first-time contributors.
+There is one more tradition here, in October, some open source projects mark their issues with the “[hacktoberfest](https://github.com/search?q=label%3Ahacktoberfest&type=issues)” label, and such issues are often suitable for first-time contributors.
 
 At FerretDB, we are preparing for Hacktoberfest too!
-So, if you are looking for something to contribute to, take a look at the good first issues in our [FerretDB](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22 "") and [github-actions](https://github.com/FerretDB/github-actions/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) repositories.
+So, if you are looking for something to contribute to, take a look at the good first issues in our [FerretDB](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [github-actions](https://github.com/FerretDB/github-actions/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) repositories.
 
 ### 3. Select a good first issue and read the contribution guidelines
 

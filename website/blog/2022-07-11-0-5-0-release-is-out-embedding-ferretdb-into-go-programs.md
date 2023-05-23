@@ -44,8 +44,7 @@ go f.Run(context.Background())
 And then, we use a method to get a MongoDB URI that can be used with any client:
 
 ```js
-fmt.Println(f.MongoDBURI())
-
+fmt.Println(f.MongoDBURI());
 ```
 
 For example, we can connect to it with Mongo Shell:
@@ -76,4 +75,4 @@ Some configuration options are missing, and some additional APIs might be needed
 Please [join our community](https://github.com/FerretDB/FerretDB#community) and tell us what you think, what works great and what doesn't, and what additional functionality is needed.
 We will be happy to hear from you!
 
-*A slightly bigger example can be seen in this repo: [https://github.com/FerretDB/embedded-example](https://github.com/FerretDB/embedded-example)*
+_A slightly bigger example can be seen in this repo: [https://github.com/FerretDB/embedded-example](https://github.com/FerretDB/embedded-example)_

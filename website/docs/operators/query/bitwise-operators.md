@@ -17,17 +17,17 @@ For the examples in this section, insert the following documents into the `numbe
 
 ```js
 db.numbers.insertMany([
-  { _id: 1, value: 23, binaryValue: '10111' },
-  { _id: 2, value: 56, binaryValue: '111000' },
-  { _id: 3, value: 67, binaryValue: '1000011' },
-  { _id: 4, value: 102, binaryValue: '1100110' },
-  { _id: 5, value: 5, binaryValue: '101' },
-])
+  { _id: 1, value: 23, binaryValue: "10111" },
+  { _id: 2, value: 56, binaryValue: "111000" },
+  { _id: 3, value: 67, binaryValue: "1000011" },
+  { _id: 4, value: 102, binaryValue: "1100110" },
+  { _id: 5, value: 5, binaryValue: "101" },
+]);
 ```
 
 ## $bitsAllClear
 
-*Syntax*: `{ <field>: { $bitsAllClear: <bitmask> } }`
+_Syntax_: `{ <field>: { $bitsAllClear: <bitmask> } }`
 
 Use the `$bitsAllClear` operator to select documents where the specified bitmask locations in the query are clear (0).
 
@@ -44,7 +44,7 @@ db.numbers.find({
   value: {
     $bitsAllClear: 6,
   },
-})
+});
 ```
 
 The binary representation for `6` in this query is `110`.
@@ -53,17 +53,15 @@ The query can also be written to show the positions of the bits to be checked:
 ```js
 db.numbers.find({
   value: {
-    $bitsAllClear: [1, 2]
+    $bitsAllClear: [1, 2],
   },
-})
+});
 ```
 
 The output:
 
 ```js
-[
-  { _id: 2, value: 56, binaryValue: '111000' },
-]
+[{ _id: 2, value: 56, binaryValue: "111000" }];
 ```
 
 For the same query above, the bitmask can also be written as a BinData value:
@@ -71,14 +69,14 @@ For the same query above, the bitmask can also be written as a BinData value:
 ```js
 db.numbers.find({
   value: {
-    $bitsAllClear: BinData(0, 'Bg=='),
+    $bitsAllClear: BinData(0, "Bg=="),
   },
-})
+});
 ```
 
 ## $bitsAllSet
 
-*Syntax*: `{ <field>: { $bitsAllSet: <bitmask> } }`
+_Syntax_: `{ <field>: { $bitsAllSet: <bitmask> } }`
 
 To select documents where the bitmask locations in a query are set (1), use the `$bitsAllSet` operator.
 
@@ -89,23 +87,23 @@ db.numbers.find({
   value: {
     $bitsAllSet: [1, 2],
   },
-})
+});
 ```
 
 The output:
 
 ```js
 [
-  { _id: 1, value: 23, binaryValue: '10111' },
-  { _id: 4, value: 102, binaryValue: '1100110' }
-]
+  { _id: 1, value: 23, binaryValue: "10111" },
+  { _id: 4, value: 102, binaryValue: "1100110" },
+];
 ```
 
 See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.
 
 ## $bitsAnyClear
 
-*Syntax*: `{ <field>: { $bitsAnyClear: <bitmask> } }`
+_Syntax_: `{ <field>: { $bitsAnyClear: <bitmask> } }`
 
 Use the `$bitsAnyClear` operator to select documents where at least one of the bitmask locations in the query is clear (0).
 
@@ -116,24 +114,24 @@ db.numbers.find({
   value: {
     $bitsAnyClear: [0, 2],
   },
-})
+});
 ```
 
 The output:
 
 ```js
 [
-  { _id: 2, value: 56, binaryValue: '111000' },
-  { _id: 3, value: 67, binaryValue: '1000011' },
-  { _id: 4, value: 102, binaryValue: '1100110' }
-]
+  { _id: 2, value: 56, binaryValue: "111000" },
+  { _id: 3, value: 67, binaryValue: "1000011" },
+  { _id: 4, value: 102, binaryValue: "1100110" },
+];
 ```
 
 See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.
 
 ## $bitsAnySet
 
-*Syntax*: `{ <field>: { $bitsAnySet: <bitmask> } }`
+_Syntax_: `{ <field>: { $bitsAnySet: <bitmask> } }`
 
 The `$bitsAnySet` operator selects documents where at least one of the bitmask locations in the query is set (1).
 
@@ -144,18 +142,18 @@ db.numbers.find({
   value: {
     $bitsAnySet: [0, 2],
   },
-})
+});
 ```
 
 The output:
 
 ```js
 [
-  { _id: 1, value: 23, binaryValue: '10111' },
-  { _id: 3, value: 67, binaryValue: '1000011' },
-  { _id: 4, value: 102, binaryValue: '1100110' },
-  { _id: 5, value: 5, binaryValue: '101' }
-]
+  { _id: 1, value: 23, binaryValue: "10111" },
+  { _id: 3, value: 67, binaryValue: "1000011" },
+  { _id: 4, value: 102, binaryValue: "1100110" },
+  { _id: 5, value: 5, binaryValue: "101" },
+];
 ```
 
 See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.
