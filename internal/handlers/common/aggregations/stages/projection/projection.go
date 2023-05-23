@@ -67,7 +67,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			_, err := operators.Get(value, "$project", key)
+			_, err := operators.NewOperator("$project", key, value)
 			if err != nil {
 				return nil, false, err
 			}
@@ -150,7 +150,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			var op operators.Operator
 			var value any
 
-			op, err = operators.Get(idValue, "$project", "_id")
+			op, err = operators.NewOperator("$project", "_id", idValue)
 			if err != nil {
 				return nil, err
 			}
@@ -230,7 +230,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			var op operators.Operator
 			var v any
 
-			op, err = operators.Get(value, "$project", key)
+			op, err = operators.NewOperator("$project", key, value)
 			if err != nil {
 				return nil, err
 			}

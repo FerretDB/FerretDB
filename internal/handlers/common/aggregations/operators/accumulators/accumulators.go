@@ -13,6 +13,9 @@
 // limitations under the License.
 
 // Package accumulators provides aggregation accumulator operators.
+// Accumulators are different from other operators as they perform operations
+// on a group of documents rather than a single document.
+// They are used only in small subset of available stages (like `$group`).
 package accumulators
 
 import (
@@ -31,8 +34,8 @@ type Accumulator interface {
 	Accumulate(in []*types.Document) (any, error)
 }
 
-// Get returns accumulator for provided value.
-func Get(value any, stage, key string) (Accumulator, error) {
+// NewAccumulator returns accumulator for provided value.
+func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 	accumulation, ok := value.(*types.Document)
 	if !ok || accumulation.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

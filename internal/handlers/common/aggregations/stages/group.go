@@ -91,7 +91,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 			continue
 		}
 
-		accumulator, err := accumulators.Get(v, "$group", field)
+		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
 			return nil, err
 		}

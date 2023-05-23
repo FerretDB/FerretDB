@@ -31,8 +31,8 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
-// Get returns operator for provided value.
-func Get(value any, stage, key string) (Operator, error) {
+// NewOperator returns operator for provided value.
+func NewOperator(stage, key string, value any) (Operator, error) {
 	operatorDoc, ok := value.(*types.Document)
 	if !ok || operatorDoc.Len() == 0 {
 		return nil, lazyerrors.New(
