@@ -16,6 +16,9 @@
 // Accumulators are different from other operators as they perform operations
 // on a group of documents rather than a single document.
 // They are used only in small subset of available stages (like `$group`).
+//
+// Accumulators that can be used outside of accumulation with different behaviour (like `$sum`),
+// should be stored in both operators and accumulators packages.
 package accumulators
 
 import (
