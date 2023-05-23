@@ -18,6 +18,7 @@ package projection
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
@@ -59,6 +60,15 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			break
 		}
 
+		if strings.HasPrefix(key, "$") {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFieldPathInvalidName,
+				"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
+					" Consider using $getField or $setField.",
+				"$project (stage)",
+			)
+		}
+
 		if err != nil {
 			return nil, false, lazyerrors.Error(err)
 		}
@@ -67,11 +77,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			_, err := operators.NewOperator("$project", key, value)
-			if err != nil {
-				return nil, false, err
-			}
-
+			// TODO refactor validation
 			validated.Set(key, value)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
@@ -150,9 +156,40 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			var op operators.Operator
 			var value any
 
-			op, err = operators.NewOperator("$project", "_id", idValue)
+			op, err = operators.NewOperator(idValue)
 			if err != nil {
-				return nil, err
+				var opErr *operators.OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, err
+				}
+
+				switch opErr.Code() {
+				case operators.ErrEmptyField:
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				case operators.ErrTooManyFields:
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrFieldPathInvalidName,
+						"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
+							" Consider using $getField or $setField.",
+						"$project (stage)",
+					)
+				case operators.ErrNotImplemented:
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				case operators.ErrWrongType:
+					fallthrough
+				default:
+					return nil, lazyerrors.Error(err)
+				}
 			}
 
 			value, err = op.Process(projected)
@@ -230,9 +267,40 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			var op operators.Operator
 			var v any
 
-			op, err = operators.NewOperator("$project", key, value)
+			op, err = operators.NewOperator(value)
 			if err != nil {
-				return nil, err
+				var opErr *operators.OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, err
+				}
+
+				switch opErr.Code() {
+				case operators.ErrEmptyField:
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				case operators.ErrTooManyFields:
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrFieldPathInvalidName,
+						"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
+							" Consider using $getField or $setField.",
+						"$project (stage)",
+					)
+				case operators.ErrNotImplemented:
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				case operators.ErrWrongType:
+					fallthrough
+				default:
+					return nil, lazyerrors.Error(err)
+				}
 			}
 
 			v, err = op.Process(doc)

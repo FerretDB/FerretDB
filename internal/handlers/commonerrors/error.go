@@ -227,6 +227,9 @@ const (
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 
+	// ErrEmptySubProject indicates that subprojection mustn't be empty.
+	ErrEmptySubProject = ErrorCode(51270) // Location51270
+
 	// ErrEmptyProject indicates that projection specification must have at least one field.
 	ErrEmptyProject = ErrorCode(51272) // Location51272
 

@@ -21,12 +21,7 @@
 // should be stored in both operators and accumulators packages.
 package operators
 
-import (
-	"fmt"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
+import "github.com/FerretDB/FerretDB/internal/types"
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
 //
@@ -42,29 +37,63 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
-// NewOperator returns operator for provided value.
-func NewOperator(stage, key string, value any) (Operator, error) {
-	operatorDoc, ok := value.(*types.Document)
-	if !ok || operatorDoc.Len() == 0 {
-		return nil, lazyerrors.New(
-			fmt.Sprintf("The field '%s' must be an object", key),
-		)
-	}
+//go:generate ../../../../../bin/stringer -linecomment -type OperatorErrorCode
 
-	// operator document contains only one field.
-	if operatorDoc.Len() > 1 {
-		return nil, lazyerrors.New(
-			fmt.Sprintf("The field '%s' must specify one operator", key),
-		)
+// OperatorErrorCode represents aggregation operator error code.
+type OperatorErrorCode int
+
+const (
+	// ErrWrongType indicates that operator field is not a document.
+	ErrWrongType OperatorErrorCode = iota + 1
+
+	// ErrEmptyField indicates that operator field does not specify any operator.
+	ErrEmptyField
+
+	// ErrTooManyFields indicates that operator field specifes more than one operators.
+	ErrTooManyFields
+
+	// ErrNotImplemented indicates that given operator is not implemented yet.
+	ErrNotImplemented
+)
+
+// newExpressionError creates a new ExpressionError.
+func newOperatorError(code OperatorErrorCode) error {
+	return &OperatorError{code: code}
+}
+
+// OperatorError describes an error that occurs while evaluating operator.
+type OperatorError struct {
+	code OperatorErrorCode
+}
+
+// Error implements the error interface.
+func (e *OperatorError) Error() string {
+	return e.code.String()
+}
+
+// Code returns the OperatorError code.
+func (e *OperatorError) Code() OperatorErrorCode {
+	return e.code
+}
+
+// NewOperator returns operator for provided value.
+func NewOperator(value any) (Operator, error) {
+	operatorDoc, ok := value.(*types.Document)
+
+	switch {
+	case !ok:
+		return nil, newOperatorError(ErrWrongType)
+	case operatorDoc.Len() == 0:
+		return nil, newOperatorError(ErrEmptyField)
+	case operatorDoc.Len() > 1:
+		return nil, newOperatorError(ErrTooManyFields)
 	}
 
 	operator := operatorDoc.Command()
 
 	newOperator, ok := Operators[operator]
 	if !ok {
-		return nil, lazyerrors.New(
-			fmt.Sprintf("%s operator %q is not implemented yet", stage, operator),
-		)
+		return nil, newOperatorError(ErrNotImplemented)
 	}
 
 	return newOperator(operatorDoc)
