@@ -49,7 +49,7 @@ import (
 // If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
 // the field must be of type `any`.
 //
-// Errors list:
+// It returns command errors with the following codes:
 //   - `ErrFailedToParse` when provided field is not present in passed structure;
 //   - `ErrFailedToParse` when provided field must be 0 or 1, but it is not;
 //   - `ErrNotImplemented` when support for provided field is not implemented yet;
@@ -88,7 +88,8 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		lookup := key
 
 		// If the key is the same as the command name, then it is a collection name.
-		if key == command {
+		// Depending on the driver, the key may be camel case or lower case for a collection name.
+		if strings.ToLower(key) == strings.ToLower(command) { //nolint:staticcheck // for clarity
 			lookup = "collection"
 		}
 
@@ -410,7 +411,8 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			continue
 		}
 
-		if !slices.Contains(keys, key) {
+		// Depending on the driver, the key may be camel case or lower case for a collection name.
+		if !slices.Contains(keys, key) && !slices.Contains(keys, strings.ToLower(key)) {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrMissingField,
 				fmt.Sprintf("BSON field '%s.%s' is missing but a required field", command, key),
