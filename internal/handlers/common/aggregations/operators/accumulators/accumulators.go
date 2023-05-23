@@ -39,6 +39,7 @@ type Accumulator interface {
 
 // NewAccumulator returns accumulator for provided value.
 func NewAccumulator(stage, key string, value any) (Accumulator, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2689
 	accumulation, ok := value.(*types.Document)
 	if !ok || accumulation.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
