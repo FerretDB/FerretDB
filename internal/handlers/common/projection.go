@@ -300,6 +300,12 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			}
 		}
 
+		// positional operator sets field for non array.
+		// TODO handle suffix containing value: a.$.b
+		if path.TrimPrefix().Prefix() == "$" {
+			projected.Set(key, embeddedSource)
+		}
+
 		// when next prefix has an array use returned value arr,
 		// if it has a document, field in the doc is set by includeProjection.
 		arr, err := includeProjection(path.TrimPrefix(), embeddedSource, doc)
@@ -342,6 +348,14 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 				return nil, lazyerrors.Error(err)
 			}
 
+			// positional operator match
+			if key == "$" {
+				// TODO: check nesting
+				arr.Append(arrElem)
+				return arr, nil
+			}
+
+			// dot notation match
 			if _, ok := arrElem.(*types.Document); !ok {
 				continue
 			}

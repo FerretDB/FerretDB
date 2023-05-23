@@ -243,6 +243,10 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			projection: bson.D{{"v.$", true}},
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1709",
 		},
+		"PositionalOperatorLastElem": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection: bson.D{{"v.$", true}},
+		},
 	}
 
 	testQueryCompat(t, testCases)
