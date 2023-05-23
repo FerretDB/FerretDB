@@ -45,7 +45,7 @@ jobs:
     name: Build packages
     runs-on:
       group: paid
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     if: >
       github.event_name != 'pull_request_target' ||

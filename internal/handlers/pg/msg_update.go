@@ -85,7 +85,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				doc := u.Filter.DeepCopy()
-				if _, err = common.UpdateDocument(doc, u.Update); err != nil {
+				if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
 					return err
 				}
 				if !doc.Has("_id") {
@@ -113,7 +113,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			matched += int32(len(resDocs))
 
 			for _, doc := range resDocs {
-				changed, err := common.UpdateDocument(doc, u.Update)
+				changed, err := common.UpdateDocument(document.Command(), doc, u.Update)
 				if err != nil {
 					return err
 				}

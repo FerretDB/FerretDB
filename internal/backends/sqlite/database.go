@@ -16,8 +16,12 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
@@ -36,7 +40,7 @@ func newDatabase(b *backend, name string) backends.Database {
 
 // Close implements backends.Database interface.
 func (db *database) Close() {
-	panic("not implemented") // TODO: Implement
+	db.b.pool.CloseDB(db.name) // TODO: Implement
 }
 
 // Collection implements backends.Database interface.
@@ -48,17 +52,107 @@ func (db *database) Collection(name string) backends.Collection {
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	panic("not implemented") // TODO: Implement
+	var result backends.ListCollectionsResult
+
+	exists, err := db.b.metadataStorage.dbExists(db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return &result, nil
+	}
+
+	list, err := db.b.metadataStorage.listCollections(ctx, db.name)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, name := range list {
+		result.Collections = append(result.Collections, backends.CollectionInfo{
+			Name: name,
+		})
+	}
+
+	return &result, nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	panic("not implemented") // TODO: Implement
+	exists, err := db.b.metadataStorage.dbExists(db.name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !exists {
+		if err = db.create(ctx); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
+	tableName, err := db.b.metadataStorage.createCollection(ctx, db.name, params.Name)
+	if err != nil {
+		return err
+	}
+
+	conn, err := db.b.pool.DB(db.name)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (sjson string)`, tableName)
+
+	_, err = conn.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	panic("not implemented") // TODO: Implement
+	table, err := db.b.metadataStorage.tableName(ctx, db.name, params.Name)
+	if err != nil {
+		return err
+	}
+
+	err = db.b.metadataStorage.removeCollection(ctx, db.name, params.Name)
+	if err != nil {
+		return err
+	}
+
+	conn, err := db.b.pool.DB(db.name)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("DROP TABLE %s", table)
+
+	_, err = conn.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *database) create(ctx context.Context) error {
+	f, err := os.Create(filepath.Join(db.b.dir, db.name+dbExtension))
+	if err != nil {
+		return err
+	}
+
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	err = db.b.metadataStorage.createDatabase(ctx, db.name)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // check interfaces
