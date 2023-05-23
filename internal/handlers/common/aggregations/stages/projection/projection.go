@@ -77,7 +77,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			// TODO refactor validation
+			// validate operators later
 			validated.Set(key, value)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
