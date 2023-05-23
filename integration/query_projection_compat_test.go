@@ -238,12 +238,17 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"PositionalOperator": {
-			filter:     bson.D{{"v", bson.D{{"$eq", 45.5}}}},
-			projection: bson.D{{"v.$", true}},
-			skip:       "https://github.com/FerretDB/FerretDB/issues/1709",
+		"PositionalOperatorImplicit": {
+			filter:         bson.D{{"v", 42}},
+			projection:     bson.D{{"v.$", true}},
+			resultPushdown: true,
 		},
-		"PositionalOperatorLastElem": {
+		"PositionalOperatorEq": {
+			filter:         bson.D{{"v", bson.D{{"$eq", 45.5}}}},
+			projection:     bson.D{{"v.$", true}},
+			resultPushdown: true,
+		},
+		"PositionalOperatorGt": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v.$", true}},
 		},

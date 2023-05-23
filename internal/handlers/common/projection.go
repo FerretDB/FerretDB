@@ -135,7 +135,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 }
 
 // ProjectDocument applies projection to the copy of the document.
-func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Document, error) {
+func ProjectDocument(doc, projection, filter *types.Document, inclusion bool) (*types.Document, error) {
 	projected, err := types.NewDocument("_id", must.NotFail(doc.Get("_id")))
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 		}
 	}
 
-	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
+	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, filter, inclusion)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 // projectDocumentWithoutID applies projection to the copy of the document and returns projected document.
 // It ignores _id field in the projection.
-func projectDocumentWithoutID(doc *types.Document, projection *types.Document, inclusion bool) (*types.Document, error) {
+func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Document, inclusion bool) (*types.Document, error) {
 	projectionWithoutID := projection.DeepCopy()
 	projectionWithoutID.Remove("_id")
 
@@ -233,7 +233,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 		case bool: // field: bool
 			if inclusion {
 				// inclusion projection copies the field on the path from docWithoutID to projected.
-				if _, err = includeProjection(path, docWithoutID, projected); err != nil {
+				if _, err = includeProjection(path, 0, docWithoutID, projected, filter); err != nil {
 					return nil, err
 				}
 
@@ -267,8 +267,8 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 //
 //	Example: "v.0.foo" path inclusion projection:
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {}]}
-func includeProjection(path types.Path, source any, projected *types.Document) (*types.Array, error) {
-	key := path.Prefix()
+func includeProjection(path types.Path, curIndex int, source any, projected, filter *types.Document) (*types.Array, error) {
+	key := path.Slice()[curIndex]
 
 	switch source := source.(type) {
 	case *types.Document:
@@ -278,7 +278,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			return nil, nil
 		}
 
-		if path.Len() <= 1 {
+		if path.Len()-1 <= curIndex {
 			// path reached suffix, set field in projected.
 			setBySourceOrder(key, embeddedSource, source, projected)
 			return nil, nil
@@ -296,7 +296,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 			if arr, ok := v.(*types.Array); ok {
 				// use next prefix key with arr value, allowing array to parse existing
 				// projection fields.
-				doc = must.NotFail(types.NewDocument(path.TrimPrefix().Prefix(), arr))
+				doc = must.NotFail(types.NewDocument(path.Slice()[curIndex+1], arr))
 			}
 		}
 
@@ -308,7 +308,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 		// when next prefix has an array use returned value arr,
 		// if it has a document, field in the doc is set by includeProjection.
-		arr, err := includeProjection(path.TrimPrefix(), embeddedSource, doc)
+		arr, err := includeProjection(path, curIndex+1, embeddedSource, doc, filter)
 		if err != nil {
 			return nil, err
 		}
@@ -322,6 +322,16 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 
 		return nil, nil
 	case *types.Array:
+		// positional operator match
+		if key == "$" {
+			v, err := getFirstElement(source, filter, path.String())
+			if err != nil {
+				return nil, err
+			}
+
+			return types.NewArray(v)
+		}
+
 		iter := source.Iterator()
 		defer iter.Close()
 
@@ -346,13 +356,6 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 				}
 
 				return nil, lazyerrors.Error(err)
-			}
-
-			// positional operator match
-			if key == "$" {
-				// TODO: check nesting
-				arr.Append(arrElem)
-				return arr, nil
 			}
 
 			// dot notation match
@@ -386,7 +389,7 @@ func includeProjection(path types.Path, source any, projected *types.Document) (
 				arr.Append(doc)
 			}
 
-			if _, err = includeProjection(path, arrElem, doc); err != nil {
+			if _, err = includeProjection(path, curIndex, arrElem, doc, filter); err != nil {
 				return nil, err
 			}
 
