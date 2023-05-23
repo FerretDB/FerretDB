@@ -21,6 +21,10 @@ This section of the documentation will focus on [aggregation commands](#aggregat
 
 Aggregation commands are top-level commands used for aggregating data, and are typically either via the `aggregate`, `count`, or `distinct` command.
 
+:::note
+Aggregation pipeline stages are only available for the `aggregate` command, and not for the `count` or `distinct` command.
+:::
+
 ### `aggregate`
 
 The `aggregate` command is used for performing aggregation operations on a collection.
