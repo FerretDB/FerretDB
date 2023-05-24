@@ -403,6 +403,13 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 
 		key := optionsList[0]
 		if key == "collection" {
+			if v.Field(i).IsZero() {
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace,
+					fmt.Sprintf("Invalid namespace specified '%s.'", v.FieldByName("DB")),
+					command,
+				)
+			}
+
 			key = command
 		}
 
