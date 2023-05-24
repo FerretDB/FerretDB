@@ -7,7 +7,7 @@ default: true
 
 MD002: false # deprecated
 MD003: { style: atx }
-#MD004: { style: "asterisk" }
+MD004: { style: "dash" }
 MD006: false # deprecated
 MD013: false # we use https://sembr.org that could lead to long lines
 MD029: { style: ordered }
