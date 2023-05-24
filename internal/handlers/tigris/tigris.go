@@ -135,7 +135,7 @@ func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
 		ClientID:     ap.ClientID,
 		ClientSecret: ap.ClientSecret,
 	}
-	p, err := tigrisdb.New(ctx, cfg, h.L)
+	p, err := tigrisdb.New(ctx, cfg, h.L, h.StateProvider)
 	if err != nil {
 		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
