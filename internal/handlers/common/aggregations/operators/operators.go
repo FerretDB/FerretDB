@@ -38,7 +38,7 @@ type Operator interface {
 }
 
 // NewOperator returns operator from provided document.
-// The document should look like: `{<$operator>: <operator-value>}`
+// The document should look like: `{<$operator>: <operator-value>}`.
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
 
