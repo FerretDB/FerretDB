@@ -44,7 +44,7 @@ go f.Run(context.Background())
 And then, we use a method to get a MongoDB URI that can be used with any client:
 
 ```js
-fmt.Println(f.MongoDBURI());
+fmt.Println(f.MongoDBURI())
 ```
 
 For example, we can connect to it with Mongo Shell:

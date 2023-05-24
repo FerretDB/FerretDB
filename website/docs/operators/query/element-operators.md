@@ -100,7 +100,7 @@ db.electronics.insertMany([
       },
     ],
   },
-]);
+])
 ```
 
 ## $exists
@@ -121,13 +121,13 @@ db.electronics.find({
   specifications: {
     $exists: true,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
     product: "laptop",
@@ -176,7 +176,7 @@ The output:
     discount: true,
     specifications: [{ type: "flatbed" }],
   },
-];
+]
 ```
 
 In the above output, the query returns all documents where the `specifications` field exists, even when the `field` has an empty value.
@@ -191,13 +191,13 @@ db.electronics.find({
     $exists: true,
     $type: "array",
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
     product: "laptop",
@@ -246,7 +246,7 @@ The output:
     discount: true,
     specifications: [{ type: "flatbed" }],
   },
-];
+]
 ```
 
 ## $type
@@ -295,7 +295,7 @@ db.electronics.find({
   discount: {
     $type: 8,
   },
-});
+})
 ```
 
 This query can also be written using the alias of the specified data type.
@@ -305,13 +305,13 @@ db.electronics.find({
   discount: {
     $type: "bool",
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
     product: "laptop",
@@ -359,5 +359,5 @@ The output:
     discount: true,
     specifications: [{ type: "flatbed" }],
   },
-];
+]
 ```

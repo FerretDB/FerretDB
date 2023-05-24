@@ -48,7 +48,7 @@ Say you have an `inventory` collection below:
 You can access the `renameCollection` command through the `db.collection.renameCollection()` method within the same database in mongosh, as shown below for a current `inventory` collection.
 
 ```js
-db.inventory.renameCollection("store");
+db.inventory.renameCollection("store")
 ```
 
 Note that `writeConcern`, `comment`, and `dropTarget` arguments are not currently implemented.
@@ -65,19 +65,19 @@ db.store.aggregate([
       inventory: 1,
     },
   },
-]);
+])
 ```
 
 The output document looks like this:
 
 ```js
-[
+;[
   {
     _id: 1,
     category: "Electronics",
     inventory: [{ product: "Laptop", price: 1200, quantity: 10 }],
   },
-];
+]
 ```
 
 This outputs the fields specified, together with the default `_id`.
@@ -88,7 +88,7 @@ With this feature, users can now specify which fields to retrieve from the datab
 For instance, if we have a `users` collection as shown below:
 
 ```js
-[
+;[
   {
     _id: 1,
     name: "John",
@@ -101,22 +101,22 @@ For instance, if we have a `users` collection as shown below:
     age: 25,
     email: "jane@example.com",
   },
-];
+]
 ```
 
 Suppose we want to retrieve the documents from the `users` collection but only include the name field while assigning a new value of 'Anonymous' to it.
 
 ```js
-db.users.find({}, { name: "Anonymous" });
+db.users.find({}, { name: "Anonymous" })
 ```
 
 The query will return:
 
 ```js
-[
+;[
   { _id: 1, name: "Anonymous" },
   { _id: 2, name: "Anonymous" },
-];
+]
 ```
 
 Also, thanks to one of our contributors, [@polyal](https://github.com/polyal), we now support `create` and `drop` commands in SAP HANA handler.

@@ -103,7 +103,7 @@ With MQL, you can query any field, embedded documents, or nested arrays in the M
 ```js
 db.users.find({
   hobbies: { $all: ["reading", "cooking"] },
-});
+})
 ```
 
 ### ACID Compliance

@@ -45,7 +45,7 @@ For instance, suppose you have a `users` collection containing several fields, i
 You can now run the following command:
 
 ```js
-db.users.createIndex({ age: 1 });
+db.users.createIndex({ age: 1 })
 ```
 
 This will create an ascending index on the "age" field, which will speed up any queries that filter on that field.
@@ -54,7 +54,7 @@ We've also added the `dropIndexes` command, which allows you to remove an index 
 Here's an example:
 
 ```js
-db.users.dropIndex({ age: 1 });
+db.users.dropIndex({ age: 1 })
 ```
 
 This will remove the index from the "users" collection.
@@ -68,19 +68,19 @@ To help you gather more information about your collections, databases, and serve
 To retrieve statistics about a collection, use the `collStats` command like this:
 
 ```js
-db.runCommand({ collStats: "users" });
+db.runCommand({ collStats: "users" })
 ```
 
 If the statistics is about the database, run the command below:
 
 ```js
-db.runCommand({ dbStats: 1 });
+db.runCommand({ dbStats: 1 })
 ```
 
 For the total data size of a collection, run the following command:
 
 ```js
-db.runCommand({ dataSize: "<database>.<collection>" });
+db.runCommand({ dataSize: "<database>.<collection>" })
 ```
 
 ## So where are we now?

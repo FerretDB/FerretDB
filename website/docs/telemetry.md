@@ -107,7 +107,7 @@ Telemetry can be disabled using any of the following options:
 5. Use the `db.disableFreeMonitoring()` command on runtime.
 
    ```js
-   db.disableFreeMonitoring();
+   db.disableFreeMonitoring()
    ```
 
    :::caution
@@ -133,7 +133,7 @@ export FERRETDB_TELEMETRY=enable
 ```
 
 ```js
-db.enableFreeMonitoring();
+db.enableFreeMonitoring()
 ```
 
 One case when explicitly enabling telemetry is useful is if you want to help us improve compatibility

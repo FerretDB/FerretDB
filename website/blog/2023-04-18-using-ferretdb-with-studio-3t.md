@@ -208,7 +208,7 @@ db.test.insertMany([
       zip: "34567",
     },
   },
-]);
+])
 ```
 
 This should insert 4 documents into the collection.
@@ -232,7 +232,7 @@ Let’s also try updating some documents in the database by extending the above 
 db.test.updateMany(
   { age: { $gte: 30 } },
   { $set: { interests: ["reading", "hiking", "photography", "painting"] } }
-);
+)
 ```
 
 This works perfectly, with two matched documents updated.
@@ -273,7 +273,7 @@ Say we want to perform operations on a new collection, `sales`, with the followi
 An aggregation pipeline operation like the one below would run without any error:
 
 ```js
-db.sales.aggregate([{ $sort: { order_total: -1 } }]);
+db.sales.aggregate([{ $sort: { order_total: -1 } }])
 ```
 
 FerretDB can be used to perform complex operations using aggregation pipelines to transform data.

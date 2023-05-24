@@ -73,7 +73,7 @@ db.catalog.insertMany([
       },
     ],
   },
-]);
+])
 ```
 
 ## $and
@@ -101,13 +101,13 @@ db.catalog.find({
       },
     },
   ],
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
     product: "bottle",
@@ -130,7 +130,7 @@ The output:
       { color: ["pink", "white", "red"] },
     ],
   },
-];
+]
 ```
 
 ## $or
@@ -165,13 +165,13 @@ db.catalog.find({
       },
     },
   ],
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
     product: "bottle",
@@ -205,7 +205,7 @@ The output:
       { color: ["pink", "white", "red"] },
     ],
   },
-];
+]
 ```
 
 ## $not
@@ -223,13 +223,13 @@ db.catalog.find({
       $lt: 5,
     },
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f15"),
     product: "cup",
@@ -252,7 +252,7 @@ The output:
       { color: ["pink", "white", "red"] },
     ],
   },
-];
+]
 ```
 
 ## $nor
@@ -287,13 +287,13 @@ db.catalog.find({
       },
     },
   ],
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f14"),
     product: "spoon",
@@ -305,5 +305,5 @@ The output:
       { color: ["silver", "white"] },
     ],
   },
-];
+]
 ```

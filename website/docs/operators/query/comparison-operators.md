@@ -53,7 +53,7 @@ db.employees.insertMany([
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-]);
+])
 ```
 
 ## $eq
@@ -71,13 +71,13 @@ db.employees.find({
   age: {
     $eq: 21,
   },
-});
+})
 ```
 
 The response returns a single document that matches the query:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
     name: { first: "Clarke", last: "Dane" },
@@ -86,7 +86,7 @@ The response returns a single document that matches the query:
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-];
+]
 ```
 
 **Example:** To query values in an embedded document, use [dot notation](../../understanding-ferretdb.md#dot-notation).
@@ -97,13 +97,13 @@ db.employees.find({
   "name.first": {
     $eq: "Earl",
   },
-});
+})
 ```
 
 The response returns a single document that matches the query:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -112,7 +112,7 @@ The response returns a single document that matches the query:
     role: "salesperson",
     catalog: ["printer", "cardboard", "crayons", "books"],
   },
-];
+]
 ```
 
 ## $gt
@@ -128,13 +128,13 @@ db.employees.find({
   age: {
     $gt: 21,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -151,7 +151,7 @@ The output:
     role: "salesperson",
     catalog: ["cabinet", "fridge", "blender", "utensils"],
   },
-];
+]
 ```
 
 ## $gte
@@ -167,13 +167,13 @@ db.employees.find({
   age: {
     $gte: 21,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -198,7 +198,7 @@ The output:
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-];
+]
 ```
 
 ## $lt
@@ -214,13 +214,13 @@ db.employees.find({
   age: {
     $lt: 25,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -237,7 +237,7 @@ The output:
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-];
+]
 ```
 
 ## $lte
@@ -254,13 +254,13 @@ db.employees.find({
   age: {
     $lte: 21,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
     name: { first: "Clarke", last: "Dane" },
@@ -269,7 +269,7 @@ The output:
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-];
+]
 ```
 
 ## $in
@@ -285,13 +285,13 @@ db.employees.find({
   age: {
     $in: [21, 35],
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
     name: { first: "Sam", last: "Johnson" },
@@ -308,7 +308,7 @@ The output:
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-];
+]
 ```
 
 ## $ne
@@ -324,13 +324,13 @@ db.employees.find({
   age: {
     $ne: 21,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -347,7 +347,7 @@ The output:
     role: "salesperson",
     catalog: ["cabinet", "fridge", "blender", "utensils"],
   },
-];
+]
 ```
 
 ## $nin
@@ -364,13 +364,13 @@ db.employees.find({
   age: {
     $nin: [21, 35],
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -379,5 +379,5 @@ The output:
     role: "salesperson",
     catalog: ["printer", "cardboard", "crayons", "books"],
   },
-];
+]
 ```

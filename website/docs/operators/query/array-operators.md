@@ -60,7 +60,7 @@ db.team.insertMany([
     },
     active: true,
   },
-]);
+])
 ```
 
 ## $all
@@ -80,13 +80,13 @@ db.team.find({
   skills: {
     $all: ["communication", "content creation"],
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
     id: 4,
@@ -96,7 +96,7 @@ The output:
     contact: { email: "alice@example.com", phone: "123-456-7893" },
     active: true,
   },
-];
+]
 ```
 
 ## $elemMatch
@@ -116,13 +116,13 @@ db.team.find({
       $nin: ["communication"],
     },
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63aa247e69c82de72bd40b93"),
     id: 2,
@@ -132,7 +132,7 @@ The output:
     contact: { email: "jane@example.com", phone: "123-456-7891" },
     active: false,
   },
-];
+]
 ```
 
 ## $size
@@ -148,13 +148,13 @@ db.team.find({
   skills: {
     $size: 3,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63aa247e69c82de72bd40b92"),
     id: 1,
@@ -191,5 +191,5 @@ The output:
     contact: { email: "alice@example.com", phone: "123-456-7893" },
     active: true,
   },
-];
+]
 ```

@@ -39,13 +39,13 @@ db.scientists.insertMany([
     born: 1815,
     invention: "computer programming",
   },
-]);
+])
 ```
 
 Run the following `findOne()` operation to retrieve a single document from the collection:
 
 ```js
-db.scientists.findOne({ invention: "Turing Machine" });
+db.scientists.findOne({ invention: "Turing Machine" })
 ```
 
 ## Retrieve all documents in a collection
@@ -53,7 +53,7 @@ db.scientists.findOne({ invention: "Turing Machine" });
 The `find()` command is used for retrieveing all the documents in a collection.
 
 ```js
-db.collection.find();
+db.collection.find()
 ```
 
 Run `db.scientists.find()` to see the complete list of documents in the collection.
@@ -64,7 +64,7 @@ Using the `find()` command, you can also filter a collection for only the docume
 For example, find the document with the field `born` set as 1857.
 
 ```js
-db.scientists.find({ born: 1857 });
+db.scientists.find({ born: 1857 })
 ```
 
 ### Retrieve documents using operator queries
@@ -74,7 +74,7 @@ There are several operator methods that you can use, such as `$gt` or `$lt`.
 For example, to find the list of scientists born after the 1900s, we'll need the `$gt` operator:
 
 ```js
-db.scientists.find({ born: { $gt: 1900 } });
+db.scientists.find({ born: { $gt: 1900 } })
 ```
 
 Here is a list of the most commonly used operators.
@@ -131,19 +131,19 @@ db.employees.insertMany([
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-]);
+])
 ```
 
 To retrieve all documents with a specific array field and value (`catalog: "printer"`), run the following command:
 
 ```js
-db.employees.find({ catalog: "printer" });
+db.employees.find({ catalog: "printer" })
 ```
 
 The response displays all the retrieved documents:
 
 ```js
-[
+;[
   {
     _id: ObjectId("636b39f80466c61a229bbf9b"),
     name: { first: "Earl", last: "Thomas" },
@@ -160,7 +160,7 @@ The response displays all the retrieved documents:
     role: "salesperson",
     catalog: ["printer", "pencils", "crayons", "toys"],
   },
-];
+]
 ```
 
 ### Retrieve documents in an array using dot notation
@@ -169,13 +169,13 @@ To retrieve all documents containing a specific value in an array, use dot notat
 The following command retrieves all documents containing `"blender"` in the third field of an array:
 
 ```js
-db.employees.find({ "catalog.2": "blender" });
+db.employees.find({ "catalog.2": "blender" })
 ```
 
 The document that matches the array query is displayed in the response:
 
 ```js
-[
+;[
   {
     _id: ObjectId("636b3b0e0466c61a229bbf9c"),
     name: { first: "Sam", last: "Johnson" },
@@ -184,7 +184,7 @@ The document that matches the array query is displayed in the response:
     role: "salesperson",
     catalog: ["cabinet", "fridge", "blender", "utensils"],
   },
-];
+]
 ```
 
 ### Query on an embedded or nested document
@@ -193,5 +193,5 @@ To query on an embedded document, use dot notation to specify the fields.
 The following command queries on the embedded document in the`employees` collection:
 
 ```js
-db.employees.find({ "name.first": "Clarke" });
+db.employees.find({ "name.first": "Clarke" })
 ```

@@ -28,7 +28,7 @@ In this release, we’ve added support for dot notation in sorting, which will a
 For instance, in a `products` collection containing product listings with a `price` field within a nested document `details`, you can now use dot notation to sort by `price` as follows:
 
 ```js
-db.products.find().sort({ "details.price": 1 });
+db.products.find().sort({ "details.price": 1 })
 ```
 
 (`1`) implies sorting in ascending order, while (`-1`) implies sorting in descending order.
@@ -40,7 +40,7 @@ Suppose you have a document like this below:
 db.users.insertOne({
   name: "Jane Doe",
   skills: ["JavaScript", "Python"],
-});
+})
 ```
 
 You can use the `$each` modifier with the `$addToSet` array update operators to add multiple unique elements to an array in one go.
@@ -49,7 +49,7 @@ You can use the `$each` modifier with the `$addToSet` array update operators to 
 db.users.updateOne(
   { name: "Jane Doe" },
   { $addToSet: { skills: { $each: ["Java", "C++"] } } }
-);
+)
 ```
 
 For the `$push` array update operator, you can use the `$each` modifier to add several elements to the array, as shown below:
@@ -58,7 +58,7 @@ For the `$push` array update operator, you can use the `$each` modifier to add s
 db.users.updateOne(
   { name: "Jane Doe" },
   { $push: { skills: { $each: ["Java", "C++"] } } }
-);
+)
 ```
 
 Another addition to this release is the support for `$pull` array update operator.
@@ -66,7 +66,7 @@ With this operator, you can remove array elements based on the query condition.
 For example, to remove `Java` from the previous `users` collection above, run:
 
 ```js
-db.users.updateOne({ name: "Jane Doe" }, { $pull: { skills: "Java" } });
+db.users.updateOne({ name: "Jane Doe" }, { $pull: { skills: "Java" } })
 ```
 
 ## Fixed Bugs

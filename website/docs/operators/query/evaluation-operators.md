@@ -40,7 +40,7 @@ db.catalog.insertMany([
     price: 20,
     stock: 3,
   },
-]);
+])
 ```
 
 ## $mod
@@ -57,13 +57,13 @@ db.catalog.find({
   stock: {
     $mod: [2, 0],
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63e3ac0184f488929a3f737a"),
     product: "spoon",
@@ -76,7 +76,7 @@ The output:
     price: 100,
     stock: 14,
   },
-];
+]
 ```
 
 :::caution
@@ -99,13 +99,13 @@ db.catalog.find({
   product: {
     $regex: /^b/,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63e4ce469695494b86bf2b2d"),
     product: "bottle",
@@ -118,7 +118,7 @@ The output:
     price: 20,
     stock: 3,
   },
-];
+]
 ```
 
 `$options` is an optional parameter that specifies the regular expression flags to use, such as:
@@ -141,13 +141,13 @@ db.catalog.find({
   product: {
     $regex: /bottle/i,
   },
-});
+})
 ```
 
 The output:
 
 ```js
-[
+;[
   {
     _id: ObjectId("63e3ac0184f488929a3f7379"),
     product: "bottle",
@@ -160,5 +160,5 @@ The output:
     price: 20,
     stock: 3,
   },
-];
+]
 ```

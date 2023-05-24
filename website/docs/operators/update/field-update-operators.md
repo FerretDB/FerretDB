@@ -35,7 +35,7 @@ db.employee.insertOne({
   jobTitle: "Manager",
   startDate: new Date("2021-01-01"),
   endDate: null,
-});
+})
 ```
 
 ## $set
@@ -53,7 +53,7 @@ db.employee.updateOne(
       "address.zip": "12345",
     },
   }
-);
+)
 ```
 
 The above query updates the value of the `city` field in the `address` embedded document and adds a new field `zip` to it.
@@ -61,7 +61,7 @@ The above query updates the value of the `city` field in the `address` embedded 
 This is the updated document:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -79,7 +79,7 @@ This is the updated document:
     startDate: ISODate("2021-01-01T00:00:00.000Z"),
     endDate: null,
   },
-];
+]
 ```
 
 ## $unset
@@ -89,13 +89,13 @@ The `$unset` operator deletes the specified field from a document and if the fie
 **Example:** The below query deletes the `zip` field from the embedded document `address`.
 
 ```js
-db.employee.updateOne({ name: "John Doe" }, { $unset: { "address.zip": "" } });
+db.employee.updateOne({ name: "John Doe" }, { $unset: { "address.zip": "" } })
 ```
 
 Below is the updated document, without the `zip` field:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -112,7 +112,7 @@ Below is the updated document, without the `zip` field:
     startDate: ISODate("2021-01-01T00:00:00.000Z"),
     endDate: null,
   },
-];
+]
 ```
 
 ## $inc
@@ -123,13 +123,13 @@ If the field is non-existent in the document, the `$inc` operator creates a new 
 **Example:** The below query increments the value of the `age` field by `1`.
 
 ```js
-db.employee.updateOne({ name: "John Doe" }, { $inc: { age: 1 } });
+db.employee.updateOne({ name: "John Doe" }, { $inc: { age: 1 } })
 ```
 
 The updated document looks like this:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -146,7 +146,7 @@ The updated document looks like this:
     startDate: ISODate("2021-01-01T00:00:00.000Z"),
     endDate: null,
   },
-];
+]
 ```
 
 ## $mul
@@ -157,13 +157,13 @@ Similar to all most of the other field update operators, if the field is non-exi
 **Example:** This example query multiplies the value of the `salary` field by `25%`, represented as `1.25`.
 
 ```js
-db.employee.updateOne({ name: "John Doe" }, { $mul: { salary: 1.25 } });
+db.employee.updateOne({ name: "John Doe" }, { $mul: { salary: 1.25 } })
 ```
 
 The updated record looks like this:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -180,7 +180,7 @@ The updated record looks like this:
     startDate: ISODate("2021-01-01T00:00:00.000Z"),
     endDate: null,
   },
-];
+]
 ```
 
 ## $rename
@@ -190,13 +190,13 @@ The `$rename` operator renames a given field to another name.
 **Example:** The query below updates the `employee` collection and renames the `jobTitle` field to `title`.
 
 ```js
-db.employee.updateOne({ name: "John Doe" }, { $rename: { jobTitle: "title" } });
+db.employee.updateOne({ name: "John Doe" }, { $rename: { jobTitle: "title" } })
 ```
 
 The updated document looks like this:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -213,7 +213,7 @@ The updated document looks like this:
     endDate: null,
     title: "Manager",
   },
-];
+]
 ```
 
 ## $min
@@ -223,14 +223,14 @@ The `$min` operator compares a specified value with the value of the given field
 **Example:** The below query updates the value of the `age` field to `30` as long as the current value is less than `30`.
 
 ```js
-db.employee.updateOne({ name: "John Doe" }, { $min: { age: 30 } });
+db.employee.updateOne({ name: "John Doe" }, { $min: { age: 30 } })
 ```
 
 Since `30` is less than `36`, the value of the `age` field is updated to `30`.
 The updated document now looks like this:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -247,7 +247,7 @@ The updated document now looks like this:
     endDate: null,
     title: "Manager",
   },
-];
+]
 ```
 
 ## $max
@@ -257,13 +257,13 @@ The `$max` operator compares a specified value with the value of the given field
 **Example:** The below query updates the value of the `age` field to `40` as long as the current value is greater than `40`.
 
 ```js
-db.employee.updateOne({ name: "John Doe" }, { $max: { age: 40 } });
+db.employee.updateOne({ name: "John Doe" }, { $max: { age: 40 } })
 ```
 
 This is what the updated document looks like:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -277,7 +277,7 @@ This is what the updated document looks like:
     height: 0,
     title: "Manager",
   },
-];
+]
 ```
 
 ## $currentDate
@@ -291,13 +291,13 @@ This can be as a date or timestamp.
 db.employee.updateOne(
   { name: "John Doe" },
   { $currentDate: { startDate: true } }
-);
+)
 ```
 
 This is the document after the update:
 
 ```js
-[
+;[
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
     name: "John Doe",
@@ -315,7 +315,7 @@ This is the document after the update:
     height: 0,
     title: "Manager",
   },
-];
+]
 ```
 
 ## $setOnInsert
@@ -338,7 +338,7 @@ db.stocks.update(
     },
   },
   { upsert: true }
-);
+)
 ```
 
 This query checks for a stock with the symbol "AAPL".
@@ -358,7 +358,7 @@ db.stocks.update(
     },
   },
   { upsert: true }
-);
+)
 ```
 
 This query also checks for a stock with the symbol "AAPL".
