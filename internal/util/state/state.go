@@ -32,9 +32,9 @@ type State struct {
 	// never persisted
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	LatestVersion   string    `json:"-"` // latest version reported by beacon
-	HandlerVersion  string    `json:"-"` // may be empty
-	UpdateAvailable bool      `json:"-"` // false if telemetry is disabled; value reported by beacon otherwise
+	HandlerVersion  string    `json:"-"` // may be empty if FerretDB did not connect to the backend yet
+	LatestVersion   string    `json:"-"` // as reported by beacon, if known
+	UpdateAvailable bool      `json:"-"` // as reported by beacon, if known
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -52,10 +52,11 @@ func (s *State) TelemetryString() string {
 
 // DisableTelemetry disables telemetry.
 //
-// It also sets UpdateAvailable to false because if telemetry is disabled then there is no way to check for updates
-// and no guarantee if update is available.
+// It also sets LatestVersion and UpdateAvailable to zero values
+// to avoid stale values when telemetry is re-enabled.
 func (s *State) DisableTelemetry() {
 	s.Telemetry = pointer.ToBool(false)
+	s.LatestVersion = ""
 	s.UpdateAvailable = false
 }
 
@@ -87,8 +88,8 @@ func (s *State) deepCopy() *State {
 		Telemetry:       telemetry,
 		TelemetryLocked: s.TelemetryLocked,
 		Start:           s.Start,
-		LatestVersion:   s.LatestVersion,
 		HandlerVersion:  s.HandlerVersion,
+		LatestVersion:   s.LatestVersion,
 		UpdateAvailable: s.UpdateAvailable,
 	}
 }

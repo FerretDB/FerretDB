@@ -141,7 +141,7 @@ func TestReporterReport(t *testing.T) {
 		// no update is available and unaware of the latest version.
 		s := r.P.Get()
 		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "", s.LatestVersion)
+		assert.Empty(t, s.LatestVersion)
 
 		// Call the telemetry server and check the state of the provider to be updated.
 		r.report(testutil.Ctx(t))
@@ -181,7 +181,7 @@ func TestReporterReport(t *testing.T) {
 		// Expect no update available and latest version equal to the previous state.
 		s = r.P.Get()
 		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "0.4.0", s.LatestVersion)
+		assert.Empty(t, s.LatestVersion)
 
 		// Enable telemetry
 		require.NoError(t, provider.Update(func(s *state.State) { s.EnableTelemetry() }))
@@ -219,7 +219,7 @@ func TestReporterReport(t *testing.T) {
 		// no update is available and unaware of the latest version.
 		s := r.P.Get()
 		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "", s.LatestVersion)
+		assert.Empty(t, s.LatestVersion)
 
 		// Call the telemetry server, as telemetry is disabled, expect no update to the provider.
 		r.report(testutil.Ctx(t))
@@ -229,6 +229,6 @@ func TestReporterReport(t *testing.T) {
 
 		s = r.P.Get()
 		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "", s.LatestVersion)
+		assert.Empty(t, s.LatestVersion)
 	})
 }
