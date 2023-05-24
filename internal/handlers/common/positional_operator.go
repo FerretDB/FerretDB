@@ -42,7 +42,6 @@ func getFirstElement(arr *types.Array, filter *types.Document, projection string
 	}
 
 	if arr.Len() == 0 {
-		// empty array returns error
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			"Executor error during find command :: caused by :: positional operator"+
@@ -59,7 +58,13 @@ func getFirstElement(arr *types.Array, filter *types.Document, projection string
 	for {
 		filterKey, filterVal, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+			// filterKey did not contain projection path.
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadPositionalOperator,
+				"Executor error during find command :: caused by :: positional operator"+
+					" '.$' couldn't find a matching element in the array",
+				"projection",
+			)
 		}
 
 		if err != nil {
@@ -70,6 +75,7 @@ func getFirstElement(arr *types.Array, filter *types.Document, projection string
 			continue
 		}
 
+		// filter is for the projection path.
 		filterDoc, ok := filterVal.(*types.Document)
 		if !ok {
 			// TODO: compare with each element of array

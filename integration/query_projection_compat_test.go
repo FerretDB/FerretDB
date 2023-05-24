@@ -238,6 +238,11 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
+		"IDFilter": {
+			filter:         bson.D{{"_id", "array"}},
+			projection:     bson.D{{"v.$", true}},
+			resultPushdown: true,
+		},
 		"Implicit": {
 			filter:         bson.D{{"v", 42}},
 			projection:     bson.D{{"v.$", true}},

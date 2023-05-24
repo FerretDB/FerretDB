@@ -72,6 +72,15 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Message: "Executor error during find command :: caused by :: positional operator '.$' couldn't find a matching element in the array",
 			},
 		},
+		"BadPositionalOperator": {
+			filter:     bson.D{{"_id", "array"}},
+			projection: bson.D{{"v.$", true}},
+			err: mongo.CommandError{
+				Code:    51246,
+				Name:    "Location51246",
+				Message: "Executor error during find command :: caused by :: positional operator '.$' couldn't find a matching element in the array",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
