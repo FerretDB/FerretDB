@@ -31,7 +31,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 
 	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		filter     bson.D             // required
 		projection any                // required
 		err        mongo.CommandError // required

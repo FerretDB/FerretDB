@@ -175,6 +175,9 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrAggregatePositionalProject indicates that positional projection cannot be used in aggregation.
+	ErrAggregatePositionalProject = ErrorCode(31324) // Location31324
+
 	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
 	// operator at the end.
 	ErrWrongPositionalOperatorLocation = ErrorCode(31394) // Location31394
@@ -234,8 +237,8 @@ const (
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
 
-	// ErrBadPositionalOperator indicates that positional operator could not find a matching element in the array.
-	ErrBadPositionalOperator = ErrorCode(51246) // Location51246
+	// ErrBadPositionalProjection indicates that positional operator could not find a matching element in the array.
+	ErrBadPositionalProjection = ErrorCode(51246) // Location51246
 
 	// ErrEmptyProject indicates that projection specification must have at least one field.
 	ErrEmptyProject = ErrorCode(51272) // Location51272

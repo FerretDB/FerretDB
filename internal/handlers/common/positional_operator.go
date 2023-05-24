@@ -25,14 +25,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// getFirstMatchingElement checks validity of the positional operator `$` and
+// getPositionalProjection checks validity of the positional operator `$` and
 // returns the first element of the array that matches the filter condition.
 //
 // Returned command error code:
 //   - ErrWrongPositionalOperatorLocation when there are multiple `$` or `$` is not at the end.
-//   - ErrBadPositionalOperator when array or filter is empty.
-//   - ErrBadPositionalOperator when filter does not contain positional operator filter.
-func getFirstMatchingElement(arr *types.Array, filter *types.Document, positionalOperator string) (any, error) {
+//   - ErrBadPositionalProjection when array or filter is empty.
+//   - ErrBadPositionalProjection when filter does not contain positional operator filter.
+func getPositionalProjection(arr *types.Array, filter *types.Document, positionalOperator string) (any, error) {
 	if !strings.HasSuffix(positionalOperator, "$") ||
 		strings.Count(positionalOperator, "$") > 1 {
 		// there can only be one positional operator at the end.
@@ -48,7 +48,7 @@ func getFirstMatchingElement(arr *types.Array, filter *types.Document, positiona
 
 	if arr.Len() == 0 || filter.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadPositionalOperator,
+			commonerrors.ErrBadPositionalProjection,
 			"Executor error during find command :: caused by :: positional operator"+
 				" '.$' couldn't find a matching element in the array",
 			"projection",
@@ -65,7 +65,7 @@ func getFirstMatchingElement(arr *types.Array, filter *types.Document, positiona
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			// filterKey did not contain projection path.
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadPositionalOperator,
+				commonerrors.ErrBadPositionalProjection,
 				"Executor error during find command :: caused by :: positional operator"+
 					" '.$' couldn't find a matching element in the array",
 				"projection",
@@ -85,7 +85,7 @@ func getFirstMatchingElement(arr *types.Array, filter *types.Document, positiona
 
 		if !ok {
 			// filterVal may be different number type compared to the first element in the array
-			// which matched the condition, iterate array to find the first match.
+			// which matched the condition, so iterate array to find the first match.
 			aIter := arr.Iterator()
 			defer aIter.Close()
 
@@ -118,8 +118,14 @@ func getFirstMatchingElement(arr *types.Array, filter *types.Document, positiona
 				return nil, err
 			}
 
-			// check array element satisfies filter condition
-			matched, err := filterFieldExpr(must.NotFail(types.NewDocument("$", elem)), "$", "$", expr)
+			// array element does not have a key, use positional operator `$` as key,
+			// it would be used for error message but there will not be error because
+			// filterFieldExpr(...) has already been call before projection.
+			key := "$"
+			doc := must.NotFail(types.NewDocument(key, elem))
+
+			// filterFieldExpr handles operators present in expr.
+			matched, err := filterFieldExpr(doc, key, key, expr)
 			if err != nil {
 				return nil, err
 			}

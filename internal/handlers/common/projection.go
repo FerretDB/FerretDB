@@ -258,13 +258,14 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 // the field unlike document.SetByPath(path).
 // Inclusion projection with non-existent path creates an empty document
 // or an empty array based on what source has.
-// It returns iterator errors other than ErrIteratorDone.
+// Positional projection returns the first element of an array which matches filter condition.
 // If the projected contains field that is not expected in source, it panics.
 //
 // Returned command error code:
 //   - ErrWrongPositionalOperatorLocation when there are multiple `$` or `$` is not at the end.
-//   - ErrBadPositionalOperator when array or filter is empty.
-//   - ErrBadPositionalOperator when filter does not contain positional operator filter.
+//   - ErrBadPositionalProjection when array or filter is empty.
+//   - ErrBadPositionalProjection when there is no filter path specially for positional projection.
+//     If positional projection is `v.$`, the filter must contain `v` in the filter key e.g. `{v: 42}`.
 //
 // Example: "v.foo" path inclusion projection:
 //
@@ -276,6 +277,10 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 // Example: "v.0.foo" path inclusion projection:
 //
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {}]}
+//
+// Example: "v.$" positional projection with filter {v: float64(2)}:
+//
+//	{v: [int64(1), int64(2), int32(2)]} -> {v: [int64(2)]}
 func includeProjection(path types.Path, curIndex int, source any, projected, filter *types.Document) (*types.Array, error) {
 	key := path.Slice()[curIndex]
 
@@ -288,7 +293,7 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 		}
 
 		if path.Len()-1 <= curIndex {
-			// path reached suffix, set field in projected.
+			// next index is suffix, set field in projected.
 			setBySourceOrder(key, embeddedSource, source, projected)
 			return nil, nil
 		}
@@ -303,18 +308,18 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 			}
 
 			if arr, ok := v.(*types.Array); ok {
-				// use next prefix key with arr value, allowing array to parse existing
+				// if array is at next index, pass it to allow array to use existing
 				// projection fields.
 				doc = must.NotFail(types.NewDocument(path.Slice()[curIndex+1], arr))
 			}
 		}
 
 		if path.TrimPrefix().Prefix() == "$" {
-			// positional operator sets non array field.
+			// positional projection sets the value for non array field.
 			projected.Set(key, embeddedSource)
 		}
 
-		// when next prefix has an array use returned value arr,
+		// when next index has an array use returned value arr,
 		// if it has a document, field in the doc is set by includeProjection.
 		arr, err := includeProjection(path, curIndex+1, embeddedSource, doc, filter)
 		if err != nil {
@@ -331,7 +336,7 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 		return nil, nil
 	case *types.Array:
 		if key == "$" {
-			v, err := getFirstMatchingElement(source, filter, path.String())
+			v, err := getPositionalProjection(source, filter, path.String())
 			if err != nil {
 				return nil, err
 			}
@@ -415,10 +420,6 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 // with the key to remove that document. This is not the case in document.Remove(key).
 // Dot notation with array index path do not exclude unlike document.RemoveByPath(key).
 //
-// Returned command error code:
-//
-//   - ErrExclusionPositionalProjection when positional projection `$` is used.
-//
 // Examples: "v.foo" path exclusion projection:
 //
 //	{v: {foo: 1}}                       -> {v: {}}
@@ -431,14 +432,6 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 //	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{foo: 1}, {foo: 2}]}
 func excludeProjection(path types.Path, projected any) error {
 	key := path.Prefix()
-
-	if key == "$" {
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrExclusionPositionalProjection,
-			"positional projection cannot be used with exclusion",
-			"projection",
-		)
-	}
 
 	switch projected := projected.(type) {
 	case *types.Document:

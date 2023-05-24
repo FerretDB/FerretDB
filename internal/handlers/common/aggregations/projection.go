@@ -69,6 +69,14 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
+		if strings.HasSuffix(key, "$") {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrAggregatePositionalProject,
+				"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
+				"projection",
+			)
+		}
+
 		var result bool
 
 		switch value := value.(type) {

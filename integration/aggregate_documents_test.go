@@ -54,6 +54,16 @@ func TestAggregateProjectErrors(t *testing.T) {
 			},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2633",
 		},
+		"ProjectPositionalOperator": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v.$", true}}}},
+			},
+			expectedErr: &mongo.CommandError{
+				Code:    31324,
+				Name:    "Location31324",
+				Message: "Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
