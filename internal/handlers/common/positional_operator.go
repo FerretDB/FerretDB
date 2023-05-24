@@ -78,14 +78,13 @@ func getFirstElement(arr *types.Array, filter *types.Document, projection string
 		// filter is for the projection path.
 		filterDoc, ok := filterVal.(*types.Document)
 		if !ok {
-			// TODO: compare with each element of array
-			break
+			// cannot return filterVal because filterVal maybe different number type
+			// from the first element in the array which matches the condition.
+			return getElement(arr, filterVal)
 		}
 
 		return fetchElementFromDoc(arr, filterDoc)
 	}
-
-	return arr.Get(0)
 }
 
 // fetchElementFromDoc fetches the first element from array which matches the value of doc.
@@ -133,4 +132,25 @@ func fetchElementFromDoc(arr *types.Array, doc *types.Document) (any, error) {
 	}
 
 	panic(fmt.Sprintf("filter %v matched array %v but no element in array matches filter", doc, arr))
+}
+
+// getElement fetches the first element from array which is the same according to the comparison as v.
+func getElement(arr *types.Array, v any) (any, error) {
+	iter := arr.Iterator()
+	defer iter.Close()
+
+	for {
+		_, elem, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			panic(fmt.Sprintf("array %v but does not contain %v", arr, v))
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if types.Compare(elem, v) == types.Equal {
+			return elem, nil
+		}
+	}
 }

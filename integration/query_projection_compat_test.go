@@ -244,7 +244,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			resultPushdown: true,
 		},
 		"Implicit": {
-			filter:         bson.D{{"v", 42}},
+			filter:         bson.D{{"v", float64(42)}},
 			projection:     bson.D{{"v.$", true}},
 			resultPushdown: true,
 		},
