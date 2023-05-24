@@ -50,7 +50,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"n", res.InsertedCount,
+		"n", int32(res.InsertedCount),
 		"ok", float64(1),
 	))
 
