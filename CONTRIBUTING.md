@@ -231,6 +231,14 @@ Writing separate tests might be much better than making a single test that check
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
 
+#### Integration tests naming conventions
+
+We use the following naming conventions for integration tests:
+
+- Test files are named after the command they test, e.g. `find_test.go` for `find` command;
+- If the file contains compat tests than we add `_compat` suffix, e.g. `find_compat_test.go`;
+- 
+
 ### Submitting code changes
 
 #### Before submitting PR
