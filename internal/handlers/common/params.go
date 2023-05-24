@@ -194,6 +194,7 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 		// {field: {$bitsAllClear: [position1, position2]}}
 		for i := 0; i < mask.Len(); i++ {
 			val := must.NotFail(mask.Get(i))
+
 			b, ok := val.(int32)
 			if !ok {
 				return 0, commonerrors.NewCommandError(

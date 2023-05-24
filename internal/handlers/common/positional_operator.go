@@ -22,13 +22,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // getFirstMatchingElement returns the first element of the array that matches the filter condition.
 //
 // Returns command error code:
 //   - ErrBadValue when multiple positional operator, positional operator is not at the end or filter is empty.
-//   - ErrBadValue when array is empty
+//   - ErrBadValue when array is empty.
 //   - ErrBadPositionalOperator when filter does not contain filter for positional operator path.
 func getFirstMatchingElement(arr *types.Array, filter *types.Document, projection string) (any, error) {
 	if !strings.HasSuffix(projection, "$") ||
@@ -102,53 +103,28 @@ func getFirstMatchingElement(arr *types.Array, filter *types.Document, projectio
 			}
 		}
 
-		return fetchElementFromDoc(arr, expr)
-	}
-}
+		iter := arr.Iterator()
+		defer iter.Close()
 
-// fetchElementFromDoc fetches the first element from array which matches the value of doc.
-// If the doc has an operator, operator is applied to array element and the first element
-// that satisfies the operator is returned.
-func fetchElementFromDoc(arr *types.Array, expr *types.Document) (any, error) {
-	keys := expr.Keys()
-
-	values, err := iterator.ConsumeValues(expr.Iterator())
-	if err != nil {
-		return nil, err
-	}
-
-	iter := arr.Iterator()
-	defer iter.Close()
-
-	for {
-		_, elem, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		for i := 0; i < len(values); i++ {
-			// check array element satisfies condition
-			k := keys[i]
-			v := values[i]
-
-			if strings.HasPrefix(k, "$") {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrNotImplemented,
-					fmt.Sprintf("operator %s is not implemented for projection", k),
-					"projection",
-				)
+		for {
+			_, elem, err := iter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				panic(fmt.Sprintf("filter %v matched array %v but no element in array matches filter", expr, arr))
 			}
 
-			// TODO: check array v. elem cannot be an array because nested array is not supported
-			if types.Compare(elem, v) == types.Equal {
+			if err != nil {
+				return nil, err
+			}
+
+			// check array element satisfies filter condition
+			matched, err := filterFieldExpr(must.NotFail(types.NewDocument("$", elem)), "$", "$", expr)
+			if err != nil {
+				return nil, err
+			}
+
+			if matched {
 				return elem, nil
 			}
 		}
 	}
-
-	panic(fmt.Sprintf("filter %v matched array %v but no element in array matches filter", expr, arr))
 }
